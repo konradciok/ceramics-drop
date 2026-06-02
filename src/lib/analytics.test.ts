@@ -110,7 +110,7 @@ describe('analytics ecommerce payloads', () => {
       shippingMethod: 'kurier',
     });
 
-    expect(event.ecommerce.value).toBe(72);
+    expect(event.ecommerce?.value).toBe(72);
     expect(event.checkout_total).toBe(90);
     expect(event.shipping_tier).toBe('kurier');
     expect(event.meta).toMatchObject({
@@ -137,7 +137,7 @@ describe('analytics ecommerce payloads', () => {
       currency: ANALYTICS_CURRENCY,
       value: 72,
       shipping: 18,
-      items: items.map(toAnalyticsItem),
+      items: items.map((p) => toAnalyticsItem(p)),
     });
     expect(event.order_total).toBe(90);
     expect(event.meta).toMatchObject({
