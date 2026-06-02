@@ -5,6 +5,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, CATEGORY_ORDER, getProductsByCategory } from '@/lib/products';
+import { getSoldIds } from '@/lib/inventory';
 import type { CategorySlug } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { Gallery } from './Gallery';
@@ -12,7 +13,12 @@ import { richTags } from '@/components/ui/richTags';
 
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
   const t = await getTranslations();
-  const products = getProductsByCategory(slug);
+  const [base, soldIds] = await Promise.all([
+    Promise.resolve(getProductsByCategory(slug)),
+    getSoldIds(),
+  ]);
+  const sold = new Set(soldIds);
+  const products = base.map((p) => (sold.has(p.id) ? { ...p, sold: true } : p));
 
   return (
     <>
