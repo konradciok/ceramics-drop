@@ -268,25 +268,52 @@ fbq('init', '${pixelId}');
 </script>`;
 }
 
+/**
+ * Shared JS snippet that resolves the EXACT raw dataLayer event object that
+ * fired this tag. GTM processes the dataLayer message queue one message at a
+ * time; while a message is being processed its `event_id` is reflected in the
+ * container's data model, reachable via
+ * `google_tag_manager['{{Container ID}}'].dataLayer.get('event_id')`. We read
+ * that id, then find the raw object in window.dataLayer whose own `event_id`
+ * matches it (scanning from the end). Matching the precise raw object — rather
+ * than "the latest analytics event" — prevents collapse/double-send when two
+ * analytics events are pushed back-to-back in one tick. Leaves `payload` set
+ * to the resolved object, or returns (no-ops) if it cannot be resolved.
+ */
+function resolveTriggeringEventSnippet() {
+  return `  var gtm = window.google_tag_manager && window.google_tag_manager['{{Container ID}}'];
+  var targetId = gtm && gtm.dataLayer && typeof gtm.dataLayer.get === 'function'
+    ? gtm.dataLayer.get('event_id')
+    : null;
+  if (!targetId) return;
+  var dl = window.dataLayer || [];
+  var payload = null;
+  for (var i = dl.length - 1; i >= 0; i--) {
+    var entry = dl[i];
+    if (entry && typeof entry === 'object' && entry.event_id === targetId) {
+      payload = entry;
+      break;
+    }
+  }
+  if (!payload) return;`;
+}
+
 function ga4BridgeHtml() {
   return `<script>
 (function(){
-  function latestAnalyticsEvent() {
-    var dl = window.dataLayer || [];
-    for (var i = dl.length - 1; i >= 0; i--) {
-      var entry = dl[i];
-      if (entry && typeof entry === 'object' && ${JSON.stringify(ANALYTICS_EVENTS)}.indexOf(entry.event) !== -1) {
-        return entry;
-      }
-    }
-    return null;
-  }
-  var payload = latestAnalyticsEvent();
-  if (!payload || !window.gtag) return;
+${resolveTriggeringEventSnippet()}
+  if (!window.gtag) return;
   var params = {};
   for (var key in payload) {
-    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta') {
+    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce') {
       params[key] = payload[key];
+    }
+  }
+  if (payload.ecommerce && typeof payload.ecommerce === 'object') {
+    for (var ek in payload.ecommerce) {
+      if (Object.prototype.hasOwnProperty.call(payload.ecommerce, ek)) {
+        params[ek] = payload.ecommerce[ek];
+      }
     }
   }
   window.gtag('event', payload.event, params);
@@ -297,18 +324,8 @@ function ga4BridgeHtml() {
 function metaBridgeHtml() {
   return `<script>
 (function(){
-  function latestAnalyticsEvent() {
-    var dl = window.dataLayer || [];
-    for (var i = dl.length - 1; i >= 0; i--) {
-      var entry = dl[i];
-      if (entry && typeof entry === 'object' && ${JSON.stringify(ANALYTICS_EVENTS)}.indexOf(entry.event) !== -1) {
-        return entry;
-      }
-    }
-    return null;
-  }
-  var payload = latestAnalyticsEvent();
-  if (!payload || !window.fbq) return;
+${resolveTriggeringEventSnippet()}
+  if (!window.fbq) return;
   if (payload.event === 'page_view') {
     window.fbq('track', 'PageView', {}, { eventID: payload.event_id });
     return;
