@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
-import { getProductById, CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { getProductById, CATEGORIES } from '@/lib/products';
 import { euro } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -71,9 +71,14 @@ export function CartView() {
   const remove = useCart((s) => s.remove);
   const clear = useCart((s) => s.clear);
 
-  // Shipping choice — default 'kurier', init from sessionStorage client-side
-  const [ship, setShip] = useState<ShipId>('kurier');
-  const [shipHydrated, setShipHydrated] = useState(false);
+  // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
+  const [ship, setShip] = useState<ShipId>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('acc_ship');
+      if (saved === 'kurier' || saved === 'odbior') return saved;
+    }
+    return 'kurier';
+  });
 
   // Confirmation state — null while still shopping, set at checkout time
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
@@ -81,30 +86,16 @@ export function CartView() {
   // Stable random order number (generated once)
   const [orderNo] = useState(() => 'ACC-' + (1000 + Math.floor(Math.random() * 9000)));
 
-  // Hydrate ship from sessionStorage (client-only)
+  // Persist ship choice to sessionStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('acc_ship');
-      if (saved === 'kurier' || saved === 'odbior') setShip(saved);
-    }
-    setShipHydrated(true);
-  }, []);
+    sessionStorage.setItem('acc_ship', ship);
+  }, [ship]);
 
-  // Persist ship choice to sessionStorage whenever it changes (after hydration)
+  // Clear cart once on confirmation mount
   useEffect(() => {
-    if (!shipHydrated) return;
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('acc_ship', ship);
-    }
-  }, [ship, shipHydrated]);
-
-  // Clear cart once on confirmation mount — correct deps so it runs exactly once
-  useEffect(() => {
-    if (confirm !== null) {
-      clear();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirm !== null]);
+    if (confirm === null) return;
+    clear();
+  }, [confirm, clear]);
 
   const products = ids.map((id) => getProductById(id)).filter(Boolean) as NonNullable<ReturnType<typeof getProductById>>[];
   const n = products.length;
@@ -197,6 +188,7 @@ export function CartView() {
             return (
               <div key={p.id} className="cart-row">
                 <Link href={`/${p.category}`} className="thumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} alt="" />
                 </Link>
                 <div>
@@ -221,7 +213,7 @@ export function CartView() {
           <span className="k">{t('cart.pieces')} ({n})</span>
           <span className="v">{euro(subtotal)}</span>
         </div>
-        <div className="ship-opts">
+        <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
           <ShipOption
             id="kurier"
             active={ship === 'kurier'}
