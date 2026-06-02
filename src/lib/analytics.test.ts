@@ -25,13 +25,58 @@ describe('analytics ecommerce payloads', () => {
   it('maps one-of-a-kind products to GA4 item shape', () => {
     expect(toAnalyticsItem(product('k01'))).toEqual({
       item_id: 'k01',
-      item_name: 'kubki Nº 01',
+      item_name: 'Mug Nº 01',
       item_brand: 'Anna Ciok Ceramics',
       item_category: 'kubki',
       item_variant: 'Nº 01',
       price: 22,
       quantity: 1,
     });
+  });
+
+  it('derives stable locale-independent item_name from singularKey for hyphenated categories', () => {
+    // wazony-duze → singularKey 'bigvase' → 'Bigvase Nº 03'
+    // product d02 is wazony-duze display index 2, num '02'
+    const bigvaseProduct = product('d02');
+    expect(bigvaseProduct.category).toBe('wazony-duze');
+    const bigvaseItem = toAnalyticsItem(bigvaseProduct);
+    expect(bigvaseItem.item_name).toBe('Bigvase Nº 02');
+    expect(bigvaseItem.item_category).toBe('wazony-duze');
+    expect(bigvaseItem.item_variant).toBe('Nº 02');
+
+    // miski-falowane → singularKey 'wavybowl' → 'Wavybowl Nº 16'
+    const wavybowlProduct = product('w16');
+    expect(wavybowlProduct.category).toBe('miski-falowane');
+    const wavybowlItem = toAnalyticsItem(wavybowlProduct);
+    expect(wavybowlItem.item_name).toBe('Wavybowl Nº 16');
+    expect(wavybowlItem.item_category).toBe('miski-falowane');
+    expect(wavybowlItem.item_variant).toBe('Nº 16');
+  });
+
+  it('item_category equals product.category directly (no round-trip indirection)', () => {
+    // vase: singularKey 'vase', category 'wazony'
+    const vaseItem = toAnalyticsItem(product('v01'));
+    expect(vaseItem.item_category).toBe('wazony');
+    expect(vaseItem.item_name).toBe('Vase Nº 01');
+
+    // talerzyki: singularKey 'dish', category 'talerzyki'
+    const dishItem = toAnalyticsItem(product('t01'));
+    expect(dishItem.item_category).toBe('talerzyki');
+    expect(dishItem.item_name).toBe('Dish Nº 01');
+  });
+
+  it('preserves item_id, price, quantity, and optional details fields', () => {
+    const item = toAnalyticsItem(product('k01'), {
+      index: 3,
+      itemListId: 'collection-kubki',
+      itemListName: 'Kubki',
+    });
+    expect(item.item_id).toBe('k01');
+    expect(item.price).toBe(22);
+    expect(item.quantity).toBe(1);
+    expect(item.index).toBe(3);
+    expect(item.item_list_id).toBe('collection-kubki');
+    expect(item.item_list_name).toBe('Kubki');
   });
 
   it('builds add_to_cart with GA4 ecommerce data and Meta standard-event mapping', () => {

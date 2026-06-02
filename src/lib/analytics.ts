@@ -76,11 +76,13 @@ export function toAnalyticsItem(
   details: { index?: number; itemListId?: string; itemListName?: string } = {},
 ): AnalyticsItem {
   const category = CATEGORIES[product.category];
+  const singularLabel =
+    category.singularKey.charAt(0).toUpperCase() + category.singularKey.slice(1);
   return {
     item_id: product.id,
-    item_name: `${product.category} Nº ${product.num}`,
+    item_name: `${singularLabel} Nº ${product.num}`,
     item_brand: BRAND,
-    item_category: category.slug,
+    item_category: product.category,
     item_variant: `Nº ${product.num}`,
     price: product.price,
     quantity: 1,
