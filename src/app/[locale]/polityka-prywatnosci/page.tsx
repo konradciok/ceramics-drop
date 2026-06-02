@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { richTags } from '@/components/ui/richTags';
 
 type Props = { params: Promise<{ locale: string }> };
