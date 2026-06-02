@@ -1,0 +1,15 @@
+/* ============================================================
+   ANNA CIOK CERAMICS — Futura BT (self-hosted)
+   Ported from design/assets/site.css. Files live in /public/fonts.
+   ============================================================ */
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-Light.otf') format('opentype'); font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-LightItalic.otf') format('opentype'); font-weight:300; font-style:italic; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-Book.otf') format('opentype'); font-weight:400; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-BookItalic.otf') format('opentype'); font-weight:400; font-style:italic; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-Medium.otf') format('opentype'); font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-Bold.otf') format('opentype'); font-weight:700; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-Heavy.otf') format('opentype'); font-weight:900; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT'; src:url('/fonts/FuturaBT-HeavyItalic.otf') format('opentype'); font-weight:900; font-style:italic; font-display:swap; }
+@font-face { font-family:'Futura BT Cond'; src:url('/fonts/FuturaBT-LightCondensed.otf') format('opentype'); font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT Cond'; src:url('/fonts/FuturaBT-MediumCondensed.otf') format('opentype'); font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:'Futura BT Cond'; src:url('/fonts/FuturaBT-BoldCondensed.otf') format('opentype'); font-weight:700; font-style:normal; font-display:swap; }
