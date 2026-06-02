@@ -28,8 +28,8 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
 
   const cat = product ? CATEGORIES[product.category] : undefined;
   const name = cat ? t(`product.${cat.singularKey}`) : '';
-  const notes = product ? (t.raw(`notes.${product.category}`) as string[] | undefined) : undefined;
-  const note = product && notes ? notes[product.noteIndex] : '';
+  const rawNotes = product ? (t.raw(`notes.${product.category}`) as unknown) : undefined;
+  const note = product && Array.isArray(rawNotes) ? (rawNotes[product.noteIndex] as string) ?? '' : '';
 
   return (
     <>
