@@ -33,7 +33,11 @@ export function AnalyticsEvents() {
       }, 30000),
     ];
 
-    const onScroll = () => {
+    let rafId = 0;
+    let ticking = false;
+
+    const measureDepth = () => {
+      ticking = false;
       const scrollable = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollable <= 0) return;
 
@@ -49,14 +53,28 @@ export function AnalyticsEvents() {
           );
         }
       }
+
+      if (firedDepths.size === 2) {
+        window.removeEventListener('scroll', onScroll);
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        rafId = window.requestAnimationFrame(measureDepth);
+      }
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    // Initial check: schedule via rAF so the path is consistent with scroll events
+    ticking = true;
+    rafId = window.requestAnimationFrame(measureDepth);
 
     return () => {
       for (const timer of timers) window.clearTimeout(timer);
       window.removeEventListener('scroll', onScroll);
+      window.cancelAnimationFrame(rafId);
     };
   }, [pathname]);
 
