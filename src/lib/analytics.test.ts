@@ -35,7 +35,7 @@ describe('analytics ecommerce payloads', () => {
   });
 
   it('derives stable locale-independent item_name from singularKey for hyphenated categories', () => {
-    // wazony-duze → singularKey 'bigvase' → 'Bigvase Nº 03'
+    // wazony-duze → singularKey 'bigvase' → 'Bigvase Nº 02'
     // product d02 is wazony-duze display index 2, num '02'
     const bigvaseProduct = product('d02');
     expect(bigvaseProduct.category).toBe('wazony-duze');
