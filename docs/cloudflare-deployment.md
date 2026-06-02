@@ -94,6 +94,21 @@ Set under **Build** → **Variables and secrets** (production):
 
 Same values as `.env.local`. Do **not** add GCP / GTM API secrets.
 
+### npm version (lockfile)
+
+Workers Builds runs **npm 10.9.x** (bundled with Node 22). If you regenerate `package-lock.json` with **npm 11+**, `npm ci` can pass locally but fail in CI with:
+
+```text
+Missing: @swc/helpers@0.5.23 from lock file
+```
+
+Before pushing dependency changes, sync the lockfile with the same npm major as CI:
+
+```bash
+npx npm@10.9.2 install
+npx npm@10.9.2 ci
+```
+
 ### Assets
 
 Ensure `public/uploads/*.webp` is committed so CI includes product images.
