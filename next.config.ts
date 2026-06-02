@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800' }],
       },
       {
         source: '/fonts/:path*',
