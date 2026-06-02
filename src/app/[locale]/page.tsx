@@ -58,7 +58,7 @@ export default async function HomePage({ params }: Props) {
           </div>
           <div className="hero-art">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/kubek-2.webp" alt="" />
+            <img src="/uploads/kubek-2.webp" alt="" width={1600} height={2000} fetchPriority="high" sizes="(max-width: 860px) 100vw, 50vw" />
             <div className="hero-art-meta">
               <span className="left">
                 <span className="mt">{t('home.heroMetaName')}</span>
@@ -93,7 +93,7 @@ export default async function HomePage({ params }: Props) {
               return (
                 <Link key={slug} className="collection" href={`/${slug}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={COVER[slug]} alt="" />
+                  <img src={COVER[slug]} alt="" sizes="(max-width: 860px) 100vw, 50vw" />
                   <div className="shade"></div>
                   <div className="col-content">
                     <div className="num">{t(`home.card.${sk}.num`)}</div>
@@ -116,7 +116,7 @@ export default async function HomePage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.webp" alt="" />
+              <img src="/uploads/waza-mala-1.webp" alt="" width={1600} height={2000} />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">
