@@ -98,6 +98,10 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
               <button
                 className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
                 onClick={() => {
+                  // Gate the analytics event on the real store transition, not the
+                  // `inCart` render snapshot (which can be stale) — add() is idempotent,
+                  // so a no-op add must not fire a duplicate add_to_cart. set() is
+                  // synchronous, so getState() after the call sees the post-mutation state.
                   const wasPresent = useCart.getState().ids.includes(product.id);
                   if (inCart) {
                     remove(product.id);

@@ -43,6 +43,10 @@ export function ProductTile({ product, onOpen }: Props) {
         onClick={(e) => {
           e.stopPropagation();
           if (product.sold) return;
+          // Gate the analytics event on the real store transition, not the `selected`
+          // render snapshot (which can be stale) — add() is idempotent, so a no-op add
+          // must not fire a duplicate add_to_cart. set() is synchronous, so getState()
+          // after the call sees the post-mutation state.
           const wasPresent = useCart.getState().ids.includes(product.id);
           if (selected) {
             remove(product.id);
