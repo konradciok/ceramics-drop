@@ -98,12 +98,15 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
               <button
                 className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
                 onClick={() => {
+                  const wasPresent = useCart.getState().ids.includes(product.id);
                   if (inCart) {
                     remove(product.id);
-                    pushDataLayer(buildRemoveFromCartEvent(product));
                   } else {
                     add(product.id);
-                    pushDataLayer(buildAddToCartEvent(product));
+                  }
+                  const isPresent = useCart.getState().ids.includes(product.id);
+                  if (wasPresent !== isPresent) {
+                    pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
                   }
                 }}
               >

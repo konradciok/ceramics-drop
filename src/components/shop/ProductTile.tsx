@@ -43,12 +43,15 @@ export function ProductTile({ product, onOpen }: Props) {
         onClick={(e) => {
           e.stopPropagation();
           if (product.sold) return;
+          const wasPresent = useCart.getState().ids.includes(product.id);
           if (selected) {
             remove(product.id);
-            pushDataLayer(buildRemoveFromCartEvent(product));
           } else {
             add(product.id);
-            pushDataLayer(buildAddToCartEvent(product));
+          }
+          const isPresent = useCart.getState().ids.includes(product.id);
+          if (wasPresent !== isPresent) {
+            pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
           }
         }}
       >
