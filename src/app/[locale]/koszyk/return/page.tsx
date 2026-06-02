@@ -21,11 +21,11 @@ export default function ReturnPage() {
   const firedRef = useRef(false);
 
   useEffect(() => {
-    const secret = new URLSearchParams(window.location.search).get('payment_intent_client_secret');
-    const piId = new URLSearchParams(window.location.search).get('payment_intent');
-    if (!secret) { setStatus('fail'); return; }
+    const params = new URLSearchParams(window.location.search);
+    const secret = params.get('payment_intent_client_secret');
+    const piId = params.get('payment_intent');
     stripePromise.then(async (stripe) => {
-      if (!stripe) { setStatus('fail'); return; }
+      if (!secret || !stripe) { setStatus('fail'); return; }
       const { paymentIntent } = await stripe.retrievePaymentIntent(secret);
       switch (paymentIntent?.status) {
         case 'succeeded': {
