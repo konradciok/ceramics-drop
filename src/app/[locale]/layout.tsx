@@ -9,6 +9,8 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
+import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 
 export const metadata: Metadata = {
   title: 'Anna Ciok Ceramics',
@@ -35,7 +37,9 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale}>
       <body>
+        <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
+          <AnalyticsEvents />
           <Header />
           {children}
           <Footer />

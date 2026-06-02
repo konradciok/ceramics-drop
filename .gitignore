@@ -6,6 +6,9 @@
 # next.js
 /.next/
 /out/
+.open-next/
+.wrangler/
+.dev.vars
 
 # production
 /build
@@ -23,6 +26,12 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+
+# local google credentials
+.secrets/
+gtm-oauth-client.json
+docs/gtm-api.json
+*-service-account*.json
 
 # typescript
 *.tsbuildinfo

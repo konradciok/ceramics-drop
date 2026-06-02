@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/types';
+import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
@@ -14,6 +15,18 @@ type Props = {
 export function Gallery({ products }: Props) {
   const available = products.filter((p) => !p.sold);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const listId = products[0]?.category ?? 'collection';
+  const listName = listId;
+
+  useEffect(() => {
+    if (products.length === 0) return;
+    pushDataLayer(
+      buildViewItemListEvent(products, {
+        itemListId: listId,
+        itemListName: listName,
+      }),
+    );
+  }, [listId, listName, products]);
 
   const step = (delta: number) =>
     setOpenIndex((i) =>
@@ -27,9 +40,17 @@ export function Gallery({ products }: Props) {
           <ProductTile
             key={p.id}
             product={p}
-            onOpen={(prod) =>
-              setOpenIndex(available.findIndex((a) => a.id === prod.id))
-            }
+            onOpen={(prod) => {
+              const index = available.findIndex((a) => a.id === prod.id);
+              pushDataLayer(
+                buildSelectItemEvent(prod, {
+                  index,
+                  itemListId: listId,
+                  itemListName: listName,
+                }),
+              );
+              setOpenIndex(index);
+            }}
           />
         ))}
       </div>

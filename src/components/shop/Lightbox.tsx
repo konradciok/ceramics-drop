@@ -1,10 +1,17 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { euro } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
+import {
+  buildAddToCartEvent,
+  buildRemoveFromCartEvent,
+  buildViewItemEvent,
+  pushDataLayer,
+} from '@/lib/analytics';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -20,7 +27,8 @@ type Props = {
 export function Lightbox({ products, index, onClose, onStep }: Props) {
   const t = useTranslations();
   const ids = useCart((s) => s.ids);
-  const toggle = useCart((s) => s.toggle);
+  const add = useCart((s) => s.add);
+  const remove = useCart((s) => s.remove);
 
   const open = index !== null;
   const product = open ? products[index] : undefined;
@@ -30,6 +38,17 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
   const name = cat ? t(`product.${cat.singularKey}`) : '';
   const rawNotes = product ? (t.raw(`notes.${product.category}`) as unknown) : undefined;
   const note = product && Array.isArray(rawNotes) ? (rawNotes[product.noteIndex] as string) ?? '' : '';
+
+  useEffect(() => {
+    if (!product) return;
+    pushDataLayer(
+      buildViewItemEvent(product, {
+        index: index ?? undefined,
+        itemListId: product.category,
+        itemListName: product.category,
+      }),
+    );
+  }, [index, product]);
 
   return (
     <>
@@ -78,7 +97,15 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
               </div>
               <button
                 className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
-                onClick={() => toggle(product.id)}
+                onClick={() => {
+                  if (inCart) {
+                    remove(product.id);
+                    pushDataLayer(buildRemoveFromCartEvent(product));
+                  } else {
+                    add(product.id);
+                    pushDataLayer(buildAddToCartEvent(product));
+                  }
+                }}
               >
                 {inCart ? t('lightbox.in') : t('lightbox.add')}
                 <Icon name={inCart ? 'check' : 'arrow'} className="btn-arrow" />

@@ -5,6 +5,7 @@ import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { euro } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
+import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -17,7 +18,8 @@ type Props = {
 export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
   const selected = useCart((s) => s.ids.includes(product.id));
-  const toggle = useCart((s) => s.toggle);
+  const add = useCart((s) => s.add);
+  const remove = useCart((s) => s.remove);
 
   const name = t(`product.${CATEGORIES[product.category].singularKey}`);
   const displayName = `${name} Nº ${product.num}`;
@@ -41,7 +43,13 @@ export function ProductTile({ product, onOpen }: Props) {
         onClick={(e) => {
           e.stopPropagation();
           if (product.sold) return;
-          toggle(product.id);
+          if (selected) {
+            remove(product.id);
+            pushDataLayer(buildRemoveFromCartEvent(product));
+          } else {
+            add(product.id);
+            pushDataLayer(buildAddToCartEvent(product));
+          }
         }}
       >
         <span className="ic">
