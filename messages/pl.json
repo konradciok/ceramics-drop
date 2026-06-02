@@ -103,8 +103,11 @@
     "free": "Gratis",
     "total": "Razem",
     "checkout": "Przejdź do płatności",
-    "fineprint": "Prototyp — płatność jest symulowana,<br/>nie pobieramy żadnych danych ani środków.",
-    "simBanner": "Prototyp — to demonstracja działania. Płatność jest symulowana, nie pobieramy żadnych środków."
+    "pay": "Zapłać teraz",
+    "payProcessing": "Przetwarzanie…",
+    "soldOut": "Niektóre prace zostały właśnie sprzedane i usunęliśmy je z koszyka.",
+    "payError": "Płatność nie powiodła się. Spróbuj ponownie.",
+    "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
     "courierT": "Wysyłka kurierem",
@@ -125,6 +128,16 @@
     "orderno": "Numer próbny:",
     "back": "Wróć na stronę główną",
     "more": "Oglądaj dalej"
+  },
+  "return": {
+    "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
+    "okP": "Płatność się powiodła. Potwierdzenie i fakturę wysłaliśmy mailem.",
+    "processingH": "Płatność w toku…",
+    "processingP": "Czekamy na potwierdzenie z banku. Możesz odświeżyć tę stronę za chwilę.",
+    "failH": "Płatność nie powiodła się",
+    "failP": "Nie pobraliśmy żadnych środków. Wróć do koszyka i spróbuj ponownie.",
+    "back": "Wróć na stronę główną",
+    "cart": "Wróć do koszyka"
   },
   "home": {
     "heroEyebrow": "Drop czerwcowy 2026 — Nº 01",

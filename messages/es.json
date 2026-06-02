@@ -103,8 +103,11 @@
     "free": "Gratis",
     "total": "Total",
     "checkout": "Ir al pago",
-    "fineprint": "Prototipo — el pago está simulado,<br/>no se recogen datos ni fondos.",
-    "simBanner": "Prototipo — esto es una demostración. El pago está simulado; no se cobra ningún importe."
+    "pay": "Pagar ahora",
+    "payProcessing": "Procesando…",
+    "soldOut": "Algunas piezas acaban de venderse y las hemos eliminado de tu carrito.",
+    "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
+    "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
   },
   "ship": {
     "courierT": "Envío por mensajería",
@@ -125,6 +128,16 @@
     "orderno": "Número de muestra:",
     "back": "Volver al inicio",
     "more": "Seguir mirando"
+  },
+  "return": {
+    "okH": "Gracias — <em>pedido recibido.</em>",
+    "okP": "El pago se realizó correctamente. Te hemos enviado un correo con la confirmación y el recibo.",
+    "processingH": "Pago en curso…",
+    "processingP": "Esperamos la confirmación del banco. Puedes actualizar esta página en un momento.",
+    "failH": "El pago ha fallado",
+    "failP": "No se ha cobrado ningún importe. Vuelve al carrito e inténtalo de nuevo.",
+    "back": "Volver al inicio",
+    "cart": "Volver al carrito"
   },
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",

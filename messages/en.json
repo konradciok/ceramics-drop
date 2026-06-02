@@ -103,8 +103,11 @@
     "free": "Free",
     "total": "Total",
     "checkout": "Go to payment",
-    "fineprint": "Prototype — payment is simulated,<br/>no data or funds are collected.",
-    "simBanner": "Prototype — this is a demonstration. Payment is simulated; no funds are collected."
+    "pay": "Pay now",
+    "payProcessing": "Processing…",
+    "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "payError": "Payment failed. Please try again.",
+    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
   },
   "ship": {
     "courierT": "Courier shipping",
@@ -125,6 +128,16 @@
     "orderno": "Sample number:",
     "back": "Back to home",
     "more": "Keep browsing"
+  },
+  "return": {
+    "okH": "Thank you — <em>order received.</em>",
+    "okP": "Payment succeeded. We've sent a confirmation and receipt to your email.",
+    "processingH": "Payment in progress…",
+    "processingP": "We're waiting for confirmation from your bank. You can refresh this page in a moment.",
+    "failH": "Payment failed",
+    "failP": "No funds were taken. Return to your cart and try again.",
+    "back": "Back to home",
+    "cart": "Back to cart"
   },
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
