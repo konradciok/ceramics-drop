@@ -30,6 +30,12 @@ const PRODUCT_REGEX =
 // Ensure output directory exists
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
+if (!fs.existsSync(SRC_DIR)) {
+  console.error(`Source directory not found: ${SRC_DIR}`);
+  console.error('The product PNGs live in design/uploads/ (gitignored). Restore them before running this script.');
+  process.exit(1);
+}
+
 const files = fs.readdirSync(SRC_DIR).filter((f) => PRODUCT_REGEX.test(f));
 console.log(`Found ${files.length} product PNGs to convert.\n`);
 
