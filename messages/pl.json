@@ -117,18 +117,6 @@
     "pickupD": "W pracowni, po umówieniu terminu.",
     "pickupPrice": "Gratis"
   },
-  "confirm": {
-    "eyebrow": "Symulacja zakończona",
-    "h": "Dziękuję — <em>do zobaczenia.</em>",
-    "p1": "To prototyp, więc nic nie zostało pobrane. W prawdziwym sklepie w tym miejscu nastąpiłoby bezpieczne przejście do Stripe Checkout.",
-    "order": "Zamówienie na",
-    "worth": "o wartości",
-    "tail": "trafiłoby do mnie do pracowni.",
-    "word": "{count, plural, one {pracę} few {prace} many {prac} other {prac}}",
-    "orderno": "Numer próbny:",
-    "back": "Wróć na stronę główną",
-    "more": "Oglądaj dalej"
-  },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
     "okP": "Płatność się powiodła. Potwierdzenie i fakturę wysłaliśmy mailem.",

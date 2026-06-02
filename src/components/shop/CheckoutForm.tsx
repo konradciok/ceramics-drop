@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import {
   PaymentElement,
   AddressElement,
+  LinkAuthenticationElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
@@ -35,6 +36,7 @@ export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
 
   return (
     <form onSubmit={onSubmit} className="pay-form">
+      <LinkAuthenticationElement />
       <AddressElement options={{ mode: 'shipping', fields: { phone: 'auto' } }} />
       <PaymentElement />
       {error && <p className="pay-error">{error}</p>}

@@ -117,18 +117,6 @@
     "pickupD": "En el estudio, con cita previa.",
     "pickupPrice": "Gratis"
   },
-  "confirm": {
-    "eyebrow": "Simulación completada",
-    "h": "Gracias — <em>hasta pronto.</em>",
-    "p1": "Esto es un prototipo, así que no se ha cobrado nada. En una tienda real, aquí se haría el paso seguro a Stripe Checkout.",
-    "order": "Un pedido de",
-    "worth": "por valor de",
-    "tail": "llegaría a mi estudio.",
-    "word": "{count, plural, one {pieza} other {piezas}}",
-    "orderno": "Número de muestra:",
-    "back": "Volver al inicio",
-    "more": "Seguir mirando"
-  },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",
     "okP": "El pago se realizó correctamente. Te hemos enviado un correo con la confirmación y el recibo.",

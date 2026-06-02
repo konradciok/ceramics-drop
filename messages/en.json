@@ -117,18 +117,6 @@
     "pickupD": "At the studio, by appointment.",
     "pickupPrice": "Free"
   },
-  "confirm": {
-    "eyebrow": "Simulation complete",
-    "h": "Thank you — <em>see you soon.</em>",
-    "p1": "This is a prototype, so nothing was charged. In a real shop this is where a secure handoff to Stripe Checkout would happen.",
-    "order": "An order for",
-    "worth": "worth",
-    "tail": "would land in my studio inbox.",
-    "word": "{count, plural, one {piece} other {pieces}}",
-    "orderno": "Sample number:",
-    "back": "Back to home",
-    "more": "Keep browsing"
-  },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
     "okP": "Payment succeeded. We've sent a confirmation and receipt to your email.",
