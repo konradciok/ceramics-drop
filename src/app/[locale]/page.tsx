@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { Marquee } from '@/components/ui/Marquee';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
+import { Icon } from '@/components/ui/Icon';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { euro } from '@/lib/format';
@@ -20,36 +21,6 @@ const COVER: Record<CategorySlug, string> = {
   'miski-falowane': '/uploads/miski-falowane-9.png',
 };
 
-/** Arrow SVG used inside CTA buttons, matching design inline SVG. */
-function Arrow() {
-  return (
-    <svg
-      className="btn-arrow"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-/** Arrow SVG used inside collection CTA spans (no btn-arrow class in design). */
-function ColArrow() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -78,7 +49,7 @@ export default async function HomePage({ params }: Props) {
             <p className="hero-sub">{t('home.heroSub')}</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/kubki">
-                <span>{t('home.heroCta1')}</span> <Arrow />
+                <span>{t('home.heroCta1')}</span> <Icon name="arrow" className="btn-arrow" />
               </Link>
               <Link className="btn btn-ghost" href="/wazony">
                 {t('home.heroCta2')}
@@ -87,7 +58,7 @@ export default async function HomePage({ params }: Props) {
           </div>
           <div className="hero-art">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/kubek-2.png" alt="Kubek z błękitną palmą" />
+            <img src="/uploads/kubek-2.png" alt="" />
             <div className="hero-art-meta">
               <span className="left">
                 <span className="mt">{t('home.heroMetaName')}</span>
@@ -129,7 +100,7 @@ export default async function HomePage({ params }: Props) {
                     <h3>{t(cat.nameKey)}</h3>
                     <p>{t(`home.card.${sk}.desc`)}</p>
                     <span className="col-cta">
-                      <span>{t(`home.card.${sk}.cta`)}</span> <ColArrow />
+                      <span>{t(`home.card.${sk}.cta`)}</span> <Icon name="arrow" />
                     </span>
                   </div>
                 </Link>
@@ -145,7 +116,7 @@ export default async function HomePage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.png" alt="Wazon z kaktusami" />
+              <img src="/uploads/waza-mala-1.png" alt="" />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">
@@ -156,7 +127,7 @@ export default async function HomePage({ params }: Props) {
               <p>{t('home.storyP3')}</p>
               <div className="story-actions">
                 <Link className="btn btn-primary" href="/kubki">
-                  <span>{t('home.storyCta1')}</span> <Arrow />
+                  <span>{t('home.storyCta1')}</span> <Icon name="arrow" className="btn-arrow" />
                 </Link>
                 <Link className="btn btn-ghost" href="/kontakt">
                   {t('home.storyCta2')}
@@ -202,7 +173,7 @@ export default async function HomePage({ params }: Props) {
             <h3>{t.rich('home.ctH', richTags)}</h3>
             <p>{t('home.ctP')}</p>
             <a className="btn btn-primary" href="mailto:hej@annaciok.pl">
-              <span>{t('home.ctBtn')}</span> <Arrow />
+              <span>{t('home.ctBtn')}</span> <Icon name="arrow" className="btn-arrow" />
             </a>
           </div>
           <div className="contact-list">
