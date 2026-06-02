@@ -244,6 +244,7 @@ export function buildPageViewEvent(details: {
 }): DataLayerEvent {
   return {
     event: 'page_view',
+    event_id: createEventId('page_view', details.pagePath),
     page_location: details.pageLocation,
     page_path: details.pagePath,
     page_title: details.pageTitle,

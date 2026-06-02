@@ -5,6 +5,7 @@ import {
   buildAddToCartEvent,
   buildBeginCheckoutEvent,
   buildEngagementEvent,
+  buildPageViewEvent,
   buildPurchaseEvent,
   pushDataLayer,
   toAnalyticsItem,
@@ -118,6 +119,21 @@ describe('analytics engagement payloads', () => {
       from_locale: 'pl',
       to_locale: 'en',
     });
+  });
+});
+
+describe('buildPageViewEvent', () => {
+  it('includes a non-empty event_id so Meta PageView can deduplicate', () => {
+    const event = buildPageViewEvent({
+      pageLocation: 'https://example.com/en/kubki',
+      pagePath: '/en/kubki',
+      pageTitle: 'Mugs',
+      locale: 'en',
+    });
+
+    expect(event.event).toBe('page_view');
+    expect(typeof event.event_id).toBe('string');
+    expect(event.event_id).not.toBe('');
   });
 });
 
