@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { getProductById } from '@/lib/products';
 import { euro } from '@/lib/format';
@@ -8,6 +9,7 @@ import { Icon } from '@/components/ui/Icon';
 
 /** Sticky bottom bar summarising the current selection. */
 export function SelectionBar() {
+  const t = useTranslations();
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
@@ -18,18 +20,17 @@ export function SelectionBar() {
     <div className={`selbar${n > 0 ? ' show' : ''}`}>
       <div className="selbar-inner">
         <div className="selbar-info">
-          {/* TODO (content): pluralised "n pieces" label */}
           <span className="cnt">
-            <em>{n}</em>
+            <em>{n}</em> {t('selbar.word', { count: n })}
           </span>
-          <span className="sum">{euro(total)}</span>
+          <span className="sum">{`${t('selbar.total')} ${euro(total)}`}</span>
         </div>
         <div className="selbar-actions">
           <button className="clear" onClick={clear}>
-            Wyczyść
+            {t('selbar.clear')}
           </button>
           <Link className="go" href="/koszyk">
-            Do koszyka <Icon name="arrow" />
+            {t('selbar.go')} <Icon name="arrow" />
           </Link>
         </div>
       </div>
