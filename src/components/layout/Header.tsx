@@ -1,46 +1,36 @@
 /* ============================================================
-   Header — announcement bar + sticky nav.
-   Structural shell. Nav labels come from the i18n catalogs in the
-   content phase; placeholders are marked with TODO.
+   Header — announcement bar + sticky nav (server component).
    ============================================================ */
+import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { Announce } from './Announce';
 import { LangSwitch } from './LangSwitch';
 import { CartCount } from './CartCount';
 
-export function Header() {
+export async function Header() {
+  const t = await getTranslations();
   return (
     <>
-      {/* TODO (content): announcement copy */}
-      <Announce />
+      <Announce>{t('announce')}</Announce>
 
       <header className="header">
         <div className="header-inner">
-          {/* TODO (content): nav labels via i18n */}
           <nav className="nav-left">
-            <Link className="nav-link" href="/kubki">
-              Sklep
-            </Link>
-            <Link className="nav-link" href="/o-studiu">
-              Studio
-            </Link>
+            <Link className="nav-link" href="/kubki">{t('nav.sklep')}</Link>
+            <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
           </nav>
 
           <Link className="brand" href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logotype.png" alt="Anna Ciok Ceramics" width={48} height={48} />
-            <span className="brand-word">
-              ANNA CIOK<small>CERAMICS</small>
-            </span>
+            <span className="brand-word">ANNA CIOK<small>CERAMICS</small></span>
           </Link>
 
           <div className="nav-right">
-            <Link className="nav-link" href="/kontakt">
-              Kontakt
-            </Link>
+            <Link className="nav-link" href="/kontakt">{t('nav.kontakt')}</Link>
             <LangSwitch />
-            <Link className="icon-btn" href="/koszyk" aria-label="Koszyk">
+            <Link className="icon-btn" href="/koszyk" aria-label={t('aria.cart')}>
               <Icon name="cart" />
               <CartCount />
             </Link>

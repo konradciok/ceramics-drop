@@ -1,8 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { euro } from '@/lib/format';
+import { CATEGORIES } from '@/lib/products';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -13,37 +15,42 @@ type Props = {
 
 /** Gallery tile — Google-Photos-style select + a distinct "add" button. */
 export function ProductTile({ product, onOpen }: Props) {
+  const t = useTranslations();
   const selected = useCart((s) => s.ids.includes(product.id));
   const toggle = useCart((s) => s.toggle);
+
+  const name = t(`product.${CATEGORIES[product.category].singularKey}`);
+  const displayName = `${name} Nº ${product.num}`;
 
   return (
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
-      data-id={product.id}
       onClick={() => !product.sold && onOpen?.(product)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={product.image} alt={`Nº ${product.num}`} loading="lazy" />
+      <img src={product.image} alt={displayName} loading="lazy" />
       <div className="veil" />
-      {/* TODO (content): "sold" / "add" / "in cart" labels via i18n */}
-      <span className="sold-tag">Sprzedane</span>
+      <span className="sold-tag">{t('gallery.sold')}</span>
       <div className="check">
         <Icon name="check" />
       </div>
       <button
         className={`tile-add${selected ? ' in' : ''}`}
+        disabled={product.sold}
+        aria-disabled={product.sold}
         onClick={(e) => {
           e.stopPropagation();
+          if (product.sold) return;
           toggle(product.id);
         }}
       >
         <span className="ic">
           <Icon name={selected ? 'check' : 'cart'} />
         </span>
-        <span className="tx">{selected ? 'W koszyku' : 'Dodaj'}</span>
+        <span className="tx">{selected ? t('lightbox.in') : t('lightbox.add')}</span>
       </button>
       <div className="tile-meta">
-        <span className="nm">Nº {product.num}</span>
+        <span className="nm">{displayName}</span>
         <span className="pr">{euro(product.price)}</span>
       </div>
     </div>

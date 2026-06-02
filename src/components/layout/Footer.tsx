@@ -1,68 +1,75 @@
 /* ============================================================
-   Footer — 5-column shell (brand + shop + studio + info + contact).
-   Structural only; link labels / copy come from i18n in the
-   content phase. Routes are already wired.
+   Footer — 5-column layout (brand + shop + studio + info + contact).
+   Server component; translated via next-intl getTranslations.
    ============================================================ */
+import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORY_ORDER } from '@/lib/products';
+import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 
-export function Footer() {
+export async function Footer() {
+  const t = await getTranslations();
   return (
     <footer className="footer">
       <div className="footer-inner">
         <div className="footer-top cols-5">
+          {/* Brand block */}
           <div className="footer-brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="flogo" src="/logotype.png" alt="" width={64} height={64} />
-            {/* TODO (content): tagline + blurb */}
-            <h4 />
-            <p />
+            <h4>{t('footer.tagline')}</h4>
+            <p>{t('footer.blurb')}</p>
           </div>
 
+          {/* Shop column */}
           <div className="footer-col">
-            <h5>Sklep</h5>
+            <h5>{t('footer.hShop')}</h5>
             <ul>
               {CATEGORY_ORDER.map((slug) => (
                 <li key={slug}>
-                  {/* TODO (content): category label via i18n */}
-                  <Link href={`/${slug}`}>{slug}</Link>
+                  <Link href={`/${slug}`}>{t(CATEGORIES[slug].nameKey)}</Link>
                 </li>
               ))}
               <li>
-                <Link href="/koszyk">Koszyk</Link>
+                <Link href="/koszyk">{t('footer.koszyk')}</Link>
               </li>
             </ul>
           </div>
 
+          {/* Studio column */}
           <div className="footer-col">
-            <h5>Studio</h5>
+            <h5>{t('footer.hStudio')}</h5>
             <ul>
               <li>
-                <Link href="/o-studiu">O studiu</Link>
+                <Link href="/o-studiu">{t('footer.oArtystce')}</Link>
               </li>
               <li>
-                <Link href="/kontakt">Kontakt</Link>
+                <Link href="/o-studiu#proces">{t('footer.proces')}</Link>
+              </li>
+              <li>
+                <Link href="/kontakt">{t('nav.kontakt')}</Link>
               </li>
             </ul>
           </div>
 
+          {/* Info column */}
           <div className="footer-col">
-            <h5>Informacje</h5>
+            <h5>{t('footer.hInfo')}</h5>
             <ul>
               <li>
-                <Link href="/dostawa-i-zwroty">Dostawa i zwroty</Link>
+                <Link href="/dostawa-i-zwroty">{t('footer.dostawa')}</Link>
               </li>
               <li>
-                <Link href="/regulamin">Regulamin</Link>
+                <Link href="/regulamin">{t('footer.regulamin')}</Link>
               </li>
               <li>
-                <Link href="/polityka-prywatnosci">Polityka prywatności</Link>
+                <Link href="/polityka-prywatnosci">{t('footer.polityka')}</Link>
               </li>
             </ul>
           </div>
 
+          {/* Kontakt column */}
           <div className="footer-col">
-            <h5>Kontakt</h5>
+            <h5>{t('footer.hKontakt')}</h5>
             <ul>
               <li>
                 <a href="mailto:hej@annaciok.pl">hej@annaciok.pl</a>
@@ -72,12 +79,21 @@ export function Footer() {
                   Instagram
                 </a>
               </li>
+              <li>
+                <Link href="/kontakt">{t('footer.odbior')}</Link>
+              </li>
             </ul>
           </div>
         </div>
 
-        {/* TODO (content): copyright + payment row */}
-        <div className="footer-bot" />
+        {/* Bottom row */}
+        <div className="footer-bot">
+          <span>{t('footer.copy')}</span>
+          <span className="pay">
+            <span>{t('footer.proto')}</span>
+            <span>{t('footer.nopay')}</span>
+          </span>
+        </div>
       </div>
     </footer>
   );
