@@ -21,7 +21,7 @@ export interface Product {
   category: CategorySlug;
   /** Display number within the family, e.g. `01`. */
   num: string;
-  /** Public image path, e.g. `/uploads/kubek-1.png`. */
+  /** Public image path, e.g. `/uploads/kubek-1.webp`. */
   image: string;
   /** Price in EUR. */
   price: number;

@@ -37,7 +37,7 @@ export default async function StudioPage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.png" alt="" />
+              <img src="/uploads/waza-mala-1.webp" alt="" />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">

@@ -77,7 +77,7 @@ export function getProducts(): Product[] {
         id,
         category: spec.slug,
         num,
-        image: `/uploads/${spec.imageBase}-${file}.png`,
+        image: `/uploads/${spec.imageBase}-${file}.webp`,
         price: cat.price,
         measure: cat.measure,
         sold: SOLD.has(id),

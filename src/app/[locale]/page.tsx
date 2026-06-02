@@ -12,13 +12,13 @@ import { euro } from '@/lib/format';
 type Props = { params: Promise<{ locale: string }> };
 
 const COVER: Record<CategorySlug, string> = {
-  kubki: '/uploads/kubek-12.png',
-  wazony: '/uploads/waza-mala-3.png',
-  'wazony-duze': '/uploads/waza-duza-7.png',
-  talerzyki: '/uploads/talerz-maly-2.png',
-  'talerze-duze': '/uploads/talerz-duzy-1.png',
-  'duze-michy': '/uploads/duza-micha-1.png',
-  'miski-falowane': '/uploads/miski-falowane-9.png',
+  kubki: '/uploads/kubek-12.webp',
+  wazony: '/uploads/waza-mala-3.webp',
+  'wazony-duze': '/uploads/waza-duza-7.webp',
+  talerzyki: '/uploads/talerz-maly-2.webp',
+  'talerze-duze': '/uploads/talerz-duzy-1.webp',
+  'duze-michy': '/uploads/duza-micha-1.webp',
+  'miski-falowane': '/uploads/miski-falowane-9.webp',
 };
 
 
@@ -58,7 +58,7 @@ export default async function HomePage({ params }: Props) {
           </div>
           <div className="hero-art">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/kubek-2.png" alt="" />
+            <img src="/uploads/kubek-2.webp" alt="" />
             <div className="hero-art-meta">
               <span className="left">
                 <span className="mt">{t('home.heroMetaName')}</span>
@@ -116,7 +116,7 @@ export default async function HomePage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.png" alt="" />
+              <img src="/uploads/waza-mala-1.webp" alt="" />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">

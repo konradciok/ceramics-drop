@@ -24,11 +24,11 @@ describe('getProducts', () => {
   });
 
   it('maps image files, honouring the skip lists', () => {
-    expect(getProductById('k01')!.image).toBe('/uploads/kubek-1.png');
-    expect(getProductById('v01')!.image).toBe('/uploads/waza-mala-1.png');
-    expect(getProductById('d02')!.image).toBe('/uploads/waza-duza-3.png');
-    expect(getProductById('p12')!.image).toBe('/uploads/talerz-duzy-13.png');
-    expect(getProductById('w16')!.image).toBe('/uploads/miski-falowane-16.png');
+    expect(getProductById('k01')!.image).toBe('/uploads/kubek-1.webp');
+    expect(getProductById('v01')!.image).toBe('/uploads/waza-mala-1.webp');
+    expect(getProductById('d02')!.image).toBe('/uploads/waza-duza-3.webp');
+    expect(getProductById('p12')!.image).toBe('/uploads/talerz-duzy-13.webp');
+    expect(getProductById('w16')!.image).toBe('/uploads/miski-falowane-16.webp');
   });
 
   it('sets price, measure and noteIndex from the category', () => {

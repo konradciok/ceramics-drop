@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "optimize-images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "next": "^16.2.7",
@@ -25,7 +26,11 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.7",
     "prettier": "^3.8.3",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.3",
     "vitest": "^2.1.9"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }
