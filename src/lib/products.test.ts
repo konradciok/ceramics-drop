@@ -19,9 +19,9 @@ describe('getProducts', () => {
     }
   });
 
-  it('marks exactly the five sold pieces', () => {
-    const sold = getProducts().filter((p) => p.sold).map((p) => p.id).sort();
-    expect(sold).toEqual(['k04', 'k11', 'k19', 'v02', 'v06']);
+  it('marks no pieces as sold (DB is now the source of truth)', () => {
+    const sold = getProducts().filter((p) => p.sold);
+    expect(sold).toHaveLength(0);
   });
 
   it('maps image files, honouring the skip lists', () => {
@@ -34,7 +34,7 @@ describe('getProducts', () => {
 
   it('sets price, measure and noteIndex from the category', () => {
     const k = getProductById('k01')!;
-    expect(k).toMatchObject({ price: 22, measure: '9 × 9 cm · 300 ml', num: '01', noteIndex: 0 });
+    expect(k).toMatchObject({ price: 90, measure: '9 × 9 cm · 300 ml', num: '01', noteIndex: 0 });
     expect(getProductById('d02')!.noteIndex).toBe(1);
   });
 
@@ -58,7 +58,8 @@ describe('resolveCartProducts', () => {
     expect(resolveCartProducts(['k01', 'nope']).map((p) => p.id)).toEqual(['k01']);
   });
 
-  it('drops sold ids so sold pieces never reach the cart', () => {
-    expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01']);
+  it('includes previously-sold ids when sold flag is false (DB is source of truth)', () => {
+    // All products now have sold: false; resolveCartProducts only filters unknown ids and sold items.
+    expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01', 'k04']);
   });
 });

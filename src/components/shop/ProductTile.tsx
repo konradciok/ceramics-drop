@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
 import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { Product } from '@/lib/types';
@@ -66,7 +66,7 @@ export function ProductTile({ product, onOpen }: Props) {
       </button>
       <div className="tile-meta">
         <span className="nm">{displayName}</span>
-        <span className="pr">{euro(product.price)}</span>
+        <span className="pr">{pln(product.price)}</span>
       </div>
     </div>
   );

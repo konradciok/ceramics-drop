@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts } from '@/lib/products';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
@@ -25,7 +25,7 @@ export function SelectionBar() {
           <span className="cnt">
             <em>{n}</em> {t('selbar.word', { count: n })}
           </span>
-          <span className="sum">{`${t('selbar.total')} ${euro(total)}`}</span>
+          <span className="sum">{`${t('selbar.total')} ${pln(total)}`}</span>
         </div>
         <div className="selbar-actions">
           <button

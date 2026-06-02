@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts, CATEGORIES } from '@/lib/products';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
@@ -160,7 +160,7 @@ export function CartView() {
           {t('confirm.order')}{' '}
           <b>{confirm.n} {t('confirm.word', { count: confirm.n })}</b>{' '}
           {t('confirm.worth')}{' '}
-          <b>{euro(confirm.total)}</b>{' '}
+          <b>{pln(confirm.total)}</b>{' '}
           {t('confirm.tail')}
         </p>
         <div className="order-no">
@@ -225,7 +225,7 @@ export function CartView() {
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
-                  <span className="price">{euro(p.price)}</span>
+                  <span className="price">{pln(p.price)}</span>
                   <button
                     className="rm"
                     onClick={() => {
@@ -246,7 +246,7 @@ export function CartView() {
         <h3>{t('cart.summary')}</h3>
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
-          <span className="v">{euro(subtotal)}</span>
+          <span className="v">{pln(subtotal)}</span>
         </div>
         <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
           <ShipOption
@@ -268,11 +268,11 @@ export function CartView() {
         </div>
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
-          <span className="v">{shipCost > 0 ? euro(shipCost) : t('cart.free')}</span>
+          <span className="v">{shipCost > 0 ? pln(shipCost) : t('cart.free')}</span>
         </div>
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
-          <span className="v">{euro(total)}</span>
+          <span className="v">{pln(total)}</span>
         </div>
         <button className="btn btn-primary" id="checkout" onClick={handleCheckout}>
           {t('cart.checkout')} <Icon name="arrow" />

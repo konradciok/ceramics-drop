@@ -109,7 +109,7 @@
   "ship": {
     "courierT": "Envío por mensajería",
     "courierD": "Embalado a mano, 3–5 días laborables.",
-    "courierPrice": "€ 18",
+    "courierPrice": "75 zł",
     "pickupT": "Recogida en el estudio",
     "pickupD": "En el estudio, con cita previa.",
     "pickupPrice": "Gratis"
@@ -145,37 +145,37 @@
     "colLead": "Toca, elige tus miniaturas favoritas como en una galería de fotos y ve directo a la caja.",
     "card": {
       "mug": {
-        "num": "22 piezas · € 22 cada una",
+        "num": "22 piezas · 90 zł cada una",
         "desc": "Tazas de diario para el café de la mañana — palmeras, limones, conchas y cactus pintados en esmalte.",
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "8 piezas · € 50 cada uno",
+        "num": "8 piezas · 210 zł cada uno",
         "desc": "Jarrones panzudos para una rama o un ramo del mercado — rayas, palmeras y cactus sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
       "bigvase": {
-        "num": "9 piezas · € 95 cada uno",
+        "num": "9 piezas · 395 zł cada uno",
         "desc": "Jarrones grandes y panzudos pintados a mano — cactus, conchas, palmeras, una langosta y figuras folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
       "dish": {
-        "num": "15 piezas · € 25 cada uno",
+        "num": "15 piezas · 105 zł cada uno",
         "desc": "Platitos pequeños para cositas — conchas, cactus, palmeras y flores con un borde pintado y decorativo.",
         "cta": "Elegir un platito"
       },
       "plate": {
-        "num": "12 piezas · € 65 cada uno",
+        "num": "12 piezas · 270 zł cada uno",
         "desc": "Platos grandes para servir o para la pared — un burro, conchas, palmeras, cactus y ojos folk con un borde pintado.",
         "cta": "Elegir un plato"
       },
       "largebowl": {
-        "num": "6 piezas · € 75 cada uno",
+        "num": "6 piezas · 315 zł cada uno",
         "desc": "Cuencos grandes pintados a mano para ensaladas y fruta — jardines cobalto, palmeras, cactus y hojas de otoño.",
         "cta": "Elegir un cuenco"
       },
       "wavybowl": {
-        "num": "16 piezas · € 38 cada uno",
+        "num": "16 piezas · 155 zł cada uno",
         "desc": "Cuencos de borde ondulado para el desayuno y aperitivos — cactus, palmeras, conchas, limones y hojas.",
         "cta": "Elegir un cuenco"
       }
@@ -212,37 +212,37 @@
     "kubki": {
       "eyebrow": "Drop de junio — 22 piezas",
       "title": "Tazas <em>Nº 01–22</em>",
-      "lead": "Cada taza es una pieza única e irrepetible por € 22. Selecciona las que quieras llevarte a casa."
+      "lead": "Cada taza es una pieza única e irrepetible por 90 zł. Selecciona las que quieras llevarte a casa."
     },
     "wazony": {
       "eyebrow": "Drop de junio — 8 piezas",
       "title": "Jarrones <em>Nº 01–08</em>",
-      "lead": "Jarrones panzudos, pintados a mano, por € 50 cada uno. Una pieza, un dueño — selecciona el tuyo."
+      "lead": "Jarrones panzudos, pintados a mano, por 210 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "wazony-duze": {
       "eyebrow": "Drop de junio — 9 piezas",
       "title": "Jarrones grandes <em>Nº 01–09</em>",
-      "lead": "Jarrones grandes pintados a mano por € 95 cada uno. Una pieza, un dueño — selecciona el tuyo."
+      "lead": "Jarrones grandes pintados a mano por 395 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "talerzyki": {
       "eyebrow": "Drop de junio — 15 piezas",
       "title": "Platitos <em>Nº 01–15</em>",
-      "lead": "Platitos pequeños para cositas por € 25 cada uno. Cada uno diferente — selecciona los que quieras llevarte a casa."
+      "lead": "Platitos pequeños para cositas por 105 zł cada uno. Cada uno diferente — selecciona los que quieras llevarte a casa."
     },
     "talerze-duze": {
       "eyebrow": "Drop de junio — 12 piezas",
       "title": "Platos grandes <em>Nº 01–12</em>",
-      "lead": "Platos grandes pintados a mano por € 65 cada uno. Cada uno diferente — para servir o para la pared. Selecciona los que quieras llevarte a casa."
+      "lead": "Platos grandes pintados a mano por 270 zł cada uno. Cada uno diferente — para servir o para la pared. Selecciona los que quieras llevarte a casa."
     },
     "duze-michy": {
       "eyebrow": "Drop de junio — 6 piezas",
       "title": "Cuencos grandes <em>Nº 01–06</em>",
-      "lead": "Cuencos grandes pintados a mano por € 75 cada uno. Una pieza, un dueño — selecciona el tuyo."
+      "lead": "Cuencos grandes pintados a mano por 315 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "miski-falowane": {
       "eyebrow": "Drop de junio — 16 piezas",
       "title": "Cuencos ondulados <em>Nº 01–16</em>",
-      "lead": "Cuencos de borde ondulado por € 38 cada uno. Cada uno diferente — selecciona los que quieras llevarte a casa."
+      "lead": "Cuencos de borde ondulado por 155 zł cada uno. Cada uno diferente — selecciona los que quieras llevarte a casa."
     }
   },
   "studio": {
@@ -325,8 +325,8 @@
     "toc6": "Daños",
     "updated": "Prototipo de tienda<br/>Actualizado: junio 2026",
     "s1H": "Envío",
-    "s1P": "Envío cada pieza por mensajería a toda Polonia. El envío cuesta <strong>€ 18</strong> sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
-    "s1Li1": "Mensajería, toda Polonia — € 18",
+    "s1P": "Envío cada pieza por mensajería a toda Polonia. El envío cuesta <strong>75 zł</strong> sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
+    "s1Li1": "Mensajería, toda Polonia — 75 zł",
     "s1Li2": "Recogida en el estudio en persona — gratis",
     "s1Li3": "Envío internacional — escríbeme y lo gestiono de forma individual",
     "s2H": "Plazos",
@@ -366,7 +366,7 @@
     "s2Li1": "Por el carácter único de las piezas, cada pieza solo puede venderse una vez",
     "s2Li2": "Si por causas imprevistas no puedo cumplir un pedido, te aviso de inmediato y devuelvo el importe completo",
     "s3H": "§3 Precios y pago",
-    "s3P": "Todos los precios se indican en euros y son precios brutos. Al total del pedido se añade el coste de envío visible en el carrito antes de confirmar la compra. El pago lo gestionaría un proveedor de pago externo (p. ej. Stripe).",
+    "s3P": "Todos los precios se indican en esloti polaco (PLN) y son precios brutos. Al total del pedido se añade el coste de envío visible en el carrito antes de confirmar la compra. El pago lo gestionaría un proveedor de pago externo (p. ej. Stripe).",
     "s4H": "§4 Cumplimiento y envío",
     "s4P": "Envío los pedidos en 3–5 días laborables desde que se confirma el pago. Los detalles sobre costes, plazos y recogida en el estudio se describen en la página <link>Envíos y devoluciones</link>.",
     "s5H": "§5 Derecho de desistimiento",
