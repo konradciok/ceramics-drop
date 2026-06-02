@@ -25,7 +25,6 @@ export function ProductTile({ product, onOpen }: Props) {
   return (
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
-      data-id={product.id}
       onClick={() => !product.sold && onOpen?.(product)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

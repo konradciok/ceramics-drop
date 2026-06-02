@@ -1,15 +1,14 @@
 /* ============================================================
-   Product catalogue — registry + accessors (SCAFFOLD)
+   Product catalogue — registry + accessors
    ------------------------------------------------------------
    The CATEGORIES registry below is the structural site map of the
    seven product families (slug, price, measure, count). It drives
    routing, navigation and the collection pages.
 
-   The actual per-piece data (image paths, sold flags) and the
-   trilingual descriptions live in the *content phase*: implement
-   `getProducts()` to build the `Product[]` (see design/assets/shop.js
-   for the reference generation), and wire descriptions through the
-   i18n message catalogs.
+   getProducts() returns the full 88-piece Product[] built from SPECS:
+   image paths (mapped from upload filenames), sold flags, and per-piece
+   metadata (id, num, price, measure, noteIndex). Category descriptions
+   are wired through the i18n message catalogs.
    ============================================================ */
 import type { Category, CategorySlug, Product } from './types';
 
@@ -63,8 +62,8 @@ const SPECS: Spec[] = [
 ];
 
 /**
- * Returns every product. Content phase: build the full 88-piece list
- * (image paths, sold flags) here — see design/assets/shop.js.
+ * Returns every product — all 88 pieces across the seven categories,
+ * each with image path, sold flag, price, measure, and display index.
  */
 export function getProducts(): Product[] {
   const products: Product[] = [];
