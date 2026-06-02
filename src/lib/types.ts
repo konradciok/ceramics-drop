@@ -29,6 +29,8 @@ export interface Product {
   measure: string;
   /** Whether the piece has already sold (1/1 → removed from sale). */
   sold: boolean;
+  /** 0-based index into the category's `notes` array (description lookup). */
+  noteIndex: number;
 }
 
 /** Structural metadata for a product family / collection page. */
@@ -36,6 +38,8 @@ export interface Category {
   slug: CategorySlug;
   /** i18n key for the family name. */
   nameKey: string;
+  /** i18n key for the singular product name (e.g. `mug`). */
+  singularKey: string;
   /** Flat price shared by every piece in the family (EUR). */
   price: number;
   /** Shared measurement string. */
