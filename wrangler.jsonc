@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "ceramics-drop",
-  "workers_dev": true,
+  "workers_dev": false,
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -27,17 +27,17 @@
   ],
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1,
+    "head_sampling_rate": 0.25,
     "logs": {
       "enabled": true,
-      "head_sampling_rate": 1,
+      "head_sampling_rate": 0.25,
       "persist": true,
       "invocation_logs": true
     },
     "traces": {
       "enabled": false,
       "persist": true,
-      "head_sampling_rate": 1
+      "head_sampling_rate": 0.25
     }
   }
 }

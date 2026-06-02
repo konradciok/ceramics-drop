@@ -39,8 +39,24 @@ npm run dev          # Next.js dev (day-to-day)
 npm run build        # Next.js only
 npm run preview:cf   # OpenNext build + Wrangler preview (Workers runtime, :8787)
 npm run deploy:cf    # OpenNext build + deploy to Cloudflare
-npm run cf-typegen   # Generate cloudflare-env.d.ts
+npm run cf-typegen   # Regenerate cloudflare-env.d.ts (uses `.env.cf-typegen`, not `.env.local`)
+npm run cf:dns-cleanup   # Remove stale Namecheap MX/TXT (needs CLOUDFLARE_API_TOKEN)
 ```
+
+### DNS cleanup (optional)
+
+After nameserver cutover, remove legacy registrar forwarding records:
+
+```bash
+set CLOUDFLARE_API_TOKEN=...
+npm run cf:dns-cleanup
+```
+
+Requires **Zone.DNS Edit** for `anna-ciok.studio`. Does not add apex/www records — fix those in the dashboard if the apex hostname fails to resolve.
+
+### Canonical host (dashboard)
+
+Use **one** public hostname for SEO and analytics. Recommended: redirect `www.anna-ciok.studio` → `anna-ciok.studio` (or the reverse) via a **Redirect rule** in the zone. Ensure the apex has proxied **A and AAAA** records, not IPv6-only.
 
 ### Local verification checklist
 
@@ -53,7 +69,7 @@ After `npm run preview:cf` (stop preview before `deploy:cf` on Windows — previ
 
 ## Observability (Workers Logs)
 
-`wrangler.jsonc` enables **Workers Logs** (invocation + `console.log` output, 100% sampling, persisted). Traces stay off.
+`wrangler.jsonc` enables **Workers Logs** (invocation + `console.log` output, **25% head sampling**, persisted). Traces stay off. Raise `head_sampling_rate` temporarily when debugging a production issue.
 
 View logs: dashboard → **Workers & Pages** → **ceramics-drop** → **Logs**, or [Observability](https://dash.cloudflare.com/?to=/:account/workers-and-pages/observability).
 
@@ -66,7 +82,9 @@ Redeploy after changing observability settings: `npm run deploy:cf` or `npx wran
 | `wrangler.jsonc` | Worker name, `nodejs_compat`, static assets binding, self-reference service, observability |
 | `open-next.config.ts` | SSG static-assets incremental cache |
 | `next.config.ts` | `initOpenNextCloudflareForDev()` for local dev |
-| `public/_headers` | Long-cache headers for `/_next/static/*` |
+| `public/_headers` | Long-cache for static assets; security headers; `noindex` on `workers.dev` |
+| `src/app/robots.ts` · `src/app/sitemap.ts` | SEO (`metadataBase` → `https://anna-ciok.studio`) |
+| `src/lib/site.ts` | Canonical origin + route list for sitemap |
 
 ## Workers Builds (CI/CD)
 
@@ -80,7 +98,7 @@ GitHub repo `konradciok/ceramics-drop` is connected to worker **ceramics-drop**.
 | **Root directory** | `/` |
 | **Build command** | `npm ci` |
 | **Deploy command** | `npm run deploy:cf` |
-| **Node.js version** | 20 (if offered in build settings) |
+| **Node.js version** | 22 (Workers Builds default; keep `package-lock.json` on npm 10.9.x) |
 
 `deploy:cf` runs `opennextjs-cloudflare build` (Next.js + OpenNext bundle) then `opennextjs-cloudflare deploy`. Do **not** use `npm run build` alone in CI — that only produces `.next/`, not `.open-next/`.
 

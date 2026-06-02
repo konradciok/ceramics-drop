@@ -50,6 +50,11 @@ export type DataLayerEvent = {
   [key: string]: unknown;
 };
 
+/** GTM ecommerce reset — clear persisted items before the next ecommerce event. */
+export type DataLayerEcommerceClear = { ecommerce: null };
+
+export type DataLayerEntry = DataLayerEvent | DataLayerEcommerceClear;
+
 type EventOptions = {
   eventId?: string;
 };
@@ -65,7 +70,7 @@ type PurchaseOptions = CheckoutOptions & {
 
 declare global {
   interface Window {
-    dataLayer?: DataLayerEvent[];
+    dataLayer?: DataLayerEntry[];
   }
 }
 
@@ -257,6 +262,11 @@ export function buildPageViewEvent(details: {
 export function pushDataLayer(event: DataLayerEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
+  // Reset GTM's persisted ecommerce object so a prior view_item_list does not
+  // merge its items into purchase / checkout / cart events in Tag Assistant or GA4.
+  if (event.ecommerce) {
+    window.dataLayer.push({ ecommerce: null });
+  }
   window.dataLayer.push(event);
   mirrorDebugEvent(event);
 }

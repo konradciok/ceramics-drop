@@ -108,11 +108,11 @@ async function setupWorkspace() {
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(), [trigger.triggerId]),
+    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId]),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(), [trigger.triggerId]),
+    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId]),
   );
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
@@ -273,15 +273,15 @@ fbq('init', '${pixelId}');
  * fired this tag. GTM processes the dataLayer message queue one message at a
  * time; while a message is being processed its `event_id` is reflected in the
  * container's data model, reachable via
- * `google_tag_manager['{{Container ID}}'].dataLayer.get('event_id')`. We read
- * that id, then find the raw object in window.dataLayer whose own `event_id`
- * matches it (scanning from the end). Matching the precise raw object — rather
- * than "the latest analytics event" — prevents collapse/double-send when two
- * analytics events are pushed back-to-back in one tick. Leaves `payload` set
- * to the resolved object, or returns (no-ops) if it cannot be resolved.
+ * `google_tag_manager['GTM-XXXX'].dataLayer.get('event_id')`. We read that id,
+ * then find the raw object in window.dataLayer whose own `event_id` matches it
+ * (scanning from the end). Matching the precise raw object — rather than "the
+ * latest analytics event" — prevents collapse/double-send when two analytics
+ * events are pushed back-to-back in one tick. Leaves `payload` set to the
+ * resolved object, or returns (no-ops) if it cannot be resolved.
  */
-function resolveTriggeringEventSnippet() {
-  return `  var gtm = window.google_tag_manager && window.google_tag_manager['{{Container ID}}'];
+function resolveTriggeringEventSnippet(gtmPublicId) {
+  return `  var gtm = window.google_tag_manager && window.google_tag_manager['${gtmPublicId}'];
   var targetId = gtm && gtm.dataLayer && typeof gtm.dataLayer.get === 'function'
     ? gtm.dataLayer.get('event_id')
     : null;
@@ -298,10 +298,10 @@ function resolveTriggeringEventSnippet() {
   if (!payload) return;`;
 }
 
-function ga4BridgeHtml() {
+function ga4BridgeHtml(gtmPublicId) {
   return `<script>
 (function(){
-${resolveTriggeringEventSnippet()}
+${resolveTriggeringEventSnippet(gtmPublicId)}
   if (!window.gtag) return;
   var params = {};
   for (var key in payload) {
@@ -321,10 +321,10 @@ ${resolveTriggeringEventSnippet()}
 </script>`;
 }
 
-function metaBridgeHtml() {
+function metaBridgeHtml(gtmPublicId) {
   return `<script>
 (function(){
-${resolveTriggeringEventSnippet()}
+${resolveTriggeringEventSnippet(gtmPublicId)}
   if (!window.fbq) return;
   if (payload.event === 'page_view') {
     window.fbq('track', 'PageView', {}, { eventID: payload.event_id });

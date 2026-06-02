@@ -11,8 +11,10 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
+import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'Anna Ciok Ceramics',
   description: 'Anna Ciok Ceramics — ręcznie malowana ceramika, czerwcowy drop.',
 };

@@ -1,0 +1,7 @@
+; Minimal DNS for anna-ciok.studio — Worker custom domains only (no legacy Namecheap MX/TXT).
+; Import via dashboard or: node scripts/cloudflare-dns-cleanup.mjs (with CLOUDFLARE_API_TOKEN)
+$ORIGIN anna-ciok.studio.
+$TTL 1
+
+; Proxied A/AAAA for Workers are normally auto-managed by custom domains.
+; This import replaces the zone file to drop stale eforward* MX and registrar SPF TXT.

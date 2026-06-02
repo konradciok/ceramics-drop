@@ -237,4 +237,19 @@ describe('pushDataLayer', () => {
       'site_engagement:language_change',
     );
   });
+
+  it('clears ecommerce before events that carry ecommerce payloads', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildAddToCartEvent(product('k01')));
+
+    expect(window.dataLayer).toEqual([
+      { ecommerce: null },
+      expect.objectContaining({ event: 'add_to_cart' }),
+    ]);
+  });
 });
