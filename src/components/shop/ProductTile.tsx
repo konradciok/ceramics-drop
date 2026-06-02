@@ -36,8 +36,11 @@ export function ProductTile({ product, onOpen }: Props) {
       </div>
       <button
         className={`tile-add${selected ? ' in' : ''}`}
+        disabled={product.sold}
+        aria-disabled={product.sold}
         onClick={(e) => {
           e.stopPropagation();
+          if (product.sold) return;
           toggle(product.id);
         }}
       >

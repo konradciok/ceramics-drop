@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
-import { getProductById, CATEGORIES } from '@/lib/products';
+import { resolveCartProducts, CATEGORIES } from '@/lib/products';
 import { euro } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -97,7 +97,7 @@ export function CartView() {
     clear();
   }, [confirm, clear]);
 
-  const products = ids.map((id) => getProductById(id)).filter(Boolean) as NonNullable<ReturnType<typeof getProductById>>[];
+  const products = resolveCartProducts(ids);
   const n = products.length;
   const subtotal = products.reduce((s, p) => s + p.price, 0);
   const shipCost = ship === 'odbior' ? 0 : 18;

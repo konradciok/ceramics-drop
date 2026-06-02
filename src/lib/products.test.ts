@@ -3,6 +3,7 @@ import {
   getProducts,
   getProductsByCategory,
   getProductById,
+  resolveCartProducts,
   CATEGORY_ORDER,
 } from './products';
 
@@ -35,5 +36,29 @@ describe('getProducts', () => {
     const k = getProductById('k01')!;
     expect(k).toMatchObject({ price: 22, measure: '9 × 9 cm · 300 ml', num: '01', noteIndex: 0 });
     expect(getProductById('d02')!.noteIndex).toBe(1);
+  });
+
+  it('caches the registry — same reference across calls', () => {
+    expect(getProducts()).toBe(getProducts());
+    expect(getProductsByCategory('kubki')).toBe(getProductsByCategory('kubki'));
+  });
+
+  it('returns the registry instance from lookups', () => {
+    const all = getProducts();
+    expect(getProductById('k01')).toBe(all.find((p) => p.id === 'k01'));
+  });
+});
+
+describe('resolveCartProducts', () => {
+  it('resolves ids to products, preserving order', () => {
+    expect(resolveCartProducts(['v01', 'k01']).map((p) => p.id)).toEqual(['v01', 'k01']);
+  });
+
+  it('drops unknown ids', () => {
+    expect(resolveCartProducts(['k01', 'nope']).map((p) => p.id)).toEqual(['k01']);
+  });
+
+  it('drops sold ids so sold pieces never reach the cart', () => {
+    expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01']);
   });
 });

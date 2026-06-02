@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
-import { getProductById } from '@/lib/products';
+import { resolveCartProducts } from '@/lib/products';
 import { euro } from '@/lib/format';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
@@ -13,8 +13,9 @@ export function SelectionBar() {
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
-  const n = ids.length;
-  const total = ids.reduce((sum, id) => sum + (getProductById(id)?.price ?? 0), 0);
+  const products = resolveCartProducts(ids);
+  const n = products.length;
+  const total = products.reduce((sum, p) => sum + p.price, 0);
 
   return (
     <div className={`selbar${n > 0 ? ' show' : ''}`}>

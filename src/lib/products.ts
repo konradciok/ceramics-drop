@@ -61,11 +61,7 @@ const SPECS: Spec[] = [
   { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 16) },
 ];
 
-/**
- * Returns every product — all 88 pieces across the seven categories,
- * each with image path, sold flag, price, measure, and display index.
- */
-export function getProducts(): Product[] {
+function buildProducts(): Product[] {
   const products: Product[] = [];
   for (const spec of SPECS) {
     const cat = CATEGORIES[spec.slug];
@@ -87,10 +83,41 @@ export function getProducts(): Product[] {
   return products;
 }
 
+/* The registry is static build-time data, so compute it once at module
+   load and reuse it; lookups read from the prebuilt id map / groupings. */
+const PRODUCTS = buildProducts();
+const PRODUCT_BY_ID = new Map(PRODUCTS.map((p) => [p.id, p]));
+const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
+  (acc, slug) => {
+    acc[slug] = PRODUCTS.filter((p) => p.category === slug);
+    return acc;
+  },
+  {} as Record<CategorySlug, Product[]>,
+);
+
+/**
+ * Returns every product — all 88 pieces across the seven categories,
+ * each with image path, sold flag, price, measure, and display index.
+ */
+export function getProducts(): Product[] {
+  return PRODUCTS;
+}
+
 export function getProductsByCategory(slug: CategorySlug): Product[] {
-  return getProducts().filter((p) => p.category === slug);
+  return PRODUCTS_BY_CATEGORY[slug];
 }
 
 export function getProductById(id: string): Product | undefined {
-  return getProducts().find((p) => p.id === id);
+  return PRODUCT_BY_ID.get(id);
+}
+
+/**
+ * Resolves a list of cart ids to the products that may actually be bought —
+ * dropping unknown ids and sold (one-of-a-kind, already-gone) pieces. Used by
+ * the cart surfaces so stale localStorage can never reintroduce sold inventory.
+ */
+export function resolveCartProducts(ids: string[]): Product[] {
+  return ids
+    .map((id) => PRODUCT_BY_ID.get(id))
+    .filter((p): p is Product => p !== undefined && !p.sold);
 }
