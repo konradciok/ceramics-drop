@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts, CATEGORIES } from '@/lib/products';
@@ -8,6 +8,13 @@ import { euro } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
+import {
+  buildBeginCheckoutEvent,
+  buildPurchaseEvent,
+  buildRemoveFromCartEvent,
+  buildViewCartEvent,
+  pushDataLayer,
+} from '@/lib/analytics';
 
 /**
  * Cart / checkout screen.
@@ -82,6 +89,7 @@ export function CartView() {
 
   // Confirmation state — null while still shopping, set at checkout time
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const viewedCartKeys = useRef(new Set<string>());
 
   // Stable random order number (generated once)
   const [orderNo] = useState(() => 'ACC-' + (1000 + Math.floor(Math.random() * 9000)));
@@ -102,6 +110,13 @@ export function CartView() {
   const subtotal = products.reduce((s, p) => s + p.price, 0);
   const shipCost = ship === 'odbior' ? 0 : 18;
   const total = subtotal + shipCost;
+  const productKey = products.map((p) => p.id).join('|');
+
+  useEffect(() => {
+    if (products.length === 0 || viewedCartKeys.current.has(productKey)) return;
+    viewedCartKeys.current.add(productKey);
+    pushDataLayer(buildViewCartEvent(products));
+  }, [productKey, products]);
 
   function handlePickShip(id: ShipId) {
     setShip(id);
@@ -110,6 +125,20 @@ export function CartView() {
   function handleCheckout() {
     // Snapshot n and total BEFORE clear() — see shop.js checkout() which reads
     // items.length and cartTotal() before clearing.
+    if (products.length === 0) return;
+    pushDataLayer(
+      buildBeginCheckoutEvent(products, {
+        shippingCost: shipCost,
+        shippingMethod: ship,
+      }),
+    );
+    pushDataLayer(
+      buildPurchaseEvent(products, {
+        orderNo,
+        shippingCost: shipCost,
+        shippingMethod: ship,
+      }),
+    );
     setConfirm({ n, total, orderNo });
   }
 
@@ -197,7 +226,13 @@ export function CartView() {
                 </div>
                 <div className="right">
                   <span className="price">{euro(p.price)}</span>
-                  <button className="rm" onClick={() => remove(p.id)}>
+                  <button
+                    className="rm"
+                    onClick={() => {
+                      remove(p.id);
+                      pushDataLayer(buildRemoveFromCartEvent(p));
+                    }}
+                  >
                     <Icon name="trash" /> {t('cart.remove')}
                   </button>
                 </div>

@@ -5,6 +5,7 @@ import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { euro } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
+import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -17,7 +18,8 @@ type Props = {
 export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
   const selected = useCart((s) => s.ids.includes(product.id));
-  const toggle = useCart((s) => s.toggle);
+  const add = useCart((s) => s.add);
+  const remove = useCart((s) => s.remove);
 
   const name = t(`product.${CATEGORIES[product.category].singularKey}`);
   const displayName = `${name} Nº ${product.num}`;
@@ -41,7 +43,20 @@ export function ProductTile({ product, onOpen }: Props) {
         onClick={(e) => {
           e.stopPropagation();
           if (product.sold) return;
-          toggle(product.id);
+          // Gate the analytics event on the real store transition, not the `selected`
+          // render snapshot (which can be stale) — add() is idempotent, so a no-op add
+          // must not fire a duplicate add_to_cart. set() is synchronous, so getState()
+          // after the call sees the post-mutation state.
+          const wasPresent = useCart.getState().ids.includes(product.id);
+          if (selected) {
+            remove(product.id);
+          } else {
+            add(product.id);
+          }
+          const isPresent = useCart.getState().ids.includes(product.id);
+          if (wasPresent !== isPresent) {
+            pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
+          }
         }}
       >
         <span className="ic">

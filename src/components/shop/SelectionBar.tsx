@@ -6,6 +6,7 @@ import { resolveCartProducts } from '@/lib/products';
 import { euro } from '@/lib/format';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
+import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
 /** Sticky bottom bar summarising the current selection. */
 export function SelectionBar() {
@@ -27,10 +28,33 @@ export function SelectionBar() {
           <span className="sum">{`${t('selbar.total')} ${euro(total)}`}</span>
         </div>
         <div className="selbar-actions">
-          <button className="clear" onClick={clear}>
+          <button
+            className="clear"
+            onClick={() => {
+              pushDataLayer(
+                buildEngagementEvent('cart_clear', {
+                  item_ids: products.map((product) => product.id),
+                  value: total,
+                }),
+              );
+              clear();
+            }}
+          >
             {t('selbar.clear')}
           </button>
-          <Link className="go" href="/koszyk">
+          <Link
+            className="go"
+            href="/koszyk"
+            onClick={() => {
+              pushDataLayer(
+                buildEngagementEvent('cart_cta_click', {
+                  location: 'selection_bar',
+                  num_items: n,
+                  value: total,
+                }),
+              );
+            }}
+          >
             {t('selbar.go')} <Icon name="arrow" />
           </Link>
         </div>

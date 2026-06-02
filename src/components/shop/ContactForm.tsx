@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
+import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
 export function ContactForm() {
   const t = useTranslations();
@@ -14,6 +15,12 @@ export function ContactForm() {
       id="contact-form"
       onSubmit={(e) => {
         e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        pushDataLayer(
+          buildEngagementEvent('contact_form_submit', {
+            topic: String(formData.get('topic') ?? ''),
+          }),
+        );
         setSent(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
