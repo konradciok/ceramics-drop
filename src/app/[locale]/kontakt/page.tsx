@@ -1,22 +1,66 @@
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import type { Metadata } from 'next';
+import { richTags } from '@/components/ui/richTags';
+import { ContactForm } from '@/components/shop/ContactForm';
 
 type Props = { params: Promise<{ locale: string }> };
 
-/** Contact. Content: form (name/email/message) + studio details sidebar. */
-export default async function Page({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale });
+  return { title: t('title.kontakt') };
+}
+
+/** Contact page — form + studio details sidebar. */
+export default async function KontaktPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  const t = await getTranslations({ locale });
+
   return (
     <main>
+      {/* ── PAGE HEAD ────────────────────────────────────────────── */}
       <section className="page-head">
         <div className="page-head-inner">
-          <div className="eyebrow" />
-          {/* TODO (content): title + lead */}
-          <h1>Kontakt</h1>
+          <div className="eyebrow">{t('contact.eyebrow')}</div>
+          <h1>{t.rich('contact.h1', richTags)}</h1>
+          <p className="lead">{t('contact.lead')}</p>
         </div>
       </section>
-      {/* TODO (content): <form className="contact-form"> + <aside className="contact-side"> */}
-      <div className="contact-page" />
+
+      {/* ── CONTACT PAGE ─────────────────────────────────────────── */}
+      <div className="contact-page">
+        <ContactForm />
+
+        <aside className="contact-side">
+          <h3>{t('contact.sideH')}</h3>
+          <div className="contact-list">
+            <div className="contact-row">
+              <span className="lbl">{t('contact.lEmail')}</span>
+              <span className="val">
+                <a href="mailto:hej@annaciok.pl">hej@annaciok.pl</a>
+              </span>
+            </div>
+            <div className="contact-row">
+              <span className="lbl">{t('contact.lIg')}</span>
+              <span className="val">{t('contact.vIg')}</span>
+            </div>
+            <div className="contact-row">
+              <span className="lbl">{t('contact.lStudio')}</span>
+              <span className="val">{t('contact.vStudio')}</span>
+            </div>
+            <div className="contact-row">
+              <span className="lbl">{t('contact.lShip')}</span>
+              <span className="val">{t('contact.vShip')}</span>
+            </div>
+            <div className="contact-row">
+              <span className="lbl">{t('contact.lReply')}</span>
+              <span className="val">{t('contact.vReply')}</span>
+            </div>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }
