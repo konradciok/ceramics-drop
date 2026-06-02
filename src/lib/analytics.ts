@@ -204,7 +204,7 @@ export function buildPurchaseEvent(
   products: Product[],
   options: PurchaseOptions,
 ): DataLayerEvent {
-  const eventId = options.eventId ?? `purchase-${options.orderNo}`;
+  const eventId = options.eventId ?? createEventId('purchase', options.orderNo);
   const items = products.map((product) => toAnalyticsItem(product));
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(

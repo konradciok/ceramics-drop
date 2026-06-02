@@ -128,10 +128,11 @@ describe('analytics ecommerce payloads', () => {
       orderNo: 'ACC-1234',
       shippingCost: 18,
       shippingMethod: 'kurier',
+      eventId: 'evt-purchase',
     });
 
     expect(event.event).toBe('purchase');
-    expect(event.event_id).toBe('purchase-ACC-1234');
+    expect(event.event_id).toBe('evt-purchase');
     expect(event.ecommerce).toMatchObject({
       transaction_id: 'ACC-1234',
       currency: ANALYTICS_CURRENCY,
@@ -146,8 +147,29 @@ describe('analytics ecommerce payloads', () => {
       currency: ANALYTICS_CURRENCY,
       value: 90,
       order_id: 'ACC-1234',
-      event_id: 'purchase-ACC-1234',
+      event_id: 'evt-purchase',
     });
+  });
+
+  it('default purchase event_id is collision-resistant and decoupled from orderNo', () => {
+    const items = [product('k01'), product('v01')];
+    const options = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier' };
+
+    const event1 = buildPurchaseEvent(items, options);
+    const event2 = buildPurchaseEvent(items, options);
+
+    // Two calls with the same orderNo must produce different event_ids
+    expect(event1.event_id).not.toBe(event2.event_id);
+
+    // The default event_id must NOT equal the plain orderNo / transaction_id
+    expect(event1.event_id).not.toBe(options.orderNo);
+    expect(event1.ecommerce?.transaction_id).toBe('ACC-1234');
+
+    // The orderNo is still embedded for readability / traceability
+    expect(event1.event_id).toContain('purchase-ACC-1234');
+
+    // meta.event_id mirrors event.event_id
+    expect(event1.meta?.event_id).toBe(event1.event_id);
   });
 });
 
