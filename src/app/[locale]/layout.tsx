@@ -36,6 +36,11 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/FuturaBT-Book.woff2" />
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/FuturaBT-Medium.woff2" />
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/FuturaBT-MediumCondensed.woff2" />
+      </head>
       <body>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
