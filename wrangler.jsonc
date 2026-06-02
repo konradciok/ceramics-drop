@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ceramics-drop",
+  "workers_dev": true,
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-02",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "ceramics-drop"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "anna-ciok.studio",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.anna-ciok.studio",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  }
+}

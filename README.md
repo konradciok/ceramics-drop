@@ -13,11 +13,15 @@ Next.js storefront for Anna Ciok Ceramics, implementing the design in [`design/`
 ## Scripts
 
 ```bash
-npm run dev      # dev server
-npm run build    # production build (static-prerenders all routes per locale)
-npm run start    # serve the build
-npm run lint     # eslint
+npm run dev        # dev server
+npm run build      # production build (static-prerenders all routes per locale)
+npm run start      # serve the build (Node)
+npm run lint       # eslint
+npm run preview:cf # OpenNext + Wrangler preview (Workers runtime)
+npm run deploy:cf  # build and deploy to Cloudflare Workers
 ```
+
+**Production:** https://ceramics-drop.konrad-ciok.workers.dev — see [docs/cloudflare-deployment.md](docs/cloudflare-deployment.md) for deploy, env vars, and Workers Builds CI.
 
 ## Layout
 
