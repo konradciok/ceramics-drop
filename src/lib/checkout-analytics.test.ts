@@ -5,7 +5,6 @@ import {
   rememberCheckoutForReturn,
   pushCheckoutStarted,
   pushConfirmedPurchase,
-  pushConfirmedPurchaseByIds,
   pushConfirmedPurchaseByIdsOnce,
   pushConfirmedPurchaseFromRememberedCheckout,
 } from './checkout-analytics';
@@ -59,12 +58,17 @@ describe('checkout analytics semantics', () => {
 
   it('confirmed payment by product ids keeps sold pieces in the purchase payload', () => {
     const push = vi.fn();
+    const storage = new Map<string, string>();
 
-    pushConfirmedPurchaseByIds(['k01', 'k04'], {
+    pushConfirmedPurchaseByIdsOnce('pi_sold', ['k01', 'k04'], {
       orderNo: 'ACC-2000',
       shippingCost: 18,
       shippingMethod: 'kurier',
       push,
+      storage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
     });
 
     expect(push).toHaveBeenCalledWith(
@@ -150,12 +154,20 @@ describe('checkout analytics semantics', () => {
         }),
       }),
     );
+    // Per-payment-intent dedupe: re-store a snapshot and replay with the SAME
+    // intent id. It must not fire again, because the dedupe key is already set
+    // (not merely because the snapshot was consumed by the first fire).
+    storage.set(
+      'acc_checkout_snapshot',
+      JSON.stringify({ ids: ['k01', 'v01'], shippingCost: 18, shippingMethod: 'kurier' }),
+    );
     expect(
-      pushConfirmedPurchaseFromRememberedCheckout('pi_456-second', 'ACC-456', {
+      pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
         push,
         storage: session,
       }),
     ).toBe(false);
+    expect(push).toHaveBeenCalledTimes(1);
   });
 
   it('does not emit purchase from remembered checkout when no snapshot exists', () => {

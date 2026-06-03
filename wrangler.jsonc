@@ -4,7 +4,7 @@
   "workers_dev": false,
   "main": ".open-next/worker.js",
   "build": {
-    "command": "npx opennextjs-cloudflare build"
+    "command": "node_modules/.bin/opennextjs-cloudflare build"
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],

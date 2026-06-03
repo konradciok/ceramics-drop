@@ -7,10 +7,7 @@ import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
-import {
-  forgetRememberedCheckout,
-  pushConfirmedPurchaseFromRememberedCheckout,
-} from '@/lib/checkout-analytics';
+import { pushConfirmedPurchaseFromRememberedCheckout } from '@/lib/checkout-analytics';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 type Status = 'loading' | 'ok' | 'processing' | 'fail';
@@ -28,8 +25,9 @@ export default function ReturnPage() {
       const { paymentIntent } = await stripe.retrievePaymentIntent(secret);
       switch (paymentIntent?.status) {
         case 'succeeded': {
+          // Fires the purchase event once per payment intent and clears the
+          // remembered snapshot internally on success.
           pushConfirmedPurchaseFromRememberedCheckout(paymentIntent.id, {});
-          forgetRememberedCheckout();
           clear();
           setStatus('ok');
           break;

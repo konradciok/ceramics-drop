@@ -55,15 +55,6 @@ export function pushConfirmedPurchase(
   );
 }
 
-export function pushConfirmedPurchaseByIds(
-  ids: string[],
-  options: ConfirmedPurchaseOptions,
-): void {
-  const products = resolveKnownProducts(ids);
-  if (products.length === 0) return;
-  pushConfirmedPurchase(products, options);
-}
-
 export function pushConfirmedPurchaseByIdsOnce(
   paymentIntentId: string,
   ids: string[],
