@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import type Stripe from 'stripe';
 import { handleStripeEvent, type WebhookDeps } from './webhook';
 
@@ -6,7 +6,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
     markPaid: vi.fn().mockResolvedValue(true),
     releaseHold: vi.fn().mockResolvedValue(undefined),
-    createInvoice: vi.fn().mockResolvedValue(undefined),
+    ensureInvoiced: vi.fn().mockResolvedValue(undefined),
     createShipment: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
     ...overrides,
@@ -16,23 +16,21 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
 const pi = (id = 'pi_1') => ({ id, object: 'payment_intent' });
 
 describe('handleStripeEvent', () => {
-  it('on success: marks paid, invoices, ships, revalidates', async () => {
+  it('on success: marks paid, revalidates, ensures invoice, creates shipment', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.markPaid).toHaveBeenCalledWith('pi_1');
-    expect(d.createInvoice).toHaveBeenCalledWith('pi_1');
-    expect(d.createShipment).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
+    expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
+    expect(d.createShipment).toHaveBeenCalledWith('pi_1');
   });
 
-  it('skips invoice when already paid, but still attempts shipment (retry path)', async () => {
-    // On webhook redelivery markPaid is a no-op, yet shipment creation must
-    // still run so a paid order without a shipment can recover.
+  it('already processed: still ensures invoice and shipment but does NOT revalidate', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
-    expect(d.createInvoice).not.toHaveBeenCalled();
-    expect(d.revalidate).not.toHaveBeenCalled();
+    expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
     expect(d.createShipment).toHaveBeenCalledWith('pi_1');
+    expect(d.revalidate).not.toHaveBeenCalled();
   });
 
   it('propagates a shipment error so the webhook 5xxs and Stripe retries', async () => {

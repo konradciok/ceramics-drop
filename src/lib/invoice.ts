@@ -1,4 +1,4 @@
-import type Stripe from 'stripe';
+﻿import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { getProductById, CATEGORIES } from './products';
@@ -11,14 +11,12 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   const { data: order } = await supabase
     .from('orders').select('*').eq('payment_intent_id', paymentIntentId).single();
-  if (!order || !order.email) return; // no email collected → nothing to send
+  if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return;
 
   const { data: items } = await supabase
     .from('order_items').select('*').eq('order_id', order.id);
   if (!items || items.length === 0) return;
 
-  // shipping_address is our ShipX-shaped courier address (or null for Paczkomat /
-  // pickup). Map it to Stripe's customer.shipping shape.
   const addr = order.shipping_address as {
     street?: string;
     building_number?: string;
@@ -47,7 +45,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     email: order.email,
     shipping: customerShipping,
     preferred_locales: ['pl'],
-  });
+  }, { idempotencyKey: `cust_${order.id}` });
 
   for (const it of items) {
     const product = getProductById(it.product_id);
@@ -60,7 +58,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       amount: it.unit_price,
       currency: 'pln',
       description: label,
-    });
+    }, { idempotencyKey: `ii_${order.id}_${it.product_id}` });
   }
   if (order.shipping > 0) {
     const shippingLabel =
@@ -68,8 +66,11 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         ? 'Wysyłka — Paczkomat InPost'
         : 'Wysyłka — Kurier InPost';
     await stripe.invoiceItems.create({
-      customer: customer.id, amount: order.shipping, currency: 'pln', description: shippingLabel,
-    });
+      customer: customer.id,
+      amount: order.shipping,
+      currency: 'pln',
+      description: shippingLabel,
+    }, { idempotencyKey: `ii_${order.id}_shipping` });
   }
 
   const invoice = await stripe.invoices.create({
@@ -77,9 +78,15 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     collection_method: 'charge_automatically',
     auto_advance: false,
     metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
-  });
+  }, { idempotencyKey: `inv_${order.id}` });
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
-  // Goods already paid via the PaymentIntent → record paid without charging again.
   await stripe.invoices.pay(finalized.id as string, { paid_out_of_band: true } as Stripe.InvoicePayParams);
   await stripe.invoices.sendInvoice(finalized.id as string);
+  const { error: recordErr } = await supabase
+    .from('orders')
+    .update({ invoiced_at: new Date().toISOString(), invoice_id: finalized.id as string })
+    .eq('id', order.id);
+  if (recordErr) {
+    throw new Error(`failed to record invoicing for order ${order.id}: ${recordErr.message}`);
+  }
 }

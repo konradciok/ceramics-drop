@@ -1,12 +1,12 @@
-import type Stripe from 'stripe';
+﻿import type Stripe from 'stripe';
 
 export type WebhookDeps = {
-  /** Flip order pending→paid and pieces reserved→sold. Returns false if already paid (idempotent no-op). */
+  /** Flip order pending→paid and claim pieces still reserved to this order. Returns false if already processed (idempotent no-op). */
   markPaid: (paymentIntentId: string) => Promise<boolean>;
   /** Return reserved pieces to available for a failed/canceled intent. */
   releaseHold: (paymentIntentId: string) => Promise<void>;
-  /** Generate + send the no-VAT invoice for a freshly-paid order. */
-  createInvoice: (paymentIntentId: string) => Promise<void>;
+  /** Attempt to invoice if not already invoiced; idempotent — safe to call on every succeeded event. */
+  ensureInvoiced: (paymentIntentId: string) => Promise<void>;
   /** Create the InPost shipment for a freshly-paid order (no-op for studio pickup). */
   createShipment: (paymentIntentId: string) => Promise<void>;
   /** Bust a Next cache tag (e.g. 'inventory'). */
@@ -17,15 +17,11 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
   const pi = event.data.object as Stripe.PaymentIntent;
   switch (event.type) {
     case 'payment_intent.succeeded': {
-      const firstTime = await deps.markPaid(pi.id);
-      if (firstTime) {
-        await deps.createInvoice(pi.id);
-        deps.revalidate('inventory');
-      }
+      const newlySold = await deps.markPaid(pi.id);
+      if (newlySold) deps.revalidate('inventory');
+      await deps.ensureInvoiced(pi.id);
       // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
       // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.
-      // Run it on EVERY delivery — not only the first — so a paid order whose
-      // first shipment attempt failed still recovers on redelivery.
       await deps.createShipment(pi.id);
       return;
     }

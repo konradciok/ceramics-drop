@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
@@ -30,26 +30,65 @@ export async function POST(req: Request) {
 
   await handleStripeEvent(event, {
     markPaid: async (pi) => {
-      // Email + delivery details were captured at checkout and already persisted,
-      // so we only flip the status here. Only the first 'pending'→'paid'
-      // transition returns a row (idempotency).
-      const { data, error } = (await supabase
+      const { data: orderData, error: orderErr } = (await supabase
         .from('orders')
         .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
         .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
-      // A DB error must not be mistaken for an "already paid" no-op — throw so the
-      // webhook 5xxs and Stripe retries instead of silently moving on.
-      if (error) throw new Error(`markPaid orders update failed: ${error.message}`);
-      if (!data || data.length === 0) return false;
-      const orderId = data[0].id;
-      const { error: pieceErr } = await supabase
+
+      if (orderErr) throw new Error(`markPaid orders update failed: ${orderErr.message}`);
+
+      let orderId: string;
+      let newSale = false;
+      if (orderData && orderData.length > 0) {
+        orderId = orderData[0].id;
+        newSale = true;
+      } else {
+        const { data: existing } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('payment_intent_id', pi)
+          .single() as { data: { id: string; status: string } | null };
+        if (!existing || existing.status !== 'paid') return false;
+        orderId = existing.id;
+      }
+
+      await supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
+        .eq('order_id', orderId)
+        .eq('status', 'reserved');
+
+      const { count: fulfilledCount, error: fulfilledErr } = await supabase
+        .from('piece_state')
+        .select('*', { count: 'exact', head: true })
+        .eq('order_id', orderId)
+        .eq('status', 'sold');
+      const { count: expectedCount, error: expectedErr } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
         .eq('order_id', orderId);
-      if (pieceErr) console.error('markPaid: piece_state update failed for', orderId, pieceErr);
-      return true;
+      if (fulfilledErr || expectedErr || fulfilledCount == null || expectedCount == null) {
+        throw new Error(`fulfillment count failed for order ${orderId}`);
+      }
+
+      if (fulfilledCount < expectedCount) {
+        try {
+          await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
+        } catch (err) {
+          console.error('refund failed for', pi, err);
+        }
+        await supabase
+          .from('piece_state')
+          .update({ status: 'available', reserved_until: null, order_id: null })
+          .eq('order_id', orderId)
+          .eq('status', 'sold');
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+        return false;
+      }
+
+      return newSale;
     },
     releaseHold: async (pi) => {
       const { data } = await supabase
@@ -66,11 +105,7 @@ export async function POST(req: Request) {
           .eq('order_id', rows[0].id);
       }
     },
-    createInvoice: async (pi) => {
-      // Invoicing must never fail the webhook: the sale is already recorded
-      // (markPaid committed). A throw here would 500 the webhook, and Stripe's
-      // retry would no-op markPaid (idempotent) — permanently losing the
-      // invoice/receipt. Swallow + log so the payment is acknowledged.
+    ensureInvoiced: async (pi) => {
       try {
         await createOrderInvoice(pi);
       } catch (err) {
@@ -78,11 +113,6 @@ export async function POST(req: Request) {
       }
     },
     createShipment: async (pi) => {
-      // Shipment creation is idempotent (guarded by inpost_shipment_id), so on
-      // failure we log with context and RE-THROW: the webhook returns non-2xx,
-      // Stripe retries, and markPaid is a no-op on redelivery (no double invoice)
-      // while the shipment attempt repeats until it succeeds. This is the
-      // recovery path a paid-but-unshipped order needs.
       try {
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
@@ -97,8 +127,6 @@ export async function POST(req: Request) {
             return (data as OrderForShipment | null) ?? null;
           },
           saveShipment: async (orderId, d) => {
-            // Guard against a concurrent delivery overwriting an existing
-            // shipment id (defence-in-depth on top of the load-time check).
             const { error } = await supabase
               .from('orders')
               .update({
@@ -108,8 +136,6 @@ export async function POST(req: Request) {
               })
               .eq('id', orderId)
               .is('inpost_shipment_id', null);
-            // Don't swallow: if ShipX created the shipment but we failed to record
-            // its id, surface the error so it's logged/retried (the outer catch).
             if (error) throw error;
           },
           inpost: getInPost(),
@@ -119,7 +145,7 @@ export async function POST(req: Request) {
           JSON.stringify({ event: 'createOrderShipment_failed', payment_intent_id: pi }),
           err,
         );
-        throw err; // surface as 5xx → Stripe retries the idempotent shipment
+        throw err;
       }
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),
