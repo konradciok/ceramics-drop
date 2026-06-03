@@ -157,10 +157,11 @@ describe('checkout analytics semantics', () => {
     // Per-payment-intent dedupe: re-store a snapshot and replay with the SAME
     // intent id. It must not fire again, because the dedupe key is already set
     // (not merely because the snapshot was consumed by the first fire).
-    storage.set(
-      'acc_checkout_snapshot',
-      JSON.stringify({ ids: ['k01', 'v01'], shippingCost: 18, shippingMethod: 'kurier' }),
-    );
+    rememberCheckoutForReturn(['k01', 'v01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      storage: session,
+    });
     expect(
       pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
         push,
