@@ -11,7 +11,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   const { data: order } = await supabase
     .from('orders').select('*').eq('payment_intent_id', paymentIntentId).single();
-  if (!order || !order.email) return; // no email collected → nothing to send
+  if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return; // skip if not paid, already invoiced, or no email
 
   const { data: items } = await supabase
     .from('order_items').select('*').eq('order_id', order.id);
@@ -52,4 +52,9 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
   // Goods already paid via the PaymentIntent → record paid without charging again.
   await stripe.invoices.pay(finalized.id as string, { paid_out_of_band: true } as Stripe.InvoicePayParams);
   await stripe.invoices.sendInvoice(finalized.id as string);
+  // Record that this order was invoiced so webhook retries skip re-invoicing.
+  await supabase
+    .from('orders')
+    .update({ invoiced_at: new Date().toISOString(), invoice_id: finalized.id as string })
+    .eq('id', order.id);
 }

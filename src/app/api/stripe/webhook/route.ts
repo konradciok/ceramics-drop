@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   await handleStripeEvent(event, {
     markPaid: async (pi) => {
-      // Pull email + shipping that the Payment/Address/LinkAuthentication Elements attached.
+      // 1. Pull email + shipping that the Payment/Address/LinkAuthentication Elements attached.
       let email: string | null = null;
       let shippingAddress: Stripe.PaymentIntent['shipping'] | null = null;
       try {
@@ -39,8 +39,9 @@ export async function POST(req: Request) {
       } catch {
         // If retrieval fails, proceed without email/shipping (invoice will be skipped).
       }
-      // Only the first 'pending'→'paid' transition returns a row (idempotency).
-      const { data } = await supabase
+
+      // 2. Transition pending→paid (idempotent): only the first call returns a row.
+      const { data: orderData } = await supabase
         .from('orders')
         .update({
           status: 'paid',
@@ -51,12 +52,43 @@ export async function POST(req: Request) {
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
         .select('id') as { data: Array<{ id: string }> | null };
-      if (!data || data.length === 0) return false;
-      const orderId = data[0].id;
-      await supabase
+      if (!orderData || orderData.length === 0) return false; // already processed
+      const orderId = orderData[0].id;
+
+      // 3. Claim only pieces STILL reserved to this order (guard against hold expiry + reassignment).
+      const { data: claimedData } = await supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
+        .eq('order_id', orderId)
+        .eq('status', 'reserved')
+        .select('product_id') as { data: Array<{ product_id: string }> | null };
+      const claimedCount = claimedData?.length ?? 0;
+
+      // 4. Expected count from order_items.
+      const { count: expectedCount } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
         .eq('order_id', orderId);
+
+      // 5. If we couldn't fulfill all items, refund + release + fail the order.
+      if (claimedCount < (expectedCount ?? 0)) {
+        // Best-effort refund — failure surfaces in Stripe Dashboard.
+        try { await stripe.refunds.create({ payment_intent: pi }); } catch {}
+        // Release any pieces we just claimed so they aren't stranded as sold.
+        await supabase
+          .from('piece_state')
+          .update({ status: 'available', reserved_until: null, order_id: null })
+          .eq('order_id', orderId)
+          .eq('status', 'sold');
+        // Mark the order failed.
+        await supabase
+          .from('orders')
+          .update({ status: 'failed' })
+          .eq('id', orderId);
+        return false; // no sale, no invoice
+      }
+
+      // 6. Fully fulfilled — new sale.
       return true;
     },
     releaseHold: async (pi) => {
@@ -74,11 +106,10 @@ export async function POST(req: Request) {
           .eq('order_id', rows[0].id);
       }
     },
-    createInvoice: async (pi) => {
-      // Invoicing must never fail the webhook: the sale is already recorded
-      // (markPaid committed). A throw here would 500 the webhook, and Stripe's
-      // retry would no-op markPaid (idempotent) — permanently losing the
-      // invoice/receipt. Swallow + log so the payment is acknowledged.
+    ensureInvoiced: async (pi) => {
+      // Invoicing must never fail the webhook: the sale is already recorded.
+      // createOrderInvoice is now idempotent (checks invoiced_at), so retries
+      // safely re-attempt a previously failed invoice send.
       try {
         await createOrderInvoice(pi);
       } catch (err) {

@@ -6,7 +6,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
     markPaid: vi.fn().mockResolvedValue(true),
     releaseHold: vi.fn().mockResolvedValue(undefined),
-    createInvoice: vi.fn().mockResolvedValue(undefined),
+    ensureInvoiced: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
     ...overrides,
   };
@@ -15,18 +15,19 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
 const pi = (id = 'pi_1') => ({ id, object: 'payment_intent' });
 
 describe('handleStripeEvent', () => {
-  it('on success: marks paid, invoices, revalidates', async () => {
+  it('on success: marks paid, revalidates, ensures invoice', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.markPaid).toHaveBeenCalledWith('pi_1');
-    expect(d.createInvoice).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
+    expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
   });
 
-  it('is idempotent: skips invoice when order was already paid', async () => {
+  it('already processed: still ensures invoice (idempotent) but does NOT revalidate', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
-    expect(d.createInvoice).not.toHaveBeenCalled();
+    expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
+    expect(d.revalidate).not.toHaveBeenCalled();
   });
 
   it('on failure: releases the hold', async () => {
