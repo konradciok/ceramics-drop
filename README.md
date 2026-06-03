@@ -26,26 +26,40 @@ npm run deploy:cf  # build and deploy to Cloudflare Workers
 ## Layout
 
 ```
-messages/            next-intl catalogs (pl/en/es) — empty, fill in content phase
+messages/            next-intl catalogs (pl/en/es) — trilingual content
 public/fonts         Futura BT (.otf)
 public/icons         line-icon SVGs
+public/uploads/      88 product images (WebP)
 src/
-  app/[locale]/      routes: home, 7 collections, koszyk, o-studiu, kontakt, 3 legal pages
-  components/         layout/ · shop/ · ui/   (skeletons)
+  app/[locale]/      routes: home, 7 collections, koszyk (+ /return), o-studiu, kontakt, 3 legal pages
+  app/api/           checkout · inventory · stripe/webhook
+  components/         layout/ · shop/ · ui/
   i18n/              routing · request · navigation
-  lib/               types · products (registry; data wiring deferred) · format
+  lib/               products · checkout · stripe · supabase · inventory · invoice · analytics · pricing · format
   store/cart.ts      Zustand cart
   styles/            fonts.css · tokens.css · site.css  (ported from design/)
   middleware.ts      next-intl locale middleware
 ```
 
-## Status: scaffold
+## Status: live
 
-Structure + dependencies only. **Deferred to the content phase:**
+Content-complete, payments-enabled, and deployed to Cloudflare Workers.
 
-- Page/component markup & copy (pages render placeholders; components are typed skeletons)
-- i18n message catalogs (PL/EN/ES) — currently empty `{}`
-- Product data: implement `getProducts()` in `src/lib/products.ts` (88 pieces, image paths,
-  sold flags) — reference: `design/assets/shop.js`
-- Product images → `public/uploads/` (from `design/uploads/`)
-- Trilingual product descriptions
+**Done:**
+
+- **Content** — all pages built with real markup & copy; trilingual catalogs (PL/EN/ES) in
+  `messages/`; 88 one-of-a-kind pieces from `getProducts()` in `src/lib/products.ts`; product
+  images in `public/uploads/` (WebP, via `npm run optimize-images`).
+- **Payments** — embedded Stripe Payment Element checkout in PLN. `/api/checkout` atomically
+  reserves the selected pieces (15-min hold) before creating the PaymentIntent;
+  `/api/stripe/webhook` does idempotent fulfillment, persists the order to Supabase, and
+  invoices it; `/koszyk/return` shows the confirmation/processing/failure status.
+- **Inventory** — one-of-a-kind sold-state tracking (`/api/inventory`, `src/lib/inventory.ts`)
+  so a sold piece can't be re-purchased.
+- **Analytics** — GA4 + Meta via GTM. `begin_checkout` on checkout start; a deduplicated
+  `purchase` event fires once per `payment_intent` on the confirmed return
+  (`src/lib/checkout-analytics.ts`). See [docs/analytics-stack.md](docs/analytics-stack.md).
+- **Deploy** — Cloudflare Workers via OpenNext, with Workers Builds CI. See
+  [docs/cloudflare-deployment.md](docs/cloudflare-deployment.md).
+
+**Design source of truth:** [`design/`](design/) is left untouched and remains the visual reference.
