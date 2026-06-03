@@ -35,14 +35,14 @@ export async function POST(req: Request) {
   const supabase = getSupabaseAdmin();
 
   // Locate the order this shipment belongs to.
-  const { data: order } = (await supabase
+  const { data: order, error: lookupErr } = (await supabase
     .from('orders')
     .select(
       'id, delivery_method, inpost_tracking_number, inpost_target_point, ' +
         'receiver_first_name, receiver_last_name, inpost_label_emailed_at',
     )
     .eq('inpost_shipment_id', evt.shipmentId)
-    .single()) as {
+    .maybeSingle()) as {
     data: {
       id: string;
       delivery_method: string;
@@ -52,19 +52,29 @@ export async function POST(req: Request) {
       receiver_last_name: string | null;
       inpost_label_emailed_at: string | null;
     } | null;
+    error: { message: string } | null;
   };
 
+  // A real DB error → 500 so InPost retries (don't lose the status update).
+  if (lookupErr) {
+    console.error('inpost webhook: order lookup failed', evt.shipmentId, lookupErr);
+    return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
+  }
   // Unknown shipment → acknowledge so InPost stops retrying.
   if (!order) return NextResponse.json({ received: true });
 
   // Mirror the latest status (+ tracking number once it appears).
-  await supabase
+  const { error: statusErr } = await supabase
     .from('orders')
     .update({
       delivery_status: evt.status,
       ...(evt.trackingNumber ? { inpost_tracking_number: evt.trackingNumber } : {}),
     })
     .eq('id', order.id);
+  if (statusErr) {
+    console.error('inpost webhook: status update failed', evt.shipmentId, statusErr);
+    return NextResponse.json({ error: 'status_update_failed' }, { status: 500 });
+  }
 
   // Label is printable from `confirmed`. Fetch + email exactly once.
   if (evt.status === LABEL_READY_STATUS && !order.inpost_label_emailed_at) {
@@ -92,13 +102,15 @@ export async function POST(req: Request) {
         };
         await emailLabelToStudio({ order: emailOrder, labelPdf });
       } catch (err) {
-        // Release the slot (only if still our claim) so InPost's retry re-sends.
+        // Release the slot (only if still our claim) and 500 so InPost redelivers
+        // the `confirmed` event and the label send is genuinely retried.
         await supabase
           .from('orders')
           .update({ inpost_label_emailed_at: null })
           .eq('id', order.id)
           .eq('inpost_label_emailed_at', claimedAt);
         console.error('label email failed for shipment', evt.shipmentId, err);
+        return NextResponse.json({ error: 'label_email_failed' }, { status: 500 });
       }
     }
   }

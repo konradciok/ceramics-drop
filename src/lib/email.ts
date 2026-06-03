@@ -9,6 +9,16 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 const FROM = 'Etykiety InPost <etykiety@anna-ciok.studio>';
 
+/** Escape user-supplied values before interpolating into the email HTML. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** ArrayBuffer → base64 (Workers has btoa but no Buffer); chunked to avoid arg limits. */
 function toBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -37,17 +47,24 @@ export async function emailLabelToStudio(params: {
   const { env } = getCloudflareContext();
   const { order, labelPdf } = params;
 
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+
   const receiver = [order.receiver_first_name, order.receiver_last_name]
     .filter(Boolean)
     .join(' ')
     .trim();
   const methodLabel = order.delivery_method === 'paczkomat' ? 'Paczkomat' : 'Kurier';
+  // Escape every interpolated value — order/receiver fields are user-supplied.
   const lines = [
-    `Zamówienie: ${order.id}`,
-    `Odbiorca: ${receiver || '—'}`,
+    `Zamówienie: ${escapeHtml(order.id)}`,
+    `Odbiorca: ${escapeHtml(receiver || '—')}`,
     `Sposób dostawy: ${methodLabel}`,
-    order.inpost_target_point ? `Paczkomat: ${order.inpost_target_point}` : null,
-    order.inpost_tracking_number ? `Numer przesyłki: ${order.inpost_tracking_number}` : null,
+    order.inpost_target_point ? `Paczkomat: ${escapeHtml(order.inpost_target_point)}` : null,
+    order.inpost_tracking_number
+      ? `Numer przesyłki: ${escapeHtml(order.inpost_tracking_number)}`
+      : null,
   ].filter(Boolean);
 
   const res = await fetch('https://api.resend.com/emails', {

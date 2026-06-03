@@ -118,6 +118,20 @@ describe('buildShipmentPayload', () => {
   it('throws for odbior (no shipment)', () => {
     expect(() => buildShipmentPayload({ ...baseOrder, delivery_method: 'odbior' })).toThrow();
   });
+
+  it('throws when the paczkomat target point is missing', () => {
+    expect(() => buildShipmentPayload({ ...baseOrder, inpost_target_point: null })).toThrow(/target_point/);
+  });
+
+  it('throws when the courier address is missing', () => {
+    expect(() =>
+      buildShipmentPayload({ ...baseOrder, delivery_method: 'kurier', shipping_address: null }),
+    ).toThrow(/address/);
+  });
+
+  it('throws when receiver contact is incomplete', () => {
+    expect(() => buildShipmentPayload({ ...baseOrder, receiver_phone: null })).toThrow(/receiver/);
+  });
 });
 
 describe('parseShipxWebhook', () => {

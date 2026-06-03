@@ -198,11 +198,28 @@ export function buildShipmentPayload(order: OrderForShipment): ShipmentPayload {
   }
   const m = method as 'paczkomat' | 'kurier';
 
+  // Defense-in-depth: validateDelivery guarantees these at checkout, but never
+  // build a half-empty ShipX payload (which would create a broken shipment).
+  if (
+    !order.receiver_first_name ||
+    !order.receiver_last_name ||
+    !order.email ||
+    !order.receiver_phone
+  ) {
+    throw new Error(`buildShipmentPayload: incomplete receiver for order ${order.id}`);
+  }
+  if (m === 'paczkomat' && !order.inpost_target_point) {
+    throw new Error(`buildShipmentPayload: missing target_point for order ${order.id}`);
+  }
+  if (m === 'kurier' && !order.shipping_address) {
+    throw new Error(`buildShipmentPayload: missing address for order ${order.id}`);
+  }
+
   const receiver: DeliveryContact & { address?: DeliveryAddress } = {
-    first_name: order.receiver_first_name ?? '',
-    last_name: order.receiver_last_name ?? '',
-    email: order.email ?? '',
-    phone: order.receiver_phone ?? '',
+    first_name: order.receiver_first_name,
+    last_name: order.receiver_last_name,
+    email: order.email,
+    phone: order.receiver_phone,
   };
 
   if (m === 'paczkomat') {

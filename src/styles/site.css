@@ -438,6 +438,7 @@ ul { list-style:none; padding:0; margin:0; }
 .geowidget { width:100%; height:460px; border:1px solid var(--c-line); border-radius:2px; overflow:hidden; }
 .geowidget inpost-geowidget { display:block; width:100%; height:100%; }
 .geowidget-msg { font-size:13px; opacity:.7; margin:0; }
+@media (max-width:560px) { .delivery-fields .field-row { flex-direction:column; gap:16px; } }
 
 /* ekran potwierdzenia */
 .confirm { max-width:620px; margin:0 auto; padding:clamp(60px,9vw,130px) var(--gut); text-align:center; }

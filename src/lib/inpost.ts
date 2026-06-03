@@ -28,6 +28,11 @@ export interface InPostClient {
 
 export function getInPost(): InPostClient {
   const { env } = getCloudflareContext();
+  if (!env.INPOST_API_URL || !env.INPOST_API_TOKEN || !env.INPOST_ORGANIZATION_ID) {
+    throw new Error(
+      'InPost not configured: INPOST_API_URL / INPOST_API_TOKEN / INPOST_ORGANIZATION_ID missing',
+    );
+  }
   const baseUrl = env.INPOST_API_URL.replace(/\/+$/, '');
   const orgId = env.INPOST_ORGANIZATION_ID;
   const authHeader = `Bearer ${env.INPOST_API_TOKEN}`;

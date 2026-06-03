@@ -93,6 +93,8 @@ export async function POST(req: Request) {
             return (data as OrderForShipment | null) ?? null;
           },
           saveShipment: async (orderId, d) => {
+            // Guard against a concurrent delivery overwriting an existing
+            // shipment id (defence-in-depth on top of the load-time check).
             await supabase
               .from('orders')
               .update({
@@ -100,7 +102,8 @@ export async function POST(req: Request) {
                 inpost_tracking_number: d.trackingNumber,
                 delivery_status: d.status,
               })
-              .eq('id', orderId);
+              .eq('id', orderId)
+              .is('inpost_shipment_id', null);
           },
           inpost: getInPost(),
         });

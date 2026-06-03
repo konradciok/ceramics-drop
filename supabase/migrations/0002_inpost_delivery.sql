@@ -16,5 +16,7 @@ alter table orders
   add column if not exists inpost_label_emailed_at  timestamptz;
 
 -- Look up an order from an inbound InPost status webhook by its shipment id.
+-- Partial: most rows (pickup / pre-shipment) have a NULL id and don't need indexing.
 create index if not exists orders_inpost_shipment_id_idx
-  on orders (inpost_shipment_id);
+  on orders (inpost_shipment_id)
+  where inpost_shipment_id is not null;
