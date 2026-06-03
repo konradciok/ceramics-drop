@@ -1,0 +1,230 @@
+{
+    "exportFormatVersion": 2,
+    "exportTime": "2026-06-02 19:40:31",
+    "containerVersion": {
+        "path": "accounts/6000988917/containers/254296918/versions/3",
+        "accountId": "6000988917",
+        "containerId": "254296918",
+        "containerVersionId": "3",
+        "name": "ACC analytics stack",
+        "description": "GA4 + Meta Pixel stack for Anna Ciok Ceramics ecommerce and engagement dataLayer events.",
+        "container": {
+            "path": "accounts/6000988917/containers/254296918",
+            "accountId": "6000988917",
+            "containerId": "254296918",
+            "name": "annaciok.studio",
+            "publicId": "GTM-NPHLG9NR",
+            "usageContext": [
+                "WEB"
+            ],
+            "fingerprint": "1780409397515",
+            "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6000988917/containers/254296918/workspaces?apiLink=container",
+            "features": {
+                "supportUserPermissions": true,
+                "supportEnvironments": true,
+                "supportWorkspaces": true,
+                "supportGtagConfigs": false,
+                "supportBuiltInVariables": true,
+                "supportClients": false,
+                "supportFolders": true,
+                "supportTags": true,
+                "supportTemplates": true,
+                "supportTriggers": true,
+                "supportVariables": true,
+                "supportVersions": true,
+                "supportZones": true,
+                "supportTransformations": false
+            },
+            "tagIds": [
+                "GTM-NPHLG9NR"
+            ]
+        },
+        "tag": [
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "tagId": "5",
+                "name": "ACC - GA4 base",
+                "type": "html",
+                "priority": {
+                    "type": "INTEGER",
+                    "value": "20"
+                },
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "<script>\n(function(w,d,s,id){\n  w.dataLayer = w.dataLayer || [];\n  w.gtag = w.gtag || function(){ w.dataLayer.push(arguments); };\n  w.gtag('js', new Date());\n  w.gtag('config', id, { send_page_view: false });\n  var firstScript = d.getElementsByTagName(s)[0];\n  var tag = d.createElement(s);\n  tag.async = true;\n  tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);\n  firstScript.parentNode.insertBefore(tag, firstScript);\n})(window, document, 'script', 'G-WPJ3RE32M6');\n</script>"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "supportDocumentWrite",
+                        "value": "false"
+                    }
+                ],
+                "fingerprint": "1780411959973",
+                "firingTriggerId": [
+                    "4"
+                ],
+                "tagFiringOption": "ONCE_PER_LOAD",
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "tagId": "6",
+                "name": "ACC - Meta Pixel base",
+                "type": "html",
+                "priority": {
+                    "type": "INTEGER",
+                    "value": "10"
+                },
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "<script>\n(function(f,b,e,v,n,t,s){\n  if (f.fbq) return;\n  n = f.fbq = function(){ n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };\n  if (!f._fbq) f._fbq = n;\n  n.push = n;\n  n.loaded = true;\n  n.version = '2.0';\n  n.queue = [];\n  t = b.createElement(e);\n  t.async = true;\n  t.src = v;\n  s = b.getElementsByTagName(e)[0];\n  s.parentNode.insertBefore(t, s);\n})(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', '535651705450454');\n</script>"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "supportDocumentWrite",
+                        "value": "false"
+                    }
+                ],
+                "fingerprint": "1780412850040",
+                "firingTriggerId": [
+                    "4"
+                ],
+                "tagFiringOption": "ONCE_PER_LOAD",
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "tagId": "7",
+                "name": "ACC - GA4 dataLayer bridge",
+                "type": "html",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "<script>\n(function(){\n  function latestAnalyticsEvent() {\n    var dl = window.dataLayer || [];\n    for (var i = dl.length - 1; i >= 0; i--) {\n      var entry = dl[i];\n      if (entry && typeof entry === 'object' && [\"page_view\",\"view_item_list\",\"select_item\",\"view_item\",\"add_to_cart\",\"remove_from_cart\",\"view_cart\",\"begin_checkout\",\"purchase\",\"site_engagement\"].indexOf(entry.event) !== -1) {\n        return entry;\n      }\n    }\n    return null;\n  }\n  var payload = latestAnalyticsEvent();\n  if (!payload || !window.gtag) return;\n  var params = {};\n  for (var key in payload) {\n    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta') {\n      params[key] = payload[key];\n    }\n  }\n  window.gtag('event', payload.event, params);\n})();\n</script>"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "supportDocumentWrite",
+                        "value": "false"
+                    }
+                ],
+                "fingerprint": "1780411962979",
+                "firingTriggerId": [
+                    "3"
+                ],
+                "tagFiringOption": "ONCE_PER_EVENT",
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "tagId": "8",
+                "name": "ACC - Meta dataLayer bridge",
+                "type": "html",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "<script>\n(function(){\n  function latestAnalyticsEvent() {\n    var dl = window.dataLayer || [];\n    for (var i = dl.length - 1; i >= 0; i--) {\n      var entry = dl[i];\n      if (entry && typeof entry === 'object' && [\"page_view\",\"view_item_list\",\"select_item\",\"view_item\",\"add_to_cart\",\"remove_from_cart\",\"view_cart\",\"begin_checkout\",\"purchase\",\"site_engagement\"].indexOf(entry.event) !== -1) {\n        return entry;\n      }\n    }\n    return null;\n  }\n  var payload = latestAnalyticsEvent();\n  if (!payload || !window.fbq) return;\n  if (payload.event === 'page_view') {\n    window.fbq('track', 'PageView', {}, { eventID: payload.event_id });\n    return;\n  }\n  if (payload.meta && payload.meta.event_name) {\n    var meta = payload.meta;\n    var params = {\n      content_ids: meta.content_ids,\n      content_type: meta.content_type,\n      currency: meta.currency,\n      value: meta.value,\n      num_items: meta.num_items\n    };\n    if (meta.order_id) params.order_id = meta.order_id;\n    window.fbq('track', meta.event_name, params, { eventID: meta.event_id });\n    return;\n  }\n  if (payload.event === 'site_engagement') {\n    window.fbq('trackCustom', 'SiteEngagement', {\n      engagement_type: payload.engagement_type,\n      page_path: payload.page_path,\n      percent_scrolled: payload.percent_scrolled,\n      engagement_seconds: payload.engagement_seconds\n    }, { eventID: payload.event_id });\n  }\n})();\n</script>"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "supportDocumentWrite",
+                        "value": "false"
+                    }
+                ],
+                "fingerprint": "1780411964581",
+                "firingTriggerId": [
+                    "3"
+                ],
+                "tagFiringOption": "ONCE_PER_EVENT",
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            }
+        ],
+        "trigger": [
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "triggerId": "3",
+                "name": "ACC - analytics dataLayer events",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "MATCH_REGEX",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "^(page_view|view_item_list|select_item|view_item|add_to_cart|remove_from_cart|view_cart|begin_checkout|purchase|site_engagement)$"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1780411957595"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "triggerId": "4",
+                "name": "ACC - Initialization",
+                "type": "INIT",
+                "fingerprint": "1780411958692"
+            }
+        ],
+        "builtInVariable": [
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "type": "PAGE_URL",
+                "name": "Page URL"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "type": "PAGE_HOSTNAME",
+                "name": "Page Hostname"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "type": "PAGE_PATH",
+                "name": "Page Path"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "type": "REFERRER",
+                "name": "Referrer"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "type": "EVENT",
+                "name": "Event"
+            }
+        ],
+        "fingerprint": "1780412853267",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/3?apiLink=version"
+    }
+}

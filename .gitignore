@@ -43,3 +43,6 @@ worker-configuration.d.ts
 !.vscode/extensions.json
 .idea
 design/
+
+# local Claude Code config + worktrees
+.claude/
