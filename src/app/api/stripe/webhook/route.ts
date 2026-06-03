@@ -99,7 +99,7 @@ export async function POST(req: Request) {
           saveShipment: async (orderId, d) => {
             // Guard against a concurrent delivery overwriting an existing
             // shipment id (defence-in-depth on top of the load-time check).
-            await supabase
+            const { error } = await supabase
               .from('orders')
               .update({
                 inpost_shipment_id: d.shipmentId,
@@ -108,6 +108,9 @@ export async function POST(req: Request) {
               })
               .eq('id', orderId)
               .is('inpost_shipment_id', null);
+            // Don't swallow: if ShipX created the shipment but we failed to record
+            // its id, surface the error so it's logged/retried (the outer catch).
+            if (error) throw error;
           },
           inpost: getInPost(),
         });

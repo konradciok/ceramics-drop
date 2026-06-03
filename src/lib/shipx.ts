@@ -199,27 +199,39 @@ export function buildShipmentPayload(order: OrderForShipment): ShipmentPayload {
   const m = method as 'paczkomat' | 'kurier';
 
   // Defense-in-depth: validateDelivery guarantees these at checkout, but never
-  // build a half-empty ShipX payload (which would create a broken shipment).
-  if (
-    !order.receiver_first_name ||
-    !order.receiver_last_name ||
-    !order.email ||
-    !order.receiver_phone
-  ) {
+  // build a half-empty ShipX payload. Use str() so whitespace-only persisted
+  // values (e.g. '   ') and partial addresses are rejected too, not just nulls.
+  const firstName = str(order.receiver_first_name);
+  const lastName = str(order.receiver_last_name);
+  const email = str(order.email);
+  const phone = str(order.receiver_phone);
+  if (!firstName || !lastName || !email || !phone) {
     throw new Error(`buildShipmentPayload: incomplete receiver for order ${order.id}`);
   }
-  if (m === 'paczkomat' && !order.inpost_target_point) {
+
+  const targetPoint = m === 'paczkomat' ? str(order.inpost_target_point) : null;
+  if (m === 'paczkomat' && !targetPoint) {
     throw new Error(`buildShipmentPayload: missing target_point for order ${order.id}`);
   }
-  if (m === 'kurier' && !order.shipping_address) {
-    throw new Error(`buildShipmentPayload: missing address for order ${order.id}`);
+
+  let address: DeliveryAddress | undefined;
+  if (m === 'kurier') {
+    const a = order.shipping_address;
+    const street = str(a?.street);
+    const building_number = str(a?.building_number);
+    const city = str(a?.city);
+    const post_code = str(a?.post_code);
+    if (!street || !building_number || !city || !post_code) {
+      throw new Error(`buildShipmentPayload: missing address for order ${order.id}`);
+    }
+    address = { street, building_number, city, post_code, country_code: str(a?.country_code) ?? 'PL' };
   }
 
   const receiver: DeliveryContact & { address?: DeliveryAddress } = {
-    first_name: order.receiver_first_name,
-    last_name: order.receiver_last_name,
-    email: order.email,
-    phone: order.receiver_phone,
+    first_name: firstName,
+    last_name: lastName,
+    email,
+    phone,
   };
 
   if (m === 'paczkomat') {
@@ -228,7 +240,7 @@ export function buildShipmentPayload(order: OrderForShipment): ShipmentPayload {
       parcels: [DEFAULT_LOCKER_PARCEL],
       custom_attributes: {
         sending_method: SENDING_METHOD.paczkomat,
-        target_point: order.inpost_target_point ?? '',
+        target_point: targetPoint as string,
       },
       service: SHIPX_SERVICE.paczkomat,
       reference: order.id,
@@ -236,7 +248,7 @@ export function buildShipmentPayload(order: OrderForShipment): ShipmentPayload {
   }
 
   // kurier
-  if (order.shipping_address) receiver.address = order.shipping_address;
+  receiver.address = address;
   return {
     receiver,
     parcels: [DEFAULT_COURIER_PARCEL],

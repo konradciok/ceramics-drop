@@ -132,6 +132,11 @@ describe('buildShipmentPayload', () => {
   it('throws when receiver contact is incomplete', () => {
     expect(() => buildShipmentPayload({ ...baseOrder, receiver_phone: null })).toThrow(/receiver/);
   });
+
+  it('rejects whitespace-only persisted values', () => {
+    expect(() => buildShipmentPayload({ ...baseOrder, inpost_target_point: '   ' })).toThrow(/target_point/);
+    expect(() => buildShipmentPayload({ ...baseOrder, receiver_first_name: '   ' })).toThrow(/receiver/);
+  });
 });
 
 describe('parseShipxWebhook', () => {
