@@ -4,6 +4,7 @@ import {
   getProductsByCategory,
   getProductById,
   resolveCartProducts,
+  resolveKnownProducts,
   CATEGORY_ORDER,
 } from './products';
 
@@ -61,5 +62,15 @@ describe('resolveCartProducts', () => {
   it('includes previously-sold ids when sold flag is false (DB is source of truth)', () => {
     // All products now have sold: false; resolveCartProducts only filters unknown ids and sold items.
     expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01', 'k04']);
+  });
+});
+
+describe('resolveKnownProducts', () => {
+  it('keeps sold pieces when resolving ids for post-purchase analytics', () => {
+    expect(resolveKnownProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01', 'k04']);
+  });
+
+  it('still drops unknown ids', () => {
+    expect(resolveKnownProducts(['k01', 'nope']).map((p) => p.id)).toEqual(['k01']);
   });
 });

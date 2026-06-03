@@ -111,13 +111,18 @@ export function getProductById(id: string): Product | undefined {
   return PRODUCT_BY_ID.get(id);
 }
 
+/** Resolve known products by id without filtering sold pieces. */
+export function resolveKnownProducts(ids: string[]): Product[] {
+  return ids
+    .map((id) => PRODUCT_BY_ID.get(id))
+    .filter((p): p is Product => p !== undefined);
+}
+
 /**
  * Resolves a list of cart ids to the products that may actually be bought —
  * dropping unknown ids and sold (one-of-a-kind, already-gone) pieces. Used by
  * the cart surfaces so stale localStorage can never reintroduce sold inventory.
  */
 export function resolveCartProducts(ids: string[]): Product[] {
-  return ids
-    .map((id) => PRODUCT_BY_ID.get(id))
-    .filter((p): p is Product => p !== undefined && !p.sold);
+  return resolveKnownProducts(ids).filter((p) => !p.sold);
 }
