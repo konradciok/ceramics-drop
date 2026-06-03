@@ -17,11 +17,13 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     .from('order_items').select('*').eq('order_id', order.id);
   if (!items || items.length === 0) return;
 
+  // Idempotency keys keyed by order id collapse duplicate Stripe objects when concurrent webhook
+  // retries both pass the invoiced_at guard above (the guard alone is a TOCTOU window).
   const customer = await stripe.customers.create({
     email: order.email,
     shipping: order.shipping_address ?? undefined,
     preferred_locales: ['pl'],
-  });
+  }, { idempotencyKey: `cust_${order.id}` });
 
   for (const it of items) {
     const product = getProductById(it.product_id);
@@ -34,12 +36,12 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       amount: it.unit_price,
       currency: 'pln',
       description: label,
-    });
+    }, { idempotencyKey: `ii_${order.id}_${it.product_id}` });
   }
   if (order.shipping > 0) {
     await stripe.invoiceItems.create({
       customer: customer.id, amount: order.shipping, currency: 'pln', description: 'Wysyłka kurierem',
-    });
+    }, { idempotencyKey: `ii_${order.id}_shipping` });
   }
 
   const invoice = await stripe.invoices.create({
@@ -47,14 +49,18 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     collection_method: 'charge_automatically',
     auto_advance: false,
     metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
-  });
+  }, { idempotencyKey: `inv_${order.id}` });
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
   // Goods already paid via the PaymentIntent → record paid without charging again.
   await stripe.invoices.pay(finalized.id as string, { paid_out_of_band: true } as Stripe.InvoicePayParams);
   await stripe.invoices.sendInvoice(finalized.id as string);
-  // Record that this order was invoiced so webhook retries skip re-invoicing.
-  await supabase
+  // Record that this order was invoiced so webhook retries skip re-invoicing. A failed write must
+  // surface (the caller logs it) rather than silently break the idempotency contract.
+  const { error: recordErr } = await supabase
     .from('orders')
     .update({ invoiced_at: new Date().toISOString(), invoice_id: finalized.id as string })
     .eq('id', order.id);
+  if (recordErr) {
+    throw new Error(`failed to record invoicing for order ${order.id}: ${recordErr.message}`);
+  }
 }
