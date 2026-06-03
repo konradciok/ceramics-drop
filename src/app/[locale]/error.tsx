@@ -1,11 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+
 type Props = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
-export default function Error({ reset }: Props) {
+export default function Error({ error, reset }: Props) {
+  const t = useTranslations('error');
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[error boundary]', error.digest ?? '', error);
+    }
+  }, [error]);
+
   return (
     <main className="error-page">
       <div className="error-page-inner">
@@ -15,10 +26,10 @@ export default function Error({ reset }: Props) {
             <path d="M12 8v4M12 16h.01" />
           </svg>
         </div>
-        <h1>Coś poszło nie tak</h1>
-        <p>Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.</p>
+        <h1>{t('heading')}</h1>
+        <p>{t('body')}</p>
         <button className="btn btn-primary" onClick={reset}>
-          Spróbuj ponownie
+          {t('retry')}
         </button>
       </div>
     </main>

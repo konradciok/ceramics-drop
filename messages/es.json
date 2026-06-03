@@ -33,7 +33,11 @@
     "zoom": "Ver",
     "close": "Cerrar",
     "prev": "Anterior",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "menuLabel": "Menú de navegación",
+    "skipToContent": "Saltar al contenido"
   },
   "footer": {
     "tagline": "Hecho despacio, pintado a mano.",
@@ -521,5 +525,19 @@
       "Limones azules con puntos blancos, desde arriba. El verano en un cuenco.",
       "Limones azules alrededor de la panza. Un ritmo fresco de limón."
     ]
+  },
+  "error": {
+    "heading": "Algo salió mal",
+    "body": "Ocurrió un error inesperado. Intenta recargar la página.",
+    "retry": "Intentar de nuevo"
+  },
+  "notFound": {
+    "heading": "Página no encontrada",
+    "body": "Esta página no existe o ha sido movida.",
+    "home": "Inicio",
+    "shop": "Ir a la tienda"
+  },
+  "meta": {
+    "description": "Cerámica funcional pintada a mano — tazas, jarrones, cuencos y platos. Colección de junio, 88 piezas únicas."
   }
 }

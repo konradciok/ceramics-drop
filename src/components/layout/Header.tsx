@@ -19,6 +19,12 @@ export async function Header() {
     { href: '/kontakt', label: t('nav.kontakt') },
   ];
 
+  const mobileAria = {
+    open: t('aria.openMenu'),
+    close: t('aria.closeMenu'),
+    nav: t('aria.menuLabel'),
+  };
+
   return (
     <>
       <Announce>{t('announce')}</Announce>
@@ -30,7 +36,7 @@ export async function Header() {
             <Link className="nav-link" href="/kubki">{t('nav.sklep')}</Link>
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
           </nav>
-          <MobileMenu links={mobileLinks} />
+          <MobileMenu links={mobileLinks} aria={mobileAria} />
 
           <Link className="brand" href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}

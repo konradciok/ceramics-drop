@@ -33,7 +33,11 @@
     "zoom": "Zobacz",
     "close": "Zamknij",
     "prev": "Poprzedni",
-    "next": "Następny"
+    "next": "Następny",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu",
+    "menuLabel": "Menu nawigacyjne",
+    "skipToContent": "Przejdź do treści"
   },
   "footer": {
     "tagline": "Robione powoli, malowane ręką.",
@@ -521,5 +525,19 @@
       "Błękitne cytryny w białe kropki, z góry. Lato w miseczce.",
       "Błękitne cytryny dookoła brzuśca. Chłodny, cytrynowy rytm."
     ]
+  },
+  "error": {
+    "heading": "Coś poszło nie tak",
+    "body": "Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.",
+    "retry": "Spróbuj ponownie"
+  },
+  "notFound": {
+    "heading": "Nie znaleziono strony",
+    "body": "Ta strona nie istnieje lub została przeniesiona.",
+    "home": "Strona główna",
+    "shop": "Przejdź do sklepu"
+  },
+  "meta": {
+    "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna."
   }
 }

@@ -8,21 +8,42 @@ type NavLink = { href: string; label: string };
 
 type Props = {
   links: NavLink[];
+  aria: { open: string; close: string; nav: string };
 };
 
-export function MobileMenu({ links }: Props) {
+export function MobileMenu({ links, aria }: Props) {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-    document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
-    // Focus first link in drawer
-    const firstLink = drawerRef.current?.querySelector<HTMLElement>('a, button:not(.mob-close)');
-    firstLink?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key !== 'Tab' || !drawerRef.current) return;
+      // Focus trap
+      const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const els = Array.from(focusable);
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    // Focus first interactive element in the drawer
+    requestAnimationFrame(() => {
+      drawerRef.current?.querySelector<HTMLElement>('button, a')?.focus();
+    });
+
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
@@ -31,7 +52,7 @@ export function MobileMenu({ links }: Props) {
 
   function close() {
     setOpen(false);
-    triggerRef.current?.focus();
+    requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   return (
@@ -39,7 +60,7 @@ export function MobileMenu({ links }: Props) {
       <button
         ref={triggerRef}
         className="mob-trigger icon-btn"
-        aria-label="Open navigation menu"
+        aria-label={aria.open}
         aria-expanded={open}
         aria-controls="mob-drawer"
         onClick={() => setOpen(true)}
@@ -49,29 +70,28 @@ export function MobileMenu({ links }: Props) {
         <span className="mob-bar" />
       </button>
 
-      {/* Overlay */}
+      {/* Overlay: aria-hidden only when closed so it's not a phantom element for AT */}
       <div
         className={`mob-overlay${open ? ' open' : ''}`}
-        aria-hidden="true"
+        aria-hidden={!open}
         onClick={close}
       />
 
-      {/* Drawer */}
+      {/* Drawer: inert when closed keeps focus out; focus trap above keeps focus in when open */}
       <div
         id="mob-drawer"
         ref={drawerRef}
         className={`mob-drawer${open ? ' open' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation menu"
-        // inert when closed prevents focus from entering (React 19 boolean attribute)
+        aria-label={aria.nav}
         inert={!open}
       >
         <div className="mob-drawer-head">
           <button
             className="mob-close icon-btn"
             onClick={close}
-            aria-label="Close navigation menu"
+            aria-label={aria.close}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width={19} height={19}>
               <path d="M6 6l12 12M18 6L6 18" />
@@ -79,7 +99,7 @@ export function MobileMenu({ links }: Props) {
           </button>
         </div>
 
-        <nav className="mob-nav" aria-label="Main navigation">
+        <nav className="mob-nav" aria-label={aria.nav}>
           {links.map((l) => (
             <Link
               key={l.href}
