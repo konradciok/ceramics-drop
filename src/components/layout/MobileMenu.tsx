@@ -63,7 +63,7 @@ export function MobileMenu({ links, aria }: Props) {
         aria-label={open ? aria.close : aria.open}
         aria-expanded={open}
         aria-controls="mob-drawer"
-        onClick={() => setOpen(true)}
+        onClick={() => { if (open) close(); else setOpen(true); }}
       >
         <span className="mob-bar" />
         <span className="mob-bar" />
