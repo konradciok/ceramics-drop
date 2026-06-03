@@ -74,7 +74,17 @@ export async function POST(req: Request) {
           .eq('order_id', rows[0].id);
       }
     },
-    createInvoice: (pi) => createOrderInvoice(pi),
+    createInvoice: async (pi) => {
+      // Invoicing must never fail the webhook: the sale is already recorded
+      // (markPaid committed). A throw here would 500 the webhook, and Stripe's
+      // retry would no-op markPaid (idempotent) — permanently losing the
+      // invoice/receipt. Swallow + log so the payment is acknowledged.
+      try {
+        await createOrderInvoice(pi);
+      } catch (err) {
+        console.error('createOrderInvoice failed for', pi, err);
+      }
+    },
     revalidate: (tag) => revalidateTag(tag, 'max'),
   });
 

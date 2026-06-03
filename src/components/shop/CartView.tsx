@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
@@ -73,6 +73,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export function CartView() {
   const t = useTranslations();
+  const locale = useLocale();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
 
@@ -88,6 +89,7 @@ export function CartView() {
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Persist ship choice to sessionStorage whenever it changes
   useEffect(() => {
@@ -122,29 +124,46 @@ export function CartView() {
   }
 
   async function handleCheckout() {
-    if (products.length === 0) return;
+    // Guard against a double-click: a second in-flight /api/checkout would
+    // 409 against this buyer's own fresh reservation and silently strip the
+    // items from their cart.
+    if (products.length === 0 || submitting) return;
+    setSubmitting(true);
     setCheckoutError(null);
     pushDataLayer(
       buildBeginCheckoutEvent(products, { shippingCost: shipCost, shippingMethod: ship }),
     );
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ids: products.map((p) => p.id), shipping_method: ship }),
-    });
-    if (res.status === 409) {
-      const { sold } = (await res.json()) as { sold: string[] };
-      sold.forEach((id) => remove(id));
-      setCheckoutError(t('cart.soldOut'));
-      return;
-    }
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: products.map((p) => p.id), shipping_method: ship }),
+      });
+      if (res.status === 409) {
+        const { sold } = (await res.json()) as { sold: string[] };
+        sold.forEach((id) => remove(id));
+        setCheckoutError(t('cart.soldOut'));
+        return;
+      }
+      if (!res.ok) {
+        setCheckoutError(t('cart.payError'));
+        return;
+      }
+      const { client_secret } = (await res.json()) as { client_secret: string };
+      setClientSecret(client_secret);
+    } catch {
       setCheckoutError(t('cart.payError'));
-      return;
+    } finally {
+      setSubmitting(false);
     }
-    const { client_secret } = (await res.json()) as { client_secret: string };
-    setClientSecret(client_secret);
   }
+
+  // Stripe redirects back to the locale-prefixed return page so the buyer's
+  // language survives the round-trip. PL is the default locale (no prefix).
+  const returnUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
+      : '/koszyk/return';
 
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
@@ -244,10 +263,10 @@ export function CartView() {
         </div>
         {clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, locale: 'pl' }}>
-            <CheckoutForm returnUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/koszyk/return`} />
+            <CheckoutForm returnUrl={returnUrl} />
           </Elements>
         ) : (
-          <button className="btn btn-primary" id="checkout" onClick={handleCheckout}>
+          <button className="btn btn-primary" id="checkout" onClick={handleCheckout} disabled={submitting}>
             {t('cart.checkout')} <Icon name="arrow" />
           </button>
         )}
