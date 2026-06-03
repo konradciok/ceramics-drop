@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
+import { createOrderShipment } from '@/lib/shipment';
+import type { OrderForShipment } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,26 +30,12 @@ export async function POST(req: Request) {
 
   await handleStripeEvent(event, {
     markPaid: async (pi) => {
-      // Pull email + shipping that the Payment/Address/LinkAuthentication Elements attached.
-      let email: string | null = null;
-      let shippingAddress: Stripe.PaymentIntent['shipping'] | null = null;
-      try {
-        const full = await stripe.paymentIntents.retrieve(pi, { expand: ['latest_charge'] });
-        const charge = full.latest_charge as Stripe.Charge | null;
-        email = charge?.billing_details?.email ?? full.receipt_email ?? null;
-        shippingAddress = full.shipping ?? null;
-      } catch {
-        // If retrieval fails, proceed without email/shipping (invoice will be skipped).
-      }
-      // Only the first 'pending'→'paid' transition returns a row (idempotency).
+      // Email + delivery details were captured at checkout and already persisted,
+      // so we only flip the status here. Only the first 'pending'→'paid'
+      // transition returns a row (idempotency).
       const { data } = await supabase
         .from('orders')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          email,
-          shipping_address: shippingAddress,
-        })
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
         .select('id') as { data: Array<{ id: string }> | null };
@@ -83,6 +71,38 @@ export async function POST(req: Request) {
         await createOrderInvoice(pi);
       } catch (err) {
         console.error('createOrderInvoice failed for', pi, err);
+      }
+    },
+    createShipment: async (pi) => {
+      // Like invoicing, shipment creation must never fail the webhook — the sale
+      // is committed. On a throw the label simply isn't created yet; swallow + log.
+      try {
+        await createOrderShipment(pi, {
+          loadOrder: async (paymentIntentId) => {
+            const { data } = await supabase
+              .from('orders')
+              .select(
+                'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
+                  'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id',
+              )
+              .eq('payment_intent_id', paymentIntentId)
+              .single();
+            return (data as OrderForShipment | null) ?? null;
+          },
+          saveShipment: async (orderId, d) => {
+            await supabase
+              .from('orders')
+              .update({
+                inpost_shipment_id: d.shipmentId,
+                inpost_tracking_number: d.trackingNumber,
+                delivery_status: d.status,
+              })
+              .eq('id', orderId);
+          },
+          inpost: getInPost(),
+        });
+      } catch (err) {
+        console.error('createOrderShipment failed for', pi, err);
       }
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),

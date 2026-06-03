@@ -1,0 +1,230 @@
+/**
+ * InPost ShipX domain logic — pure, no I/O.
+ *
+ * Splits into: (1) `validateDelivery`, which turns the raw checkout body into a
+ * typed delivery selection (mirrors `validateCart`'s discriminated-union style),
+ * and (2) `buildShipmentPayload`, which turns a paid order into the ShipX
+ * create-shipment request body.
+ */
+import type { DeliveryMethod } from './pricing';
+
+/** Receiver contact collected at checkout. `phone` is required for InPost shipments. */
+export type DeliveryContact = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+};
+
+/** Courier address in ShipX shape (also what we persist in `orders.shipping_address`). */
+export type DeliveryAddress = {
+  street: string;
+  building_number: string;
+  city: string;
+  post_code: string;
+  country_code: string;
+};
+
+export type DeliverySelection = {
+  method: DeliveryMethod;
+  contact: DeliveryContact;
+  /** Paczkomat code (e.g. 'KRA010') — paczkomat only. */
+  target_point?: string;
+  /** Courier address — kurier only. */
+  address?: DeliveryAddress;
+};
+
+export type ValidateDeliveryResult =
+  | { ok: true; delivery: DeliverySelection }
+  | {
+      ok: false;
+      reason:
+        | 'invalid_method'
+        | 'invalid_contact'
+        | 'missing_target_point'
+        | 'invalid_address';
+    };
+
+const METHODS: readonly DeliveryMethod[] = ['paczkomat', 'kurier', 'odbior'];
+
+function str(v: unknown): string | null {
+  return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
+}
+
+/** Resolve the raw checkout delivery payload to a typed, validated selection. */
+export function validateDelivery(raw: unknown): ValidateDeliveryResult {
+  if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'invalid_method' };
+  const body = raw as Record<string, unknown>;
+
+  const method = body.delivery_method;
+  if (typeof method !== 'string' || !METHODS.includes(method as DeliveryMethod)) {
+    return { ok: false, reason: 'invalid_method' };
+  }
+  const m = method as DeliveryMethod;
+
+  // Contact: name + email always required; phone required for InPost shipments.
+  const c = (body.contact ?? {}) as Record<string, unknown>;
+  const first_name = str(c.first_name);
+  const last_name = str(c.last_name);
+  const email = str(c.email);
+  const phone = str(c.phone);
+  if (!first_name || !last_name || !email) return { ok: false, reason: 'invalid_contact' };
+  if (m !== 'odbior' && !phone) return { ok: false, reason: 'invalid_contact' };
+
+  const contact: DeliveryContact = { first_name, last_name, email, phone: phone ?? '' };
+
+  if (m === 'paczkomat') {
+    const target_point = str(body.target_point);
+    if (!target_point) return { ok: false, reason: 'missing_target_point' };
+    return { ok: true, delivery: { method: m, contact, target_point } };
+  }
+
+  if (m === 'kurier') {
+    const a = (body.address ?? {}) as Record<string, unknown>;
+    const street = str(a.street);
+    const building_number = str(a.building_number);
+    const city = str(a.city);
+    const post_code = str(a.post_code);
+    if (!street || !building_number || !city || !post_code) {
+      return { ok: false, reason: 'invalid_address' };
+    }
+    const address: DeliveryAddress = {
+      street,
+      building_number,
+      city,
+      post_code,
+      country_code: str(a.country_code) ?? 'PL',
+    };
+    return { ok: true, delivery: { method: m, contact, address } };
+  }
+
+  // odbior — no shipment, no address/locker.
+  return { ok: true, delivery: { method: m, contact } };
+}
+
+/** Whether a delivery method results in an InPost shipment (odbior does not). */
+export function needsShipment(method: DeliveryMethod): boolean {
+  return method === 'paczkomat' || method === 'kurier';
+}
+
+/** ShipX service identifiers per method. */
+export const SHIPX_SERVICE: Record<'paczkomat' | 'kurier', string> = {
+  paczkomat: 'inpost_locker_standard',
+  kurier: 'inpost_courier_standard',
+};
+
+/** How the sender hands the parcel to InPost (configurable per studio logistics). */
+export const SENDING_METHOD: Record<'paczkomat' | 'kurier', string> = {
+  paczkomat: 'parcel_locker', // studio drops the parcel at a Paczkomat
+  kurier: 'dispatch_order', //   courier collects from the studio
+};
+
+/**
+ * Single default parcel size for every shipment (no per-product sizing).
+ * Lockers take a template; courier takes the equivalent dimensions + weight.
+ */
+export const DEFAULT_LOCKER_PARCEL = { template: 'medium' };
+export const DEFAULT_COURIER_PARCEL = {
+  dimensions: { length: '380', width: '640', height: '190', unit: 'mm' },
+  weight: { amount: '2', unit: 'kg' },
+};
+
+/** ShipX status at which the printable label becomes available. */
+export const LABEL_READY_STATUS = 'confirmed';
+
+export type ShipxStatusEvent = {
+  shipmentId: string;
+  status: string;
+  trackingNumber: string | null;
+};
+
+/**
+ * Parse an inbound ShipX status webhook. The payload may carry the fields at the
+ * top level or nested under `payload` — read defensively and return null if the
+ * essentials (shipment id + status) are missing.
+ */
+export function parseShipxWebhook(raw: unknown): ShipxStatusEvent | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const root = raw as Record<string, unknown>;
+  const nested =
+    typeof root.payload === 'object' && root.payload !== null
+      ? (root.payload as Record<string, unknown>)
+      : root;
+
+  const idRaw = nested.shipment_id ?? nested.id ?? root.shipment_id;
+  if (idRaw === undefined || idRaw === null || idRaw === '') return null;
+
+  const status = nested.status ?? root.status;
+  if (typeof status !== 'string' || status.length === 0) return null;
+
+  const tracking = nested.tracking_number ?? root.tracking_number ?? null;
+  return {
+    shipmentId: String(idRaw),
+    status,
+    trackingNumber: typeof tracking === 'string' && tracking.length > 0 ? tracking : null,
+  };
+}
+
+/** Order fields `buildShipmentPayload` needs (a subset of the `orders` row). */
+export type OrderForShipment = {
+  id: string;
+  delivery_method: DeliveryMethod;
+  email: string | null;
+  receiver_first_name: string | null;
+  receiver_last_name: string | null;
+  receiver_phone: string | null;
+  inpost_target_point: string | null;
+  shipping_address: DeliveryAddress | null;
+  /** Set once a shipment exists — used to keep creation idempotent. */
+  inpost_shipment_id: string | null;
+};
+
+export type ShipmentPayload = {
+  receiver: DeliveryContact & { address?: DeliveryAddress };
+  parcels: unknown[];
+  custom_attributes: Record<string, string>;
+  service: string;
+  reference: string;
+};
+
+/**
+ * Build the ShipX `POST /v1/organizations/{id}/shipments` body for a paid order.
+ * Throws for `odbior` (no shipment) — callers gate on `needsShipment` first.
+ */
+export function buildShipmentPayload(order: OrderForShipment): ShipmentPayload {
+  const method = order.delivery_method;
+  if (!needsShipment(method)) {
+    throw new Error(`buildShipmentPayload called for non-shipment method: ${method}`);
+  }
+  const m = method as 'paczkomat' | 'kurier';
+
+  const receiver: DeliveryContact & { address?: DeliveryAddress } = {
+    first_name: order.receiver_first_name ?? '',
+    last_name: order.receiver_last_name ?? '',
+    email: order.email ?? '',
+    phone: order.receiver_phone ?? '',
+  };
+
+  if (m === 'paczkomat') {
+    return {
+      receiver,
+      parcels: [DEFAULT_LOCKER_PARCEL],
+      custom_attributes: {
+        sending_method: SENDING_METHOD.paczkomat,
+        target_point: order.inpost_target_point ?? '',
+      },
+      service: SHIPX_SERVICE.paczkomat,
+      reference: order.id,
+    };
+  }
+
+  // kurier
+  if (order.shipping_address) receiver.address = order.shipping_address;
+  return {
+    receiver,
+    parcels: [DEFAULT_COURIER_PARCEL],
+    custom_attributes: { sending_method: SENDING_METHOD.kurier },
+    service: SHIPX_SERVICE.kurier,
+    reference: order.id,
+  };
+}

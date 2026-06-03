@@ -20,16 +20,20 @@ import {
   pushCheckoutStarted,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
-import { SHIPPING_PLN } from '@/lib/pricing';
+import { SHIPPING_PLN, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
+import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
 /**
- * Cart / checkout screen.
- * Reference: design/assets/shop.js renderCart (714–788), shipOpt (783–788),
- * checkout (790–811).
+ * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
+ * Paczkomat (Geowidget), a courier address, or free studio pickup, and the
+ * receiver contact is collected here — before payment — so the shipment can be
+ * created automatically once the order is paid.
  */
 
-type ShipId = 'kurier' | 'odbior';
+type ShipId = DeliveryMethod;
+
+const SHIP_IDS: ShipId[] = ['paczkomat', 'kurier', 'odbior'];
 
 interface ShipOptionProps {
   id: ShipId;
@@ -75,6 +79,8 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function CartView() {
   const t = useTranslations();
   const locale = useLocale();
@@ -85,10 +91,15 @@ export function CartView() {
   const [ship, setShip] = useState<ShipId>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('acc_ship');
-      if (saved === 'kurier' || saved === 'odbior') return saved;
+      if (saved && (SHIP_IDS as string[]).includes(saved)) return saved as ShipId;
     }
-    return 'kurier';
+    return 'paczkomat';
   });
+
+  // Receiver contact (all methods) + courier address + selected Paczkomat.
+  const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
+  const [locker, setLocker] = useState<SelectedPoint | null>(null);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -113,7 +124,7 @@ export function CartView() {
   const products = resolveCartProducts(ids);
   const n = products.length;
   const subtotal = products.reduce((s, p) => s + p.price, 0);
-  const shipCost = ship === 'odbior' ? 0 : SHIPPING_PLN;
+  const shipCost = SHIPPING_PLN[ship];
   const total = subtotal + shipCost;
   const productKey = products.map((p) => p.id).join('|');
 
@@ -127,11 +138,50 @@ export function CartView() {
     setShip(id);
   }
 
+  // Client-side gate: the InPost shipment needs the right fields per method.
+  const contactReady =
+    contact.firstName.trim() !== '' &&
+    contact.lastName.trim() !== '' &&
+    EMAIL_RE.test(contact.email.trim());
+  const phoneReady = ship === 'odbior' || contact.phone.trim() !== '';
+  const lockerReady = ship !== 'paczkomat' || locker !== null;
+  const addressReady =
+    ship !== 'kurier' ||
+    (address.street.trim() !== '' &&
+      address.building.trim() !== '' &&
+      address.city.trim() !== '' &&
+      address.postCode.trim() !== '');
+  const deliveryReady = contactReady && phoneReady && lockerReady && addressReady;
+
+  function deliveryBody() {
+    return {
+      delivery_method: ship,
+      contact: {
+        first_name: contact.firstName.trim(),
+        last_name: contact.lastName.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+      },
+      ...(ship === 'paczkomat' && locker ? { target_point: locker.name } : {}),
+      ...(ship === 'kurier'
+        ? {
+            address: {
+              street: address.street.trim(),
+              building_number: address.building.trim(),
+              city: address.city.trim(),
+              post_code: address.postCode.trim(),
+              country_code: 'PL',
+            },
+          }
+        : {}),
+    };
+  }
+
   async function handleCheckout() {
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (products.length === 0 || submitting) return;
+    if (products.length === 0 || submitting || !deliveryReady) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
@@ -140,7 +190,7 @@ export function CartView() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: products.map((p) => p.id), shipping_method: ship }),
+        body: JSON.stringify({ ids: products.map((p) => p.id), ...deliveryBody() }),
       });
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
@@ -194,6 +244,8 @@ export function CartView() {
     );
   }
 
+  const priceLabel = (id: ShipId) => (SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free'));
+
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (
     <div className="cart-wrap">
@@ -244,12 +296,20 @@ export function CartView() {
         </div>
         <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
           <ShipOption
+            id="paczkomat"
+            active={ship === 'paczkomat'}
+            onPick={handlePickShip}
+            title={t('ship.paczkomatT')}
+            desc={t('ship.paczkomatD')}
+            price={priceLabel('paczkomat')}
+          />
+          <ShipOption
             id="kurier"
             active={ship === 'kurier'}
             onPick={handlePickShip}
             title={t('ship.courierT')}
             desc={t('ship.courierD')}
-            price={t('ship.courierPrice')}
+            price={priceLabel('kurier')}
           />
           <ShipOption
             id="odbior"
@@ -257,9 +317,104 @@ export function CartView() {
             onPick={handlePickShip}
             title={t('ship.pickupT')}
             desc={t('ship.pickupD')}
-            price={t('ship.pickupPrice')}
+            price={priceLabel('odbior')}
           />
         </div>
+
+        {!clientSecret && (
+          <div className="delivery-fields">
+            <div className="field-row">
+              <label className="field">
+                <span>{t('delivery.firstName')}</span>
+                <input
+                  value={contact.firstName}
+                  onChange={(e) => setContact((c) => ({ ...c, firstName: e.target.value }))}
+                  autoComplete="given-name"
+                />
+              </label>
+              <label className="field">
+                <span>{t('delivery.lastName')}</span>
+                <input
+                  value={contact.lastName}
+                  onChange={(e) => setContact((c) => ({ ...c, lastName: e.target.value }))}
+                  autoComplete="family-name"
+                />
+              </label>
+            </div>
+            <label className="field">
+              <span>{t('delivery.email')}</span>
+              <input
+                type="email"
+                value={contact.email}
+                onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+                autoComplete="email"
+              />
+            </label>
+            {ship !== 'odbior' && (
+              <label className="field">
+                <span>{t('delivery.phone')}</span>
+                <input
+                  type="tel"
+                  value={contact.phone}
+                  onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+                  autoComplete="tel"
+                />
+              </label>
+            )}
+
+            {ship === 'paczkomat' && (
+              <div className="locker-pick">
+                {locker && (
+                  <p className="locker-chosen">
+                    {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
+                  </p>
+                )}
+                <GeowidgetPicker onSelect={setLocker} />
+              </div>
+            )}
+
+            {ship === 'kurier' && (
+              <>
+                <div className="field-row">
+                  <label className="field" style={{ flex: 2 }}>
+                    <span>{t('delivery.street')}</span>
+                    <input
+                      value={address.street}
+                      onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))}
+                      autoComplete="address-line1"
+                    />
+                  </label>
+                  <label className="field" style={{ flex: 1 }}>
+                    <span>{t('delivery.building')}</span>
+                    <input
+                      value={address.building}
+                      onChange={(e) => setAddress((a) => ({ ...a, building: e.target.value }))}
+                    />
+                  </label>
+                </div>
+                <div className="field-row">
+                  <label className="field" style={{ flex: 1 }}>
+                    <span>{t('delivery.postCode')}</span>
+                    <input
+                      value={address.postCode}
+                      onChange={(e) => setAddress((a) => ({ ...a, postCode: e.target.value }))}
+                      autoComplete="postal-code"
+                    />
+                  </label>
+                  <label className="field" style={{ flex: 2 }}>
+                    <span>{t('delivery.city')}</span>
+                    <input
+                      value={address.city}
+                      onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
+                      autoComplete="address-level2"
+                    />
+                  </label>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
           <span className="v">{shipCost > 0 ? pln(shipCost) : t('cart.free')}</span>
@@ -273,7 +428,12 @@ export function CartView() {
             <CheckoutForm returnUrl={returnUrl} />
           </Elements>
         ) : (
-          <button className="btn btn-primary" id="checkout" onClick={handleCheckout} disabled={submitting}>
+          <button
+            className="btn btn-primary"
+            id="checkout"
+            onClick={handleCheckout}
+            disabled={submitting || !deliveryReady}
+          >
             {t('cart.checkout')} <Icon name="arrow" />
           </button>
         )}

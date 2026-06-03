@@ -17,9 +17,33 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     .from('order_items').select('*').eq('order_id', order.id);
   if (!items || items.length === 0) return;
 
+  // shipping_address is our ShipX-shaped courier address (or null for Paczkomat /
+  // pickup). Map it to Stripe's customer.shipping shape.
+  const addr = order.shipping_address as {
+    street?: string;
+    building_number?: string;
+    city?: string;
+    post_code?: string;
+    country_code?: string;
+  } | null;
+  const customerShipping = addr
+    ? {
+        name:
+          `${order.receiver_first_name ?? ''} ${order.receiver_last_name ?? ''}`.trim() ||
+          (order.email as string),
+        phone: order.receiver_phone ?? undefined,
+        address: {
+          line1: `${addr.street ?? ''} ${addr.building_number ?? ''}`.trim(),
+          city: addr.city,
+          postal_code: addr.post_code,
+          country: addr.country_code ?? 'PL',
+        },
+      }
+    : undefined;
+
   const customer = await stripe.customers.create({
     email: order.email,
-    shipping: order.shipping_address ?? undefined,
+    shipping: customerShipping,
     preferred_locales: ['pl'],
   });
 
@@ -37,8 +61,12 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     });
   }
   if (order.shipping > 0) {
+    const shippingLabel =
+      order.delivery_method === 'paczkomat'
+        ? 'Wysyłka — Paczkomat InPost'
+        : 'Wysyłka — Kurier InPost';
     await stripe.invoiceItems.create({
-      customer: customer.id, amount: order.shipping, currency: 'pln', description: 'Wysyłka kurierem',
+      customer: customer.id, amount: order.shipping, currency: 'pln', description: shippingLabel,
     });
   }
 

@@ -110,12 +110,25 @@
     "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
-    "courierT": "Wysyłka kurierem",
-    "courierD": "Pakowane ręcznie, 3–5 dni roboczych.",
+    "paczkomatT": "Paczkomat InPost",
+    "paczkomatD": "Odbiór z wybranego paczkomatu, 1–2 dni robocze.",
+    "courierT": "Kurier InPost",
+    "courierD": "Pakowane ręcznie, 1–2 dni robocze.",
     "courierPrice": "75 zł",
     "pickupT": "Odbiór osobisty",
     "pickupD": "W pracowni, po umówieniu terminu.",
     "pickupPrice": "Gratis"
+  },
+  "delivery": {
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "street": "Ulica",
+    "building": "Nr",
+    "postCode": "Kod pocztowy",
+    "city": "Miasto",
+    "lockerChosen": "Wybrany paczkomat:"
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

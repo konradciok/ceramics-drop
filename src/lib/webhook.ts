@@ -7,6 +7,8 @@ export type WebhookDeps = {
   releaseHold: (paymentIntentId: string) => Promise<void>;
   /** Generate + send the no-VAT invoice for a freshly-paid order. */
   createInvoice: (paymentIntentId: string) => Promise<void>;
+  /** Create the InPost shipment for a freshly-paid order (no-op for studio pickup). */
+  createShipment: (paymentIntentId: string) => Promise<void>;
   /** Bust a Next cache tag (e.g. 'inventory'). */
   revalidate: (tag: string) => void;
 };
@@ -18,6 +20,7 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const firstTime = await deps.markPaid(pi.id);
       if (firstTime) {
         await deps.createInvoice(pi.id);
+        await deps.createShipment(pi.id);
         deps.revalidate('inventory');
       }
       return;
