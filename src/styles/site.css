@@ -475,7 +475,7 @@ ul { list-style:none; padding:0; margin:0; }
   .craft-grid { grid-template-columns:1fr; }
   .footer-top { grid-template-columns:1fr 1fr; }
   .lb-card { grid-template-columns:1fr; max-height:92vh; overflow-y:auto; }
-  .lb-img { min-height:320px; aspect-ratio:1/1; }
+  .lb-img { min-height:320px; aspect-ratio:1/1; touch-action:pan-y; }
 }
 @media (max-width:560px){
   .gallery { grid-template-columns:repeat(2,1fr); gap:12px; }
@@ -594,3 +594,99 @@ ul { list-style:none; padding:0; margin:0; }
   .facts-grid { grid-template-columns:1fr; }
   .footer-top.cols-5 { grid-template-columns:1fr; }
 }
+
+/* ─── SKIP LINK ───────────────────────────────────────────── */
+.skip-link {
+  position:absolute; top:-100%; left:0; z-index:999;
+  padding:13px 26px; background:var(--c-espresso); color:var(--c-paper);
+  font-family:var(--f-cond); font-size:13px; letter-spacing:.14em; text-transform:uppercase;
+  transition:top .2s ease; white-space:nowrap;
+}
+.skip-link:focus { top:0; }
+
+/* ─── MOBILE MENU ─────────────────────────────────────────── */
+.mob-trigger { display:none; }
+.mob-bar {
+  display:block; width:20px; height:1.5px;
+  background:var(--c-espresso); border-radius:1px;
+}
+.mob-overlay {
+  position:fixed; inset:0; z-index:80;
+  background:rgba(58,40,24,.45); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity .3s var(--ease);
+}
+.mob-overlay.open { opacity:1; pointer-events:auto; }
+.mob-drawer {
+  position:fixed; top:0; right:0; bottom:0; z-index:81;
+  width:min(320px,88vw); background:var(--c-paper);
+  padding:0 var(--gut) clamp(32px,5vw,56px);
+  display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .35s var(--ease);
+  overflow-y:auto;
+}
+.mob-drawer.open { transform:translateX(0); }
+.mob-drawer-head {
+  display:flex; justify-content:flex-end;
+  padding:16px 0 24px; border-bottom:1px solid var(--c-line-soft); margin-bottom:32px;
+}
+.mob-close { width:38px; height:38px; }
+.mob-nav { display:flex; flex-direction:column; margin-bottom:auto; }
+.mob-link {
+  font-family:var(--f-display); font-weight:300; font-size:32px;
+  line-height:1.1; letter-spacing:-.01em; padding:12px 0;
+  border-bottom:1px solid var(--c-line-soft); transition:color .2s;
+}
+.mob-link:hover { color:var(--c-terracotta); }
+.mob-link:last-child { border-bottom:0; }
+.mob-lang { margin-top:36px; }
+@media (max-width:860px) {
+  .mob-trigger { display:inline-flex; }
+  .nav-right .nav-link { display:none; }
+}
+@media (max-width:560px) {
+  .nav-right .lang-switch { display:none; }
+}
+
+/* ─── SKELETON LOADING ────────────────────────────────────── */
+@keyframes shimmer { from{background-position:200% 0;} to{background-position:-200% 0;} }
+.skel-gallery { padding-bottom:80px; }
+.skel-tile {
+  aspect-ratio:4/5; border-radius:2px;
+  background:linear-gradient(90deg,var(--c-bone) 25%,var(--c-cream) 50%,var(--c-bone) 75%);
+  background-size:200% 100%; animation:shimmer 1.6s ease-in-out infinite;
+}
+
+/* ─── 404 NOT FOUND ───────────────────────────────────────── */
+.notfound {
+  min-height:70vh; display:flex; align-items:center; justify-content:center;
+  padding:clamp(60px,9vw,140px) var(--gut); background:var(--c-cream);
+}
+.notfound-inner { text-align:center; max-width:520px; margin:0 auto; }
+.notfound-code {
+  font-family:var(--f-display); font-weight:300; font-size:clamp(80px,14vw,160px);
+  line-height:1; letter-spacing:-.04em; color:var(--c-terracotta); margin:0 0 8px;
+}
+.notfound h1 {
+  font-family:var(--f-display); font-weight:300; font-size:clamp(28px,4vw,44px);
+  line-height:1.05; margin:0 0 20px; letter-spacing:-.01em;
+}
+.notfound-body { font-size:17px; line-height:1.6; opacity:.75; margin:0 0 36px; }
+.notfound-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+/* ─── ERROR PAGE ──────────────────────────────────────────── */
+.error-page {
+  min-height:70vh; display:flex; align-items:center; justify-content:center;
+  padding:clamp(60px,9vw,140px) var(--gut);
+}
+.error-page-inner { text-align:center; max-width:480px; margin:0 auto; }
+.error-seal {
+  width:64px; height:64px; border-radius:50%; background:var(--c-terracotta);
+  color:var(--c-paper); display:flex; align-items:center; justify-content:center;
+  margin:0 auto 28px;
+}
+.error-seal svg { width:30px; height:30px; }
+.error-page h1 {
+  font-family:var(--f-display); font-weight:300; font-size:clamp(28px,4vw,44px);
+  line-height:1.05; margin:0 0 16px; letter-spacing:-.01em;
+}
+.error-page p { font-size:17px; line-height:1.6; opacity:.75; margin:0 0 32px; }

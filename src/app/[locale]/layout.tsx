@@ -2,7 +2,7 @@ import '@/styles/fonts.css';
 import '@/styles/tokens.css';
 import '@/styles/site.css';
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -13,10 +13,25 @@ import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 import { SITE_URL } from '@/lib/site';
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#3A2818',
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'Anna Ciok Ceramics',
+  title: { default: 'Anna Ciok Ceramics', template: '%s — Anna Ciok Ceramics' },
   description: 'Anna Ciok Ceramics — ręcznie malowana ceramika, czerwcowy drop.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Anna Ciok Ceramics',
+    images: [{ url: '/uploads/kubek-01.webp', width: 1200, height: 800, alt: 'Anna Ciok Ceramics' }],
+  },
+  twitter: { card: 'summary_large_image' },
+  icons: {
+    apple: '/logotype.png',
+  },
 };
 
 export function generateStaticParams() {
@@ -44,10 +59,12 @@ export default async function LocaleLayout({ children, params }: Props) {
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/FuturaBT-MediumCondensed.woff2" />
       </head>
       <body>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
           <AnalyticsEvents />
           <Header />
+          <div id="main-content" tabIndex={-1} style={{ outline: 'none' }} />
           {children}
           <Footer />
         </NextIntlClientProvider>
