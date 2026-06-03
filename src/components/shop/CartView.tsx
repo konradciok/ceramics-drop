@@ -11,11 +11,15 @@ import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
-  buildBeginCheckoutEvent,
   buildRemoveFromCartEvent,
   buildViewCartEvent,
   pushDataLayer,
 } from '@/lib/analytics';
+import {
+  forgetRememberedCheckout,
+  pushCheckoutStarted,
+  rememberCheckoutForReturn,
+} from '@/lib/checkout-analytics';
 import { SHIPPING_PLN } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 
@@ -130,9 +134,8 @@ export function CartView() {
     if (products.length === 0 || submitting) return;
     setSubmitting(true);
     setCheckoutError(null);
-    pushDataLayer(
-      buildBeginCheckoutEvent(products, { shippingCost: shipCost, shippingMethod: ship }),
-    );
+    forgetRememberedCheckout();
+    pushCheckoutStarted(products, { shippingCost: shipCost, shippingMethod: ship });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -150,6 +153,10 @@ export function CartView() {
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
+      rememberCheckoutForReturn(products.map((p) => p.id), {
+        shippingCost: shipCost,
+        shippingMethod: ship,
+      });
       setClientSecret(client_secret);
     } catch {
       setCheckoutError(t('cart.payError'));

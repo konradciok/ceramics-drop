@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
-import { resolveCartProducts } from '@/lib/products';
-import { SHIPPING_PLN } from '@/lib/pricing';
-import { buildPurchaseEvent, pushDataLayer } from '@/lib/analytics';
+import { pushConfirmedPurchaseFromRememberedCheckout } from '@/lib/checkout-analytics';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 type Status = 'loading' | 'ok' | 'processing' | 'fail';
@@ -18,37 +16,18 @@ export default function ReturnPage() {
   const t = useTranslations('return');
   const clear = useCart((s) => s.clear);
   const [status, setStatus] = useState<Status>('loading');
-  const firedRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const secret = params.get('payment_intent_client_secret');
-    const piId = params.get('payment_intent');
     stripePromise.then(async (stripe) => {
       if (!secret || !stripe) { setStatus('fail'); return; }
       const { paymentIntent } = await stripe.retrievePaymentIntent(secret);
       switch (paymentIntent?.status) {
         case 'succeeded': {
-          // Fire purchase analytics exactly once per payment_intent
-          const guardKey = `acc_purchase_fired_${piId ?? secret}`;
-          if (!firedRef.current && !sessionStorage.getItem(guardKey)) {
-            firedRef.current = true;
-            sessionStorage.setItem(guardKey, '1');
-            const ids = useCart.getState().ids;
-            const products = resolveCartProducts(ids);
-            const methodRaw = sessionStorage.getItem('acc_ship');
-            const method = methodRaw === 'odbior' ? 'odbior' : 'kurier';
-            const shippingCost = method === 'odbior' ? 0 : SHIPPING_PLN;
-            if (products.length > 0) {
-              pushDataLayer(
-                buildPurchaseEvent(products, {
-                  orderNo: paymentIntent.id,
-                  shippingCost,
-                  shippingMethod: method,
-                }),
-              );
-            }
-          }
+          // Fires the purchase event once per payment intent and clears the
+          // remembered snapshot internally on success.
+          pushConfirmedPurchaseFromRememberedCheckout(paymentIntent.id, {});
           clear();
           setStatus('ok');
           break;

@@ -33,7 +33,7 @@ The app pushes these events:
 | `remove_from_cart` | product is removed | ecommerce cart removal | none |
 | `view_cart` | cart page renders with items | ecommerce cart view | none |
 | `begin_checkout` | checkout button click | checkout start | `InitiateCheckout` |
-| `purchase` | simulated order confirmation | purchase conversion | `Purchase` |
+| `purchase` | confirmed payment / order success | purchase conversion | `Purchase` |
 | `site_engagement` | scroll depth, 30s time, language switch, contact submit, cart CTA/clear | engagement reporting | `SiteEngagement` custom event |
 
 GA4 ecommerce payloads use:
@@ -101,9 +101,26 @@ npm run gtm:setup -- --publish
 5. Open a product lightbox and confirm `select_item` then `view_item`.
 6. Add a product and confirm `add_to_cart`.
 7. Open the cart and confirm `view_cart`.
-8. Click checkout and confirm `begin_checkout` and `purchase`, with one `transaction_id`.
-9. Check GA4 DebugView for the GA4 event names.
-10. Check Meta Events Manager Test Events for `PageView`, `ViewContent`, `AddToCart`, `InitiateCheckout`, and `Purchase`.
+8. Click checkout and confirm `begin_checkout`.
+9. After the payment flow confirms the order, confirm one `purchase` with one `transaction_id`.
+10. Check GA4 DebugView for the GA4 event names.
+11. Check Meta Events Manager Test Events for `PageView`, `ViewContent`, `AddToCart`, `InitiateCheckout`, and `Purchase`.
+
+## Current storefront status
+
+The storefront now uses the live Stripe checkout flow.
+On checkout start, the app:
+1. emits `begin_checkout`
+2. saves a browser-side cart snapshot with `rememberCheckoutForReturn(...)`
+
+On `/koszyk/return`, after Stripe confirms a successful PaymentIntent, the app calls
+`pushConfirmedPurchaseFromRememberedCheckout(...)` and then clears the cart.
+
+Those helpers in `src/lib/checkout-analytics.ts` keep the purchase payload intact even after
+inventory marks the pieces as sold, and they deduplicate the browser-side `purchase` event so it
+fires only once per `payment_intent`.
+If the return page has a Stripe-backed `order_id`, pass that through as the analytics
+`transaction_id`; otherwise the helper can fall back to `paymentIntent.id`.
 
 ## Production Note
 
