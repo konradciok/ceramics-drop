@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import type Stripe from 'stripe';
 import { handleStripeEvent, type WebhookDeps } from './webhook';
 
@@ -7,6 +7,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     markPaid: vi.fn().mockResolvedValue(true),
     releaseHold: vi.fn().mockResolvedValue(undefined),
     ensureInvoiced: vi.fn().mockResolvedValue(undefined),
+    createShipment: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
     ...overrides,
   };
@@ -15,19 +16,28 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
 const pi = (id = 'pi_1') => ({ id, object: 'payment_intent' });
 
 describe('handleStripeEvent', () => {
-  it('on success: marks paid, revalidates, ensures invoice', async () => {
+  it('on success: marks paid, revalidates, ensures invoice, creates shipment', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.markPaid).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
     expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
+    expect(d.createShipment).toHaveBeenCalledWith('pi_1');
   });
 
-  it('already processed: still ensures invoice (idempotent) but does NOT revalidate', async () => {
+  it('already processed: still ensures invoice and shipment but does NOT revalidate', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
+    expect(d.createShipment).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).not.toHaveBeenCalled();
+  });
+
+  it('propagates a shipment error so the webhook 5xxs and Stripe retries', async () => {
+    const d = deps({ createShipment: vi.fn().mockRejectedValue(new Error('shipx down')) });
+    await expect(
+      handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d),
+    ).rejects.toThrow('shipx down');
   });
 
   it('on failure: releases the hold', async () => {

@@ -1,4 +1,4 @@
-import type Stripe from 'stripe';
+﻿import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { getProductById, CATEGORIES } from './products';
@@ -11,17 +11,39 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   const { data: order } = await supabase
     .from('orders').select('*').eq('payment_intent_id', paymentIntentId).single();
-  if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return; // skip if not paid, already invoiced, or no email
+  if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return;
 
   const { data: items } = await supabase
     .from('order_items').select('*').eq('order_id', order.id);
   if (!items || items.length === 0) return;
 
-  // Idempotency keys keyed by order id collapse duplicate Stripe objects when concurrent webhook
-  // retries both pass the invoiced_at guard above (the guard alone is a TOCTOU window).
+  const addr = order.shipping_address as {
+    street?: string;
+    building_number?: string;
+    city?: string;
+    post_code?: string;
+    country_code?: string;
+  } | null;
+  const line1 = `${addr?.street ?? ''} ${addr?.building_number ?? ''}`.trim();
+  const customerShipping =
+    addr && line1
+      ? {
+          name:
+            `${order.receiver_first_name ?? ''} ${order.receiver_last_name ?? ''}`.trim() ||
+            (order.email as string),
+          phone: order.receiver_phone ?? undefined,
+          address: {
+            line1,
+            city: addr.city,
+            postal_code: addr.post_code,
+            country: addr.country_code ?? 'PL',
+          },
+        }
+      : undefined;
+
   const customer = await stripe.customers.create({
     email: order.email,
-    shipping: order.shipping_address ?? undefined,
+    shipping: customerShipping,
     preferred_locales: ['pl'],
   }, { idempotencyKey: `cust_${order.id}` });
 
@@ -39,8 +61,15 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     }, { idempotencyKey: `ii_${order.id}_${it.product_id}` });
   }
   if (order.shipping > 0) {
+    const shippingLabel =
+      order.delivery_method === 'paczkomat'
+        ? 'Wysyłka — Paczkomat InPost'
+        : 'Wysyłka — Kurier InPost';
     await stripe.invoiceItems.create({
-      customer: customer.id, amount: order.shipping, currency: 'pln', description: 'Wysyłka kurierem',
+      customer: customer.id,
+      amount: order.shipping,
+      currency: 'pln',
+      description: shippingLabel,
     }, { idempotencyKey: `ii_${order.id}_shipping` });
   }
 
@@ -51,11 +80,8 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
   }, { idempotencyKey: `inv_${order.id}` });
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
-  // Goods already paid via the PaymentIntent → record paid without charging again.
   await stripe.invoices.pay(finalized.id as string, { paid_out_of_band: true } as Stripe.InvoicePayParams);
   await stripe.invoices.sendInvoice(finalized.id as string);
-  // Record that this order was invoiced so webhook retries skip re-invoicing. A failed write must
-  // surface (the caller logs it) rather than silently break the idempotency contract.
   const { error: recordErr } = await supabase
     .from('orders')
     .update({ invoiced_at: new Date().toISOString(), invoice_id: finalized.id as string })

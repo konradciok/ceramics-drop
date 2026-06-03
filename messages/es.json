@@ -110,12 +110,24 @@
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
   },
   "ship": {
-    "courierT": "Envío por mensajería",
-    "courierD": "Embalado a mano, 3–5 días laborables.",
-    "courierPrice": "75 zł",
+    "paczkomatT": "Paczkomat InPost",
+    "paczkomatD": "Recogida en el Paczkomat elegido, 1–2 días laborables.",
+    "courierT": "Mensajería InPost",
+    "courierD": "Embalado a mano, 1–2 días laborables.",
     "pickupT": "Recogida en el estudio",
-    "pickupD": "En el estudio, con cita previa.",
-    "pickupPrice": "Gratis"
+    "pickupD": "En el estudio, con cita previa."
+  },
+  "delivery": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "street": "Calle",
+    "building": "Núm.",
+    "postCode": "Código postal",
+    "city": "Ciudad",
+    "lockerChosen": "Paczkomat elegido:",
+    "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente."
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",

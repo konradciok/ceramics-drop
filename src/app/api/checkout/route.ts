@@ -2,14 +2,16 @@ import { NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
-import { orderAmountGrosze, type ShipMethod } from '@/lib/pricing';
+import { validateDelivery } from '@/lib/shipx';
+import { orderAmountGrosze } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 
 export async function POST(req: Request) {
-  let body: { ids?: unknown; shipping_method?: unknown };
+  // Loosely typed: validateCart / validateDelivery narrow the fields at runtime.
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
@@ -19,7 +21,12 @@ export async function POST(req: Request) {
   const valid = validateCart(body.ids);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
 
-  const method: ShipMethod = body.shipping_method === 'odbior' ? 'odbior' : 'kurier';
+  // Delivery details (method, receiver contact, locker/address) are collected
+  // pre-payment so InPost has everything it needs once the order is paid.
+  const delivery = validateDelivery(body);
+  if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
+  const { method, contact, target_point, address } = delivery.delivery;
+
   const amount = orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
   const ids = valid.items.map((i) => i.product_id);
 
@@ -40,11 +47,14 @@ export async function POST(req: Request) {
   const stripe = getStripe();
   let paymentIntent;
   try {
+    // No receipt_email here: the paid order is emailed a faktura via
+    // createOrderInvoice (Stripe sendInvoice), so setting receipt_email would
+    // risk a second, duplicate Stripe receipt.
     paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'pln',
       automatic_payment_methods: { enabled: true },
-      metadata: { order_id: orderId, product_ids: ids.join(','), shipping_method: method },
+      metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
     });
   } catch {
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
@@ -62,7 +72,14 @@ export async function POST(req: Request) {
     subtotal,
     shipping: amount - subtotal,
     total: amount,
-    shipping_method: method,
+    shipping_method: method, // legacy NOT NULL column — kept in sync with delivery_method
+    delivery_method: method,
+    email: contact.email,
+    receiver_first_name: contact.first_name,
+    receiver_last_name: contact.last_name,
+    receiver_phone: contact.phone || null,
+    inpost_target_point: target_point ?? null,
+    shipping_address: address ?? null,
   });
   let itemsErr = null;
   if (!orderErr) {

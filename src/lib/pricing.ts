@@ -11,18 +11,31 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'miski-falowane': 155,
 };
 
-export const SHIPPING_PLN = 75;
+/** Delivery methods — InPost is the sole carrier; `odbior` is free studio pickup. */
+export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 
-export type ShipMethod = 'kurier' | 'odbior';
+/**
+ * Customer-facing delivery price (zloty) per method. Placeholder figures —
+ * confirm against the studio's InPost rates before launch.
+ */
+export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
+  paczkomat: 15,
+  kurier: 75,
+  odbior: 0,
+};
 
 /** Zloty (integer) → grosze. Prices have no fractional zloty, so this is ×100. */
 export function toGrosze(zloty: number): number {
   return Math.round(zloty * 100);
 }
 
+/** Shipping cost (grosze) for the chosen delivery method. */
+export function shippingGrosze(method: DeliveryMethod): number {
+  return toGrosze(SHIPPING_PLN[method]);
+}
+
 /** Sum item amounts (grosze) plus shipping for the chosen method. */
-export function orderAmountGrosze(itemGrosze: number[], method: ShipMethod): number {
+export function orderAmountGrosze(itemGrosze: number[], method: DeliveryMethod): number {
   const items = itemGrosze.reduce((s, g) => s + g, 0);
-  const shipping = method === 'odbior' ? 0 : toGrosze(SHIPPING_PLN);
-  return items + shipping;
+  return items + shippingGrosze(method);
 }

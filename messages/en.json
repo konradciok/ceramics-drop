@@ -110,12 +110,24 @@
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
   },
   "ship": {
-    "courierT": "Courier shipping",
-    "courierD": "Packed by hand, 3–5 business days.",
-    "courierPrice": "75 zł",
+    "paczkomatT": "InPost Parcel Locker",
+    "paczkomatD": "Pick up from your chosen locker, 1–2 business days.",
+    "courierT": "InPost Courier",
+    "courierD": "Packed by hand, 1–2 business days.",
     "pickupT": "Studio pickup",
-    "pickupD": "At the studio, by appointment.",
-    "pickupPrice": "Free"
+    "pickupD": "At the studio, by appointment."
+  },
+  "delivery": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "street": "Street",
+    "building": "No.",
+    "postCode": "Post code",
+    "city": "City",
+    "lockerChosen": "Chosen locker:",
+    "lockerUnavailable": "Parcel locker picker is temporarily unavailable."
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",

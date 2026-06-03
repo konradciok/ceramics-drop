@@ -2,13 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  PaymentElement,
-  AddressElement,
-  LinkAuthenticationElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
+import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
   const t = useTranslations('cart');
@@ -36,8 +30,8 @@ export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
 
   return (
     <form onSubmit={onSubmit} className="pay-form">
-      <LinkAuthenticationElement />
-      <AddressElement options={{ mode: 'shipping', fields: { phone: 'auto' } }} />
+      {/* Email + delivery details are collected before payment, so only the
+          payment method is gathered here. */}
       <PaymentElement />
       {error && <p className="pay-error">{error}</p>}
       <button className="btn btn-primary" type="submit" disabled={!stripe || submitting}>
