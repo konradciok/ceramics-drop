@@ -538,6 +538,7 @@
     "shop": "Przejdź do sklepu"
   },
   "meta": {
-    "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna."
+    "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna.",
+    "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek"
   }
 }

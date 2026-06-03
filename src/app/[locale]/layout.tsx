@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       type: 'website',
       siteName: 'Anna Ciok Ceramics',
-      images: [{ url: '/uploads/kubek-01.webp', width: 1200, height: 800, alt: 'Anna Ciok Ceramics' }],
+      images: [{ url: '/uploads/kubek-01.webp', width: 1200, height: 800, alt: t('meta.ogImageAlt') }],
     },
     twitter: { card: 'summary_large_image' },
     icons: { apple: '/logotype.png' },

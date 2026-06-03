@@ -60,7 +60,7 @@ export function MobileMenu({ links, aria }: Props) {
       <button
         ref={triggerRef}
         className="mob-trigger icon-btn"
-        aria-label={aria.open}
+        aria-label={open ? aria.close : aria.open}
         aria-expanded={open}
         aria-controls="mob-drawer"
         onClick={() => setOpen(true)}
