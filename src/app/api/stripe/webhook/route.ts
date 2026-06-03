@@ -74,8 +74,11 @@ export async function POST(req: Request) {
       }
     },
     createShipment: async (pi) => {
-      // Like invoicing, shipment creation must never fail the webhook — the sale
-      // is committed. On a throw the label simply isn't created yet; swallow + log.
+      // Shipment creation is idempotent (guarded by inpost_shipment_id), so on
+      // failure we log with context and RE-THROW: the webhook returns non-2xx,
+      // Stripe retries, and markPaid is a no-op on redelivery (no double invoice)
+      // while the shipment attempt repeats until it succeeds. This is the
+      // recovery path a paid-but-unshipped order needs.
       try {
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
@@ -102,7 +105,11 @@ export async function POST(req: Request) {
           inpost: getInPost(),
         });
       } catch (err) {
-        console.error('createOrderShipment failed for', pi, err);
+        console.error(
+          JSON.stringify({ event: 'createOrderShipment_failed', payment_intent_id: pi }),
+          err,
+        );
+        throw err; // surface as 5xx → Stripe retries the idempotent shipment
       }
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),

@@ -66,26 +66,40 @@ export async function POST(req: Request) {
     })
     .eq('id', order.id);
 
-  // Label is printable from `confirmed`. Fetch + email once.
+  // Label is printable from `confirmed`. Fetch + email exactly once.
   if (evt.status === LABEL_READY_STATUS && !order.inpost_label_emailed_at) {
-    try {
-      const labelPdf = await getInPost().getLabelPdf(evt.shipmentId);
-      const emailOrder: LabelEmailOrder = {
-        id: order.id,
-        delivery_method: order.delivery_method,
-        inpost_tracking_number: evt.trackingNumber ?? order.inpost_tracking_number,
-        inpost_target_point: order.inpost_target_point,
-        receiver_first_name: order.receiver_first_name,
-        receiver_last_name: order.receiver_last_name,
-      };
-      await emailLabelToStudio({ order: emailOrder, labelPdf });
-      await supabase
-        .from('orders')
-        .update({ inpost_label_emailed_at: new Date().toISOString() })
-        .eq('id', order.id);
-    } catch (err) {
-      // Don't fail the webhook — InPost retries and the stamp keeps it idempotent.
-      console.error('label email failed for shipment', evt.shipmentId, err);
+    // Atomically claim the email slot (NULL→timestamp) so two concurrent
+    // `confirmed` deliveries can't both send. Only the row-winning delivery
+    // proceeds; on send failure we release the slot for a later retry.
+    const claimedAt = new Date().toISOString();
+    const { data: claimed } = (await supabase
+      .from('orders')
+      .update({ inpost_label_emailed_at: claimedAt })
+      .eq('id', order.id)
+      .is('inpost_label_emailed_at', null)
+      .select('id')) as { data: Array<{ id: string }> | null };
+
+    if (claimed && claimed.length > 0) {
+      try {
+        const labelPdf = await getInPost().getLabelPdf(evt.shipmentId);
+        const emailOrder: LabelEmailOrder = {
+          id: order.id,
+          delivery_method: order.delivery_method,
+          inpost_tracking_number: evt.trackingNumber ?? order.inpost_tracking_number,
+          inpost_target_point: order.inpost_target_point,
+          receiver_first_name: order.receiver_first_name,
+          receiver_last_name: order.receiver_last_name,
+        };
+        await emailLabelToStudio({ order: emailOrder, labelPdf });
+      } catch (err) {
+        // Release the slot (only if still our claim) so InPost's retry re-sends.
+        await supabase
+          .from('orders')
+          .update({ inpost_label_emailed_at: null })
+          .eq('id', order.id)
+          .eq('inpost_label_emailed_at', claimedAt);
+        console.error('label email failed for shipment', evt.shipmentId, err);
+      }
     }
   }
 

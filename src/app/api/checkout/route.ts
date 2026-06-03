@@ -46,10 +46,12 @@ export async function POST(req: Request) {
   const stripe = getStripe();
   let paymentIntent;
   try {
+    // No receipt_email here: the paid order is emailed a faktura via
+    // createOrderInvoice (Stripe sendInvoice), so setting receipt_email would
+    // risk a second, duplicate Stripe receipt.
     paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'pln',
-      receipt_email: contact.email,
       automatic_payment_methods: { enabled: true },
       metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
     });

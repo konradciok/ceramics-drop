@@ -369,7 +369,11 @@ export function CartView() {
                     {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
                   </p>
                 )}
-                <GeowidgetPicker onSelect={setLocker} />
+                <GeowidgetPicker
+                  onSelect={setLocker}
+                  language={locale}
+                  unavailableLabel={t('delivery.lockerUnavailable')}
+                />
               </div>
             )}
 

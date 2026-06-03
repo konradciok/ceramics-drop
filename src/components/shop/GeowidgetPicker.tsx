@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * InPost Geowidget v5 parcel-locker picker. Loads the InPost web component
@@ -14,6 +14,11 @@ const HOST =
   ENV === 'sandbox'
     ? 'https://sandbox-easy-geowidget-sdk.easypack24.net'
     : 'https://geowidget.inpost.pl';
+
+/** Geowidget supports a limited language set; fall back to Polish. */
+function widgetLanguage(locale: string): string {
+  return locale === 'en' ? 'en' : 'pl';
+}
 
 function ensureAssets() {
   if (typeof document === 'undefined') return;
@@ -35,7 +40,15 @@ function ensureAssets() {
 
 export type SelectedPoint = { name: string; address: string };
 
-export function GeowidgetPicker({ onSelect }: { onSelect: (p: SelectedPoint) => void }) {
+export function GeowidgetPicker({
+  onSelect,
+  language = 'pl',
+  unavailableLabel,
+}: {
+  onSelect: (p: SelectedPoint) => void;
+  language?: string;
+  unavailableLabel?: string;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   // Keep the latest callback without re-mounting the (heavy) widget each render.
   const onSelectRef = useRef(onSelect);
@@ -43,16 +56,14 @@ export function GeowidgetPicker({ onSelect }: { onSelect: (p: SelectedPoint) => 
     onSelectRef.current = onSelect;
   });
 
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
+    if (!TOKEN) return;
     ensureAssets();
+    let cancelled = false;
     const host = hostRef.current;
     if (!host) return;
-
-    host.innerHTML = '';
-    const el = document.createElement('inpost-geowidget');
-    el.setAttribute('token', TOKEN);
-    el.setAttribute('language', 'pl');
-    el.setAttribute('config', 'parcelcollect');
 
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as
@@ -62,14 +73,34 @@ export function GeowidgetPicker({ onSelect }: { onSelect: (p: SelectedPoint) => 
         onSelectRef.current({ name: detail.name, address: detail.address?.line1 ?? '' });
       }
     };
-    el.addEventListener('onpoint', handler as EventListener);
-    host.appendChild(el);
+
+    let el: HTMLElement | null = null;
+    // The script is injected with `defer`, so the custom element may not be
+    // registered yet — wait for it before mounting, otherwise the box is blank.
+    customElements.whenDefined('inpost-geowidget').then(() => {
+      if (cancelled || !host) return;
+      host.innerHTML = '';
+      el = document.createElement('inpost-geowidget');
+      el.setAttribute('token', TOKEN);
+      el.setAttribute('language', widgetLanguage(language));
+      el.setAttribute('config', 'parcelcollect');
+      el.addEventListener('onpoint', handler as EventListener);
+      host.appendChild(el);
+      setReady(true);
+    });
 
     return () => {
-      el.removeEventListener('onpoint', handler as EventListener);
-      host.innerHTML = '';
+      cancelled = true;
+      if (el) el.removeEventListener('onpoint', handler as EventListener);
+      if (host) host.innerHTML = '';
     };
-  }, []);
+  }, [language]);
 
-  return <div className="geowidget" ref={hostRef} />;
+  if (!TOKEN) {
+    return <p className="geowidget-msg">{unavailableLabel ?? 'Parcel locker picker unavailable.'}</p>;
+  }
+
+  return (
+    <div className="geowidget" ref={hostRef} aria-busy={!ready} />
+  );
 }

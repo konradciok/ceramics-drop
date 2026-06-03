@@ -25,11 +25,14 @@ describe('handleStripeEvent', () => {
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
   });
 
-  it('is idempotent: skips invoice + shipment when order was already paid', async () => {
+  it('skips invoice when already paid, but still attempts shipment (retry path)', async () => {
+    // On webhook redelivery markPaid is a no-op, yet shipment creation must
+    // still run so a paid order without a shipment can recover.
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.createInvoice).not.toHaveBeenCalled();
-    expect(d.createShipment).not.toHaveBeenCalled();
+    expect(d.revalidate).not.toHaveBeenCalled();
+    expect(d.createShipment).toHaveBeenCalledWith('pi_1');
   });
 
   it('on failure: releases the hold', async () => {

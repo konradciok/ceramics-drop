@@ -20,9 +20,13 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const firstTime = await deps.markPaid(pi.id);
       if (firstTime) {
         await deps.createInvoice(pi.id);
-        await deps.createShipment(pi.id);
         deps.revalidate('inventory');
       }
+      // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
+      // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.
+      // Run it on EVERY delivery — not only the first — so a paid order whose
+      // first shipment attempt failed still recovers on redelivery.
+      await deps.createShipment(pi.id);
       return;
     }
     case 'payment_intent.payment_failed':
