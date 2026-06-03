@@ -234,3 +234,68 @@ describe('checkout analytics semantics', () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+describe('checkout analytics never breaks the storefront when storage throws', () => {
+  const throwingStorage = {
+    getItem: () => {
+      throw new Error('storage blocked');
+    },
+    setItem: () => {
+      throw new Error('storage blocked');
+    },
+    removeItem: () => {
+      throw new Error('storage blocked');
+    },
+  };
+
+  it('rememberCheckoutForReturn swallows storage write failures', () => {
+    expect(() =>
+      rememberCheckoutForReturn(['k01'], {
+        shippingCost: 18,
+        shippingMethod: 'kurier',
+        storage: throwingStorage,
+      }),
+    ).not.toThrow();
+  });
+
+  it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', () => {
+    const push = vi.fn();
+
+    let fired = false;
+    expect(() => {
+      fired = pushConfirmedPurchaseByIdsOnce('pi_throw', ['k01', 'k04'], {
+        orderNo: 'ACC-THROW',
+        shippingCost: 18,
+        shippingMethod: 'kurier',
+        push,
+        storage: throwingStorage,
+      });
+    }).not.toThrow();
+
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'purchase' }),
+    );
+  });
+
+  it('forgetRememberedCheckout swallows storage removal failures', () => {
+    expect(() => forgetRememberedCheckout(throwingStorage)).not.toThrow();
+  });
+
+  it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', () => {
+    const push = vi.fn();
+
+    let fired = true;
+    expect(() => {
+      fired = pushConfirmedPurchaseFromRememberedCheckout('pi_throw_return', 'ACC-X', {
+        push,
+        storage: throwingStorage,
+      });
+    }).not.toThrow();
+
+    // Snapshot read fails safely → treated as no snapshot, so nothing is emitted.
+    expect(fired).toBe(false);
+    expect(push).not.toHaveBeenCalled();
+  });
+});

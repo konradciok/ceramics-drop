@@ -71,13 +71,13 @@ export function pushConfirmedPurchaseByIdsOnce(
 ): boolean {
   const storage = options.storage ?? getDefaultStorage();
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
-  if (storage?.getItem(key) === '1') return false;
+  if (safeGetItem(storage, key) === '1') return false;
 
   const products = resolveKnownProducts(ids);
   if (products.length === 0) return false;
 
   pushConfirmedPurchase(products, options);
-  storage?.setItem(key, '1');
+  safeSetItem(storage, key, '1');
   return true;
 }
 
@@ -93,11 +93,11 @@ export function rememberCheckoutForReturn(
     shippingCost: options.shippingCost,
     shippingMethod: options.shippingMethod,
   };
-  storage.setItem(CHECKOUT_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  safeSetItem(storage, CHECKOUT_SNAPSHOT_KEY, JSON.stringify(snapshot));
 }
 
 export function forgetRememberedCheckout(storage = getDefaultStorage()): void {
-  storage?.removeItem?.(CHECKOUT_SNAPSHOT_KEY);
+  safeRemoveItem(storage, CHECKOUT_SNAPSHOT_KEY);
 }
 
 export function pushConfirmedPurchaseFromRememberedCheckout(
@@ -133,7 +133,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
 }
 
 function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null {
-  const raw = storage?.getItem(CHECKOUT_SNAPSHOT_KEY);
+  const raw = safeGetItem(storage, CHECKOUT_SNAPSHOT_KEY);
   if (!raw) return null;
 
   try {
@@ -163,5 +163,35 @@ function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null 
 
 function getDefaultStorage(): SimpleStorage | undefined {
   if (typeof window === 'undefined') return undefined;
-  return window.sessionStorage;
+  try {
+    return window.sessionStorage;
+  } catch {
+    // Accessing Web Storage can throw (blocked storage, some private modes);
+    // analytics must never break the storefront.
+    return undefined;
+  }
+}
+
+function safeGetItem(storage: SimpleStorage | undefined, key: string): string | null {
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(storage: SimpleStorage | undefined, key: string, value: string): void {
+  try {
+    storage?.setItem(key, value);
+  } catch {
+    // Best-effort: ignore storage write failures (quota, blocked storage).
+  }
+}
+
+function safeRemoveItem(storage: SimpleStorage | undefined, key: string): void {
+  try {
+    storage?.removeItem?.(key);
+  } catch {
+    // Best-effort: ignore storage removal failures.
+  }
 }
