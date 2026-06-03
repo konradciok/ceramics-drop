@@ -28,14 +28,17 @@ export interface InPostClient {
 
 export function getInPost(): InPostClient {
   const { env } = getCloudflareContext();
-  if (!env.INPOST_API_URL || !env.INPOST_API_TOKEN || !env.INPOST_ORGANIZATION_ID) {
+  // Normalize first so whitespace-only values don't slip past the guard.
+  const apiUrl = env.INPOST_API_URL?.trim();
+  const apiToken = env.INPOST_API_TOKEN?.trim();
+  const orgId = env.INPOST_ORGANIZATION_ID?.trim();
+  if (!apiUrl || !apiToken || !orgId) {
     throw new Error(
       'InPost not configured: INPOST_API_URL / INPOST_API_TOKEN / INPOST_ORGANIZATION_ID missing',
     );
   }
-  const baseUrl = env.INPOST_API_URL.replace(/\/+$/, '');
-  const orgId = env.INPOST_ORGANIZATION_ID;
-  const authHeader = `Bearer ${env.INPOST_API_TOKEN}`;
+  const baseUrl = apiUrl.replace(/\/+$/, '');
+  const authHeader = `Bearer ${apiToken}`;
 
   async function request(path: string, init?: RequestInit): Promise<Response> {
     // Bound the call so a slow/unreachable upstream can't hang a webhook.

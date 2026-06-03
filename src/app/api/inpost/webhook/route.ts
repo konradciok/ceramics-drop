@@ -82,12 +82,17 @@ export async function POST(req: Request) {
     // `confirmed` deliveries can't both send. Only the row-winning delivery
     // proceeds; on send failure we release the slot for a later retry.
     const claimedAt = new Date().toISOString();
-    const { data: claimed } = (await supabase
+    const { data: claimed, error: claimErr } = (await supabase
       .from('orders')
       .update({ inpost_label_emailed_at: claimedAt })
       .eq('id', order.id)
       .is('inpost_label_emailed_at', null)
-      .select('id')) as { data: Array<{ id: string }> | null };
+      .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+    // A failed claim must 500 (not silently skip) so InPost redelivers.
+    if (claimErr) {
+      console.error('inpost webhook: label claim failed', evt.shipmentId, claimErr);
+      return NextResponse.json({ error: 'label_claim_failed' }, { status: 500 });
+    }
 
     if (claimed && claimed.length > 0) {
       try {
@@ -104,11 +109,14 @@ export async function POST(req: Request) {
       } catch (err) {
         // Release the slot (only if still our claim) and 500 so InPost redelivers
         // the `confirmed` event and the label send is genuinely retried.
-        await supabase
+        const { error: releaseErr } = await supabase
           .from('orders')
           .update({ inpost_label_emailed_at: null })
           .eq('id', order.id)
           .eq('inpost_label_emailed_at', claimedAt);
+        if (releaseErr) {
+          console.error('inpost webhook: label claim release failed', order.id, claimedAt, releaseErr);
+        }
         console.error('label email failed for shipment', evt.shipmentId, err);
         return NextResponse.json({ error: 'label_email_failed' }, { status: 500 });
       }
