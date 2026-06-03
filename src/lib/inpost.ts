@@ -38,14 +38,23 @@ export function getInPost(): InPostClient {
   const authHeader = `Bearer ${env.INPOST_API_TOKEN}`;
 
   async function request(path: string, init?: RequestInit): Promise<Response> {
-    const res = await fetch(`${baseUrl}${path}`, {
-      ...init,
-      headers: {
-        Authorization: authHeader,
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(init?.headers ?? {}),
-      },
-    });
+    // Bound the call so a slow/unreachable upstream can't hang a webhook.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}${path}`, {
+        ...init,
+        signal: init?.signal ?? controller.signal,
+        headers: {
+          Authorization: authHeader,
+          ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(init?.headers ?? {}),
+        },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
       throw new Error(`ShipX ${init?.method ?? 'GET'} ${path} → ${res.status}: ${detail.slice(0, 500)}`);

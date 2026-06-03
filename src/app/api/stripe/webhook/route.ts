@@ -33,18 +33,22 @@ export async function POST(req: Request) {
       // Email + delivery details were captured at checkout and already persisted,
       // so we only flip the status here. Only the first 'pending'→'paid'
       // transition returns a row (idempotency).
-      const { data } = await supabase
+      const { data, error } = (await supabase
         .from('orders')
         .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id') as { data: Array<{ id: string }> | null };
+        .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+      // A DB error must not be mistaken for an "already paid" no-op — throw so the
+      // webhook 5xxs and Stripe retries instead of silently moving on.
+      if (error) throw new Error(`markPaid orders update failed: ${error.message}`);
       if (!data || data.length === 0) return false;
       const orderId = data[0].id;
-      await supabase
+      const { error: pieceErr } = await supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
         .eq('order_id', orderId);
+      if (pieceErr) console.error('markPaid: piece_state update failed for', orderId, pieceErr);
       return true;
     },
     releaseHold: async (pi) => {

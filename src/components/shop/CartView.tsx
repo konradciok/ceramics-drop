@@ -52,7 +52,12 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
       role="radio"
       aria-checked={active}
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onPick(id); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault(); // Space would otherwise scroll the page
+          onPick(id);
+        }
+      }}
     >
       <span className="ship-radio" />
       <div style={{ flex: 1 }}>
@@ -246,6 +251,11 @@ export function CartView() {
 
   const priceLabel = (id: ShipId) => (SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free'));
 
+  // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
+  const stripeLocale = (['pl', 'en', 'es'] as string[]).includes(locale)
+    ? (locale as 'pl' | 'en' | 'es')
+    : 'auto';
+
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (
     <div className="cart-wrap">
@@ -428,7 +438,7 @@ export function CartView() {
           <span className="v">{pln(total)}</span>
         </div>
         {clientSecret ? (
-          <Elements stripe={stripePromise} options={{ clientSecret, locale: 'pl' }}>
+          <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
             <CheckoutForm returnUrl={returnUrl} />
           </Elements>
         ) : (

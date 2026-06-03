@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 
 export async function POST(req: Request) {
-  let body: { ids?: unknown };
+  // Loosely typed: validateCart / validateDelivery narrow the fields at runtime.
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {

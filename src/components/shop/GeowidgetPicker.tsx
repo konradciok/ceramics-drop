@@ -57,6 +57,7 @@ export function GeowidgetPicker({
   });
 
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!TOKEN) return;
@@ -74,11 +75,18 @@ export function GeowidgetPicker({
       }
     };
 
+    // If the script never loads (blocked/offline), whenDefined never resolves —
+    // surface a fallback instead of an indefinitely blank box.
+    const timeout = setTimeout(() => {
+      if (!cancelled) setFailed(true);
+    }, 8000);
+
     let el: HTMLElement | null = null;
     // The script is injected with `defer`, so the custom element may not be
     // registered yet — wait for it before mounting, otherwise the box is blank.
     customElements.whenDefined('inpost-geowidget').then(() => {
       if (cancelled || !host) return;
+      clearTimeout(timeout);
       host.innerHTML = '';
       el = document.createElement('inpost-geowidget');
       el.setAttribute('token', TOKEN);
@@ -91,12 +99,13 @@ export function GeowidgetPicker({
 
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
       if (el) el.removeEventListener('onpoint', handler as EventListener);
       if (host) host.innerHTML = '';
     };
   }, [language]);
 
-  if (!TOKEN) {
+  if (!TOKEN || failed) {
     return <p className="geowidget-msg">{unavailableLabel ?? 'Parcel locker picker unavailable.'}</p>;
   }
 

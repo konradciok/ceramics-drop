@@ -26,20 +26,22 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     post_code?: string;
     country_code?: string;
   } | null;
-  const customerShipping = addr
-    ? {
-        name:
-          `${order.receiver_first_name ?? ''} ${order.receiver_last_name ?? ''}`.trim() ||
-          (order.email as string),
-        phone: order.receiver_phone ?? undefined,
-        address: {
-          line1: `${addr.street ?? ''} ${addr.building_number ?? ''}`.trim(),
-          city: addr.city,
-          postal_code: addr.post_code,
-          country: addr.country_code ?? 'PL',
-        },
-      }
-    : undefined;
+  const line1 = `${addr?.street ?? ''} ${addr?.building_number ?? ''}`.trim();
+  const customerShipping =
+    addr && line1
+      ? {
+          name:
+            `${order.receiver_first_name ?? ''} ${order.receiver_last_name ?? ''}`.trim() ||
+            (order.email as string),
+          phone: order.receiver_phone ?? undefined,
+          address: {
+            line1,
+            city: addr.city,
+            postal_code: addr.post_code,
+            country: addr.country_code ?? 'PL',
+          },
+        }
+      : undefined;
 
   const customer = await stripe.customers.create({
     email: order.email,
