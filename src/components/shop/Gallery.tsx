@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Product } from '@/lib/types';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { ProductTile } from './ProductTile';
@@ -22,6 +22,10 @@ export function Gallery({ products }: Props) {
   // every piece in the category is sold (available[0] would be undefined then).
   const listId = products[0]?.category ?? 'collection';
   const listName = listId;
+
+  // Tracks whichever tile button triggered the lightbox open so focus can
+  // return to it when the lightbox closes.
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     // Emit view_item_list only when there are purchasable items to show; index
@@ -48,6 +52,8 @@ export function Gallery({ products }: Props) {
             key={p.id}
             product={p}
             onOpen={(prod) => {
+              // Capture the focused element (the tile button) before state update
+              triggerRef.current = document.activeElement as HTMLElement;
               const index = available.findIndex((a) => a.id === prod.id);
               pushDataLayer(
                 buildSelectItemEvent(prod, {
@@ -67,6 +73,7 @@ export function Gallery({ products }: Props) {
         index={openIndex}
         onClose={() => setOpenIndex(null)}
         onStep={step}
+        triggerRef={triggerRef}
       />
       <SelectionBar />
     </>

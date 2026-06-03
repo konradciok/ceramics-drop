@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
@@ -21,10 +21,12 @@ type Props = {
   index: number | null;
   onClose: () => void;
   onStep: (delta: number) => void;
+  /** The element that triggered opening; focus returns here on close. */
+  triggerRef: React.RefObject<HTMLElement | null>;
 };
 
-/** Product detail popup. */
-export function Lightbox({ products, index, onClose, onStep }: Props) {
+/** Product detail popup with keyboard, swipe, and focus-trap support. */
+export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props) {
   const t = useTranslations();
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
@@ -39,6 +41,10 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
   const rawNotes = product ? (t.raw(`notes.${product.category}`) as unknown) : undefined;
   const note = product && Array.isArray(rawNotes) ? (rawNotes[product.noteIndex] as string) ?? '' : '';
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Analytics: fire view_item on each index change
   useEffect(() => {
     if (!product) return;
     pushDataLayer(
@@ -50,19 +56,86 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
     );
   }, [index, product]);
 
+  // Keyboard (Escape) + scroll lock + focus management
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); handleClose(); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); onStep(-1); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); onStep(1); return; }
+      // Focus trap
+      if (e.key !== 'Tab' || !cardRef.current) return;
+      const focusable = cardRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const els = Array.from(focusable);
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    // Move focus into the card
+    requestAnimationFrame(() => {
+      const firstBtn = cardRef.current?.querySelector<HTMLElement>('button');
+      firstBtn?.focus();
+    });
+
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+    // handleClose is stable (defined below with useCallback pattern via ref)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  function handleClose() {
+    onClose();
+    // Return focus to the triggering tile button
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
   return (
     <>
-      <div className={`lb-scrim${open ? ' open' : ''}`} onClick={onClose} />
+      <div className={`lb-scrim${open ? ' open' : ''}`} onClick={handleClose} />
       <div
         className={`lb${open ? ' open' : ''}`}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
+        onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+        {...(open
+          ? { role: 'dialog', 'aria-modal': 'true', 'aria-label': product ? `${name} Nº ${product.num}` : '' }
+          : { 'aria-hidden': 'true' }
+        )}
       >
         {product && (
-          <div className="lb-card">
-            <div className="lb-img">
-              <button className="lb-close" onClick={onClose} aria-label={t('aria.close')}>
+          <div ref={cardRef} className="lb-card">
+            <div
+              className="lb-img"
+              // Touch-only swipe: gated on pointerType to avoid accidental mouse drags
+              onPointerDown={(e) => {
+                if (e.pointerType !== 'touch') return;
+                if ((e.target as HTMLElement).closest('button')) return;
+                pointerStart.current = { x: e.clientX, y: e.clientY };
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              }}
+              onPointerUp={(e) => {
+                if (e.pointerType !== 'touch' || !pointerStart.current) return;
+                const dx = e.clientX - pointerStart.current.x;
+                const dy = e.clientY - pointerStart.current.y;
+                pointerStart.current = null;
+                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+                  onStep(dx < 0 ? 1 : -1);
+                }
+              }}
+              onPointerCancel={() => { pointerStart.current = null; }}
+            >
+              <button className="lb-close" onClick={handleClose} aria-label={t('aria.close')}>
                 <Icon name="close" />
               </button>
               <button className="lb-nav lb-prev" onClick={() => onStep(-1)} aria-label={t('aria.prev')}>
@@ -72,7 +145,7 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
                 <Icon name="chevron-right" />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.image} alt={`${name} Nº ${product.num}`} />
+              <img src={product.image} alt={`${name} Nº ${product.num}`} draggable={false} />
             </div>
             <div className="lb-body">
               <div className="eyebrow lb-eyebrow">
@@ -98,16 +171,8 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
               <button
                 className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
                 onClick={() => {
-                  // Gate the analytics event on the real store transition, not the
-                  // `inCart` render snapshot (which can be stale) — add() is idempotent,
-                  // so a no-op add must not fire a duplicate add_to_cart. set() is
-                  // synchronous, so getState() after the call sees the post-mutation state.
                   const wasPresent = useCart.getState().ids.includes(product.id);
-                  if (inCart) {
-                    remove(product.id);
-                  } else {
-                    add(product.id);
-                  }
+                  if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
                     pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));

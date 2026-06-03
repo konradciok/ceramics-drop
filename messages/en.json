@@ -33,7 +33,11 @@
     "zoom": "View",
     "close": "Close",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menuLabel": "Navigation menu",
+    "skipToContent": "Skip to main content"
   },
   "footer": {
     "tagline": "Made slowly, painted by hand.",
@@ -521,5 +525,20 @@
       "Blue lemons dotted in white, from above. Summer in a bowl.",
       "Blue lemons around the belly. A cool, lemony rhythm."
     ]
+  },
+  "error": {
+    "heading": "Something went wrong",
+    "body": "An unexpected error occurred. Try refreshing the page.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "heading": "Page not found",
+    "body": "This page doesn't exist or has been moved.",
+    "home": "Home",
+    "shop": "Go to shop"
+  },
+  "meta": {
+    "description": "Hand-painted functional ceramics — mugs, vases, bowls and plates. June drop, 88 one-of-a-kind pieces.",
+    "ogImageAlt": "Anna Ciok Ceramics — handmade ceramic mug"
   }
 }
