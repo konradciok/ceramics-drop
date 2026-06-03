@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -79,7 +79,7 @@ export function Lightbox({ products, index, onClose, onStep }: Props) {
                 {cat ? `${t(cat.nameKey)} — ${t('lightbox.drop')}` : ''}
               </div>
               <h3>{name} <em>Nº {product.num}</em></h3>
-              <div className="lb-price">{euro(product.price)}</div>
+              <div className="lb-price">{pln(product.price)}</div>
               <p className="lb-note">{note}</p>
               <div className="lb-specs">
                 <div className="lb-spec">

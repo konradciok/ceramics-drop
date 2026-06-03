@@ -1,20 +1,23 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts, CATEGORIES } from '@/lib/products';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
   buildBeginCheckoutEvent,
-  buildPurchaseEvent,
   buildRemoveFromCartEvent,
   buildViewCartEvent,
   pushDataLayer,
 } from '@/lib/analytics';
+import { SHIPPING_PLN } from '@/lib/pricing';
+import { CheckoutForm } from './CheckoutForm';
 
 /**
  * Cart / checkout screen.
@@ -66,17 +69,13 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
   { key: 'seeWavybowls',  href: '/miski-falowane' },
 ];
 
-interface ConfirmState {
-  n: number;
-  total: number;
-  orderNo: string;
-}
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export function CartView() {
   const t = useTranslations();
+  const locale = useLocale();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
-  const clear = useCart((s) => s.clear);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
   const [ship, setShip] = useState<ShipId>(() => {
@@ -87,28 +86,30 @@ export function CartView() {
     return 'kurier';
   });
 
-  // Confirmation state — null while still shopping, set at checkout time
-  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const viewedCartKeys = useRef(new Set<string>());
-
-  // Stable random order number (generated once)
-  const [orderNo] = useState(() => 'ACC-' + (1000 + Math.floor(Math.random() * 9000)));
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Persist ship choice to sessionStorage whenever it changes
   useEffect(() => {
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // Clear cart once on confirmation mount
+  // Prune already-sold items from the cart on mount
   useEffect(() => {
-    if (confirm === null) return;
-    clear();
-  }, [confirm, clear]);
+    fetch('/api/inventory')
+      .then((r) => r.json())
+      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
+      .catch(() => {});
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const products = resolveCartProducts(ids);
   const n = products.length;
   const subtotal = products.reduce((s, p) => s + p.price, 0);
-  const shipCost = ship === 'odbior' ? 0 : 18;
+  const shipCost = ship === 'odbior' ? 0 : SHIPPING_PLN;
   const total = subtotal + shipCost;
   const productKey = products.map((p) => p.id).join('|');
 
@@ -122,61 +123,47 @@ export function CartView() {
     setShip(id);
   }
 
-  function handleCheckout() {
-    // Snapshot n and total BEFORE clear() — see shop.js checkout() which reads
-    // items.length and cartTotal() before clearing.
-    if (products.length === 0) return;
+  async function handleCheckout() {
+    // Guard against a double-click: a second in-flight /api/checkout would
+    // 409 against this buyer's own fresh reservation and silently strip the
+    // items from their cart.
+    if (products.length === 0 || submitting) return;
+    setSubmitting(true);
+    setCheckoutError(null);
     pushDataLayer(
-      buildBeginCheckoutEvent(products, {
-        shippingCost: shipCost,
-        shippingMethod: ship,
-      }),
+      buildBeginCheckoutEvent(products, { shippingCost: shipCost, shippingMethod: ship }),
     );
-    pushDataLayer(
-      buildPurchaseEvent(products, {
-        orderNo,
-        shippingCost: shipCost,
-        shippingMethod: ship,
-      }),
-    );
-    setConfirm({ n, total, orderNo });
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: products.map((p) => p.id), shipping_method: ship }),
+      });
+      if (res.status === 409) {
+        const { sold } = (await res.json()) as { sold: string[] };
+        sold.forEach((id) => remove(id));
+        setCheckoutError(t('cart.soldOut'));
+        return;
+      }
+      if (!res.ok) {
+        setCheckoutError(t('cart.payError'));
+        return;
+      }
+      const { client_secret } = (await res.json()) as { client_secret: string };
+      setClientSecret(client_secret);
+    } catch {
+      setCheckoutError(t('cart.payError'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  // ── Confirmation screen ─────────────────────────────────────────────────
-  if (confirm !== null) {
-    return (
-      <div className="confirm">
-        <div className="seal">
-          <Icon name="check" />
-        </div>
-        <div className="eyebrow" style={{ justifyContent: 'center' }}>
-          {t('confirm.eyebrow')}
-        </div>
-        <h1 style={{ marginTop: 18 }}>
-          {t.rich('confirm.h', richTags)}
-        </h1>
-        <p>{t('confirm.p1')}</p>
-        <p>
-          {t('confirm.order')}{' '}
-          <b>{confirm.n} {t('confirm.word', { count: confirm.n })}</b>{' '}
-          {t('confirm.worth')}{' '}
-          <b>{euro(confirm.total)}</b>{' '}
-          {t('confirm.tail')}
-        </p>
-        <div className="order-no">
-          {t('confirm.orderno')} {confirm.orderNo}
-        </div>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" className="btn btn-primary">
-            {t('confirm.back')} <Icon name="arrow" />
-          </Link>
-          <Link href="/kubki" className="btn btn-ghost">
-            {t('confirm.more')}
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Stripe redirects back to the locale-prefixed return page so the buyer's
+  // language survives the round-trip. PL is the default locale (no prefix).
+  const returnUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
+      : '/koszyk/return';
 
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
@@ -225,7 +212,7 @@ export function CartView() {
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
-                  <span className="price">{euro(p.price)}</span>
+                  <span className="price">{pln(p.price)}</span>
                   <button
                     className="rm"
                     onClick={() => {
@@ -246,7 +233,7 @@ export function CartView() {
         <h3>{t('cart.summary')}</h3>
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
-          <span className="v">{euro(subtotal)}</span>
+          <span className="v">{pln(subtotal)}</span>
         </div>
         <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
           <ShipOption
@@ -268,15 +255,22 @@ export function CartView() {
         </div>
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
-          <span className="v">{shipCost > 0 ? euro(shipCost) : t('cart.free')}</span>
+          <span className="v">{shipCost > 0 ? pln(shipCost) : t('cart.free')}</span>
         </div>
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
-          <span className="v">{euro(total)}</span>
+          <span className="v">{pln(total)}</span>
         </div>
-        <button className="btn btn-primary" id="checkout" onClick={handleCheckout}>
-          {t('cart.checkout')} <Icon name="arrow" />
-        </button>
+        {clientSecret ? (
+          <Elements stripe={stripePromise} options={{ clientSecret, locale: 'pl' }}>
+            <CheckoutForm returnUrl={returnUrl} />
+          </Elements>
+        ) : (
+          <button className="btn btn-primary" id="checkout" onClick={handleCheckout} disabled={submitting}>
+            {t('cart.checkout')} <Icon name="arrow" />
+          </button>
+        )}
+        {checkoutError && <p className="pay-error">{checkoutError}</p>}
         <p className="fineprint">
           {t.rich('cart.fineprint', richTags)}
         </p>

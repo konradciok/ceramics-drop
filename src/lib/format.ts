@@ -1,2 +1,2 @@
-/** Format a EUR amount the brand way: symbol-first with a space — "€ 22". */
-export const euro = (n: number): string => `€ ${n}`;
+/** Format a PLN amount the brand way: amount then unit — "90 zł". */
+export const pln = (n: number): string => `${n} zł`;

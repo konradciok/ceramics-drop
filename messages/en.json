@@ -103,28 +103,29 @@
     "free": "Free",
     "total": "Total",
     "checkout": "Go to payment",
-    "fineprint": "Prototype — payment is simulated,<br/>no data or funds are collected.",
-    "simBanner": "Prototype — this is a demonstration. Payment is simulated; no funds are collected."
+    "pay": "Pay now",
+    "payProcessing": "Processing…",
+    "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "payError": "Payment failed. Please try again.",
+    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
   },
   "ship": {
     "courierT": "Courier shipping",
     "courierD": "Packed by hand, 3–5 business days.",
-    "courierPrice": "€ 18",
+    "courierPrice": "75 zł",
     "pickupT": "Studio pickup",
     "pickupD": "At the studio, by appointment.",
     "pickupPrice": "Free"
   },
-  "confirm": {
-    "eyebrow": "Simulation complete",
-    "h": "Thank you — <em>see you soon.</em>",
-    "p1": "This is a prototype, so nothing was charged. In a real shop this is where a secure handoff to Stripe Checkout would happen.",
-    "order": "An order for",
-    "worth": "worth",
-    "tail": "would land in my studio inbox.",
-    "word": "{count, plural, one {piece} other {pieces}}",
-    "orderno": "Sample number:",
+  "return": {
+    "okH": "Thank you — <em>order received.</em>",
+    "okP": "Payment succeeded. We've sent a confirmation and receipt to your email.",
+    "processingH": "Payment in progress…",
+    "processingP": "We're waiting for confirmation from your bank. You can refresh this page in a moment.",
+    "failH": "Payment failed",
+    "failP": "No funds were taken. Return to your cart and try again.",
     "back": "Back to home",
-    "more": "Keep browsing"
+    "cart": "Back to cart"
   },
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
@@ -145,37 +146,37 @@
     "colLead": "Tap, pick your favourite thumbnails like in a photo gallery, and go straight to checkout.",
     "card": {
       "mug": {
-        "num": "22 pieces · € 22 each",
+        "num": "22 pieces · 90 zł each",
         "desc": "Everyday mugs for the morning coffee — palms, lemons, shells and cacti painted in glaze.",
         "cta": "Choose a mug"
       },
       "vase": {
-        "num": "8 pieces · € 50 each",
+        "num": "8 pieces · 210 zł each",
         "desc": "Round-bellied vases for a single branch or a market bunch — stripes, palms and cacti on warm white.",
         "cta": "Choose a vase"
       },
       "bigvase": {
-        "num": "9 pieces · € 95 each",
+        "num": "9 pieces · 395 zł each",
         "desc": "Large, round-bellied vases painted by hand — cacti, shells, palms, a lobster and folk figures on warm white.",
         "cta": "Choose a vase"
       },
       "dish": {
-        "num": "15 pieces · € 25 each",
+        "num": "15 pieces · 105 zł each",
         "desc": "Small dishes for little things — shells, cacti, palms and flowers with a painted, decorative rim.",
         "cta": "Choose a dish"
       },
       "plate": {
-        "num": "12 pieces · € 65 each",
+        "num": "12 pieces · 270 zł each",
         "desc": "Large plates for serving or the wall — a donkey, shells, palms, cacti and folk eyes with a painted rim.",
         "cta": "Choose a plate"
       },
       "largebowl": {
-        "num": "6 pieces · € 75 each",
+        "num": "6 pieces · 315 zł each",
         "desc": "Large, hand-painted bowls for salads and fruit — cobalt gardens, palms, cacti and autumn leaves.",
         "cta": "Choose a bowl"
       },
       "wavybowl": {
-        "num": "16 pieces · € 38 each",
+        "num": "16 pieces · 155 zł each",
         "desc": "Wavy-rimmed bowls for breakfast and snacks — cacti, palms, shells, lemons and leaves.",
         "cta": "Choose a bowl"
       }
@@ -212,37 +213,37 @@
     "kubki": {
       "eyebrow": "June drop — 22 pieces",
       "title": "Mugs <em>Nº 01–22</em>",
-      "lead": "Each mug is a single, one-off piece at € 22. Select the ones you want to take home."
+      "lead": "Each mug is a single, one-off piece at 90 zł. Select the ones you want to take home."
     },
     "wazony": {
       "eyebrow": "June drop — 8 pieces",
       "title": "Vases <em>Nº 01–08</em>",
-      "lead": "Round-bellied, hand-painted vases at € 50 each. One piece, one owner — select yours."
+      "lead": "Round-bellied, hand-painted vases at 210 zł each. One piece, one owner — select yours."
     },
     "wazony-duze": {
       "eyebrow": "June drop — 9 pieces",
       "title": "Large vases <em>Nº 01–09</em>",
-      "lead": "Large, hand-painted vases at € 95 each. One piece, one owner — select yours."
+      "lead": "Large, hand-painted vases at 395 zł each. One piece, one owner — select yours."
     },
     "talerzyki": {
       "eyebrow": "June drop — 15 pieces",
       "title": "Dishes <em>Nº 01–15</em>",
-      "lead": "Small dishes for little things at € 25 each. Each one different — select the ones you want to take home."
+      "lead": "Small dishes for little things at 105 zł each. Each one different — select the ones you want to take home."
     },
     "talerze-duze": {
       "eyebrow": "June drop — 12 pieces",
       "title": "Large plates <em>Nº 01–12</em>",
-      "lead": "Large, hand-painted plates at € 65 each. Each one different — for serving or for the wall. Select the ones you want to take home."
+      "lead": "Large, hand-painted plates at 270 zł each. Each one different — for serving or for the wall. Select the ones you want to take home."
     },
     "duze-michy": {
       "eyebrow": "June drop — 6 pieces",
       "title": "Large bowls <em>Nº 01–06</em>",
-      "lead": "Large, hand-painted bowls at € 75 each. One piece, one owner — select yours."
+      "lead": "Large, hand-painted bowls at 315 zł each. One piece, one owner — select yours."
     },
     "miski-falowane": {
       "eyebrow": "June drop — 16 pieces",
       "title": "Wavy bowls <em>Nº 01–16</em>",
-      "lead": "Wavy-rimmed bowls at € 38 each. Each one different — select the ones you want to take home."
+      "lead": "Wavy-rimmed bowls at 155 zł each. Each one different — select the ones you want to take home."
     }
   },
   "studio": {
@@ -325,8 +326,8 @@
     "toc6": "Damage",
     "updated": "Shop prototype<br/>Updated: June 2026",
     "s1H": "Shipping",
-    "s1P": "I send every piece by courier across all of Poland. Shipping costs <strong>€ 18</strong> regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
-    "s1Li1": "Courier, all of Poland — € 18",
+    "s1P": "I send every piece by courier across all of Poland. Shipping costs <strong>75 zł</strong> regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1Li1": "Courier, all of Poland — 75 zł",
     "s1Li2": "Studio pickup in person — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
     "s2H": "Turnaround",
@@ -366,7 +367,7 @@
     "s2Li1": "Because each piece is unique, any given piece can be sold only once",
     "s2Li2": "If for reasons beyond my control I cannot fulfil an order, I inform you immediately and refund the full amount",
     "s3H": "§3 Prices & payment",
-    "s3P": "All prices are given in euro and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment would be handled by an external payment provider (e.g. Stripe).",
+    "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment would be handled by an external payment provider (e.g. Stripe).",
     "s4H": "§4 Fulfilment & shipping",
     "s4P": "I send orders within 3–5 business days of the payment clearing. Details of costs, timing and studio pickup are described on the <link>Shipping & returns</link> page.",
     "s5H": "§5 Right of withdrawal",

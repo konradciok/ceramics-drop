@@ -20,10 +20,14 @@
     "cf:dns-cleanup": "node scripts/cloudflare-dns-cleanup.mjs"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.7.0",
+    "@supabase/supabase-js": "^2.107.0",
     "next": "^16.2.7",
     "next-intl": "^4.13.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "stripe": "^22.2.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

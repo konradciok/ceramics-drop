@@ -5,6 +5,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, CATEGORY_ORDER, getProductsByCategory } from '@/lib/products';
+import { getSoldIds } from '@/lib/inventory';
 import type { CategorySlug } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { Gallery } from './Gallery';
@@ -12,7 +13,15 @@ import { richTags } from '@/components/ui/richTags';
 
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
   const t = await getTranslations();
-  const products = getProductsByCategory(slug);
+  const [base, soldIds] = await Promise.all([
+    Promise.resolve(getProductsByCategory(slug)),
+    // Sold-state overlay is best-effort: a Supabase outage must not take the
+    // whole storefront down. Fall back to "nothing sold" — the checkout
+    // reservation (reserve_pieces) is the real double-sale guard.
+    getSoldIds().catch(() => [] as string[]),
+  ]);
+  const sold = new Set(soldIds);
+  const products = base.map((p) => (sold.has(p.id) ? { ...p, sold: true } : p));
 
   return (
     <>

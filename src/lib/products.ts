@@ -11,15 +11,16 @@
    are wired through the i18n message catalogs.
    ============================================================ */
 import type { Category, CategorySlug, Product } from './types';
+import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: 22, measure: '9 × 9 cm · 300 ml', count: 22 },
-  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: 50, measure: '18 × 16 cm', count: 8 },
-  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: 95, measure: '24 × 20 cm', count: 9 },
-  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: 25, measure: '⌀ 12 cm', count: 15 },
-  'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: 65, measure: '⌀ 28 cm', count: 12 },
-  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: 75, measure: '⌀ 26 × 14 cm', count: 6 },
-  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: 38, measure: '⌀ 16 × 9 cm', count: 16 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '9 × 9 cm · 300 ml', count: 22 },
+  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '18 × 16 cm', count: 8 },
+  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '24 × 20 cm', count: 9 },
+  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '⌀ 12 cm', count: 15 },
+  'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 28 cm', count: 12 },
+  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '⌀ 26 × 14 cm', count: 6 },
+  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '⌀ 16 × 9 cm', count: 16 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
@@ -37,7 +38,6 @@ export function getCategory(slug: CategorySlug): Category {
   return CATEGORIES[slug];
 }
 
-const SOLD = new Set(['k04', 'k11', 'k19', 'v02', 'v06']);
 
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 const range = (a: number, b: number) =>
@@ -75,7 +75,7 @@ function buildProducts(): Product[] {
         image: `/uploads/${spec.imageBase}-${file}.webp`,
         price: cat.price,
         measure: cat.measure,
-        sold: SOLD.has(id),
+        sold: false,
         noteIndex: i,
       });
     });

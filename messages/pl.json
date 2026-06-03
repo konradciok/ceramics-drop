@@ -103,28 +103,29 @@
     "free": "Gratis",
     "total": "Razem",
     "checkout": "Przejdź do płatności",
-    "fineprint": "Prototyp — płatność jest symulowana,<br/>nie pobieramy żadnych danych ani środków.",
-    "simBanner": "Prototyp — to demonstracja działania. Płatność jest symulowana, nie pobieramy żadnych środków."
+    "pay": "Zapłać teraz",
+    "payProcessing": "Przetwarzanie…",
+    "soldOut": "Niektóre prace zostały właśnie sprzedane i usunęliśmy je z koszyka.",
+    "payError": "Płatność nie powiodła się. Spróbuj ponownie.",
+    "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
     "courierT": "Wysyłka kurierem",
     "courierD": "Pakowane ręcznie, 3–5 dni roboczych.",
-    "courierPrice": "€ 18",
+    "courierPrice": "75 zł",
     "pickupT": "Odbiór osobisty",
     "pickupD": "W pracowni, po umówieniu terminu.",
     "pickupPrice": "Gratis"
   },
-  "confirm": {
-    "eyebrow": "Symulacja zakończona",
-    "h": "Dziękuję — <em>do zobaczenia.</em>",
-    "p1": "To prototyp, więc nic nie zostało pobrane. W prawdziwym sklepie w tym miejscu nastąpiłoby bezpieczne przejście do Stripe Checkout.",
-    "order": "Zamówienie na",
-    "worth": "o wartości",
-    "tail": "trafiłoby do mnie do pracowni.",
-    "word": "{count, plural, one {pracę} few {prace} many {prac} other {prac}}",
-    "orderno": "Numer próbny:",
+  "return": {
+    "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
+    "okP": "Płatność się powiodła. Potwierdzenie i fakturę wysłaliśmy mailem.",
+    "processingH": "Płatność w toku…",
+    "processingP": "Czekamy na potwierdzenie z banku. Możesz odświeżyć tę stronę za chwilę.",
+    "failH": "Płatność nie powiodła się",
+    "failP": "Nie pobraliśmy żadnych środków. Wróć do koszyka i spróbuj ponownie.",
     "back": "Wróć na stronę główną",
-    "more": "Oglądaj dalej"
+    "cart": "Wróć do koszyka"
   },
   "home": {
     "heroEyebrow": "Drop czerwcowy 2026 — Nº 01",
@@ -145,37 +146,37 @@
     "colLead": "Kliknij, wybierz ulubione miniatury jak w galerii zdjęć i przejdź prosto do kasy.",
     "card": {
       "mug": {
-        "num": "22 prace · € 22 każda",
+        "num": "22 prace · 90 zł każda",
         "desc": "Codzienne kubki do porannej kawy — palmy, cytryny, muszle i kaktusy malowane szkliwem.",
         "cta": "Wybierz kubek"
       },
       "vase": {
-        "num": "8 prac · € 50 każda",
+        "num": "8 prac · 210 zł każdy",
         "desc": "Pękate wazony na gałązkę albo bukiet z targu — paski, palmy i kaktusy na ciepłej bieli.",
         "cta": "Wybierz wazon"
       },
       "bigvase": {
-        "num": "9 prac · € 95 każdy",
+        "num": "9 prac · 395 zł każdy",
         "desc": "Duże, pękate wazony malowane ręką — kaktusy, muszle, palmy, homar i folkowe sylwetki na ciepłej bieli.",
         "cta": "Wybierz wazon"
       },
       "dish": {
-        "num": "15 prac · € 25 każdy",
+        "num": "15 prac · 105 zł każdy",
         "desc": "Małe talerzyki na drobiazgi — muszle, kaktusy, palmy i kwiaty z malowanym, ozdobnym rantem.",
         "cta": "Wybierz talerzyk"
       },
       "plate": {
-        "num": "12 prac · € 65 każdy",
+        "num": "12 prac · 270 zł każdy",
         "desc": "Duże talerze do podania albo na ścianę — osiołek, muszle, palmy, kaktusy i ludowe oczy z malowanym rantem.",
         "cta": "Wybierz talerz"
       },
       "largebowl": {
-        "num": "6 prac · € 75 każda",
+        "num": "6 prac · 315 zł każda",
         "desc": "Duże, ręcznie malowane michy do sałat i owoców — kobaltowe ogrody, palmy, kaktusy i jesienne liście.",
         "cta": "Wybierz michę"
       },
       "wavybowl": {
-        "num": "16 prac · € 38 każda",
+        "num": "16 prac · 155 zł każda",
         "desc": "Miski o falowanym brzegu na Śniadanie i przekąski — kaktusy, palmy, muszle, cytryny i liście.",
         "cta": "Wybierz miskę"
       }
@@ -212,37 +213,37 @@
     "kubki": {
       "eyebrow": "Drop czerwcowy — 22 prace",
       "title": "Kubki <em>Nº 01–22</em>",
-      "lead": "Każdy kubek to jeden, niepowtarzalny egzemplarz za € 22. Zaznacz te, które chcesz zabrać do siebie."
+      "lead": "Każdy kubek to jeden, niepowtarzalny egzemplarz za 90 zł. Zaznacz te, które chcesz zabrać do siebie."
     },
     "wazony": {
       "eyebrow": "Drop czerwcowy — 8 prac",
       "title": "Wazony <em>Nº 01–08</em>",
-      "lead": "Pękate, ręcznie malowane wazony za € 50 każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
+      "lead": "Pękate, ręcznie malowane wazony za 210 zł każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "wazony-duze": {
       "eyebrow": "Drop czerwcowy — 9 prac",
       "title": "Wazony duże <em>Nº 01–09</em>",
-      "lead": "Duże, ręcznie malowane wazony za € 95 każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
+      "lead": "Duże, ręcznie malowane wazony za 395 zł każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "talerzyki": {
       "eyebrow": "Drop czerwcowy — 15 prac",
       "title": "Talerzyki <em>Nº 01–15</em>",
-      "lead": "Małe talerzyki na drobiazgi za € 25 każdy. Każdy inny — zaznacz te, które chcesz zabrać do siebie."
+      "lead": "Małe talerzyki na drobiazgi za 105 zł każdy. Każdy inny — zaznacz te, które chcesz zabrać do siebie."
     },
     "talerze-duze": {
       "eyebrow": "Drop czerwcowy — 12 prac",
       "title": "Talerze duże <em>Nº 01–12</em>",
-      "lead": "Duże, malowane ręcznie talerze za € 65 każdy. Każdy inny — do podania albo na ścianę. Zaznacz te, które chcesz zabrać do siebie."
+      "lead": "Duże, malowane ręcznie talerze za 270 zł każdy. Każdy inny — do podania albo na ścianę. Zaznacz te, które chcesz zabrać do siebie."
     },
     "duze-michy": {
       "eyebrow": "Drop czerwcowy — 6 prac",
       "title": "Duże michy <em>Nº 01–06</em>",
-      "lead": "Duże, ręcznie malowane michy za € 75 każda. Jeden egzemplarz, jeden właściciel — zaznacz swój."
+      "lead": "Duże, ręcznie malowane michy za 315 zł każda. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "miski-falowane": {
       "eyebrow": "Drop czerwcowy — 16 prac",
       "title": "Miski falowane <em>Nº 01–16</em>",
-      "lead": "Miski o falowanym brzegu za € 38 każda. Każda inna — zaznacz te, które chcesz zabrać do siebie."
+      "lead": "Miski o falowanym brzegu za 155 zł każda. Każda inna — zaznacz te, które chcesz zabrać do siebie."
     }
   },
   "studio": {
@@ -325,8 +326,8 @@
     "toc6": "Uszkodzenia",
     "updated": "Prototyp sklepu<br/>Aktualizacja: czerwiec 2026",
     "s1H": "Wysyłka",
-    "s1P": "Każdą pracę wysyłam kurierem na terenie całej Polski. Koszt przesyłki to <strong>€ 18</strong> niezależnie od liczby zamówionych prac — jeśli kupujesz kilka, jadą razem w jednej paczce.",
-    "s1Li1": "Kurier, cała Polska — € 18",
+    "s1P": "Każdą pracę wysyłam kurierem na terenie całej Polski. Koszt przesyłki to <strong>75 zł</strong> niezależnie od liczby zamówionych prac — jeśli kupujesz kilka, jadą razem w jednej paczce.",
+    "s1Li1": "Kurier, cała Polska — 75 zł",
     "s1Li2": "Odbiór osobisty w pracowni — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, ustalę indywidualnie",
     "s2H": "Czas realizacji",
@@ -366,7 +367,7 @@
     "s2Li1": "Ze względu na jednostkowy charakter prac dana sztuka może być sprzedana tylko raz",
     "s2Li2": "Jeśli z przyczyn losowych nie mogę zrealizować zamówienia, niezwłocznie informuję o tym i zwracam pełną kwotę",
     "s3H": "§3 Ceny i płatność",
-    "s3P": "Wszystkie ceny podane są w euro i są cenami brutto. Do wartości zamówienia doliczany jest koszt wysyłki widoczny w koszyku przed potwierdzeniem zakupu. Płatność obsługiwana byłaby przez zewnętrznego operatora płatności (np. Stripe).",
+    "s3P": "Wszystkie ceny podane są w złotych polskich (PLN) i są cenami brutto. Do wartości zamówienia doliczany jest koszt wysyłki widoczny w koszyku przed potwierdzeniem zakupu. Płatność obsługiwana byłaby przez zewnętrznego operatora płatności (np. Stripe).",
     "s4H": "§4 Realizacja i wysyłka",
     "s4P": "Zamówienia nadaję w ciągu 3–5 dni roboczych od zaksięgowania płatności. Szczegóły dotyczące kosztów, terminów i odbioru osobistego opisane są na stronie <link>Dostawa i zwroty</link>.",
     "s5H": "§5 Odstąpienie od umowy",

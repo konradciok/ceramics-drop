@@ -1,7 +1,7 @@
 import { CATEGORIES } from './products';
 import type { Product } from './types';
 
-export const ANALYTICS_CURRENCY = 'EUR';
+export const ANALYTICS_CURRENCY = 'PLN';
 const BRAND = 'Anna Ciok Ceramics';
 
 export type MetaStandardEvent =

@@ -7,7 +7,7 @@ import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
-import { euro } from '@/lib/format';
+import { pln } from '@/lib/format';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -65,7 +65,7 @@ export default async function HomePage({ params }: Props) {
                 <br />
                 <span>{t('home.heroMetaDesc')}</span>
               </span>
-              <span className="right">{euro(22)}</span>
+              <span className="right">{pln(90)}</span>
             </div>
           </div>
         </div>
