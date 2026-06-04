@@ -1,0 +1,3815 @@
+[
+  {
+    "source": {
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:52.860Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+          "method": "POST",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a068604b5f6f444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "content-length": "596",
+            "content-type": "text/plain;charset=UTF-8",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "origin": "https://www.anna-ciok.studio",
+            "priority": "u=1, i",
+            "referer": "https://www.anna-ciok.studio/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/sentry-tunnel",
+          "search": {
+            "r": "de",
+            "o": 4510201389907968,
+            "p": 4511507404161104
+          }
+        },
+        "rayId": "a068604b5f6f444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a068604b5f6f444d",
+      "cpuTimeMs": 2,
+      "wallTimeMs": 60
+    },
+    "$metadata": {
+      "id": "01KT9R2TRWD4C1C30PPF8F3W73",
+      "requestId": "a068604b5f6f444d",
+      "trigger": "POST /sentry-tunnel",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:48.412Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+          "method": "POST",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a068602f7ce9444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "content-length": "21367",
+            "content-type": "text/plain;charset=UTF-8",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "origin": "https://www.anna-ciok.studio",
+            "priority": "u=1, i",
+            "referer": "https://www.anna-ciok.studio/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/sentry-tunnel",
+          "search": {
+            "r": "de",
+            "o": 4510201389907968,
+            "p": 4511507404161104
+          }
+        },
+        "rayId": "a068602f7ce9444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a068602f7ce9444d",
+      "cpuTimeMs": 3,
+      "wallTimeMs": 46
+    },
+    "$metadata": {
+      "id": "01KT9R2PDWNDZW7TR85C2HSMQY",
+      "requestId": "a068602f7ce9444d",
+      "trigger": "POST /sentry-tunnel",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:48.396Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+          "method": "POST",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a068602f7ce8444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "content-length": "597",
+            "content-type": "text/plain;charset=UTF-8",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "origin": "https://www.anna-ciok.studio",
+            "priority": "u=1, i",
+            "referer": "https://www.anna-ciok.studio/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/sentry-tunnel",
+          "search": {
+            "r": "de",
+            "o": 4510201389907968,
+            "p": 4511507404161104
+          }
+        },
+        "rayId": "a068602f7ce8444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a068602f7ce8444d",
+      "cpuTimeMs": 3,
+      "wallTimeMs": 40
+    },
+    "$metadata": {
+      "id": "01KT9R2PDCMHE0VJPXGBTG4FFA",
+      "requestId": "a068602f7ce8444d",
+      "trigger": "POST /sentry-tunnel",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "POST https://www.anna-ciok.studio/sentry-tunnel?o=4510201389907968&p=4511507404161104&r=de"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/miski-falowane?_rsc=oZWjgRXNSTFSNdU2"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:48.026Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/miski-falowane?_rsc=oZWjgRXNSTFSNdU2",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "baggage": "sentry-environment=production,sentry-release=4f3e570317694a1f670866554a7a7c14033726f6,sentry-public_key=5851217de490361cbd86c39e3a012b06,sentry-trace_id=607c1253216640499d032d79c1b4e5fe,sentry-org_id=4510201389907968,sentry-transaction=%2F%3Alocale%2Fwazony,sentry-sampled=false,sentry-sample_rand=0.24897026282522516,sentry-sample_rate=0.1",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a068602d1cda444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "next-router-prefetch": "1",
+            "next-router-segment-prefetch": "/_tree",
+            "next-url": "/pl/wazony",
+            "priority": "i",
+            "referer": "https://www.anna-ciok.studio/wazony",
+            "rsc": "1",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "sentry-trace": "607c1253216640499d032d79c1b4e5fe-b252baeb2183238b-0",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/miski-falowane",
+          "search": {
+            "_rsc": "oZWjgRXNSTFSNdU2"
+          }
+        },
+        "rayId": "a068602d1cda444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a068602d1cda444d",
+      "cpuTimeMs": 15,
+      "wallTimeMs": 31
+    },
+    "$metadata": {
+      "id": "01KT9R2P1TGZN5WKSMGVHKM9XC",
+      "requestId": "a068602d1cda444d",
+      "trigger": "GET /miski-falowane",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/miski-falowane?_rsc=oZWjgRXNSTFSNdU2",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://www.anna-ciok.studio/miski-falowane?_rsc=oZWjgRXNSTFSNdU2"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/pl/o-studiu type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:44.263Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://www.anna-ciok.studio/o-studiu?_rsc=rd32D-TB6g-ZXwvv",
+          "method": "GET",
+          "path": "/o-studiu",
+          "search": {
+            "_rsc": "rd32D-TB6g-ZXwvv"
+          }
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a06860158af0444d"
+    },
+    "$metadata": {
+      "id": "01KT9R2JC7NT8M6P4T8HRB8X6Z",
+      "requestId": "a06860158af0444d",
+      "trigger": "GET /o-studiu",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/pl/o-studiu type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/pl/o-studiu type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "6f3a57a8d1384e92892e78aa13132eeb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/pl/o-studiu type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/o-studiu?_rsc=rd32D-TB6g-ZXwvv"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:44.245Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/o-studiu?_rsc=rd32D-TB6g-ZXwvv",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "baggage": "sentry-environment=production,sentry-release=4f3e570317694a1f670866554a7a7c14033726f6,sentry-public_key=5851217de490361cbd86c39e3a012b06,sentry-trace_id=ed4e124b930bcfb6db367561b72db29e,sentry-org_id=4510201389907968,sentry-sampled=false,sentry-sample_rand=0.9459927054953416,sentry-sample_rate=0.1",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a06860158af0444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "next-router-prefetch": "1",
+            "next-router-segment-prefetch": "/_head",
+            "next-url": "/pl",
+            "priority": "i",
+            "referer": "https://www.anna-ciok.studio/",
+            "rsc": "1",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "sentry-trace": "ed4e124b930bcfb6db367561b72db29e-ad3c421678ce6080-0",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/o-studiu",
+          "search": {
+            "_rsc": "rd32D-TB6g-ZXwvv"
+          }
+        },
+        "rayId": "a06860158af0444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a06860158af0444d",
+      "cpuTimeMs": 83,
+      "wallTimeMs": 145
+    },
+    "$metadata": {
+      "id": "01KT9R2JBNXPTA4C8WRYXMEJAM",
+      "requestId": "a06860158af0444d",
+      "trigger": "GET /o-studiu",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/o-studiu?_rsc=rd32D-TB6g-ZXwvv",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://www.anna-ciok.studio/o-studiu?_rsc=rd32D-TB6g-ZXwvv"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/kontakt?_rsc=0srT9kZkTOoGJEcI"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:39:43.954Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/3",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "3m1LYiJ5Uj9ar4fOZPo4AY2x9+MCy1zcLlcqN+w+UH0=",
+            "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+            "tlsClientExtensionsSha1": "lVmdXsYaZbEAlQAJQjIVOWr/jjY=",
+            "tlsClientExtensionsSha1Le": "BNw5WgYH1nk6ycLwIWIb73W7rqk=",
+            "tlsClientHelloLength": "1767",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 0,
+            "clientQuicRtt": 27,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 22463958
+            }
+          },
+          "url": "https://www.anna-ciok.studio/kontakt?_rsc=0srT9kZkTOoGJEcI",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "pl,pl-PL;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+            "baggage": "sentry-environment=production,sentry-release=4f3e570317694a1f670866554a7a7c14033726f6,sentry-public_key=5851217de490361cbd86c39e3a012b06,sentry-trace_id=ed4e124b930bcfb6db367561b72db29e,sentry-org_id=4510201389907968,sentry-sampled=false,sentry-sample_rand=0.9459927054953416,sentry-sample_rate=0.1",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a0686013aad9444d",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "cookie": "REDACTED",
+            "dnt": "1",
+            "host": "www.anna-ciok.studio",
+            "next-router-prefetch": "1",
+            "next-router-segment-prefetch": "/$d$locale/kontakt/__PAGE__",
+            "next-url": "/pl",
+            "priority": "i",
+            "referer": "https://www.anna-ciok.studio/",
+            "rsc": "1",
+            "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "sentry-trace": "ed4e124b930bcfb6db367561b72db29e-a6c8f4f3737466d7-0",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/kontakt",
+          "search": {
+            "_rsc": "0srT9kZkTOoGJEcI"
+          }
+        },
+        "rayId": "a0686013aad9444d",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a0686013aad9444d",
+      "cpuTimeMs": 10,
+      "wallTimeMs": 288
+    },
+    "$metadata": {
+      "id": "01KT9R2J2JYH22Z9DFBTZ00RQA",
+      "requestId": "a0686013aad9444d",
+      "trigger": "GET /kontakt",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://www.anna-ciok.studio/kontakt?_rsc=0srT9kZkTOoGJEcI",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://www.anna-ciok.studio/kontakt?_rsc=0srT9kZkTOoGJEcI"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=4e342f670e77fc4d60075a0bd5cb00727326a97ec6f35b5072ee86f31791aed8 type=fetch"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:37:40.909Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/api/inventory",
+          "method": "GET",
+          "path": "/api/inventory"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a0685d0cde0f014a"
+    },
+    "$metadata": {
+      "id": "01KT9QYSXDXBE7BTXP7Z7048G1",
+      "requestId": "a0685d0cde0f014a",
+      "trigger": "GET /api/inventory",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=4e342f670e77fc4d60075a0bd5cb00727326a97ec6f35b5072ee86f31791aed8 type=fetch",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=4e342f670e77fc4d60075a0bd5cb00727326a97ec6f35b5072ee86f31791aed8 type=fetch",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "8469272f05cd830162833f36fe84b332",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=4e342f670e77fc4d60075a0bd5cb00727326a97ec6f35b5072ee86f31791aed8 type=fetch"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/api/inventory"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:37:39.988Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "",
+            "colo": "MAD",
+            "asOrganization": "Digi Spain Telecom",
+            "country": "ES",
+            "isEUCountry": "1",
+            "city": "Santa Cruz de Tenerife",
+            "continent": "EU",
+            "region": "Canary Islands",
+            "regionCode": "CN",
+            "timezone": "Atlantic/Canary",
+            "longitude": "-16.25462",
+            "latitude": "28.46824",
+            "postalCode": "38001",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES256-GCM-SHA384",
+            "tlsClientRandom": "JHCftV+om6Rojf1BgygFxAWd69Bx64l6chpRRz2rPgA=",
+            "tlsClientCiphersSha1": "kTkJ+HAwBvIuoPFncb1wEDLcgfg=",
+            "tlsClientExtensionsSha1": "lf5q7awZSBiIczJVKjOX/yrO1/8=",
+            "tlsClientExtensionsSha1Le": "GEbde1I7IelzRL2Iu/DQxSXdJak=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "07633f9ac1fed0ccc5f90c0029573c6ae2a1d79b69e3369478dc8a6f40c16e538f0aa32825138af454c753a34c08a1c7",
+              "serverHandshake": "395211b6e98af2b7de1330c7dcf06061a6ec94a0b80fb60be00814630b9a0e373fafb8166b574ecf97d0ede99e5c15d6",
+              "clientFinished": "79bd5f6e124f37765ea3909ac12db95797ab5f1c361b197968c30a0657f483f2e79f28b4a90d5c02aad8eb606d96082e",
+              "serverFinished": "33ec3c9380afa7172d6e9bc4ef5850e5279d4b0dee185f44070b9ddb20da7e415445140079f363faf5cadd5e32201932"
+            },
+            "tlsClientHelloLength": "705",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 28,
+            "clientQuicRtt": 0,
+            "asn": 57269,
+            "edgeL4": {
+              "deliveryRate": 49804
+            }
+          },
+          "url": "https://anna-ciok.studio/api/inventory",
+          "method": "GET",
+          "headers": {
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "79.117.156.80",
+            "cf-ipcountry": "ES",
+            "cf-ray": "a0685d0cde0f014a",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26200; pl-PL) PowerShell/7.6.2",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "79.117.156.80"
+          },
+          "path": "/api/inventory"
+        },
+        "rayId": "a0685d0cde0f014a",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "15955798-a751-4533-bf64-e6ceabff513c"
+      },
+      "requestId": "a0685d0cde0f014a",
+      "cpuTimeMs": 239,
+      "wallTimeMs": 737
+    },
+    "$metadata": {
+      "id": "01KT9QYS0M8V9J6BG7PHMWNW66",
+      "requestId": "a0685d0cde0f014a",
+      "trigger": "GET /api/inventory",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/api/inventory",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/api/inventory"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:00:55.397Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/wp-admin/install.php?step=1",
+          "method": "GET",
+          "path": "/wp-admin/install.php",
+          "search": {
+            "step": 1
+          }
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0682738a3a8aa08"
+    },
+    "$metadata": {
+      "id": "01KT9NVG3578MEK0DCGT0C0AGF",
+      "requestId": "a0682738a3a8aa08",
+      "trigger": "GET /wp-admin/install.php",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/wp-admin/install.php?step=1"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T16:00:55.180Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/wp-admin/install.php?step=1",
+          "method": "GET",
+          "headers": {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-us,en;q=0.8,fr;q=0.5,fr-ca;q=0.3",
+            "cache-control": "no-cache",
+            "cf-connecting-ip": "2a06:98c0:3600::103",
+            "cf-ipcountry": "SE",
+            "cf-ray": "a0682738a3a8aa08",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "kaxghz57zj.workers.dev",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "pragma": "no-cache",
+            "user-agent": "http://anna-ciok.studio/wp-admin/install.php?step=1",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "2a06:98c0:3600::103"
+          },
+          "cf": {
+            "httpProtocol": "HTTP/1.1",
+            "tlsCipher": "",
+            "continent": "EU",
+            "verifiedBotCategory": "",
+            "country": "SE",
+            "isEUCountry": "1",
+            "region": "Stockholm",
+            "tlsClientCiphersSha1": "",
+            "tlsClientAuth": {
+              "certIssuerDNLegacy": "",
+              "certIssuerSKI": "",
+              "certSubjectDNRFC2253": "",
+              "certSubjectDNLegacy": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certSKI": "",
+              "certSerial": "",
+              "certIssuerDN": "",
+              "certVerified": "NONE",
+              "certNotAfter": "",
+              "certSubjectDN": "",
+              "certPresented": "0",
+              "certRevoked": "0",
+              "certIssuerSerial": "",
+              "certIssuerDNRFC2253": "",
+              "certFingerprintSHA1": ""
+            },
+            "tlsClientRandom": "",
+            "tlsClientHelloLength": "",
+            "colo": "ARN",
+            "timezone": "Europe/Stockholm",
+            "longitude": "18.06871",
+            "latitude": "59.32938",
+            "requestPriority": "",
+            "postalCode": "195 87",
+            "city": "Stockholm",
+            "tlsVersion": "",
+            "regionCode": "AB",
+            "asOrganization": "Cloudflare, Inc.",
+            "tlsClientExtensionsSha1Le": "",
+            "tlsClientExtensionsSha1": "",
+            "asn": 13335,
+            "edgeRequestKeepAliveStatus": 1
+          },
+          "path": "/wp-admin/install.php",
+          "search": {
+            "step": 1
+          }
+        },
+        "rayId": "a0682738a3a8aa08",
+        "response": {
+          "status": 404
+        }
+      },
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0682738a3a8aa08",
+      "cpuTimeMs": 160,
+      "wallTimeMs": 173
+    },
+    "$metadata": {
+      "id": "01KT9NVFWCT4JXDTN63ZEB072R",
+      "requestId": "a0682738a3a8aa08",
+      "trigger": "GET /wp-admin/install.php",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/wp-admin/install.php?step=1",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/wp-admin/install.php?step=1"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:54:53.670Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/ollama/api/tags",
+          "method": "GET",
+          "path": "/ollama/api/tags"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681e6558169875"
+    },
+    "$metadata": {
+      "id": "01KT9NGEV6R8M6CG9T6BHWFMK3",
+      "requestId": "a0681e6558169875",
+      "trigger": "GET /ollama/api/tags",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/ollama/api/tags"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:54:53.670Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "nISdcSoU5IMMKPcIRoVHMAMKfm9q7/SzyOccuPaHETY=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "8f65e9e6d383c01a56945973e359c68d981cff35cb4790fd6305f9da5b070c96",
+              "serverHandshake": "9980e69bd5f6d6fac6f999b70029eaa4d17d1d4f4764cacbc57487a83e3786e7",
+              "clientFinished": "b8d651499dcc4c5769e50d493d5140fd76ff3a3617ef91e9a1e1bef387464999",
+              "serverFinished": "e8312df225c99ca969fbac414cf7f7d5bb4e9d2dc29af5298f9f1a4e876d60df"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 19,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 744090
+            }
+          },
+          "url": "https://anna-ciok.studio/ollama/api/tags",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0681e6558169875",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/ollama/api/tags"
+        },
+        "rayId": "a0681e6558169875",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681e6558169875",
+      "cpuTimeMs": 14,
+      "wallTimeMs": 18
+    },
+    "$metadata": {
+      "id": "01KT9NGEV6R8M6CG9T6BHWFMK2",
+      "requestId": "a0681e6558169875",
+      "trigger": "GET /ollama/api/tags",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/ollama/api/tags",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/ollama/api/tags"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:54:42.784Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/jaeger/api/services",
+          "method": "GET",
+          "path": "/jaeger/api/services"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681e215c7949b9"
+    },
+    "$metadata": {
+      "id": "01KT9NG470PM2W2BQCSWF6B4D4",
+      "requestId": "a0681e215c7949b9",
+      "trigger": "GET /jaeger/api/services",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/jaeger/api/services"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:54:42.784Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "1HWgbH9ejuAqX3eFglNSIs4L3CMIe10YvOorLkw1LqE=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "805f2d4267c2dad32c2b4565ddaae13524dbb0ba3546b56b424af219e2e6b174",
+              "serverHandshake": "ce29966ffeaf9c4eea1d1a51a515d71dd5c94f4bccb413fcfb56f7cfb17ccc3a",
+              "clientFinished": "9972cfff2d7b2ca1e86c613ecf27dde4895c89d5bc464c7762c232e4c7faedea",
+              "serverFinished": "5c90f320a179a190661c253fe536c28bd36c989539da70b4a513676b2fd97c62"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 16,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1395999
+            }
+          },
+          "url": "https://anna-ciok.studio/jaeger/api/services",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0681e215c7949b9",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/jaeger/api/services"
+        },
+        "rayId": "a0681e215c7949b9",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681e215c7949b9",
+      "cpuTimeMs": 23,
+      "wallTimeMs": 29
+    },
+    "$metadata": {
+      "id": "01KT9NG470PM2W2BQCSWF6B4D3",
+      "requestId": "a0681e215c7949b9",
+      "trigger": "GET /jaeger/api/services",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/jaeger/api/services",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/jaeger/api/services"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:53:44.131Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/.vercel/output/config.json",
+          "method": "GET",
+          "path": "/.vercel/output/config.json"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681cb2bd5c4464"
+    },
+    "$metadata": {
+      "id": "01KT9NEAY31150CR80J9WJF03Y",
+      "requestId": "a0681cb2bd5c4464",
+      "trigger": "GET /.vercel/output/config.json",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/.vercel/output/config.json"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:53:44.131Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "E/NiS4To6Fh4buHthFhVDNXGEW+/bLoZ9NePLm7ixrU=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "9a6fac8f782a035c3ae0c51d5e208be9a0901f994d02e851a900c3641beaef21",
+              "serverHandshake": "b38cbfa7f29d02c29fd827cbf190fd1fb4224e6566c779c64e702c22997b76b5",
+              "clientFinished": "4e5716c570ddf7f3b63524f3497ec6105f98a77f84655251d92137431ef4aa0d",
+              "serverFinished": "28c0ade0f7c154b5a11f7080700ddb59e919e298863b3a87d6c000dc395c6bef"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 14,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1082751
+            }
+          },
+          "url": "https://anna-ciok.studio/.vercel/output/config.json",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0681cb2bd5c4464",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/.vercel/output/config.json"
+        },
+        "rayId": "a0681cb2bd5c4464",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0681cb2bd5c4464",
+      "cpuTimeMs": 14,
+      "wallTimeMs": 19
+    },
+    "$metadata": {
+      "id": "01KT9NEAY31150CR80J9WJF03X",
+      "requestId": "a0681cb2bd5c4464",
+      "trigger": "GET /.vercel/output/config.json",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/.vercel/output/config.json",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/.vercel/output/config.json"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:51:15.205Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/.next/routes-manifest.json",
+          "method": "GET",
+          "path": "/.next/routes-manifest.json"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a068190ffed4be6e"
+    },
+    "$metadata": {
+      "id": "01KT9N9SG5BS67TEQ2A8Z22490",
+      "requestId": "a068190ffed4be6e",
+      "trigger": "GET /.next/routes-manifest.json",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/.next/routes-manifest.json"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:51:15.205Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "n9sIimKGwm878ooix899tdPdEzHmAW/XgLlgdC4U+nk=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "69c67b12f2d7d59274f6af73de2815a41a0836c756864dbf1dd55cb4470d8ed6",
+              "serverHandshake": "f0a2589f8b6d6e8944b0e2fb9a1ee60a5da419641b25b69567df3d2a3cd7fcf1",
+              "clientFinished": "75dc379fdfbe120458f5b815727cc2f252addbda22742cf50f14305cd638b75d",
+              "serverFinished": "b77f75969016d36174b117ed624419b213ae7335e65540c8bb56c5ad1c64a75a"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 5,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 898123
+            }
+          },
+          "url": "https://anna-ciok.studio/.next/routes-manifest.json",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a068190ffed4be6e",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/.next/routes-manifest.json"
+        },
+        "rayId": "a068190ffed4be6e",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a068190ffed4be6e",
+      "cpuTimeMs": 14,
+      "wallTimeMs": 17
+    },
+    "$metadata": {
+      "id": "01KT9N9SG5BS67TEQ2A8Z2248Z",
+      "requestId": "a068190ffed4be6e",
+      "trigger": "GET /.next/routes-manifest.json",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/.next/routes-manifest.json",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/.next/routes-manifest.json"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:50:56.976Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/wp-json/gravitysmtp/v1/connector/amazon-ses",
+          "method": "GET",
+          "path": "/wp-json/gravitysmtp/v1/connector/amazon-ses"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a068189e0dccbe6e"
+    },
+    "$metadata": {
+      "id": "01KT9N97PG4WMJZV3SB6QPMVH4",
+      "requestId": "a068189e0dccbe6e",
+      "trigger": "GET /wp-json/gravitysmtp/v1/connector/amazon-ses",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/wp-json/gravitysmtp/v1/connector/amazon-ses"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:50:56.976Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "n9sIimKGwm878ooix899tdPdEzHmAW/XgLlgdC4U+nk=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "69c67b12f2d7d59274f6af73de2815a41a0836c756864dbf1dd55cb4470d8ed6",
+              "serverHandshake": "f0a2589f8b6d6e8944b0e2fb9a1ee60a5da419641b25b69567df3d2a3cd7fcf1",
+              "clientFinished": "75dc379fdfbe120458f5b815727cc2f252addbda22742cf50f14305cd638b75d",
+              "serverFinished": "b77f75969016d36174b117ed624419b213ae7335e65540c8bb56c5ad1c64a75a"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 5,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 321040
+            }
+          },
+          "url": "https://anna-ciok.studio/wp-json/gravitysmtp/v1/connector/amazon-ses",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a068189e0dccbe6e",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/wp-json/gravitysmtp/v1/connector/amazon-ses"
+        },
+        "rayId": "a068189e0dccbe6e",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a068189e0dccbe6e",
+      "cpuTimeMs": 21,
+      "wallTimeMs": 25
+    },
+    "$metadata": {
+      "id": "01KT9N97PG4WMJZV3SB6QPMVH3",
+      "requestId": "a068189e0dccbe6e",
+      "trigger": "GET /wp-json/gravitysmtp/v1/connector/amazon-ses",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/wp-json/gravitysmtp/v1/connector/amazon-ses",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/wp-json/gravitysmtp/v1/connector/amazon-ses"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/docker/.env"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:49:05.713Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "VQJFvpsjYFDSplCYHQW7tWNietwZQFgalVoYC2V/jtw=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "b9eb74008d6bd631ebfcb3b864558a4572fbb0444dc03d9f5b13f1f26498ee55",
+              "serverHandshake": "c04a108b701d7cf9341cfd79efd84d76ec52b6f009b4f9fb8906630f30b5baff",
+              "clientFinished": "026ac032a3586fee5ddb909b58e8e0074085484044425434335e9a893d333d06",
+              "serverFinished": "1661d1e5a210be124a6c4bc41e32d2fabddd32d83ff8caa7e4d00e2286a07d17"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 6,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 218445
+            }
+          },
+          "url": "https://anna-ciok.studio/docker/.env",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a06815e69a7566a2",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/docker/.env"
+        },
+        "rayId": "a06815e69a7566a2",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06815e69a7566a2",
+      "cpuTimeMs": 45,
+      "wallTimeMs": 53
+    },
+    "$metadata": {
+      "id": "01KT9N5V1HE06B9VTDVVTTK0S0",
+      "requestId": "a06815e69a7566a2",
+      "trigger": "GET /docker/.env",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/docker/.env",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/docker/.env"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:47:28.343Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/backend/.env",
+          "method": "GET",
+          "path": "/backend/.env"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06813861c39f5bf"
+    },
+    "$metadata": {
+      "id": "01KT9N2VYQ2DW8JVBPRXQFQ4PF",
+      "requestId": "a06813861c39f5bf",
+      "trigger": "GET /backend/.env",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/backend/.env"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:47:28.343Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "Sx7x06k/TBCY/UmTfvvJOaGcJvxDixfIowhCTEqZMJs=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "0eff4d94f8d58348f322df7a02848b67d0cf8e6d2261c2096e740fdc9f2b2128",
+              "serverHandshake": "2e57d8825d80f960a65274b26c3653d7ccf1edccc5bfd3ea3934fb7790dd5cec",
+              "clientFinished": "68df2e6cbe64a282503f6066d995b7e10df356dedec6912c905527ee6af679ab",
+              "serverFinished": "1112493b12dc30fb98a921fed51469063c1151f92708d648541dcb4a8da29c43"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 16,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 475637
+            }
+          },
+          "url": "https://anna-ciok.studio/backend/.env",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a06813861c39f5bf",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/backend/.env"
+        },
+        "rayId": "a06813861c39f5bf",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06813861c39f5bf",
+      "cpuTimeMs": 19,
+      "wallTimeMs": 22
+    },
+    "$metadata": {
+      "id": "01KT9N2VYQ2DW8JVBPRXQFQ4PE",
+      "requestId": "a06813861c39f5bf",
+      "trigger": "GET /backend/.env",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/backend/.env",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/backend/.env"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:46:54.281Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/admin/.env",
+          "method": "GET",
+          "path": "/admin/.env"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06812b13a84a6e5"
+    },
+    "$metadata": {
+      "id": "01KT9N1TP9SHYNS39FHFMX48J3",
+      "requestId": "a06812b13a84a6e5",
+      "trigger": "GET /admin/.env",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/admin/.env"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:46:54.281Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "sMwVfyjQYFdSDb3umwkz+1cIEeSBfwKHkxkcWK55hbg=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "31da2d0075e7a16bd61b45a505e78a983dc4e08873cef5cb15f38dbe380739b7",
+              "serverHandshake": "c2d95a423dd6d1d79d4e19e8599c75db8101d2bf32366749059c090cf428274d",
+              "clientFinished": "9abae10102a52a9583b06beb106e6d681a729e1f06c4e9aa6d3c606fbdc378cf",
+              "serverFinished": "24e906e45520cb45a8b6cb3a5bf7ac4f37c8ea79e33aa772ef567680ec120f92"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 4,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1097524
+            }
+          },
+          "url": "https://anna-ciok.studio/admin/.env",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a06812b13a84a6e5",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/admin/.env"
+        },
+        "rayId": "a06812b13a84a6e5",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06812b13a84a6e5",
+      "cpuTimeMs": 22,
+      "wallTimeMs": 25
+    },
+    "$metadata": {
+      "id": "01KT9N1TP9SHYNS39FHFMX48J2",
+      "requestId": "a06812b13a84a6e5",
+      "trigger": "GET /admin/.env",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/admin/.env",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/admin/.env"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:45.390Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/api/v1/credentials",
+          "method": "GET",
+          "path": "/api/v1/credentials"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06811029d33664c"
+    },
+    "$metadata": {
+      "id": "01KT9MZQDEESSSE8T15MW3EYSW",
+      "requestId": "a06811029d33664c",
+      "trigger": "GET /api/v1/credentials",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/api/v1/credentials"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:45.390Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "ZFZ7O1jTrug7DWWr3BvtIq7eXPclEvBkVONtB/jRK5w=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "558a76a0ed4cbf864790d571201682049ef03ee7942cf6db7338047df7be3997",
+              "serverHandshake": "0db31ee978880864664fc91ea62c4c6f77dd912c54675d20dce0890fc26a77d7",
+              "clientFinished": "2cf88f944452a531af2345b881ad40aa7920fa73a242047ed399888a1379b470",
+              "serverFinished": "d51eca67a3c8d1aebfc82bf30ab16ff3bd4bdeaf0402d90f248f2c0f98c14c8c"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 4,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1094758
+            }
+          },
+          "url": "https://anna-ciok.studio/api/v1/credentials",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a06811029d33664c",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/api/v1/credentials"
+        },
+        "rayId": "a06811029d33664c",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06811029d33664c",
+      "cpuTimeMs": 24,
+      "wallTimeMs": 30
+    },
+    "$metadata": {
+      "id": "01KT9MZQDEESSSE8T15MW3EYSV",
+      "requestId": "a06811029d33664c",
+      "trigger": "GET /api/v1/credentials",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/api/v1/credentials",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/api/v1/credentials"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/robots.txt type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:36.984Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/robots.txt",
+          "method": "GET",
+          "path": "/robots.txt"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06810ccf96d36cd"
+    },
+    "$metadata": {
+      "id": "01KT9MZF6RWP8N7FZ1CY9WJQP3",
+      "requestId": "a06810ccf96d36cd",
+      "trigger": "GET /robots.txt",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/robots.txt type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/robots.txt type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "71dcced7e34e4789f8acc862dd28192f",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/<DOMAIN> type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/robots.txt"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:36.802Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "isEUCountry": false,
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/2",
+            "clientAcceptEncoding": "gzip, deflate, br",
+            "requestPriority": "weight=16;exclusive=0;group=0;group-weight=0",
+            "colo": "CMH",
+            "asOrganization": "Anthropic, PBC",
+            "country": "US",
+            "city": "Columbus",
+            "continent": "NA",
+            "region": "Ohio",
+            "regionCode": "OH",
+            "timezone": "America/New_York",
+            "longitude": "-82.99879",
+            "latitude": "39.96118",
+            "postalCode": "43215",
+            "metroCode": "535",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES256-GCM-SHA384",
+            "tlsClientRandom": "7JImDnkK5p7AAsNcGCvfsENJ0P5qpB8kh9YFU+cPQQo=",
+            "tlsClientCiphersSha1": "WUS9+h7TjVkF9aEouGuCEMjGQGA=",
+            "tlsClientExtensionsSha1": "RfTiE9RYCR7TGqq7zmQBj9Zxaf0=",
+            "tlsClientExtensionsSha1Le": "Ku/rRV8y8Esv+dvfd/dqjSK27bI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "fc78513cadd9448cc859d1b4a2c47f6a7406087e7ef5197b715f9290d179fcfda406e1fbee857c6388fc3f2e26e8baee",
+              "serverHandshake": "395c7ca084b5868dec0a5601615f956dd6695e1a013accdae847ad564f1f37be493f3546f3ec612032051bbd0a09d0ec",
+              "clientFinished": "c8b5dd3fe3b0f75e7de7663bfe5644f44e8f5b52383be3dd249bd50fa586886005cbc022695128969d6cf32cd51e4f02",
+              "serverFinished": "0b418f2485405153eedee12f6b139a68872a229fbcd7f3cda8ed9a0f742ba4548602c00f8da81d28ee822b46e8844f57"
+            },
+            "tlsClientHelloLength": "252",
+            "verifiedBotCategory": "AI Search",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 1,
+            "clientQuicRtt": 0,
+            "asn": 16509,
+            "edgeL4": {
+              "deliveryRate": 2378970
+            }
+          },
+          "url": "https://anna-ciok.studio/robots.txt",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "216.73.217.83",
+            "cf-ipcountry": "US",
+            "cf-ray": "a06810ccf96d36cd",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +searchbot@anthropic.com)",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "216.73.217.83"
+          },
+          "path": "/robots.txt"
+        },
+        "rayId": "a06810ccf96d36cd",
+        "response": {
+          "status": 200
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06810ccf96d36cd",
+      "cpuTimeMs": 119,
+      "wallTimeMs": 130
+    },
+    "$metadata": {
+      "id": "01KT9MZF120HX4BZ2RNWA2JGYR",
+      "requestId": "a06810ccf96d36cd",
+      "trigger": "GET /robots.txt",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/robots.txt",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/robots.txt"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:31.338Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/stripe/webhook_secret%2eenv",
+          "method": "GET",
+          "path": "/stripe/webhook_secret%2eenv"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06810aad90c5c45"
+    },
+    "$metadata": {
+      "id": "01KT9MZ9PAH4DDQRPZ9YP6FRZX",
+      "requestId": "a06810aad90c5c45",
+      "trigger": "GET /stripe/webhook_secret%2eenv",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/stripe/webhook_secret%2eenv"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:45:31.338Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "oRNWwUJz4TNecUR1gnQ8M4ESGFKPuHZjnKuOzA6h/Bc=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "82f5d83e66ae2bb06cc65e7b0fd6f06b6d5172899b34c513f0e88b4bec992cd1",
+              "serverHandshake": "c1d39327add4eb0ebdad9dab0e7e5aa963582fffc65d98e79bc2ee400a475adf",
+              "clientFinished": "259349eab0ceb7eaa2547ce5d54acd699cf8c505667321077e5238873f3bf747",
+              "serverFinished": "79542fca1136d73055ea112aa6211e12c4113545431da440de7ce80fa78dc057"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 16,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 411978
+            }
+          },
+          "url": "https://anna-ciok.studio/stripe/webhook_secret%2eenv",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a06810aad90c5c45",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/stripe/webhook_secret%2eenv"
+        },
+        "rayId": "a06810aad90c5c45",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a06810aad90c5c45",
+      "cpuTimeMs": 25,
+      "wallTimeMs": 32
+    },
+    "$metadata": {
+      "id": "01KT9MZ9PAH4DDQRPZ9YP6FRZW",
+      "requestId": "a06810aad90c5c45",
+      "trigger": "GET /stripe/webhook_secret%2eenv",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/stripe/webhook_secret%2eenv",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/stripe/webhook_secret%2eenv"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:44:48.375Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/_profiler",
+          "method": "GET",
+          "path": "/_profiler"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680f9e5b58fb9c"
+    },
+    "$metadata": {
+      "id": "01KT9MXZQQ5N3T0YQET734EGTN",
+      "requestId": "a0680f9e5b58fb9c",
+      "trigger": "GET /_profiler",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/_profiler"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:44:48.375Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "BwyXccRs5od618w8jgZoGn92qLhvEQIMHL3tiIqIGHE=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "60e680bd0acf04b97ac2f71f0f91ff6e62fe3d61a8486b1eb888ca9b4702ed4c",
+              "serverHandshake": "07ad8458024b8fe903a593617e3cbcaa4417114b4e4ae0c80d20aeb6a82839bf",
+              "clientFinished": "050c05b99dacd8452921cbe9dc261c189e511e6aab9a2f4066914a67c4680649",
+              "serverFinished": "6b1e1e78d2471443d7d6fe0f02639b40551d6045a5c43569bd35d895dc5578ec"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 6,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1503634
+            }
+          },
+          "url": "https://anna-ciok.studio/_profiler",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680f9e5b58fb9c",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/_profiler"
+        },
+        "rayId": "a0680f9e5b58fb9c",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680f9e5b58fb9c",
+      "cpuTimeMs": 19,
+      "wallTimeMs": 24
+    },
+    "$metadata": {
+      "id": "01KT9MXZQQ5N3T0YQET734EGTM",
+      "requestId": "a0680f9e5b58fb9c",
+      "trigger": "GET /_profiler",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/_profiler",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/_profiler"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:43:52.416Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/%2eenv%2edevelopment",
+          "method": "GET",
+          "path": "/%2eenv%2edevelopment"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680e408d646612"
+    },
+    "$metadata": {
+      "id": "01KT9MW930EGP24B4SGJGJF2BT",
+      "requestId": "a0680e408d646612",
+      "trigger": "GET /%2eenv%2edevelopment",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/%2eenv%2edevelopment"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:43:52.416Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "SWJFMJJxpJr2c2NjTHvO1PGoF90JRwK51Ilxn8eoiCM=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "f2086ba3ccf5ead51261c9423c96e0f205174102a7aa58226267781062c9dac2",
+              "serverHandshake": "3552c763fb09663a95b8bc1dfdd137a93b46fe9824179d849c0b7da9e9cdeae6",
+              "clientFinished": "3ea1679cd1c5402b02c06e7113758438572ea304d161e5a49ea97e65eaabd5bb",
+              "serverFinished": "05fbdaa8c68d5275e7c4c71aea58216ef47914fe0f1afbf0245563ef8433254b"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 4,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 593929
+            }
+          },
+          "url": "https://anna-ciok.studio/%2eenv%2edevelopment",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680e408d646612",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/%2eenv%2edevelopment"
+        },
+        "rayId": "a0680e408d646612",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680e408d646612",
+      "cpuTimeMs": 32,
+      "wallTimeMs": 39
+    },
+    "$metadata": {
+      "id": "01KT9MW930EGP24B4SGJGJF2BS",
+      "requestId": "a0680e408d646612",
+      "trigger": "GET /%2eenv%2edevelopment",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/%2eenv%2edevelopment",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/%2eenv%2edevelopment"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:43:30.443Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/laravel/%2eenv",
+          "method": "GET",
+          "path": "/laravel/%2eenv"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680db73e5f8e2b"
+    },
+    "$metadata": {
+      "id": "01KT9MVKMBDNF4C7V9G5JFKXCZ",
+      "requestId": "a0680db73e5f8e2b",
+      "trigger": "GET /laravel/%2eenv",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/laravel/%2eenv"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:43:30.443Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "vnk+iuWBLYvPIATRAGD2w3mHZ74di4xJWjSUv8/NBEA=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "2e18c25970e70f99c44bc824140dc37584a72ff420daf204c09e35d81cd6dc32",
+              "serverHandshake": "85eb3e466139fad900f0890579e1c9f64da5277592f301f67b00e78744d991ea",
+              "clientFinished": "cd58b2a5cc13390a4ea7e44bbcc8c620ce84aa33b440f98f7357543b6ffe6349",
+              "serverFinished": "f8266d6c268581dfc100895a76b22d1941cb5629e449d3ac20d6d75a7b30f3fb"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 4,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 966192
+            }
+          },
+          "url": "https://anna-ciok.studio/laravel/%2eenv",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680db73e5f8e2b",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/laravel/%2eenv"
+        },
+        "rayId": "a0680db73e5f8e2b",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680db73e5f8e2b",
+      "cpuTimeMs": 17,
+      "wallTimeMs": 20
+    },
+    "$metadata": {
+      "id": "01KT9MVKMBDNF4C7V9G5JFKXCY",
+      "requestId": "a0680db73e5f8e2b",
+      "trigger": "GET /laravel/%2eenv",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/laravel/%2eenv",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/laravel/%2eenv"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:42:42.501Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/app/amplify%2eyaml",
+          "method": "GET",
+          "path": "/app/amplify%2eyaml"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680c8b9a4ebb01"
+    },
+    "$metadata": {
+      "id": "01KT9MT4T533Y00HFHPQ7NFSJM",
+      "requestId": "a0680c8b9a4ebb01",
+      "trigger": "GET /app/amplify%2eyaml",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/app/amplify%2eyaml"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:42:42.501Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "xf9lALY1r1l44K/JqA9UnJJVgMaeV2yjX42GqDRfxqg=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "0da450b8be21de7bff7e9582bb5513487e3b023c5356d86299cb547cd18828a4",
+              "serverHandshake": "93830b78f448475e115691f2723d88d941b32b813af307fc97becb0091321511",
+              "clientFinished": "4eddc38b04dd582498ba2479d9cefb8650287d883a294cbd1df5a8d874b5b0a8",
+              "serverFinished": "7240b126525b2135dcd8126a36b0fd061ed680c65b696d65028091e7a1b58777"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 4,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1155011
+            }
+          },
+          "url": "https://anna-ciok.studio/app/amplify%2eyaml",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680c8b9a4ebb01",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/app/amplify%2eyaml"
+        },
+        "rayId": "a0680c8b9a4ebb01",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680c8b9a4ebb01",
+      "cpuTimeMs": 26,
+      "wallTimeMs": 31
+    },
+    "$metadata": {
+      "id": "01KT9MT4T533Y00HFHPQ7NFSJK",
+      "requestId": "a0680c8b9a4ebb01",
+      "trigger": "GET /app/amplify%2eyaml",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/app/amplify%2eyaml",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/app/amplify%2eyaml"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:41:58.831Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/s3%2eproperties",
+          "method": "GET",
+          "path": "/s3%2eproperties"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680b7aad909fed"
+    },
+    "$metadata": {
+      "id": "01KT9MRT5FEKH7MZCBTFJ91ZWJ",
+      "requestId": "a0680b7aad909fed",
+      "trigger": "GET /s3%2eproperties",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/s3%2eproperties"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:41:58.831Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "+neeZGtPB0tsUZ4PRTE7tXpPLnTxAQkDeGW+jYqpGjs=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "d95298f1e7d97dbadf938e2bd4b4e0fb78636ae0e62b6062e51cd0b8ff1f4b52",
+              "serverHandshake": "f2838ac1186963808ded6e759a93b7e32411d7e2c42f9da1854a28603ddf5440",
+              "clientFinished": "0256bf16fc5b14f767aa3f3b89861a7aaf49475e24c5ad6e3619e316a50ca579",
+              "serverFinished": "c0db09a7467444ce15879f57037126dd0b451f78ffc91ea2523dab59afd5ec8d"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 10,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 1430830
+            }
+          },
+          "url": "https://anna-ciok.studio/s3%2eproperties",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680b7aad909fed",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/s3%2eproperties"
+        },
+        "rayId": "a0680b7aad909fed",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680b7aad909fed",
+      "cpuTimeMs": 28,
+      "wallTimeMs": 32
+    },
+    "$metadata": {
+      "id": "01KT9MRT5FEKH7MZCBTFJ91ZWH",
+      "requestId": "a0680b7aad909fed",
+      "trigger": "GET /s3%2eproperties",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/s3%2eproperties",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/s3%2eproperties"
+    }
+  },
+  {
+    "source": {
+      "level": "error",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:41:45.111Z",
+    "$workers": {
+      "truncated": false,
+      "event": {
+        "request": {
+          "url": "https://anna-ciok.studio/aws_s3_config%2ejson",
+          "method": "GET",
+          "path": "/aws_s3_config%2ejson"
+        }
+      },
+      "outcome": "ok",
+      "scriptName": "ceramics-drop",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680b24dc1e6715"
+    },
+    "$metadata": {
+      "id": "01KT9MRCRQ606NMGRRWMRQ4WBW",
+      "requestId": "a0680b24dc1e6715",
+      "trigger": "GET /aws_s3_config%2ejson",
+      "service": "ceramics-drop",
+      "level": "error",
+      "error": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "message": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker",
+      "fingerprint": "317da1b00665d0d7c98805558e2dcdcb",
+      "origin": "fetch",
+      "messageTemplate": "StaticAssetsIncrementalCache: Failed to set to read-only cache key=/_not-found type=cache"
+    }
+  },
+  {
+    "source": {
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/aws_s3_config%2ejson"
+    },
+    "dataset": "cloudflare-workers",
+    "timestamp": "2026-06-04T15:41:45.111Z",
+    "$workers": {
+      "event": {
+        "request": {
+          "cf": {
+            "tlsClientAuth": {
+              "certRFC9440TooLarge": false,
+              "certChainRFC9440TooLarge": false,
+              "certPresented": "0",
+              "certVerified": "NONE",
+              "certRevoked": "0",
+              "certIssuerDN": "",
+              "certSubjectDN": "",
+              "certIssuerDNRFC2253": "",
+              "certSubjectDNRFC2253": "",
+              "certIssuerDNLegacy": "",
+              "certSubjectDNLegacy": "",
+              "certSerial": "",
+              "certIssuerSerial": "",
+              "certSKI": "",
+              "certIssuerSKI": "",
+              "certFingerprintSHA1": "",
+              "certFingerprintSHA256": "",
+              "certNotBefore": "",
+              "certNotAfter": "",
+              "certRFC9440": "",
+              "certChainRFC9440": ""
+            },
+            "httpProtocol": "HTTP/1.1",
+            "clientAcceptEncoding": "gzip",
+            "requestPriority": "",
+            "colo": "AMS",
+            "asOrganization": "Kprohost",
+            "country": "NL",
+            "isEUCountry": "1",
+            "city": "Kerkrade",
+            "continent": "EU",
+            "region": "Limburg",
+            "regionCode": "LI",
+            "timezone": "Europe/Amsterdam",
+            "longitude": "6.0625",
+            "latitude": "50.86583",
+            "postalCode": "6461",
+            "tlsVersion": "TLSv1.3",
+            "tlsCipher": "AEAD-AES128-GCM-SHA256",
+            "tlsClientRandom": "1kBS8UY0eLgarTjRkzEYWZNyGR/pnUs5iKkkC8cFS94=",
+            "tlsClientCiphersSha1": "TR/nWVyRwvW06zCmsHLGssxPcfk=",
+            "tlsClientExtensionsSha1": "aWVCohOefx9sYmnLzIkGYW/Cb9M=",
+            "tlsClientExtensionsSha1Le": "G5t+uwtBmY9hJOvSdB/+WgzrvyI=",
+            "tlsExportedAuthenticator": {
+              "clientHandshake": "efd94952fda07f3fd959b624e23ef0a5b674000ce70198dcd3a9208bd8befc31",
+              "serverHandshake": "c35fca291beb64cdb86510b1e28bf1b20485a868eeb75500b291305ea92a438a",
+              "clientFinished": "5c998aaa2c84b606317ca38eede62dcdabcda9730be0df3cc950da06c3ee29b4",
+              "serverFinished": "304effeb99088790112ac14c20a4a55e0ad40750172d1241895189ad50c473cb"
+            },
+            "tlsClientHelloLength": "259",
+            "verifiedBotCategory": "",
+            "edgeRequestKeepAliveStatus": 1,
+            "clientTcpRtt": 6,
+            "clientQuicRtt": 0,
+            "asn": 214940,
+            "edgeL4": {
+              "deliveryRate": 279374
+            }
+          },
+          "url": "https://anna-ciok.studio/aws_s3_config%2ejson",
+          "method": "GET",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cf-connecting-ip": "45.144.212.70",
+            "cf-ipcountry": "NL",
+            "cf-ray": "a0680b24dc1e6715",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "connection": "Keep-Alive",
+            "host": "anna-ciok.studio",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-forwarded-proto": "https",
+            "x-real-ip": "45.144.212.70"
+          },
+          "path": "/aws_s3_config%2ejson"
+        },
+        "rayId": "a0680b24dc1e6715",
+        "response": {
+          "status": 404
+        }
+      },
+      "truncated": false,
+      "scriptName": "ceramics-drop",
+      "outcome": "ok",
+      "eventType": "fetch",
+      "executionModel": "stateless",
+      "scriptVersion": {
+        "id": "284a9f1a-7d60-4e64-a149-fdb520c4a12a"
+      },
+      "requestId": "a0680b24dc1e6715",
+      "cpuTimeMs": 35,
+      "wallTimeMs": 42
+    },
+    "$metadata": {
+      "id": "01KT9MRCRQ606NMGRRWMRQ4WBV",
+      "requestId": "a0680b24dc1e6715",
+      "trigger": "GET /aws_s3_config%2ejson",
+      "service": "ceramics-drop",
+      "level": "info",
+      "message": "GET https://anna-ciok.studio/aws_s3_config%2ejson",
+      "account": "3ebc59b80b15b6b4850ae0734a24ce26",
+      "type": "cf-worker-event",
+      "fingerprint": "8b2ed94956a635d3098b4336dcb80d11",
+      "origin": "fetch",
+      "messageTemplate": "GET https://anna-ciok.studio/aws_s3_config%2ejson"
+    }
+  }
+]
