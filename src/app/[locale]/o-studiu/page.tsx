@@ -4,13 +4,18 @@ import { Link } from '@/i18n/navigation';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
+import { alternatesFor } from '@/lib/seo/urls';
+import type { Locale } from '@/i18n/routing';
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
-  return { title: t('title.studio') };
+  return {
+    title: t('title.studio'),
+    alternates: alternatesFor(locale as Locale, '/o-studiu'),
+  };
 }
 
 /** Studio / about. Sections: page-head, story, facts, process, CTA. */

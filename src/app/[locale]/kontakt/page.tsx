@@ -2,13 +2,18 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { richTags } from '@/components/ui/richTags';
 import { ContactForm } from '@/components/shop/ContactForm';
+import { alternatesFor } from '@/lib/seo/urls';
+import type { Locale } from '@/i18n/routing';
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
-  return { title: t('title.kontakt') };
+  return {
+    title: t('title.kontakt'),
+    alternates: alternatesFor(locale as Locale, '/kontakt'),
+  };
 }
 
 /** Contact page — form + studio details sidebar. */
