@@ -21,6 +21,13 @@ export async function POST(req: Request) {
   const valid = validateCart(body.ids);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
 
+  // Persist the buyer's locale so the shipping-confirmation email can be localised.
+  const VALID_LOCALES = ['pl', 'en', 'es'] as const;
+  const locale: string =
+    typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
+      ? body.locale
+      : 'pl';
+
   // Delivery details (method, receiver contact, locker/address) are collected
   // pre-payment so InPost has everything it needs once the order is paid.
   const delivery = validateDelivery(body);
@@ -80,6 +87,7 @@ export async function POST(req: Request) {
     receiver_phone: contact.phone || null,
     inpost_target_point: target_point ?? null,
     shipping_address: address ?? null,
+    locale,
   });
   let itemsErr = null;
   if (!orderErr) {
