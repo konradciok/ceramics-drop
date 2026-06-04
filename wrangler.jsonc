@@ -2,12 +2,14 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "ceramics-drop",
   "workers_dev": false,
-  "main": ".open-next/worker.js",
+  "main": "./worker.ts",
   "build": {
     "command": "node_modules/.bin/opennextjs-cloudflare build"
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Expire abandoned checkout orders (cancel open PI, free reserved pieces) every 15 minutes.
+  "triggers": { "crons": ["*/15 * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
