@@ -142,7 +142,8 @@ export async function POST(req: Request) {
               .from('orders')
               .select(
                 'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
-                  'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id',
+                  'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id, ' +
+                  'inpost_dispatch_order_id',
               )
               .eq('payment_intent_id', paymentIntentId)
               .single();
@@ -164,7 +165,8 @@ export async function POST(req: Request) {
             const { error } = await supabase
               .from('orders')
               .update({ inpost_dispatch_order_id: dispatchOrderId })
-              .eq('id', orderId);
+              .eq('id', orderId)
+              .is('inpost_dispatch_order_id', null);
             if (error) throw error;
           },
           inpost: getInPost(),

@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
-import { emailLabelToStudio, emailShippingConfirmationToCustomer, type LabelEmailOrder } from '@/lib/email';
+import {
+  emailLabelToStudio,
+  emailShippingConfirmationToCustomer,
+  emailReturnLabelToCustomer,
+  type LabelEmailOrder,
+} from '@/lib/email';
 import { parseShipxWebhook, LABEL_READY_STATUS } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
@@ -64,8 +69,10 @@ export async function POST(req: Request) {
     console.error('inpost webhook: order lookup failed', evt.shipmentId, lookupErr);
     return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
   }
-  // Unknown shipment → acknowledge so InPost stops retrying.
-  if (!order) return NextResponse.json({ received: true });
+  // Unknown outbound shipment — check if it belongs to a return shipment.
+  if (!order) {
+    return handleReturnShipmentWebhook(evt, supabase);
+  }
 
   // Mirror the latest status (+ tracking number once it appears).
   const { error: statusErr } = await supabase
@@ -184,6 +191,80 @@ export async function POST(req: Request) {
         }
         console.error('customer shipping email failed for shipment', evt.shipmentId, err);
         return NextResponse.json({ error: 'customer_notify_failed' }, { status: 500 });
+      }
+    }
+  }
+
+  return NextResponse.json({ received: true });
+}
+
+/**
+ * Handle a ShipX status event for a return shipment. Mirrors the outbound
+ * label flow: on first `confirmed`, atomically claim `return_label_emailed_at`,
+ * fetch the A6 PDF, and email it to the customer.
+ */
+async function handleReturnShipmentWebhook(
+  evt: { shipmentId: string; status: string },
+  supabase: ReturnType<typeof import('@/lib/supabase').getSupabaseAdmin>,
+): Promise<Response> {
+  const { data: returnOrder, error: returnLookupErr } = (await supabase
+    .from('orders')
+    .select('id, email, receiver_first_name, locale, return_label_emailed_at')
+    .eq('inpost_return_shipment_id', evt.shipmentId)
+    .maybeSingle()) as {
+    data: {
+      id: string;
+      email: string | null;
+      receiver_first_name: string | null;
+      locale: string | null;
+      return_label_emailed_at: string | null;
+    } | null;
+    error: { message: string } | null;
+  };
+
+  if (returnLookupErr) {
+    console.error('inpost webhook: return order lookup failed', evt.shipmentId, returnLookupErr);
+    return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
+  }
+  if (!returnOrder) return NextResponse.json({ received: true });
+
+  if (evt.status === LABEL_READY_STATUS && returnOrder.email && !returnOrder.return_label_emailed_at) {
+    const claimedAt = new Date().toISOString();
+    const { data: claimed, error: claimErr } = (await supabase
+      .from('orders')
+      .update({ return_label_emailed_at: claimedAt })
+      .eq('id', returnOrder.id)
+      .is('return_label_emailed_at', null)
+      .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+
+    if (claimErr) {
+      console.error('inpost webhook: return label claim failed', evt.shipmentId, claimErr);
+      return NextResponse.json({ error: 'return_label_claim_failed' }, { status: 500 });
+    }
+
+    if (claimed && claimed.length > 0) {
+      try {
+        const labelPdf = await getInPost().getLabelPdf(evt.shipmentId);
+        await emailReturnLabelToCustomer({
+          order: {
+            id: returnOrder.id,
+            email: returnOrder.email,
+            receiver_first_name: returnOrder.receiver_first_name,
+          },
+          labelPdf,
+          locale: returnOrder.locale ?? 'pl',
+        });
+      } catch (err) {
+        const { error: releaseErr } = await supabase
+          .from('orders')
+          .update({ return_label_emailed_at: null })
+          .eq('id', returnOrder.id)
+          .eq('return_label_emailed_at', claimedAt);
+        if (releaseErr) {
+          console.error('inpost webhook: return label claim release failed', returnOrder.id, claimedAt, releaseErr);
+        }
+        console.error('return label email failed for shipment', evt.shipmentId, err);
+        return NextResponse.json({ error: 'return_label_email_failed' }, { status: 500 });
       }
     }
   }

@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
-import { emailReturnLabelToCustomer } from '@/lib/email';
 import { createOrderReturn } from '@/lib/return';
-import type { StudioReturnConfig } from '@/lib/shipx';
-import type { OrderForReturn } from '@/lib/shipx';
+import type { StudioReturnConfig, OrderForReturn } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,25 +52,25 @@ export async function POST(req: Request) {
       }) | null;
     },
     saveReturn: async (id, d) => {
+      // Guard with IS NULL so concurrent requests don't create duplicate ShipX shipments.
       const { error } = await supabase
         .from('orders')
         .update({
           inpost_return_shipment_id: d.returnShipmentId,
           return_requested_at: new Date().toISOString(),
         })
-        .eq('id', id);
+        .eq('id', id)
+        .is('inpost_return_shipment_id', null);
       if (error) throw error;
     },
     inpost: getInPost(),
     studioConfig,
-    emailReturnLabel: async (order, labelPdf, locale) => {
-      await emailReturnLabelToCustomer({ order, labelPdf, locale });
-    },
   });
 
   if (!result.ok) {
-    // Return 404 for all ineligible states to avoid leaking order state.
-    return NextResponse.json({ error: result.reason }, { status: 404 });
+    // Single opaque body for all ineligible states — distinct reasons in logs only.
+    console.info('returns: ineligible', { orderId, reason: result.reason });
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
   return NextResponse.json({

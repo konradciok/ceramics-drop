@@ -31,7 +31,22 @@ export async function createOrderShipment(
   const order = await deps.loadOrder(paymentIntentId);
   if (!order) return;
   if (!needsShipment(order.delivery_method)) return; // odbior → no carrier shipment
-  if (order.inpost_shipment_id) return; // already shipped (idempotent on webhook replay)
+
+  // Shipment already created (Stripe webhook replay). Still schedule dispatch if it
+  // was never persisted — covers the race where createShipment succeeded but
+  // createDispatchOrder threw, causing a webhook retry that would otherwise no-op here.
+  if (order.inpost_shipment_id) {
+    if (
+      order.delivery_method === 'kurier' &&
+      !order.inpost_dispatch_order_id &&
+      deps.saveDispatchOrderId
+    ) {
+      const dispatchPayload = buildDispatchOrderPayload(order.inpost_shipment_id, new Date());
+      const dispatchOrder = await deps.inpost.createDispatchOrder(dispatchPayload);
+      await deps.saveDispatchOrderId(order.id, String(dispatchOrder.id));
+    }
+    return;
+  }
 
   const payload = buildShipmentPayload(order);
   const shipment = await deps.inpost.createShipment(payload);

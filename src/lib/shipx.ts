@@ -258,6 +258,8 @@ export type OrderForShipment = {
   shipping_address: DeliveryAddress | null;
   /** Set once a shipment exists — used to keep creation idempotent. */
   inpost_shipment_id: string | null;
+  /** Set once a dispatch order exists — used to retry dispatch when shipment succeeded but dispatch failed. */
+  inpost_dispatch_order_id: string | null;
 };
 
 export type ShipmentPayload = {

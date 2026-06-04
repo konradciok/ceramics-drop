@@ -4,8 +4,13 @@
  * The studio is the receiver; the customer drops the parcel at any InPost
  * parcel locker using the QR code / A6 PDF label emailed to them.
  *
- * Side effects are dependency-injected (mirrors `CreateShipmentDeps`) so the
- * orchestration is unit-testable without the Workers env.
+ * Label delivery is intentionally deferred: after `createShipment` the
+ * shipment is still in `created` state — the label only becomes available
+ * once InPost moves it to `confirmed`. The `/api/inpost/webhook` handler
+ * picks that up and emails the customer, mirroring the outbound label flow.
+ *
+ * Side effects are dependency-injected (mirrors `CreateShipmentDeps`) so
+ * the orchestration is unit-testable without the Workers env.
  */
 import { buildReturnShipmentPayload, type OrderForReturn, type StudioReturnConfig } from './shipx';
 import type { InPostClient } from './inpost';
@@ -24,7 +29,6 @@ export type CreateReturnDeps = {
   ) => Promise<void>;
   inpost: InPostClient;
   studioConfig: StudioReturnConfig;
-  emailReturnLabel: (order: OrderForReturn, labelPdf: ArrayBuffer, locale: string) => Promise<void>;
 };
 
 export type CreateReturnResult =
@@ -32,8 +36,10 @@ export type CreateReturnResult =
   | { ok: false; reason: 'order_not_found' | 'not_eligible' | 'already_returned' };
 
 /**
- * Create a return shipment and email the customer the return label PDF.
- * Idempotent: returns `already_returned` if the order already has a return shipment.
+ * Create the return shipment and persist its ID. Idempotent: returns
+ * `already_returned` if the order already has a return shipment.
+ * The customer label email is sent by `/api/inpost/webhook` once the
+ * shipment reaches `confirmed` status.
  */
 export async function createOrderReturn(
   orderId: string,
@@ -50,8 +56,8 @@ export async function createOrderReturn(
   const returnShipmentId = String(shipment.id);
   const trackingNumber = shipment.tracking_number ?? null;
 
-  const labelPdf = await deps.inpost.getLabelPdf(returnShipmentId);
-  await deps.emailReturnLabel(order, labelPdf, order.locale ?? 'pl');
+  // Persist ID before any further side effects so that a retry doesn't create
+  // a second ShipX shipment (guard: `.is('inpost_return_shipment_id', null)`).
   await deps.saveReturn(orderId, { returnShipmentId, trackingNumber });
 
   return { ok: true, returnShipmentId, trackingNumber };

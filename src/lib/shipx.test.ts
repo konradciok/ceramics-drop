@@ -92,6 +92,7 @@ const baseOrder: OrderForShipment = {
   inpost_target_point: 'KRA010',
   shipping_address: null,
   inpost_shipment_id: null,
+  inpost_dispatch_order_id: null,
 };
 
 describe('buildShipmentPayload', () => {

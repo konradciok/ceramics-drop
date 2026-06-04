@@ -13,6 +13,7 @@ const order: OrderForShipment = {
   inpost_target_point: 'KRA010',
   shipping_address: null,
   inpost_shipment_id: null,
+  inpost_dispatch_order_id: null,
 };
 
 function deps(overrides: Partial<CreateShipmentDeps> = {}): CreateShipmentDeps {
@@ -63,12 +64,31 @@ describe('createOrderShipment', () => {
 
   it('creates a dispatch order for kurier and persists its id', async () => {
     const saveDispatchOrderId = vi.fn().mockResolvedValue(undefined);
-    const d = deps({
-      loadOrder: vi.fn().mockResolvedValue({ ...order, delivery_method: 'kurier', inpost_target_point: null,
-        shipping_address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' } }),
-      saveDispatchOrderId,
-    });
+    const kurierOrder: OrderForShipment = {
+      ...order,
+      delivery_method: 'kurier',
+      inpost_target_point: null,
+      shipping_address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
+    };
+    const d = deps({ loadOrder: vi.fn().mockResolvedValue(kurierOrder), saveDispatchOrderId });
     await createOrderShipment('pi_1', d);
+    expect(d.inpost.createDispatchOrder).toHaveBeenCalledOnce();
+    expect(saveDispatchOrderId).toHaveBeenCalledWith('ord-1', '99');
+  });
+
+  it('retries dispatch when shipment exists but dispatch is missing', async () => {
+    const saveDispatchOrderId = vi.fn().mockResolvedValue(undefined);
+    const kurierWithShipment: OrderForShipment = {
+      ...order,
+      delivery_method: 'kurier',
+      inpost_target_point: null,
+      shipping_address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
+      inpost_shipment_id: '42',         // shipment already created
+      inpost_dispatch_order_id: null,   // but dispatch never persisted
+    };
+    const d = deps({ loadOrder: vi.fn().mockResolvedValue(kurierWithShipment), saveDispatchOrderId });
+    await createOrderShipment('pi_1', d);
+    expect(d.inpost.createShipment).not.toHaveBeenCalled();   // no duplicate shipment
     expect(d.inpost.createDispatchOrder).toHaveBeenCalledOnce();
     expect(saveDispatchOrderId).toHaveBeenCalledWith('ord-1', '99');
   });
