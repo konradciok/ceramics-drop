@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -12,6 +13,7 @@ export default function Error({ error, reset }: Props) {
   const t = useTranslations('error');
 
   useEffect(() => {
+    Sentry.captureException(error);
     if (process.env.NODE_ENV === 'development') {
       console.error('[error boundary]', error.digest ?? '', error);
     }

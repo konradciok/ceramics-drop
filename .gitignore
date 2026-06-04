@@ -26,6 +26,7 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+.env.sentry-build-plugin
 
 # local google credentials
 .secrets/

@@ -6,6 +6,8 @@ interface CloudflareEnv {
   WORKER_SELF_REFERENCE: Service<typeof import('./.open-next/worker').default>;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
+  /** Signing secret for the thin event destination (/api/stripe/webhook-thin). */
+  STRIPE_WEBHOOK_THIN_SECRET: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   // InPost ShipX (sole delivery provider). API base + Bearer token + organization
@@ -19,6 +21,8 @@ interface CloudflareEnv {
   // where the printable A6 label PDF is sent once a shipment is confirmed.
   RESEND_API_KEY: string;
   STUDIO_NOTIFY_EMAIL: string;
+  // Sentry (optional; server runtime falls back to NEXT_PUBLIC_SENTRY_DSN from the build).
+  SENTRY_DSN?: string;
 }
 
 declare namespace Cloudflare {
