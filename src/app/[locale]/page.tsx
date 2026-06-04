@@ -8,6 +8,8 @@ import { Icon } from '@/components/ui/Icon';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { pln } from '@/lib/format';
+import { alternatesFor } from '@/lib/seo/urls';
+import type { Locale } from '@/i18n/routing';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -25,7 +27,10 @@ const COVER: Record<CategorySlug, string> = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
-  return { title: t('title.home') };
+  return {
+    title: t('title.home'),
+    alternates: alternatesFor(locale as Locale, '/'),
+  };
 }
 
 /**
