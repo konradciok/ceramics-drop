@@ -2,6 +2,7 @@
 // (cron) handler that expires abandoned checkout orders. The OpenNext build
 // emits `./.open-next/worker.js` with a default `{ fetch }` AND three Durable
 // Object classes; all three MUST be re-exported or the deployment breaks.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
 import { stripeFromEnv } from './src/lib/stripe';
@@ -85,5 +86,6 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
 }
 
 // Re-export the OpenNext Durable Object classes so the deployment keeps working.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js';
