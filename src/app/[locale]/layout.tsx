@@ -41,6 +41,9 @@ export default async function LocaleLayout({ children, params }: Props) {
       <head>
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Variable-latin.woff2" />
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Variable-latinExt.woff2" />
+        {/* Hero <h1> uses an italic <em> ("malowana ręką.") above the fold — preload italic to avoid LCP swap */}
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Italic-Variable-latin.woff2" />
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Italic-Variable-latinExt.woff2" />
       </head>
       <body>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
