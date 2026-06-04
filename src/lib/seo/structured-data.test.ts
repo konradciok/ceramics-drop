@@ -40,11 +40,23 @@ describe('collectionSchema', () => {
     expect(nodes[1].itemListElement).toHaveLength(expected);
   });
 
-  it('prices every offer in PLN, in stock, with an absolute image URL', () => {
+  it('prices every offer in PLN, in stock by default, with an absolute image URL', () => {
     for (const { item } of nodes[1].itemListElement ?? []) {
       expect(item.offers.priceCurrency).toBe('PLN');
       expect(item.offers.availability).toBe('https://schema.org/InStock');
       expect(item.image.startsWith(`${SITE_URL}/`)).toBe(true);
+    }
+  });
+
+  it('maps live soldIds to SoldOut, leaving the rest InStock', () => {
+    const products = getProductsByCategory('kubki');
+    const soldId = products[0].id; // first piece, e.g. "k01"
+    const soldGraph = collectionSchema({ slug: 'kubki', locale: 'pl', t, soldIds: [soldId] });
+    const items = (soldGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
+
+    expect(items[0].item.offers.availability).toBe('https://schema.org/SoldOut');
+    for (const { item } of items.slice(1)) {
+      expect(item.offers.availability).toBe('https://schema.org/InStock');
     }
   });
 });

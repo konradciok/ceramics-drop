@@ -14,20 +14,27 @@ export function absoluteUrl(locale: Locale, path: string): string {
 }
 
 /**
- * Canonical + hreflang alternates for a route, ready to spread into a page's
- * `metadata.alternates`. Emits one `hreflang` per locale plus `x-default`
- * (pointing at the default locale) so all three language variants cross-reference
- * each other in `<head>` — not only in the sitemap.
+ * hreflang map for a route: one absolute URL per locale plus `x-default`
+ * (the default locale). Shared by page `<head>` alternates and the sitemap so
+ * the two never drift apart.
  */
-export function alternatesFor(locale: Locale, path: string): Metadata['alternates'] {
+export function languageAlternates(path: string): Record<string, string> {
   const languages: Record<string, string> = {};
   for (const l of routing.locales) {
     languages[l] = absoluteUrl(l, path);
   }
   languages['x-default'] = absoluteUrl(routing.defaultLocale, path);
+  return languages;
+}
 
+/**
+ * Canonical + hreflang alternates for a route, ready to spread into a page's
+ * `metadata.alternates`. Emits one `hreflang` per locale plus `x-default` so all
+ * three language variants cross-reference each other in `<head>`.
+ */
+export function alternatesFor(locale: Locale, path: string): Metadata['alternates'] {
   return {
     canonical: absoluteUrl(locale, path),
-    languages,
+    languages: languageAlternates(path),
   };
 }

@@ -11,6 +11,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'title' });
   return {
     title: t('koszyk'),
+    // Cart is session-specific / often empty — keep it out of the index (also excluded from sitemap).
+    robots: { index: false, follow: false },
     alternates: alternatesFor(locale as Locale, '/koszyk'),
   };
 }

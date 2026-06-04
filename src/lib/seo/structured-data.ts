@@ -2,7 +2,7 @@ import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
-import { SITE_URL } from '@/lib/site';
+import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
@@ -18,7 +18,7 @@ export function organizationSchema(): WithContext<Organization> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Anna Ciok Ceramics',
+    name: SITE_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/logotype.png`,
     email: 'hej@annaciok.pl',
@@ -30,6 +30,12 @@ type CollectionArgs = {
   locale: Locale;
   /** A next-intl translator bound to the request locale. */
   t: (key: string) => string;
+  /**
+   * Live sold piece ids (from `getSoldIds()`), so JSON-LD availability matches the
+   * Supabase-backed gallery. Defaults to none sold — the static catalog flag alone
+   * would otherwise always report `InStock`.
+   */
+  soldIds?: readonly string[];
 };
 
 /**
@@ -38,9 +44,10 @@ type CollectionArgs = {
  * Pieces are one-of-a-kind, so the price is the shared family price and
  * availability degrades to `SoldOut` once a piece sells.
  */
-export function collectionSchema({ slug, locale, t }: CollectionArgs): Graph {
+export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionArgs): Graph {
   const category = getCategory(slug);
   const products = getProductsByCategory(slug);
+  const sold = new Set(soldIds);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
   const homeUrl = absoluteUrl(locale, '/');
@@ -52,7 +59,7 @@ export function collectionSchema({ slug, locale, t }: CollectionArgs): Graph {
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Anna Ciok Ceramics', item: homeUrl },
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
           { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
         ],
       },
@@ -72,7 +79,7 @@ export function collectionSchema({ slug, locale, t }: CollectionArgs): Graph {
               '@type': 'Offer',
               price: category.price,
               priceCurrency: 'PLN',
-              availability: availabilityFor(p.sold),
+              availability: availabilityFor(p.sold || sold.has(p.id)),
               url: collectionUrl,
             },
           },
