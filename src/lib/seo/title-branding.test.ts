@@ -18,7 +18,11 @@ const BRAND = 'Anna Ciok Ceramics';
 
 function loadTitles(locale: string): Record<string, string> {
   const path = fileURLToPath(new URL(`../../../messages/${locale}.json`, import.meta.url));
-  return JSON.parse(readFileSync(path, 'utf-8')).title as Record<string, string>;
+  const content = JSON.parse(readFileSync(path, 'utf-8'));
+  if (!content.title || typeof content.title !== 'object') {
+    throw new Error(`Missing or invalid 'title' object in messages/${locale}.json`);
+  }
+  return content.title as Record<string, string>;
 }
 
 describe('message title branding', () => {
