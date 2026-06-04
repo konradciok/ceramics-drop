@@ -290,7 +290,7 @@ function resolveTriggeringEventSnippet(gtmPublicId) {
   var payload = null;
   for (var i = dl.length - 1; i >= 0; i--) {
     var entry = dl[i];
-    if (entry && typeof entry === 'object' && entry.event_id === targetId) {
+    if (entry && typeof entry === 'object' && entry.event_id === targetId && entry.event) {
       payload = entry;
       break;
     }
@@ -298,14 +298,23 @@ function resolveTriggeringEventSnippet(gtmPublicId) {
   if (!payload) return;`;
 }
 
+/** Prevent GA4/Meta bridge tags from re-firing when gtag() pushes back into dataLayer. */
+function dedupeBridgeSendSnippet(channel) {
+  return `  window.__accBridgeSent = window.__accBridgeSent || {};
+  var dedupeKey = '${channel}:' + payload.event_id;
+  if (window.__accBridgeSent[dedupeKey]) return;
+  window.__accBridgeSent[dedupeKey] = true;`;
+}
+
 function ga4BridgeHtml(gtmPublicId) {
   return `<script>
 (function(){
 ${resolveTriggeringEventSnippet(gtmPublicId)}
+${dedupeBridgeSendSnippet('ga4')}
   if (!window.gtag) return;
   var params = {};
   for (var key in payload) {
-    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce') {
+    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin') {
       params[key] = payload[key];
     }
   }
@@ -325,6 +334,7 @@ function metaBridgeHtml(gtmPublicId) {
   return `<script>
 (function(){
 ${resolveTriggeringEventSnippet(gtmPublicId)}
+${dedupeBridgeSendSnippet('meta')}
   if (!window.fbq) return;
   if (payload.event === 'page_view') {
     window.fbq('track', 'PageView', {}, { eventID: payload.event_id });
