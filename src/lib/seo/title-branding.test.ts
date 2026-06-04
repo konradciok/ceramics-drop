@@ -22,6 +22,10 @@ function loadTitles(locale: string): Record<string, string> {
   if (!content.title || typeof content.title !== 'object') {
     throw new Error(`Missing or invalid 'title' object in messages/${locale}.json`);
   }
+  const nonString = Object.keys(content.title).filter((key) => typeof content.title[key] !== 'string');
+  if (nonString.length > 0) {
+    throw new Error(`Non-string 'title' values in messages/${locale}.json: ${nonString.join(', ')}`);
+  }
   return content.title as Record<string, string>;
 }
 
