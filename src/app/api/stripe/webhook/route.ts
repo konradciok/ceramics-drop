@@ -102,7 +102,8 @@ export async function POST(req: Request) {
         await supabase
           .from('piece_state')
           .update({ status: 'available', reserved_until: null, order_id: null })
-          .eq('order_id', rows[0].id);
+          .eq('order_id', rows[0].id)
+          .eq('status', 'reserved');
       }
     },
     releaseSale: async (pi) => {
