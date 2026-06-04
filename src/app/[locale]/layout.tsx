@@ -16,6 +16,7 @@ import { SITE_URL } from '@/lib/site';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
   themeColor: '#3A2818',
 };
 
