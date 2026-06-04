@@ -2,19 +2,19 @@
   "announce": "Drop de junio 2026 — 88 piezas, cada una única",
   "title": {
     "home": "Anna Ciok Ceramics — Drop de junio 2026",
-    "kubki": "Tazas — Anna Ciok Ceramics",
-    "wazony": "Jarrones — Anna Ciok Ceramics",
-    "wazonyDuze": "Jarrones grandes — Anna Ciok Ceramics",
-    "talerzyki": "Platitos — Anna Ciok Ceramics",
-    "talerzeDuze": "Platos grandes — Anna Ciok Ceramics",
-    "duzeMichy": "Cuencos grandes — Anna Ciok Ceramics",
-    "miskiFalowane": "Cuencos ondulados — Anna Ciok Ceramics",
-    "koszyk": "Carrito — Anna Ciok Ceramics",
-    "studio": "Estudio — Anna Ciok Ceramics",
-    "kontakt": "Contacto — Anna Ciok Ceramics",
-    "dostawa": "Envíos y devoluciones — Anna Ciok Ceramics",
-    "regulamin": "Términos — Anna Ciok Ceramics",
-    "polityka": "Política de privacidad — Anna Ciok Ceramics"
+    "kubki": "Tazas",
+    "wazony": "Jarrones",
+    "wazonyDuze": "Jarrones grandes",
+    "talerzyki": "Platitos",
+    "talerzeDuze": "Platos grandes",
+    "duzeMichy": "Cuencos grandes",
+    "miskiFalowane": "Cuencos ondulados",
+    "koszyk": "Carrito",
+    "studio": "Estudio",
+    "kontakt": "Contacto",
+    "dostawa": "Envíos y devoluciones",
+    "regulamin": "Términos",
+    "polityka": "Política de privacidad"
   },
   "nav": {
     "sklep": "Tienda",
@@ -539,6 +539,15 @@
   },
   "meta": {
     "description": "Cerámica funcional pintada a mano — tazas, jarrones, cuencos y platos. Colección de junio, 88 piezas únicas.",
-    "ogImageAlt": "Anna Ciok Ceramics — taza cerámica artesanal"
+    "ogImageAlt": "Anna Ciok Ceramics — taza cerámica artesanal",
+    "collections": {
+      "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 22 piezas irrepetibles del drop de junio de Anna Ciok.",
+      "wazony": "Jarrones de cerámica pintados a mano — pequeños y escultóricos, cada uno único. Ocho piezas del drop de junio de Anna Ciok.",
+      "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Nueve obras del drop de junio de Anna Ciok.",
+      "talerzyki": "Platos de cerámica pintados a mano, ⌀ 12 cm — cada uno único. Quince piezas irrepetibles del drop de junio de Anna Ciok.",
+      "talerzeDuze": "Grandes platos de cerámica pintados a mano, ⌀ 28 cm — cada uno único. Doce piezas del drop de junio de Anna Ciok.",
+      "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Seis piezas del drop de junio de Anna Ciok.",
+      "miskiFalowane": "Cuencos ondulados de cerámica pintados a mano — formas orgánicas, cada uno único. Dieciséis piezas del drop de junio de Anna Ciok."
+    }
   }
 }

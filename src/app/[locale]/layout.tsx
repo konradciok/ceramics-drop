@@ -11,6 +11,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { organizationSchema } from '@/lib/seo/structured-data';
 import { SITE_URL } from '@/lib/site';
 
 export const viewport: Viewport = {
@@ -30,6 +32,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale });
   return {
     metadataBase: new URL(SITE_URL),
+    // This template owns the brand suffix, so per-page `title.*` translations
+    // must be page-only (e.g. "Mugs", not "Mugs — Anna Ciok Ceramics") or the
+    // brand renders twice. `title.home` is the exception — it opts out via
+    // `title: { absolute }` in page.tsx. Guarded by title-branding.test.ts.
     title: { default: 'Anna Ciok Ceramics', template: '%s — Anna Ciok Ceramics' },
     description: t('meta.description'),
     openGraph: {
@@ -64,6 +70,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Italic-Variable-latinExt.woff2" />
       </head>
       <body>
+        <JsonLd data={organizationSchema()} />
         <a href="#main-content" className="skip-link">{t('aria.skipToContent')}</a>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>

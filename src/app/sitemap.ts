@@ -1,26 +1,21 @@
 import type { MetadataRoute } from 'next';
-import { routing, type Locale } from '@/i18n/routing';
-import { localePath } from '@/lib/locale-path';
-import { SITE_PATHS, SITE_URL } from '@/lib/site';
+import { routing } from '@/i18n/routing';
+import { absoluteUrl, languageAlternates } from '@/lib/seo/urls';
+import { NOINDEX_PATHS, SITE_PATHS } from '@/lib/site';
 
-function absoluteUrl(locale: Locale, path: string): string {
-  const pathname = localePath(locale, path);
-  return pathname === '/' ? SITE_URL : `${SITE_URL}${pathname}`;
-}
+/** Stable per-build timestamp — avoids churning every entry's lastmod on each request. */
+const LAST_MODIFIED = new Date();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
+  const paths = SITE_PATHS.filter((path) => !NOINDEX_PATHS.includes(path));
 
-  for (const path of SITE_PATHS) {
+  for (const path of paths) {
     for (const locale of routing.locales) {
       entries.push({
         url: absoluteUrl(locale, path),
-        lastModified: new Date(),
-        alternates: {
-          languages: Object.fromEntries(
-            routing.locales.map((l) => [l, absoluteUrl(l, path)]),
-          ),
-        },
+        lastModified: LAST_MODIFIED,
+        alternates: { languages: languageAlternates(path) },
       });
     }
   }

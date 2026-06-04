@@ -2,19 +2,19 @@
   "announce": "Drop czerwcowy 2026 — 88 prac, każda jedyna w swoim rodzaju",
   "title": {
     "home": "Anna Ciok Ceramics — Drop czerwcowy 2026",
-    "kubki": "Kubki — Anna Ciok Ceramics",
-    "wazony": "Wazony — Anna Ciok Ceramics",
-    "wazonyDuze": "Wazony duże — Anna Ciok Ceramics",
-    "talerzyki": "Talerzyki — Anna Ciok Ceramics",
-    "talerzeDuze": "Talerze duże — Anna Ciok Ceramics",
-    "duzeMichy": "Duże michy — Anna Ciok Ceramics",
-    "miskiFalowane": "Miski falowane — Anna Ciok Ceramics",
-    "koszyk": "Koszyk — Anna Ciok Ceramics",
-    "studio": "O studiu — Anna Ciok Ceramics",
-    "kontakt": "Kontakt — Anna Ciok Ceramics",
-    "dostawa": "Dostawa i zwroty — Anna Ciok Ceramics",
-    "regulamin": "Regulamin — Anna Ciok Ceramics",
-    "polityka": "Polityka prywatności — Anna Ciok Ceramics"
+    "kubki": "Kubki",
+    "wazony": "Wazony",
+    "wazonyDuze": "Wazony duże",
+    "talerzyki": "Talerzyki",
+    "talerzeDuze": "Talerze duże",
+    "duzeMichy": "Duże michy",
+    "miskiFalowane": "Miski falowane",
+    "koszyk": "Koszyk",
+    "studio": "O studiu",
+    "kontakt": "Kontakt",
+    "dostawa": "Dostawa i zwroty",
+    "regulamin": "Regulamin",
+    "polityka": "Polityka prywatności"
   },
   "nav": {
     "sklep": "Sklep",
@@ -539,6 +539,15 @@
   },
   "meta": {
     "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna.",
-    "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek"
+    "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek",
+    "collections": {
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml — każdy jedyny w swoim rodzaju. 22 niepowtarzalne prace z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane wazony ceramiczne — małe, rzeźbiarskie, każdy jedyny. Osiem niepowtarzalnych prac z czerwcowego dropu Anny Ciok.",
+      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne — wyraziste formy, każdy jedyny. Dziewięć prac z czerwcowego dropu Anny Ciok.",
+      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, ⌀ 12 cm — każdy jedyny w swoim rodzaju. Piętnaście prac z czerwcowego dropu Anny Ciok.",
+      "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 28 cm — każdy jedyny. Dwanaście prac z czerwcowego dropu Anny Ciok.",
+      "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Sześć prac z czerwcowego dropu Anny Ciok.",
+      "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Szesnaście prac z czerwcowego dropu Anny Ciok."
+    }
   }
 }
