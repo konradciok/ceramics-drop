@@ -1,13 +1,14 @@
-/**
+﻿/**
  * Server-only InPost ShipX client. Created per request so it reads the current
  * Workers env (mirrors `getStripe()` / `getSupabaseAdmin()`). Thin `fetch`
  * wrapper that injects the base URL and the Bearer token.
  *
- * Base URL is `INPOST_API_URL` — point it at the sandbox
+ * Base URL is `INPOST_API_URL` ÔÇö point it at the sandbox
  * (`https://sandbox-api-shipx-pl.easypack24.net`) or production
  * (`https://api-shipx-pl.easypack24.net`).
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { ShipxApiError } from './shipx-errors';
 import type { ShipmentPayload } from './shipx';
 
 /** Minimal shape of a ShipX shipment we read back after creation. */
@@ -60,7 +61,7 @@ export function getInPost(): InPostClient {
     }
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      throw new Error(`ShipX ${init?.method ?? 'GET'} ${path} → ${res.status}: ${detail.slice(0, 500)}`);
+      throw new ShipxApiError(init?.method ?? 'GET', path, res.status, detail.slice(0, 500));
     }
     return res;
   }

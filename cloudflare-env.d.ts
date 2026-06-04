@@ -16,6 +16,8 @@ interface CloudflareEnv {
   INPOST_API_URL: string;
   INPOST_API_TOKEN: string;
   INPOST_ORGANIZATION_ID: string;
+  /** Set to `true` after InPost enables Web Trucker (courier) on the organization. */
+  INPOST_COURIER_ENABLED?: string;
   INPOST_WEBHOOK_TOKEN: string;
   // Transactional email for the shipping label (Resend). STUDIO_NOTIFY_EMAIL is
   // where the printable A6 label PDF is sent once a shipment is confirmed.

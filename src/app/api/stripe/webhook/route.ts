@@ -7,6 +7,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
+import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
@@ -162,10 +163,21 @@ export async function POST(req: Request) {
           inpost: getInPost(),
         });
       } catch (err) {
+        const code =
+          err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : null;
         console.error(
-          JSON.stringify({ event: 'createOrderShipment_failed', payment_intent_id: pi }),
+          JSON.stringify({
+            event: 'createOrderShipment_failed',
+            payment_intent_id: pi,
+            shipx_error: code,
+            non_retryable: isNonRetryableShipxError(err),
+          }),
           err,
         );
+        // missing_trucker_id = InPost org lacks Web Trucker — retries cannot fix it.
+        if (!shouldRethrowShipmentError(err)) return;
         throw err;
       }
     },
