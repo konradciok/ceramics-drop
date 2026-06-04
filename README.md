@@ -8,7 +8,7 @@ Next.js storefront for Anna Ciok Ceramics, implementing the design in [`design/`
 - **Next.js 16** (App Router) · **React 19** · **TypeScript**
 - **next-intl** — trilingual routing: `/` (PL, default), `/en`, `/es`
 - **Zustand** — cart store (set of one-of-a-kind product IDs), persisted to `localStorage`
-- Ported brand CSS (design tokens + `site.css`) and self-hosted **Futura BT** fonts
+- Ported brand CSS (design tokens + `site.css`) and self-hosted **Jost\*** fonts (geometric Futura alternative with full Polish glyph coverage)
 
 ## Scripts
 
@@ -27,7 +27,7 @@ npm run deploy:cf  # build and deploy to Cloudflare Workers
 
 ```
 messages/            next-intl catalogs (pl/en/es) — trilingual content
-public/fonts         Futura BT (.otf)
+public/fonts         Jost* variable webfonts (.woff2) + OFL license
 public/icons         line-icon SVGs
 public/uploads/      88 product images (WebP)
 src/
