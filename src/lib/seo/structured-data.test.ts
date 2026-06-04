@@ -40,23 +40,30 @@ describe('collectionSchema', () => {
     expect(nodes[1].itemListElement).toHaveLength(expected);
   });
 
-  it('prices every offer in PLN, in stock by default, with an absolute image URL', () => {
-    for (const { item } of nodes[1].itemListElement ?? []) {
+  it('prices every offer in PLN and maps availability from catalog sold flags', () => {
+    const products = getProductsByCategory('kubki');
+    (nodes[1].itemListElement ?? []).forEach(({ item }, i) => {
+      const expected = products[i].sold
+        ? 'https://schema.org/SoldOut'
+        : 'https://schema.org/InStock';
       expect(item.offers.priceCurrency).toBe('PLN');
-      expect(item.offers.availability).toBe('https://schema.org/InStock');
+      expect(item.offers.availability).toBe(expected);
       expect(item.image.startsWith(`${SITE_URL}/`)).toBe(true);
-    }
+    });
   });
 
-  it('maps live soldIds to SoldOut, leaving the rest InStock', () => {
+  it('maps live soldIds to SoldOut, leaving the rest at their catalog state', () => {
     const products = getProductsByCategory('kubki');
     const soldId = products[0].id; // first piece, e.g. "k01"
     const soldGraph = collectionSchema({ slug: 'kubki', locale: 'pl', t, soldIds: [soldId] });
     const items = (soldGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
 
-    expect(items[0].item.offers.availability).toBe('https://schema.org/SoldOut');
-    for (const { item } of items.slice(1)) {
-      expect(item.offers.availability).toBe('https://schema.org/InStock');
-    }
+    items.forEach(({ item }, i) => {
+      const expected =
+        products[i].sold || products[i].id === soldId
+          ? 'https://schema.org/SoldOut'
+          : 'https://schema.org/InStock';
+      expect(item.offers.availability).toBe(expected);
+    });
   });
 });
