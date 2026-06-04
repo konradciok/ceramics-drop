@@ -8,6 +8,8 @@ import { Icon } from '@/components/ui/Icon';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { pln } from '@/lib/format';
+import { alternatesFor } from '@/lib/seo/urls';
+import type { Locale } from '@/i18n/routing';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -27,7 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
   // "%s — Anna Ciok Ceramics" template to avoid doubling it.
-  return { title: { absolute: t('title.home') } };
+  return {
+    title: { absolute: t('title.home') },
+    alternates: alternatesFor(locale as Locale, '/'),
+  };
 }
 
 /**

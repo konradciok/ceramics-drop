@@ -539,6 +539,15 @@
   },
   "meta": {
     "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna.",
-    "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek"
+    "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek",
+    "collections": {
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml — każdy jedyny w swoim rodzaju. 22 niepowtarzalne prace z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane wazony ceramiczne — małe, rzeźbiarskie, każdy jedyny. Osiem niepowtarzalnych prac z czerwcowego dropu Anny Ciok.",
+      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne — wyraziste formy, każdy jedyny. Dziewięć prac z czerwcowego dropu Anny Ciok.",
+      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, ⌀ 12 cm — każdy jedyny w swoim rodzaju. Piętnaście prac z czerwcowego dropu Anny Ciok.",
+      "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 28 cm — każdy jedyny. Dwanaście prac z czerwcowego dropu Anny Ciok.",
+      "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Sześć prac z czerwcowego dropu Anny Ciok.",
+      "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Szesnaście prac z czerwcowego dropu Anny Ciok."
+    }
   }
 }

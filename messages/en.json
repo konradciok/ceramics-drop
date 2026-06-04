@@ -539,6 +539,15 @@
   },
   "meta": {
     "description": "Hand-painted functional ceramics — mugs, vases, bowls and plates. June drop, 88 one-of-a-kind pieces.",
-    "ogImageAlt": "Anna Ciok Ceramics — handmade ceramic mug"
+    "ogImageAlt": "Anna Ciok Ceramics — handmade ceramic mug",
+    "collections": {
+      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 22 unique pieces from Anna Ciok's June 2026 drop.",
+      "wazony": "Hand-painted ceramic vases — small, sculptural and one of a kind. Eight unique pieces from Anna Ciok's June 2026 drop.",
+      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Nine unique works from Anna Ciok's June 2026 drop.",
+      "talerzyki": "Hand-painted ceramic dishes, ⌀ 12 cm — each one of a kind. Fifteen unique small plates from Anna Ciok's June 2026 drop.",
+      "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 28 cm — each one of a kind. Twelve unique pieces from Anna Ciok's June 2026 drop.",
+      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Six unique pieces from Anna Ciok's June 2026 drop.",
+      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Sixteen unique pieces from Anna Ciok's June 2026 drop."
+    }
   }
 }
