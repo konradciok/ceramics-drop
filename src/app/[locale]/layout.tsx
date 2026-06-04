@@ -32,6 +32,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale });
   return {
     metadataBase: new URL(SITE_URL),
+    // This template owns the brand suffix, so per-page `title.*` translations
+    // must be page-only (e.g. "Mugs", not "Mugs — Anna Ciok Ceramics") or the
+    // brand renders twice. `title.home` is the exception — it opts out via
+    // `title: { absolute }` in page.tsx. Guarded by title-branding.test.ts.
     title: { default: 'Anna Ciok Ceramics', template: '%s — Anna Ciok Ceramics' },
     description: t('meta.description'),
     openGraph: {
