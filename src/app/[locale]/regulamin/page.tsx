@@ -60,8 +60,6 @@ export default async function Page({ params }: Props) {
         </nav>
 
         <div className="prose">
-          <div className="note"><p>{t('terms.protoNote')}</p></div>
-
           {/* ── #ogolne ──────────────────────────────────────────── */}
           <section id="ogolne">
             <h2>{t('terms.s1H')}</h2>
