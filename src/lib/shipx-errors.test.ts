@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   ShipxApiError,
   isNonRetryableShipxError,
-  isInpostCourierEnabled,
   shouldRethrowShipmentError,
 } from './shipx-errors';
 
@@ -36,14 +35,6 @@ describe('isNonRetryableShipxError', () => {
 
   it('does not treat generic 500 as non-retryable', () => {
     expect(isNonRetryableShipxError(new Error('ShipX POST /shipments → 500: upstream'))).toBe(false);
-  });
-});
-
-describe('isInpostCourierEnabled', () => {
-  it('is true only when env is exactly "true"', () => {
-    expect(isInpostCourierEnabled('true')).toBe(true);
-    expect(isInpostCourierEnabled(' false')).toBe(false);
-    expect(isInpostCourierEnabled(undefined)).toBe(false);
   });
 });
 

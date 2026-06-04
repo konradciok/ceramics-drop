@@ -31,8 +31,13 @@ export class ShipxApiError extends Error {
 }
 
 /**
- * Configuration / contract errors that will not succeed on Stripe webhook retry.
- * The sale is already committed — return 200 and surface the failure in logs/Sentry.
+ * Organisation-level setup errors that cannot be fixed by retrying the webhook.
+ * The sale is already committed — callers should return 200 to Stripe and surface
+ * the failure as a high-severity alert so the InPost account can be corrected.
+ *
+ * `missing_trucker_id` means the InPost organisation does not have the courier
+ * dispatch feature enabled. Fix: configure the organisation in Manager Paczek so
+ * that `POST /v1/organizations/{id}/dispatch_orders` stops returning this code.
  */
 export function isNonRetryableShipxError(err: unknown): boolean {
   if (err instanceof ShipxApiError) {
@@ -40,11 +45,6 @@ export function isNonRetryableShipxError(err: unknown): boolean {
   }
   const msg = err instanceof Error ? err.message : String(err);
   return msg.includes('missing_trucker_id') || msg.includes('trucker_ID_is_not_set_for_organization');
-}
-
-/** Whether kurier checkout + courier ShipX calls are allowed (Web Trucker configured). */
-export function isInpostCourierEnabled(raw: string | undefined): boolean {
-  return raw?.trim() === 'true';
 }
 
 /** Stripe webhook: rethrow only when a retry might succeed (transient / unknown errors). */

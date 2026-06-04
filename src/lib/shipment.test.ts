@@ -20,6 +20,7 @@ function deps(overrides: Partial<CreateShipmentDeps> = {}): CreateShipmentDeps {
     createShipment: vi.fn().mockResolvedValue({ id: 42, status: 'created', tracking_number: '6200001' }),
     getShipment: vi.fn(),
     getLabelPdf: vi.fn(),
+    createDispatchOrder: vi.fn().mockResolvedValue({ id: 99, status: 'created', deadline_time: '2026-06-05 18:00' }),
   };
   return {
     loadOrder: vi.fn().mockResolvedValue(order),
@@ -58,5 +59,23 @@ describe('createOrderShipment', () => {
     const d = deps({ loadOrder: vi.fn().mockResolvedValue(null) });
     await createOrderShipment('pi_x', d);
     expect(d.inpost.createShipment).not.toHaveBeenCalled();
+  });
+
+  it('creates a dispatch order for kurier and persists its id', async () => {
+    const saveDispatchOrderId = vi.fn().mockResolvedValue(undefined);
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue({ ...order, delivery_method: 'kurier', inpost_target_point: null,
+        shipping_address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' } }),
+      saveDispatchOrderId,
+    });
+    await createOrderShipment('pi_1', d);
+    expect(d.inpost.createDispatchOrder).toHaveBeenCalledOnce();
+    expect(saveDispatchOrderId).toHaveBeenCalledWith('ord-1', '99');
+  });
+
+  it('does not create a dispatch order for paczkomat (no saveDispatchOrderId needed)', async () => {
+    const d = deps();
+    await createOrderShipment('pi_1', d);
+    expect(d.inpost.createDispatchOrder).not.toHaveBeenCalled();
   });
 });

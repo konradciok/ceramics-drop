@@ -160,6 +160,13 @@ export async function POST(req: Request) {
               .is('inpost_shipment_id', null);
             if (error) throw error;
           },
+          saveDispatchOrderId: async (orderId, dispatchOrderId) => {
+            const { error } = await supabase
+              .from('orders')
+              .update({ inpost_dispatch_order_id: dispatchOrderId })
+              .eq('id', orderId);
+            if (error) throw error;
+          },
           inpost: getInPost(),
         });
       } catch (err) {
@@ -176,7 +183,7 @@ export async function POST(req: Request) {
           }),
           err,
         );
-        // missing_trucker_id = InPost org lacks Web Trucker — retries cannot fix it.
+        // missing_trucker_id = InPost org courier dispatch not configured — retries cannot fix it.
         if (!shouldRethrowShipmentError(err)) return;
         throw err;
       }

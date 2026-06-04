@@ -1,10 +1,8 @@
 ﻿import { NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { validateDelivery } from '@/lib/shipx';
-import { isInpostCourierEnabled } from '@/lib/shipx-errors';
 import { orderAmountGrosze } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
@@ -35,11 +33,6 @@ export async function POST(req: Request) {
   const delivery = validateDelivery(body);
   if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
   const { method, contact, target_point, address } = delivery.delivery;
-
-  const { env } = getCloudflareContext();
-  if (method === 'kurier' && !isInpostCourierEnabled(env.INPOST_COURIER_ENABLED)) {
-    return NextResponse.json({ error: 'courier_unavailable' }, { status: 503 });
-  }
 
   const amount = orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
   const ids = valid.items.map((i) => i.product_id);

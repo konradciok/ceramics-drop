@@ -132,6 +132,87 @@ export const DEFAULT_COURIER_PARCEL = {
 /** ShipX status at which the printable label becomes available. */
 export const LABEL_READY_STATUS = 'confirmed';
 
+// ── Dispatch orders (courier pickup scheduling) ──────────────────────────────
+
+export type DispatchOrderPayload = {
+  name: string;
+  shipment_ids: string[];
+  /** Latest courier arrival time: "YYYY-MM-DD HH:MM" in Europe/Warsaw. */
+  deadline_time: string;
+  comments?: string;
+};
+
+/**
+ * Build a dispatch order payload that schedules courier pickup of `shipmentId`.
+ * Deadline is set to the next calendar day at 18:00 Warsaw time, computed from
+ * the `now` argument (injectable for deterministic tests).
+ */
+export function buildDispatchOrderPayload(shipmentId: string, now: Date): DispatchOrderPayload {
+  const warsawDateStr = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Warsaw',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+  const [year, month, day] = warsawDateStr.split('-').map(Number);
+  const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
+  const nextDayStr = nextDay.toISOString().slice(0, 10);
+  return {
+    name: `Odbiór kurierski ${nextDayStr}`,
+    shipment_ids: [shipmentId],
+    deadline_time: `${nextDayStr} 18:00`,
+  };
+}
+
+// ── Return shipments ─────────────────────────────────────────────────────────
+
+/** Order fields needed to build a return shipment payload. */
+export type OrderForReturn = {
+  id: string;
+  email: string | null;
+  receiver_first_name: string | null;
+  locale: string | null;
+};
+
+/** Studio contact + address used as the receiver on return shipments. */
+export type StudioReturnConfig = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: DeliveryAddress;
+  /** Optional paczkomat code pre-assigned as the return drop-off target. */
+  return_point?: string;
+};
+
+/**
+ * Build the ShipX create-shipment body for a customer return.
+ * The studio is the receiver; the customer drops the parcel at any paczkomat
+ * (or the one specified by `config.return_point`).
+ */
+export function buildReturnShipmentPayload(
+  order: OrderForReturn,
+  config: StudioReturnConfig,
+): ShipmentPayload {
+  const receiver: DeliveryContact & { address?: DeliveryAddress } = {
+    first_name: config.first_name,
+    last_name: config.last_name,
+    email: config.email,
+    phone: config.phone,
+    address: config.address,
+  };
+  return {
+    receiver,
+    parcels: [DEFAULT_LOCKER_PARCEL],
+    custom_attributes: {
+      sending_method: SENDING_METHOD.paczkomat,
+      ...(config.return_point ? { target_point: config.return_point } : {}),
+    },
+    service: SHIPX_SERVICE.paczkomat,
+    reference: `return:${order.id}`,
+  };
+}
+
 export type ShipxStatusEvent = {
   shipmentId: string;
   status: string;
