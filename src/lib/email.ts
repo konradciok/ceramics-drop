@@ -211,24 +211,28 @@ const I18N_RETURN: Record<SupportedLocale, {
   intro: string;
   instructions: string;
   signOff: string;
+  filename: string;
 }> = {
   pl: {
     subject: 'Etykieta zwrotna — zamówienie',
     intro: 'Twoja prośba o zwrot została przyjęta. W załączniku znajdziesz etykietę zwrotną.',
     instructions: 'Wydrukuj etykietę lub pokaż kod QR w paczkomacie InPost, aby nadać przesyłkę.',
     signOff: 'Dziękujemy! Anna Ciok Studio',
+    filename: 'zwrot',
   },
   en: {
     subject: 'Return label — order',
     intro: 'Your return request has been accepted. Please find the return label attached.',
     instructions: 'Print the label or show the QR code at an InPost parcel locker to send your return.',
     signOff: 'Thank you! Anna Ciok Studio',
+    filename: 'return',
   },
   es: {
     subject: 'Etiqueta de devolución — pedido',
     intro: 'Tu solicitud de devolución ha sido aceptada. Encontrarás la etiqueta de devolución adjunta.',
     instructions: 'Imprime la etiqueta o muéstrala en un punto de recogida InPost para enviar tu devolución.',
     signOff: '¡Gracias! Anna Ciok Studio',
+    filename: 'devolucion',
   },
 };
 
@@ -270,6 +274,7 @@ export async function emailReturnLabelToCustomer(params: {
     throw new Error(`Cannot send return label: order ${order.id} has no email`);
   }
 
+  const loc = resolveLocale(params.locale);
   const { subject, html } = buildReturnLabelEmail({ order, locale: params.locale });
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -285,7 +290,7 @@ export async function emailReturnLabelToCustomer(params: {
       html,
       attachments: [
         {
-          filename: `zwrot-${order.id}.pdf`,
+          filename: `${I18N_RETURN[loc].filename}-${order.id}.pdf`,
           content: toBase64(labelPdf),
         },
       ],

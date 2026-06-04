@@ -98,4 +98,18 @@ describe('createOrderShipment', () => {
     await createOrderShipment('pi_1', d);
     expect(d.inpost.createDispatchOrder).not.toHaveBeenCalled();
   });
+
+  it('does not create a dispatch order for kurier when saveDispatchOrderId is absent', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue({
+        ...order,
+        delivery_method: 'kurier',
+        inpost_target_point: null,
+        shipping_address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
+      }),
+    });
+    await createOrderShipment('pi_1', d);
+    expect(d.inpost.createShipment).toHaveBeenCalledOnce();
+    expect(d.inpost.createDispatchOrder).not.toHaveBeenCalled();
+  });
 });
