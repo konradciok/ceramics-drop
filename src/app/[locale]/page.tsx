@@ -25,7 +25,9 @@ const COVER: Record<CategorySlug, string> = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
-  return { title: t('title.home') };
+  // Home title already leads with the brand, so opt out of the layout's
+  // "%s — Anna Ciok Ceramics" template to avoid doubling it.
+  return { title: { absolute: t('title.home') } };
 }
 
 /**
