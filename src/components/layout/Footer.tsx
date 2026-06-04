@@ -90,8 +90,6 @@ export async function Footer() {
         <div className="footer-bot">
           <span>{t('footer.copy')}</span>
           <span className="pay">
-            <span>{t('footer.proto')}</span>
-            <span>{t('footer.nopay')}</span>
             <a href="/fonts/Jost-OFL.txt" target="_blank" rel="noopener noreferrer license">
               Font: Jost (OFL)
             </a>

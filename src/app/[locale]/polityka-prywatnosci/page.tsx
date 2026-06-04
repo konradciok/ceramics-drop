@@ -54,8 +54,6 @@ export default async function Page({ params }: Props) {
         </nav>
 
         <div className="prose">
-          <div className="note"><p>{t('privacy.protoNote')}</p></div>
-
           {/* ── #administrator ───────────────────────────────────── */}
           <section id="administrator">
             <h2>{t('privacy.s1H')}</h2>
