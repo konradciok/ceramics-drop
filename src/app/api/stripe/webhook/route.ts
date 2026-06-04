@@ -102,8 +102,29 @@ export async function POST(req: Request) {
         await supabase
           .from('piece_state')
           .update({ status: 'available', reserved_until: null, order_id: null })
-          .eq('order_id', rows[0].id);
+          .eq('order_id', rows[0].id)
+          .eq('status', 'reserved');
       }
+    },
+    releaseSale: async (pi) => {
+      const { data } = await supabase
+        .from('orders')
+        .update({ status: 'refunded' })
+        .eq('payment_intent_id', pi)
+        .eq('status', 'paid')
+        .select('id');
+      const rows = data as Array<{ id: string }> | null;
+      if (!rows || rows.length === 0) return false;
+      // Throw on a piece_state failure (don't return true): otherwise the caller
+      // would revalidate inventory and advertise a piece as available while it is
+      // still 'sold' in the DB. A 5xx makes Stripe retry until the relist sticks.
+      const { error: pieceErr } = await supabase
+        .from('piece_state')
+        .update({ status: 'available', reserved_until: null, order_id: null })
+        .eq('order_id', rows[0].id)
+        .eq('status', 'sold');
+      if (pieceErr) throw new Error(`releaseSale piece_state update failed: ${pieceErr.message}`);
+      return true;
     },
     ensureInvoiced: async (pi) => {
       try {

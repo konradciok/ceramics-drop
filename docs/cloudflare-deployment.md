@@ -142,7 +142,14 @@ Locale routing uses `src/middleware.ts` (next-intl). This deployment uses OpenNe
 
 ## Windows note
 
-OpenNext warns that Windows is not fully supported. Builds and deploy succeeded from this repo; prefer WSL for repeat deploys if you hit `EBUSY` on `.open-next` (stop `preview:cf` / `workerd` before redeploying).
+OpenNext warns that Windows is not fully supported. For local deploy on Windows:
+
+1. Enable **Developer Mode** (Settings → For developers) so OpenNext can create symlinks during the bundle step.
+2. Stop `preview:cf` / `workerd` before deploy if you hit `EBUSY` or `EPERM` deleting `.open-next`.
+3. Use `npx wrangler` (not bare `wrangler`) unless Wrangler is installed globally.
+4. `wrangler.jsonc` uses `npx opennextjs-cloudflare build` (not `node_modules/.bin/...`) so Wrangler’s custom build works in cmd/PowerShell.
+
+Prefer WSL if symlink or file-lock errors persist.
 
 ## Related docs
 

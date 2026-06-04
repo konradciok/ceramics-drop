@@ -160,6 +160,7 @@ export function CartView() {
 
   function deliveryBody() {
     return {
+      locale,
       delivery_method: ship,
       contact: {
         first_name: contact.firstName.trim(),

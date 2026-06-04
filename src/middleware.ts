@@ -8,5 +8,5 @@ export const config = {
   // - API routes
   // - Next.js internals (_next, _vercel)
   // - static files (anything with a dot, e.g. /favicon.ico, /fonts/*.otf)
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/((?!api|_next|_vercel|sentry-tunnel|.*\\..*).*)'],
 };

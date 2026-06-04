@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type Stripe from 'stripe';
 import { handleStripeEvent, type WebhookDeps } from './webhook';
 
@@ -6,6 +6,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
     markPaid: vi.fn().mockResolvedValue(true),
     releaseHold: vi.fn().mockResolvedValue(undefined),
+    releaseSale: vi.fn().mockResolvedValue(true),
     ensureInvoiced: vi.fn().mockResolvedValue(undefined),
     createShipment: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
@@ -14,6 +15,23 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
 }
 
 const pi = (id = 'pi_1') => ({ id, object: 'payment_intent' });
+
+const charge = (overrides: Partial<{ payment_intent: string; amount: number; amount_refunded: number }> = {}) => ({
+  id: 'ch_1',
+  object: 'charge',
+  payment_intent: 'pi_1',
+  amount: 1000,
+  amount_refunded: 1000,
+  ...overrides,
+});
+
+const dispute = (overrides: Partial<{ payment_intent: string | { id: string } | null; status: string }> = {}) => ({
+  id: 'dp_1',
+  object: 'dispute',
+  payment_intent: 'pi_1',
+  status: 'lost',
+  ...overrides,
+});
 
 describe('handleStripeEvent', () => {
   it('on success: marks paid, revalidates, ensures invoice, creates shipment', async () => {
@@ -51,5 +69,107 @@ describe('handleStripeEvent', () => {
     await handleStripeEvent({ type: 'charge.updated', data: { object: {} } } as unknown as Stripe.Event, d);
     expect(d.markPaid).not.toHaveBeenCalled();
     expect(d.releaseHold).not.toHaveBeenCalled();
+  });
+
+  // charge.refunded
+  describe('charge.refunded', () => {
+    it('full refund: calls releaseSale and revalidates', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.refunded', data: { object: charge() } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_1');
+      expect(d.revalidate).toHaveBeenCalledWith('inventory');
+    });
+
+    it('partial refund: does NOT call releaseSale', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.refunded', data: { object: charge({ amount: 1000, amount_refunded: 500 }) } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).not.toHaveBeenCalled();
+    });
+
+    it('full refund but releaseSale returns false: does NOT revalidate', async () => {
+      const d = deps({ releaseSale: vi.fn().mockResolvedValue(false) });
+      await handleStripeEvent(
+        { type: 'charge.refunded', data: { object: charge() } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_1');
+      expect(d.revalidate).not.toHaveBeenCalled();
+    });
+
+    it('full refund with expanded payment_intent object: extracts id correctly', async () => {
+      const d = deps();
+      const expandedCharge = { ...charge(), payment_intent: { id: 'pi_expanded' } };
+      await handleStripeEvent(
+        { type: 'charge.refunded', data: { object: expandedCharge } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_expanded');
+    });
+
+    it('full refund with null payment_intent: ignores event', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.refunded', data: { object: charge({ payment_intent: undefined as unknown as string }) } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).not.toHaveBeenCalled();
+    });
+  });
+
+  // charge.dispute.closed
+  describe('charge.dispute.closed', () => {
+    it('lost dispute: calls releaseSale and revalidates', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.dispute.closed', data: { object: dispute() } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_1');
+      expect(d.revalidate).toHaveBeenCalledWith('inventory');
+    });
+
+    it('lost dispute with expanded payment_intent object: extracts id correctly', async () => {
+      const d = deps();
+      const expandedDispute = { ...dispute(), payment_intent: { id: 'pi_expanded' } };
+      await handleStripeEvent(
+        { type: 'charge.dispute.closed', data: { object: expandedDispute } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_expanded');
+    });
+
+    it('lost dispute but releaseSale returns false: does NOT revalidate', async () => {
+      const d = deps({ releaseSale: vi.fn().mockResolvedValue(false) });
+      await handleStripeEvent(
+        { type: 'charge.dispute.closed', data: { object: dispute() } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).toHaveBeenCalledWith('pi_1');
+      expect(d.revalidate).not.toHaveBeenCalled();
+    });
+
+    it('won dispute: does NOT call releaseSale', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.dispute.closed', data: { object: dispute({ status: 'won' }) } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).not.toHaveBeenCalled();
+    });
+
+    it('other dispute status (needs_response): does NOT call releaseSale', async () => {
+      const d = deps();
+      await handleStripeEvent(
+        { type: 'charge.dispute.closed', data: { object: dispute({ status: 'needs_response' }) } } as unknown as Stripe.Event,
+        d,
+      );
+      expect(d.releaseSale).not.toHaveBeenCalled();
+    });
   });
 });

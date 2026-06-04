@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
-import { emailLabelToStudio, type LabelEmailOrder } from '@/lib/email';
+import { emailLabelToStudio, emailShippingConfirmationToCustomer, type LabelEmailOrder } from '@/lib/email';
 import { parseShipxWebhook, LABEL_READY_STATUS } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +39,8 @@ export async function POST(req: Request) {
     .from('orders')
     .select(
       'id, delivery_method, inpost_tracking_number, inpost_target_point, ' +
-        'receiver_first_name, receiver_last_name, inpost_label_emailed_at',
+        'receiver_first_name, receiver_last_name, inpost_label_emailed_at, ' +
+        'email, locale, customer_notified_at',
     )
     .eq('inpost_shipment_id', evt.shipmentId)
     .maybeSingle()) as {
@@ -51,6 +52,9 @@ export async function POST(req: Request) {
       receiver_first_name: string | null;
       receiver_last_name: string | null;
       inpost_label_emailed_at: string | null;
+      email: string | null;
+      locale: string | null;
+      customer_notified_at: string | null;
     } | null;
     error: { message: string } | null;
   };
@@ -119,6 +123,67 @@ export async function POST(req: Request) {
         }
         console.error('label email failed for shipment', evt.shipmentId, err);
         return NextResponse.json({ error: 'label_email_failed' }, { status: 500 });
+      }
+    }
+  }
+
+  // Customer shipping-confirmation email — sent once when a shipment is confirmed.
+  // Independent of the studio-label block above: a failure here 500s and triggers
+  // InPost redelivery without disturbing the already-sent label email.
+  //
+  // We also require a tracking number to be available before claiming the once-only
+  // slot. Tracking is normally assigned at shipment creation, but if `confirmed`
+  // arrives before InPost issues it, we defer rather than send a useless
+  // trackingless email and permanently burn the slot — a later delivery carrying
+  // the tracking number will then send the real notification.
+  // We intentionally skip (not 500) when order.email is null: such an order can
+  // never be notified, so retrying forever would be wrong.
+  const customerTracking = evt.trackingNumber ?? order.inpost_tracking_number;
+  if (
+    evt.status === LABEL_READY_STATUS &&
+    order.email &&
+    customerTracking &&
+    !order.customer_notified_at
+  ) {
+    // Atomically claim the customer-notification slot (NULL→timestamp), same
+    // pattern as the label slot, so concurrent deliveries can't double-send.
+    const notifiedAt = new Date().toISOString();
+    const { data: claimed, error: claimErr } = (await supabase
+      .from('orders')
+      .update({ customer_notified_at: notifiedAt })
+      .eq('id', order.id)
+      .is('customer_notified_at', null)
+      .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+    if (claimErr) {
+      console.error('inpost webhook: customer-notify claim failed', evt.shipmentId, claimErr);
+      return NextResponse.json({ error: 'customer_notify_claim_failed' }, { status: 500 });
+    }
+
+    if (claimed && claimed.length > 0) {
+      try {
+        await emailShippingConfirmationToCustomer({
+          order: {
+            id: order.id,
+            email: order.email,
+            delivery_method: order.delivery_method,
+            receiver_first_name: order.receiver_first_name,
+            inpost_tracking_number: customerTracking,
+            inpost_target_point: order.inpost_target_point,
+          },
+          locale: order.locale ?? 'pl',
+        });
+      } catch (err) {
+        // Release the slot (only if still our claim) and 500 so InPost redelivers.
+        const { error: releaseErr } = await supabase
+          .from('orders')
+          .update({ customer_notified_at: null })
+          .eq('id', order.id)
+          .eq('customer_notified_at', notifiedAt);
+        if (releaseErr) {
+          console.error('inpost webhook: customer-notify claim release failed', order.id, notifiedAt, releaseErr);
+        }
+        console.error('customer shipping email failed for shipment', evt.shipmentId, err);
+        return NextResponse.json({ error: 'customer_notify_failed' }, { status: 500 });
       }
     }
   }
