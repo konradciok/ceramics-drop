@@ -16,11 +16,18 @@ export function ContactForm() {
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        pushDataLayer(
-          buildEngagementEvent('contact_form_submit', {
-            topic: String(formData.get('topic') ?? ''),
-          }),
-        );
+        const name = String(formData.get('name') ?? '');
+        const email = String(formData.get('email') ?? '');
+        const topic = String(formData.get('topic') ?? '');
+        const message = String(formData.get('message') ?? '');
+        pushDataLayer(buildEngagementEvent('contact_form_submit', { topic }));
+        // No server-side inbox: hand the message off to the visitor's own mail
+        // client, pre-addressed to the studio, so it actually reaches Anna.
+        const subject = `[Anna Ciok Ceramics] ${topic}`;
+        const body = `${message}\n\n— ${name}${email ? ` (${email})` : ''}`;
+        window.location.href =
+          `mailto:hej@annaciok.pl?subject=${encodeURIComponent(subject)}` +
+          `&body=${encodeURIComponent(body)}`;
         setSent(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
