@@ -83,4 +83,11 @@ describe('createOrderReturn', () => {
     const result = await createOrderReturn('unknown', d);
     expect(result).toEqual({ ok: false, reason: 'order_not_found' });
   });
+
+  it('propagates InPost API errors', async () => {
+    const d = deps();
+    (d.inpost.createShipment as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('ShipX unavailable'));
+    await expect(createOrderReturn('ord-1', d)).rejects.toThrow('ShipX unavailable');
+    expect(d.saveReturn).not.toHaveBeenCalled();
+  });
 });
