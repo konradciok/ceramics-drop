@@ -27,6 +27,10 @@ export default async function Page({ params }: Props) {
     <a className="inline" href="mailto:hej@annaciok.pl">{c}</a>
   );
 
+  const stripeLink = (c: ReactNode) => (
+    <a className="inline" href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">{c}</a>
+  );
+
   return (
     <main>
       {/* ── PAGE HEAD ─────────────────────────────────────────────── */}
@@ -66,6 +70,7 @@ export default async function Page({ params }: Props) {
             <ul className="bullets">
               <li>{t('privacy.s2Li1')}</li>
               <li>{t('privacy.s2Li2')}</li>
+              <li>{t.rich('privacy.s2Li4', { ...richTags, link: stripeLink })}</li>
               <li>{t('privacy.s2Li3')}</li>
             </ul>
             <p>{t('privacy.s2P')}</p>
@@ -74,7 +79,7 @@ export default async function Page({ params }: Props) {
           {/* ── #cel ─────────────────────────────────────────────── */}
           <section id="cel">
             <h2>{t('privacy.s3H')}</h2>
-            <p>{t('privacy.s3P')}</p>
+            <p>{t.rich('privacy.s3P', { ...richTags, link: stripeLink })}</p>
           </section>
 
           {/* ── #czas ────────────────────────────────────────────── */}
@@ -86,7 +91,7 @@ export default async function Page({ params }: Props) {
           {/* ── #cookies ─────────────────────────────────────────── */}
           <section id="cookies">
             <h2>{t('privacy.s5H')}</h2>
-            <p>{t('privacy.s5P')}</p>
+            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink })}</p>
           </section>
 
           {/* ── #prawa ───────────────────────────────────────────── */}

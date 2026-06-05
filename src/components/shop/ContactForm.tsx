@@ -4,10 +4,12 @@ import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import { buildContactMailto } from '@/lib/contact-mailto';
 
 export function ContactForm() {
   const t = useTranslations();
   const [sent, setSent] = useState(false);
+  const [mailtoUrl, setMailtoUrl] = useState('mailto:hej@annaciok.pl');
 
   return (
     <form
@@ -16,11 +18,24 @@ export function ContactForm() {
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        pushDataLayer(
-          buildEngagementEvent('contact_form_submit', {
-            topic: String(formData.get('topic') ?? ''),
-          }),
-        );
+        const name = String(formData.get('name') ?? '');
+        const email = String(formData.get('email') ?? '');
+        const topic = String(formData.get('topic') ?? '');
+        const message = String(formData.get('message') ?? '');
+        // "Compose opened", not "message delivered" — delivery happens in the
+        // visitor's own mail client and is never confirmed here.
+        pushDataLayer(buildEngagementEvent('contact_form_mailto_open', { topic }));
+        // No server-side inbox: hand the message off to the visitor's own mail
+        // client, pre-addressed to the studio, so it actually reaches Anna.
+        const url = buildContactMailto({
+          to: 'hej@annaciok.pl',
+          subject: t('contact.mailtoSubject', { topic }),
+          message,
+          signature: `\n\n— ${name}${email ? ` (${email})` : ''}`,
+          truncatedNote: t('contact.mailtoTruncated'),
+        });
+        setMailtoUrl(url);
+        window.location.href = url;
         setSent(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
@@ -77,7 +92,16 @@ export function ContactForm() {
           <Icon name="check" />
         </div>
         <h3>{t.rich('contact.sentH', richTags)}</h3>
-        <p>{t('contact.sentP')}</p>
+        <p>
+          {t.rich('contact.sentP', {
+            ...richTags,
+            link: (c) => (
+              <a className="inline" href={mailtoUrl}>
+                {c}
+              </a>
+            ),
+          })}
+        </p>
       </div>
     </form>
   );
