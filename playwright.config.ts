@@ -19,9 +19,11 @@ export default defineConfig({
   // mutation) are excluded from EVERY run — including bare `npx playwright test` —
   // unless explicitly opted in with E2E_DESTRUCTIVE=1.
   grepInvert: process.env.E2E_DESTRUCTIVE === '1' ? undefined : /@destructive/,
-  // Checkout specs run serially within a file; keep one worker in CI so
-  // @destructive flows never overlap on shared inventory.
-  workers: process.env.CI ? 1 : undefined,
+  // Checkout specs run serially within a file, but distinct @destructive FILES
+  // would still run in parallel workers and race each other on shared inventory
+  // (the decline spec reserving the same first-unsold piece the purchase spec
+  // picks). Force a single worker in CI and for every destructive run.
+  workers: process.env.CI || process.env.E2E_DESTRUCTIVE === '1' ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'https://anna-ciok.studio',

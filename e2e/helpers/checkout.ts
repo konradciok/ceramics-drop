@@ -89,8 +89,14 @@ export async function mockGeowidget(page: Page, context: BrowserContext): Promis
  * CI-safe locker selection: dispatch the same 'onpoint' CustomEvent the app's
  * GeowidgetPicker listens for (GeowidgetPicker.tsx — reads detail.name and
  * detail.address.line1) instead of driving the third-party map.
+ *
+ * The default MUST be a real, Operating ShipX point: on a completed payment the
+ * prod webhook creates a real InPost shipment against it, and a fabricated code
+ * fails ShipX validation (400 validation_failed) leaving the order shipment-less.
+ * WAW20A = Łopuszańska 38B, 02-220 Warszawa — verified via
+ * GET https://api-shipx-pl.easypack24.net/v1/points/WAW20A.
  */
-export async function mockLockerSelection(page: Page, lockerCode = 'WAW01A'): Promise<void> {
+export async function mockLockerSelection(page: Page, lockerCode = 'WAW20A'): Promise<void> {
   // Fast-fail with a clear blocker when the picker rendered its unavailable
   // fallback instead of the widget (token missing at build time).
   const widget = page.locator('inpost-geowidget');
@@ -106,7 +112,7 @@ export async function mockLockerSelection(page: Page, lockerCode = 'WAW01A'): Pr
   // element is in the DOM the event will be heard.
   await widget.waitFor({ state: 'attached' });
   await page.evaluate((code) => {
-    const detail = { name: code, address: { line1: 'Testowa 1, 00-001 Warszawa' } };
+    const detail = { name: code, address: { line1: 'Łopuszańska 38B, 02-220 Warszawa' } };
     document.querySelector('inpost-geowidget')?.dispatchEvent(new CustomEvent('onpoint', { detail }));
   }, lockerCode);
   await expect(page.locator(sel.selectedLocker)).toContainText(lockerCode);
