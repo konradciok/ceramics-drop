@@ -51,7 +51,12 @@ export async function createOrderReturn(
   if (order.delivery_method === 'odbior') return { ok: false, reason: 'not_eligible' };
   if (order.inpost_return_shipment_id) return { ok: false, reason: 'already_returned' };
 
-  const payload = buildReturnShipmentPayload(order, deps.studioConfig);
+  let payload;
+  try {
+    payload = buildReturnShipmentPayload(order, deps.studioConfig);
+  } catch {
+    return { ok: false, reason: 'not_eligible' };
+  }
   const shipment = await deps.inpost.createShipment(payload);
   const returnShipmentId = String(shipment.id);
   const trackingNumber = shipment.tracking_number ?? null;

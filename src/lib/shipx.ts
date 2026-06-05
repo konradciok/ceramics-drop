@@ -171,6 +171,8 @@ export type OrderForReturn = {
   id: string;
   email: string | null;
   receiver_first_name: string | null;
+  receiver_last_name: string | null;
+  receiver_phone: string | null;
   locale: string | null;
 };
 
@@ -187,26 +189,38 @@ export type StudioReturnConfig = {
 
 /**
  * Build the ShipX create-shipment body for a customer return.
- * The studio is the receiver; the customer drops the parcel at any paczkomat
- * (or the one specified by `config.return_point`).
+ * Customer is the sender (drops off at `return_point` locker); studio is the receiver.
+ * We set sender/receiver explicitly — `is_return: true` 500s on our ShipX org.
  */
 export function buildReturnShipmentPayload(
   order: OrderForReturn,
   config: StudioReturnConfig,
 ): ShipmentPayload {
-  const receiver: DeliveryContact & { address?: DeliveryAddress } = {
-    first_name: config.first_name,
-    last_name: config.last_name,
-    email: config.email,
-    phone: config.phone,
-    address: config.address,
-  };
+  const firstName = str(order.receiver_first_name);
+  const lastName = str(order.receiver_last_name);
+  const email = str(order.email);
+  const phone = str(order.receiver_phone);
+  const returnPoint = str(config.return_point);
+  if (!firstName || !lastName || !email || !phone) {
+    throw new Error(`buildReturnShipmentPayload: incomplete customer contact for order ${order.id}`);
+  }
+  if (!returnPoint) {
+    throw new Error(`buildReturnShipmentPayload: return_point required for order ${order.id}`);
+  }
+
   return {
-    receiver,
+    sender: { first_name: firstName, last_name: lastName, email, phone },
+    receiver: {
+      first_name: config.first_name,
+      last_name: config.last_name,
+      email: config.email,
+      phone: config.phone,
+      address: config.address,
+    },
     parcels: [DEFAULT_LOCKER_PARCEL],
     custom_attributes: {
       sending_method: SENDING_METHOD.paczkomat,
-      ...(config.return_point ? { target_point: config.return_point } : {}),
+      target_point: returnPoint,
     },
     service: SHIPX_SERVICE.paczkomat,
     reference: `return:${order.id}`,
@@ -263,7 +277,9 @@ export type OrderForShipment = {
 };
 
 export type ShipmentPayload = {
-  receiver: DeliveryContact & { address?: DeliveryAddress };
+  receiver?: DeliveryContact & { address?: DeliveryAddress };
+  sender?: DeliveryContact & { address?: DeliveryAddress };
+  is_return?: boolean;
   parcels: unknown[];
   custom_attributes: Record<string, string>;
   service: string;

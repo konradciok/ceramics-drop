@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       const { data } = await supabase
         .from('orders')
         .select(
-          'id, status, delivery_method, email, receiver_first_name, locale, inpost_return_shipment_id',
+          'id, status, delivery_method, email, receiver_first_name, receiver_last_name, receiver_phone, locale, inpost_return_shipment_id',
         )
         .eq('id', id)
         .maybeSingle();
@@ -89,7 +89,9 @@ function buildStudioReturnConfig(env: CloudflareEnv): StudioReturnConfig | null 
   const city = env.STUDIO_RETURN_ADDRESS_CITY?.trim();
   const postal = env.STUDIO_RETURN_ADDRESS_POSTAL?.trim();
 
-  if (!first_name || !last_name || !email || !phone || !street || !building || !city || !postal) {
+  const return_point = env.STUDIO_RETURN_POINT?.trim();
+
+  if (!first_name || !last_name || !email || !phone || !street || !building || !city || !postal || !return_point) {
     return null;
   }
 
@@ -105,6 +107,6 @@ function buildStudioReturnConfig(env: CloudflareEnv): StudioReturnConfig | null 
       post_code: postal,
       country_code: 'PL',
     },
-    return_point: env.STUDIO_RETURN_POINT?.trim() || undefined,
+    return_point,
   };
 }

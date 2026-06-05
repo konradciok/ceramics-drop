@@ -168,22 +168,47 @@ const studioConfig: StudioReturnConfig = {
   address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
 };
 
+const returnOrder = {
+  id: 'ord-1',
+  email: 'a@example.com',
+  receiver_first_name: 'Anna',
+  receiver_last_name: 'Kowalska',
+  receiver_phone: '+48111222333',
+  locale: 'pl',
+};
+
 describe('buildReturnShipmentPayload', () => {
-  it('builds a return shipment with studio as receiver', () => {
-    const p = buildReturnShipmentPayload({ id: 'ord-1', email: 'a@example.com', receiver_first_name: 'Anna', locale: 'pl' }, studioConfig);
+  const configWithPoint = { ...studioConfig, return_point: 'WAW20A' };
+
+  it('builds a locker return with customer sender and studio receiver', () => {
+    const p = buildReturnShipmentPayload(returnOrder, configWithPoint);
     expect(p.service).toBe(SHIPX_SERVICE.paczkomat);
-    expect(p.custom_attributes.sending_method).toBe('parcel_locker');
-    expect(p.custom_attributes.target_point).toBeUndefined();
-    expect(p.receiver.first_name).toBe('Anna Ciok');
+    expect(p.custom_attributes).toEqual({ sending_method: 'parcel_locker', target_point: 'WAW20A' });
+    expect(p.sender).toEqual({
+      first_name: 'Anna',
+      last_name: 'Kowalska',
+      email: 'a@example.com',
+      phone: '+48111222333',
+    });
+    expect(p.receiver).toMatchObject({
+      first_name: 'Anna Ciok',
+      last_name: 'Studio',
+      address: studioConfig.address,
+    });
     expect(p.reference).toBe('return:ord-1');
   });
 
-  it('includes target_point when return_point is configured', () => {
-    const p = buildReturnShipmentPayload(
-      { id: 'ord-2', email: null, receiver_first_name: null, locale: null },
-      { ...studioConfig, return_point: 'KRA010' },
-    );
-    expect(p.custom_attributes.target_point).toBe('KRA010');
+  it('throws when return_point is missing', () => {
+    expect(() => buildReturnShipmentPayload(returnOrder, studioConfig)).toThrow('return_point required');
+  });
+
+  it('throws when customer contact is incomplete', () => {
+    expect(() =>
+      buildReturnShipmentPayload(
+        { ...returnOrder, receiver_phone: null },
+        configWithPoint,
+      ),
+    ).toThrow('incomplete customer contact');
   });
 });
 

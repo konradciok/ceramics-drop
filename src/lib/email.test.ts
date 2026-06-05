@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildShippingConfirmation, type CustomerShippingOrder } from './email';
+import {
+  buildReturnLabelEmail,
+  buildShippingConfirmation,
+  type CustomerShippingOrder,
+  type ReturnLabelOrder,
+} from './email';
 
 const baseOrder: CustomerShippingOrder = {
   id: 'ord-abc',
@@ -84,5 +89,39 @@ describe('buildShippingConfirmation — paczkomat line', () => {
     const noPoint: CustomerShippingOrder = { ...baseOrder, inpost_target_point: null };
     const { html } = buildShippingConfirmation({ order: noPoint, locale: 'pl' });
     expect(html).not.toContain('Paczkomat:');
+  });
+});
+
+const returnOrder: ReturnLabelOrder = {
+  id: 'ord-ret-1',
+  email: 'buyer@example.com',
+  receiver_first_name: 'Anna',
+};
+
+describe('buildReturnLabelEmail — subject localisation', () => {
+  it('returns Polish subject with order id for pl', () => {
+    const { subject } = buildReturnLabelEmail({ order: returnOrder, locale: 'pl' });
+    expect(subject).toBe('Etykieta zwrotna — zamówienie ord-ret-1');
+  });
+
+  it('returns English subject for en', () => {
+    const { subject } = buildReturnLabelEmail({ order: returnOrder, locale: 'en' });
+    expect(subject).toBe('Return label — order ord-ret-1');
+  });
+
+  it('falls back to Polish for an unknown locale', () => {
+    const { subject } = buildReturnLabelEmail({ order: returnOrder, locale: 'de' });
+    expect(subject).toBe('Etykieta zwrotna — zamówienie ord-ret-1');
+  });
+});
+
+describe('buildReturnLabelEmail — HTML escaping', () => {
+  it('escapes HTML special chars in receiver_first_name', () => {
+    const { html } = buildReturnLabelEmail({
+      order: { ...returnOrder, receiver_first_name: '<script>' },
+      locale: 'pl',
+    });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
   });
 });

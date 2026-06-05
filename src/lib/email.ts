@@ -1,13 +1,21 @@
 /**
  * Transactional email for shipping labels (Resend REST API — fetch-based,
- * Workers-friendly). The studio receives the printable A6 label PDF once a
- * shipment is confirmed.
+ * Workers-friendly). Branded HTML lives in published Resend templates; this
+ * module supplies localised variables and PDF attachments.
  *
- * NOTE: the `from` domain must be verified in Resend (anna-ciok.studio).
+ * NOTE: the `from` domains must be verified in Resend (anna-ciok.studio).
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import {
+  RESEND_TEMPLATE_ALIASES,
+  emailButton,
+  emailDetailTable,
+  emailMutedParagraph,
+  emailParagraph,
+} from './email-layout';
 
 const FROM = 'Etykiety InPost <etykiety@anna-ciok.studio>';
+const CUSTOMER_FROM = 'Anna Ciok Studio <sklep@anna-ciok.studio>';
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -30,6 +38,48 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(binary);
 }
 
+type ResendSendBody = Record<string, unknown>;
+
+/** Send via a published Resend template (variables pre-escaped by callers). */
+async function sendResendTemplate(params: {
+  apiKey: string;
+  from: string;
+  to: string[];
+  subject: string;
+  templateId: string;
+  variables: Record<string, string>;
+  attachments?: Array<{ filename: string; content: string }>;
+}): Promise<void> {
+  const body: ResendSendBody = {
+    from: params.from,
+    to: params.to,
+    subject: params.subject,
+    template: {
+      id: params.templateId,
+      variables: params.variables,
+    },
+  };
+  if (params.attachments?.length) {
+    body.attachments = params.attachments;
+  }
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${params.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  }
+}
+
+// ── Studio label email ───────────────────────────────────────────────────────
+
 export type LabelEmailOrder = {
   id: string;
   delivery_method: string;
@@ -38,6 +88,44 @@ export type LabelEmailOrder = {
   receiver_first_name: string | null;
   receiver_last_name: string | null;
 };
+
+/** Pure function — builds subject + inner HTML for the studio label email. */
+export function buildLabelToStudioEmail(params: { order: LabelEmailOrder }): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const { order } = params;
+  const receiver = [order.receiver_first_name, order.receiver_last_name]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const methodLabel = order.delivery_method === 'paczkomat' ? 'Paczkomat' : 'Kurier';
+
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(order.id) },
+    { label: 'Odbiorca', value: escapeHtml(receiver || '—') },
+    { label: 'Dostawa', value: methodLabel },
+  ];
+  if (order.inpost_target_point) {
+    rows.push({ label: 'Paczkomat', value: escapeHtml(order.inpost_target_point) });
+  }
+  if (order.inpost_tracking_number) {
+    rows.push({ label: 'Numer przesyłki', value: escapeHtml(order.inpost_tracking_number) });
+  }
+
+  const mainContent = [
+    emailParagraph('<strong>Nowa etykieta InPost do wydruku.</strong>'),
+    emailMutedParagraph('Etykieta A6 jest w załączniku PDF.'),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `Etykieta InPost — zamówienie ${order.id}`,
+    html: mainContent,
+    mainContent,
+  };
+}
 
 /** Email the A6 label PDF (+ tracking summary) to the studio for printing. */
 export async function emailLabelToStudio(params: {
@@ -51,59 +139,30 @@ export async function emailLabelToStudio(params: {
     throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
   }
 
-  const receiver = [order.receiver_first_name, order.receiver_last_name]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-  const methodLabel = order.delivery_method === 'paczkomat' ? 'Paczkomat' : 'Kurier';
-  // Escape every interpolated value — order/receiver fields are user-supplied.
-  const lines = [
-    `Zamówienie: ${escapeHtml(order.id)}`,
-    `Odbiorca: ${escapeHtml(receiver || '—')}`,
-    `Sposób dostawy: ${methodLabel}`,
-    order.inpost_target_point ? `Paczkomat: ${escapeHtml(order.inpost_target_point)}` : null,
-    order.inpost_tracking_number
-      ? `Numer przesyłki: ${escapeHtml(order.inpost_tracking_number)}`
-      : null,
-  ].filter(Boolean);
+  const { subject, mainContent } = buildLabelToStudioEmail({ order });
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: FROM,
-      to: [env.STUDIO_NOTIFY_EMAIL],
-      subject: `Etykieta InPost — zamówienie ${order.id}`,
-      html: `<p>Nowa etykieta InPost do wydruku.</p><pre>${lines.join('\n')}</pre>`,
-      attachments: [
-        {
-          filename: `etykieta-${order.id}.pdf`,
-          content: toBase64(labelPdf),
-        },
-      ],
-    }),
+  await sendResendTemplate({
+    apiKey: env.RESEND_API_KEY,
+    from: FROM,
+    to: [env.STUDIO_NOTIFY_EMAIL],
+    subject,
+    templateId: RESEND_TEMPLATE_ALIASES.labelStudio,
+    variables: { MAIN_CONTENT: mainContent },
+    attachments: [
+      {
+        filename: `etykieta-${order.id}.pdf`,
+        content: toBase64(labelPdf),
+      },
+    ],
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-  }
 }
 
 // ── Customer shipping-confirmation email ─────────────────────────────────────
 
-/**
- * NOTE: the `from` domain (anna-ciok.studio) must be verified in Resend.
- */
-const CUSTOMER_FROM = 'Anna Ciok Studio <sklep@anna-ciok.studio>';
-
 export type CustomerShippingOrder = {
   id: string;
   email: string | null;
-  delivery_method: string;               // 'paczkomat' | 'kurier' | 'odbior'
+  delivery_method: string;
   receiver_first_name: string | null;
   inpost_tracking_number: string | null;
   inpost_target_point: string | null;
@@ -127,7 +186,7 @@ const I18N: Record<SupportedLocale, {
 }> = {
   pl: {
     subject: 'Twoje zamówienie zostało wysłane',
-    greeting: (name) => name ? `Cześć ${name}` : 'Cześć',
+    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     body1: 'Twoje zamówienie zostało nadane i jest w drodze.',
     trackingLabel: 'Numer przesyłki',
     trackLink: 'Śledź przesyłkę',
@@ -136,7 +195,7 @@ const I18N: Record<SupportedLocale, {
   },
   en: {
     subject: 'Your order has been shipped',
-    greeting: (name) => name ? `Hi ${name}` : 'Hi',
+    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
     body1: 'Your order has been shipped and is on its way.',
     trackingLabel: 'Tracking number',
     trackLink: 'Track your parcel',
@@ -145,7 +204,7 @@ const I18N: Record<SupportedLocale, {
   },
   es: {
     subject: 'Tu pedido ha sido enviado',
-    greeting: (name) => name ? `Hola ${name}` : 'Hola',
+    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     body1: 'Tu pedido ha sido enviado y está en camino.',
     trackingLabel: 'Número de seguimiento',
     trackLink: 'Sigue tu envío',
@@ -161,7 +220,7 @@ const I18N: Record<SupportedLocale, {
 export function buildShippingConfirmation(params: {
   order: CustomerShippingOrder;
   locale: string;
-}): { subject: string; html: string } {
+}): { subject: string; html: string; mainContent: string } {
   const { order } = params;
   const loc = resolveLocale(params.locale);
   const t = I18N[loc];
@@ -175,26 +234,34 @@ export function buildShippingConfirmation(params: {
     : null;
 
   const parts: string[] = [
-    `<p>${greeting},</p>`,
-    `<p>${t.body1}</p>`,
+    emailParagraph(`${greeting},`),
+    emailParagraph(t.body1),
   ];
 
   if (tracking && trackingUrl) {
     parts.push(
-      `<p>${t.trackingLabel}: ${escapeHtml(tracking)}<br>` +
-      `<a href="${trackingUrl}">${t.trackLink}</a></p>`,
+      emailParagraph(
+        `${t.trackingLabel}: <strong>${escapeHtml(tracking)}</strong>`,
+      ),
+      emailButton(trackingUrl, t.trackLink),
     );
   }
 
   if (order.delivery_method === 'paczkomat' && order.inpost_target_point) {
-    parts.push(`<p>${t.paczkomatLabel}: ${escapeHtml(order.inpost_target_point)}</p>`);
+    parts.push(
+      emailParagraph(
+        `${t.paczkomatLabel}: <strong>${escapeHtml(order.inpost_target_point)}</strong>`,
+      ),
+    );
   }
 
-  parts.push(`<p>${t.signOff}</p>`);
+  parts.push(emailMutedParagraph(t.signOff));
 
+  const mainContent = parts.join('');
   return {
     subject: t.subject,
-    html: parts.join('\n'),
+    html: mainContent,
+    mainContent,
   };
 }
 
@@ -216,21 +283,24 @@ const I18N_RETURN: Record<SupportedLocale, {
   pl: {
     subject: 'Etykieta zwrotna — zamówienie',
     intro: 'Twoja prośba o zwrot została przyjęta. W załączniku znajdziesz etykietę zwrotną.',
-    instructions: 'Wydrukuj etykietę lub pokaż kod QR w paczkomacie InPost, aby nadać przesyłkę.',
+    instructions:
+      'Wydrukuj etykietę lub pokaż kod QR w paczkomacie InPost, aby nadać przesyłkę.',
     signOff: 'Dziękujemy! Anna Ciok Studio',
     filename: 'zwrot',
   },
   en: {
     subject: 'Return label — order',
     intro: 'Your return request has been accepted. Please find the return label attached.',
-    instructions: 'Print the label or show the QR code at an InPost parcel locker to send your return.',
+    instructions:
+      'Print the label or show the QR code at an InPost parcel locker to send your return.',
     signOff: 'Thank you! Anna Ciok Studio',
     filename: 'return',
   },
   es: {
     subject: 'Etiqueta de devolución — pedido',
     intro: 'Tu solicitud de devolución ha sido aceptada. Encontrarás la etiqueta de devolución adjunta.',
-    instructions: 'Imprime la etiqueta o muéstrala en un punto de recogida InPost para enviar tu devolución.',
+    instructions:
+      'Imprime la etiqueta o muéstrala en un punto de recogida InPost para enviar tu devolución.',
     signOff: '¡Gracias! Anna Ciok Studio',
     filename: 'devolucion',
   },
@@ -240,21 +310,28 @@ const I18N_RETURN: Record<SupportedLocale, {
 export function buildReturnLabelEmail(params: {
   order: ReturnLabelOrder;
   locale: string;
-}): { subject: string; html: string } {
+}): { subject: string; html: string; mainContent: string } {
   const loc = resolveLocale(params.locale);
   const t = I18N_RETURN[loc];
   const firstName = params.order.receiver_first_name
     ? escapeHtml(params.order.receiver_first_name)
     : null;
-  const greeting = firstName ? `${firstName},` : '';
+
+  const parts: string[] = [];
+  if (firstName) {
+    parts.push(emailParagraph(`${firstName},`));
+  }
+  parts.push(
+    emailParagraph(t.intro),
+    emailParagraph(t.instructions),
+    emailMutedParagraph(t.signOff),
+  );
+
+  const mainContent = parts.join('');
   return {
     subject: `${t.subject} ${params.order.id}`,
-    html: [
-      greeting ? `<p>${greeting}</p>` : '',
-      `<p>${t.intro}</p>`,
-      `<p>${t.instructions}</p>`,
-      `<p>${t.signOff}</p>`,
-    ].filter(Boolean).join('\n'),
+    html: mainContent,
+    mainContent,
   };
 }
 
@@ -275,32 +352,22 @@ export async function emailReturnLabelToCustomer(params: {
   }
 
   const loc = resolveLocale(params.locale);
-  const { subject, html } = buildReturnLabelEmail({ order, locale: params.locale });
+  const { subject, mainContent } = buildReturnLabelEmail({ order, locale: params.locale });
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: CUSTOMER_FROM,
-      to: [order.email],
-      subject,
-      html,
-      attachments: [
-        {
-          filename: `${I18N_RETURN[loc].filename}-${order.id}.pdf`,
-          content: toBase64(labelPdf),
-        },
-      ],
-    }),
+  await sendResendTemplate({
+    apiKey: env.RESEND_API_KEY,
+    from: CUSTOMER_FROM,
+    to: [order.email],
+    subject,
+    templateId: RESEND_TEMPLATE_ALIASES.returnLabel,
+    variables: { MAIN_CONTENT: mainContent },
+    attachments: [
+      {
+        filename: `${I18N_RETURN[loc].filename}-${order.id}.pdf`,
+        content: toBase64(labelPdf),
+      },
+    ],
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-  }
 }
 
 /**
@@ -322,24 +389,14 @@ export async function emailShippingConfirmationToCustomer(params: {
     throw new Error(`Cannot send shipping confirmation: order ${order.id} has no email`);
   }
 
-  const { subject, html } = buildShippingConfirmation(params);
+  const { subject, mainContent } = buildShippingConfirmation(params);
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: CUSTOMER_FROM,
-      to: [order.email],
-      subject,
-      html,
-    }),
+  await sendResendTemplate({
+    apiKey: env.RESEND_API_KEY,
+    from: CUSTOMER_FROM,
+    to: [order.email],
+    subject,
+    templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
+    variables: { MAIN_CONTENT: mainContent },
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-  }
 }
