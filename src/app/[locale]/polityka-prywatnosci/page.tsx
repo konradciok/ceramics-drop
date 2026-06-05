@@ -70,7 +70,7 @@ export default async function Page({ params }: Props) {
             <ul className="bullets">
               <li>{t('privacy.s2Li1')}</li>
               <li>{t('privacy.s2Li2')}</li>
-              <li>{t('privacy.s2Li4')}</li>
+              <li>{t.rich('privacy.s2Li4', { ...richTags, link: stripeLink })}</li>
               <li>{t('privacy.s2Li3')}</li>
             </ul>
             <p>{t('privacy.s2P')}</p>
@@ -91,7 +91,7 @@ export default async function Page({ params }: Props) {
           {/* ── #cookies ─────────────────────────────────────────── */}
           <section id="cookies">
             <h2>{t('privacy.s5H')}</h2>
-            <p>{t('privacy.s5P')}</p>
+            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink })}</p>
           </section>
 
           {/* ── #prawa ───────────────────────────────────────────── */}

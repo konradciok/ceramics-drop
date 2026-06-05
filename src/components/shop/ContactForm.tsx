@@ -5,9 +5,13 @@ import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
+/** Long mailto: URLs silently fail on some OS/browser combos (~2000 char cap). */
+const MAX_MAILTO_MESSAGE = 1500;
+
 export function ContactForm() {
   const t = useTranslations();
   const [sent, setSent] = useState(false);
+  const [mailtoUrl, setMailtoUrl] = useState('mailto:hej@annaciok.pl');
 
   return (
     <form
@@ -20,14 +24,22 @@ export function ContactForm() {
         const email = String(formData.get('email') ?? '');
         const topic = String(formData.get('topic') ?? '');
         const message = String(formData.get('message') ?? '');
-        pushDataLayer(buildEngagementEvent('contact_form_submit', { topic }));
+        // "Compose opened", not "message delivered" — delivery happens in the
+        // visitor's own mail client and is never confirmed here.
+        pushDataLayer(buildEngagementEvent('contact_form_mailto_open', { topic }));
         // No server-side inbox: hand the message off to the visitor's own mail
         // client, pre-addressed to the studio, so it actually reaches Anna.
-        const subject = `[Anna Ciok Ceramics] ${topic}`;
-        const body = `${message}\n\n— ${name}${email ? ` (${email})` : ''}`;
-        window.location.href =
+        const subject = t('contact.mailtoSubject', { topic });
+        const trimmed =
+          message.length > MAX_MAILTO_MESSAGE
+            ? `${message.slice(0, MAX_MAILTO_MESSAGE)}…\n[${t('contact.mailtoTruncated')}]`
+            : message;
+        const body = `${trimmed}\n\n— ${name}${email ? ` (${email})` : ''}`;
+        const url =
           `mailto:hej@annaciok.pl?subject=${encodeURIComponent(subject)}` +
           `&body=${encodeURIComponent(body)}`;
+        setMailtoUrl(url);
+        window.location.href = url;
         setSent(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
@@ -84,7 +96,16 @@ export function ContactForm() {
           <Icon name="check" />
         </div>
         <h3>{t.rich('contact.sentH', richTags)}</h3>
-        <p>{t('contact.sentP')}</p>
+        <p>
+          {t.rich('contact.sentP', {
+            ...richTags,
+            link: (c) => (
+              <a className="inline" href={mailtoUrl}>
+                {c}
+              </a>
+            ),
+          })}
+        </p>
       </div>
     </form>
   );
