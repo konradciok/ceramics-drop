@@ -1,10 +1,28 @@
-﻿import type Stripe from 'stripe';
+import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { getProductById, CATEGORIES } from './products';
 import plMessages from '../../messages/pl.json';
 
-/** Build a no-VAT invoice for a paid order and email it via Stripe. */
+/**
+ * Build a no-VAT invoice for a paid order and email it via Stripe.
+ *
+ * Flow notes (each step verified against the live test-mode API):
+ * - The invoice is created FIRST and items are attached directly to it.
+ *   Relying on pending invoice items is a trap: `invoices.create` defaults
+ *   `pending_invoice_items_behavior` to `exclude`, which produced 0 zł invoices
+ *   that auto-paid on finalization and made the explicit `pay()` throw
+ *   "Invoice is already paid" — no invoice was ever recorded or emailed.
+ * - `collection_method` must be `send_invoice`: Stripe refuses to manually send
+ *   `charge_automatically` invoices regardless of status.
+ * - `currency: 'pln'` must be explicit — the account default (EUR) otherwise
+ *   conflicts with the PLN invoice items.
+ * - Order matters: finalize → pay(paid_out_of_band) → sendInvoice. Sending an
+ *   already-paid send_invoice invoice is allowed and emails a 0-due document.
+ * - Webhook retries replay POSTs from Stripe's idempotency cache, which returns
+ *   the ORIGINAL response snapshot — statuses are re-read with a live retrieve
+ *   before deciding which steps still need to run.
+ */
 export async function createOrderInvoice(paymentIntentId: string): Promise<void> {
   const stripe = getStripe();
   const supabase = getSupabaseAdmin();
@@ -47,44 +65,82 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     preferred_locales: ['pl'],
   }, { idempotencyKey: `cust_${order.id}` });
 
-  for (const it of items) {
-    const product = getProductById(it.product_id);
-    const productNames = plMessages.product as Record<string, string>;
-    const label = product
-      ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
-      : it.product_id;
-    await stripe.invoiceItems.create({
-      customer: customer.id,
-      amount: it.unit_price,
-      currency: 'pln',
-      description: label,
-    }, { idempotencyKey: `ii_${order.id}_${it.product_id}` });
-  }
-  if (order.shipping > 0) {
-    const shippingLabel =
-      order.delivery_method === 'paczkomat'
-        ? 'Wysyłka — Paczkomat InPost'
-        : 'Wysyłka — Kurier InPost';
-    await stripe.invoiceItems.create({
-      customer: customer.id,
-      amount: order.shipping,
-      currency: 'pln',
-      description: shippingLabel,
-    }, { idempotencyKey: `ii_${order.id}_shipping` });
-  }
-
-  const invoice = await stripe.invoices.create({
+  // "2" prefixes: the v1 flow left idempotency entries with different params
+  // (pending-item style); reusing those keys would be rejected by Stripe.
+  let invoice = await stripe.invoices.create({
     customer: customer.id,
-    collection_method: 'charge_automatically',
+    collection_method: 'send_invoice',
+    days_until_due: 30,
+    currency: 'pln',
     auto_advance: false,
     metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
-  }, { idempotencyKey: `inv_${order.id}` });
-  const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
-  await stripe.invoices.pay(finalized.id as string, { paid_out_of_band: true } as Stripe.InvoicePayParams);
-  await stripe.invoices.sendInvoice(finalized.id as string);
+  }, { idempotencyKey: `inv2_${order.id}` });
+
+  // Re-read live state: an idempotent replay returns the at-creation (draft)
+  // snapshot even when the invoice has since been finalized or paid.
+  invoice = await stripe.invoices.retrieve(invoice.id as string);
+
+  if (invoice.status === 'draft') {
+    for (const it of items) {
+      const product = getProductById(it.product_id);
+      const productNames = plMessages.product as Record<string, string>;
+      const label = product
+        ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
+        : it.product_id;
+      await stripe.invoiceItems.create({
+        customer: customer.id,
+        invoice: invoice.id as string,
+        amount: it.unit_price,
+        currency: 'pln',
+        description: label,
+      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}` });
+    }
+    if (order.shipping > 0) {
+      const shippingLabel =
+        order.delivery_method === 'paczkomat'
+          ? 'Wysyłka — Paczkomat InPost'
+          : 'Wysyłka — Kurier InPost';
+      await stripe.invoiceItems.create({
+        customer: customer.id,
+        invoice: invoice.id as string,
+        amount: order.shipping,
+        currency: 'pln',
+        description: shippingLabel,
+      }, { idempotencyKey: `ii2_${order.id}_shipping` });
+    }
+
+    // Guard against drift before the invoice becomes immutable. A mismatch
+    // leaves the draft in place; the webhook retry lands here again.
+    invoice = await stripe.invoices.retrieve(invoice.id as string);
+    if (invoice.total !== order.total) {
+      throw new Error(
+        `invoice ${invoice.id} total ${invoice.total} != order ${order.id} total ${order.total}`,
+      );
+    }
+    invoice = await stripe.invoices.finalizeInvoice(
+      invoice.id as string, {}, { idempotencyKey: `fin_${order.id}` },
+    );
+  }
+
+  if (invoice.status === 'open') {
+    invoice = await stripe.invoices.pay(
+      invoice.id as string,
+      { paid_out_of_band: true } as Stripe.InvoicePayParams,
+      { idempotencyKey: `payinv_${order.id}` },
+    );
+  }
+
+  if (invoice.status !== 'paid') {
+    throw new Error(`invoice ${invoice.id} in unexpected status ${invoice.status}`);
+  }
+
+  await stripe.invoices.sendInvoice(
+    invoice.id as string, {}, { idempotencyKey: `sendinv_${order.id}` },
+  );
+
   const { error: recordErr } = await supabase
     .from('orders')
-    .update({ invoiced_at: new Date().toISOString(), invoice_id: finalized.id as string })
+    .update({ invoiced_at: new Date().toISOString(), invoice_id: invoice.id as string })
     .eq('id', order.id);
   if (recordErr) {
     throw new Error(`failed to record invoicing for order ${order.id}: ${recordErr.message}`);
