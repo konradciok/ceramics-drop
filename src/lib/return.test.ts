@@ -9,6 +9,7 @@ const studioConfig: StudioReturnConfig = {
   email: 'studio@anna-ciok.studio',
   phone: '+48600000001',
   address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
+  return_point: 'WAW20A',
 };
 
 const paidOrder = {
@@ -17,6 +18,8 @@ const paidOrder = {
   delivery_method: 'paczkomat',
   email: 'buyer@example.com',
   receiver_first_name: 'Anna',
+  receiver_last_name: 'Kowalska',
+  receiver_phone: '+48111222333',
   locale: 'pl',
   inpost_return_shipment_id: null,
 };
