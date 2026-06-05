@@ -4,9 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
-
-/** Long mailto: URLs silently fail on some OS/browser combos (~2000 char cap). */
-const MAX_MAILTO_MESSAGE = 1500;
+import { buildContactMailto } from '@/lib/contact-mailto';
 
 export function ContactForm() {
   const t = useTranslations();
@@ -29,15 +27,13 @@ export function ContactForm() {
         pushDataLayer(buildEngagementEvent('contact_form_mailto_open', { topic }));
         // No server-side inbox: hand the message off to the visitor's own mail
         // client, pre-addressed to the studio, so it actually reaches Anna.
-        const subject = t('contact.mailtoSubject', { topic });
-        const trimmed =
-          message.length > MAX_MAILTO_MESSAGE
-            ? `${message.slice(0, MAX_MAILTO_MESSAGE)}…\n[${t('contact.mailtoTruncated')}]`
-            : message;
-        const body = `${trimmed}\n\n— ${name}${email ? ` (${email})` : ''}`;
-        const url =
-          `mailto:hej@annaciok.pl?subject=${encodeURIComponent(subject)}` +
-          `&body=${encodeURIComponent(body)}`;
+        const url = buildContactMailto({
+          to: 'hej@annaciok.pl',
+          subject: t('contact.mailtoSubject', { topic }),
+          message,
+          signature: `\n\n— ${name}${email ? ` (${email})` : ''}`,
+          truncatedNote: t('contact.mailtoTruncated'),
+        });
         setMailtoUrl(url);
         window.location.href = url;
         setSent(true);
