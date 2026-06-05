@@ -48,6 +48,7 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
   return (
     <div
       className={`ship-opt${active ? ' sel' : ''}`}
+      data-testid={`shipping-${id}`}
       onClick={() => onPick(id)}
       role="radio"
       aria-checked={active}
@@ -272,7 +273,7 @@ export function CartView() {
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
-              <div key={p.id} className="cart-row">
+              <div key={p.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
                 <Link href={`/${p.category}`} className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} alt="" />
@@ -376,7 +377,7 @@ export function CartView() {
             {ship === 'paczkomat' && (
               <div className="locker-pick">
                 {locker && (
-                  <p className="locker-chosen">
+                  <p className="locker-chosen" data-testid="selected-locker">
                     {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
                   </p>
                 )}
@@ -446,6 +447,7 @@ export function CartView() {
           <button
             className="btn btn-primary"
             id="checkout"
+            data-testid="checkout-button"
             onClick={handleCheckout}
             disabled={submitting || !deliveryReady}
           >

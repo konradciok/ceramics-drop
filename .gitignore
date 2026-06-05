@@ -34,6 +34,11 @@ gtm-oauth-client.json
 docs/gtm-api.json
 *-service-account*.json
 
+# playwright
+/test-results/
+/playwright-report/
+/e2e/REPORT.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -45,7 +45,7 @@ export default function ReturnPage() {
   const key = status === 'ok' ? 'ok' : status === 'processing' ? 'processing' : 'fail';
   return (
     <main id="cart-root">
-      <div className="confirm">
+      <div className="confirm" data-testid={status === 'ok' ? 'checkout-success' : undefined}>
         {status === 'ok' && <div className="seal"><Icon name="check" /></div>}
         <h1>{t.rich(`${key}H`, richTags)}</h1>
         <p>{t(`${key}P`)}</p>

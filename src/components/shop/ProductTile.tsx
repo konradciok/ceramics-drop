@@ -28,6 +28,11 @@ export function ProductTile({ product, onOpen }: Props) {
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
       onClick={() => !product.sold && onOpen?.(product)}
+      data-testid="product-tile"
+      data-product-id={product.id}
+      data-category={product.category}
+      data-price={product.price}
+      data-sold={product.sold ? 'true' : undefined}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={product.image} alt={displayName} loading="lazy" />
@@ -38,6 +43,7 @@ export function ProductTile({ product, onOpen }: Props) {
       </div>
       <button
         className={`tile-add${selected ? ' in' : ''}`}
+        data-testid="add-to-cart"
         disabled={product.sold}
         aria-disabled={product.sold}
         onClick={(e) => {
