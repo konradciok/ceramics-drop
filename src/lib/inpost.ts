@@ -9,7 +9,7 @@
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { ShipxApiError } from './shipx-errors';
-import type { ShipmentPayload } from './shipx';
+import type { ShipmentPayload, DispatchOrderPayload } from './shipx';
 
 /** Minimal shape of a ShipX shipment we read back after creation. */
 export type ShipxShipment = {
@@ -20,11 +20,21 @@ export type ShipxShipment = {
   [key: string]: unknown;
 };
 
+/** Minimal shape of a ShipX dispatch order (courier pickup scheduling). */
+export type ShipxDispatchOrder = {
+  id: number | string;
+  status: string;
+  deadline_time: string;
+  [key: string]: unknown;
+};
+
 export interface InPostClient {
   createShipment(payload: ShipmentPayload): Promise<ShipxShipment>;
   getShipment(id: string): Promise<ShipxShipment>;
   /** A6 PDF label bytes for a confirmed shipment. */
   getLabelPdf(id: string): Promise<ArrayBuffer>;
+  /** Schedule a courier pickup for one or more shipments. */
+  createDispatchOrder(payload: DispatchOrderPayload): Promise<ShipxDispatchOrder>;
 }
 
 export function getInPost(): InPostClient {
@@ -83,6 +93,13 @@ export function getInPost(): InPostClient {
         headers: { Accept: 'application/pdf' },
       });
       return await res.arrayBuffer();
+    },
+    async createDispatchOrder(payload) {
+      const res = await request(`/v1/organizations/${orgId}/dispatch_orders`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return (await res.json()) as ShipxDispatchOrder;
     },
   };
 }

@@ -198,6 +198,111 @@ export function buildShippingConfirmation(params: {
   };
 }
 
+// ── Return label email ───────────────────────────────────────────────────────
+
+export type ReturnLabelOrder = {
+  id: string;
+  email: string | null;
+  receiver_first_name: string | null;
+};
+
+const I18N_RETURN: Record<SupportedLocale, {
+  subject: string;
+  intro: string;
+  instructions: string;
+  signOff: string;
+  filename: string;
+}> = {
+  pl: {
+    subject: 'Etykieta zwrotna — zamówienie',
+    intro: 'Twoja prośba o zwrot została przyjęta. W załączniku znajdziesz etykietę zwrotną.',
+    instructions: 'Wydrukuj etykietę lub pokaż kod QR w paczkomacie InPost, aby nadać przesyłkę.',
+    signOff: 'Dziękujemy! Anna Ciok Studio',
+    filename: 'zwrot',
+  },
+  en: {
+    subject: 'Return label — order',
+    intro: 'Your return request has been accepted. Please find the return label attached.',
+    instructions: 'Print the label or show the QR code at an InPost parcel locker to send your return.',
+    signOff: 'Thank you! Anna Ciok Studio',
+    filename: 'return',
+  },
+  es: {
+    subject: 'Etiqueta de devolución — pedido',
+    intro: 'Tu solicitud de devolución ha sido aceptada. Encontrarás la etiqueta de devolución adjunta.',
+    instructions: 'Imprime la etiqueta o muéstrala en un punto de recogida InPost para enviar tu devolución.',
+    signOff: '¡Gracias! Anna Ciok Studio',
+    filename: 'devolucion',
+  },
+};
+
+/** Pure function: builds localised subject + HTML for the return-label email. */
+export function buildReturnLabelEmail(params: {
+  order: ReturnLabelOrder;
+  locale: string;
+}): { subject: string; html: string } {
+  const loc = resolveLocale(params.locale);
+  const t = I18N_RETURN[loc];
+  const firstName = params.order.receiver_first_name
+    ? escapeHtml(params.order.receiver_first_name)
+    : null;
+  const greeting = firstName ? `${firstName},` : '';
+  return {
+    subject: `${t.subject} ${params.order.id}`,
+    html: [
+      greeting ? `<p>${greeting}</p>` : '',
+      `<p>${t.intro}</p>`,
+      `<p>${t.instructions}</p>`,
+      `<p>${t.signOff}</p>`,
+    ].filter(Boolean).join('\n'),
+  };
+}
+
+/** Send the customer a return-label PDF via Resend. */
+export async function emailReturnLabelToCustomer(params: {
+  order: ReturnLabelOrder;
+  labelPdf: ArrayBuffer;
+  locale: string;
+}): Promise<void> {
+  const { env } = getCloudflareContext();
+  const { order, labelPdf } = params;
+
+  if (!env.RESEND_API_KEY) {
+    throw new Error('Resend not configured: RESEND_API_KEY missing');
+  }
+  if (!order.email) {
+    throw new Error(`Cannot send return label: order ${order.id} has no email`);
+  }
+
+  const loc = resolveLocale(params.locale);
+  const { subject, html } = buildReturnLabelEmail({ order, locale: params.locale });
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: CUSTOMER_FROM,
+      to: [order.email],
+      subject,
+      html,
+      attachments: [
+        {
+          filename: `${I18N_RETURN[loc].filename}-${order.id}.pdf`,
+          content: toBase64(labelPdf),
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  }
+}
+
 /**
  * Send the customer a localised shipping-confirmation email via Resend.
  * Throws if config is missing, email is falsy, or Resend returns a non-ok response

@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   validateDelivery,
   buildShipmentPayload,
+  buildDispatchOrderPayload,
+  buildReturnShipmentPayload,
   needsShipment,
   parseShipxWebhook,
   SHIPX_SERVICE,
   type OrderForShipment,
+  type StudioReturnConfig,
 } from './shipx';
 
 const contact = { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com', phone: '+48600100200' };
@@ -89,6 +92,7 @@ const baseOrder: OrderForShipment = {
   inpost_target_point: 'KRA010',
   shipping_address: null,
   inpost_shipment_id: null,
+  inpost_dispatch_order_id: null,
 };
 
 describe('buildShipmentPayload', () => {
@@ -136,6 +140,50 @@ describe('buildShipmentPayload', () => {
   it('rejects whitespace-only persisted values', () => {
     expect(() => buildShipmentPayload({ ...baseOrder, inpost_target_point: '   ' })).toThrow(/target_point/);
     expect(() => buildShipmentPayload({ ...baseOrder, receiver_first_name: '   ' })).toThrow(/receiver/);
+  });
+});
+
+describe('buildDispatchOrderPayload', () => {
+  it('schedules pickup for the next calendar day at 18:00', () => {
+    // 2026-06-04 10:00 UTC = 2026-06-04 12:00 Warsaw (CEST, UTC+2)
+    const now = new Date('2026-06-04T10:00:00Z');
+    const p = buildDispatchOrderPayload('42', now);
+    expect(p.shipment_ids).toEqual(['42']);
+    expect(p.deadline_time).toBe('2026-06-05 18:00');
+    expect(p.name).toContain('2026-06-05');
+  });
+
+  it('crosses month boundaries correctly', () => {
+    const now = new Date('2026-06-30T10:00:00Z');
+    const p = buildDispatchOrderPayload('7', now);
+    expect(p.deadline_time).toBe('2026-07-01 18:00');
+  });
+});
+
+const studioConfig: StudioReturnConfig = {
+  first_name: 'Anna Ciok',
+  last_name: 'Studio',
+  email: 'studio@anna-ciok.studio',
+  phone: '+48600000001',
+  address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
+};
+
+describe('buildReturnShipmentPayload', () => {
+  it('builds a return shipment with studio as receiver', () => {
+    const p = buildReturnShipmentPayload({ id: 'ord-1', email: 'a@example.com', receiver_first_name: 'Anna', locale: 'pl' }, studioConfig);
+    expect(p.service).toBe(SHIPX_SERVICE.paczkomat);
+    expect(p.custom_attributes.sending_method).toBe('parcel_locker');
+    expect(p.custom_attributes.target_point).toBeUndefined();
+    expect(p.receiver.first_name).toBe('Anna Ciok');
+    expect(p.reference).toBe('return:ord-1');
+  });
+
+  it('includes target_point when return_point is configured', () => {
+    const p = buildReturnShipmentPayload(
+      { id: 'ord-2', email: null, receiver_first_name: null, locale: null },
+      { ...studioConfig, return_point: 'KRA010' },
+    );
+    expect(p.custom_attributes.target_point).toBe('KRA010');
   });
 });
 
