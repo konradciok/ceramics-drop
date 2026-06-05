@@ -91,9 +91,20 @@ export async function mockGeowidget(page: Page, context: BrowserContext): Promis
  * detail.address.line1) instead of driving the third-party map.
  */
 export async function mockLockerSelection(page: Page, lockerCode = 'WAW01A'): Promise<void> {
+  // Fast-fail with a clear blocker when the picker rendered its unavailable
+  // fallback instead of the widget (token missing at build time).
+  const widget = page.locator('inpost-geowidget');
+  const unavailable = page.locator('.geowidget-msg');
+  await widget.or(unavailable).first().waitFor({ state: 'attached' });
+  if (await unavailable.isVisible().catch(() => false)) {
+    throw new Error(
+      'ENVIRONMENT BLOCKER: Geowidget fallback rendered — NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN ' +
+        'must be set at build time (any non-empty value satisfies the mock seam).',
+    );
+  }
   // The picker attaches its listener before appending the element, so once the
   // element is in the DOM the event will be heard.
-  await page.locator('inpost-geowidget').waitFor({ state: 'attached' });
+  await widget.waitFor({ state: 'attached' });
   await page.evaluate((code) => {
     const detail = { name: code, address: { line1: 'Testowa 1, 00-001 Warszawa' } };
     document.querySelector('inpost-geowidget')?.dispatchEvent(new CustomEvent('onpoint', { detail }));

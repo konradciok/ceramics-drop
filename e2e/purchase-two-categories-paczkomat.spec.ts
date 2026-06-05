@@ -122,9 +122,19 @@ test.describe('@checkout @destructive purchase two categories via paczkomat', ()
     const { sold } = (await inventory.json()) as { sold: string[] };
     evidence.inventoryBefore = sold;
 
-    // Fail fast if a live publishable key leaks into the page HTML.
+    // Fail fast if a live publishable key leaks into the page. NEXT_PUBLIC_* is
+    // inlined into JS chunks rather than SSR HTML, so scan a bounded sample of
+    // chunks too; record pk_test_ sightings for the report.
     const cartHtml = await (await request.get('/koszyk')).text();
-    expect(cartHtml, 'page must not reference a live Stripe key').not.toContain('pk_live_');
+    expect(cartHtml, 'page HTML must not reference a live Stripe key').not.toContain('pk_live_');
+    const chunkSrcs = [...cartHtml.matchAll(/src="([^"]*\/_next\/[^"]+\.js)"/g)]
+      .map((m) => m[1])
+      .slice(0, 15);
+    for (const src of chunkSrcs) {
+      const js = await (await request.get(src)).text().catch(() => '');
+      expect(js, `live Stripe key found in ${src}`).not.toContain('pk_live_');
+      if (js.includes('pk_test_')) stripeKeyMode = 'test';
+    }
 
     // Find two distinct categories with unsold stock from the collection pages
     // (data-driven — no hardcoded product IDs).
@@ -147,14 +157,16 @@ test.describe('@checkout @destructive purchase two categories via paczkomat', ()
     await resetCart(page);
     attachEvidence(page);
 
-    // Hard safety gate: abort the Stripe confirm call if it carries a live key.
-    await page.route(/api\.stripe\.com\/v1\/payment_intents\/[^/]+\/confirm/, (route) => {
+    // Hard safety gate: abort ANY Stripe API call carrying a live key. Watching
+    // all api.stripe.com traffic (not just /confirm) gives many capture points,
+    // so the key-mode check doesn't hinge on one request's payload shape.
+    await page.route(/api\.stripe\.com/, (route) => {
       const payload = `${route.request().url()} ${route.request().postData() ?? ''}`;
       if (payload.includes('pk_live_')) {
         stripeKeyMode = 'live';
         return route.abort();
       }
-      if (payload.includes('pk_test_')) stripeKeyMode = 'test';
+      if (stripeKeyMode !== 'live' && payload.includes('pk_test_')) stripeKeyMode = 'test';
       return route.continue();
     });
 
@@ -204,7 +216,10 @@ test.describe('@checkout @destructive purchase two categories via paczkomat', ()
     // Order matters: fill → submit → redirect → assert (brief §Stripe test card).
     await page.waitForURL(/\/koszyk\/return\?.*payment_intent/, { timeout: 90_000 });
     returnUrl = page.url();
-    expect(stripeKeyMode, 'Stripe confirm must use a pk_test_ key').toBe('test');
+    // Hard-fail on a live key (the route above also aborted it); soft-flag if no
+    // key was captured at all so a Stripe payload change doesn't sink a green run.
+    expect(stripeKeyMode, 'a pk_live_ key must never be used').not.toBe('live');
+    expect.soft(stripeKeyMode, 'expected to observe a pk_test_ key').toBe('test');
 
     step = 'success page';
     await expect(page.locator(sel.checkoutSuccess)).toBeVisible({ timeout: 30_000 });

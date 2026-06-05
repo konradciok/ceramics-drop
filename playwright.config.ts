@@ -15,6 +15,10 @@ export default defineConfig({
   timeout: 90_000,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // Safety rail: specs tagged @destructive (real payment, inventory reservation/
+  // mutation) are excluded from EVERY run — including bare `npx playwright test` —
+  // unless explicitly opted in with E2E_DESTRUCTIVE=1.
+  grepInvert: process.env.E2E_DESTRUCTIVE === '1' ? undefined : /@destructive/,
   // Checkout specs run serially within a file; keep one worker in CI so
   // @destructive flows never overlap on shared inventory.
   workers: process.env.CI ? 1 : undefined,

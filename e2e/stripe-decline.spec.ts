@@ -11,12 +11,13 @@ import {
   sel,
 } from './helpers/checkout';
 
-// Failure path: Stripe decline card. NOT tagged @ci — it creates a real test-mode
-// PaymentIntent and drives the live Payment Element, so run it on demand / release-gate.
+// Failure path: Stripe decline card. Tagged @destructive (config excludes it unless
+// E2E_DESTRUCTIVE=1): even a declined card hits the real /api/checkout, which
+// reserves the pieces for 15 minutes — running this casually locks shared stock.
 // Expected: a payment error is shown (CheckoutForm renders error.message — Stripe's
 // PL copy matches /odrzucon/) and the cart is NOT cleared (buyer can retry; the cart
 // only clears on /koszyk/return with a succeeded payment intent).
-test.describe('@checkout-edge stripe decline', () => {
+test.describe('@checkout-edge @destructive stripe decline', () => {
   test.describe.configure({ mode: 'serial' });
 
   const DECLINE_CARD = '4000000000000002';
