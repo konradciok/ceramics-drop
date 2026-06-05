@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test --grep @ci",
+    "test:e2e:edge": "playwright test --grep @checkout-edge",
     "gtm:key": "node -e \"require('node:fs').mkdirSync('.secrets',{recursive:true})\" && gcloud iam service-accounts keys create .secrets/gtm-api-deploy.json --iam-account=gtm-api-deploy@bloomy-tale-477216.iam.gserviceaccount.com",
     "gtm:list": "node scripts/gtm-api.mjs list",
     "gtm:setup": "node scripts/gtm-api.mjs setup",
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@opennextjs/cloudflare": "^1.19.11",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",

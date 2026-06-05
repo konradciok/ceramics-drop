@@ -34,7 +34,7 @@ export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
           payment method is gathered here. */}
       <PaymentElement />
       {error && <p className="pay-error">{error}</p>}
-      <button className="btn btn-primary" type="submit" disabled={!stripe || submitting}>
+      <button className="btn btn-primary" type="submit" data-testid="payment-submit" disabled={!stripe || submitting}>
         {submitting ? t('payProcessing') : t('pay')}
       </button>
     </form>
