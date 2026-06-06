@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/Icon';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { pln } from '@/lib/format';
+import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 
@@ -65,7 +66,7 @@ export default async function HomePage({ params }: Props) {
           </div>
           <div className="hero-art">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/kubek-2.webp" alt="" width={1600} height={2000} fetchPriority="high" />
+            <img src="/uploads/kubek-2.webp" srcSet={srcSet('/uploads/kubek-2.webp')} sizes="(min-width:861px) 50vw, 100vw" alt="" width={1600} height={2000} fetchPriority="high" />
             <div className="hero-art-meta">
               <span className="left">
                 <span className="mt">{t('home.heroMetaName')}</span>
@@ -100,7 +101,7 @@ export default async function HomePage({ params }: Props) {
               return (
                 <Link key={slug} className="collection" href={`/${slug}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={COVER[slug]} alt="" />
+                  <img src={COVER[slug]} srcSet={srcSet(COVER[slug])} sizes="(min-width:861px) 50vw, 100vw" alt="" />
                   <div className="shade"></div>
                   <div className="col-content">
                     <div className="num">{t(`home.card.${sk}.num`)}</div>
@@ -123,7 +124,7 @@ export default async function HomePage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.webp" alt="" width={1600} height={2000} />
+              <img src="/uploads/waza-mala-1.webp" srcSet={srcSet('/uploads/waza-mala-1.webp')} sizes="(min-width:861px) 50vw, 100vw" alt="" width={1600} height={2000} />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">

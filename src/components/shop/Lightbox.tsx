@@ -12,6 +12,7 @@ import {
   buildViewItemEvent,
   pushDataLayer,
 } from '@/lib/analytics';
+import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -145,7 +146,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 <Icon name="chevron-right" />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.image} alt={`${name} Nº ${product.num}`} draggable={false} />
+              <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:861px) min(50vw, 460px), 100vw" alt={`${name} Nº ${product.num}`} draggable={false} />
             </div>
             <div className="lb-body">
               <div className="eyebrow lb-eyebrow">

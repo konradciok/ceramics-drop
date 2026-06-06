@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/Icon';
 import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
 import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
+import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
 
 type Props = {
@@ -35,7 +36,7 @@ export function ProductTile({ product, onOpen }: Props) {
       data-sold={product.sold ? 'true' : undefined}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={product.image} alt={displayName} loading="lazy" />
+      <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
       <div className="veil" />
       <span className="sold-tag">{t('gallery.sold')}</span>
       <div className="check">
