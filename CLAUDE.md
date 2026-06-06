@@ -14,6 +14,7 @@ npm run build         # Production build (static pre-render)
 npm run lint          # ESLint
 npm run test          # Vitest unit tests (src/**/*.test.ts)
 npm run test:e2e      # Playwright E2E (@ci specs) — runs against deployed site by default
+npm run test:e2e:edge # Playwright E2E (@checkout-edge specs) — real Geowidget + Stripe
 npm run preview:cf    # OpenNext + Wrangler local preview on :8787 (Workers runtime)
 npm run deploy:cf     # Build & deploy to Cloudflare Workers
 npm run optimize-images  # Convert design/uploads/*.png → public/uploads/*.webp
@@ -35,7 +36,7 @@ npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 
 All 88 products are defined statically in `src/lib/products.ts`. At module load time, three lookup structures are built: `PRODUCTS` (array), `PRODUCT_BY_ID` (map), `PRODUCTS_BY_CATEGORY` (map). The database (`piece_state` table) is the source of truth only for sold/reserved state — product metadata never lives in the DB.
 
-Each product has: `id` (e.g. `k01`, `v03`), `category` slug, `price` in EUR (stored as integer grosze = EUR×100), image path, dimensions, a `noteIndex` for i18n content lookup, and a `sold` flag (seeded from DB via `getSoldIds()`).
+Each product has: `id` (e.g. `k01`, `v03`), `category` slug, `price` in PLN złoty (integer; converted to grosze at checkout via `toGrosze()`), image path, dimensions, and a `noteIndex` for i18n content lookup. The `sold` flag is NOT baked in at module load — `getSoldIds()` in `src/lib/inventory.ts` fetches it and is merged at render time on collection pages and via `/api/inventory` on the cart page.
 
 ### Cart
 
@@ -45,21 +46,23 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 
 1. **Client:** User fills delivery details, clicks pay → POST `/api/checkout`
 2. **Server (`src/app/api/checkout/route.ts`):**
-   - Validates cart items (`validateCart`) and delivery details (`validateDelivery`)
+   - Validates cart items (`validateCart` in `src/lib/checkout.ts`) and delivery details (`validateDelivery` in `src/lib/shipx.ts`)
    - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict
    - Creates Stripe `PaymentIntent` (currency: PLN, amount in grosze)
    - Persists `orders` + `order_items` rows
-   - Returns `client_secret` to client
+   - Returns `client_secret` to client (or `502` with `{ error: 'stripe_failed' }` if PI creation fails)
 3. **Client:** Stripe PaymentElement completes payment
-4. **Return page (`/koszyk/return`):** Polls Stripe for `payment_intent` status, shows success/failure
+4. **Return page (`/koszyk/return`):** Calls `stripe.retrievePaymentIntent()` once on mount via `payment_intent_client_secret` query param; maps status to success/processing/failure — no polling loop
 
 ### Webhook Fulfillment
 
-`src/lib/webhook.ts` → `handleStripeEvent()` handles Stripe webhooks at `/api/stripe/webhook`. On `payment_intent.succeeded`:
-- Marks order `paid`, updates `piece_state` to `sold` (idempotent — safe to retry)
-- Validates piece count; if mismatch → issues refund + marks order `failed`
-- Sends invoice email via Resend
-- Creates InPost shipment via ShipX API
+`src/lib/webhook.ts` → `handleStripeEvent()` handles Stripe webhooks at `/api/stripe/webhook`. There is also a thin ACK-only handler at `/api/stripe/webhook-thin` (uses `STRIPE_WEBHOOK_THIN_SECRET`).
+
+Event handling:
+- `payment_intent.succeeded` → `markPaid` (idempotent), then `ensureInvoiced` (errors swallowed — Stripe gets 200, no retry), then `createShipment` (re-throws retryable errors so Stripe retries up to 3 days)
+- `payment_intent.payment_failed` / `payment_intent.canceled` → `releaseHold` (frees reserved pieces)
+- `charge.refunded` (full refund only) → `releaseSale` (relists pieces)
+- `charge.dispute.closed` (lost only) → `releaseSale`
 
 A Cloudflare Worker cron (`worker.ts`, every 15 min) expires abandoned orders older than 1 hour: cancels the Stripe PaymentIntent and frees reserved pieces.
 
@@ -70,7 +73,7 @@ Trilingual: Polish (default, no prefix), English (`/en`), Spanish (`/es`). Confi
 ### Database Schema (Supabase)
 
 - `piece_state`: `product_id` PK, `status` (available|reserved|sold), `reserved_until`, `order_id`
-- `orders`: UUID id, `payment_intent_id`, `status` (pending|paid|failed|expired), totals in grosze, contact JSON, `delivery_method`, `locale`
+- `orders`: UUID id, `payment_intent_id`, `status` (pending|paid|failed|expired|refunded), totals in grosze, contact JSON, `delivery_method`, `locale`
 - `order_items`: `order_id`, `product_id`, `unit_price` (grosze)
 - `reserve_pieces()` RPC: atomically reserves rows; returns array of conflicting product IDs (empty = success)
 
@@ -78,16 +81,24 @@ RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmi
 
 ### Pricing & Shipping
 
-All monetary values are integers in grosze (PLN×100). `src/lib/pricing.ts` defines per-category EUR prices and `orderAmountGrosze()`. Shipping methods: Paczkomat 1500 grosze, kurier 7500 grosze, odbiór osobisty 0. Delivery details are validated in `src/lib/inpost.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `GeowidgetPicker.tsx` for locker selection.
+All monetary values are integers in grosze (PLN×100). `src/lib/pricing.ts` defines per-category PLN prices (`PRICE_PLN`) and `orderAmountGrosze()`. Conversion to grosze happens at checkout via `toGrosze()`. Shipping methods: Paczkomat 1500 grosze, kurier 7500 grosze, odbiór osobisty 0. Delivery details are validated in `src/lib/shipx.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `src/components/shop/GeowidgetPicker.tsx` for locker selection.
 
-### Key Environment Variables
+### Environment Variables
 
-- `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe
-- `STRIPE_WEBHOOK_SECRET` — webhook signature verification
-- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — Supabase admin access
-- `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` — ShipX API
-- `RESEND_API_KEY` — transactional email
-- `NEXT_PUBLIC_GTM_ID` — Google Tag Manager (build-time)
+**Build-time** (`NEXT_PUBLIC_*` — set as Workers Build env vars, NOT wrangler secrets):
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe Payment Element
+- `NEXT_PUBLIC_GTM_ID` — Google Tag Manager
+- `NEXT_PUBLIC_SENTRY_DSN` — client-side error monitoring
+- `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` / `NEXT_PUBLIC_INPOST_GEOWIDGET_ENV` — locker picker
+
+**Runtime secrets** (set with `wrangler secret put` in prod, `.dev.vars` locally):
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_WEBHOOK_THIN_SECRET`
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
+- `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` / `INPOST_API_URL` / `INPOST_WEBHOOK_TOKEN`
+- `RESEND_API_KEY` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`
+- `STUDIO_RETURN_*` — return shipment address (required for `/api/returns`)
+
+See `.env.example` for the full list and setup notes. See `docs/cloudflare-deployment.md` for Workers Builds CI configuration.
 
 ## Key Conventions
 
@@ -101,12 +112,16 @@ All monetary values are integers in grosze (PLN×100). `src/lib/pricing.ts` defi
 
 **Responsive images:** Use `srcSet()` from `src/lib/images.ts` for product images. All product images are WebP in `public/uploads/`.
 
-**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), 409 (pieces unavailable — include `unavailable: string[]`), 500 (server fault).
+**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), 409 with `{ error: 'unavailable', sold: string[] }` (pieces unavailable), 502 with `{ error: 'stripe_failed' }` (Stripe PI creation failure), 500 (other server faults).
 
-**Analytics:** Fire `begin_checkout` on cart → checkout navigation. Fire deduplicated `purchase` event on return page (keyed by `payment_intent` ID to prevent double-counting on refresh).
+**Analytics:** Fire `begin_checkout` when the user clicks pay in `CartView` (before POST `/api/checkout`). Fire deduplicated `purchase` event on return page (keyed by `payment_intent` ID to prevent double-counting on refresh).
 
 ## Deployment
 
-Cloudflare Workers via OpenNext (`open-next.config.ts`). Preview locally with `npm run preview:cf` (requires `wrangler` and `CLOUDFLARE_ACCOUNT_ID`). Workers Builds CI handles production deploys on push to main. The `wrangler.jsonc` configures the worker name, cron trigger, and static assets binding.
+Cloudflare Workers via OpenNext (`open-next.config.ts`). Preview locally with `npm run preview:cf`. Workers Builds CI handles production deploys on push to main.
+
+Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`), `WORKER_SELF_REFERENCE` service binding (self-reference for cache purging), cron trigger every 15 min.
+
+`worker.ts` wraps the OpenNext handler and adds the cron scheduled handler. It **must** re-export `DOQueueHandler`, `DOShardedTagCache`, and `BucketCachePurge` from `.open-next/worker.js` — omitting these breaks deployment.
 
 New migrations go in `supabase/migrations/` with timestamp prefix. Docs for deployment, E2E testing design, and analytics setup are in `docs/`.
