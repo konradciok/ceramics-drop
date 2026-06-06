@@ -6,6 +6,12 @@ import { useEffect, useRef, useState } from 'react';
  * InPost Geowidget v5 parcel-locker picker. Loads the InPost web component
  * (script + CSS) and surfaces the selected Paczkomat code via `onSelect`.
  * Sandbox vs production assets are chosen by NEXT_PUBLIC_INPOST_GEOWIDGET_ENV.
+ *
+ * InPost Geowidget v5 event API:
+ *   - The `onpoint` attribute on the element specifies the event name InPost
+ *     will dispatch on `document` when a locker is selected.
+ *   - The event data lives on `event.details` (plural), not `event.detail`.
+ *   - Listening on the element itself does NOT work — must use document.
  */
 
 const ENV = process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_ENV ?? 'production';
@@ -14,6 +20,9 @@ const HOST =
   ENV === 'sandbox'
     ? 'https://sandbox-easy-geowidget-sdk.easypack24.net'
     : 'https://geowidget.inpost.pl';
+
+// Event name InPost will dispatch on document; value of the 'onpoint' attribute.
+const POINT_EVENT = 'inpost.point.select';
 
 /** Geowidget supports a limited language set; fall back to Polish. */
 function widgetLanguage(locale: string): string {
@@ -66,14 +75,21 @@ export function GeowidgetPicker({
     const host = hostRef.current;
     if (!host) return;
 
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as
-        | { name?: string; address?: { line1?: string } }
-        | undefined;
-      if (detail?.name) {
-        onSelectRef.current({ name: detail.name, address: detail.address?.line1 ?? '' });
+    // InPost Geowidget v5 dispatches the selection event on `document` using the
+    // event name set in the element's `onpoint` attribute. The selected point is
+    // in `event.details` (plural) — non-standard but per InPost's v5 API.
+    // E2E mocks dispatch `new CustomEvent('onpoint', { detail })` on the element
+    // directly; we keep the element listener as a fallback for that path.
+    const handlePoint = (e: Event) => {
+      const raw = (e as unknown as Record<string, unknown>).details ?? (e as CustomEvent).detail;
+      const data = raw as { name?: string; address?: { line1?: string } } | undefined;
+      if (data?.name) {
+        onSelectRef.current({ name: data.name, address: data.address?.line1 ?? '' });
       }
     };
+
+    // Primary: InPost v5 fires on document with POINT_EVENT as the name.
+    document.addEventListener(POINT_EVENT, handlePoint);
 
     // If the script never loads (blocked/offline), whenDefined never resolves —
     // surface a fallback instead of an indefinitely blank box.
@@ -92,7 +108,10 @@ export function GeowidgetPicker({
       el.setAttribute('token', TOKEN);
       el.setAttribute('language', widgetLanguage(language));
       el.setAttribute('config', 'parcelcollect');
-      el.addEventListener('onpoint', handler as EventListener);
+      // Tells InPost which event name to dispatch on document upon selection.
+      el.setAttribute('onpoint', POINT_EVENT);
+      // Fallback: E2E mocks dispatch 'onpoint' directly on this element.
+      el.addEventListener('onpoint', handlePoint);
       host.appendChild(el);
       setReady(true);
     });
@@ -100,7 +119,8 @@ export function GeowidgetPicker({
     return () => {
       cancelled = true;
       clearTimeout(timeout);
-      if (el) el.removeEventListener('onpoint', handler as EventListener);
+      document.removeEventListener(POINT_EVENT, handlePoint);
+      if (el) el.removeEventListener('onpoint', handlePoint);
       if (host) host.innerHTML = '';
     };
   }, [language]);

@@ -86,9 +86,13 @@ export async function mockGeowidget(page: Page, context: BrowserContext): Promis
 }
 
 /**
- * CI-safe locker selection: dispatch the same 'onpoint' CustomEvent the app's
- * GeowidgetPicker listens for (GeowidgetPicker.tsx — reads detail.name and
- * detail.address.line1) instead of driving the third-party map.
+ * CI-safe locker selection: simulate the InPost Geowidget v5 selection event.
+ *
+ * InPost Geowidget v5 dispatches a CustomEvent on `document` whose name is the
+ * value of the element's `onpoint` attribute (GeowidgetPicker sets this to
+ * 'inpost.point.select'). The payload arrives on `event.details` (plural).
+ * We use `detail` here because CustomEvent init only supports `detail`; the
+ * GeowidgetPicker handler falls back to `event.detail` automatically.
  *
  * The default MUST be a real, Operating ShipX point: on a completed payment the
  * prod webhook creates a real InPost shipment against it, and a fabricated code
@@ -108,12 +112,12 @@ export async function mockLockerSelection(page: Page, lockerCode = 'WAW20A'): Pr
         'must be set at build time (any non-empty value satisfies the mock seam).',
     );
   }
-  // The picker attaches its listener before appending the element, so once the
-  // element is in the DOM the event will be heard.
+  // Wait for the element to mount so GeowidgetPicker's document listener is registered.
   await widget.waitFor({ state: 'attached' });
   await page.evaluate((code) => {
+    // Mirror InPost v5: dispatch on document with the POINT_EVENT name, not on the element.
     const detail = { name: code, address: { line1: 'Łopuszańska 38B, 02-220 Warszawa' } };
-    document.querySelector('inpost-geowidget')?.dispatchEvent(new CustomEvent('onpoint', { detail }));
+    document.dispatchEvent(new CustomEvent('inpost.point.select', { detail }));
   }, lockerCode);
   await expect(page.locator(sel.selectedLocker)).toContainText(lockerCode);
 }
