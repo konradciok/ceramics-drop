@@ -22,4 +22,12 @@ describe('images helpers', () => {
     expect(result).toContain('/uploads/waza-mala-1-400w.webp 400w');
     expect(result).toContain('/uploads/waza-mala-1-1600w.webp 1600w');
   });
+
+  it('smallest throws when path has no extension', () => {
+    expect(() => smallest('/uploads/no-extension')).toThrow('smallest() requires a file extension');
+  });
+
+  it('srcSet throws when path has no extension', () => {
+    expect(() => srcSet('/uploads/no-extension')).toThrow('srcSet() requires a file extension');
+  });
 });
