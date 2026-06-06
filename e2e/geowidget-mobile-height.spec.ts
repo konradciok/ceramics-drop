@@ -5,8 +5,11 @@ import { resetCart, addFirstUnsoldFromCategory, goToCart, selectPaczkomat, mockG
 // InPost detail panel (Navigate / Select / Back to map) is never clipped.
 // Uses the same stub seam as geowidget-unavailable.spec.ts — fully mocked, no
 // real InPost assets loaded.
-// @ci-safe — no network, no checkout, no inventory mutation.
-test.describe('@ci geowidget mobile height', () => {
+//
+// NOT tagged @ci: CI runs against the production URL which only reflects merged
+// CSS. Run this spec post-deploy against a preview URL:
+//   PLAYWRIGHT_BASE_URL=<preview-url> npx playwright test geowidget-mobile-height
+test.describe('geowidget mobile height', () => {
   test.use({ viewport: { width: 375, height: 812 } });
   test.describe.configure({ mode: 'serial' });
 
