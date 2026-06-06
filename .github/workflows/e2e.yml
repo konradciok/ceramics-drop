@@ -1,74 +1,51 @@
-import { type Page, type BrowserContext, expect } from '@playwright/test';
+name: E2E
 
-// Shared helpers for the failure-path checkout specs.
-// Copy this folder into the repo's e2e/ and replace the TODO markers with repo specifics.
-// Selectors mirror references/source-brief.md → "App-owned selectors". Prefer data-testid;
-// CSS/text fallbacks are temporary selector debt and should be recorded in the report.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-export const CART_KEY = 'acc_cart_v1';
+permissions:
+  contents: read
 
-export const sel = {
-  productTile: '[data-testid="product-tile"]',
-  addToCart: '[data-testid="add-to-cart"]',
-  cartLine: '[data-testid="cart-line"]',
-  shippingPaczkomat: '[data-testid="shipping-paczkomat"]',
-  selectedLocker: '[data-testid="selected-locker"]',
-  checkoutButton: '[data-testid="checkout-button"]',
-  paymentSubmit: '[data-testid="payment-submit"]',
-  checkoutSuccess: '[data-testid="checkout-success"]',
-} as const;
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
-/** Clear the Zustand-persisted cart before the app boots. Never hand-write a persist blob. */
-export async function resetCart(page: Page): Promise<void> {
-  await page.addInitScript((key) => {
-    try { localStorage.removeItem(key); } catch { /* ignore */ }
-  }, CART_KEY);
-}
+jobs:
+  e2e:
+    name: Playwright @ci specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-export interface PickedProduct { id: string | null; category: string; price: number; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
 
-/** Add the first unsold tile from a category page and record its metadata. */
-export async function addFirstUnsoldFromCategory(page: Page, category: string): Promise<PickedProduct> {
-  await page.goto(`/${category}`);
-  const tile = page.locator(`${sel.productTile}:not([data-sold="true"])`).first();
-  await expect(tile, `no unsold tile in category ${category}`).toBeVisible();
-  const id = await tile.getAttribute('data-product-id');
-  const price = Number(await tile.getAttribute('data-price'));
-  await tile.locator(sel.addToCart).click();
-  return { id, category, price };
-}
+      - name: Install dependencies
+        run: npm ci
 
-export async function goToCart(page: Page): Promise<void> {
-  await page.goto('/koszyk');
-}
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
-export async function selectPaczkomat(page: Page): Promise<void> {
-  await page.locator(sel.shippingPaczkomat).click();
-}
+      - name: Run @ci e2e tests
+        run: npm run test:e2e
+        env:
+          # Explicit target — @ci specs run against the deployed production site.
+          # Override with PLAYWRIGHT_BASE_URL secret/var to point at a preview deploy.
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'https://anna-ciok.studio' }}
 
-/**
- * CI-safe locker selection: inject the same event the app's GeowidgetPicker listens for
- * instead of driving the third-party map. TODO: confirm the real callback name/shape
- * (e.g. <inpost-geowidget> "onpoint", or a GeowidgetPicker.onSelect test hook).
- */
-export async function mockLockerSelection(page: Page, lockerCode = 'WAR01A'): Promise<void> {
-  await page.evaluate((code) => {
-    const detail = { name: code, address: { line1: 'Testowa 1', line2: '00-001 Warszawa' } };
-    document.querySelector('inpost-geowidget')?.dispatchEvent(new CustomEvent('onpoint', { detail }));
-    (window as unknown as { __E2E_SELECT_LOCKER__?: (d: unknown) => void }).__E2E_SELECT_LOCKER__?.(detail);
-  }, lockerCode);
-  await expect(page.locator(sel.selectedLocker)).toContainText(lockerCode);
-}
-
-/** Fill the Stripe Payment Element card fields via frameLocator. Adjust if fields are split across iframes. */
-export async function fillStripeCard(page: Page, number: string): Promise<void> {
-  const frame = page.frameLocator('iframe[title*="payment" i], iframe[name^="__privateStripeFrame"]').first();
-  await frame.getByPlaceholder(/1234 1234 1234 1234|card number/i).fill(number);
-  await frame.getByPlaceholder(/MM ?\/ ?YY/i).fill('12 / 34');
-  await frame.getByPlaceholder(/CVC/i).fill('123');
-}
-
-/** Block the InPost Geowidget so it cannot load (simulates missing token / outage). */
-export async function blockGeowidget(context: BrowserContext): Promise<void> {
-  await context.route(/geowidget\.inpost\.pl|inpost.*geowidget|geowidget.*\.js/i, (route) => route.abort());
-}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

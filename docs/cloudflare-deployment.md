@@ -29,7 +29,8 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 3. **Build-time env vars** (set locally and in Workers Builds):
    - `NEXT_PUBLIC_GTM_ID`
    - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`
-   - `NEXT_PUBLIC_META_PIXEL_ID`  
+   - `NEXT_PUBLIC_META_PIXEL_ID`
+   - `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` — required by `GeowidgetPicker`; any non-empty value satisfies the e2e mock seam (real token needed for production locker selection)
    Do **not** add GCP / GTM API secrets (`.secrets/`, `GTM_*`) to Cloudflare.
 
 ## Commands
@@ -109,6 +110,7 @@ Set under **Build** → **Variables and secrets** (production):
 - `NEXT_PUBLIC_GTM_ID`
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`
 - `NEXT_PUBLIC_META_PIXEL_ID`
+- `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` — InPost Geowidget token; required at build time so `GeowidgetPicker` renders the widget instead of the unavailable fallback. Also required for the `@ci` e2e specs (`checkout-409`, `geowidget-unavailable`) to pass against preview builds.
 
 Same values as `.env.local`. Do **not** add GCP / GTM API secrets.
 
