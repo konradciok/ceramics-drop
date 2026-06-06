@@ -20,7 +20,7 @@ import {
   pushCheckoutStarted,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
-import { smallest } from '@/lib/images';
+import { srcSet } from '@/lib/images';
 import { SHIPPING_PLN, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -277,7 +277,7 @@ export function CartView() {
               <div key={p.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
                 <Link href={`/${p.category}`} className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={smallest(p.image)} alt="" />
+                  <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
                 </Link>
                 <div>
                   <h4>{name} Nº {p.num}</h4>

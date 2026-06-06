@@ -33,6 +33,7 @@ const OUT_DIR = path.join(ROOT, 'public', 'uploads');
 const PRODUCT_REGEX =
   /^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$/;
 
+// Keep in sync with IMG_WIDTHS in src/lib/images.ts (verified by images.test.ts)
 const IMG_WIDTHS = [400, 800, 1600];
 
 // Ensure output directory exists
