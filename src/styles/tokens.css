@@ -16,4 +16,5 @@
   --max:1480px; --gut:clamp(20px,3vw,48px); --section-y:clamp(72px,9vw,144px);
   --ease:cubic-bezier(.7,0,.2,1);
   --r-sharp:2px; --r-pill:999px;
+  --header-h:96px;
 }

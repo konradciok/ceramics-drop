@@ -4,6 +4,12 @@
  * Converts the 88 product PNGs from design/uploads/ to optimized WebP files
  * in public/uploads/ at quality 80.
  *
+ * For each source file, emits:
+ *   - <stem>.webp          (canonical base — used by product.image, JSON-LD, OG)
+ *   - <stem>-400w.webp     (responsive variant)
+ *   - <stem>-800w.webp     (responsive variant)
+ *   - <stem>-1600w.webp    (responsive variant)
+ *
  * Usage:
  *   node scripts/optimize-images.mjs
  *
@@ -27,6 +33,8 @@ const OUT_DIR = path.join(ROOT, 'public', 'uploads');
 const PRODUCT_REGEX =
   /^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$/;
 
+const IMG_WIDTHS = [400, 800, 1600];
+
 // Ensure output directory exists
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -44,15 +52,24 @@ let totalBytes = 0;
 for (const file of files) {
   const input = path.join(SRC_DIR, file);
   const baseName = path.basename(file, '.png');
+
+  // Canonical base output (used by product.image, JSON-LD, OG)
   const output = path.join(OUT_DIR, `${baseName}.webp`);
-
   await sharp(input).webp({ quality: 80 }).toFile(output);
-
   const { size } = fs.statSync(output);
   totalBytes += size;
   console.log(`  ${file} → ${baseName}.webp  (${(size / 1024).toFixed(0)} KB)`);
+
+  // Responsive variants
+  for (const w of IMG_WIDTHS) {
+    const variantOutput = path.join(OUT_DIR, `${baseName}-${w}w.webp`);
+    await sharp(input).resize({ width: w, withoutEnlargement: true }).webp({ quality: 80 }).toFile(variantOutput);
+    const { size: vSize } = fs.statSync(variantOutput);
+    totalBytes += vSize;
+    console.log(`    → ${baseName}-${w}w.webp  (${(vSize / 1024).toFixed(0)} KB)`);
+  }
 }
 
 const totalMB = (totalBytes / 1024 / 1024).toFixed(2);
-console.log(`\nDone. Converted ${files.length} files → ${OUT_DIR}`);
+console.log(`\nDone. Converted ${files.length} files (+ ${files.length * IMG_WIDTHS.length} responsive variants) → ${OUT_DIR}`);
 console.log(`Total output size: ${totalMB} MB`);

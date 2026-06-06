@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
+import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 
@@ -42,7 +43,7 @@ export default async function StudioPage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.webp" alt="" />
+              <img src="/uploads/waza-mala-1.webp" srcSet={srcSet('/uploads/waza-mala-1.webp')} sizes="(min-width:861px) 50vw, 100vw" alt="" />
               <span className="signature">Anna</span>
             </div>
             <div className="story-text">
