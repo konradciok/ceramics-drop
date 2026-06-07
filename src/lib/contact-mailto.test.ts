@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildContactMailto } from './contact-mailto';
 
 const base = {
-  to: 'hej@annaciok.pl',
+  to: 'hej@ciok.art',
   subject: '[Anna Ciok Ceramics] Studio pickup',
   signature: '\n\n— Ania (ania@example.com)',
   truncatedNote: 'Message truncated — please paste the rest before sending',

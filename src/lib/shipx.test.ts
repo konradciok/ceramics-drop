@@ -163,7 +163,7 @@ describe('buildDispatchOrderPayload', () => {
 const studioConfig: StudioReturnConfig = {
   first_name: 'Anna Ciok',
   last_name: 'Studio',
-  email: 'studio@anna-ciok.studio',
+  email: 'studio@ciok.art',
   phone: '+48600000001',
   address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
 };
