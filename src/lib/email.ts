@@ -120,7 +120,7 @@ export function buildLabelToStudioEmail(params: { order: LabelEmailOrder }): {
   ].join('');
 
   return {
-    subject: `Etykieta InPost — zamówienie ${order.id}`,
+    subject: `[Etykieta] Etykieta InPost — zamówienie ${order.id}`,
     html: mainContent,
     mainContent,
   };
@@ -142,7 +142,7 @@ export async function emailLabelToStudio(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: EMAIL_FROM.labels,
+    from: EMAIL_FROM,
     to: [env.STUDIO_NOTIFY_EMAIL],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.labelStudio,
@@ -355,7 +355,7 @@ export async function emailReturnLabelToCustomer(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: EMAIL_FROM.shop,
+    from: EMAIL_FROM,
     to: [order.email],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.returnLabel,
@@ -392,7 +392,7 @@ export async function emailShippingConfirmationToCustomer(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: EMAIL_FROM.shop,
+    from: EMAIL_FROM,
     to: [order.email],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
