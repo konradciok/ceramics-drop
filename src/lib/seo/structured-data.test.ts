@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { collectionSchema, organizationSchema } from './structured-data';
 import { getProductsByCategory } from '@/lib/products';
 import { SITE_URL } from '@/lib/site';
+import { EMAIL } from '@/lib/email-addresses';
 
 /** Stub translator: returns the key so assertions are locale-agnostic. */
 const t = (key: string) => key;
@@ -23,6 +24,11 @@ describe('organizationSchema', () => {
     expect(org['@type']).toBe('Organization');
     expect(org.url).toBe(SITE_URL);
     expect(org.logo).toBe(`${SITE_URL}/logotype.png`);
+  });
+
+  it('exposes the public contact email from the shared address module', () => {
+    const org = organizationSchema() as unknown as Record<string, unknown>;
+    expect(org.email).toBe(EMAIL.contact);
   });
 });
 
