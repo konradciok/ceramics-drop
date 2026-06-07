@@ -4,6 +4,7 @@ import { richTags } from '@/components/ui/richTags';
 import { ContactForm } from '@/components/shop/ContactForm';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { EMAIL } from '@/lib/email-addresses';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -44,7 +45,7 @@ export default async function KontaktPage({ params }: Props) {
             <div className="contact-row">
               <span className="lbl">{t('contact.lEmail')}</span>
               <span className="val">
-                <a href="mailto:hej@annaciok.pl">hej@annaciok.pl</a>
+                <a href={`mailto:${EMAIL.contact}`}>{EMAIL.contact}</a>
               </span>
             </div>
             <div className="contact-row">
