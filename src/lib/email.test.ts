@@ -1,10 +1,35 @@
 import { describe, it, expect } from 'vitest';
+import { EMAIL, EMAIL_FROM } from './email-addresses';
 import {
+  buildLabelToStudioEmail,
   buildReturnLabelEmail,
   buildShippingConfirmation,
   type CustomerShippingOrder,
+  type LabelEmailOrder,
   type ReturnLabelOrder,
 } from './email';
+
+describe('transactional FROM address', () => {
+  it('uses one Resend FROM for all transactional mail', () => {
+    expect(EMAIL_FROM).toBe(`${EMAIL.shopFromDisplay} <${EMAIL.shopFrom}>`);
+  });
+});
+
+const labelOrder: LabelEmailOrder = {
+  id: 'ord-label-1',
+  delivery_method: 'paczkomat',
+  inpost_tracking_number: '620000000012345678',
+  inpost_target_point: 'KRA010',
+  receiver_first_name: 'Anna',
+  receiver_last_name: 'Ciok',
+};
+
+describe('buildLabelToStudioEmail — subject', () => {
+  it('prefixes subject with [Etykieta] for studio inbox filters', () => {
+    const { subject } = buildLabelToStudioEmail({ order: labelOrder });
+    expect(subject).toBe('[Etykieta] Etykieta InPost — zamówienie ord-label-1');
+  });
+});
 
 const baseOrder: CustomerShippingOrder = {
   id: 'ord-abc',

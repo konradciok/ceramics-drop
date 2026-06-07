@@ -32,18 +32,18 @@ Agent verifies alias availability in OVH/Resend and proposes corrections if need
 | Role | Current address | Target @ciok.art |
 | --- | --- | --- |
 | Public contact (mailto, legal, JSON-LD) | `hej@annaciok.pl` | **`hej@ciok.art`** |
-| FROM — customer emails (shipping, returns) | `sklep@anna-ciok.studio` | **`sklep@ciok.art`** |
-| FROM — InPost labels → studio | `etykiety@anna-ciok.studio` | **`etykiety@ciok.art`** |
-| TO — label inbox (Workers secret) | `STUDIO_NOTIFY_EMAIL` | **`studio@ciok.art`** or **`etykiety@ciok.art`** (confirm with user) |
+| FROM — all Resend transactional mail (shipping, returns, labels) | `sklep@anna-ciok.studio` / `etykiety@anna-ciok.studio` | **`sklep@ciok.art`** (single sender; no OVH mailbox) |
+| TO — label inbox (Workers secret) | `STUDIO_NOTIFY_EMAIL` | **`studio@ciok.art`** |
 | InPost returns (`STUDIO_RETURN_EMAIL`) | defaults to `STUDIO_NOTIFY_EMAIL` | same as notify, e.g. **`studio@ciok.art`** |
 | Reply-To on transactional mail (optional) | none | **`hej@ciok.art`** — recommended |
 
-**FROM strings in code (Resend):**
+**FROM string in code (Resend — all transactional mail):**
 
 ```
 Anna Ciok Studio <sklep@ciok.art>
-Etykiety InPost <etykiety@ciok.art>
 ```
+
+Label PDFs to studio use the same FROM; subject is prefixed `[Etykieta]` for inbox filtering.
 
 ---
 
@@ -53,9 +53,9 @@ Etykiety InPost <etykiety@ciok.art>
 
 | Trigger | FROM (current) | TO |
 | --- | --- | --- |
-| InPost label → studio | `etykiety@anna-ciok.studio` | `STUDIO_NOTIFY_EMAIL` |
-| Shipping confirmation → customer | `sklep@anna-ciok.studio` | order email |
-| Return label → customer | `sklep@anna-ciok.studio` | order email |
+| InPost label → studio | `sklep@ciok.art` (was `etykiety@anna-ciok.studio`) | `STUDIO_NOTIFY_EMAIL` (`studio@ciok.art`) |
+| Shipping confirmation → customer | `sklep@ciok.art` | order email |
+| Return label → customer | `sklep@ciok.art` | order email |
 
 Resend template aliases (`src/lib/email-layout.ts`): `label-to-studio`, `shipping-confirmation`, `return-label-customer`.
 
@@ -92,8 +92,7 @@ STUDIO_RETURN_EMAIL=                     → optional; defaults to STUDIO_NOTIFY
 │  ciok.art (OVH — DNS + MX + mailboxes/aliases)              │
 │  ├── hej@        → public contact inbox (OVH MX)            │
 │  ├── studio@     → InPost label inbox (STUDIO_NOTIFY)       │
-│  ├── sklep@      → Resend FROM (customers)                  │
-│  └── etykiety@   → Resend FROM (label PDFs)                 │
+│  └── sklep@      → Resend FROM (all transactional send)     │
 │                                                             │
 │  TXT/CNAME: SPF, DKIM, DMARC for Resend on ciok.art         │
 └─────────────────────────────────────────────────────────────┘
@@ -183,7 +182,7 @@ Docs: https://resend.com/docs/dashboard/domains/introduction
 - [ ] OVH: `annaciok.pl` — forwards to migrate
 - [ ] Resend: is `ciok.art` already added; status of `anna-ciok.studio`
 - [ ] Repo: full grep `hej@annaciok|sklep@anna|etykiety@anna|STUDIO_`
-- [ ] Confirm with user: `STUDIO_NOTIFY_EMAIL` = `studio@ciok.art` vs `etykiety@ciok.art`
+- [x] `STUDIO_NOTIFY_EMAIL` = `studio@ciok.art` (confirmed)
 
 ### Phase 2 — OVH + Resend infrastructure (after approval)
 
@@ -209,16 +208,12 @@ wrangler secret put STUDIO_RETURN_EMAIL    # if different
 /** Single source of truth — all @ciok.art addresses */
 export const EMAIL = {
   contact: 'hej@ciok.art',
+  /** Resend FROM for all transactional mail (no OVH mailbox required). */
   shopFrom: 'sklep@ciok.art',
-  labelsFrom: 'etykiety@ciok.art',
   shopFromDisplay: 'Anna Ciok Studio',
-  labelsFromDisplay: 'Etykiety InPost',
 } as const;
 
-export const EMAIL_FROM = {
-  shop: `${EMAIL.shopFromDisplay} <${EMAIL.shopFrom}>`,
-  labels: `${EMAIL.labelsFromDisplay} <${EMAIL.labelsFrom}>`,
-} as const;
+export const EMAIL_FROM = `${EMAIL.shopFromDisplay} <${EMAIL.shopFrom}>`;
 ```
 
 **Reply-To (recommended in the address map — requires this code change, do not skip):** in `sendResendTemplate` (`src/lib/email.ts:53`), add `reply_to` to the request body:
@@ -239,7 +234,7 @@ Note: `messages/*.json` cannot import the module — address stays a literal str
 
 | File | Change |
 | --- | --- |
-| `src/lib/email.ts` | `FROM` / `CUSTOMER_FROM` → `EMAIL_FROM.*`; add `reply_to` (above); fix stale comment line 6: “verified in Resend (anna-ciok.studio)” → `ciok.art` |
+| `src/lib/email.ts` | all send paths use `EMAIL_FROM`; add `reply_to` (above); label subject prefixed `[Etykieta]` for studio inbox filters |
 | `ContactForm.tsx` | **both** occurrences (line 12 `useState` default + line 31 `to:`) → `EMAIL.contact` |
 | `src/lib/contact-mailto.test.ts` | fixture `to:` → `hej@ciok.art` — **no change** to `contact-mailto.ts` itself (parameterized) |
 | `Footer.tsx`, `page.tsx` (×2), legal pages | mailto → `hej@ciok.art` |
@@ -258,7 +253,7 @@ Note: `messages/*.json` cannot import the module — address stays a literal str
 
 - [ ] `npm test` — email, contact-mailto, return, shipx
 - [ ] `rg "hej@annaciok\.pl|@anna-ciok\.studio" src messages .env.example` → **0 matches** (24 + 5 before migration; `docs/` history exempt)
-- [ ] Resend test send: FROM `sklep@ciok.art`, `etykiety@ciok.art`
+- [ ] Resend test send: FROM `sklep@ciok.art` (labels + customer mail); label subject `[Etykieta] …` → `studio@ciok.art`
 - [ ] InPost webhook (staging): label PDF → `STUDIO_NOTIFY_EMAIL`
 - [ ] `/kontakt` — mailto `hej@ciok.art`
 - [ ] JSON-LD — `hej@ciok.art`
@@ -285,7 +280,7 @@ Note: `messages/*.json` cannot import the module — address stays a literal str
 3. **Resend state** — `ciok.art` verification
 4. **Migration map** — old → new address
 5. **Phased plan** with PR checklist
-6. **One question** (if needed): `STUDIO_NOTIFY_EMAIL` = `studio@ciok.art` or `etykiety@ciok.art`?
+6. **Resolved:** `STUDIO_NOTIFY_EMAIL` = `studio@ciok.art`; single Resend FROM = `sklep@ciok.art`
 
 ---
 

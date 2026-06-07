@@ -120,7 +120,7 @@ export function buildLabelToStudioEmail(params: { order: LabelEmailOrder }): {
   ].join('');
 
   return {
-    subject: `Etykieta InPost — zamówienie ${order.id}`,
+    subject: `[Etykieta] Etykieta InPost — zamówienie ${order.id}`,
     html: mainContent,
     mainContent,
   };
