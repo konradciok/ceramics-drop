@@ -4,6 +4,7 @@ import type { CategorySlug } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
+import { EMAIL } from '@/lib/email-addresses';
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
 function availabilityFor(sold: boolean) {
@@ -21,7 +22,7 @@ export function organizationSchema(): WithContext<Organization> {
     name: SITE_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/logotype.png`,
-    email: 'hej@annaciok.pl',
+    email: EMAIL.contact,
   };
 }
 

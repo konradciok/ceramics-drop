@@ -5,11 +5,12 @@ import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 import { buildContactMailto } from '@/lib/contact-mailto';
+import { EMAIL } from '@/lib/email-addresses';
 
 export function ContactForm() {
   const t = useTranslations();
   const [sent, setSent] = useState(false);
-  const [mailtoUrl, setMailtoUrl] = useState('mailto:hej@annaciok.pl');
+  const [mailtoUrl, setMailtoUrl] = useState(`mailto:${EMAIL.contact}`);
 
   return (
     <form
@@ -28,7 +29,7 @@ export function ContactForm() {
         // No server-side inbox: hand the message off to the visitor's own mail
         // client, pre-addressed to the studio, so it actually reaches Anna.
         const url = buildContactMailto({
-          to: 'hej@annaciok.pl',
+          to: EMAIL.contact,
           subject: t('contact.mailtoSubject', { topic }),
           message,
           signature: `\n\n— ${name}${email ? ` (${email})` : ''}`,

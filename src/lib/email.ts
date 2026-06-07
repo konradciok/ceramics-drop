@@ -3,7 +3,7 @@
  * Workers-friendly). Branded HTML lives in published Resend templates; this
  * module supplies localised variables and PDF attachments.
  *
- * NOTE: the `from` domains must be verified in Resend (anna-ciok.studio).
+ * NOTE: the `from` domains must be verified in Resend (ciok.art).
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import {
@@ -13,9 +13,7 @@ import {
   emailMutedParagraph,
   emailParagraph,
 } from './email-layout';
-
-const FROM = 'Etykiety InPost <etykiety@anna-ciok.studio>';
-const CUSTOMER_FROM = 'Anna Ciok Studio <sklep@anna-ciok.studio>';
+import { EMAIL, EMAIL_FROM } from './email-addresses';
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -53,6 +51,7 @@ async function sendResendTemplate(params: {
   const body: ResendSendBody = {
     from: params.from,
     to: params.to,
+    reply_to: EMAIL.contact,
     subject: params.subject,
     template: {
       id: params.templateId,
@@ -143,7 +142,7 @@ export async function emailLabelToStudio(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: FROM,
+    from: EMAIL_FROM.labels,
     to: [env.STUDIO_NOTIFY_EMAIL],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.labelStudio,
@@ -356,7 +355,7 @@ export async function emailReturnLabelToCustomer(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: CUSTOMER_FROM,
+    from: EMAIL_FROM.shop,
     to: [order.email],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.returnLabel,
@@ -393,7 +392,7 @@ export async function emailShippingConfirmationToCustomer(params: {
 
   await sendResendTemplate({
     apiKey: env.RESEND_API_KEY,
-    from: CUSTOMER_FROM,
+    from: EMAIL_FROM.shop,
     to: [order.email],
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,

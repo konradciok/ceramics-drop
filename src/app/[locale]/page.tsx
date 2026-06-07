@@ -11,6 +11,7 @@ import { pln } from '@/lib/format';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { EMAIL } from '@/lib/email-addresses';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -180,14 +181,14 @@ export default async function HomePage({ params }: Props) {
             <div className="section-eyebrow">{t('home.ctEyebrow')}</div>
             <h3>{t.rich('home.ctH', richTags)}</h3>
             <p>{t('home.ctP')}</p>
-            <a className="btn btn-primary" href="mailto:hej@annaciok.pl">
+            <a className="btn btn-primary" href={`mailto:${EMAIL.contact}`}>
               <span>{t('home.ctBtn')}</span> <Icon name="arrow" className="btn-arrow" />
             </a>
           </div>
           <div className="contact-list">
             <div className="contact-row">
               <span className="lbl">{t('home.ctLEmail')}</span>
-              <span className="val">hej@annaciok.pl</span>
+              <span className="val">{EMAIL.contact}</span>
             </div>
             <div className="contact-row">
               <span className="lbl">{t('home.ctLIg')}</span>

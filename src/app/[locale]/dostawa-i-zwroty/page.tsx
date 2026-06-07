@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { richTags } from '@/components/ui/richTags';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { EMAIL } from '@/lib/email-addresses';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -24,7 +25,7 @@ export default async function Page({ params }: Props) {
   const t = await getTranslations({ locale });
 
   const mailtoLink = (c: ReactNode) => (
-    <a className="inline" href="mailto:hej@annaciok.pl">{c}</a>
+    <a className="inline" href={`mailto:${EMAIL.contact}`}>{c}</a>
   );
 
   return (

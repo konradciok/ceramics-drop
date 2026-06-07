@@ -5,6 +5,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { EMAIL } from '@/lib/email-addresses';
 
 export async function Footer() {
   const t = await getTranslations();
@@ -72,7 +73,7 @@ export async function Footer() {
             <h5>{t('footer.hKontakt')}</h5>
             <ul>
               <li>
-                <a href="mailto:hej@annaciok.pl">hej@annaciok.pl</a>
+                <a href={`mailto:${EMAIL.contact}`}>{EMAIL.contact}</a>
               </li>
               <li>
                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
