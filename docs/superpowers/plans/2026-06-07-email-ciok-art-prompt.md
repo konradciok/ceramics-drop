@@ -61,14 +61,15 @@ Resend template aliases (`src/lib/email-layout.ts`): `label-to-studio`, `shippin
 
 Email template footer: `Anna Ciok Ceramics · anna-ciok.studio` + logo from `https://anna-ciok.studio/logotype.png` — **keep** (shop URL, not FROM domain).
 
-### Public contact — `hej@annaciok.pl` in 15+ places
+### Public contact — `hej@annaciok.pl` in 24 places (9 in `src/`, 15 in `messages/`)
 
-- `src/components/shop/ContactForm.tsx`, `src/lib/contact-mailto.ts` (+ test)
+- `src/components/shop/ContactForm.tsx` — **2 occurrences**: line 12 (`useState` mailto default) **and** line 31 (`to:`) — update both
+- `src/lib/contact-mailto.ts` — **no hardcoded address** (takes `to` as a parameter; do **not** edit). Only its test fixture `contact-mailto.test.ts:5` hardcodes it
 - `src/components/layout/Footer.tsx`
-- `src/app/[locale]/page.tsx`, `kontakt/page.tsx`
+- `src/app/[locale]/page.tsx` (2: mailto button + visible text), `kontakt/page.tsx`
 - `regulamin`, `polityka-prywatnosci`, `dostawa-i-zwroty`
-- `src/lib/seo/structured-data.ts` — JSON-LD `email`
-- `messages/pl.json`, `en.json`, `es.json` — legal and contact copy
+- `src/lib/seo/structured-data.ts:24` — JSON-LD `email`
+- `messages/pl.json`, `en.json`, `es.json` — 5 strings per locale (contact note, sent-fallback, withdrawal, terms, privacy)
 
 **Rule:** translation keys are a stable contract — change **address values in strings**, not key names.
 
@@ -79,6 +80,8 @@ RESEND_API_KEY=
 STUDIO_NOTIFY_EMAIL=studio@example.com   → target e.g. studio@ciok.art
 STUDIO_RETURN_EMAIL=                     → optional; defaults to STUDIO_NOTIFY_EMAIL
 ```
+
+> ⚠️ `STUDIO_RETURN_EMAIL` (fallback: `STUDIO_NOTIFY_EMAIL`) is **not just an email TO** — `src/app/api/returns/route.ts:85` injects it as the **ShipX return-shipment receiver**, so InPost sends return tracking notifications to that address. The target `@ciok.art` inbox must demonstrably receive external mail **before** the secret is flipped (Phase 2 step 5 gates Phase 3).
 
 ---
 
@@ -188,7 +191,7 @@ Docs: https://resend.com/docs/dashboard/domains/introduction
 2. Add Resend DNS records (SPF, DKIM, DMARC) in `ciok.art` zone
 3. `verify-domain` in Resend — wait for `verified`
 4. Forward: `hej@annaciok.pl` → `hej@ciok.art`
-5. Test receive on each inbox
+5. Test receive on each inbox — **hard gate for Phase 3**: the notify/return inbox is the ShipX return receiver (`returns/route.ts:85`); do not flip secrets until external mail demonstrably arrives
 
 ### Phase 3 — Cloudflare Workers secrets
 
@@ -218,13 +221,28 @@ export const EMAIL_FROM = {
 } as const;
 ```
 
+**Reply-To (recommended in the address map — requires this code change, do not skip):** in `sendResendTemplate` (`src/lib/email.ts:53`), add `reply_to` to the request body:
+
+```typescript
+const body: ResendSendBody = {
+  from: params.from,
+  to: params.to,
+  reply_to: EMAIL.contact, // hej@ciok.art — customer replies land in the public inbox
+  subject: params.subject,
+  // ...rest unchanged
+};
+```
+
+Note: `messages/*.json` cannot import the module — address stays a literal string there; use `EMAIL.contact` only in `.ts`/`.tsx` files.
+
 **Files to update:**
 
 | File | Change |
 | --- | --- |
-| `src/lib/email.ts` | `FROM` / `CUSTOMER_FROM` → `EMAIL_FROM.*` |
-| `src/lib/contact-mailto.ts`, `ContactForm.tsx`, test | `hej@ciok.art` |
-| `Footer.tsx`, `page.tsx`, legal pages | mailto → `hej@ciok.art` |
+| `src/lib/email.ts` | `FROM` / `CUSTOMER_FROM` → `EMAIL_FROM.*`; add `reply_to` (above); fix stale comment line 6: “verified in Resend (anna-ciok.studio)” → `ciok.art` |
+| `ContactForm.tsx` | **both** occurrences (line 12 `useState` default + line 31 `to:`) → `EMAIL.contact` |
+| `src/lib/contact-mailto.test.ts` | fixture `to:` → `hej@ciok.art` — **no change** to `contact-mailto.ts` itself (parameterized) |
+| `Footer.tsx`, `page.tsx` (×2), legal pages | mailto → `hej@ciok.art` |
 | `src/lib/seo/structured-data.ts` | JSON-LD email |
 | `messages/pl.json`, `en.json`, `es.json` | `hej@annaciok.pl` → `hej@ciok.art` in all strings |
 | `.env.example` | comments: FROM `@ciok.art`, Resend domain `ciok.art` |
@@ -239,6 +257,7 @@ export const EMAIL_FROM = {
 ### Phase 5 — Verification
 
 - [ ] `npm test` — email, contact-mailto, return, shipx
+- [ ] `rg "hej@annaciok\.pl|@anna-ciok\.studio" src messages .env.example` → **0 matches** (24 + 5 before migration; `docs/` history exempt)
 - [ ] Resend test send: FROM `sklep@ciok.art`, `etykiety@ciok.art`
 - [ ] InPost webhook (staging): label PDF → `STUDIO_NOTIFY_EMAIL`
 - [ ] `/kontakt` — mailto `hej@ciok.art`
@@ -255,6 +274,7 @@ export const EMAIL_FROM = {
 3. No production deploy without approval
 4. Two registries: **email DNS = OVH (`ciok.art`)**, **WWW = Cloudflare (`anna-ciok.studio`)** — do not mix zones
 5. Resend failure in InPost webhook → HTTP 500 → retry — test carefully
+6. **One SPF TXT per hostname.** OVH mailboxes (receive + webmail replies) and Resend both live on `ciok.art`. Resend puts SPF/return-path on a `send.ciok.art` subdomain (per `get-domain` output), so root SPF should stay OVH-only — verify, don't assume; never create a second SPF record on the same name. `_dmarc.ciok.art` covers **both** senders — start `p=none` with `rua=` reporting before tightening
 
 ---
 
