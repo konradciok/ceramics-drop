@@ -6,10 +6,10 @@
     "label": "Numer zamówienia",
     "button": "Rozpocznij zwrot",
     "success": "Prośba o zwrot przyjęta. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
-    "ineligible": "Nie znaleziono zamówienia kwalifikującego się do zwrotu. Sprawdź numer lub napisz na hej@ciok.art.",
-    "unavailable": "Zwroty są chwilowo niedostępne. Spróbuj później lub napisz na hej@ciok.art.",
-    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
-    "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
+    "ineligible": "Nie znalazłam zamówienia pasującego do tego numeru. Sprawdź, czy numer jest właściwy — albo napisz wprost na hej@ciok.art.",
+    "unavailable": "Zwroty są chwilowo niedostępne — napisz do mnie bezpośrednio na hej@ciok.art.",
+    "rateLimited": "Za dużo prób naraz — poczekaj chwilę i spróbuj jeszcze raz.",
+    "error": "Coś się nie udało — spróbuj za chwilę albo napisz na hej@ciok.art.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
   "announce": "Drop czerwcowy 2026 — 96 prac, każda jedyna w swoim rodzaju",
@@ -66,7 +66,7 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "odbior": "Odbiór osobisty",
-    "copy": "© 2026 Anna Ciok Ceramics — wszystkie prace jednorazowe"
+    "copy": "© 2026 Anna Ciok Ceramics — każda praca jedyna w swoim rodzaju"
   },
   "product": {
     "mug": "Kubek",
@@ -78,7 +78,7 @@
     "wavybowl": "Miska falowana"
   },
   "gallery": {
-    "sold": "Sprzedane"
+    "sold": "Znalazło dom"
   },
   "selbar": {
     "clear": "Wyczyść",
@@ -94,7 +94,7 @@
     "specTech": "Technika",
     "specCopy": "Egzemplarz",
     "specTechVal": "Szkliwo malowane ręcznie",
-    "specCopyVal": "Jedyny — 1 z 1",
+    "specCopyVal": "Jedyny egzemplarz",
     "approx": "ok."
   },
   "cart": {
@@ -120,10 +120,10 @@
     "checkout": "Przejdź do płatności",
     "pay": "Zapłać teraz",
     "payProcessing": "Przetwarzanie…",
-    "soldOut": "Niektóre prace zostały właśnie sprzedane i usunęliśmy je z koszyka.",
-    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
-    "payError": "Płatność nie powiodła się. Spróbuj ponownie.",
-    "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
+    "soldOut": "Część prac zdążyła znaleźć swojego właściciela — usunęłam je z Twojego koszyka.",
+    "rateLimited": "Za dużo prób naraz — poczekaj chwilę i spróbuj jeszcze raz.",
+    "payError": "Płatność nie przeszła — sprawdź dane karty i spróbuj jeszcze raz. Żadnych środków nie pobrano.",
+    "fineprint": "Płatność prowadzi bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -147,11 +147,11 @@
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
-    "okP": "Płatność się powiodła. Potwierdzenie i fakturę wysłaliśmy mailem.",
+    "okP": "Płatność przeszła. Potwierdzenie i fakturę wysłałam na Twój adres e-mail.",
     "processingH": "Płatność w toku…",
-    "processingP": "Czekamy na potwierdzenie z banku. Możesz odświeżyć tę stronę za chwilę.",
-    "failH": "Płatność nie powiodła się",
-    "failP": "Nie pobraliśmy żadnych środków. Wróć do koszyka i spróbuj ponownie.",
+    "processingP": "Czekam na potwierdzenie z banku — możesz odświeżyć stronę za chwilę.",
+    "failH": "Płatność nie przeszła",
+    "failP": "Nic nie zostało pobrane z Twojego konta. Wróć do koszyka i spróbuj jeszcze raz — prace na Ciebie czekają.",
     "back": "Wróć na stronę główną",
     "cart": "Wróć do koszyka"
   },
@@ -549,13 +549,13 @@
     ]
   },
   "error": {
-    "heading": "Coś poszło nie tak",
-    "body": "Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.",
-    "retry": "Spróbuj ponownie"
+    "heading": "Coś się zacięło",
+    "body": "Strona napotkała błąd. Odśwież — zazwyczaj to pomaga.",
+    "retry": "Odśwież stronę"
   },
   "notFound": {
-    "heading": "Nie znaleziono strony",
-    "body": "Ta strona nie istnieje lub została przeniesiona.",
+    "heading": "Tej strony tu nie ma",
+    "body": "Mogła zostać przeniesiona albo po prostu nie istnieje. Wróć do sklepu — wszystkie prace czekają tam.",
     "home": "Strona główna",
     "shop": "Przejdź do sklepu"
   },
@@ -574,7 +574,7 @@
   },
   "consent": {
     "title": "Pliki cookie",
-    "body": "Używam plików cookie do analityki i marketingu. Możesz zaakceptować lub odrzucić — odrzucenie nie blokuje zakupów.",
+    "body": "Używam ciasteczek do analityki i marketingu. Możesz odmówić — zakupy działają tak samo.",
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"
