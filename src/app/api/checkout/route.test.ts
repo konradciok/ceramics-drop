@@ -95,7 +95,9 @@ describe('POST /api/checkout', () => {
     }
 
     expect(lastResponse?.status).toBe(429);
-    expect(lastResponse?.headers.get('Retry-After')).toBeTruthy();
+    expect(await lastResponse?.json()).toEqual({ error: 'rate_limited' });
+    const retryAfter = Number(lastResponse?.headers.get('Retry-After'));
+    expect(retryAfter).toBeGreaterThan(0);
     expect(reserveRpc).toHaveBeenCalledTimes(30);
     expect(createPaymentIntent).toHaveBeenCalledTimes(30);
   });
