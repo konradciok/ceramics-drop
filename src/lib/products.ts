@@ -5,7 +5,7 @@
    seven product families (slug, price, measure, count). It drives
    routing, navigation and the collection pages.
 
-   getProducts() returns the full 88-piece Product[] built from SPECS:
+   getProducts() returns the full 96-piece Product[] built from SPECS:
    image paths (mapped from upload filenames), sold flags, and per-piece
    metadata (id, num, price, measure, noteIndex). Category descriptions
    are wired through the i18n message catalogs.
@@ -96,7 +96,7 @@ const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
 );
 
 /**
- * Returns every product — all 88 pieces across the seven categories,
+ * Returns every product — all 96 pieces across the seven categories,
  * each with image path, sold flag, price, measure, and display index.
  */
 export function getProducts(): Product[] {
