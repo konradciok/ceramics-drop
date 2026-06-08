@@ -21,7 +21,7 @@ export function defaultConsentSnippet(): string {
       'wait_for_update': 500
     });
     try {
-      var m = document.cookie.match(/(?:^|; )${COOKIE_NAME}=(granted|denied)/);
+      var m = document.cookie.match(/(?:^|;\\s*)${COOKIE_NAME}=(granted|denied)/);
       if (m && m[1] === 'granted') {
         gtag('consent', 'update', {
           'ad_storage': 'granted',
@@ -35,7 +35,7 @@ export function defaultConsentSnippet(): string {
 }
 
 export function readConsent(cookieString: string): ConsentValue | null {
-  const match = cookieString.split('; ').find((c) => c.startsWith(`${COOKIE_NAME}=`));
+  const match = cookieString.split(/;\s*/).find((c) => c.startsWith(`${COOKIE_NAME}=`));
   if (!match) return null;
   const v = match.split('=')[1];
   return v === 'granted' || v === 'denied' ? v : null;

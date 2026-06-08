@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
-import { buildEngagementEvent, buildPageViewEvent, pushDataLayer } from '@/lib/analytics';
+import { buildEngagementEvent, buildPageViewEvent, pushDataLayer, redactSensitiveUrl } from '@/lib/analytics';
 
 export function AnalyticsEvents() {
   const pathname = usePathname();
@@ -27,7 +27,7 @@ export function AnalyticsEvents() {
         pushDataLayer(
           buildEngagementEvent('time_on_page', {
             engagement_seconds: 30,
-            page_path: `${window.location.pathname}${window.location.search}`,
+            page_path: redactSensitiveUrl(`${window.location.pathname}${window.location.search}`),
           }),
         );
       }, 30000),
@@ -48,7 +48,7 @@ export function AnalyticsEvents() {
           pushDataLayer(
             buildEngagementEvent('scroll_depth', {
               percent_scrolled: threshold,
-              page_path: `${window.location.pathname}${window.location.search}`,
+              page_path: redactSensitiveUrl(`${window.location.pathname}${window.location.search}`),
             }),
           );
         }

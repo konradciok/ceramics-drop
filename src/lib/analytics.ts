@@ -243,17 +243,44 @@ export function buildEngagementEvent(
   };
 }
 
+/** Query params that carry a capability token / secret and must never reach the
+ *  dataLayer (and thus GA4 / Meta). `order` is the return capability token used by
+ *  /zwrot?order=<uuid> → POST /api/returns. */
+const SENSITIVE_QUERY_PARAMS = ['order'];
+
+/** Redact sensitive query params from an absolute or path-only URL before it is
+ *  pushed to analytics. Returns the input unchanged if it has no sensitive param
+ *  or can't be parsed. */
+export function redactSensitiveUrl(value: string): string {
+  try {
+    const hasOrigin = /^[a-z]+:\/\//i.test(value);
+    const url = new URL(value, 'https://redacted.local');
+    let changed = false;
+    for (const key of SENSITIVE_QUERY_PARAMS) {
+      if (url.searchParams.has(key)) {
+        url.searchParams.set(key, 'redacted');
+        changed = true;
+      }
+    }
+    if (!changed) return value;
+    return hasOrigin ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return value;
+  }
+}
+
 export function buildPageViewEvent(details: {
   pageLocation: string;
   pagePath: string;
   pageTitle?: string;
   locale?: string;
 }): DataLayerEvent {
+  const pagePath = redactSensitiveUrl(details.pagePath);
   return {
     event: 'page_view',
-    event_id: createEventId('page_view', details.pagePath),
-    page_location: details.pageLocation,
-    page_path: details.pagePath,
+    event_id: createEventId('page_view', pagePath),
+    page_location: redactSensitiveUrl(details.pageLocation),
+    page_path: pagePath,
     page_title: details.pageTitle,
     locale: details.locale,
   };

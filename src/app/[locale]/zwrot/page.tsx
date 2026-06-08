@@ -5,7 +5,7 @@ import { ReturnRequestForm } from '@/components/shop/ReturnRequestForm';
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ order?: string | string[] }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -18,6 +18,9 @@ export default async function Page({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const { order } = await searchParams;
+  // A repeated ?order=a&order=b query yields string[]; ReturnRequestForm calls
+  // orderId.trim(), so collapse to a single string.
+  const initialOrderId = Array.isArray(order) ? (order[0] ?? '') : (order ?? '');
   const t = await getTranslations({ locale });
 
   return (
@@ -31,7 +34,7 @@ export default async function Page({ params, searchParams }: Props) {
       </section>
       <div className="prose-wrap">
         <div className="prose">
-          <ReturnRequestForm initialOrderId={order ?? ''} />
+          <ReturnRequestForm initialOrderId={initialOrderId} />
           <p><Link href="/dostawa-i-zwroty">{t('returns.moreInfo')}</Link></p>
         </div>
       </div>

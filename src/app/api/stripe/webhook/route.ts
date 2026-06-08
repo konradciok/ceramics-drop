@@ -92,15 +92,17 @@ export async function POST(req: Request) {
 
       if (newSale) {
         try {
-          const { data: orderRow } = await supabase
+          const { data: orderRow, error: orderErr } = await supabase
             .from('orders')
             .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point')
             .eq('id', orderId)
             .single();
-          const { data: itemRows } = await supabase
+          if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
+          const { data: itemRows, error: itemsErr } = await supabase
             .from('order_items')
             .select('product_id, unit_price')
             .eq('order_id', orderId);
+          if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
           if (orderRow) {
             const notifyOrder = {
               order: {

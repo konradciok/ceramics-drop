@@ -94,14 +94,22 @@ async function sendResendHtml(params: {
     subject: params.subject,
     html: params.html,
   };
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${params.apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  // Bound the request so a hung Resend connection can't stall the webhook.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${params.apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    }
+  } finally {
+    clearTimeout(timer);
   }
 }
 

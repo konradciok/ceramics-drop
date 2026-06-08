@@ -8,7 +8,7 @@ describe('vuln-scanner probe filter', () => {
     }
   });
   it('passes real paths through', () => {
-    for (const p of ['/pl', '/api/checkout', '/uploads/x.webp', '/koszyk']) {
+    for (const p of ['/pl', '/api/checkout', '/uploads/x.webp', '/uploads/backup.webp', '/pl/config.json', '/koszyk']) {
       expect(isProbePath(p)).toBe(false);
     }
   });

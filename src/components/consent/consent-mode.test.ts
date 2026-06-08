@@ -15,6 +15,8 @@ describe('consent mode', () => {
   });
   it('reads stored consent from cookie string', () => {
     expect(readConsent(`${COOKIE_NAME}=granted`)).toBe('granted');
+    expect(readConsent(`foo=1; ${COOKIE_NAME}=granted`)).toBe('granted');
+    expect(readConsent(`foo=1;${COOKIE_NAME}=denied`)).toBe('denied'); // no space after ';'
     expect(readConsent('')).toBe(null);
   });
 });
