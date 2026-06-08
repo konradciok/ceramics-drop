@@ -12,6 +12,7 @@ import {
   emailDetailTable,
   emailMutedParagraph,
   emailParagraph,
+  resendTemplateHtml,
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { SITE_URL } from '@/lib/site';
@@ -72,6 +73,32 @@ async function sendResendTemplate(params: {
     body: JSON.stringify(body),
   });
 
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  }
+}
+
+/** Send a one-off inline-HTML email (no published template needed). */
+async function sendResendHtml(params: {
+  apiKey: string;
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const body: ResendSendBody = {
+    from: params.from,
+    to: params.to,
+    reply_to: EMAIL.contact,
+    subject: params.subject,
+    html: params.html,
+  };
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${params.apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
@@ -155,6 +182,78 @@ export async function emailLabelToStudio(params: {
       },
     ],
   });
+}
+
+// ── Studio new-order notification ────────────────────────────────────────────
+
+export type NewOrderEmailOrder = {
+  id: string;
+  email: string | null;
+  total: number;          // grosze
+  currency: string;
+  delivery_method: string;
+  receiver_first_name: string | null;
+  receiver_last_name: string | null;
+  inpost_target_point: string | null;
+  items: Array<{ product_id: string; unit_price: number }>;
+};
+
+function formatGrosze(grosze: number, currency: string): string {
+  return `${(grosze / 100).toFixed(2)} ${currency.toUpperCase()}`;
+}
+
+/** Pure function — subject + inner HTML for the studio "new paid order" email. */
+export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const { order } = params;
+  const receiver = [order.receiver_first_name, order.receiver_last_name].filter(Boolean).join(' ').trim();
+  const customer = [receiver, order.email].filter(Boolean).join(' · ') || '—';
+  const methodLabel =
+    order.delivery_method === 'paczkomat' ? 'Paczkomat'
+    : order.delivery_method === 'kurier' ? 'Kurier'
+    : 'Odbiór osobisty';
+
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(order.id) },
+    { label: 'Klient', value: escapeHtml(customer) },
+    { label: 'Dostawa', value: methodLabel },
+  ];
+  if (order.inpost_target_point) {
+    rows.push({ label: 'Paczkomat', value: escapeHtml(order.inpost_target_point) });
+  }
+  rows.push({ label: 'Pozycje', value: String(order.items.length) });
+  rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
+
+  const itemLines = order.items
+    .map((it) => `${escapeHtml(it.product_id)} — ${formatGrosze(it.unit_price, order.currency)}`)
+    .join('<br />');
+
+  const mainContent = [
+    emailParagraph('<strong>Nowe opłacone zamówienie.</strong>'),
+    emailDetailTable(rows),
+    itemLines ? emailMutedParagraph(itemLines) : '',
+  ].join('');
+
+  return {
+    subject: `[Zamówienie] Nowe opłacone zamówienie ${order.id}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Email the studio about a new paid order. Throws if Resend isn't configured (caller must catch). */
+export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder }): Promise<void> {
+  const { env } = getCloudflareContext();
+  const { order } = params;
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildNewOrderToStudioEmail({ order });
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
 // ── Customer shipping-confirmation email ─────────────────────────────────────
