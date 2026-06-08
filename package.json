@@ -16,6 +16,7 @@
     "gtm:list": "node scripts/gtm-api.mjs list",
     "gtm:setup": "node scripts/gtm-api.mjs setup",
     "optimize-images": "node scripts/optimize-images.mjs",
+    "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv --include-runtime=false --include-env=true --env-file .env.cf-typegen cloudflare-env.d.ts",
