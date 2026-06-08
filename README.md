@@ -19,7 +19,11 @@ npm run start      # serve the build (Node)
 npm run lint       # eslint
 npm run preview:cf # OpenNext + Wrangler preview (Workers runtime)
 npm run deploy:cf  # build and deploy to Cloudflare Workers
+npm run i18n:push  # sync messages/pl.json → Notion (Polish editing UI)
+npm run i18n:pull  # pull Ready/Done rows from Notion → pl.json
 ```
+
+**Notion translations:** edit Polish copy in a Notion table instead of raw JSON — see [docs/notion-i18n.md](docs/notion-i18n.md).
 
 **Production:** https://ceramics-drop.konrad-ciok.workers.dev — see [docs/cloudflare-deployment.md](docs/cloudflare-deployment.md) for deploy, env vars, and Workers Builds CI.
 

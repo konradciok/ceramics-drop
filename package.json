@@ -19,7 +19,12 @@
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv --include-runtime=false --include-env=true --env-file .env.cf-typegen cloudflare-env.d.ts",
-    "cf:dns-cleanup": "node scripts/cloudflare-dns-cleanup.mjs"
+    "cf:dns-cleanup": "node scripts/cloudflare-dns-cleanup.mjs",
+    "i18n:check": "node scripts/notion-i18n/check.mjs",
+    "i18n:organize": "node scripts/notion-i18n/organize.mjs",
+    "i18n:setup": "node scripts/notion-i18n/setup.mjs",
+    "i18n:push": "node scripts/notion-i18n/push.mjs",
+    "i18n:pull": "node scripts/notion-i18n/pull.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.56.0",

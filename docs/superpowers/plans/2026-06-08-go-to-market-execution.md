@@ -5,7 +5,8 @@
 > **⚠️ STATUS — executed 2026-06-08 (this is now a historical record; check `main` before acting).**
 > Most 🤖 AGENT tasks were implemented and merged via **#36** and **#37**: **DONE** → T1, T4, T7 (in `src/middleware.ts`, *not* `proxy.ts`), T9, T10 (migration written, not yet applied to prod), T11, T12, T13, T14, and the `/api/returns` half of T15.
 > **CANCELLED** → **T8** (rename to `proxy.ts`) — it breaks the OpenNext/Cloudflare deploy; `middleware.ts` stays on the edge runtime (see the note on T8).
-> **STILL OPEN** → T2/T3 (real shipping rates), T5/T6 (legal NIP/REGON/address), the `/api/checkout` half of T15, and the 🧑 go-live tasks T16–T22. The per-task `[ ]` boxes below are left as originally written — defer to `main` for what's actually shipped.
+> **DONE (ops, 2026-06-08)** → **T15 `/api/checkout` half** — Cloudflare WAF rate-limit rule `checkout-rate-limit` on `anna-ciok.studio` (see Task 15 notes for Free-plan constraints).
+> **STILL OPEN** → T2/T3 (real shipping rates), T5/T6 (legal NIP/REGON/address), T15 `/api/returns` WAF rule (optional — in-route guard shipped in #37; Free plan allows only 1 rate-limit rule), and the 🧑 go-live tasks T16–T22. The per-task `[ ]` boxes below are left as originally written — defer to `main` for what's actually shipped.
 
 **Goal:** Close every gap and fix every issue in the 2026-06-07 go-to-market audit, in dependency-correct order, taking the storefront from "code-complete on test integrations" to "launched on live integrations."
 
@@ -741,13 +742,16 @@ git commit -m "feat(ops): email studio on new paid order"
 
 **Why (audit "Medium — operations"):** no rate limiting on `/api/checkout` or `/api/returns`. `/api/returns` is an unauthenticated capability-token endpoint (enumeration risk); `/api/checkout` mutates inventory reservations.
 
-- [ ] **🧑 Primary — Cloudflare Rate Limiting rule** (no code, no new bindings): in the Cloudflare dashboard for `anna-ciok.studio`, add WAF Rate Limiting rules:
-  - `/api/returns` — e.g. 10 requests / 10 min / IP → block.
-  - `/api/checkout` — e.g. 30 requests / min / IP → managed challenge.
-  - Verify with a quick loop that the Nth request is challenged/blocked.
-- [ ] **🤖 Optional — in-route guard** (only if a KV/DO binding is added): a lightweight per-IP counter. Skip unless the WAF rule is insufficient; it adds a binding + state the project doesn't currently have.
+- [x] **`/api/returns` — in-route guard** (shipped #37): per-IP token-bucket limiter (3 / 10 min, 429 + `Retry-After`).
+- [x] **`/api/checkout` — Cloudflare WAF rate-limit rule** (applied 2026-06-08 via API on zone `df154a46a71277a8b5b4a9e3d9af23ad`):
+  - Rule: `checkout-rate-limit` · ruleset `237f07c4303b4afbaa7854baeea64c01` · rule id `020447cad9604aeb9361fde0155d0689`
+  - Expression: `POST` to `/api/checkout`
+  - **Applied:** `block` after **5 requests / 10 seconds / IP** (~30/min effective)
+  - **Free-plan constraints** (entitlement API errors if exceeded): `period` must be `10` (not 60); `mitigation_timeout` must be `10` (not 600); `managed_challenge` not available → `block`; `characteristics` must include `cf.colo.id` alongside `ip.src`; **max 1 rate-limit rule** per zone.
+- [ ] **`/api/returns` — Cloudflare WAF rule** (deferred): planned 10 req / 10 min / IP → block, but Free plan allows only one `http_ratelimit` rule (checkout rule uses the slot). Revisit after Pro upgrade or if in-route guard proves insufficient.
+- [ ] **🤖 Optional — in-route guard for `/api/checkout`** (only if WAF rule is insufficient): skip unless a KV/DO binding is added.
 
-**Verification:** rate-limit rule active in Cloudflare; burst test shows throttling.
+**Verification:** rate-limit rule active in Cloudflare (`GET .../phases/http_ratelimit/entrypoint` returns `checkout-rate-limit`); burst test shows blocking after threshold.
 
 ---
 
@@ -896,7 +900,8 @@ E2E_DESTRUCTIVE=1 npx playwright test --grep @destructive
 - [ ] (T17) Verify **live Stripe webhooks + payment methods** in the Dashboard
 - [ ] (T21) Investigate the live InPost `validation_failed`; (T9) quiet scanner-probe noise
 - [ ] (T1) CI runs unit + lint + typecheck + build
-- [ ] (T15) Rate-limit `/api/checkout` + `/api/returns`
+- [x] (T15) Rate-limit `/api/checkout` — Cloudflare WAF `checkout-rate-limit` (2026-06-08)
+- [x] (T15) Rate-limit `/api/returns` — in-route guard (#37); WAF edge rule deferred (Free = 1 rule)
 - [ ] (T8) Rename `middleware.ts` → `proxy.ts`
 
 ---

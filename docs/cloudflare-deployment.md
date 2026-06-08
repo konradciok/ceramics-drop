@@ -59,6 +59,20 @@ Requires **Zone.DNS Edit** for `anna-ciok.studio`. Does not add apex/www records
 
 Use **one** public hostname for SEO and analytics. Recommended: redirect `www.anna-ciok.studio` → `anna-ciok.studio` (or the reverse) via a **Redirect rule** in the zone. Ensure the apex has proxied **A and AAAA** records, not IPv6-only.
 
+### WAF rate limiting (dashboard / API)
+
+Applied **2026-06-08** on zone `df154a46a71277a8b5b4a9e3d9af23ad`:
+
+| Rule | Expression | Limit | Action |
+| --- | --- | --- | --- |
+| `checkout-rate-limit` | `POST` `/api/checkout` | 5 req / 10 s / IP (~30/min) | block |
+
+Ruleset `237f07c4303b4afbaa7854baeea64c01` · rule `020447cad9604aeb9361fde0155d0689`.
+
+**Free plan constraints:** `http_ratelimit` rules use a 10 s sampling period, 10 s mitigation timeout, `block` only (no managed challenge), and **one rule per zone**. `/api/returns` is covered by the in-app limiter (`src/app/api/returns/route.ts`); add a second WAF rule after upgrading to Pro if needed.
+
+Verify: Security → WAF → Rate limiting rules, or `GET /zones/{zone_id}/rulesets/phases/http_ratelimit/entrypoint`.
+
 ### Local verification checklist
 
 After `npm run preview:cf` (stop preview before `deploy:cf` on Windows — preview locks `.open-next/assets`):
