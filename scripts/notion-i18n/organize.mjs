@@ -45,6 +45,7 @@ for (const row of pages) {
     Section: { rich_text: richText(want.section) },
   });
   updated++;
+  if (updated % 25 === 0) console.log(`… ${updated} updated, ${skipped} skipped`);
   await sleep(350);
 }
 

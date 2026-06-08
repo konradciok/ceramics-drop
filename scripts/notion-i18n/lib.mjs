@@ -309,26 +309,34 @@ export class NotionClient {
     this.token = token;
   }
 
-  async request(method, apiPath, body) {
-    const res = await fetch(`https://api.notion.com/v1${apiPath}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        'Notion-Version': NOTION_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
+  async request(method, apiPath, body, { retries = 4 } = {}) {
+    const retryable = new Set([429, 502, 503, 504]);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const res = await fetch(`https://api.notion.com/v1${apiPath}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Notion-Version': NOTION_VERSION,
+          'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return data;
+
       const msg = data.message ?? JSON.stringify(data);
+      if (retryable.has(res.status) && attempt < retries) {
+        await sleep(1000 * 2 ** attempt);
+        continue;
+      }
+
       const hint =
         res.status === 404 && apiPath.includes('/databases/')
           ? ' Share the database with your integration: Notion → ⋯ → Connections.'
           : '';
       throw new Error(`Notion ${method} ${apiPath} → ${res.status}: ${msg}${hint}`);
     }
-    return data;
+    throw new Error(`Notion ${method} ${apiPath} failed after retries`);
   }
 
   async queryDatabase(databaseId, filter, startCursor) {
