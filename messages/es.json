@@ -121,6 +121,7 @@
     "pay": "Pagar ahora",
     "payProcessing": "Procesando…",
     "soldOut": "Algunas piezas acaban de venderse y las hemos eliminado de tu carrito.",
+    "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
   },

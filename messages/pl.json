@@ -121,6 +121,7 @@
     "pay": "Zapłać teraz",
     "payProcessing": "Przetwarzanie…",
     "soldOut": "Niektóre prace zostały właśnie sprzedane i usunęliśmy je z koszyka.",
+    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
     "payError": "Płatność nie powiodła się. Spróbuj ponownie.",
     "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },

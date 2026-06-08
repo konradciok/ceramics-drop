@@ -121,6 +121,7 @@
     "pay": "Pay now",
     "payProcessing": "Processing…",
     "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "payError": "Payment failed. Please try again.",
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
   },

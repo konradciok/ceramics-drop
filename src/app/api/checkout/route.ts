@@ -4,12 +4,30 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze } from '@/lib/pricing';
+import { getClientIp } from '@/lib/client-ip';
+import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
+const checkoutRateLimiter = createCheckoutRateLimiter();
+// x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
+const TRUST_FORWARDED_IP = process.env.NODE_ENV !== 'production';
 
 export async function POST(req: Request) {
+  // Throttle before any reservation / Stripe work. In prod a missing IP shares one
+  // "unknown" bucket instead of bypassing the limiter; in dev we fail open.
+  const clientIp = getClientIp(req, { trustForwarded: TRUST_FORWARDED_IP })?.trim() || null;
+  const rateKey = clientIp ?? (TRUST_FORWARDED_IP ? null : 'unknown');
+  const rate = checkoutRateLimiter.allow(rateKey);
+  if (!rate.ok) {
+    console.warn('checkout: rate_limited', { hasIp: Boolean(clientIp) });
+    return NextResponse.json(
+      { error: 'rate_limited' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
+    );
+  }
+
   // Loosely typed: validateCart / validateDelivery narrow the fields at runtime.
   let body: Record<string, unknown>;
   try {

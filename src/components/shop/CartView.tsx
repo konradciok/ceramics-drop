@@ -206,6 +206,12 @@ export function CartView() {
         setCheckoutError(t('cart.soldOut'));
         return;
       }
+      if (res.status === 429) {
+        // Too many checkout attempts — show a wait-and-retry message rather than
+        // the generic "payment failed", which would invite rapid retries.
+        setCheckoutError(t('cart.rateLimited'));
+        return;
+      }
       if (!res.ok) {
         setCheckoutError(t('cart.payError'));
         return;
