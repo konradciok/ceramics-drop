@@ -12,6 +12,7 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
 
 https://ceramics-drop.konrad-ciok.workers.dev/*
   X-Robots-Tag: noindex
