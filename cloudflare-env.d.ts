@@ -21,6 +21,8 @@ interface CloudflareEnv {
   // where the printable A6 label PDF is sent once a shipment is confirmed.
   RESEND_API_KEY: string;
   STUDIO_NOTIFY_EMAIL: string;
+  /** Svix signing secret for the Resend delivery/bounce/complaint webhook. */
+  RESEND_WEBHOOK_SECRET: string;
   // Studio return address — used as the receiver on InPost return shipments.
   // All fields required to enable POST /api/returns; endpoint returns 503 if any are missing.
   STUDIO_RETURN_FIRST_NAME?: string;
