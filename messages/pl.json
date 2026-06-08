@@ -6,10 +6,10 @@
     "label": "Numer zamówienia",
     "button": "Rozpocznij zwrot",
     "success": "Prośba o zwrot przyjęta. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
-    "ineligible": "Nie znaleziono zamówienia kwalifikującego się do zwrotu. Sprawdź numer lub napisz na hej@ciok.art.",
-    "unavailable": "Zwroty są chwilowo niedostępne. Spróbuj później lub napisz na hej@ciok.art.",
-    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
-    "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
+    "ineligible": "Nie znalazłam zamówienia pasującego do tego numeru. Sprawdź, czy numer jest właściwy — albo napisz wprost na hej@ciok.art.",
+    "unavailable": "Zwroty są chwilowo niedostępne — napisz do mnie bezpośrednio na hej@ciok.art.",
+    "rateLimited": "Za dużo prób naraz — poczekaj chwilę i spróbuj jeszcze raz.",
+    "error": "Coś się nie udało — spróbuj za chwilę albo napisz na hej@ciok.art.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
   "announce": "Drop czerwcowy 2026 — 96 prac, każda jedyna w swoim rodzaju",
@@ -66,7 +66,7 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "odbior": "Odbiór osobisty",
-    "copy": "© 2026 Anna Ciok Ceramics — wszystkie prace jednorazowe"
+    "copy": "© 2026 Anna Ciok Ceramics — każda praca jedyna w swoim rodzaju"
   },
   "product": {
     "mug": "Kubek",
@@ -78,7 +78,7 @@
     "wavybowl": "Miska falowana"
   },
   "gallery": {
-    "sold": "Sprzedane"
+    "sold": "Znalazła dom"
   },
   "selbar": {
     "clear": "Wyczyść",
@@ -94,7 +94,7 @@
     "specTech": "Technika",
     "specCopy": "Egzemplarz",
     "specTechVal": "Szkliwo malowane ręcznie",
-    "specCopyVal": "Jedyny — 1 z 1",
+    "specCopyVal": "Jedyny egzemplarz",
     "approx": "ok."
   },
   "cart": {
@@ -120,10 +120,11 @@
     "checkout": "Przejdź do płatności",
     "pay": "Zapłać teraz",
     "payProcessing": "Przetwarzanie…",
-    "soldOut": "Niektóre prace zostały właśnie sprzedane i usunęliśmy je z koszyka.",
-    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
-    "payError": "Płatność nie powiodła się. Spróbuj ponownie.",
-    "fineprint": "Płatność obsługuje bezpiecznie Stripe — karta, BLIK lub Przelewy24."
+    "soldOut": "Część prac zdążyła znaleźć swojego właściciela — usunęłam je z Twojego koszyka.",
+    "rateLimited": "Za dużo prób naraz — poczekaj chwilę i spróbuj jeszcze raz.",
+    "checkoutError": "Nie udało się rozpocząć płatności — spróbuj za chwilę.",
+    "payError": "Płatność nie przeszła — spróbuj jeszcze raz.",
+    "fineprint": "Płatność prowadzi bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -147,11 +148,11 @@
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
-    "okP": "Płatność się powiodła. Potwierdzenie i fakturę wysłaliśmy mailem.",
+    "okP": "Płatność przeszła. Potwierdzenie i fakturę wyślę na Twój adres e-mail.",
     "processingH": "Płatność w toku…",
-    "processingP": "Czekamy na potwierdzenie z banku. Możesz odświeżyć tę stronę za chwilę.",
-    "failH": "Płatność nie powiodła się",
-    "failP": "Nie pobraliśmy żadnych środków. Wróć do koszyka i spróbuj ponownie.",
+    "processingP": "Czekam na potwierdzenie z banku — możesz odświeżyć stronę za chwilę.",
+    "failH": "Płatność nie przeszła",
+    "failP": "Nic nie zostało pobrane z Twojego konta. Wróć do koszyka i spróbuj jeszcze raz — prace na Ciebie czekają.",
     "back": "Wróć na stronę główną",
     "cart": "Wróć do koszyka"
   },
@@ -211,7 +212,7 @@
     },
     "storyEyebrow": "O artystce",
     "storyTitle": "Najpierw maluję, <em>potem lepię.</em>",
-    "storyP1": "Jestem Anna. Zaczynałam jako malarka i tak naprawdę nigdy nie przestałam — tyle że płótno zamieniłam na glinę. Każdy kubek i każdy wazon traktuję jak mały obraz, który da się wziąć do ręki i napełnić kawą albo polnym kwiatem.",
+    "storyP1": "Jestem Anna. Jestem malarką i lepię ceramikę — oba światy istnieją obok siebie w tej samej pracowni. Ale to glina i szkliwo mają moje serce. Każdy kubek i każdy wazon traktuję jak mały obraz, który da się wziąć do ręki i napełnić kawą albo polnym kwiatem.",
     "storyP2": "Pracownię mam jedną, niedużą. Lepię, szkliwię i maluję sama, jedną pracę po drugiej. Dlatego paski nigdy nie są idealnie równe, a dwie palmy nigdy nie wyjdą tak samo — i właśnie o to mi chodzi.",
     "storyP3": "Czerwcowy drop to dziewięćdziesiąt sześć prac, które powstały tej wiosny. Kiedy któraś znajdzie swój dom, znika ze sklepu na dobre.",
     "storyCta1": "Wybierz pracę",
@@ -278,9 +279,9 @@
     "eyebrow": "O studiu",
     "h1": "Jedna pracownia, <em>jedna para rąk.</em>",
     "lead": "Mała pracownia ceramiczna w Warszawie. Lepię, szkliwię i maluję sama, jedną pracę po drugiej — dlatego żadna nie wychodzi tak samo jak poprzednia.",
-    "storyEyebrow": "Najpierw był obraz",
-    "storyH": "Płótno zamieniłam <em>na glinę.</em>",
-    "storyP1": "Jestem Anna. Studiowałam malarstwo i tak naprawdę nigdy nie przestałam malować — tyle że zamiast płótna mam teraz kubek albo brzusiec wazonu. Każdą pracę traktuję jak mały obraz, który da się wziąć do ręki i napełnić kawą albo polnym kwiatem.",
+    "storyEyebrow": "Obraz i glina",
+    "storyH": "Maluję <em>i lepię.</em>",
+    "storyP1": "Jestem Anna. Studiowałam malarstwo i maluję do dziś — w pracowni wiszą obrazy i stoją wazony, pędzle służą i jednemu, i drugiemu. Ale to w glinie i szkliwie bije moje serce. Każdą pracę traktuję jak mały obraz, który da się wziąć do ręki i napełnić kawą albo polnym kwiatem.",
     "storyP2": "Do gliny przekonałam się powoli. Najpierw był jeden kurs, potem kąt w cudzej pracowni, w końcu własne, niewielkie miejsce z piecem, kołem i półkami, na których suszą się prace. Studyjny kot ma wstęp wszędzie poza strefą szkliw.",
     "storyP3": "Maluję ręką, jednym pędzlem, bez kalki i bez szablonu. Paski nigdy nie są idealnie równe, a dwie palmy nigdy nie wyjdą tak samo — i właśnie o to mi chodzi.",
     "factsEyebrow": "Detale pracowni",
@@ -549,13 +550,13 @@
     ]
   },
   "error": {
-    "heading": "Coś poszło nie tak",
-    "body": "Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę.",
-    "retry": "Spróbuj ponownie"
+    "heading": "Coś się zacięło",
+    "body": "Strona napotkała błąd. Odśwież — zazwyczaj to pomaga.",
+    "retry": "Odśwież stronę"
   },
   "notFound": {
-    "heading": "Nie znaleziono strony",
-    "body": "Ta strona nie istnieje lub została przeniesiona.",
+    "heading": "Tej strony tu nie ma",
+    "body": "Mogła zostać przeniesiona albo po prostu nie istnieje. Wróć do sklepu — wszystkie prace czekają tam.",
     "home": "Strona główna",
     "shop": "Przejdź do sklepu"
   },
@@ -574,7 +575,7 @@
   },
   "consent": {
     "title": "Pliki cookie",
-    "body": "Używam plików cookie do analityki i marketingu. Możesz zaakceptować lub odrzucić — odrzucenie nie blokuje zakupów.",
+    "body": "Używam ciasteczek do analityki i marketingu. Możesz odmówić — zakupy działają tak samo.",
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"

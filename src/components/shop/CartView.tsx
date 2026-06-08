@@ -213,7 +213,7 @@ export function CartView() {
         return;
       }
       if (!res.ok) {
-        setCheckoutError(t('cart.payError'));
+        setCheckoutError(t('cart.checkoutError'));
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
@@ -223,7 +223,7 @@ export function CartView() {
       });
       setClientSecret(client_secret);
     } catch {
-      setCheckoutError(t('cart.payError'));
+      setCheckoutError(t('cart.checkoutError'));
     } finally {
       setSubmitting(false);
     }

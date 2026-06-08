@@ -43,8 +43,8 @@ test.describe('@checkout-edge @ci checkout 409', () => {
 
     await page.locator(sel.checkoutButton).click();
 
-    // cart.soldOut (messages/pl.json): "Niektóre prace zostały właśnie sprzedane…"
-    await expect(page.getByText(/właśnie sprzedane/i)).toBeVisible();
+    // cart.soldOut (messages/pl.json): "Część prac zdążyła znaleźć swojego właściciela…"
+    await expect(page.getByText(/znaleźć swojego właściciela/i)).toBeVisible();
 
     // The sold line is pruned; the other line remains.
     await expect(page.locator(`${sel.cartLine}[data-product-id="${a.id}"]`)).toHaveCount(0);
