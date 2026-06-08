@@ -26,6 +26,9 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+
+# Notion i18n sync state (local page IDs + timestamps)
+.notion-i18n/
 .env.sentry-build-plugin
 
 # local google credentials
