@@ -8,6 +8,7 @@
     "success": "Return request received. I'll email your label once InPost confirms the shipment.",
     "ineligible": "No return-eligible order found. Check the number or write to hej@ciok.art.",
     "unavailable": "Returns are temporarily unavailable. Try again later or write to hej@ciok.art.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "error": "Something went wrong. Please try again shortly.",
     "moreInfo": "More about shipping & returns"
   },

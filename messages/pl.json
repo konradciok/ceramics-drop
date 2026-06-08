@@ -8,6 +8,7 @@
     "success": "Prośba o zwrot przyjęta. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
     "ineligible": "Nie znaleziono zamówienia kwalifikującego się do zwrotu. Sprawdź numer lub napisz na hej@ciok.art.",
     "unavailable": "Zwroty są chwilowo niedostępne. Spróbuj później lub napisz na hej@ciok.art.",
+    "rateLimited": "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.",
     "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
