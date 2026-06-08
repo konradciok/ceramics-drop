@@ -2,6 +2,13 @@ import createMiddleware from 'next-intl/middleware';
 import type { NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 
+// NOTE: This stays `middleware.ts` (not the Next 16 `proxy.ts`) on purpose.
+// `@opennextjs/cloudflare` only bundles edge-runtime middleware; renaming to
+// `proxy.ts` flips it to the Node.js runtime ("Proxy does not support Edge
+// runtime"), which OpenNext rejects ("Node.js middleware is not currently
+// supported"), breaking the Cloudflare deploy build. Revisit when OpenNext
+// supports the Node-runtime proxy. The Next deprecation warning is harmless.
+
 const handleI18n = createMiddleware(routing);
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -24,7 +31,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   ].join('; '),
 };
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const response = handleI18n(request);
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);
