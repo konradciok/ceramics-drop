@@ -38,7 +38,8 @@ export async function POST(req: Request) {
   const rateKey = clientIp ?? (TRUST_FORWARDED_IP ? null : 'unknown');
   const rate = returnRateLimiter.allow(rateKey);
   if (!rate.ok) {
-    console.warn('returns: rate_limited', { ip: clientIp });
+    // Don't log the raw IP (PII / RODO); a presence flag is enough to spot abuse.
+    console.warn('returns: rate_limited', { hasIp: Boolean(clientIp) });
     return NextResponse.json(
       { error: 'rate_limited' },
       { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } },
