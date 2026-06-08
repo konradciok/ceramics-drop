@@ -47,6 +47,7 @@ const pages = await notion.queryAll(databaseId);
 const lastPullAt = state.lastPullAt ? Date.parse(state.lastPullAt) : 0;
 const currentFlat = Object.fromEntries(flattenMessages(pl).map((r) => [r.key, r.value]));
 const updates = {};
+const seenKeyToPageId = new Map();
 let pulled = 0;
 let skipped = 0;
 
@@ -64,6 +65,17 @@ for (const page of pages) {
     skipped++;
     continue;
   }
+
+  // Two eligible rows sharing a key would silently last-write-win by API order.
+  // Throw so the operator resolves the duplicate in Notion before pulling.
+  const prevPageId = seenKeyToPageId.get(row.key);
+  if (prevPageId) {
+    throw new Error(
+      `Duplicate Notion rows for key "${row.key}": ${prevPageId} and ${row.pageId}. ` +
+        'Resolve the duplicate in Notion before running pull.',
+    );
+  }
+  seenKeyToPageId.set(row.key, row.pageId);
 
   // Reject keys absent from the current pl.json template — a typo in Notion must
   // not inject new keys (or sparse null array slots) into the catalog.
