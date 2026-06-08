@@ -24,6 +24,7 @@ import {
   NotionClient,
   sleep,
   assertRoundTrip,
+  PULL_STATUSES,
 } from './lib.mjs';
 
 loadDotEnv();
@@ -47,11 +48,21 @@ const notion = token ? new NotionClient(token) : null;
 
 console.log(`Flattened ${plRows.length} keys from messages/pl.json`);
 
-const existingPages = dryRun || !notion || !databaseId ? [] : await notion.queryAll(databaseId);
+// Fetch existing rows even in dry-run (read-only) so the report shows a real
+// create/update diff instead of marking everything as "create".
+const existingPages = !notion || !databaseId ? [] : await notion.queryAll(databaseId);
 const byKey = new Map();
 for (const page of existingPages) {
   const fields = readPageFields(page);
-  if (fields.key) byKey.set(fields.key, fields);
+  if (!fields.key) continue;
+  const prev = byKey.get(fields.key);
+  if (prev) {
+    throw new Error(
+      `Duplicate Notion rows for key "${fields.key}": ${prev.pageId} and ${fields.pageId}. ` +
+        'Resolve the duplicate in Notion before syncing.',
+    );
+  }
+  byKey.set(fields.key, fields);
 }
 
 let created = 0;
@@ -86,6 +97,16 @@ for (const { key, value: polish } of plRows) {
     existing.area !== want.area ||
     existing.page !== want.page ||
     existing.section !== want.section;
+
+  // Don't stomp a translator's in-progress Polish: if the Notion row's Polish
+  // diverged from what we last pushed AND the row isn't approved (Ready/Done),
+  // push English/grouping only and leave Polish untouched.
+  const lastPushedPolish = state.pages[key]?.lastPushedPolish;
+  const notionPolishEdited =
+    lastPushedPolish !== undefined && existing.polish !== lastPushedPolish;
+  const approved = existing.status && PULL_STATUSES.has(existing.status);
+  const protectPolish = polishChanged && notionPolishEdited && !approved;
+
   if (!polishChanged && !englishChanged && !groupingChanged) {
     skipped++;
     state.pages[key] = {
@@ -96,19 +117,31 @@ for (const { key, value: polish } of plRows) {
     continue;
   }
 
+  if (protectPolish && !englishChanged && !groupingChanged) {
+    skipped++;
+    console.warn(
+      `[push] keeping in-progress Notion Polish for ${key} (status ${existing.status ?? 'none'}); nothing else changed`,
+    );
+    continue; // leave state.lastPushedPolish unchanged so divergence stays detected
+  }
+
   if (dryRun || !notion) {
-    console.log(`[update] ${key}`);
+    console.log(`[update] ${key}${protectPolish ? ' (English/grouping only)' : ''}`);
     updated++;
     continue;
   }
 
-  await notion.updatePage(
-    existing.pageId,
-    pageProperties({ key, polish, english }),
-  );
+  const props = pageProperties({ key, polish, english });
+  if (protectPolish) {
+    delete props.Polish;
+    console.warn(
+      `[push] keeping in-progress Notion Polish for ${key} (status ${existing.status ?? 'none'}); pushing English/grouping only`,
+    );
+  }
+  await notion.updatePage(existing.pageId, props);
   state.pages[key] = {
     pageId: existing.pageId,
-    lastPushedPolish: polish,
+    lastPushedPolish: protectPolish ? lastPushedPolish : polish,
     lastPushedEnglish: english,
   };
   updated++;

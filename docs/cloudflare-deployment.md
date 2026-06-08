@@ -128,6 +128,13 @@ Set under **Build** → **Variables and secrets** (production):
 
 Same values as `.env.local`. Do **not** add GCP / GTM API secrets.
 
+### Runtime secrets (`wrangler secret put`)
+
+The build vars above are **not** the runtime secrets. Server-only secrets are set per-environment with `wrangler secret put <NAME>` (or `.dev.vars` locally) — see `.env.example` for the authoritative list and inline notes. Beyond Stripe/Supabase/InPost, the **returns + studio-email** flow needs:
+
+- `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (return labels, shipping confirmations); Resend template aliases are wired in `src/lib/email-layout.ts`.
+- `STUDIO_RETURN_FIRST_NAME` / `_LAST_NAME` / `_PHONE` / `_ADDRESS_STREET` / `_BUILDING` / `_CITY` / `_POSTAL` / `_POINT` — the InPost return receiver. **All required**, or `POST /api/returns` returns `503`. `STUDIO_RETURN_EMAIL` defaults to `STUDIO_NOTIFY_EMAIL` when unset.
+
 ### npm version (lockfile)
 
 Workers Builds runs **npm 10.9.x** (bundled with Node 22). If you regenerate `package-lock.json` with **npm 11+**, `npm ci` can pass locally but fail in CI with:

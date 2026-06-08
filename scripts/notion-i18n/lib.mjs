@@ -99,16 +99,6 @@ const SECTION_LABELS = {
   'miski-falowane': 'Wavy bowls',
 };
 
-const COLLECTION_SLUGS = new Set([
-  'kubki',
-  'wazony',
-  'wazony-duze',
-  'talerzyki',
-  'talerze-duze',
-  'duze-michy',
-  'miski-falowane',
-]);
-
 /** Map a flat messages key to Area / Page / Section for Notion grouping. */
 export function classifyKey(key) {
   const parts = key.split('.');
@@ -123,13 +113,13 @@ export function classifyKey(key) {
     sectionKey = '(main)';
   }
 
-  let section = SECTION_LABELS[sectionKey] ?? sectionKey;
-  if (COLLECTION_SLUGS.has(sectionKey)) {
-    section = SECTION_LABELS[sectionKey] ?? sectionKey;
-  } else if (sectionKey === '(main)') {
+  let section;
+  if (sectionKey === '(main)') {
     section = 'Main';
   } else {
-    section = sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1);
+    section =
+      SECTION_LABELS[sectionKey] ??
+      sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1);
   }
 
   return { area, page, section };
