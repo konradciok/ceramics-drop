@@ -78,7 +78,7 @@
     "wavybowl": "Miska falowana"
   },
   "gallery": {
-    "sold": "Znalazło dom"
+    "sold": "Znalazła dom"
   },
   "selbar": {
     "clear": "Wyczyść",
@@ -122,7 +122,8 @@
     "payProcessing": "Przetwarzanie…",
     "soldOut": "Część prac zdążyła znaleźć swojego właściciela — usunęłam je z Twojego koszyka.",
     "rateLimited": "Za dużo prób naraz — poczekaj chwilę i spróbuj jeszcze raz.",
-    "payError": "Płatność nie przeszła — sprawdź dane karty i spróbuj jeszcze raz. Żadnych środków nie pobrano.",
+    "checkoutError": "Nie udało się rozpocząć płatności — spróbuj za chwilę.",
+    "payError": "Płatność nie przeszła — spróbuj jeszcze raz.",
     "fineprint": "Płatność prowadzi bezpiecznie Stripe — karta, BLIK lub Przelewy24."
   },
   "ship": {
@@ -147,7 +148,7 @@
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
-    "okP": "Płatność przeszła. Potwierdzenie i fakturę wysłałam na Twój adres e-mail.",
+    "okP": "Płatność przeszła. Potwierdzenie i fakturę wyślę na Twój adres e-mail.",
     "processingH": "Płatność w toku…",
     "processingP": "Czekam na potwierdzenie z banku — możesz odświeżyć stronę za chwilę.",
     "failH": "Płatność nie przeszła",
