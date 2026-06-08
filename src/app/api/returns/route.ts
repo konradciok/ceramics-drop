@@ -3,9 +3,11 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
 import { createOrderReturn } from '@/lib/return';
+import { createReturnRateLimiter } from '@/lib/return-rate-limit';
 import type { StudioReturnConfig, OrderForReturn } from '@/lib/shipx';
 
 export const dynamic = 'force-dynamic';
+const returnRateLimiter = createReturnRateLimiter();
 
 /**
  * POST /api/returns
@@ -25,6 +27,12 @@ export async function POST(req: Request) {
 
   const orderId = typeof body.order_id === 'string' ? body.order_id.trim() : null;
   if (!orderId) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
+
+  const ip = getClientIp(req);
+  if (!returnRateLimiter.allow(ip)) {
+    console.warn('returns: rate_limited', { ip });
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
 
   const { env } = getCloudflareContext();
 
@@ -77,6 +85,17 @@ export async function POST(req: Request) {
     return_shipment_id: result.returnShipmentId,
     tracking_number: result.trackingNumber,
   });
+}
+
+function getClientIp(req: Request): string | null {
+  const cfIp = req.headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp;
+
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (!forwarded) return null;
+
+  const first = forwarded.split(',')[0]?.trim();
+  return first || null;
 }
 
 function buildStudioReturnConfig(env: CloudflareEnv): StudioReturnConfig | null {
