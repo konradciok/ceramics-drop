@@ -8,6 +8,7 @@
     "success": "Solicitud de devolución recibida. Te enviaré la etiqueta por correo cuando InPost confirme el envío.",
     "ineligible": "No se encontró ningún pedido que pueda devolverse. Comprueba el número o escribe a hej@ciok.art.",
     "unavailable": "Las devoluciones no están disponibles temporalmente. Inténtalo más tarde o escribe a hej@ciok.art.",
+    "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "error": "Algo salió mal. Inténtalo de nuevo en un momento.",
     "moreInfo": "Más sobre envíos y devoluciones"
   },
