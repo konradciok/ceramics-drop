@@ -19,10 +19,9 @@
 
 - OVH mailboxes: `hej@ciok.art`, `studio@ciok.art` (task IDs 213086006, 213086007)
 - Resend domain `ciok.art` created (ID `7767a4f9-bfc1-40e9-918b-c0ea3850290d`, region `eu-west-1`)
-- OVH DNS zone records added + refreshed:
-  - `resend._domainkey` TXT (DKIM)
-  - `send` MX + TXT (Resend return-path / SPF)
-  - `_dmarc` TXT (`p=none`, `rua=mailto:dmarc@ciok.art`)
+- OVH DNS zone records:
+  - **Added**: `resend._domainkey` TXT (DKIM); `send` MX + TXT (Resend return-path / SPF)
+  - **Verified (already present)**: `_dmarc` TXT (`p=none`, `rua=mailto:dmarc@ciok.art`)
 - Root `@` unchanged: OVH MX (`mx1/mx2/mx3.mail.ovh.net`) + SPF `include:mx.ovh.com`
 - Resend verify: **verified** (all three records green)
 

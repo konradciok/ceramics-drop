@@ -64,7 +64,7 @@ npm run build     # production build (OpenNext)
 - `src/components/consent/consent-mode.ts` — Google Consent Mode v2 default/update helpers (Task 11)
 - `src/app/[locale]/zwrot/page.tsx` — returns-initiation page calling `/api/returns` (Task 13)
 - `src/components/shop/ReturnRequestForm.tsx` — returns form client component (Task 13)
-- `src/proxy.ts` — renamed from `src/middleware.ts`, now also sets security headers (Tasks 7–8)
+- `src/middleware.ts` — security headers added here (Task 7). NB: the Task 8 rename to `src/proxy.ts` was **cancelled** (breaks OpenNext) — no `proxy.ts` exists.
 
 **Modified**
 - `src/lib/pricing.ts` — confirmed shipping rates (Task 3)
@@ -296,7 +296,7 @@ git commit -m "legal: add seller identification (NIP/REGON/address) to terms & p
 
 **Why (audit "New issues — security headers missing on HTML pages"):** `public/_headers` security headers reach **static assets only** on OpenNext/CF (verified live); HTML pages get none, and there is no HSTS anywhere. `next.config.ts` `headers()` only sets Cache-Control. The reliable place to set headers on every HTML response is the next-intl middleware (it already runs on all non-API, non-static routes).
 
-> Done together with Task 8 (the rename), because both edit the same file. Implement Task 8's rename first, then add headers here.
+> **Correction (2026-06-08):** Task 8 (rename to `proxy.ts`) was **CANCELLED** — OpenNext rejects Node-runtime `proxy.ts`. As shipped in #36, the headers live in **`src/middleware.ts`** with the test in **`src/middleware.test.ts`**. Throughout the steps below, read every `proxy.ts`/`proxy.test.ts`/`./proxy` as `middleware.ts`/`middleware.test.ts`/`./middleware`.
 
 **Files:**
 - Modify: `src/proxy.ts` (post-rename; see Task 8)
