@@ -14,6 +14,7 @@ import {
   emailParagraph,
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
+import { SITE_URL } from '@/lib/site';
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -181,6 +182,8 @@ const I18N: Record<SupportedLocale, {
   trackingLabel: string;
   trackLink: string;
   paczkomatLabel: string;
+  returnsLabel: string;
+  returnsLink: string;
   signOff: string;
 }> = {
   pl: {
@@ -190,6 +193,8 @@ const I18N: Record<SupportedLocale, {
     trackingLabel: 'Numer przesyłki',
     trackLink: 'Śledź przesyłkę',
     paczkomatLabel: 'Paczkomat',
+    returnsLabel: 'Chcesz zwrócić zakup? Masz na to 14 dni od otrzymania paczki.',
+    returnsLink: 'Rozpocznij zwrot',
     signOff: 'Dziękujemy! Anna Ciok Studio',
   },
   en: {
@@ -199,6 +204,8 @@ const I18N: Record<SupportedLocale, {
     trackingLabel: 'Tracking number',
     trackLink: 'Track your parcel',
     paczkomatLabel: 'Parcel locker',
+    returnsLabel: 'Want to return your order? You have 14 days from delivery.',
+    returnsLink: 'Start a return',
     signOff: 'Thank you! Anna Ciok Studio',
   },
   es: {
@@ -208,6 +215,8 @@ const I18N: Record<SupportedLocale, {
     trackingLabel: 'Número de seguimiento',
     trackLink: 'Sigue tu envío',
     paczkomatLabel: 'Punto de recogida',
+    returnsLabel: '¿Quieres devolver tu pedido? Tienes 14 días desde la entrega.',
+    returnsLink: 'Iniciar devolución',
     signOff: '¡Gracias! Anna Ciok Studio',
   },
 };
@@ -253,6 +262,9 @@ export function buildShippingConfirmation(params: {
       ),
     );
   }
+
+  const returnUrl = `${SITE_URL}/${loc === 'pl' ? '' : loc + '/'}zwrot?order=${encodeURIComponent(order.id)}`;
+  parts.push(emailParagraph(t.returnsLabel), emailButton(returnUrl, t.returnsLink));
 
   parts.push(emailMutedParagraph(t.signOff));
 

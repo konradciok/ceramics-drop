@@ -117,6 +117,17 @@ describe('buildShippingConfirmation — paczkomat line', () => {
   });
 });
 
+describe('buildShippingConfirmation — returns link', () => {
+  it('includes a returns link with the order id', () => {
+    const { html } = buildShippingConfirmation({ order: { ...baseOrder, id: 'abc-123' }, locale: 'pl' });
+    expect(html).toContain('/zwrot?order=abc-123');
+  });
+  it('prefixes the locale for non-default locales', () => {
+    const { html } = buildShippingConfirmation({ order: { ...baseOrder, id: 'abc-123' }, locale: 'en' });
+    expect(html).toContain('/en/zwrot?order=abc-123');
+  });
+});
+
 const returnOrder: ReturnLabelOrder = {
   id: 'ord-ret-1',
   email: 'buyer@example.com',
