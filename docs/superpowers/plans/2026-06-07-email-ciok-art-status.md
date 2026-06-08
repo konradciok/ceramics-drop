@@ -42,6 +42,31 @@
 - Active studio mailboxes on `ciok.art`: `hej`, `studio`, `ania`, `info`.
 - `konradciok.pl` does not exist — ignore. `konradciok.art` is a separate registered domain in this OVH account (empty redirect-only email offer); unrelated to storefront mail.
 
+## T20 — Resend hardening (2026-06-08)
+
+Evidence from the T20 session (`docs/superpowers/plans/2026-06-08-resend.md`):
+
+- **API keys pruned** — deleted stale keys `docker`, `react`, `Onboarding`; `list-api-keys`
+  now returns **only `ceramics`** (the Worker's `RESEND_API_KEY`).
+- **Smoke send delivered** — FROM `sklep@ciok.art` → `studio@ciok.art`, Resend ID
+  `60818b7e-6aee-4c17-9b18-aed79e28c448`, status **delivered**, 2026-06-08 20:18 UTC.
+  Proves domain + DNS + deliverability via the Resend MCP key. **Does not** prove the
+  production Worker's `RESEND_API_KEY` wiring (no admin send route; true Worker proof
+  needs a real checkout — Task 22).
+- **Resend webhook route added** — `src/app/api/resend/webhook/route.ts` + pure verifier
+  `src/lib/resend-webhook.ts` (+ tests), committed `bffa2f0` on `codex/hardening`. Verifies
+  the Svix HMAC-SHA256 signature via Web Crypto, ±300s replay window, fails closed without
+  the secret. Introduces `RESEND_WEBHOOK_SECRET`. **Not yet deployed or registered.**
+- **DMARC still NXDOMAIN** — unchanged; OVH MCP was not connected this session, so
+  `_dmarc.ciok.art` could not be added. Still requires `v=DMARC1; p=none; rua=mailto:dmarc@ciok.art`.
+
+**Pending (gated on user):**
+- Connect OVH MCP / creds → add `_dmarc` TXT, then re-verify with `dig`.
+- Set `wrangler secret put RESEND_WEBHOOK_SECRET` on prod, deploy/merge to main, then
+  register the Resend webhook at `https://anna-ciok.studio/api/resend/webhook`
+  (events: delivered, bounced, complained, delivery_delayed) and confirm an
+  `email.delivered` event arrives for a fresh smoke send.
+
 ## Not started
 
 - Phase 4 smoke tests (post-merge)
