@@ -1,4 +1,16 @@
 {
+  "returns": {
+    "eyebrow": "Returns",
+    "heading": "Start a return",
+    "intro": "Enter your order number (it's in your shipping-confirmation email) and I'll prepare a return label. You have 14 days from delivery.",
+    "label": "Order number",
+    "button": "Start a return",
+    "success": "Return request received. I'll email your label once InPost confirms the shipment.",
+    "ineligible": "No return-eligible order found. Check the number or write to hej@ciok.art.",
+    "unavailable": "Returns are temporarily unavailable. Try again later or write to hej@ciok.art.",
+    "error": "Something went wrong. Please try again shortly.",
+    "moreInfo": "More about shipping & returns"
+  },
   "announce": "June 2026 drop — 88 pieces, each one of a kind",
   "title": {
     "home": "Anna Ciok Ceramics — June 2026 drop",
@@ -342,8 +354,9 @@
     "toc6": "Damage",
     "updated": "Updated: June 2026",
     "s1H": "Shipping",
-    "s1P": "I send every piece by courier across all of Poland. Shipping costs <strong>75 zł</strong> regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
-    "s1Li1": "Courier, all of Poland — 75 zł",
+    "s1P": "I send every piece by <strong>InPost Parcel Locker (15 zł)</strong> or <strong>courier (75 zł)</strong> across all of Poland. The cost is the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1Li1": "InPost Parcel Locker, all of Poland — 15 zł",
+    "s1Li1b": "InPost courier, all of Poland — 75 zł",
     "s1Li2": "Studio pickup in person — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
     "s2H": "Turnaround",
@@ -354,7 +367,7 @@
     "s4H": "Studio pickup",
     "s4P": "Live in Warsaw or passing through? You can collect a piece directly from the studio — then shipping is free. We arrange the pickup by email for a specific day and time; the studio isn’t open on fixed hours.",
     "s5H": "Returns",
-    "s5P": "As a consumer you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the parcel, with no reason needed. Just write to <link>hej@ciok.art</link> and I’ll send the next steps.",
+    "s5P": "As a consumer you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the parcel, with no reason needed. You can start your return on the <zlink>returns page</zlink> — just your order number. You can also write to <link>hej@ciok.art</link>.",
     "s5Li1": "The piece should come back undamaged, ideally in its original packaging",
     "s5Li2": "The cost of return shipping is on the buyer",
     "s5Li3": "I refund within 14 days of receiving the piece back",
@@ -548,5 +561,12 @@
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Six unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Sixteen unique pieces from Anna Ciok's June 2026 drop."
     }
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "I use cookies for analytics and marketing. You can accept or reject — rejecting doesn't block purchases.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "more": "Privacy policy"
   }
 }

@@ -8,6 +8,7 @@ import {
   buildPageViewEvent,
   buildPurchaseEvent,
   pushDataLayer,
+  redactSensitiveUrl,
   toAnalyticsItem,
 } from './analytics';
 
@@ -19,6 +20,31 @@ const product = (id: string) => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe('redactSensitiveUrl', () => {
+  it('redacts the order capability token from absolute and relative urls', () => {
+    expect(redactSensitiveUrl('https://anna-ciok.studio/zwrot?order=abc-123')).toBe(
+      'https://anna-ciok.studio/zwrot?order=redacted',
+    );
+    expect(redactSensitiveUrl('/zwrot?order=abc-123')).toBe('/zwrot?order=redacted');
+  });
+  it('leaves non-sensitive urls unchanged', () => {
+    expect(redactSensitiveUrl('/pl/koszyk')).toBe('/pl/koszyk');
+    expect(redactSensitiveUrl('https://anna-ciok.studio/pl')).toBe('https://anna-ciok.studio/pl');
+  });
+});
+
+describe('buildPageViewEvent redaction', () => {
+  it('strips the order token from page_location and page_path', () => {
+    const e = buildPageViewEvent({
+      pageLocation: 'https://anna-ciok.studio/zwrot?order=abc-123',
+      pagePath: '/zwrot?order=abc-123',
+    });
+    expect(e.page_location).toBe('https://anna-ciok.studio/zwrot?order=redacted');
+    expect(e.page_path).toBe('/zwrot?order=redacted');
+    expect(JSON.stringify(e)).not.toContain('abc-123');
+  });
 });
 
 describe('analytics ecommerce payloads', () => {

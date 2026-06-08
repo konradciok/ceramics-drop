@@ -7,6 +7,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
+import { emailNewOrderToStudio } from '@/lib/email';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 
@@ -87,6 +88,51 @@ export async function POST(req: Request) {
           .eq('status', 'sold');
         await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
         return false;
+      }
+
+      if (newSale) {
+        try {
+          const { data: orderRow, error: orderErr } = await supabase
+            .from('orders')
+            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point')
+            .eq('id', orderId)
+            .single();
+          if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
+          const { data: itemRows, error: itemsErr } = await supabase
+            .from('order_items')
+            .select('product_id, unit_price')
+            .eq('order_id', orderId);
+          if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
+          if (orderRow) {
+            const notifyOrder = {
+              order: {
+                ...(orderRow as {
+                  id: string; email: string | null; total: number; currency: string;
+                  delivery_method: string; receiver_first_name: string | null;
+                  receiver_last_name: string | null; inpost_target_point: string | null;
+                }),
+                items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
+              },
+            };
+            // Best-effort with bounded retries: this fires once (gated on newSale,
+            // so retried/duplicate webhook deliveries won't re-notify), which means
+            // a transient Resend blip would otherwise lose the notification for good.
+            // A few quick retries survive transient failures without risking dupes;
+            // the operational label email (InPost webhook) remains the backstop.
+            let sent = false;
+            for (let attempt = 0; attempt < 3 && !sent; attempt++) {
+              try {
+                await emailNewOrderToStudio(notifyOrder);
+                sent = true;
+              } catch (err) {
+                if (attempt === 2) throw err;
+                await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+              }
+            }
+          }
+        } catch (err) {
+          console.error('emailNewOrderToStudio failed for', orderId, err);
+        }
       }
 
       return newSale;

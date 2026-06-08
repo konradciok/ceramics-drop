@@ -3,6 +3,7 @@ import '@/styles/tokens.css';
 import '@/styles/site.css';
 
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -11,6 +12,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
+import { defaultConsentSnippet } from '@/components/consent/consent-mode';
+import { ConsentBanner } from '@/components/consent/ConsentBanner';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { organizationSchema } from '@/lib/seo/structured-data';
 import { SITE_URL } from '@/lib/site';
@@ -72,6 +75,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body>
         <JsonLd data={organizationSchema()} />
         <a href="#main-content" className="skip-link">{t('aria.skipToContent')}</a>
+        <Script id="consent-default" strategy="beforeInteractive">{defaultConsentSnippet()}</Script>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
           <AnalyticsEvents />
@@ -80,6 +84,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             {children}
           </div>
           <Footer />
+          <ConsentBanner />
         </NextIntlClientProvider>
       </body>
     </html>

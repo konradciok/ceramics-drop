@@ -1,4 +1,16 @@
 {
+  "returns": {
+    "eyebrow": "Devoluciones",
+    "heading": "Iniciar devolución",
+    "intro": "Introduce el número de pedido (está en tu correo de confirmación de envío) y prepararé una etiqueta de devolución. Tienes 14 días desde la entrega.",
+    "label": "Número de pedido",
+    "button": "Iniciar devolución",
+    "success": "Solicitud de devolución recibida. Te enviaré la etiqueta por correo cuando InPost confirme el envío.",
+    "ineligible": "No se encontró ningún pedido que pueda devolverse. Comprueba el número o escribe a hej@ciok.art.",
+    "unavailable": "Las devoluciones no están disponibles temporalmente. Inténtalo más tarde o escribe a hej@ciok.art.",
+    "error": "Algo salió mal. Inténtalo de nuevo en un momento.",
+    "moreInfo": "Más sobre envíos y devoluciones"
+  },
   "announce": "Drop de junio 2026 — 88 piezas, cada una única",
   "title": {
     "home": "Anna Ciok Ceramics — Drop de junio 2026",
@@ -342,8 +354,9 @@
     "toc6": "Daños",
     "updated": "Actualizado: junio 2026",
     "s1H": "Envío",
-    "s1P": "Envío cada pieza por mensajería a toda Polonia. El envío cuesta <strong>75 zł</strong> sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
-    "s1Li1": "Mensajería, toda Polonia — 75 zł",
+    "s1P": "Envío cada pieza por <strong>Paczkomat InPost (15 zł)</strong> o <strong>mensajería (75 zł)</strong> a toda Polonia. El coste es el mismo sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
+    "s1Li1": "Paczkomat InPost, toda Polonia — 15 zł",
+    "s1Li1b": "Mensajería InPost, toda Polonia — 75 zł",
     "s1Li2": "Recogida en el estudio en persona — gratis",
     "s1Li3": "Envío internacional — escríbeme y lo gestiono de forma individual",
     "s2H": "Plazos",
@@ -354,7 +367,7 @@
     "s4H": "Recogida en el estudio",
     "s4P": "¿Vives en Varsovia o estás de paso? Puedes recoger la pieza directamente en el estudio — entonces el envío es gratis. La recogida la acordamos por correo para un día y una hora concretos; el estudio no abre en horario fijo.",
     "s5H": "Devoluciones",
-    "s5P": "Como consumidor tienes derecho a desistir de la compra en un plazo de <strong>14 días</strong> desde la recepción del paquete, sin dar ningún motivo. Basta con que escribas a <link>hej@ciok.art</link> y te enviaré los siguientes pasos.",
+    "s5P": "Como consumidor tienes derecho a desistir de la compra en un plazo de <strong>14 días</strong> desde la recepción del paquete, sin dar ningún motivo. Puedes iniciar tu devolución en la <zlink>página de devoluciones</zlink> — solo con tu número de pedido. También puedes escribir a <link>hej@ciok.art</link>.",
     "s5Li1": "La pieza debe volver sin daños, preferiblemente en su embalaje original",
     "s5Li2": "El coste del envío de vuelta corre a cargo del comprador",
     "s5Li3": "Devuelvo el importe en un plazo de 14 días desde que recibo la pieza de vuelta",
@@ -548,5 +561,12 @@
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Seis piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos ondulados de cerámica pintados a mano — formas orgánicas, cada uno único. Dieciséis piezas del drop de junio de Anna Ciok."
     }
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "Uso cookies para analítica y marketing. Puedes aceptar o rechazar — rechazar no bloquea las compras.",
+    "accept": "Acepto",
+    "reject": "Rechazo",
+    "more": "Política de privacidad"
   }
 }

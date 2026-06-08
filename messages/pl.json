@@ -1,4 +1,16 @@
 {
+  "returns": {
+    "eyebrow": "Zwroty",
+    "heading": "Rozpocznij zwrot",
+    "intro": "Podaj numer zamówienia (znajdziesz go w e-mailu z potwierdzeniem wysyłki), a przygotuję etykietę zwrotną. Masz na to 14 dni od otrzymania paczki.",
+    "label": "Numer zamówienia",
+    "button": "Rozpocznij zwrot",
+    "success": "Prośba o zwrot przyjęta. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
+    "ineligible": "Nie znaleziono zamówienia kwalifikującego się do zwrotu. Sprawdź numer lub napisz na hej@ciok.art.",
+    "unavailable": "Zwroty są chwilowo niedostępne. Spróbuj później lub napisz na hej@ciok.art.",
+    "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
+    "moreInfo": "Więcej o dostawie i zwrotach"
+  },
   "announce": "Drop czerwcowy 2026 — 88 prac, każda jedyna w swoim rodzaju",
   "title": {
     "home": "Anna Ciok Ceramics — Drop czerwcowy 2026",
@@ -342,8 +354,9 @@
     "toc6": "Uszkodzenia",
     "updated": "Aktualizacja: czerwiec 2026",
     "s1H": "Wysyłka",
-    "s1P": "Każdą pracę wysyłam kurierem na terenie całej Polski. Koszt przesyłki to <strong>75 zł</strong> niezależnie od liczby zamówionych prac — jeśli kupujesz kilka, jadą razem w jednej paczce.",
-    "s1Li1": "Kurier, cała Polska — 75 zł",
+    "s1P": "Każdą pracę wysyłam <strong>Paczkomatem InPost (15 zł)</strong> lub <strong>kurierem (75 zł)</strong> na terenie całej Polski. Koszt jest niezależny od liczby zamówionych prac — jeśli kupujesz kilka, jadą razem w jednej paczce.",
+    "s1Li1": "Paczkomat InPost, cała Polska — 15 zł",
+    "s1Li1b": "Kurier InPost, cała Polska — 75 zł",
     "s1Li2": "Odbiór osobisty w pracowni — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, ustalę indywidualnie",
     "s2H": "Czas realizacji",
@@ -354,7 +367,7 @@
     "s4H": "Odbiór osobisty",
     "s4P": "Mieszkasz w Warszawie albo będziesz przejazdem? Możesz odebrać pracę bezpośrednio w pracowni — wtedy wysyłka jest bezpłatna. Odbiór umawiamy mailowo na konkretny dzień i godzinę; pracownia nie jest otwarta na stałe.",
     "s5H": "Zwroty",
-    "s5P": "Kupując jako konsument masz prawo odstąpić od umowy w ciągu <strong>14 dni</strong> od otrzymania przesyłki, bez podawania przyczyny. Wystarczy, że napiszesz na <link>hej@ciok.art</link>, a ja podeślę dalsze kroki.",
+    "s5P": "Kupując jako konsument masz prawo odstąpić od umowy w ciągu <strong>14 dni</strong> od otrzymania przesyłki, bez podawania przyczyny. Zwrot rozpoczniesz na <zlink>stronie zwrotów</zlink> — wystarczy numer zamówienia. Możesz też napisać na <link>hej@ciok.art</link>.",
     "s5Li1": "Praca powinna wrócić nieuszkodzona, najlepiej w oryginalnym opakowaniu",
     "s5Li2": "Koszt odesłania jest po stronie kupującego",
     "s5Li3": "Pieniądze zwracam w ciągu 14 dni od otrzymania pracy z powrotem",
@@ -548,5 +561,12 @@
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Sześć prac z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Szesnaście prac z czerwcowego dropu Anny Ciok."
     }
+  },
+  "consent": {
+    "title": "Pliki cookie",
+    "body": "Używam plików cookie do analityki i marketingu. Możesz zaakceptować lub odrzucić — odrzucenie nie blokuje zakupów.",
+    "accept": "Akceptuję",
+    "reject": "Odrzucam",
+    "more": "Polityka prywatności"
   }
 }

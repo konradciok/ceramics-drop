@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { richTags } from '@/components/ui/richTags';
+import { Link } from '@/i18n/navigation';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
@@ -61,6 +62,7 @@ export default async function Page({ params }: Props) {
             <p>{t.rich('shipping.s1P', richTags)}</p>
             <ul className="bullets">
               <li>{t('shipping.s1Li1')}</li>
+              <li>{t('shipping.s1Li1b')}</li>
               <li>{t('shipping.s1Li2')}</li>
               <li>{t('shipping.s1Li3')}</li>
             </ul>
@@ -88,7 +90,7 @@ export default async function Page({ params }: Props) {
           {/* ── #zwroty ──────────────────────────────────────────── */}
           <section id="zwroty">
             <h2>{t('shipping.s5H')}</h2>
-            <p>{t.rich('shipping.s5P', { ...richTags, link: mailtoLink })}</p>
+            <p>{t.rich('shipping.s5P', { ...richTags, link: mailtoLink, zlink: (c) => <Link href="/zwrot">{c}</Link> })}</p>
             <ul className="bullets">
               <li>{t('shipping.s5Li1')}</li>
               <li>{t('shipping.s5Li2')}</li>

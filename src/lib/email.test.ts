@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import {
   buildLabelToStudioEmail,
+  buildNewOrderToStudioEmail,
   buildReturnLabelEmail,
   buildShippingConfirmation,
   type CustomerShippingOrder,
@@ -28,6 +29,32 @@ describe('buildLabelToStudioEmail — subject', () => {
   it('prefixes subject with [Etykieta] for studio inbox filters', () => {
     const { subject } = buildLabelToStudioEmail({ order: labelOrder });
     expect(subject).toBe('[Etykieta] Etykieta InPost — zamówienie ord-label-1');
+  });
+});
+
+describe('buildNewOrderToStudioEmail', () => {
+  const newOrder = {
+    id: 'ord-9',
+    email: 'buyer@example.com',
+    total: 10500,
+    currency: 'pln',
+    delivery_method: 'paczkomat',
+    receiver_first_name: 'Jan',
+    receiver_last_name: 'Kowalski',
+    inpost_target_point: 'WAW01A',
+    items: [
+      { product_id: 'kubek-1', unit_price: 9000 },
+      { product_id: 'miska-2', unit_price: 1500 },
+    ],
+  };
+  it('includes order id, customer, items, delivery method and total', () => {
+    const { subject, html } = buildNewOrderToStudioEmail({ order: newOrder });
+    expect(subject).toContain('ord-9');
+    expect(html).toContain('ord-9');
+    expect(html).toContain('buyer@example.com');
+    expect(html).toContain('kubek-1');
+    expect(html).toContain('Paczkomat');
+    expect(html).toContain('105.00');
   });
 });
 
@@ -114,6 +141,17 @@ describe('buildShippingConfirmation — paczkomat line', () => {
     const noPoint: CustomerShippingOrder = { ...baseOrder, inpost_target_point: null };
     const { html } = buildShippingConfirmation({ order: noPoint, locale: 'pl' });
     expect(html).not.toContain('Paczkomat:');
+  });
+});
+
+describe('buildShippingConfirmation — returns link', () => {
+  it('includes a returns link with the order id', () => {
+    const { html } = buildShippingConfirmation({ order: { ...baseOrder, id: 'abc-123' }, locale: 'pl' });
+    expect(html).toContain('/zwrot?order=abc-123');
+  });
+  it('prefixes the locale for non-default locales', () => {
+    const { html } = buildShippingConfirmation({ order: { ...baseOrder, id: 'abc-123' }, locale: 'en' });
+    expect(html).toContain('/en/zwrot?order=abc-123');
   });
 });
 

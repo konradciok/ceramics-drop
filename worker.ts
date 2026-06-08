@@ -8,12 +8,19 @@ import { default as handler } from './.open-next/worker.js';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orders';
+import { isProbePath } from './src/lib/probe-paths';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
 const BATCH_LIMIT = 100;
 
 export default {
-  fetch: handler.fetch,
+  async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    if (isProbePath(url.pathname)) {
+      return new Response('Not found', { status: 404 });
+    }
+    return handler.fetch(request, env, ctx);
+  },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {
     // waitUntil discards rejections silently, so catch + log here — otherwise a
