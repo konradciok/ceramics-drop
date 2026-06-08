@@ -1,15 +1,24 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { readConsent, setConsent } from './consent-mode';
 
+// The cookie isn't an external store that pushes updates, so the subscribe is a
+// no-op; useSyncExternalStore is used purely to read a client-only value without
+// a hydration mismatch (server snapshot = null) and without set-state-in-effect.
+const noopSubscribe = () => () => {};
+
 export function ConsentBanner() {
   const t = useTranslations('consent');
-  const [show, setShow] = useState(false);
-  useEffect(() => { setShow(readConsent(document.cookie) === null); }, []);
-  if (!show) return null;
-  const choose = (v: 'granted' | 'denied') => { setConsent(v); setShow(false); };
+  const [dismissed, setDismissed] = useState(false);
+  const stored = useSyncExternalStore(
+    noopSubscribe,
+    () => readConsent(document.cookie),
+    () => null,
+  );
+  if (dismissed || stored !== null) return null;
+  const choose = (v: 'granted' | 'denied') => { setConsent(v); setDismissed(true); };
   return (
     <div role="dialog" aria-label={t('title')} className="consent">
       <p className="consent-body">{t('body')}</p>
