@@ -102,8 +102,8 @@ describe('buildShipmentPayload', () => {
     expect(p.custom_attributes.target_point).toBe('KRA010');
     expect(p.custom_attributes.sending_method).toBe('parcel_locker');
     expect(p.reference).toBe('ord-1');
-    expect(p.receiver.address).toBeUndefined();
-    expect(p.receiver.phone).toBe('+48600100200');
+    expect(p.receiver!.address).toBeUndefined();
+    expect(p.receiver!.phone).toBe('+48600100200');
   });
 
   it('builds a courier shipment with the receiver address and courier service', () => {
@@ -116,7 +116,7 @@ describe('buildShipmentPayload', () => {
     expect(p.service).toBe(SHIPX_SERVICE.kurier);
     expect(p.custom_attributes.sending_method).toBe('dispatch_order');
     expect(p.custom_attributes.target_point).toBeUndefined();
-    expect(p.receiver.address?.city).toBe('Kraków');
+    expect(p.receiver!.address?.city).toBe('Kraków');
   });
 
   it('throws for odbior (no shipment)', () => {
