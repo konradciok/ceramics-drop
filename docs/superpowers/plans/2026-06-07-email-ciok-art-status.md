@@ -33,7 +33,7 @@
 
 ## Your turn
 
-1. **Phase 4 smoke tests** (see prompt doc checklist).
+1. **Phase 4 smoke tests** — see `docs/superpowers/plans/2026-06-07-email-ciok-art-prompt.md` and tasks **T20/T22** in `2026-06-08-go-to-market-execution.md`.
 
 ## OVH cleanup (2026-06-07)
 
