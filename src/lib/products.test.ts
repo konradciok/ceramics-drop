@@ -32,6 +32,9 @@ describe('getProducts', () => {
     expect(getProductById('p12')!.image).toBe('/uploads/talerz-duzy-13.webp');
     expect(getProductById('w16')!.image).toBe('/uploads/miski-falowane-16.webp');
     // Newly added pieces
+    expect(getProductById('k23')!.image).toBe('/uploads/kubek-23.webp');
+    expect(getProductById('k24')!.image).toBe('/uploads/kubek-24.webp');
+    expect(getProductById('k25')!.image).toBe('/uploads/kubek-25.webp');
     expect(getProductById('k26')!.image).toBe('/uploads/kubek-26.webp');
     expect(getProductById('v09')!.image).toBe('/uploads/waza-mala-9.webp');
     expect(getProductById('d10')!.image).toBe('/uploads/waza-duza-11.webp');
