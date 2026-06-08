@@ -65,7 +65,7 @@ Conversion map (mobile values → BASE; desktop values → min-width block):
 | `.selbar-inner` / `.selbar-info .sum` | 560-block tweaks → BASE | `@sm`: revert to :335/:341 values |
 | `.shop-switch` | `width:100%` | `@sm`: revert |
 | `.delivery-fields .field-row` | `column; gap:16px` | `@sm`: `row; gap:14px` |
-| `.geowidget` | `min-height:280px; height:min(50dvh,360px)` | `@sm`: `height:min(460px, 70dvh)` ← detail fix C3 folded in |
+| `.geowidget` | `min-height:400px; height:min(75dvh,500px)` | `@sm`: `height:min(500px, 70dvh)` ← mobile height fix #32 |
 | `.mob-drawer` | bottom-sheet → BASE; **drop the desktop right-drawer variant — dead code** (unreachable ≥md since `.mob-trigger` hidden) | — |
 
 Also during this phase: delete dead `.btn-sm` rule (:96) and `.feature-inner` from the :475 selector list; update `.prose h2 { scroll-margin-top: var(--header-h) }` (:525).
