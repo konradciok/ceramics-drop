@@ -5,7 +5,7 @@
     "intro": "Introduce el número de pedido (está en tu correo de confirmación de envío) y prepararé una etiqueta de devolución. Tienes 14 días desde la entrega.",
     "label": "Número de pedido",
     "button": "Iniciar devolución",
-    "success": "¡Gracias! Tu etiqueta de devolución va de camino a tu correo.",
+    "success": "Solicitud de devolución recibida. Te enviaré la etiqueta por correo cuando InPost confirme el envío.",
     "ineligible": "No se encontró ningún pedido que pueda devolverse. Comprueba el número o escribe a hej@ciok.art.",
     "unavailable": "Las devoluciones no están disponibles temporalmente. Inténtalo más tarde o escribe a hej@ciok.art.",
     "error": "Algo salió mal. Inténtalo de nuevo en un momento.",

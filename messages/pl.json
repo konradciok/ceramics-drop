@@ -5,7 +5,7 @@
     "intro": "Podaj numer zamówienia (znajdziesz go w e-mailu z potwierdzeniem wysyłki), a przygotuję etykietę zwrotną. Masz na to 14 dni od otrzymania paczki.",
     "label": "Numer zamówienia",
     "button": "Rozpocznij zwrot",
-    "success": "Dziękuję! Etykieta zwrotna jest w drodze na Twój e-mail.",
+    "success": "Prośba o zwrot przyjęta. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
     "ineligible": "Nie znaleziono zamówienia kwalifikującego się do zwrotu. Sprawdź numer lub napisz na hej@ciok.art.",
     "unavailable": "Zwroty są chwilowo niedostępne. Spróbuj później lub napisz na hej@ciok.art.",
     "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",

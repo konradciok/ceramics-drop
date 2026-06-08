@@ -5,7 +5,7 @@
     "intro": "Enter your order number (it's in your shipping-confirmation email) and I'll prepare a return label. You have 14 days from delivery.",
     "label": "Order number",
     "button": "Start a return",
-    "success": "Thank you! Your return label is on its way to your email.",
+    "success": "Return request received. I'll email your label once InPost confirms the shipment.",
     "ineligible": "No return-eligible order found. Check the number or write to hej@ciok.art.",
     "unavailable": "Returns are temporarily unavailable. Try again later or write to hej@ciok.art.",
     "error": "Something went wrong. Please try again shortly.",

@@ -102,7 +102,7 @@ export async function POST(req: Request) {
             .select('product_id, unit_price')
             .eq('order_id', orderId);
           if (orderRow) {
-            await emailNewOrderToStudio({
+            const notifyOrder = {
               order: {
                 ...(orderRow as {
                   id: string; email: string | null; total: number; currency: string;
@@ -111,7 +111,22 @@ export async function POST(req: Request) {
                 }),
                 items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
               },
-            });
+            };
+            // Best-effort with bounded retries: this fires once (gated on newSale,
+            // so retried/duplicate webhook deliveries won't re-notify), which means
+            // a transient Resend blip would otherwise lose the notification for good.
+            // A few quick retries survive transient failures without risking dupes;
+            // the operational label email (InPost webhook) remains the backstop.
+            let sent = false;
+            for (let attempt = 0; attempt < 3 && !sent; attempt++) {
+              try {
+                await emailNewOrderToStudio(notifyOrder);
+                sent = true;
+              } catch (err) {
+                if (attempt === 2) throw err;
+                await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+              }
+            }
           }
         } catch (err) {
           console.error('emailNewOrderToStudio failed for', orderId, err);
