@@ -12,7 +12,7 @@
     "error": "Something went wrong. Please try again shortly.",
     "moreInfo": "More about shipping & returns"
   },
-  "announce": "June 2026 drop — 88 pieces, each one of a kind",
+  "announce": "June 2026 drop — 96 pieces, each one of a kind",
   "title": {
     "home": "Anna Ciok Ceramics — June 2026 drop",
     "kubki": "Mugs",
@@ -158,7 +158,7 @@
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
     "heroTitle": "Each piece one, <em>painted by hand.</em>",
-    "heroSub": "Eighty-eight ceramic pieces from my small studio — mugs, vases, large vases, dishes, plates, large bowls and wavy bowls. Thrown and painted one at a time, so no second one exists. You choose exactly the piece you see in the photo.",
+    "heroSub": "Ninety-six ceramic pieces from my small studio — mugs, vases, large vases, dishes, plates, large bowls and wavy bowls. Thrown and painted one at a time, so no second one exists. You choose exactly the piece you see in the photo.",
     "heroCta1": "See mugs",
     "heroCta2": "See vases",
     "heroMetaName": "Mug Nº 02",
@@ -170,21 +170,21 @@
       "straight from the studio"
     ],
     "colEyebrow": "June drop",
-    "colTitle": "Seven families, <em>eighty-eight pieces.</em>",
+    "colTitle": "Seven families, <em>ninety-six pieces.</em>",
     "colLead": "Tap, pick your favourite thumbnails like in a photo gallery, and go straight to checkout.",
     "card": {
       "mug": {
-        "num": "22 pieces · 90 zł each",
+        "num": "26 pieces · 90 zł each",
         "desc": "Everyday mugs for the morning coffee — palms, lemons, shells and cacti painted in glaze.",
         "cta": "Choose a mug"
       },
       "vase": {
-        "num": "8 pieces · 210 zł each",
+        "num": "9 pieces · 210 zł each",
         "desc": "Round-bellied vases for a single branch or a market bunch — stripes, palms and cacti on warm white.",
         "cta": "Choose a vase"
       },
       "bigvase": {
-        "num": "9 pieces · 395 zł each",
+        "num": "10 pieces · 395 zł each",
         "desc": "Large, round-bellied vases painted by hand — cacti, shells, palms, a lobster and folk figures on warm white.",
         "cta": "Choose a vase"
       },
@@ -199,12 +199,12 @@
         "cta": "Choose a plate"
       },
       "largebowl": {
-        "num": "6 pieces · 315 zł each",
+        "num": "7 pieces · 315 zł each",
         "desc": "Large, hand-painted bowls for salads and fruit — cobalt gardens, palms, cacti and autumn leaves.",
         "cta": "Choose a bowl"
       },
       "wavybowl": {
-        "num": "16 pieces · 155 zł each",
+        "num": "17 pieces · 155 zł each",
         "desc": "Wavy-rimmed bowls for breakfast and snacks — cacti, palms, shells, lemons and leaves.",
         "cta": "Choose a bowl"
       }
@@ -213,7 +213,7 @@
     "storyTitle": "First I paint, <em>then I throw.</em>",
     "storyP1": "I’m Anna. I started out as a painter and never really stopped — I just swapped canvas for clay. I treat every mug and vase as a small painting you can pick up and fill with coffee or a wildflower.",
     "storyP2": "I have one small studio. I throw, glaze and paint everything myself, one piece after another. That’s why the stripes are never perfectly even and no two palms ever come out the same — and that’s exactly the point.",
-    "storyP3": "The June drop is eighty-eight pieces made this spring. When one finds its home, it leaves the shop for good.",
+    "storyP3": "The June drop is ninety-six pieces made this spring. When one finds its home, it leaves the shop for good.",
     "storyCta1": "Choose a piece",
     "storyCta2": "Write to me",
     "craftEyebrow": "How it works",
@@ -239,18 +239,18 @@
   "collection": {
     "hint": "Click a thumbnail or its name to open the piece’s <b>details</b>. Add a piece with the <b>“Add to cart”</b> button — on the tile or inside the preview. Added pieces gather in the bar at the bottom.",
     "kubki": {
-      "eyebrow": "June drop — 22 pieces",
-      "title": "Mugs <em>Nº 01–22</em>",
+      "eyebrow": "June drop — 26 pieces",
+      "title": "Mugs <em>Nº 01–26</em>",
       "lead": "Each mug is a single, one-off piece at 90 zł. Select the ones you want to take home."
     },
     "wazony": {
-      "eyebrow": "June drop — 8 pieces",
-      "title": "Vases <em>Nº 01–08</em>",
+      "eyebrow": "June drop — 9 pieces",
+      "title": "Vases <em>Nº 01–09</em>",
       "lead": "Round-bellied, hand-painted vases at 210 zł each. One piece, one owner — select yours."
     },
     "wazony-duze": {
-      "eyebrow": "June drop — 9 pieces",
-      "title": "Large vases <em>Nº 01–09</em>",
+      "eyebrow": "June drop — 10 pieces",
+      "title": "Large vases <em>Nº 01–10</em>",
       "lead": "Large, hand-painted vases at 395 zł each. One piece, one owner — select yours."
     },
     "talerzyki": {
@@ -264,13 +264,13 @@
       "lead": "Large, hand-painted plates at 270 zł each. Each one different — for serving or for the wall. Select the ones you want to take home."
     },
     "duze-michy": {
-      "eyebrow": "June drop — 6 pieces",
-      "title": "Large bowls <em>Nº 01–06</em>",
+      "eyebrow": "June drop — 7 pieces",
+      "title": "Large bowls <em>Nº 01–07</em>",
       "lead": "Large, hand-painted bowls at 315 zł each. One piece, one owner — select yours."
     },
     "miski-falowane": {
-      "eyebrow": "June drop — 16 pieces",
-      "title": "Wavy bowls <em>Nº 01–16</em>",
+      "eyebrow": "June drop — 17 pieces",
+      "title": "Wavy bowls <em>Nº 01–17</em>",
       "lead": "Wavy-rimmed bowls at 155 zł each. Each one different — select the ones you want to take home."
     }
   },
@@ -292,7 +292,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Two firings per piece — a bisque firing, and a second proper one after glazing.",
     "fact3K": "June drop",
-    "fact3V": "88 <em>pieces</em>",
+    "fact3V": "96 <em>pieces</em>",
     "fact3D": "Mugs, vases, large vases, dishes, plates, large bowls and wavy bowls. Every piece one of a kind.",
     "fact4K": "Shipping",
     "fact4V": "3–5 <em>days</em>",
@@ -459,7 +459,11 @@
       "Brown loops, one after another. A script you can’t read.",
       "A brown shell, black dots up top. Raw and warm at once.",
       "A terracotta cactus with white needles. Dry climate, soft hand.",
-      "Brown swirls in three rows. A rhythm written with a brush."
+      "Brown swirls in three rows. A rhythm written with a brush.",
+      "A black flower with six round heads on a tall stem. A wavy striped band runs across the middle.",
+      "A black tulip with fanned petals on a herringbone-leaf stem. Veins scratched by hand.",
+      "A black eye framed by a wreath of petals. A talisman painted in one brush.",
+      "A round black poppy on a stem, leaves in herringbone. Graphic and simple."
     ],
     "wazony": [
       "Blue cacti and a terracotta sun. A desert on the belly of the vase.",
@@ -469,7 +473,8 @@
       "A palm with a ribbed rim. Light, holiday-like.",
       "Brown loops around the whole belly. The dance of a single brush.",
       "A black palm, rusty coconuts. Graphic on warm white.",
-      "A second black palm — bigger, bolder. Evening over the ocean."
+      "A second black palm — bigger, bolder. Evening over the ocean.",
+      "A black ribbon winding around the belly, filled with fine stripes. One line, one motion."
     ],
     "wazony-duze": [
       "Black cacti and terracotta suns around the belly. Inside, a scalloped terracotta collar.",
@@ -480,7 +485,8 @@
       "A lobster drawn with a single brush, from feelers to tail. My nod to the sea.",
       "A moon, a herringbone sprig and a man in a hat. A little story around the vase.",
       "A woman in a striped skirt, a moon and leaves. A folk scene scratched in black.",
-      "A terracotta herringbone palm with black coconuts. A ribbed rim like an awning in the sun."
+      "A terracotta herringbone palm with black coconuts. A ribbed rim like an awning in the sun.",
+      "Black dandelions and drooping flowers around the belly. A meadow scratched in black."
     ],
     "talerzyki": [
       "A black shell in the middle, terracotta dashes at the rim. For rings or a drop of oil.",
@@ -519,7 +525,8 @@
       "Terracotta herringbone palms with black coconuts. A holiday rhythm around the bowl.",
       "Terracotta saguaro and small black diamonds. A desert on a large bowl.",
       "A cobalt wave and a scalloped rim. The inside full of flowers, figs and shells.",
-      "Zigzags in black and terracotta. Three wave rhythms on warm white."
+      "Zigzags in black and terracotta. Three wave rhythms on warm white.",
+      "A black garden inside — a dotted flower, starbursts and herringbone sprigs. A whole tale on the bowl's floor."
     ],
     "miski-falowane": [
       "Black cacti and terracotta suns, a wavy rim. The whole family stacked up.",
@@ -537,7 +544,8 @@
       "Blue shells around a terracotta starfish. Marine quiet.",
       "Blue shells and a terracotta wave below. Coiled line by line.",
       "Blue lemons dotted in white, from above. Summer in a bowl.",
-      "Blue lemons around the belly. A cool, lemony rhythm."
+      "Blue lemons around the belly. A cool, lemony rhythm.",
+      "Black berry sprigs and herringbone leaves. A wavy rim like a petal."
     ]
   },
   "error": {
@@ -552,16 +560,16 @@
     "shop": "Go to shop"
   },
   "meta": {
-    "description": "Hand-painted functional ceramics — mugs, vases, bowls and plates. June drop, 88 one-of-a-kind pieces.",
+    "description": "Hand-painted functional ceramics — mugs, vases, bowls and plates. June drop, 96 one-of-a-kind pieces.",
     "ogImageAlt": "Anna Ciok Ceramics — handmade ceramic mug",
     "collections": {
-      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 22 unique pieces from Anna Ciok's June 2026 drop.",
-      "wazony": "Hand-painted ceramic vases — small, sculptural and one of a kind. Eight unique pieces from Anna Ciok's June 2026 drop.",
-      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Nine unique works from Anna Ciok's June 2026 drop.",
+      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 26 unique pieces from Anna Ciok's June 2026 drop.",
+      "wazony": "Hand-painted ceramic vases — small, sculptural and one of a kind. Nine unique pieces from Anna Ciok's June 2026 drop.",
+      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Ten unique works from Anna Ciok's June 2026 drop.",
       "talerzyki": "Hand-painted ceramic dishes, ⌀ 12 cm — each one of a kind. Fifteen unique small plates from Anna Ciok's June 2026 drop.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 28 cm — each one of a kind. Twelve unique pieces from Anna Ciok's June 2026 drop.",
-      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Six unique pieces from Anna Ciok's June 2026 drop.",
-      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Sixteen unique pieces from Anna Ciok's June 2026 drop."
+      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Seven unique pieces from Anna Ciok's June 2026 drop.",
+      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Seventeen unique pieces from Anna Ciok's June 2026 drop."
     }
   },
   "consent": {

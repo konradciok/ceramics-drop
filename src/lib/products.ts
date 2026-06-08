@@ -5,7 +5,7 @@
    seven product families (slug, price, measure, count). It drives
    routing, navigation and the collection pages.
 
-   getProducts() returns the full 88-piece Product[] built from SPECS:
+   getProducts() returns the full 96-piece Product[] built from SPECS:
    image paths (mapped from upload filenames), sold flags, and per-piece
    metadata (id, num, price, measure, noteIndex). Category descriptions
    are wired through the i18n message catalogs.
@@ -14,13 +14,13 @@ import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '9 × 9 cm · 300 ml', count: 22 },
-  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '18 × 16 cm', count: 8 },
-  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '24 × 20 cm', count: 9 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '9 × 9 cm · 300 ml', count: 26 },
+  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '18 × 16 cm', count: 9 },
+  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '24 × 20 cm', count: 10 },
   talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '⌀ 12 cm', count: 15 },
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 28 cm', count: 12 },
-  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '⌀ 26 × 14 cm', count: 6 },
-  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '⌀ 16 × 9 cm', count: 16 },
+  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '⌀ 26 × 14 cm', count: 7 },
+  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '⌀ 16 × 9 cm', count: 17 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
@@ -52,13 +52,13 @@ type Spec = {
 };
 
 const SPECS: Spec[] = [
-  { slug: 'kubki', prefix: 'k', imageBase: 'kubek', files: range(1, 22) },
-  { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 8) },
-  { slug: 'wazony-duze', prefix: 'd', imageBase: 'waza-duza', files: [1, 3, 4, 5, 6, 7, 8, 9, 10] },
+  { slug: 'kubki', prefix: 'k', imageBase: 'kubek', files: range(1, 26) },
+  { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 9) },
+  { slug: 'wazony-duze', prefix: 'd', imageBase: 'waza-duza', files: [1, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
   { slug: 'talerzyki', prefix: 't', imageBase: 'talerz-maly', files: range(1, 15) },
   { slug: 'talerze-duze', prefix: 'p', imageBase: 'talerz-duzy', files: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13] },
-  { slug: 'duze-michy', prefix: 'b', imageBase: 'duza-micha', files: range(1, 6) },
-  { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 16) },
+  { slug: 'duze-michy', prefix: 'b', imageBase: 'duza-micha', files: range(1, 7) },
+  { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 17) },
 ];
 
 function buildProducts(): Product[] {
@@ -96,7 +96,7 @@ const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
 );
 
 /**
- * Returns every product — all 88 pieces across the seven categories,
+ * Returns every product — all 96 pieces across the seven categories,
  * each with image path, sold flag, price, measure, and display index.
  */
 export function getProducts(): Product[] {

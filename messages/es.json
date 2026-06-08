@@ -12,7 +12,7 @@
     "error": "Algo salió mal. Inténtalo de nuevo en un momento.",
     "moreInfo": "Más sobre envíos y devoluciones"
   },
-  "announce": "Drop de junio 2026 — 88 piezas, cada una única",
+  "announce": "Drop de junio 2026 — 96 piezas, cada una única",
   "title": {
     "home": "Anna Ciok Ceramics — Drop de junio 2026",
     "kubki": "Tazas",
@@ -158,7 +158,7 @@
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Cada pieza única, <em>pintada a mano.</em>",
-    "heroSub": "Ochenta y ocho piezas de cerámica de mi pequeño estudio — tazas, jarrones, jarrones grandes, platitos, platos, cuencos grandes y cuencos ondulados. Modeladas y pintadas de una en una, así que no existe una segunda igual. Eliges exactamente la pieza que ves en la foto.",
+    "heroSub": "Noventa y seis piezas de cerámica de mi pequeño estudio — tazas, jarrones, jarrones grandes, platitos, platos, cuencos grandes y cuencos ondulados. Modeladas y pintadas de una en una, así que no existe una segunda igual. Eliges exactamente la pieza que ves en la foto.",
     "heroCta1": "Ver tazas",
     "heroCta2": "Ver jarrones",
     "heroMetaName": "Taza Nº 02",
@@ -170,21 +170,21 @@
       "directo del estudio"
     ],
     "colEyebrow": "Drop de junio",
-    "colTitle": "Siete familias, <em>ochenta y ocho piezas.</em>",
+    "colTitle": "Siete familias, <em>noventa y seis piezas.</em>",
     "colLead": "Toca, elige tus miniaturas favoritas como en una galería de fotos y ve directo a la caja.",
     "card": {
       "mug": {
-        "num": "22 piezas · 90 zł cada una",
+        "num": "26 piezas · 90 zł cada una",
         "desc": "Tazas de diario para el café de la mañana — palmeras, limones, conchas y cactus pintados en esmalte.",
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "8 piezas · 210 zł cada uno",
+        "num": "9 piezas · 210 zł cada uno",
         "desc": "Jarrones panzudos para una rama o un ramo del mercado — rayas, palmeras y cactus sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
       "bigvase": {
-        "num": "9 piezas · 395 zł cada uno",
+        "num": "10 piezas · 395 zł cada uno",
         "desc": "Jarrones grandes y panzudos pintados a mano — cactus, conchas, palmeras, una langosta y figuras folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
@@ -199,12 +199,12 @@
         "cta": "Elegir un plato"
       },
       "largebowl": {
-        "num": "6 piezas · 315 zł cada uno",
+        "num": "7 piezas · 315 zł cada uno",
         "desc": "Cuencos grandes pintados a mano para ensaladas y fruta — jardines cobalto, palmeras, cactus y hojas de otoño.",
         "cta": "Elegir un cuenco"
       },
       "wavybowl": {
-        "num": "16 piezas · 155 zł cada uno",
+        "num": "17 piezas · 155 zł cada uno",
         "desc": "Cuencos de borde ondulado para el desayuno y aperitivos — cactus, palmeras, conchas, limones y hojas.",
         "cta": "Elegir un cuenco"
       }
@@ -213,7 +213,7 @@
     "storyTitle": "Primero pinto, <em>luego modelo.</em>",
     "storyP1": "Soy Anna. Empecé como pintora y en realidad nunca lo dejé — solo cambié el lienzo por la arcilla. Trato cada taza y cada jarrón como un pequeño cuadro que puedes coger y llenar de café o de una flor del campo.",
     "storyP2": "Tengo un solo estudio, pequeño. Modelo, esmalto y pinto todo yo misma, una pieza tras otra. Por eso las rayas nunca salen perfectamente rectas y dos palmeras nunca salen iguales — y de eso se trata.",
-    "storyP3": "El drop de junio son ochenta y ocho piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
+    "storyP3": "El drop de junio son noventa y seis piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
     "storyCta1": "Elegir una pieza",
     "storyCta2": "Escríbeme",
     "craftEyebrow": "Cómo funciona",
@@ -239,18 +239,18 @@
   "collection": {
     "hint": "Haz clic en una miniatura o su nombre para abrir los <b>detalles</b> de la pieza. Añade una pieza con el botón <b>«Añadir al carrito»</b> — en la miniatura o dentro de la vista previa. Las piezas añadidas se reúnen en la barra inferior.",
     "kubki": {
-      "eyebrow": "Drop de junio — 22 piezas",
-      "title": "Tazas <em>Nº 01–22</em>",
+      "eyebrow": "Drop de junio — 26 piezas",
+      "title": "Tazas <em>Nº 01–26</em>",
       "lead": "Cada taza es una pieza única e irrepetible por 90 zł. Selecciona las que quieras llevarte a casa."
     },
     "wazony": {
-      "eyebrow": "Drop de junio — 8 piezas",
-      "title": "Jarrones <em>Nº 01–08</em>",
+      "eyebrow": "Drop de junio — 9 piezas",
+      "title": "Jarrones <em>Nº 01–09</em>",
       "lead": "Jarrones panzudos, pintados a mano, por 210 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "wazony-duze": {
-      "eyebrow": "Drop de junio — 9 piezas",
-      "title": "Jarrones grandes <em>Nº 01–09</em>",
+      "eyebrow": "Drop de junio — 10 piezas",
+      "title": "Jarrones grandes <em>Nº 01–10</em>",
       "lead": "Jarrones grandes pintados a mano por 395 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "talerzyki": {
@@ -264,13 +264,13 @@
       "lead": "Platos grandes pintados a mano por 270 zł cada uno. Cada uno diferente — para servir o para la pared. Selecciona los que quieras llevarte a casa."
     },
     "duze-michy": {
-      "eyebrow": "Drop de junio — 6 piezas",
-      "title": "Cuencos grandes <em>Nº 01–06</em>",
+      "eyebrow": "Drop de junio — 7 piezas",
+      "title": "Cuencos grandes <em>Nº 01–07</em>",
       "lead": "Cuencos grandes pintados a mano por 315 zł cada uno. Una pieza, un dueño — selecciona el tuyo."
     },
     "miski-falowane": {
-      "eyebrow": "Drop de junio — 16 piezas",
-      "title": "Cuencos ondulados <em>Nº 01–16</em>",
+      "eyebrow": "Drop de junio — 17 piezas",
+      "title": "Cuencos ondulados <em>Nº 01–17</em>",
       "lead": "Cuencos de borde ondulado por 155 zł cada uno. Cada uno diferente — selecciona los que quieras llevarte a casa."
     }
   },
@@ -292,7 +292,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Dos cocciones por pieza — una de bizcocho y, tras esmaltar, la segunda definitiva.",
     "fact3K": "Drop de junio",
-    "fact3V": "88 <em>piezas</em>",
+    "fact3V": "96 <em>piezas</em>",
     "fact3D": "Tazas, jarrones, jarrones grandes, platitos, platos, cuencos grandes y cuencos ondulados. Cada pieza única.",
     "fact4K": "Envío",
     "fact4V": "3–5 <em>días</em>",
@@ -459,7 +459,11 @@
       "Lazos marrones, uno tras otro. Una escritura que no se puede leer.",
       "Una concha marrón, puntos negros arriba. Cruda y cálida a la vez.",
       "Un cactus de terracota con púas blancas. Clima seco, mano suave.",
-      "Espirales marrones en tres filas. Un ritmo escrito con pincel."
+      "Espirales marrones en tres filas. Un ritmo escrito con pincel.",
+      "Una flor negra de seis cabezas sobre un tallo alto. Una banda ondulada y rayada cruza el centro.",
+      "Un tulipán negro de pétalos en abanico sobre un tallo de hojas en espiga. Vetas rascadas a mano.",
+      "Un ojo negro enmarcado por una corona de pétalos. Un talismán pintado de un solo trazo.",
+      "Una amapola negra y redonda sobre un tallo, hojas en espiga. Gráfica y sencilla."
     ],
     "wazony": [
       "Cactus azules y un sol de terracota. Un desierto en la panza del jarrón.",
@@ -469,7 +473,8 @@
       "Una palmera con borde acanalado. Ligera, veraniega.",
       "Lazos marrones alrededor de toda la panza. La danza de un solo pincel.",
       "Una palmera negra, cocos óxido. Gráfica sobre blanco cálido.",
-      "Una segunda palmera negra — más grande, más atrevida. Noche sobre el océano."
+      "Una segunda palmera negra — más grande, más atrevida. Noche sobre el océano.",
+      "Una cinta negra serpenteando alrededor del cuerpo, rellena de rayas finas. Una línea, un solo gesto."
     ],
     "wazony-duze": [
       "Cactus negros y soles de terracota alrededor de la panza. Dentro, un cuello festoneado de terracota.",
@@ -480,7 +485,8 @@
       "Una langosta dibujada de un solo pincel, de las antenas a la cola. Mi guiño al mar.",
       "Una luna, una ramita en espiga y un hombre con sombrero. Una pequeña historia alrededor del jarrón.",
       "Una mujer con falda de rayas, una luna y hojas. Una escena folk rascada en negro.",
-      "Una palmera de terracota en espiga con cocos negros. Un borde acanalado como un toldo al sol."
+      "Una palmera de terracota en espiga con cocos negros. Un borde acanalado como un toldo al sol.",
+      "Dientes de león negros y flores caídas alrededor del cuerpo. Un prado rascado en negro."
     ],
     "talerzyki": [
       "Una concha negra en el centro, trazos de terracota en el borde. Para anillos o un chorro de aceite.",
@@ -519,7 +525,8 @@
       "Palmeras de terracota en espiga con cocos negros. Un ritmo de vacaciones alrededor del cuenco.",
       "Saguaros de terracota y pequeños rombos negros. Un desierto en un cuenco grande.",
       "Una ola cobalto y un borde festoneado. El interior lleno de flores, higos y conchas.",
-      "Zigzags en negro y terracota. Tres ritmos de ola sobre blanco cálido."
+      "Zigzags en negro y terracota. Tres ritmos de ola sobre blanco cálido.",
+      "Un jardín negro dentro — una flor de puntos, estrellas y ramitas en espiga. Todo un cuento en el fondo de la fuente."
     ],
     "miski-falowane": [
       "Cactus negros y soles de terracota, borde ondulado. Toda la familia apilada.",
@@ -537,7 +544,8 @@
       "Conchas azules alrededor de una estrella de mar de terracota. Calma marina.",
       "Conchas azules y una ola de terracota abajo. Enroscadas línea a línea.",
       "Limones azules con puntos blancos, desde arriba. El verano en un cuenco.",
-      "Limones azules alrededor de la panza. Un ritmo fresco de limón."
+      "Limones azules alrededor de la panza. Un ritmo fresco de limón.",
+      "Ramitas negras con bayas y hojas en espiga. Un borde ondulado como un pétalo."
     ]
   },
   "error": {
@@ -552,16 +560,16 @@
     "shop": "Ir a la tienda"
   },
   "meta": {
-    "description": "Cerámica funcional pintada a mano — tazas, jarrones, cuencos y platos. Colección de junio, 88 piezas únicas.",
+    "description": "Cerámica funcional pintada a mano — tazas, jarrones, cuencos y platos. Colección de junio, 96 piezas únicas.",
     "ogImageAlt": "Anna Ciok Ceramics — taza cerámica artesanal",
     "collections": {
-      "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 22 piezas irrepetibles del drop de junio de Anna Ciok.",
-      "wazony": "Jarrones de cerámica pintados a mano — pequeños y escultóricos, cada uno único. Ocho piezas del drop de junio de Anna Ciok.",
-      "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Nueve obras del drop de junio de Anna Ciok.",
+      "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 26 piezas irrepetibles del drop de junio de Anna Ciok.",
+      "wazony": "Jarrones de cerámica pintados a mano — pequeños y escultóricos, cada uno único. Nueve piezas del drop de junio de Anna Ciok.",
+      "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Diez obras del drop de junio de Anna Ciok.",
       "talerzyki": "Platos de cerámica pintados a mano, ⌀ 12 cm — cada uno único. Quince piezas irrepetibles del drop de junio de Anna Ciok.",
       "talerzeDuze": "Grandes platos de cerámica pintados a mano, ⌀ 28 cm — cada uno único. Doce piezas del drop de junio de Anna Ciok.",
-      "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Seis piezas del drop de junio de Anna Ciok.",
-      "miskiFalowane": "Cuencos ondulados de cerámica pintados a mano — formas orgánicas, cada uno único. Dieciséis piezas del drop de junio de Anna Ciok."
+      "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Siete piezas del drop de junio de Anna Ciok.",
+      "miskiFalowane": "Cuencos ondulados de cerámica pintados a mano — formas orgánicas, cada uno único. Diecisiete piezas del drop de junio de Anna Ciok."
     }
   },
   "consent": {

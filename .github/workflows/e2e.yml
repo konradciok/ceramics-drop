@@ -34,12 +34,27 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Build the app once so Playwright's webServer can `next start` it locally.
+      # The @ci specs are client-UX assertions (mocked /api/checkout, blocked
+      # Geowidget assets); they need the app served, not real backends. A
+      # backendless server degrades to "all available" (getSoldIds catches and
+      # returns []), which still gives the specs unsold tiles to pick.
+      - name: Build app (hermetic)
+        run: npm run build
+        env:
+          # Any non-empty token makes GeowidgetPicker mount the element instead of
+          # the missing-token fallback; no real points lookup happens in @ci.
+          NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN: e2e-placeholder
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_placeholder
+
       - name: Run @ci e2e tests
         run: npm run test:e2e
         env:
-          # Explicit target — @ci specs run against the deployed production site.
-          # Override with PLAYWRIGHT_BASE_URL secret/var to point at a preview deploy.
-          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'https://anna-ciok.studio' }}
+          # Hermetic local target — Playwright builds/serves the app (webServer in
+          # playwright.config.ts) instead of hitting the Cloudflare-fronted prod
+          # host, which serves CI runner IPs a bot-challenge page (no product tiles).
+          # Override with the PLAYWRIGHT_BASE_URL var to point at a real deploy.
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
