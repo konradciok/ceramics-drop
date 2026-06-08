@@ -101,4 +101,34 @@ describe('POST /api/checkout', () => {
     expect(reserveRpc).toHaveBeenCalledTimes(30);
     expect(createPaymentIntent).toHaveBeenCalledTimes(30);
   });
+
+  it('shares one "unknown" bucket in production when the client IP is absent', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    getClientIp.mockReturnValue(null as unknown as string);
+    try {
+      const { POST } = await import('./route');
+      const makeReq = () =>
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify({
+            ids: ['k01'],
+            locale: 'pl',
+            delivery_method: 'odbior',
+            contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+          }),
+        });
+
+      let lastResponse: Response | null = null;
+      for (let i = 0; i < 31; i += 1) {
+        lastResponse = await POST(makeReq());
+      }
+
+      // No IP, but production must not fail open — all 31 share the 'unknown' bucket.
+      expect(lastResponse?.status).toBe(429);
+      expect(reserveRpc).toHaveBeenCalledTimes(30);
+    } finally {
+      vi.unstubAllEnvs();
+      getClientIp.mockReturnValue('203.0.113.50');
+    }
+  });
 });

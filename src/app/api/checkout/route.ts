@@ -17,7 +17,7 @@ const TRUST_FORWARDED_IP = process.env.NODE_ENV !== 'production';
 export async function POST(req: Request) {
   // Throttle before any reservation / Stripe work. In prod a missing IP shares one
   // "unknown" bucket instead of bypassing the limiter; in dev we fail open.
-  const clientIp = getClientIp(req, { trustForwarded: TRUST_FORWARDED_IP });
+  const clientIp = getClientIp(req, { trustForwarded: TRUST_FORWARDED_IP })?.trim() || null;
   const rateKey = clientIp ?? (TRUST_FORWARDED_IP ? null : 'unknown');
   const rate = checkoutRateLimiter.allow(rateKey);
   if (!rate.ok) {
