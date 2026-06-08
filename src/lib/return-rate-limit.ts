@@ -52,6 +52,10 @@ export function createReturnRateLimiter(
       const key = ip?.trim();
       if (!key) return { ok: true, retryAfterSeconds: 0 };
 
+      // Fixed-window: a client may send up to maxRequests just before reset and
+      // again right after. Intentional — this is a lightweight in-route guard
+      // (the WAF rule, plan T15, is the primary defense); fixed-window keeps it
+      // simple and memory-cheap.
       const bucket = store.get(key);
       if (!bucket || bucket.resetAt <= now) {
         makeRoom(now);

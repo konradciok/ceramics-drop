@@ -35,6 +35,29 @@ describe('createReturnRateLimiter', () => {
     expect(limiter.allow('', 1_001).ok).toBe(true);
   });
 
+  it('tracks IPs independently', () => {
+    const limiter = createReturnRateLimiter();
+    expect(limiter.allow('203.0.113.1', 1).ok).toBe(true);
+    expect(limiter.allow('203.0.113.2', 1).ok).toBe(true);
+    expect(limiter.allow('203.0.113.1', 2).ok).toBe(true);
+    expect(limiter.allow('203.0.113.1', 3).ok).toBe(true);
+    expect(limiter.allow('203.0.113.1', 4).ok).toBe(false); // .1 exhausted
+    expect(limiter.allow('203.0.113.2', 4).ok).toBe(true); // .2 unaffected
+  });
+
+  it('trims surrounding whitespace so it maps to one bucket', () => {
+    const limiter = createReturnRateLimiter();
+    expect(limiter.allow(' 203.0.113.9 ', 1).ok).toBe(true);
+    expect(limiter.allow('203.0.113.9', 2).ok).toBe(true);
+    expect(limiter.allow('203.0.113.9', 3).ok).toBe(true);
+    expect(limiter.allow(' 203.0.113.9 ', 4).ok).toBe(false);
+  });
+
+  it('treats a whitespace-only IP as missing (fail-open)', () => {
+    const limiter = createReturnRateLimiter();
+    expect(limiter.allow('   ', 1_000).ok).toBe(true);
+  });
+
   it('bounds memory to maxEntries', () => {
     const store = new Map();
     const limiter = createReturnRateLimiter({ maxEntries: 2, store });
