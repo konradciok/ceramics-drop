@@ -61,6 +61,7 @@ export default async function Page({ params }: Props) {
             <p>{t.rich('shipping.s1P', richTags)}</p>
             <ul className="bullets">
               <li>{t('shipping.s1Li1')}</li>
+              <li>{t('shipping.s1Li1b')}</li>
               <li>{t('shipping.s1Li2')}</li>
               <li>{t('shipping.s1Li3')}</li>
             </ul>
