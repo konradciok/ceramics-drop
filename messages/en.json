@@ -549,5 +549,12 @@
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Six unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Sixteen unique pieces from Anna Ciok's June 2026 drop."
     }
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "I use cookies for analytics and marketing. You can accept or reject — rejecting doesn't block purchases.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "more": "Privacy policy"
   }
 }

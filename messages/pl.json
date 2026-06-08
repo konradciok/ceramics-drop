@@ -549,5 +549,12 @@
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Sześć prac z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Szesnaście prac z czerwcowego dropu Anny Ciok."
     }
+  },
+  "consent": {
+    "title": "Pliki cookie",
+    "body": "Używam plików cookie do analityki i marketingu. Możesz zaakceptować lub odrzucić — odrzucenie nie blokuje zakupów.",
+    "accept": "Akceptuję",
+    "reject": "Odrzucam",
+    "more": "Polityka prywatności"
   }
 }

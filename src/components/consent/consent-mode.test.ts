@@ -1,0 +1,14 @@
+import { describe, it, expect } from 'vitest';
+import { defaultConsentSnippet, COOKIE_NAME, readConsent } from './consent-mode';
+
+describe('consent mode', () => {
+  it('default snippet denies analytics/ad storage', () => {
+    const s = defaultConsentSnippet();
+    expect(s).toContain("'analytics_storage': 'denied'");
+    expect(s).toContain("'ad_storage': 'denied'");
+  });
+  it('reads stored consent from cookie string', () => {
+    expect(readConsent(`${COOKIE_NAME}=granted`)).toBe('granted');
+    expect(readConsent('')).toBe(null);
+  });
+});

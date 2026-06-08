@@ -549,5 +549,12 @@
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Seis piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos ondulados de cerámica pintados a mano — formas orgánicas, cada uno único. Dieciséis piezas del drop de junio de Anna Ciok."
     }
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "Uso cookies para analítica y marketing. Puedes aceptar o rechazar — rechazar no bloquea las compras.",
+    "accept": "Acepto",
+    "reject": "Rechazo",
+    "more": "Política de privacidad"
   }
 }
