@@ -1,6 +1,6 @@
 # Email migration `@ciok.art` — status checkpoint
 
-> Updated: 2026-06-07 (session). PR **#34** awaits squash-merge once human gates pass.
+> Updated: 2026-06-07 (session). PR **#34** is merged (`3f4b4f4`). Remaining Phase-4 smoke tests are tracked as T20/T22 in `2026-06-08-go-to-market-execution.md`.
 
 ## Gates
 

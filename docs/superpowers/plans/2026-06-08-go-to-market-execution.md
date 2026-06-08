@@ -2,6 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement the 🤖 AGENT tasks task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 🧑 USER tasks are operational (dashboards, DNS, secrets, legal, contracts) and must be done by a human — an agent must STOP and hand off, never fabricate completion.
 
+> **⚠️ STATUS — executed 2026-06-08 (this is now a historical record; check `main` before acting).**
+> Most 🤖 AGENT tasks were implemented and merged via **#36** and **#37**: **DONE** → T1, T4, T7 (in `src/middleware.ts`, *not* `proxy.ts`), T9, T10 (migration written, not yet applied to prod), T11, T12, T13, T14, and the `/api/returns` half of T15.
+> **CANCELLED** → **T8** (rename to `proxy.ts`) — it breaks the OpenNext/Cloudflare deploy; `middleware.ts` stays on the edge runtime (see the note on T8).
+> **STILL OPEN** → T2/T3 (real shipping rates), T5/T6 (legal NIP/REGON/address), the `/api/checkout` half of T15, and the 🧑 go-live tasks T16–T22. The per-task `[ ]` boxes below are left as originally written — defer to `main` for what's actually shipped.
+
 **Goal:** Close every gap and fix every issue in the 2026-06-07 go-to-market audit, in dependency-correct order, taking the storefront from "code-complete on test integrations" to "launched on live integrations."
 
 **Architecture:** Land all code-only hardening first (behind a CI safety net) so the deployed Worker is correct *before* real money/traffic flows; then perform the external go-live flips (Stripe/InPost/Geowidget/Sentry/Resend) as human dashboard+secret operations; gate launch on a single live smoke test.
@@ -24,7 +29,7 @@
 
 **Repo invariant to keep green throughout:**
 ```bash
-npm test          # 169 unit tests (Vitest)
+npm test          # unit tests (Vitest) — all must pass (count grows per PR; was 169 at plan time)
 npm run build     # production build (OpenNext)
 ```
 
@@ -377,6 +382,8 @@ git commit -m "security: add HSTS + hardening headers (CSP report-only) to HTML 
 > **Follow-up (post-launch, separate task):** review CSP-Report-Only violations in browser/Sentry, tighten the policy, then promote `Content-Security-Policy-Report-Only` → `Content-Security-Policy`.
 
 ## Task 8 — 🤖 AGENT · Rename `middleware.ts` → `proxy.ts` (Next.js 16)
+
+> **🚫 CANCELLED (2026-06-08).** This was attempted and reverted in #36: `@opennextjs/cloudflare` only bundles **edge-runtime** middleware, but Next 16's `proxy.ts` is **Node-runtime only** (`"Proxy does not support Edge runtime"`), which OpenNext rejects (`"Node.js middleware is not currently supported"`) — it breaks the Cloudflare deploy build (`opennextjs-cloudflare build`). `next build` alone does NOT catch this. Keep `src/middleware.ts` on the edge runtime; the deprecation warning is harmless. Revisit only when OpenNext supports the Node-runtime proxy. The premise below ("`proxy` is fine here") is wrong for this stack.
 
 **Why (audit "Low — minor debt"):** Next.js 16 deprecates `middleware.ts` in favour of `proxy.ts` (build legend already shows "Proxy (Middleware)"). `proxy` is nodejs-runtime only / no edge — fine for the next-intl middleware here.
 
@@ -753,7 +760,8 @@ git commit -m "feat(ops): email studio on new paid order"
 - [ ] Set the server DSN as a Worker secret:
 ```bash
 npx wrangler secret put SENTRY_DSN
-# paste: https://5851217de490361cbd86c39e3a012b06@o4510201389907968.ingest.de.sentry.io/4511507404161104
+# paste the server DSN from the Sentry project settings:
+#   https://<key>@o<org>.ingest.de.sentry.io/<project>   (do NOT commit the real value)
 ```
 - [ ] Ensure `NEXT_PUBLIC_SENTRY_DSN` is set as a **build variable** in the Workers Build config (it's inlined at build time; currently set in `.env.local` only).
 - [ ] Redeploy (push to main / trigger Workers Build).
@@ -823,9 +831,11 @@ NEXT_PUBLIC_INPOST_GEOWIDGET_ENV=production
 
 ## Task 20 — 🧑 USER · Harden Resend
 
-**Why (audit connector check + launch checklist):** Resend config is done (`ciok.art` verified, single FROM `sklep@ciok.art`), but the live chain is **unproven** (only 3 manual test emails, 0 automated sends), there are **0 webhooks**, **no `_dmarc`**, and stale API keys.
+**Why (audit connector check + launch checklist):** Resend config is done (`ciok.art` verified, single FROM `sklep@ciok.art`), but the live chain is **unproven** (only 3 manual test emails, 0 automated sends), there are **0 webhooks**, and stale API keys.
 
-- [ ] Add a **DMARC** record at the **OVH DNS** level (Resend manages DKIM+SPF only): `_dmarc.ciok.art TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@ciok.art"` (start at `p=none` to monitor if preferred).
+> **Note (2026-06-08):** the companion `2026-06-07-email-ciok-art-status.md` records a `_dmarc` TXT at `p=none` already added at OVH. Confirm with `dig TXT _dmarc.ciok.art` before editing — the remaining work is **tightening** the policy (`p=none → p=quarantine`), not adding DMARC from scratch.
+
+- [ ] **Tighten DMARC** at the **OVH DNS** level (Resend manages DKIM+SPF only) to `_dmarc.ciok.art TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@ciok.art"` (currently `p=none` — monitor reports first).
 - [ ] Register a Resend **delivery/bounce/complaint webhook** so bounces are tracked.
 - [ ] Prune the stale API keys (`docker`, `react`, `Onboarding`); keep only `ceramics`.
 - [ ] **Verify:** `dig TXT _dmarc.ciok.art` returns the policy; webhook shows in Resend; a test send shows a delivered event.
