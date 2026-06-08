@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 88 pieces', () => {
-    expect(getProducts()).toHaveLength(88);
+  it('builds exactly 96 pieces', () => {
+    expect(getProducts()).toHaveLength(96);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 22, wazony: 8, 'wazony-duze': 9, talerzyki: 15, 'talerze-duze': 12, 'duze-michy': 6, 'miski-falowane': 16 };
+    const counts = { kubki: 26, wazony: 9, 'wazony-duze': 10, talerzyki: 15, 'talerze-duze': 12, 'duze-michy': 7, 'miski-falowane': 17 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -31,6 +31,12 @@ describe('getProducts', () => {
     expect(getProductById('d02')!.image).toBe('/uploads/waza-duza-3.webp');
     expect(getProductById('p12')!.image).toBe('/uploads/talerz-duzy-13.webp');
     expect(getProductById('w16')!.image).toBe('/uploads/miski-falowane-16.webp');
+    // Newly added pieces
+    expect(getProductById('k26')!.image).toBe('/uploads/kubek-26.webp');
+    expect(getProductById('v09')!.image).toBe('/uploads/waza-mala-9.webp');
+    expect(getProductById('d10')!.image).toBe('/uploads/waza-duza-11.webp');
+    expect(getProductById('b07')!.image).toBe('/uploads/duza-micha-7.webp');
+    expect(getProductById('w17')!.image).toBe('/uploads/miski-falowane-17.webp');
   });
 
   it('sets price, measure and noteIndex from the category', () => {

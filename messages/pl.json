@@ -12,7 +12,7 @@
     "error": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
-  "announce": "Drop czerwcowy 2026 — 88 prac, każda jedyna w swoim rodzaju",
+  "announce": "Drop czerwcowy 2026 — 96 prac, każda jedyna w swoim rodzaju",
   "title": {
     "home": "Anna Ciok Ceramics — Drop czerwcowy 2026",
     "kubki": "Kubki",
@@ -158,7 +158,7 @@
   "home": {
     "heroEyebrow": "Drop czerwcowy 2026 — Nº 01",
     "heroTitle": "Każda sztuka jedna, <em>malowana ręką.</em>",
-    "heroSub": "Osiemdziesiąt osiem ceramicznych prac z mojej małej pracowni — kubki, wazony, duże wazony, talerzyki, talerze, duże michy i miski falowane. Lepione i malowane pojedynczo, więc żadna druga taka nie istnieje. Wybierasz dokładnie ten egzemplarz, który widzisz na zdjęciu.",
+    "heroSub": "Dziewięćdziesiąt sześć ceramicznych prac z mojej małej pracowni — kubki, wazony, duże wazony, talerzyki, talerze, duże michy i miski falowane. Lepione i malowane pojedynczo, więc żadna druga taka nie istnieje. Wybierasz dokładnie ten egzemplarz, który widzisz na zdjęciu.",
     "heroCta1": "Zobacz kubki",
     "heroCta2": "Zobacz wazony",
     "heroMetaName": "Kubek Nº 02",
@@ -170,21 +170,21 @@
       "prosto z pracowni"
     ],
     "colEyebrow": "Czerwcowy drop",
-    "colTitle": "Siedem rodzin, <em>osiemdziesiąt osiem prac.</em>",
+    "colTitle": "Siedem rodzin, <em>dziewięćdziesiąt sześć prac.</em>",
     "colLead": "Kliknij, wybierz ulubione miniatury jak w galerii zdjęć i przejdź prosto do kasy.",
     "card": {
       "mug": {
-        "num": "22 prace · 90 zł każda",
+        "num": "26 prac · 90 zł każda",
         "desc": "Codzienne kubki do porannej kawy — palmy, cytryny, muszle i kaktusy malowane szkliwem.",
         "cta": "Wybierz kubek"
       },
       "vase": {
-        "num": "8 prac · 210 zł każdy",
+        "num": "9 prac · 210 zł każdy",
         "desc": "Pękate wazony na gałązkę albo bukiet z targu — paski, palmy i kaktusy na ciepłej bieli.",
         "cta": "Wybierz wazon"
       },
       "bigvase": {
-        "num": "9 prac · 395 zł każdy",
+        "num": "10 prac · 395 zł każdy",
         "desc": "Duże, pękate wazony malowane ręką — kaktusy, muszle, palmy, homar i folkowe sylwetki na ciepłej bieli.",
         "cta": "Wybierz wazon"
       },
@@ -199,12 +199,12 @@
         "cta": "Wybierz talerz"
       },
       "largebowl": {
-        "num": "6 prac · 315 zł każda",
+        "num": "7 prac · 315 zł każda",
         "desc": "Duże, ręcznie malowane michy do sałat i owoców — kobaltowe ogrody, palmy, kaktusy i jesienne liście.",
         "cta": "Wybierz michę"
       },
       "wavybowl": {
-        "num": "16 prac · 155 zł każda",
+        "num": "17 prac · 155 zł każda",
         "desc": "Miski o falowanym brzegu na Śniadanie i przekąski — kaktusy, palmy, muszle, cytryny i liście.",
         "cta": "Wybierz miskę"
       }
@@ -213,7 +213,7 @@
     "storyTitle": "Najpierw maluję, <em>potem lepię.</em>",
     "storyP1": "Jestem Anna. Zaczynałam jako malarka i tak naprawdę nigdy nie przestałam — tyle że płótno zamieniłam na glinę. Każdy kubek i każdy wazon traktuję jak mały obraz, który da się wziąć do ręki i napełnić kawą albo polnym kwiatem.",
     "storyP2": "Pracownię mam jedną, niedużą. Lepię, szkliwię i maluję sama, jedną pracę po drugiej. Dlatego paski nigdy nie są idealnie równe, a dwie palmy nigdy nie wyjdą tak samo — i właśnie o to mi chodzi.",
-    "storyP3": "Czerwcowy drop to osiemdziesiąt osiem prac, które powstały tej wiosny. Kiedy któraś znajdzie swój dom, znika ze sklepu na dobre.",
+    "storyP3": "Czerwcowy drop to dziewięćdziesiąt sześć prac, które powstały tej wiosny. Kiedy któraś znajdzie swój dom, znika ze sklepu na dobre.",
     "storyCta1": "Wybierz pracę",
     "storyCta2": "Napisz do mnie",
     "craftEyebrow": "Jak to działa",
@@ -239,18 +239,18 @@
   "collection": {
     "hint": "Kliknij miniaturę lub nazwę, aby otworzyć <b>szczegóły</b> pracy. Do koszyka dodasz pracę przyciskiem <b>„Dodaj do koszyka”</b> — na kafelku albo w oknie podglądu. Dodane prace zbierają się na pasku u dołu.",
     "kubki": {
-      "eyebrow": "Drop czerwcowy — 22 prace",
-      "title": "Kubki <em>Nº 01–22</em>",
+      "eyebrow": "Drop czerwcowy — 26 prac",
+      "title": "Kubki <em>Nº 01–26</em>",
       "lead": "Każdy kubek to jeden, niepowtarzalny egzemplarz za 90 zł. Zaznacz te, które chcesz zabrać do siebie."
     },
     "wazony": {
-      "eyebrow": "Drop czerwcowy — 8 prac",
-      "title": "Wazony <em>Nº 01–08</em>",
+      "eyebrow": "Drop czerwcowy — 9 prac",
+      "title": "Wazony <em>Nº 01–09</em>",
       "lead": "Pękate, ręcznie malowane wazony za 210 zł każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "wazony-duze": {
-      "eyebrow": "Drop czerwcowy — 9 prac",
-      "title": "Wazony duże <em>Nº 01–09</em>",
+      "eyebrow": "Drop czerwcowy — 10 prac",
+      "title": "Wazony duże <em>Nº 01–10</em>",
       "lead": "Duże, ręcznie malowane wazony za 395 zł każdy. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "talerzyki": {
@@ -264,13 +264,13 @@
       "lead": "Duże, malowane ręcznie talerze za 270 zł każdy. Każdy inny — do podania albo na ścianę. Zaznacz te, które chcesz zabrać do siebie."
     },
     "duze-michy": {
-      "eyebrow": "Drop czerwcowy — 6 prac",
-      "title": "Duże michy <em>Nº 01–06</em>",
+      "eyebrow": "Drop czerwcowy — 7 prac",
+      "title": "Duże michy <em>Nº 01–07</em>",
       "lead": "Duże, ręcznie malowane michy za 315 zł każda. Jeden egzemplarz, jeden właściciel — zaznacz swój."
     },
     "miski-falowane": {
-      "eyebrow": "Drop czerwcowy — 16 prac",
-      "title": "Miski falowane <em>Nº 01–16</em>",
+      "eyebrow": "Drop czerwcowy — 17 prac",
+      "title": "Miski falowane <em>Nº 01–17</em>",
       "lead": "Miski o falowanym brzegu za 155 zł każda. Każda inna — zaznacz te, które chcesz zabrać do siebie."
     }
   },
@@ -292,7 +292,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Dwa wypały każdej pracy — biskwitowy, a po szkliwieniu drugi, właściwy.",
     "fact3K": "Czerwcowy drop",
-    "fact3V": "88 <em>prac</em>",
+    "fact3V": "96 <em>prac</em>",
     "fact3D": "Kubki, wazony, duże wazony, talerzyki, talerze, duże michy i miski falowane. Każda sztuka jedyna w swoim rodzaju.",
     "fact4K": "Wysyłka",
     "fact4V": "3–5 <em>dni</em>",
@@ -459,7 +459,11 @@
       "Brązowe pętle, jedna za drugą. Pismo, którego nie da się odczytać.",
       "Brązowa muszla, czarne kropki u góry. Surowa i ciepła zarazem.",
       "Terakotowy kaktus z białymi igłami. Suchy klimat, miękka ręka.",
-      "Brązowe zawijasy w trzech rzędach. Rytm pisany pędzlem."
+      "Brązowe zawijasy w trzech rzędach. Rytm pisany pędzlem.",
+      "Czarny kwiat o sześciu główkach na wysokiej łodydze. W pasie falująca, prążkowana wstęga.",
+      "Czarny tulipan o wachlarzu płatków, na łodydze z liśćmi w jodełkę. Wydrapywane żyłki.",
+      "Czarne oko w wieńcu płatków. Talizman malowany jednym pędzlem.",
+      "Czarny mak na łodydze, listki w jodełkę. Graficzny i prosty."
     ],
     "wazony": [
       "Błękitne kaktusy i terakotowe słońce. Pustynia na brzuchu wazonu.",
@@ -469,7 +473,8 @@
       "Palma z prążkowanym brzegiem. Lekka, wakacyjna.",
       "Brązowe pętle wokół całego brzuśca. Taniec jednego pędzla.",
       "Czarna palma, rdzawe kokosy. Grafika na ciepłej bieli.",
-      "Druga czarna palma — większa, śmielsza. Wieczór nad oceanem."
+      "Druga czarna palma — większa, śmielsza. Wieczór nad oceanem.",
+      "Czarna wstęga wijąca się dookoła brzuśca, wypełniona drobnym prążkiem. Jedna linia, jeden ruch."
     ],
     "wazony-duze": [
       "Czarne kaktusy i terakotowe słońca dookoła brzuśca. W środku karbowany, terakotowy kołnierz.",
@@ -480,7 +485,8 @@
       "Homar kreślony jednym pędzlem, od czułków po ogon. Mój ukłon w stronę morza.",
       "Księżyc, jodełkowa gałązka i mężczyzna w kapeluszu. Mała opowieść dookoła wazonu.",
       "Kobieta w prążkowanej spódnicy, księżyc i listki. Folkowa scenka wydrapywana w czerni.",
-      "Terakotowa palma w jodełkę z czarnymi kokosami. Prążkowany brzeg jak markiza w słońcu."
+      "Terakotowa palma w jodełkę z czarnymi kokosami. Prążkowany brzeg jak markiza w słońcu.",
+      "Czarne dmuchawce i opadające kwiaty dookoła brzuśca. Łąka wydrapywana w czerni."
     ],
     "talerzyki": [
       "Czarna muszla pośrodku, terakotowe kreski na brzegu. Na pierścionki albo oliwę.",
@@ -519,7 +525,8 @@
       "Terakotowe palmy w jodełkę z czarnymi kokosami. Wakacyjny rytm dookoła misy.",
       "Terakotowe saguaro i małe, czarne romby. Pustynia na dużej misie.",
       "Kobaltowa fala i scalkowany rant. Wnętrze pełne kwiatów, fig i muszli.",
-      "Zygzaki w czerni i terakocie. Trzy rytmy fal na ciepłej bieli."
+      "Zygzaki w czerni i terakocie. Trzy rytmy fal na ciepłej bieli.",
+      "Czarny ogród we wnętrzu — kwiat w kropki, gwiazdki i listki w jodełkę. Cała opowieść na dnie misy."
     ],
     "miski-falowane": [
       "Czarne kaktusy i terakotowe słońca, falowany brzeg. Cała rodzinka misek jedna na drugiej.",
@@ -537,7 +544,8 @@
       "Błękitne muszle wokół terakotowej rozgwiazdy. Morska cisza.",
       "Błękitne muszle i terakotowa fala u dołu. Zwijane linia po linii.",
       "Błękitne cytryny w białe kropki, z góry. Lato w miseczce.",
-      "Błękitne cytryny dookoła brzuśca. Chłodny, cytrynowy rytm."
+      "Błękitne cytryny dookoła brzuśca. Chłodny, cytrynowy rytm.",
+      "Czarne gałązki z jagodami i listki w jodełkę. Falowany brzeg jak płatek."
     ]
   },
   "error": {
@@ -552,16 +560,16 @@
     "shop": "Przejdź do sklepu"
   },
   "meta": {
-    "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 88 prac, każda jedyna.",
+    "description": "Ręcznie malowana ceramika użytkowa — kubki, wazony, miski i talerze. Czerwcowy drop, 96 prac, każda jedyna.",
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie robiony ceramiczny kubek",
     "collections": {
-      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml — każdy jedyny w swoim rodzaju. 22 niepowtarzalne prace z czerwcowego dropu Anny Ciok.",
-      "wazony": "Ręcznie malowane wazony ceramiczne — małe, rzeźbiarskie, każdy jedyny. Osiem niepowtarzalnych prac z czerwcowego dropu Anny Ciok.",
-      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne — wyraziste formy, każdy jedyny. Dziewięć prac z czerwcowego dropu Anny Ciok.",
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml — każdy jedyny w swoim rodzaju. 26 niepowtarzalnych prac z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane wazony ceramiczne — małe, rzeźbiarskie, każdy jedyny. Dziewięć niepowtarzalnych prac z czerwcowego dropu Anny Ciok.",
+      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne — wyraziste formy, każdy jedyny. Dziesięć prac z czerwcowego dropu Anny Ciok.",
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, ⌀ 12 cm — każdy jedyny w swoim rodzaju. Piętnaście prac z czerwcowego dropu Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 28 cm — każdy jedyny. Dwanaście prac z czerwcowego dropu Anny Ciok.",
-      "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Sześć prac z czerwcowego dropu Anny Ciok.",
-      "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Szesnaście prac z czerwcowego dropu Anny Ciok."
+      "duzeMichy": "Duże ręcznie malowane misy ceramiczne — pojemne, każda jedyna w swoim rodzaju. Siedem prac z czerwcowego dropu Anny Ciok.",
+      "miskiFalowane": "Ręcznie malowane miski falowane — organiczne formy, każda jedyna. Siedemnaście prac z czerwcowego dropu Anny Ciok."
     }
   },
   "consent": {
