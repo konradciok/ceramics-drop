@@ -34,6 +34,9 @@ gtm-oauth-client.json
 docs/gtm-api.json
 *-service-account*.json
 
+# ad-hoc debug/log exports — never commit (may contain tokens/DSN keys in headers)
+docs/logs-*.json
+
 # playwright
 /test-results/
 /playwright-report/

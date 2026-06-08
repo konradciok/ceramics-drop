@@ -21,7 +21,7 @@
 - Resend domain `ciok.art` created (ID `7767a4f9-bfc1-40e9-918b-c0ea3850290d`, region `eu-west-1`)
 - OVH DNS zone records:
   - **Added**: `resend._domainkey` TXT (DKIM); `send` MX + TXT (Resend return-path / SPF)
-  - **Verified (already present)**: `_dmarc` TXT (`p=none`, `rua=mailto:dmarc@ciok.art`)
+  - **⚠️ NOT set**: `_dmarc` TXT — verified NXDOMAIN via 1.1.1.1 + 8.8.8.8 on 2026-06-08. Must still be **added** at OVH (`v=DMARC1; p=none; rua=mailto:dmarc@ciok.art`, then tighten to `p=quarantine`). Earlier "added" notes were incorrect.
 - Root `@` unchanged: OVH MX (`mx1/mx2/mx3.mail.ovh.net`) + SPF `include:mx.ovh.com`
 - Resend verify: **verified** (all three records green)
 
