@@ -65,17 +65,42 @@ export function GroupedGallery({ products }: Props) {
       });
     };
 
+    // Top inset of the "active" band — sits just under the sticky header + nav.
+    // Single-sourced so the observer's rootMargin and the scroll fallback below
+    // can't drift apart.
+    const BAND_TOP = 160;
+
+    // Fallback for the gaps an intersection-only spy misses: pick the last
+    // section whose top has scrolled above the band. Covers first paint (before
+    // any entry fires) and the page bottom, where the short last section may
+    // never enter the biased band and would otherwise never light up.
+    const syncFromScroll = () => {
+      let current = sections[0];
+      for (const s of sections) {
+        if (s.getBoundingClientRect().top <= BAND_TOP) current = s;
+        else break;
+      }
+      setCurrent(current.id);
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setCurrent(visible[0].target.id);
+        else syncFromScroll();
       },
-      // Bias the "active" band to just under the sticky header + nav.
-      { rootMargin: '-160px 0px -60% 0px', threshold: 0 },
+      { rootMargin: `-${BAND_TOP}px 0px -60% 0px`, threshold: 0 },
     );
     sections.forEach((s) => observer.observe(s));
+
+    // Initial highlight before the first intersection callback fires — honour a
+    // deep-link hash, otherwise mark the section currently under the band.
+    const hash = decodeURIComponent(location.hash.slice(1));
+    if (hash && sections.some((s) => s.id === hash)) setCurrent(hash);
+    else syncFromScroll();
+
     return () => observer.disconnect();
   }, [groups]);
 
