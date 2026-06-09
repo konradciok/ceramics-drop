@@ -28,7 +28,8 @@
     "kontakt": "Contact",
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
-    "polityka": "Privacy policy"
+    "polityka": "Privacy policy",
+    "sklep": "All pieces"
   },
   "nav": {
     "sklep": "Shop",
@@ -166,8 +167,7 @@
     "heroEyebrow": "June 2026 drop — Nº 01",
     "heroTitle": "One piece, one original, <em>one trace of the hand.</em>",
     "heroSub": "Seventy-eight ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is glazed and hand-painted separately, so you choose the exact one shown in the photo.",
-    "heroCta1": "See mugs",
-    "heroCta2": "See vases",
+    "heroCta1": "Browse all pieces",
     "heroMetaName": "Mug Nº 02",
     "heroMetaDesc": "Blue palm",
     "marquee": [
@@ -289,6 +289,11 @@
       "eyebrow": "June drop — 10 pieces",
       "title": "Wavy-rim bowls <em>Nº 01–10</em>",
       "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
+    },
+    "sklep": {
+      "eyebrow": "June drop — 78 pieces",
+      "title": "All <em>pieces</em>",
+      "lead": "The whole collection in one place — mugs, vases, plates and bowls. Every item is one of a kind. Browse by category and mark your favourites."
     }
   },
   "studio": {
@@ -571,7 +576,8 @@
       "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Fourteen one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
-      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop."
+      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
+      "sklep": "Anna Ciok's full collection: 78 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
     }
   },
   "consent": {

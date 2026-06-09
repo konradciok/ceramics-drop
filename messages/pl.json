@@ -28,7 +28,8 @@
     "kontakt": "Kontakt",
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
-    "polityka": "Polityka prywatności"
+    "polityka": "Polityka prywatności",
+    "sklep": "Wszystkie prace"
   },
   "nav": {
     "sklep": "Sklep",
@@ -166,8 +167,7 @@
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
     "heroTitle": "Jedna praca, jedna sztuka, <em>jeden ślad ręki.</em>",
     "heroSub": "Siedemdziesiąt osiem ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
-    "heroCta1": "Zobacz kubki",
-    "heroCta2": "Zobacz wazony",
+    "heroCta1": "Przeglądaj wszystkie prace",
     "heroMetaName": "Kubek Nº 02",
     "heroMetaDesc": "Błękitna palma",
     "marquee": [
@@ -289,6 +289,11 @@
       "eyebrow": "Czerwcowy drop — 10 prac",
       "title": "Miski z falowanym brzegiem <em>Nº 01–10</em>",
       "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
+    },
+    "sklep": {
+      "eyebrow": "Czerwcowy drop — 78 prac",
+      "title": "Wszystkie <em>prace</em>",
+      "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
     }
   },
   "studio": {
@@ -571,7 +576,8 @@
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok."
+      "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "sklep": "Cała kolekcja Anny Ciok: 78 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
     }
   },
   "consent": {
