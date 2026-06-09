@@ -29,6 +29,15 @@ describe('redactSensitiveUrl', () => {
     );
     expect(redactSensitiveUrl('/zwrot?order=abc-123')).toBe('/zwrot?order=redacted');
   });
+  it('redacts the Stripe payment_intent secret from the return url', () => {
+    expect(
+      redactSensitiveUrl(
+        '/pl/koszyk/return?payment_intent=pi_123&payment_intent_client_secret=pi_123_secret_xyz&redirect_status=succeeded',
+      ),
+    ).toBe(
+      '/pl/koszyk/return?payment_intent=redacted&payment_intent_client_secret=redacted&redirect_status=succeeded',
+    );
+  });
   it('leaves non-sensitive urls unchanged', () => {
     expect(redactSensitiveUrl('/pl/koszyk')).toBe('/pl/koszyk');
     expect(redactSensitiveUrl('https://anna-ciok.studio/pl')).toBe('https://anna-ciok.studio/pl');
@@ -176,24 +185,23 @@ describe('analytics ecommerce payloads', () => {
     });
   });
 
-  it('default purchase event_id is collision-resistant and decoupled from orderNo', () => {
+  it('default purchase event_id is deterministic from orderNo for browser/server dedup', () => {
     const items = [product('k01'), product('v01')];
     const options = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier' };
 
     const event1 = buildPurchaseEvent(items, options);
     const event2 = buildPurchaseEvent(items, options);
 
-    // Two calls with the same orderNo must produce different event_ids
-    expect(event1.event_id).not.toBe(event2.event_id);
+    // Same orderNo must yield the SAME event_id: a server-side Meta CAPI / GA4
+    // Measurement Protocol replay only knows the orderNo, so it must be able to
+    // reconstruct this exact id to deduplicate against the browser event.
+    expect(event1.event_id).toBe(event2.event_id);
+    expect(event1.event_id).toBe('purchase-ACC-1234');
 
-    // The default event_id must NOT equal the plain orderNo / transaction_id
-    expect(event1.event_id).not.toBe(options.orderNo);
+    // transaction_id stays the raw orderNo
     expect(event1.ecommerce?.transaction_id).toBe('ACC-1234');
 
-    // The orderNo is still embedded for readability / traceability
-    expect(event1.event_id).toContain('purchase-ACC-1234');
-
-    // meta.event_id mirrors event.event_id
+    // meta.event_id (Meta's dedup key) mirrors event.event_id
     expect(event1.meta?.event_id).toBe(event1.event_id);
   });
 });

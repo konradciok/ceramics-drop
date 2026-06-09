@@ -38,7 +38,7 @@ The app pushes these events:
 
 GA4 ecommerce payloads use:
 
-- `currency: "EUR"`
+- `currency: "PLN"`
 - `ecommerce.value`: item subtotal
 - `ecommerce.shipping`: shipping cost on purchase
 - `order_total`: subtotal plus shipping as a custom parameter
@@ -124,7 +124,7 @@ If the return page has a Stripe-backed `order_id`, pass that through as the anal
 
 ## Production Note
 
-For production in the EU, connect this GTM workspace to a consent-management setup before publishing ad/analytics tags live. The app event contract is consent-agnostic; GTM should decide whether GA4 and Meta tags can fire after consent state is known.
+The app already implements Google Consent Mode v2 (`src/components/consent/`): defaults are denied and registered in a `beforeInteractive` script before GTM loads, and the consent banner calls `gtag('consent', 'update', …)` on the user's choice. The app event contract is consent-agnostic; GTM decides whether GA4 and Meta tags fire once consent state is known. Confirm the GA4/Meta tags in the container respect the consent signals before publishing ad/analytics tags live.
 
 ## Official References
 

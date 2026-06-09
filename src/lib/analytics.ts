@@ -209,7 +209,13 @@ export function buildPurchaseEvent(
   products: Product[],
   options: PurchaseOptions,
 ): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('purchase', options.orderNo);
+  // Deterministic id (no random suffix): a purchase is a single conversion, so
+  // the browser event_id must be reproducible server-side from the orderNo —
+  // that shared id is what lets a Meta CAPI / GA4 Measurement Protocol replay
+  // from the Stripe webhook deduplicate against this browser event. The client
+  // already fires at most once per payment intent (acc_purchase_pi: guard in
+  // checkout-analytics.ts), so collision-resistance here is unnecessary.
+  const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const items = products.map((product) => toAnalyticsItem(product));
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
@@ -245,8 +251,10 @@ export function buildEngagementEvent(
 
 /** Query params that carry a capability token / secret and must never reach the
  *  dataLayer (and thus GA4 / Meta). `order` is the return capability token used by
- *  /zwrot?order=<uuid> → POST /api/returns. */
-const SENSITIVE_QUERY_PARAMS = ['order'];
+ *  /zwrot?order=<uuid> → POST /api/returns. `payment_intent` /
+ *  `payment_intent_client_secret` are appended by Stripe to the /koszyk/return URL
+ *  and must not be logged or exposed to third parties. */
+const SENSITIVE_QUERY_PARAMS = ['order', 'payment_intent', 'payment_intent_client_secret'];
 
 /** Redact sensitive query params from an absolute or path-only URL before it is
  *  pushed to analytics. Returns the input unchanged if it has no sensitive param
