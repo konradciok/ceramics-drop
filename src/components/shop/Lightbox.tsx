@@ -58,6 +58,14 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
   // natural ratio and shape the box to match so the piece is shown in full —
   // never cropped to a fixed frame (CLAUDE.md: preserve original proportions).
   const [imgRatio, setImgRatio] = useState<number | null>(null);
+  // Drop the previous photo's ratio the instant the active image changes (paging
+  // pieces, gallery dots, reopen) so the box falls back to the CSS default until
+  // the new image's onLoad measures it — same adjust-state-during-render pattern.
+  const [ratioFor, setRatioFor] = useState(currentImage);
+  if (currentImage !== ratioFor) {
+    setRatioFor(currentImage);
+    setImgRatio(null);
+  }
 
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
@@ -173,6 +181,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                key={currentImage}
                 src={currentImage}
                 srcSet={srcSet(currentImage)}
                 sizes="(min-width:861px) min(50vw, 460px), 100vw"
