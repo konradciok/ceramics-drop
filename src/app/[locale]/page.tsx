@@ -58,11 +58,8 @@ export default async function HomePage({ params }: Props) {
             <h1 className="hero-title">{t.rich('home.heroTitle', richTags)}</h1>
             <p className="hero-sub">{t('home.heroSub')}</p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/kubki">
+              <Link className="btn btn-primary" href="/sklep">
                 <span>{t('home.heroCta1')}</span> <Icon name="arrow" className="btn-arrow" />
-              </Link>
-              <Link className="btn btn-ghost" href="/wazony">
-                {t('home.heroCta2')}
               </Link>
             </div>
           </div>
