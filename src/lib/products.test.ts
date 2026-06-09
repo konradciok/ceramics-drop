@@ -39,7 +39,7 @@ describe('getProducts', () => {
 
   it('sets price, measure and noteIndex from the category', () => {
     const k = getProductById('k01')!;
-    expect(k).toMatchObject({ price: 90, measure: '9 × 9 cm · 300 ml', num: '01', noteIndex: 0 });
+    expect(k).toMatchObject({ price: 90, measure: '8 × 8 × 10 cm', num: '01', noteIndex: 0 });
   });
 
   it('caches the registry — same reference across calls', () => {

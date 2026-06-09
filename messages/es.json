@@ -253,42 +253,42 @@
     "kubki": {
       "eyebrow": "Drop de junio — 24 piezas",
       "title": "Tazas <em>Nº 01–24</em>",
-      "lead": "Tazas pintadas a mano por 90 zł cada una. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
+      "lead": "Tazas pintadas a mano. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
     },
     "wazony": {
       "eyebrow": "Drop de junio — 8 piezas",
       "title": "Jarrones pequeños <em>Nº 01–08</em>",
-      "lead": "Jarrones panzudos pintados a mano, por 210 zł cada uno. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
+      "lead": "Jarrones panzudos pintados a mano. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
     },
     "wazony-srednie": {
       "eyebrow": "Drop de junio — 4 piezas",
       "title": "Jarrones medianos <em>Nº 01–04</em>",
-      "lead": "Jarrones medianos de cerámica, un ejemplar de cada uno, por 300 zł. Una forma entre lo pequeño y lo grande — para un ramo o una estantería."
+      "lead": "Jarrones medianos de cerámica, un ejemplar de cada uno. Una forma entre lo pequeño y lo grande — para un ramo o una estantería."
     },
     "wazony-duze": {
       "eyebrow": "Drop de junio — 4 piezas",
       "title": "Jarrones grandes <em>Nº 01–04</em>",
-      "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno, por 395 zł. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
+      "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
     },
     "talerzyki": {
       "eyebrow": "Drop de junio — 14 piezas",
       "title": "Platitos <em>Nº 01–14</em>",
-      "lead": "Platitos por 105 zł cada uno. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
+      "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
     },
     "talerze-duze": {
       "eyebrow": "Drop de junio — 9 piezas",
       "title": "Platos grandes <em>Nº 01–09</em>",
-      "lead": "Platos grandes por 270 zł cada uno. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
+      "lead": "Platos grandes. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
     },
     "duze-michy": {
       "eyebrow": "Drop de junio — 5 piezas",
       "title": "Cuencos grandes <em>Nº 01–05</em>",
-      "lead": "Cuencos amplios pintados a mano por 315 zł cada uno. Cada uno está listo para fruta, ensalada o el centro de la mesa."
+      "lead": "Cuencos amplios pintados a mano. Cada uno está listo para fruta, ensalada o el centro de la mesa."
     },
     "miski-falowane": {
       "eyebrow": "Drop de junio — 10 piezas",
       "title": "Cuencos de borde ondulado <em>Nº 01–10</em>",
-      "lead": "Cuencos de borde ondulado por 155 zł cada uno. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
+      "lead": "Cuencos de borde ondulado. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
     }
   },
   "studio": {
@@ -568,8 +568,8 @@
       "wazony": "Jarrones pequeños de cerámica pintados a mano. Ocho piezas panzudas y únicas del drop de junio de Anna Ciok.",
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Cuatro piezas únicas del drop de junio de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Cuatro obras del drop de junio de Anna Ciok.",
-      "talerzyki": "Platitos de cerámica pintados a mano, ⌀ 12 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
-      "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 28 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
+      "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
+      "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok."
     }
