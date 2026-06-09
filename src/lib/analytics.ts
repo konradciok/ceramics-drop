@@ -65,6 +65,7 @@ type EventOptions = {
 type CheckoutOptions = EventOptions & {
   shippingCost: number;
   shippingMethod: string;
+  userData?: { em?: string };
 };
 
 type PurchaseOptions = CheckoutOptions & {
@@ -200,6 +201,7 @@ export function buildBeginCheckoutEvent(
       event_id: eventId,
       shipping_tier: options.shippingMethod,
       checkout_total: orderTotal,
+      ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: ecommerce(items),
     },
     'InitiateCheckout',

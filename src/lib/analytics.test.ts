@@ -166,6 +166,14 @@ describe('analytics ecommerce payloads', () => {
     });
   });
 
+  it('attaches hashed user_data to begin_checkout when provided', () => {
+    const e = buildBeginCheckoutEvent([product('k01')], {
+      shippingCost: 18, shippingMethod: 'kurier', eventId: 'evt-bc',
+      userData: { em: 'HASH_EM' },
+    });
+    expect(e.user_data).toEqual({ em: 'HASH_EM' });
+  });
+
   it('builds purchase with transaction id, shipping, subtotal and Meta Purchase value', () => {
     const items = [product('k01'), product('v01')];
     const event = buildPurchaseEvent(items, {

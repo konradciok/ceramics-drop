@@ -314,7 +314,7 @@ ${dedupeBridgeSendSnippet('ga4')}
   if (!window.gtag) return;
   var params = {};
   for (var key in payload) {
-    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin') {
+    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin' && key !== 'user_data') {
       params[key] = payload[key];
     }
   }
@@ -324,6 +324,9 @@ ${dedupeBridgeSendSnippet('ga4')}
         params[ek] = payload.ecommerce[ek];
       }
     }
+  }
+  if (payload.user_data && payload.user_data.em) {
+    window.gtag('set', 'user_data', { sha256_email_address: payload.user_data.em });
   }
   window.gtag('event', payload.event, params);
 })();
@@ -336,6 +339,9 @@ function metaBridgeHtml(gtmPublicId) {
 ${resolveTriggeringEventSnippet(gtmPublicId)}
 ${dedupeBridgeSendSnippet('meta')}
   if (!window.fbq) return;
+  if (payload.user_data && payload.user_data.em) {
+    window.fbq('set', 'userData', { em: payload.user_data.em });
+  }
   if (payload.event === 'page_view') {
     window.fbq('track', 'PageView', {}, { eventID: payload.event_id });
     return;

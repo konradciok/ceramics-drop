@@ -21,6 +21,7 @@ import {
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
+import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { SHIPPING_PLN, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
@@ -195,7 +196,9 @@ export function CartView() {
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
-    pushCheckoutStarted(products, { shippingCost: shipCost, shippingMethod: ship });
+    const emailNorm = contact.email.trim().toLowerCase();
+    const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
+    pushCheckoutStarted(products, { shippingCost: shipCost, shippingMethod: ship, userData: em ? { em } : undefined });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
