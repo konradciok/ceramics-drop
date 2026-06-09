@@ -10,10 +10,16 @@
      @xl  — min-width: 1101px
    ============================================================ */
 
+/* All component styles live in a single `site` cascade layer, so future author
+   CSS can override them without specificity wars. One layer ⇒ internal source
+   order is preserved ⇒ behavior-preserving. tokens.css/fonts.css stay unlayered
+   (custom properties + @font-face don't collide with these selectors). */
+@layer site {
+
 /* ─── RESET ───────────────────────────────────────────── */
 *,*::before,*::after { box-sizing:border-box; }
 html,body { margin:0; padding:0; }
-html { scroll-behavior:smooth; }
+html { scroll-behavior:smooth; scroll-padding-top:var(--header-h); }
 body {
   font-family:var(--f-body); font-weight:400; color:var(--c-espresso);
   background:var(--c-paper); -webkit-font-smoothing:antialiased;
@@ -34,7 +40,7 @@ ul { list-style:none; padding:0; margin:0; }
 .announce .dot { width:6px; height:6px; background:var(--c-terracotta); border-radius:50%; }
 
 /* ─── HEADER ──────────────────────────────────────────── */
-.header { position:sticky; top:0; z-index:50; background:var(--c-paper); border-bottom:1px solid var(--c-line-soft); padding-top:env(safe-area-inset-top,0px); }
+.header { position:sticky; top:0; z-index:var(--z-header); background:var(--c-paper); border-bottom:1px solid var(--c-line-soft); padding-top:env(safe-area-inset-top,0px); }
 .header-inner {
   max-width:var(--max); margin:0 auto; padding:16px var(--gut);
   display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px;
@@ -293,16 +299,31 @@ ul { list-style:none; padding:0; margin:0; }
    ============================================================ */
 .shop-head { background:var(--c-cream); padding:clamp(40px,5vw,80px) var(--gut) clamp(32px,4vw,56px); }
 .shop-head-inner { max-width:var(--max); margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; gap:32px; flex-wrap:wrap; }
+/* let the heading/lead column shrink instead of overflowing the flex row */
+.shop-head-inner > div { min-width:0; }
 .shop-head h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(40px,5.4vw,84px); line-height:.95; letter-spacing:-.02em; margin:14px 0 0; }
 .shop-head h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .shop-head .lead { font-size:16px; line-height:1.6; max-width:42ch; opacity:.85; margin:18px 0 0; }
-.shop-switch { display:flex; flex-wrap:wrap; gap:8px; flex-basis:100%; width:100%; }
+/* Mobile: single non-wrapping row that scrolls horizontally with snap, so the
+   8 category pills never stack into 2–3 rows on a narrow phone. Reverts to the
+   original wrap at @sm so ≥561px is visually unchanged. */
+.shop-switch {
+  display:flex; flex-wrap:nowrap; gap:8px; flex-basis:100%; width:100%; min-width:0;
+  overflow-x:auto; overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.shop-switch::-webkit-scrollbar { display:none; }
 @media (min-width:561px) {
-  .shop-switch { width:auto; }
+  .shop-switch {
+    flex-wrap:wrap; width:auto; overflow-x:visible; scroll-snap-type:none;
+  }
 }
 .shop-switch a {
   font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase; white-space:nowrap;
   padding:11px 20px; border-radius:999px; border:1px solid var(--c-line); transition:all .25s var(--ease);
+  flex:none; scroll-snap-align:start;
 }
 .shop-switch a:hover { border-color:var(--c-espresso); }
 .shop-switch a.active { background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso); }
@@ -330,6 +351,10 @@ ul { list-style:none; padding:0; margin:0; }
   position:relative; cursor:pointer; background:var(--c-bone); border-radius:2px; overflow:hidden;
   aspect-ratio:4/5; outline:0 solid var(--c-terracotta); transition:outline-width .18s var(--ease);
   outline-offset:-3px;
+  /* Skip rendering work for off-screen tiles (long galleries). Width comes from
+     the 1fr grid track + aspect-ratio:4/5 gives the height, so the intrinsic-size
+     is just the never-rendered fallback; `auto` remembers the real size after. */
+  content-visibility:auto; contain-intrinsic-size:auto 360px;
 }
 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .8s var(--ease); }
 .tile:hover img { transform:scale(1.04); }
@@ -399,7 +424,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── PASEK WYBORU (sticky) ───────────────────────────── */
 .selbar {
-  position:fixed; left:0; right:0; bottom:0; z-index:60;
+  position:fixed; left:0; right:0; bottom:var(--consent-h, 0px); z-index:var(--z-selbar);
   transform:translateY(120%); transition:transform .4s var(--ease);
   padding:0 var(--gut) max(18px, calc(env(safe-area-inset-bottom,0px) + 12px));
   pointer-events:none;
@@ -435,7 +460,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── COOKIE CONSENT ──────────────────────────────────── */
 .consent {
-  position:fixed; left:var(--gut); right:var(--gut); bottom:0; z-index:70;
+  position:fixed; left:var(--gut); right:var(--gut); bottom:0; z-index:var(--z-consent);
   margin-bottom:max(18px, calc(env(safe-area-inset-bottom,0px) + 12px));
   max-width:430px;
   background:var(--c-espresso); color:var(--c-paper);
@@ -459,10 +484,10 @@ ul { list-style:none; padding:0; margin:0; }
 .consent-more:hover { opacity:1; }
 
 /* ─── LIGHTBOX (podgląd) ──────────────────────────────── */
-.lb-scrim { position:fixed; inset:0; z-index:90; background:rgba(31,22,16,.82); opacity:0; pointer-events:none; transition:opacity .3s ease; backdrop-filter:blur(3px); }
+.lb-scrim { position:fixed; inset:0; z-index:var(--z-lb-scrim); background:rgba(31,22,16,.82); opacity:0; pointer-events:none; transition:opacity .3s ease; backdrop-filter:blur(3px); }
 .lb-scrim.open { opacity:1; pointer-events:auto; }
 .lb {
-  position:fixed; inset:0; z-index:91; display:flex; align-items:flex-end; justify-content:center;
+  position:fixed; inset:0; z-index:var(--z-lb); display:flex; align-items:flex-end; justify-content:center;
   padding:0; opacity:0; pointer-events:none; transition:opacity .3s ease;
 }
 .lb.open { opacity:1; pointer-events:auto; }
@@ -531,6 +556,9 @@ ul { list-style:none; padding:0; margin:0; }
   .cart-row { grid-template-columns:96px 1fr auto; gap:20px; }
 }
 .cart-row:first-child { border-top:1px solid var(--c-line); }
+/* grid children must be allowed to shrink below content size or long product
+   titles force horizontal overflow (default grid/flex min-width is auto). */
+.cart-row > div { min-width:0; }
 .cart-row .thumb { aspect-ratio:4/5; background:var(--c-bone); border-radius:2px; overflow:hidden; position:relative; }
 .cart-row .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .cart-row h4 { font-family:var(--f-display); font-style:italic; font-weight:400; font-size:21px; margin:0 0 4px; }
@@ -720,7 +748,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── SKIP LINK ───────────────────────────────────────────── */
 .skip-link {
-  position:absolute; top:-100%; left:0; z-index:999;
+  position:absolute; top:-100%; left:0; z-index:var(--z-skip);
   padding:13px 26px; background:var(--c-espresso); color:var(--c-paper);
   font-family:var(--f-cond); font-size:13px; letter-spacing:.14em; text-transform:uppercase;
   transition:top .2s ease; white-space:nowrap;
@@ -742,7 +770,7 @@ ul { list-style:none; padding:0; margin:0; }
 .mob-trigger[aria-expanded="true"] .mob-bar:nth-child(2) { opacity:0; transform:scaleX(0); }
 .mob-trigger[aria-expanded="true"] .mob-bar:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg); }
 .mob-overlay {
-  position:fixed; inset:0; z-index:80;
+  position:fixed; inset:0; z-index:var(--z-mobnav);
   background:rgba(58,40,24,.45); backdrop-filter:blur(2px);
   opacity:0; pointer-events:none; transition:opacity .3s var(--ease);
 }
@@ -750,7 +778,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* Mobile menu → bottom sheet (base) */
 .mob-drawer {
-  position:fixed; top:auto; right:0; left:0; bottom:0; z-index:81;
+  position:fixed; top:auto; right:0; left:0; bottom:0; z-index:var(--z-mobdrawer);
   width:100%; max-height:85vh; max-height:85dvh;
   background:var(--c-paper);
   border-radius:20px 20px 0 0;
@@ -792,7 +820,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── 404 NOT FOUND ───────────────────────────────────────── */
 .notfound {
-  min-height:70vh; display:flex; align-items:center; justify-content:center;
+  min-height:70vh; min-height:70svh; display:flex; align-items:center; justify-content:center;
   padding:clamp(60px,9vw,140px) var(--gut); background:var(--c-cream);
 }
 .notfound-inner { text-align:center; max-width:520px; margin:0 auto; }
@@ -821,7 +849,7 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── ERROR PAGE ──────────────────────────────────────────── */
 .error-page {
-  min-height:70vh; display:flex; align-items:center; justify-content:center;
+  min-height:70vh; min-height:70svh; display:flex; align-items:center; justify-content:center;
   padding:clamp(60px,9vw,140px) var(--gut);
 }
 .error-page-inner { text-align:center; max-width:480px; margin:0 auto; }
@@ -847,3 +875,5 @@ ul { list-style:none; padding:0; margin:0; }
 .return-btn:disabled { opacity:.5; cursor:not-allowed; }
 .return-msg { font-family:var(--f-cond); font-size:14px; margin-top:4px; }
 .return-msg-error, .return-msg-ineligible { color:var(--c-terracotta-deep); }
+
+} /* @layer site */

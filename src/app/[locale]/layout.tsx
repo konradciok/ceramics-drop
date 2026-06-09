@@ -9,6 +9,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Header } from '@/components/layout/Header';
+import { HeaderHeightProbe } from '@/components/layout/HeaderHeightProbe';
 import { Footer } from '@/components/layout/Footer';
 import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
@@ -79,6 +80,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
           <AnalyticsEvents />
+          <HeaderHeightProbe />
           <Header />
           <div id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
             {children}
