@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze } from './pricing';
 
 describe('pricing', () => {
-  it('exposes PLN prices for all seven categories', () => {
+  it('exposes PLN prices for all eight categories', () => {
     expect(PRICE_PLN.kubki).toBe(90);
+    expect(PRICE_PLN['wazony-srednie']).toBe(300);
     expect(PRICE_PLN['wazony-duze']).toBe(395);
   });
 

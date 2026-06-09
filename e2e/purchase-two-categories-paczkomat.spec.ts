@@ -39,6 +39,7 @@ const BUYER_EMAIL = 'e2e+playwright@example.com';
 const ALL_CATEGORIES = [
   'kubki',
   'wazony',
+  'wazony-srednie',
   'wazony-duze',
   'talerzyki',
   'talerze-duze',

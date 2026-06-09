@@ -1,7 +1,7 @@
 import { getProductById } from './products';
 import { toGrosze } from './pricing';
 
-export const MAX_CART = 96; // total catalog size — a hard sanity bound.
+export const MAX_CART = 78; // total catalog size — a hard sanity bound.
 
 export type CheckoutItem = { product_id: string; unit_price: number };
 export type ValidateResult =
