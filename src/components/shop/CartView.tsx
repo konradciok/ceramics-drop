@@ -259,7 +259,7 @@ export function CartView() {
   }
 
   const priceLabel = (id: ShipId) => {
-    if (id === 'paczkomat') return t('ship.paczkomatPrice');
+    if (id === 'paczkomat') return t('ship.paczkomatPrice', { price: pln(SHIPPING_PLN.paczkomat) });
     return SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free');
   };
 

@@ -129,7 +129,7 @@
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
     "paczkomatD": "Pick up from your chosen parcel locker, usually 1–2 business days after I hand the parcel over.",
-    "paczkomatPrice": "from 20 zł",
+    "paczkomatPrice": "from {price}",
     "courierT": "InPost Courier",
     "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
     "pickupT": "Personal pickup",
@@ -358,7 +358,7 @@
     "toc6": "Damage",
     "updated": "Updated: June 2026",
     "s1H": "Shipping",
-    "s1P": "I send every piece by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. The cost is the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1P": "I ship by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
     "s1Li1": "InPost Parcel Locker, all of Poland — from 20 zł",
     "s1Li1b": "InPost courier, all of Poland — 30 zł",
     "s1Li2": "Pickup in Warsaw — free",

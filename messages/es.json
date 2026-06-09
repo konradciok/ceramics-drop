@@ -129,7 +129,7 @@
   "ship": {
     "paczkomatT": "Paczkomat InPost",
     "paczkomatD": "Recogida en el Paczkomat elegido, normalmente 1–2 días laborables después de entregar el paquete.",
-    "paczkomatPrice": "desde 20 zł",
+    "paczkomatPrice": "desde {price}",
     "courierT": "Mensajería InPost",
     "courierD": "Entrega a domicilio, normalmente 1–2 días laborables después de entregar el paquete.",
     "pickupT": "Recogida personal",
@@ -358,7 +358,7 @@
     "toc6": "Daños",
     "updated": "Actualizado: junio 2026",
     "s1H": "Envío",
-    "s1P": "Envío cada pieza por <strong>Paczkomat InPost (desde 20 zł)</strong> o <strong>mensajería (30 zł)</strong> a toda Polonia. El coste es el mismo sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
+    "s1P": "Envío por <strong>Paczkomat InPost (desde 20 zł)</strong> o <strong>mensajería (30 zł)</strong> a toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
     "s1Li1": "Paczkomat InPost, toda Polonia — desde 20 zł",
     "s1Li1b": "Mensajería InPost, toda Polonia — 30 zł",
     "s1Li2": "Recogida en Varsovia — gratis",

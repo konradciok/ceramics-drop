@@ -129,7 +129,7 @@
   "ship": {
     "paczkomatT": "Paczkomat InPost",
     "paczkomatD": "Odbiór w wybranym paczkomacie, zwykle 1–2 dni robocze po nadaniu pracy.",
-    "paczkomatPrice": "od 20 zł",
+    "paczkomatPrice": "od {price}",
     "courierT": "Kurier InPost",
     "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
     "pickupT": "Odbiór osobisty",
