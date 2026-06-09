@@ -30,7 +30,7 @@ import {
  */
 
 const SUCCESS_CARD = '4242424242424242';
-const SHIPPING_PACZKOMAT_PLN = 15; // src/lib/pricing.ts SHIPPING_PLN.paczkomat
+const SHIPPING_PACZKOMAT_PLN = 20; // src/lib/pricing.ts SHIPPING_PLN.paczkomat
 const GEOWIDGET_MODE = process.env.E2E_GEOWIDGET_MODE === 'real' ? 'real' : 'mock';
 const BUYER_EMAIL = 'e2e+playwright@example.com';
 

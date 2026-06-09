@@ -258,7 +258,10 @@ export function CartView() {
     );
   }
 
-  const priceLabel = (id: ShipId) => (SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free'));
+  const priceLabel = (id: ShipId) => {
+    if (id === 'paczkomat') return t('ship.paczkomatPrice');
+    return SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free');
+  };
 
   // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
   const stripeLocale = (['pl', 'en', 'es'] as string[]).includes(locale)

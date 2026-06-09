@@ -19,7 +19,7 @@ const ORDER = {
   receiver_last_name: 'Buyer',
   receiver_phone: '600100200',
   delivery_method: 'paczkomat',
-  shipping: 1500,
+  shipping: 2000,
   total: 10500,
 };
 
