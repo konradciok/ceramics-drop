@@ -22,17 +22,22 @@ export async function AllPiecesScreen({ products }: { products: Product[] }) {
             <h1>{t.rich('collection.sklep.title', richTags)}</h1>
             <p className="lead">{t('collection.sklep.lead')}</p>
           </div>
-          {/* In-page jump nav (anchors, not route links). Sticky via CSS.
-              GroupedGallery's scroll-spy toggles aria-current on these. */}
-          <nav id="shop-nav" className="shop-switch shop-nav-sticky" aria-label={t('nav.sklep')}>
-            {CATEGORY_ORDER.map((s) => (
-              <a key={s} href={`#${s}`}>
-                {t(CATEGORIES[s].nameKey)}
-              </a>
-            ))}
-          </nav>
         </div>
       </section>
+
+      {/* Full-width sticky category jump-nav. Lifted out of .shop-head so its
+          sticky containing block is <main> — it stays pinned under the site
+          header while the user scrolls the galleries. GroupedGallery's
+          scroll-spy toggles aria-current on these anchors. */}
+      <nav id="shop-nav" className="shop-nav-sticky" aria-label={t('nav.sklep')}>
+        <div className="shop-switch shop-nav-track">
+          {CATEGORY_ORDER.map((s) => (
+            <a key={s} href={`#${s}`}>
+              {t(CATEGORIES[s].nameKey)}
+            </a>
+          ))}
+        </div>
+      </nav>
 
       <div className="shop-hint">
         <span className="ic"><Icon name="check" /></span>

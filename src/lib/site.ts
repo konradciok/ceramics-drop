@@ -7,6 +7,7 @@ export const SITE_NAME = 'Anna Ciok Ceramics';
 /** App routes under `[locale]` (path segment only, leading slash). */
 export const SITE_PATHS = [
   '/',
+  '/sklep',
   '/kubki',
   '/duze-michy',
   '/miski-falowane',

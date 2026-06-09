@@ -431,9 +431,11 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ── /sklep grouped gallery ─────────────────────────────────── */
 .shop-nav-sticky {
-  position:sticky; top:var(--header-h); z-index:1;
+  position:sticky; top:var(--header-h); z-index:5;
   background:var(--c-paper); padding-block:10px;
+  border-bottom:1px solid var(--c-line-soft);
 }
+.shop-nav-track { max-width:var(--max); margin:0 auto; padding:0 var(--gut); }
 .shop-switch a[aria-current="true"] {
   background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso);
 }
