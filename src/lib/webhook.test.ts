@@ -10,6 +10,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     ensureInvoiced: vi.fn().mockResolvedValue(undefined),
     createShipment: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
+    trackPurchase: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -49,6 +50,18 @@ describe('handleStripeEvent', () => {
     expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
     expect(d.createShipment).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).not.toHaveBeenCalled();
+  });
+
+  it('on a new sale: fires trackPurchase', async () => {
+    const d = deps();
+    await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
+    expect(d.trackPurchase).toHaveBeenCalledWith('pi_1');
+  });
+
+  it('already processed (not a new sale): does NOT fire trackPurchase', async () => {
+    const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
+    await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
+    expect(d.trackPurchase).not.toHaveBeenCalled();
   });
 
   it('propagates a shipment error so the webhook 5xxs and Stripe retries', async () => {
