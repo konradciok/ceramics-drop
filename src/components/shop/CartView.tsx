@@ -11,6 +11,7 @@ import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
+  buildEngagementEvent,
   buildRemoveFromCartEvent,
   buildViewCartEvent,
   pushDataLayer,
@@ -37,6 +38,14 @@ import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 type ShipId = DeliveryMethod;
 
 const SHIP_IDS: ShipId[] = ['paczkomat', 'kurier', 'odbior'];
+
+// Maps each delivery method to its funnel event so we can see which option
+// creates friction vs. advantage (InPost locker vs. courier vs. Warsaw pickup).
+const SHIP_EVENT: Record<ShipId, string> = {
+  paczkomat: 'parcel_locker_select',
+  kurier: 'courier_select',
+  odbior: 'pickup_select',
+};
 
 interface ShipOptionProps {
   id: ShipId;
@@ -145,6 +154,10 @@ export function CartView() {
   }, [productKey, products]);
 
   function handlePickShip(id: ShipId) {
+    // Fire only on an actual change — re-clicking the active option must not
+    // double-count the selection.
+    if (id === ship) return;
+    pushDataLayer(buildEngagementEvent(SHIP_EVENT[id], { method: id, page: 'cart' }));
     setShip(id);
   }
 
@@ -208,16 +221,19 @@ export function CartView() {
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
         sold.forEach((id) => remove(id));
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
         return;
       }
       if (res.status === 429) {
         // Too many checkout attempts — show a wait-and-retry message rather than
         // the generic "payment failed", which would invite rapid retries.
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited' }));
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
       if (!res.ok) {
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
         setCheckoutError(t('cart.checkoutError'));
         return;
       }
@@ -228,6 +244,7 @@ export function CartView() {
       });
       setClientSecret(client_secret);
     } catch {
+      pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error' }));
       setCheckoutError(t('cart.checkoutError'));
     } finally {
       setSubmitting(false);
@@ -397,7 +414,14 @@ export function CartView() {
                   </p>
                 )}
                 <GeowidgetPicker
-                  onSelect={setLocker}
+                  onSelect={(p) => {
+                    // Completion signal: the buyer got through InPost locker
+                    // selection (vs. merely picking the paczkomat method in A1).
+                    pushDataLayer(
+                      buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
+                    );
+                    setLocker(p);
+                  }}
                   language={locale}
                   unavailableLabel={t('delivery.lockerUnavailable')}
                 />

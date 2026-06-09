@@ -5,7 +5,12 @@ import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
-import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
+import {
+  buildAddToCartEvent,
+  buildEngagementEvent,
+  buildRemoveFromCartEvent,
+  pushDataLayer,
+} from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
 
@@ -29,7 +34,22 @@ export function ProductTile({ product, onOpen }: Props) {
   return (
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
-      onClick={() => !product.sold && onOpen?.(product)}
+      onClick={() => {
+        if (product.sold) {
+          // Demand signal for already-sold pieces — important for drops. The tile
+          // is otherwise a no-op (sold pieces don't open the lightbox).
+          pushDataLayer(
+            buildEngagementEvent('sold_item_view', {
+              item_id: product.id,
+              item_name: displayName,
+              item_category: product.category,
+              price: product.price,
+            }),
+          );
+          return;
+        }
+        onOpen?.(product);
+      }}
       data-testid="product-tile"
       data-product-id={product.id}
       data-category={product.category}
