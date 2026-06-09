@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { Product } from '@/lib/types';
-import type { CategorySlug } from '@/lib/types';
+import type { Product, CategorySlug } from '@/lib/types';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { ProductTile } from './ProductTile';
