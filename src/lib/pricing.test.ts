@@ -8,8 +8,8 @@ describe('pricing', () => {
   });
 
   it('exposes a per-method shipping price map', () => {
-    expect(SHIPPING_PLN.kurier).toBe(75);
-    expect(SHIPPING_PLN.paczkomat).toBe(15);
+    expect(SHIPPING_PLN.kurier).toBe(30);
+    expect(SHIPPING_PLN.paczkomat).toBe(20);
     expect(SHIPPING_PLN.odbior).toBe(0);
   });
 
@@ -19,18 +19,18 @@ describe('pricing', () => {
   });
 
   it('computes shipping grosze per method', () => {
-    expect(shippingGrosze('paczkomat')).toBe(1500);
-    expect(shippingGrosze('kurier')).toBe(7500);
+    expect(shippingGrosze('paczkomat')).toBe(2000);
+    expect(shippingGrosze('kurier')).toBe(3000);
     expect(shippingGrosze('odbior')).toBe(0);
   });
 
   it('sums item grosze plus courier shipping', () => {
     const amount = orderAmountGrosze([9000, 21000], 'kurier');
-    expect(amount).toBe(9000 + 21000 + 7500);
+    expect(amount).toBe(9000 + 21000 + 3000);
   });
 
   it('sums item grosze plus paczkomat shipping', () => {
-    expect(orderAmountGrosze([9000], 'paczkomat')).toBe(9000 + 1500);
+    expect(orderAmountGrosze([9000], 'paczkomat')).toBe(9000 + 2000);
   });
 
   it('charges no shipping for pickup', () => {

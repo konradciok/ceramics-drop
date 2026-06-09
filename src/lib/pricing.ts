@@ -11,7 +11,7 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'miski-falowane': 155,
 };
 
-/** Delivery methods — InPost is the sole carrier; `odbior` is free studio pickup. */
+/** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
 export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 
 /**
@@ -19,8 +19,8 @@ export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
  * confirm against the studio's InPost rates before launch.
  */
 export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
-  paczkomat: 15,
-  kurier: 75,
+  paczkomat: 20,
+  kurier: 30,
   odbior: 0,
 };
 
