@@ -158,7 +158,6 @@ Fulfillment is driven by Dashboard endpoints on the deployed Worker.
 | Route | URL | Secret | Role |
 | --- | --- | --- | --- |
 | `POST /api/stripe/webhook` | `https://anna-ciok.studio/api/stripe/webhook` | `STRIPE_WEBHOOK_SECRET` | Fulfillment (paid, sold, invoice, shipment) |
-| `POST /api/stripe/webhook-thin` | `https://anna-ciok.studio/api/stripe/webhook-thin` | `STRIPE_WEBHOOK_THIN_SECRET` | ACK only |
 | `POST /api/inpost/webhook?token=…` | `https://anna-ciok.studio/api/inpost/webhook?token=<INPOST_WEBHOOK_TOKEN>` | query `token` | Label/status (post-checkout logistics) |
 
 **Handler events:** `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled`, `charge.refunded` (full), `charge.dispute.closed` (`lost`).
