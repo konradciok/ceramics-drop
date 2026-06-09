@@ -1,5 +1,6 @@
 import {
   buildBeginCheckoutEvent,
+  buildEngagementEvent,
   buildPurchaseEvent,
   pushDataLayer,
   type DataLayerEvent,
@@ -23,6 +24,7 @@ type SimpleStorage = Pick<Storage, 'getItem' | 'setItem'> & {
 };
 
 const PURCHASE_DEDUPE_PREFIX = 'acc_purchase_pi:';
+const PAYMENT_FAILED_DEDUPE_PREFIX = 'acc_payment_failed_pi:';
 const CHECKOUT_SNAPSHOT_KEY = 'acc_checkout_snapshot';
 
 type CheckoutSnapshot = {
@@ -70,6 +72,26 @@ export function pushConfirmedPurchaseByIdsOnce(
   if (products.length === 0) return false;
 
   pushConfirmedPurchase(products, options);
+  safeSetItem(storage, key, '1');
+  return true;
+}
+
+/**
+ * Fire `payment_failed` at most once per PaymentIntent. The return page mounts on
+ * every visit/refresh (and twice under React Strict Mode in dev), so without this
+ * guard a buyer reloading the failure screen would inflate the count — mirrors the
+ * purchase dedupe above. `status` is the PaymentIntent status (the PI id is never sent).
+ */
+export function pushPaymentFailedOnce(
+  paymentIntentId: string,
+  status: string,
+  options: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage } = {},
+): boolean {
+  const storage = options.storage ?? getDefaultStorage();
+  const key = `${PAYMENT_FAILED_DEDUPE_PREFIX}${paymentIntentId}`;
+  if (safeGetItem(storage, key) === '1') return false;
+
+  (options.push ?? pushDataLayer)(buildEngagementEvent('payment_failed', { status }));
   safeSetItem(storage, key, '1');
   return true;
 }

@@ -5,7 +5,13 @@ import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
-import { buildAddToCartEvent, buildRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
+import {
+  buildAddToCartEvent,
+  buildEngagementEvent,
+  buildRemoveFromCartEvent,
+  pushDataLayer,
+  toAnalyticsItem,
+} from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
 
@@ -29,7 +35,25 @@ export function ProductTile({ product, onOpen }: Props) {
   return (
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
-      onClick={() => !product.sold && onOpen?.(product)}
+      onClick={() => {
+        if (product.sold) {
+          // Demand signal for already-sold pieces — important for drops. The tile
+          // is otherwise a no-op (sold pieces don't open the lightbox). Reuse
+          // toAnalyticsItem so item_name/price match every other ecommerce event
+          // and stay locale-independent (so PL/EN/ES clicks aggregate as one piece).
+          const item = toAnalyticsItem(product);
+          pushDataLayer(
+            buildEngagementEvent('sold_item_view', {
+              item_id: item.item_id,
+              item_name: item.item_name,
+              item_category: item.item_category,
+              price: item.price,
+            }),
+          );
+          return;
+        }
+        onOpen?.(product);
+      }}
       data-testid="product-tile"
       data-product-id={product.id}
       data-category={product.category}
