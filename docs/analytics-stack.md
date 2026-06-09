@@ -132,3 +132,20 @@ The app already implements Google Consent Mode v2 (`src/components/consent/`): d
 - Google Tag Manager custom event trigger help: https://support.google.com/tagmanager/answer/7679219
 - GA4 recommended ecommerce events: https://developers.google.com/analytics/devguides/collection/ga4/reference/events
 - Meta Pixel standard events: https://developers.facebook.com/docs/meta-pixel/reference#standard-events
+
+## Server-side Conversions
+
+The Stripe webhook fires `Purchase` (Meta CAPI) and `purchase` (GA4 Measurement Protocol) on a newly-paid order, deduplicated by the PaymentIntent ID:
+
+- **Meta CAPI event_id**: `purchase-<payment_intent_id>` — matches the browser `event_id` emitted at order confirmation, so Meta deduplicates the pixel event and the server event into one.
+- **GA4 transaction_id**: `<payment_intent_id>` — same value used in the browser `purchase` event.
+- **Consent gate**: both calls are skipped when `orders.marketing.consent !== 'granted'` (captured from the buyer's cookie state at checkout time).
+- **PII hashing**: email, phone, name, address fields are SHA-256 hashed per Meta spec before transmission.
+
+New runtime secrets required:
+
+| Secret | How to set | Description |
+|--------|-----------|-------------|
+| `META_CAPI_ACCESS_TOKEN` | `wrangler secret put META_CAPI_ACCESS_TOKEN` | Meta system-user token with `ads_management` + CAPI scope |
+| `GA4_API_SECRET` | `wrangler secret put GA4_API_SECRET` | GA4 Admin → Data Streams → Measurement Protocol API secrets |
+| `META_TEST_EVENT_CODE` | `wrangler secret put META_TEST_EVENT_CODE` | Optional; set during validation only, remove before going live |

@@ -97,6 +97,7 @@ async function setupWorkspace() {
     customHtmlTag('ACC - GA4 base', ga4BaseHtml(ga4MeasurementId), [initTrigger.triggerId], {
       oncePerLoad: true,
       priority: 20,
+      consentTypes: ['analytics_storage'],
     }),
   );
   await upsertTag(
@@ -104,15 +105,20 @@ async function setupWorkspace() {
     customHtmlTag('ACC - Meta Pixel base', metaBaseHtml(metaPixelId), [initTrigger.triggerId], {
       oncePerLoad: true,
       priority: 10,
+      consentTypes: ['ad_storage'],
     }),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId]),
+    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId], {
+      consentTypes: ['analytics_storage'],
+    }),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId]),
+    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId], {
+      consentTypes: ['ad_storage'],
+    }),
   );
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
@@ -224,6 +230,14 @@ function customHtmlTag(name, html, firingTriggerId, options = {}) {
     tagFiringOption: options.oncePerLoad ? 'oncePerLoad' : 'oncePerEvent',
     ...(options.priority
       ? { priority: { key: 'priority', type: 'integer', value: String(options.priority) } }
+      : {}),
+    ...(options.consentTypes
+      ? {
+          consentSettings: {
+            consentStatus: 'needed',
+            consentType: options.consentTypes.map((t) => ({ type: 'template', value: t })),
+          },
+        }
       : {}),
   };
 }

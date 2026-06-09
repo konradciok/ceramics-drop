@@ -240,9 +240,7 @@ export async function POST(req: Request) {
     revalidate: (tag) => revalidateTag(tag, 'max'),
     trackPurchase: async (pi) => {
       try {
-        // @ts-expect-error — typed in cloudflare-env.d.ts Task 12
         const metaToken = env.META_CAPI_ACCESS_TOKEN;
-        // @ts-expect-error — typed in cloudflare-env.d.ts Task 12
         const ga4Secret = env.GA4_API_SECRET;
         const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
         const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
@@ -271,8 +269,7 @@ export async function POST(req: Request) {
           metaConfig: {
             pixelId,
             accessToken: metaToken,
-            // @ts-expect-error — typed in cloudflare-env.d.ts Task 12
-            ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}),
+              ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}),
           },
           ga4Config: { measurementId, apiSecret: ga4Secret },
           eventTimeSecs: Math.floor(Date.now() / 1000),
