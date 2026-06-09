@@ -93,7 +93,15 @@ export async function POST(req: Request) {
   const cookieHeader = req.headers.get('cookie') ?? '';
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
   const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
-  const str2 = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : null);
+  const str2 = (v: unknown, max = 256) => {
+    if (typeof v !== 'string') return null;
+    const s = v.trim();
+    if (!s || s.length > max) return null;
+    return s;
+  };
+  const origin = req.headers.get('origin') ?? '';
+  const localePrefix = locale !== 'pl' ? `/${locale}` : '';
+  const eventSourceUrl = origin ? `${origin}${localePrefix}/koszyk/return` : null;
   const marketing: MarketingContext = {
     consent,
     fbp: str2(mc.fbp),
@@ -102,7 +110,7 @@ export async function POST(req: Request) {
     ga_session_id: str2(mc.ga_session_id),
     ip: clientIp,
     user_agent: req.headers.get('user-agent'),
-    event_source_url: req.headers.get('referer'),
+    event_source_url: eventSourceUrl,
     captured_at: new Date().toISOString(),
   };
 

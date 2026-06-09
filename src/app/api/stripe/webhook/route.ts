@@ -244,13 +244,22 @@ export async function POST(req: Request) {
         const ga4Secret = env.GA4_API_SECRET;
         const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
         const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
-        if (!metaToken || !ga4Secret || !pixelId || !measurementId) return;
+
+        const metaConfig = (metaToken && pixelId)
+          ? { pixelId, accessToken: metaToken, ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}) }
+          : undefined;
+        const ga4Config = (ga4Secret && measurementId)
+          ? { measurementId, apiSecret: ga4Secret }
+          : undefined;
+
+        if (!metaConfig && !ga4Config) return;
+
         await sendPurchaseConversions(pi, {
           loadOrder: async (paymentIntentId) => {
             const { data } = await supabase
               .from('orders')
               .select(
-                'id, payment_intent_id, subtotal, shipping, total, currency, email, ' +
+                'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
                   'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
               )
               .eq('payment_intent_id', paymentIntentId)
@@ -266,13 +275,8 @@ export async function POST(req: Request) {
               items: (itemRows as ConversionOrder['items'] | null) ?? [],
             };
           },
-          metaConfig: {
-            pixelId,
-            accessToken: metaToken,
-              ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}),
-          },
-          ga4Config: { measurementId, apiSecret: ga4Secret },
-          eventTimeSecs: Math.floor(Date.now() / 1000),
+          metaConfig,
+          ga4Config,
         });
       } catch (err) {
         console.error('trackPurchase failed for', pi, err);

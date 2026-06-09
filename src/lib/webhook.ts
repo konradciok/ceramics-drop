@@ -37,7 +37,7 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const pi = event.data.object as Stripe.PaymentIntent;
       const newlySold = await deps.markPaid(pi.id);
       if (newlySold) deps.revalidate('inventory');
-      if (newlySold) await deps.trackPurchase(pi.id);
+      await deps.trackPurchase(pi.id);
       await deps.ensureInvoiced(pi.id);
       // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
       // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.

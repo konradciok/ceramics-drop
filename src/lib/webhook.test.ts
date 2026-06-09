@@ -58,10 +58,10 @@ describe('handleStripeEvent', () => {
     expect(d.trackPurchase).toHaveBeenCalledWith('pi_1');
   });
 
-  it('already processed (not a new sale): does NOT fire trackPurchase', async () => {
+  it('already processed (not a new sale): still fires trackPurchase (conversions dedup via event_id)', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
-    expect(d.trackPurchase).not.toHaveBeenCalled();
+    expect(d.trackPurchase).toHaveBeenCalledWith('pi_1');
   });
 
   it('propagates a shipment error so the webhook 5xxs and Stripe retries', async () => {

@@ -25,6 +25,8 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 > **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
 > `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy.
 >
+> Before merging PR #51, apply `supabase/migrations/20260609130000_orders_marketing.sql` to Supabase prod. The checkout route now inserts `orders.marketing`; without this column the insert fails at runtime.
+>
 > Audit for gaps — paste the catalogue ids (`getProducts().map(p => p.id)` from `src/lib/products.ts`) into the array literal; any rows returned are ids missing a `piece_state` row:
 >
 > ```sql
@@ -146,6 +148,9 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (return labels, shipping confirmations); Resend template aliases are wired in `src/lib/email-layout.ts`.
 - `RESEND_WEBHOOK_SECRET` — Svix signing secret for `/api/resend/webhook`; get from the Resend dashboard → Webhooks → signing secret. **Required after deploying PR #44** or the endpoint returns `500`.
 - `STUDIO_RETURN_FIRST_NAME` / `_LAST_NAME` / `_PHONE` / `_ADDRESS_STREET` / `_BUILDING` / `_CITY` / `_POSTAL` / `_POINT` — the InPost return receiver. **All required**, or `POST /api/returns` returns `503`. `STUDIO_RETURN_EMAIL` defaults to `STUDIO_NOTIFY_EMAIL` when unset.
+- `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
+- `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
+- `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
 
 ### npm version (lockfile)
 

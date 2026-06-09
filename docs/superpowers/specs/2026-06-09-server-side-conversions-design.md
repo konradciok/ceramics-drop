@@ -146,7 +146,7 @@ DebugView → confirm no double-count.
 
 ## Data flow
 
-```
+```text
 checkout POST ──> capture {consent, fbp, fbc, ga_client_id, ga_session_id, ip, ua}
               └─> orders.marketing (jsonb)
 

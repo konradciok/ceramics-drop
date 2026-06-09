@@ -3,6 +3,7 @@ import { sendPurchaseConversions, type ConversionOrder } from './conversions';
 
 const baseOrder = (over: Partial<ConversionOrder> = {}): ConversionOrder => ({
   payment_intent_id: 'pi_1',
+  status: 'paid',
   subtotal: 30000, // grosze
   shipping: 1800,
   total: 31800,
@@ -26,7 +27,6 @@ function deps(over = {}) {
     loadOrder: vi.fn().mockResolvedValue(baseOrder()),
     metaConfig: { pixelId: 'PIX', accessToken: 'TOK' },
     ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
-    eventTimeSecs: 1_680_000_000,
     sendMeta: vi.fn().mockResolvedValue({ ok: true, status: 200 }),
     sendGa4: vi.fn().mockResolvedValue({ ok: true, status: 204 }),
     ...over,
@@ -47,6 +47,13 @@ describe('sendPurchaseConversions', () => {
     expect(d.sendMeta).not.toHaveBeenCalled();
   });
 
+  it('does nothing when order status is not paid', async () => {
+    const d = deps({ loadOrder: vi.fn().mockResolvedValue(baseOrder({ status: 'failed' })) });
+    await sendPurchaseConversions('pi_1', d);
+    expect(d.sendMeta).not.toHaveBeenCalled();
+    expect(d.sendGa4).not.toHaveBeenCalled();
+  });
+
   it('sends Meta (value=total/100) and GA4 (value=subtotal/100) with the dedup id', async () => {
     const d = deps();
     await sendPurchaseConversions('pi_1', d);
@@ -61,9 +68,52 @@ describe('sendPurchaseConversions', () => {
     expect(ga4Input.shipping).toBe(18);
   });
 
+  it('uses order_items.unit_price for Meta contents item_price (not catalogue price)', async () => {
+    const d = deps();
+    await sendPurchaseConversions('pi_1', d);
+    const metaInput = d.sendMeta.mock.calls[0][1];
+    // unit_price = 9000 grosze → 90 PLN
+    expect(metaInput.contents[0].item_price).toBe(90);
+  });
+
+  it('derives eventTimeSecs from marketing.captured_at, not webhook receive time', async () => {
+    const d = deps();
+    await sendPurchaseConversions('pi_1', d);
+    const metaInput = d.sendMeta.mock.calls[0][1];
+    // captured_at: '2026-06-09T00:00:00Z' → 1749427200
+    expect(metaInput.eventTimeSecs).toBe(Math.floor(new Date('2026-06-09T00:00:00Z').getTime() / 1000));
+  });
+
   it('swallows a Meta failure and still attempts GA4', async () => {
     const d = deps({ sendMeta: vi.fn().mockRejectedValue(new Error('graph 500')) });
     await expect(sendPurchaseConversions('pi_1', d)).resolves.toBeUndefined();
     expect(d.sendGa4).toHaveBeenCalled();
+  });
+
+  it('logs and captures to Sentry when Meta returns a non-ok HTTP response, still calls GA4', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const d = deps({ sendMeta: vi.fn().mockResolvedValue({ ok: false, status: 400 }) });
+    await sendPurchaseConversions('pi_1', d);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('meta capi purchase http error'),
+      'pi_1',
+      400,
+    );
+    expect(d.sendGa4).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it('skips Meta when only ga4Config is provided', async () => {
+    const d = deps({ metaConfig: undefined });
+    await sendPurchaseConversions('pi_1', d);
+    expect(d.sendMeta).not.toHaveBeenCalled();
+    expect(d.sendGa4).toHaveBeenCalled();
+  });
+
+  it('skips GA4 when only metaConfig is provided', async () => {
+    const d = deps({ ga4Config: undefined });
+    await sendPurchaseConversions('pi_1', d);
+    expect(d.sendMeta).toHaveBeenCalled();
+    expect(d.sendGa4).not.toHaveBeenCalled();
   });
 });

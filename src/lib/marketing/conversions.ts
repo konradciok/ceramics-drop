@@ -9,6 +9,7 @@ import type { DeliveryAddress } from '../shipx';
 
 export type ConversionOrder = {
   payment_intent_id: string;
+  status: string;
   subtotal: number; // grosze
   shipping: number; // grosze
   total: number;    // grosze
@@ -24,9 +25,8 @@ export type ConversionOrder = {
 
 export type ConversionsDeps = {
   loadOrder: (paymentIntentId: string) => Promise<ConversionOrder | null>;
-  metaConfig: MetaCapiConfig;
-  ga4Config: Ga4Config;
-  eventTimeSecs: number;
+  metaConfig?: MetaCapiConfig;
+  ga4Config?: Ga4Config;
   sendMeta?: typeof sendMetaPurchase;
   sendGa4?: typeof sendGa4Purchase;
 };
@@ -37,17 +37,40 @@ export async function sendPurchaseConversions(
 ): Promise<void> {
   const order = await deps.loadOrder(paymentIntentId);
   if (!order || !order.marketing || order.marketing.consent !== 'granted') return;
+  if (order.status !== 'paid') return;
 
   const m = order.marketing;
+  const eventTimeSecs = Math.floor(new Date(m.captured_at).getTime() / 1000);
   const ids = order.items.map((i) => i.product_id);
-  const products = resolveKnownProducts(ids);
-  const analyticsItems = products.map((p) => toAnalyticsItem(p));
+
+  const productById = new Map(
+    resolveKnownProducts(ids).map((p) => [p.id, p]),
+  );
+
+  const metaContents = order.items.map((item) => ({
+    id: item.product_id,
+    quantity: 1 as const,
+    item_price: item.unit_price / 100,
+  }));
+
+  const ga4Items = order.items.map((item) => {
+    const p = productById.get(item.product_id);
+    const ai = p ? toAnalyticsItem(p) : null;
+    return {
+      item_id: item.product_id,
+      item_name: ai?.item_name ?? item.product_id,
+      price: item.unit_price / 100,
+      quantity: 1 as const,
+      item_category: ai?.item_category ?? '',
+      item_brand: ai?.item_brand ?? 'Anna Ciok Ceramics',
+    };
+  });
 
   const emailHash = await hashUserField(order.email, normalizeEmail);
 
   const metaInput: MetaPurchaseInput = {
     eventId: `purchase-${order.payment_intent_id}`,
-    eventTimeSecs: deps.eventTimeSecs,
+    eventTimeSecs,
     eventSourceUrl: m.event_source_url,
     userData: {
       em: emailHash,
@@ -65,7 +88,7 @@ export async function sendPurchaseConversions(
     value: order.total / 100,
     currency: order.currency.toUpperCase(),
     contentIds: ids,
-    contents: analyticsItems.map((it) => ({ id: it.item_id, quantity: 1, item_price: it.price })),
+    contents: metaContents,
     numItems: ids.length,
     orderId: order.payment_intent_id,
   };
@@ -77,31 +100,37 @@ export async function sendPurchaseConversions(
     value: order.subtotal / 100,
     shipping: order.shipping / 100,
     currency: order.currency.toUpperCase(),
-    items: analyticsItems.map((it) => ({
-      item_id: it.item_id,
-      item_name: it.item_name,
-      price: it.price,
-      quantity: 1 as const,
-      item_category: it.item_category,
-      item_brand: it.item_brand,
-    })),
+    items: ga4Items,
     ...(emailHash ? { userData: { sha256_email_address: emailHash[0] } } : {}),
   };
 
   const sendMeta = deps.sendMeta ?? sendMetaPurchase;
   const sendGa4 = deps.sendGa4 ?? sendGa4Purchase;
 
-  try {
-    await sendMeta(deps.metaConfig, metaInput);
-  } catch (err) {
-    console.error('meta capi purchase failed for', paymentIntentId, err);
-    Sentry.captureException(err);
+  if (deps.metaConfig) {
+    try {
+      const result = await sendMeta(deps.metaConfig, metaInput);
+      if (!result.ok) {
+        console.error('meta capi purchase http error for', paymentIntentId, result.status);
+        Sentry.captureMessage(`meta capi purchase http error ${result.status} for ${paymentIntentId}`);
+      }
+    } catch (err) {
+      console.error('meta capi purchase failed for', paymentIntentId, err);
+      Sentry.captureException(err);
+    }
   }
-  try {
-    await sendGa4(deps.ga4Config, ga4Input);
-  } catch (err) {
-    console.error('ga4 mp purchase failed for', paymentIntentId, err);
-    Sentry.captureException(err);
+
+  if (deps.ga4Config) {
+    try {
+      const result = await sendGa4(deps.ga4Config, ga4Input);
+      if (!result.skipped && !result.ok) {
+        console.error('ga4 mp purchase http error for', paymentIntentId, result.status);
+        Sentry.captureMessage(`ga4 mp purchase http error ${result.status} for ${paymentIntentId}`);
+      }
+    } catch (err) {
+      console.error('ga4 mp purchase failed for', paymentIntentId, err);
+      Sentry.captureException(err);
+    }
   }
 }
 
