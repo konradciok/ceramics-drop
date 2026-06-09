@@ -14,7 +14,7 @@ export async function Header() {
   const t = await getTranslations();
 
   const mobileLinks = [
-    { href: '/kubki', label: t('nav.sklep') },
+    { href: '/sklep', label: t('nav.sklep') },
     { href: '/o-studiu', label: t('nav.studio') },
     { href: '/kontakt', label: t('nav.kontakt') },
   ];
@@ -33,7 +33,7 @@ export async function Header() {
         <div className="header-inner">
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}
           <nav className="nav-left">
-            <Link className="nav-link" href="/kubki">{t('nav.sklep')}</Link>
+            <Link className="nav-link" href="/sklep">{t('nav.sklep')}</Link>
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
           </nav>
           <MobileMenu links={mobileLinks} aria={mobileAria} />
