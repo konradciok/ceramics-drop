@@ -10,6 +10,7 @@ import {
   buildEngagementEvent,
   buildRemoveFromCartEvent,
   pushDataLayer,
+  toAnalyticsItem,
 } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
@@ -37,13 +38,16 @@ export function ProductTile({ product, onOpen }: Props) {
       onClick={() => {
         if (product.sold) {
           // Demand signal for already-sold pieces — important for drops. The tile
-          // is otherwise a no-op (sold pieces don't open the lightbox).
+          // is otherwise a no-op (sold pieces don't open the lightbox). Reuse
+          // toAnalyticsItem so item_name/price match every other ecommerce event
+          // and stay locale-independent (so PL/EN/ES clicks aggregate as one piece).
+          const item = toAnalyticsItem(product);
           pushDataLayer(
             buildEngagementEvent('sold_item_view', {
-              item_id: product.id,
-              item_name: displayName,
-              item_category: product.category,
-              price: product.price,
+              item_id: item.item_id,
+              item_name: item.item_name,
+              item_category: item.item_category,
+              price: item.price,
             }),
           );
           return;

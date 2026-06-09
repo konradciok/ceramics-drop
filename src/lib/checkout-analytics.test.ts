@@ -7,6 +7,7 @@ import {
   pushConfirmedPurchase,
   pushConfirmedPurchaseByIdsOnce,
   pushConfirmedPurchaseFromRememberedCheckout,
+  pushPaymentFailedOnce,
 } from './checkout-analytics';
 
 const product = (id: string) => {
@@ -222,6 +223,35 @@ describe('checkout analytics semantics', () => {
     );
   });
 
+  it('payment_failed fires once per payment intent and carries the status', () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    };
+
+    const first = pushPaymentFailedOnce('pi_fail', 'requires_payment_method', {
+      push,
+      storage: session,
+    });
+    const second = pushPaymentFailedOnce('pi_fail', 'requires_payment_method', {
+      push,
+      storage: session,
+    });
+
+    expect(first).toBe(true);
+    expect(second).toBe(false);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'site_engagement',
+        engagement_type: 'payment_failed',
+        status: 'requires_payment_method',
+      }),
+    );
+  });
+
   it('can explicitly forget a remembered checkout snapshot', () => {
     const storage = new Map<string, string>();
     const session = {
@@ -294,6 +324,24 @@ describe('checkout analytics never breaks the storefront when storage throws', (
 
   it('forgetRememberedCheckout swallows storage removal failures', () => {
     expect(() => forgetRememberedCheckout(throwingStorage)).not.toThrow();
+  });
+
+  it('pushPaymentFailedOnce still emits when storage throws', () => {
+    const push = vi.fn();
+
+    let fired = false;
+    expect(() => {
+      fired = pushPaymentFailedOnce('pi_fail_throw', 'canceled', {
+        push,
+        storage: throwingStorage,
+      });
+    }).not.toThrow();
+
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({ engagement_type: 'payment_failed' }),
+    );
   });
 
   it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', () => {

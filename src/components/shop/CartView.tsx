@@ -221,14 +221,14 @@ export function CartView() {
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
         sold.forEach((id) => remove(id));
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', sold_count: sold.length }));
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
         return;
       }
       if (res.status === 429) {
         // Too many checkout attempts — show a wait-and-retry message rather than
         // the generic "payment failed", which would invite rapid retries.
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited' }));
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited', status: 429 }));
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
@@ -244,7 +244,7 @@ export function CartView() {
       });
       setClientSecret(client_secret);
     } catch {
-      pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error' }));
+      pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
       setCheckoutError(t('cart.checkoutError'));
     } finally {
       setSubmitting(false);

@@ -7,7 +7,10 @@ import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
-import { pushConfirmedPurchaseFromRememberedCheckout } from '@/lib/checkout-analytics';
+import {
+  pushConfirmedPurchaseFromRememberedCheckout,
+  pushPaymentFailedOnce,
+} from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -36,16 +39,21 @@ export default function ReturnPage() {
         case 'processing':
           setStatus('processing');
           break;
-        default:
+        default: {
           // Distinct from checkout_error (pre-payment): the PaymentIntent itself
           // failed/was canceled. Only the status is sent — the PI id is a sensitive
-          // param and never reaches analytics.
-          pushDataLayer(
-            buildEngagementEvent('payment_failed', {
-              status: paymentIntent?.status ?? 'unknown',
-            }),
-          );
+          // param and never reaches analytics. The `status` param keeps the granularity
+          // (e.g. canceled vs. requires_payment_method) so the funnel can segment.
+          const status = paymentIntent?.status ?? 'unknown';
+          if (paymentIntent?.id) {
+            pushPaymentFailedOnce(paymentIntent.id, status);
+          } else {
+            // No PI id to dedupe against (e.g. unretrievable intent) — fire once.
+            pushDataLayer(buildEngagementEvent('payment_failed', { status }));
+          }
           setStatus('fail');
+          break;
+        }
       }
     });
   }, [clear]);
