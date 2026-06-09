@@ -28,7 +28,8 @@
     "kontakt": "Contacto",
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
-    "polityka": "Política de privacidad"
+    "polityka": "Política de privacidad",
+    "sklep": "Todas las piezas"
   },
   "nav": {
     "sklep": "Tienda",
@@ -166,8 +167,7 @@
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
     "heroSub": "Setenta y ocho piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se esmalta y se pinta a mano por separado, así que eliges exactamente el que ves en la foto.",
-    "heroCta1": "Ver tazas",
-    "heroCta2": "Ver jarrones",
+    "heroCta1": "Ver todas las piezas",
     "heroMetaName": "Taza Nº 02",
     "heroMetaDesc": "Palmera azul",
     "marquee": [
@@ -289,6 +289,11 @@
       "eyebrow": "Drop de junio — 10 piezas",
       "title": "Cuencos de borde ondulado <em>Nº 01–10</em>",
       "lead": "Cuencos de borde ondulado. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
+    },
+    "sklep": {
+      "eyebrow": "Drop de junio — 78 piezas",
+      "title": "Todas las <em>piezas</em>",
+      "lead": "Toda la colección en un solo lugar: tazas, jarrones, platos y cuencos. Cada pieza es única. Explora por categoría y marca tus favoritas."
     }
   },
   "studio": {
@@ -571,7 +576,8 @@
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
-      "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok."
+      "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
+      "sklep": "La colección completa de Anna Ciok: 78 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta."
     }
   },
   "consent": {
