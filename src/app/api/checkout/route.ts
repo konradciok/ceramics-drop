@@ -6,6 +6,8 @@ import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
+import { readConsent } from '@/components/consent/consent-mode';
+import type { MarketingContext } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +90,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
 
+  const cookieHeader = req.headers.get('cookie') ?? '';
+  const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
+  const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
+  const str2 = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : null);
+  const marketing: MarketingContext = {
+    consent,
+    fbp: str2(mc.fbp),
+    fbc: str2(mc.fbc),
+    ga_client_id: str2(mc.ga_client_id),
+    ga_session_id: str2(mc.ga_session_id),
+    ip: clientIp,
+    user_agent: req.headers.get('user-agent'),
+    event_source_url: req.headers.get('referer'),
+    captured_at: new Date().toISOString(),
+  };
+
   const subtotal = valid.items.reduce((s, i) => s + i.unit_price, 0);
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId,
@@ -106,6 +124,7 @@ export async function POST(req: Request) {
     inpost_target_point: target_point ?? null,
     shipping_address: address ?? null,
     locale,
+    marketing,
   });
   let itemsErr = null;
   if (!orderErr) {

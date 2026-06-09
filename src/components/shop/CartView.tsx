@@ -20,6 +20,7 @@ import {
   pushCheckoutStarted,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
+import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { srcSet } from '@/lib/images';
 import { SHIPPING_PLN, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
@@ -199,7 +200,7 @@ export function CartView() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: products.map((p) => p.id), ...deliveryBody() }),
+        body: JSON.stringify({ ids: products.map((p) => p.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies() }),
       });
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
