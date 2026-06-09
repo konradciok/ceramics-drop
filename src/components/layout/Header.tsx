@@ -29,7 +29,7 @@ export async function Header() {
     <>
       <Announce>{t('announce')}</Announce>
 
-      <header className="header">
+      <header id="site-header" className="header">
         <div className="header-inner">
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}
           <nav className="nav-left">
