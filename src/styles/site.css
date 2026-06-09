@@ -534,12 +534,15 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .lb-img {
   position:relative; background:var(--c-bone);
-  min-height:260px; aspect-ratio:4/3; touch-action:pan-y;
+  /* Box adopts each photo's natural ratio (set inline on load in Lightbox.tsx);
+     4/5 is the pre-load default since most pieces are portrait. */
+  min-height:260px; aspect-ratio:4/5; touch-action:pan-y;
 }
 @media (min-width:861px) {
-  .lb-img { min-height:360px; aspect-ratio:1/1; touch-action:auto; }
+  .lb-img { min-height:360px; touch-action:auto; }
 }
-.lb-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+/* contain (not cover) keeps the whole piece visible — never cropped to the frame */
+.lb-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
 .lb-body { padding:20px 20px max(20px, calc(env(safe-area-inset-bottom,0px) + 12px)); display:flex; flex-direction:column; }
 @media (min-width:861px) {
   .lb-body { padding:clamp(28px,3vw,48px); }

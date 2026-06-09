@@ -54,6 +54,11 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
   }
   const currentImage = images[imgIndex] ?? product?.image ?? '';
 
+  // Photos are either 4:5 (portrait) or 1:1 (square). Measure the loaded image's
+  // natural ratio and shape the box to match so the piece is shown in full —
+  // never cropped to a fixed frame (CLAUDE.md: preserve original proportions).
+  const [imgRatio, setImgRatio] = useState<number | null>(null);
+
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -130,6 +135,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
           <div ref={cardRef} className="lb-card">
             <div
               className="lb-img"
+              style={imgRatio ? { aspectRatio: String(imgRatio) } : undefined}
               // Touch-only swipe: gated on pointerType to avoid accidental mouse drags
               onPointerDown={(e) => {
                 if (e.pointerType !== 'touch') return;
@@ -166,7 +172,17 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 <Icon name="chevron-right" />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentImage} srcSet={srcSet(currentImage)} sizes="(min-width:861px) min(50vw, 460px), 100vw" alt={`${name} Nº ${product.num}`} draggable={false} />
+              <img
+                src={currentImage}
+                srcSet={srcSet(currentImage)}
+                sizes="(min-width:861px) min(50vw, 460px), 100vw"
+                alt={`${name} Nº ${product.num}`}
+                draggable={false}
+                onLoad={(e) => {
+                  const el = e.currentTarget;
+                  if (el.naturalWidth && el.naturalHeight) setImgRatio(el.naturalWidth / el.naturalHeight);
+                }}
+              />
               {images.length > 1 && (
                 <div className="lb-dots">
                   {images.map((img, i) => (
