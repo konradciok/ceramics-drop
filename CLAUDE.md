@@ -56,7 +56,9 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 
 ### Webhook Fulfillment
 
-`src/lib/webhook.ts` → `handleStripeEvent()` handles Stripe webhooks at `/api/stripe/webhook`. There is also a thin ACK-only handler at `/api/stripe/webhook-thin` (uses `STRIPE_WEBHOOK_THIN_SECRET`).
+`src/lib/webhook.ts` → `handleStripeEvent()` handles Stripe webhooks at `/api/stripe/webhook` (snapshot / full-payload event destination).
+
+**API-version ritual:** `src/lib/stripe.ts` does not pin `apiVersion`, so the SDK uses the account-default version, and the SDK's generated types track the version bundled with the installed `stripe` package (`^22.2.0` → `2026-05-27.dahlia`). Keep the snapshot webhook endpoint's API version (set in the Stripe Dashboard) matched to that bundled version, and when you bump the `stripe` package update the Dashboard endpoint in lockstep so incoming event payloads stay aligned with the SDK types.
 
 Event handling:
 - `payment_intent.succeeded` → `markPaid` (idempotent), then `ensureInvoiced` (errors swallowed — Stripe gets 200, no retry), then `createShipment` (re-throws retryable errors so Stripe retries up to 3 days)
@@ -92,7 +94,7 @@ All monetary values are integers in grosze (PLN×100). `src/lib/pricing.ts` defi
 - `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` / `NEXT_PUBLIC_INPOST_GEOWIDGET_ENV` — locker picker
 
 **Runtime secrets** (set with `wrangler secret put` in prod, `.dev.vars` locally):
-- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_WEBHOOK_THIN_SECRET`
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` / `INPOST_API_URL` / `INPOST_WEBHOOK_TOKEN`
 - `RESEND_API_KEY` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`

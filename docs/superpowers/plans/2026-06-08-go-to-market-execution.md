@@ -786,11 +786,10 @@ npx wrangler secret put SENTRY_DSN
 ```bash
 npx wrangler secret put STRIPE_SECRET_KEY            # sk_live_...
 npx wrangler secret put STRIPE_WEBHOOK_SECRET        # from live webhook endpoint
-npx wrangler secret put STRIPE_WEBHOOK_THIN_SECRET   # from live thin endpoint
 ```
 - [ ] Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...` as a **build var** and redeploy (it's inlined at build).
 - [ ] In the Stripe **live** dashboard:
-  - Register webhook → `https://anna-ciok.studio/api/stripe/webhook` (fulfillment) and `https://anna-ciok.studio/api/stripe/webhook-thin` (ACK shadow).
+  - Register webhook → `https://anna-ciok.studio/api/stripe/webhook` (fulfillment). Set the endpoint's API version to match `src/lib/stripe.ts` (`2026-05-27.dahlia`).
   - Enable Payment Element methods in **live**: **BLIK, P24, cards**.
 - [ ] **Verify (audit: "not readable via MCP — check manually"):** confirm the live webhook endpoints are listed and the live payment methods are enabled in the dashboard.
 
@@ -922,6 +921,6 @@ E2E_DESTRUCTIVE=1 npx playwright test --grep @destructive
 
 ## Self-review notes (spec coverage)
 
-Every audit item maps to a task: Stripe/InPost/Geowidget live → T17–19; shipping prices → T2–3; content mismatch → T4; returns flow → T12–13; consent gap → T11; legal/NIP → T5–6; ops/monitoring (new-order email, rate limiting) → T14–15; CI/CD gaps → T1; security headers → T7; bot-noise → T9; Sentry DSN → T16; reserve_pieces search_path → T10; InPost validation_failed → T21; webhook-thin/README/middleware-rename/inventory-seed minor debt → T8 (rename) + noted (webhook-thin and README remain low-priority debt, intentionally deferred — call out if you want them as tasks); Resend hardening → T20; live smoke test → T22.
+Every audit item maps to a task: Stripe/InPost/Geowidget live → T17–19; shipping prices → T2–3; content mismatch → T4; returns flow → T12–13; consent gap → T11; legal/NIP → T5–6; ops/monitoring (new-order email, rate limiting) → T14–15; CI/CD gaps → T1; security headers → T7; bot-noise → T9; Sentry DSN → T16; reserve_pieces search_path → T10; InPost validation_failed → T21; README/middleware-rename/inventory-seed minor debt → T8 (rename) + noted (README remains low-priority debt, intentionally deferred — call out if you want it as a task); Resend hardening → T20; live smoke test → T22.
 
-**Deferred by design (not launch-blocking):** `/api/stripe/webhook-thin` thin-destination migration completion; `README.md` URL/route refresh; inventory-seed drift (informational only — real DB already drifted as expected). Promote any of these to a task on request.
+**Deferred by design (not launch-blocking):** `README.md` URL/route refresh; inventory-seed drift (informational only — real DB already drifted as expected). Promote any of these to a task on request. (The `/api/stripe/webhook-thin` thin-destination migration was removed — see `docs/superpowers/specs/2026-06-09-thin-webhook-backout-design.md`.)
