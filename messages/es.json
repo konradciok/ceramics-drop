@@ -12,11 +12,12 @@
     "error": "Algo salió mal. Inténtalo de nuevo en un momento.",
     "moreInfo": "Más sobre envíos y devoluciones"
   },
-  "announce": "Drop de junio 2026 — 96 piezas, cada una única",
+  "announce": "Drop de junio 2026 — 78 piezas, cada una única",
   "title": {
     "home": "Anna Ciok Ceramics — Drop de junio 2026",
     "kubki": "Tazas",
-    "wazony": "Jarrones medianos",
+    "wazony": "Jarrones pequeños",
+    "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
     "talerzeDuze": "Platos grandes",
@@ -32,7 +33,8 @@
   "nav": {
     "sklep": "Tienda",
     "kubki": "Tazas",
-    "wazony": "Jarrones medianos",
+    "wazony": "Jarrones pequeños",
+    "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
     "talerzeDuze": "Platos grandes",
@@ -47,14 +49,15 @@
     "close": "Cerrar",
     "prev": "Anterior",
     "next": "Siguiente",
+    "photo": "Foto",
     "openMenu": "Abrir menú",
     "closeMenu": "Cerrar menú",
     "menuLabel": "Menú de navegación",
     "skipToContent": "Saltar al contenido"
   },
   "footer": {
-    "tagline": "Hecho despacio, pintado a mano.",
-    "blurb": "El pequeño estudio de cerámica de Anna Ciok. Cada pieza se modela y se pinta de una en una.",
+    "tagline": "Pintado despacio, una pieza a la vez.",
+    "blurb": "El pequeño estudio de cerámica de Anna Ciok. Cada motivo se crea por separado y se pinta a mano.",
     "hShop": "Tienda",
     "hStudio": "Estudio",
     "hInfo": "Información",
@@ -70,7 +73,8 @@
   },
   "product": {
     "mug": "Taza",
-    "vase": "Jarrón mediano",
+    "vase": "Jarrón pequeño",
+    "midvase": "Jarrón mediano",
     "bigvase": "Jarrón grande",
     "dish": "Platito",
     "plate": "Plato grande",
@@ -101,7 +105,8 @@
     "emptyH": "Tu carrito está <em>vacío</em>",
     "emptyP": "Elige piezas del drop de junio. Haz clic en una miniatura para añadirla a tu selección.",
     "seeMugs": "Ver tazas",
-    "seeVases": "Ver jarrones medianos",
+    "seeVases": "Ver jarrones pequeños",
+    "seeMidvases": "Ver jarrones medianos",
     "seeBigvases": "Ver jarrones grandes",
     "seeDishes": "Ver platitos",
     "seePlates": "Ver platos grandes",
@@ -159,8 +164,8 @@
   },
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
-    "heroTitle": "Una pieza, una forma, <em>una huella de la mano.</em>",
-    "heroSub": "Noventa y seis piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones medianos, jarrones grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada una se modeló, esmaltó y pintó por separado, así que eliges exactamente el ejemplar que ves en la foto.",
+    "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
+    "heroSub": "Setenta y ocho piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se esmalta y se pinta a mano por separado, así que eliges exactamente el que ves en la foto.",
     "heroCta1": "Ver tazas",
     "heroCta2": "Ver jarrones",
     "heroMetaName": "Taza Nº 02",
@@ -168,54 +173,59 @@
     "marquee": [
       "pintado a mano",
       "pieza única",
-      "hechas despacio",
+      "esmaltado por separado",
       "directo del estudio"
     ],
     "colEyebrow": "Drop de junio",
-    "colTitle": "Siete categorías, <em>noventa y seis historias.</em>",
+    "colTitle": "Ocho categorías, <em>setenta y ocho historias.</em>",
     "colLead": "Recorre el drop como una galería, marca tus piezas favoritas y pasa por caja cuando tu selección esté lista.",
     "card": {
       "mug": {
-        "num": "26 piezas · 90 zł cada una",
+        "num": "24 piezas · 90 zł cada una",
         "desc": "Tazas para el café y el té de todos los días. Palmeras, limones, conchas y cactus pintados con esmalte sobre arcilla clara.",
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "9 piezas · 210 zł cada uno",
+        "num": "8 piezas · 210 zł cada uno",
         "desc": "Jarrones panzudos para una rama, unos tulipanes o un ramo del mercado. Cada uno tiene su propio ritmo de rayas y dibujos.",
         "cta": "Elegir un jarrón"
       },
+      "midvase": {
+        "num": "4 piezas · 300 zł cada uno",
+        "desc": "Jarrones medianos con carácter — entre el formato pequeño y el grande.",
+        "cta": "Elegir un jarrón"
+      },
       "bigvase": {
-        "num": "10 piezas · 395 zł cada uno",
+        "num": "4 piezas · 395 zł cada uno",
         "desc": "Formas grandes con carácter: palmeras, conchas, cactus, una langosta y pequeñas escenas folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
       "dish": {
-        "num": "15 piezas · 105 zł cada uno",
+        "num": "14 piezas · 105 zł cada uno",
         "desc": "Platitos para joyas, aceite de oliva, sal o pequeños objetos de la mesilla. Pequeños, pero con mucho carácter.",
         "cta": "Elegir un platito"
       },
       "plate": {
-        "num": "12 piezas · 270 zł cada uno",
+        "num": "9 piezas · 270 zł cada uno",
         "desc": "Platos grandes para servir, coleccionar o colgar en la pared. Un burrito, palmeras, ojos, conchas y bordes pintados.",
         "cta": "Elegir un plato"
       },
       "largebowl": {
-        "num": "7 piezas · 315 zł cada uno",
+        "num": "5 piezas · 315 zł cada uno",
         "desc": "Cuencos amplios para fruta, ensaladas y cosas que quieren quedarse en la mesa. Dentro: jardines cobalto, palmeras y hojas.",
         "cta": "Elegir un cuenco"
       },
       "wavybowl": {
-        "num": "17 piezas · 155 zł cada uno",
+        "num": "10 piezas · 155 zł cada uno",
         "desc": "Cuencos de borde ondulado para desayunos, aperitivos y pequeños rituales diarios. Cada uno ondula a su manera.",
         "cta": "Elegir un cuenco"
       }
     },
     "storyEyebrow": "Sobre la artista",
-    "storyTitle": "Primero llegó la pintura, <em>ahora está la arcilla.</em>",
-    "storyP1": "Soy Anna. Pinto cuadros y hago cerámica, y esos dos mundos se encuentran en el mismo estudio. Trato una taza, un plato o un jarrón como un pequeño cuadro útil: puedes cogerlo, ponerlo en la mesa y usarlo sin esperar una ocasión especial.",
-    "storyP2": "Trabajo sola y despacio, una forma tras otra. La mano deja su huella en la línea, en el borde, en una palmera irregular y en una raya que no intenta ser perfecta. Ahí es donde cada pieza encuentra su carácter.",
-    "storyP3": "El drop de junio son noventa y seis piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
+    "storyTitle": "Primero llegó la pintura, <em>hoy está la cerámica.</em>",
+    "storyP1": "Soy Anna. Pinto cuadros y cerámica, y esos dos mundos se encuentran en el mismo estudio. Trato una taza, un plato o un jarrón como un pequeño cuadro útil: puedes cogerlo, ponerlo en la mesa y usarlo sin esperar una ocasión especial.",
+    "storyP2": "Trabajo sola y despacio, un ejemplar tras otro. La mano deja su huella en la línea del pincel, en una palmera irregular y en una raya que no intenta ser perfecta. Ahí es donde cada pieza encuentra su carácter.",
+    "storyP3": "El drop de junio son setenta y ocho piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
     "storyCta1": "Elegir una pieza",
     "storyCta2": "Escríbeme",
     "craftEyebrow": "Cómo funciona",
@@ -241,72 +251,77 @@
   "collection": {
     "hint": "Haz clic en una miniatura o en el título para ver los <b>detalles</b> de la pieza. Añádela con el botón <b>«Añadir al carrito»</b> en la ficha o en la vista previa. Las piezas seleccionadas se reúnen en la barra inferior.",
     "kubki": {
-      "eyebrow": "Drop de junio — 26 piezas",
-      "title": "Tazas <em>Nº 01–26</em>",
-      "lead": "Tazas pintadas a mano por 90 zł cada una. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
+      "eyebrow": "Drop de junio — 24 piezas",
+      "title": "Tazas <em>Nº 01–24</em>",
+      "lead": "Tazas pintadas a mano. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
     },
     "wazony": {
-      "eyebrow": "Drop de junio — 9 piezas",
-      "title": "Jarrones medianos <em>Nº 01–09</em>",
-      "lead": "Jarrones panzudos pintados a mano, por 210 zł cada uno. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
+      "eyebrow": "Drop de junio — 8 piezas",
+      "title": "Jarrones pequeños <em>Nº 01–08</em>",
+      "lead": "Jarrones panzudos pintados a mano. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
+    },
+    "wazony-srednie": {
+      "eyebrow": "Drop de junio — 4 piezas",
+      "title": "Jarrones medianos <em>Nº 01–04</em>",
+      "lead": "Jarrones medianos de cerámica, un ejemplar de cada uno. Una forma entre lo pequeño y lo grande — para un ramo o una estantería."
     },
     "wazony-duze": {
-      "eyebrow": "Drop de junio — 10 piezas",
-      "title": "Jarrones grandes <em>Nº 01–10</em>",
-      "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno, por 395 zł. Formas expresivas para ramos e interiores que agradecen una huella hecha a mano."
+      "eyebrow": "Drop de junio — 4 piezas",
+      "title": "Jarrones grandes <em>Nº 01–04</em>",
+      "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
     },
     "talerzyki": {
-      "eyebrow": "Drop de junio — 15 piezas",
-      "title": "Platitos <em>Nº 01–15</em>",
-      "lead": "Platitos por 105 zł cada uno. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
+      "eyebrow": "Drop de junio — 14 piezas",
+      "title": "Platitos <em>Nº 01–14</em>",
+      "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
     },
     "talerze-duze": {
-      "eyebrow": "Drop de junio — 12 piezas",
-      "title": "Platos grandes <em>Nº 01–12</em>",
-      "lead": "Platos grandes por 270 zł cada uno. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
+      "eyebrow": "Drop de junio — 9 piezas",
+      "title": "Platos grandes <em>Nº 01–09</em>",
+      "lead": "Platos grandes. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
     },
     "duze-michy": {
-      "eyebrow": "Drop de junio — 7 piezas",
-      "title": "Cuencos grandes <em>Nº 01–07</em>",
-      "lead": "Cuencos amplios pintados a mano por 315 zł cada uno. Cada uno está listo para fruta, ensalada o el centro de la mesa."
+      "eyebrow": "Drop de junio — 5 piezas",
+      "title": "Cuencos grandes <em>Nº 01–05</em>",
+      "lead": "Cuencos amplios pintados a mano. Cada uno está listo para fruta, ensalada o el centro de la mesa."
     },
     "miski-falowane": {
-      "eyebrow": "Drop de junio — 17 piezas",
-      "title": "Cuencos de borde ondulado <em>Nº 01–17</em>",
-      "lead": "Cuencos de borde ondulado por 155 zł cada uno. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
+      "eyebrow": "Drop de junio — 10 piezas",
+      "title": "Cuencos de borde ondulado <em>Nº 01–10</em>",
+      "lead": "Cuencos de borde ondulado. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
     }
   },
   "studio": {
     "eyebrow": "Estudio",
     "h1": "Un estudio, <em>un par de manos.</em>",
-    "lead": "Un pequeño estudio de cerámica en Tenerife. Modelo, esmalto y pinto todo yo misma, una pieza tras otra. Este drop de junio viajó conmigo a Polonia para el verano, así que la recogida se acuerda en Varsovia.",
-    "storyEyebrow": "Pintura y arcilla",
-    "storyH": "Pinto <em>y modelo.</em>",
-    "storyP1": "Soy Anna. Soy pintora y ceramista. Aunque sigo pintando, desde hace unos años la arcilla me atrae cada vez más. Me gusta que un cuadro pueda bajar de la pared, llegar a las manos y formar parte de lo cotidiano.",
-    "storyP2": "Llegué a la cerámica despacio: primero un curso, luego una estantería en el estudio de otra persona y, por fin, mi propio lugar pequeño con torno, horno y mesa de esmaltado. Es un trabajo tranquilo y físico, imposible de acelerar del todo.",
+    "lead": "Un pequeño estudio de cerámica en Tenerife. Aquí esmalto, pinto y remato cada pieza yo misma, una tras otra. Este drop de junio viajó conmigo a Polonia para el verano, así que la recogida se acuerda en Varsovia.",
+    "storyEyebrow": "Pintura y cerámica",
+    "storyH": "Pinto <em>sobre cerámica.</em>",
+    "storyP1": "Soy Anna. Soy pintora y artista cerámica. Aunque sigo pintando cuadros, desde hace unos años la cerámica me atrae cada vez más. Me gusta que un cuadro pueda bajar de la pared, llegar a las manos y formar parte de lo cotidiano.",
+    "storyP2": "Llegué a la cerámica despacio: primero un curso, luego una estantería en el estudio de otra persona y, por fin, mi propio lugar pequeño con mesa de esmaltado, pinceles y horno. Es un trabajo tranquilo y físico, imposible de acelerar del todo.",
     "storyP3": "Pinto a mano, sin calco y sin plantilla. Por eso una línea a veces se escapa un poco, una palmera sale algo torcida y dos motivos parecidos nunca son iguales. Para mí, ahí empieza la vida del objeto.",
     "factsEyebrow": "Detalles del estudio",
     "factsH": "Unos números <em>y datos.</em>",
     "fact1K": "Estudio",
     "fact1V": "Tenerife",
-    "fact1D": "Una sala, un torno, un horno. Las piezas del drop de junio ya están en Polonia, así que la recogida se acuerda en Varsovia con cita previa.",
+    "fact1D": "Una sala, una mesa de esmaltado, pinceles y un horno. Las piezas del drop de junio ya están en Polonia, así que la recogida se acuerda en Varsovia con cita previa.",
     "fact2K": "Cocción",
     "fact2V": "1040 <em>°C</em>",
-    "fact2D": "Dos cocciones por pieza — una de bizcocho y, tras esmaltar, la segunda definitiva.",
+    "fact2D": "Después del esmaltado y la pintura, cada pieza pasa por el horno: la cocción fija el color y convierte la superficie en una capa vítrea y funcional.",
     "fact3K": "Drop de junio",
-    "fact3V": "96 <em>piezas</em>",
-    "fact3D": "Tazas, jarrones medianos, jarrones grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada pieza es única.",
+    "fact3V": "78 <em>piezas</em>",
+    "fact3D": "Tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada pieza es única.",
     "fact4K": "Envío",
     "fact4V": "1–3 <em>días</em>",
     "fact4D": "Embalo a mano y envío por mensajería a toda Polonia.",
     "procEyebrow": "Cómo se hace una pieza",
-    "procH": "De un trozo de arcilla <em>a una pieza terminada.</em>",
-    "p1H": "Moldeo <em>y doy forma</em>",
-    "p1P": "Saco cada forma en el torno o la levanto a mano. Después unos días de secado y la primera cocción, de bizcocho, para que la arcilla endurezca.",
+    "procH": "De la primera capa <em>a una pieza terminada.</em>",
+    "p1H": "Preparo <em>la superficie</em>",
+    "p1P": "Empiezo revisando cada pieza, pensando la composición del motivo y eligiendo los colores del esmalte. Después llega el trabajo tranquilo, capa a capa.",
     "p2H": "Esmalto <em>y pinto</em>",
-    "p2P": "Sobre la superficie bizcochada aplico el esmalte y pinto el motivo con pincel: palmeras, limones, conchas, cactus, rayas. En ese momento cada pieza recibe su propio ritmo.",
+    "p2P": "Sobre la superficie cerámica clara aplico el esmalte y pinto el motivo con pincel: palmeras, limones, conchas, cactus, rayas. En ese momento cada pieza recibe su propio ritmo.",
     "p3H": "Cuezo <em>y firmo</em>",
-    "p3P": "La segunda cocción fija el esmalte y el color. Reviso la pieza terminada con cuidado, firmo la base y la dejo en la estantería, donde espera su casa.",
+    "p3P": "La cocción fija el esmalte y el color. Reviso la pieza terminada con cuidado, firmo la base y la dejo en la estantería, donde espera su casa.",
     "ctaH": "Cada una se va <em>una sola vez.</em>",
     "ctaP": "Cuando una pieza encuentra su hogar, deja la tienda para siempre. Echa un vistazo a lo que espera en el drop de junio.",
     "ctaB1": "Ver tazas",
@@ -393,7 +408,7 @@
     "updated": "Versión: junio 2026",
     "s1H": "§1 Disposiciones generales",
     "s1P1": "La tienda online Anna Ciok Ceramics la gestiona el estudio de cerámica de Anna Ciok, con sede en Varsovia. Puedes contactar con la vendedora en <link>hej@ciok.art</link>.",
-    "s1P2": "El objeto de venta son piezas de cerámica hechas a mano. Cada pieza es el único ejemplar — una vez vendida desaparece de la oferta y no se reproduce.",
+    "s1P2": "El objeto de venta son piezas de cerámica pintadas a mano. Cada pieza es el único ejemplar — una vez vendida desaparece de la oferta y no se reproduce.",
     "s2H": "§2 Pedidos",
     "s2P": "Realizas un pedido añadiendo las piezas elegidas al carrito y confirmando la compra. El contrato de venta se concluye en el momento en que se confirma el pedido y se confirma el pago.",
     "s2Li1": "Por el carácter único de las piezas, cada pieza solo puede venderse una vez",
@@ -454,8 +469,6 @@
       "Medio sol de rayos azules. El resto queda claro, liso y tranquilo.",
       "Un limón de terracota y puntos azules junto al borde. Cálida, ligera, un poco de vacaciones.",
       "Una palmera azul con frutos. El motivo clásico al que vuelvo con más gusto.",
-      "La palmera otra vez, pero con hojas en otro orden. Hermana, no gemela.",
-      "Una palmera de terracota con frutos negros. La versión nocturna del mismo recuerdo.",
       "Una flor de terracota en un tallo largo. Terrosa, sencilla y muy tranquila.",
       "Un limón de terracota y pequeños ladrillos negros en el borde. Un contraste pequeño que sostiene el conjunto.",
       "Bucles marrones, uno tras otro. Parecen una escritura que no hace falta leer.",
@@ -475,27 +488,25 @@
       "Una palmera y un borde a rayas. Ligero, veraniego, listo para algo verde.",
       "Bucles marrones rodean todo el cuerpo. Una sola línea que se convierte en baile.",
       "Una palmera negra con frutos óxido. Un motivo gráfico sobre esmalte blanco cálido.",
-      "Otra palmera negra, más grande y más decidida. Un poco como la tarde junto al agua.",
-      "Una cinta negra rodea el cuerpo y se llena de rayas finas. Un movimiento, mucha paciencia."
+      "Dientes de león negros y flores que caen alrededor del cuerpo. Un prado dibujado con una línea fina y oscura."
     ],
-    "wazony-duze": [
+    "wazony-srednie": [
       "Cactus negros y soles de terracota rodean el cuerpo. Dentro, un cuello de terracota marca el ritmo.",
       "Una amapola negra sobre un tallo de terracota en espiga. Las vetas rascadas y el borde a rayas le dan ligereza.",
       "Una concha negra enroscada línea a línea, con borde azul. Calma marina sobre una forma grande.",
-      "Otra concha negra, esta vez con un cuello azul de puntos. Una historia parecida con otro acento.",
-      "Un saguaro negro con púas blancas rascadas. Arriba, un cuello de terracota con ritmo acanalado.",
+      "Un saguaro negro con púas blancas rascadas. Arriba, un cuello de terracota con ritmo acanalado."
+    ],
+    "wazony-duze": [
       "Una langosta trazada con un solo pincel, de las antenas a la cola. Un guiño al mar en una pieza grande.",
       "Una luna, una rama en espiga y un hombre con sombrero. Una pequeña historia que gira alrededor del cuerpo.",
-      "Una mujer con falda de rayas, una luna y hojas. Una escena folk rascada en negro.",
       "Una palmera de terracota en espiga con frutos negros. El borde a rayas parece un toldo al sol.",
-      "Dientes de león negros y flores que caen alrededor del cuerpo. Un prado dibujado con una línea fina y oscura."
+      "Una cinta negra rodea el cuerpo y se llena de rayas finas. Un movimiento, mucha paciencia."
     ],
     "talerzyki": [
       "Una concha negra en el centro y marcas de terracota en el borde. Un buen platito para anillos, sal o aceite de oliva.",
       "Un cactus negro y un borde de terracota con puntos. Un desierto diminuto en la palma de la mano.",
-      "Otro cactus negro con un cuello de terracota ondulado. Para llaves, joyas y pequeñas cosas de todos los días.",
       "Una amapola negra sobre un tallo de terracota en espiga. El borde rayado mantiene el motivo en un marco tranquilo.",
-      "Una palmera azul y negra con frutos de terracota. Alrededor, finas rayas hechas a mano.",
+      "Una palmera azul y negra con frutos de terracota. Alrededor, finas rayas trazadas a mano.",
       "Una concha de terracota y un borde ajedrezado en blanco y negro. Cálida y marina a la vez.",
       "Una amapola de terracota sobre hojas negras en espiga. Una de las flores más sencillas y silenciosas.",
       "Un cactus de terracota con púas blancas y borde negro de puntos. Clima seco, línea suave.",
@@ -511,14 +522,11 @@
       "Un burrito marrón con una manta blanca rascada. Por el borde corre una trenza negra y ondulada.",
       "Una concha de terracota enroscada línea a línea. El borde negro de escamas le da un contorno firme.",
       "Una concha alta de terracota con espiral blanca rascada. En el borde, un peine de pequeñas escamas.",
-      "Una palmera negra con frutos de terracota. Una trenza ondulada de terracota rodea el borde.",
       "Tres saguaros negros con púas blancas. Una ola de terracota guía la mirada alrededor del borde.",
-      "Una palmera azul con frutos negros. El borde negro en rayos le da energía.",
       "Ocho flores azules repartidas por todo el fondo. Sin borde: solo un prado claro.",
       "Un limón azul con semillas blancas. Pequeños ladrillos negros cierran el motivo junto al borde.",
       "Una gran hoja azul con nervios blancos. El resto del plato queda claro y cálido.",
       "Un ojo-estrella azul en un abanico de pétalos. Marcas de terracota con punto ponen ritmo al borde.",
-      "Una palmera azul con frutos de terracota. En el borde, barras de terracota con pequeños puntos.",
       "Un ojo de terracota en un abanico de lágrimas. Pequeños ladrillos azules rodean el borde."
     ],
     "duze-michy": [
@@ -526,27 +534,18 @@
       "Amapolas negras y hojas de terracota en espiga. Una rama de otoño repartida por el fondo de un cuenco grande.",
       "Palmeras de terracota en espiga con frutos negros. Un ritmo de vacaciones que rodea todo el cuenco.",
       "Saguaros de terracota y pequeños rombos negros. Un desierto extendido sobre una forma amplia y clara.",
-      "Una ola cobalto, un borde ondulado y un interior lleno de flores, higos y conchas. Un cuenco grande con jardín dentro.",
-      "Zigzags en negro y terracota. Tres ritmos de olas sobre esmalte blanco cálido.",
       "Un jardín negro en el interior: flor de puntos, estrellitas y hojas en espiga. Toda una historia en el fondo del cuenco."
     ],
     "miski-falowane": [
-      "Cactus negros, soles de terracota y borde ondulado. Toda una familia del desierto en un cuenco.",
-      "Cactus azules y puntos de terracota. Frescor de desierto sobre una forma suavemente ondulada.",
       "Un saguaro negro y un sol de terracota. El borde ondulado se abre como un pétalo de cerámica.",
-      "Cactus negros, un sol de terracota y una ola marrón en la base. El desierto rodea todo el cuenco.",
       "Conchas negras alrededor de una estrella de mar de terracota. Motivo marino sobre borde ondulado.",
       "Grandes cactus negros y puntos óxido. El más atrevido de los cuencos del desierto.",
       "Hojas negras y de terracota en espiga. Una rama de otoño recorriendo los lados.",
       "Cactus azules y soles de terracota. Un desierto fresco y luminoso para usar a diario.",
       "Una palmera azul con frutos de terracota y una ola debajo. Ligera, veraniega, con movimiento.",
-      "Una palmera azul y frutos óxido vistos desde arriba. Un pequeño trópico dentro del cuenco.",
-      "Hojas de terracota en espiga y una ola grafito por fuera. Tranquila, suave y muy cotidiana.",
       "Una palmera de terracota con frutos negros. Aire cálido y seco sobre una forma ondulada.",
-      "Conchas azules alrededor de una estrella de mar de terracota. Calma marina en un cuenco pequeño.",
       "Conchas azules y una ola de terracota en la base. Cada espiral, línea a línea.",
       "Limones azules con puntos blancos, vistos desde arriba. Verano guardado en un cuenco pequeño.",
-      "Limones azules alrededor del cuerpo. Un ritmo fresco y cítrico sobre esmalte claro.",
       "Ramas negras con bayas y hojas en espiga. El borde ondulado parece un pétalo suave."
     ]
   },
@@ -562,16 +561,17 @@
     "shop": "Ir a la tienda"
   },
   "meta": {
-    "description": "Cerámica funcional pintada a mano por Anna Ciok: tazas, jarrones, cuencos y platos. Drop de junio 2026, 96 piezas únicas.",
-    "ogImageAlt": "Anna Ciok Ceramics — taza cerámica artesanal",
+    "description": "Cerámica funcional pintada a mano por Anna Ciok: tazas, jarrones, cuencos y platos. Drop de junio 2026, 78 piezas únicas.",
+    "ogImageAlt": "Anna Ciok Ceramics — taza de cerámica pintada a mano",
     "collections": {
-      "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 26 piezas irrepetibles del drop de junio de Anna Ciok.",
-      "wazony": "Jarrones de cerámica pintados a mano. Nueve piezas panzudas y únicas del drop de junio de Anna Ciok.",
-      "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Diez obras del drop de junio de Anna Ciok.",
-      "talerzyki": "Platitos de cerámica pintados a mano, ⌀ 12 cm. Quince ejemplares únicos del drop de junio de Anna Ciok.",
-      "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 28 cm. Doce piezas únicas para la mesa, la colección o la pared.",
-      "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Siete piezas del drop de junio de Anna Ciok.",
-      "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diecisiete piezas del drop de junio de Anna Ciok."
+      "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 24 piezas irrepetibles del drop de junio de Anna Ciok.",
+      "wazony": "Jarrones pequeños de cerámica pintados a mano. Ocho piezas panzudas y únicas del drop de junio de Anna Ciok.",
+      "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Cuatro piezas únicas del drop de junio de Anna Ciok.",
+      "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Cuatro obras del drop de junio de Anna Ciok.",
+      "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
+      "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
+      "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
+      "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok."
     }
   },
   "consent": {

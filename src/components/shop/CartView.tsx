@@ -77,6 +77,7 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
 const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
   { key: 'seeMugs',       href: '/kubki',          primary: true },
   { key: 'seeVases',      href: '/wazony' },
+  { key: 'seeMidvases',   href: '/wazony-srednie' },
   { key: 'seeBigvases',   href: '/wazony-duze' },
   { key: 'seeDishes',     href: '/talerzyki' },
   { key: 'seePlates',     href: '/talerze-duze' },

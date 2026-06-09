@@ -61,22 +61,21 @@ describe('analytics ecommerce payloads', () => {
   });
 
   it('derives stable locale-independent item_name from singularKey for hyphenated categories', () => {
-    // wazony-duze → singularKey 'bigvase' → 'Bigvase Nº 02'
-    // product d02 is wazony-duze display index 2, num '02'
-    const bigvaseProduct = product('d02');
+    // wazony-duze → singularKey 'bigvase'. d06 keeps its id but is now Nº 01.
+    const bigvaseProduct = product('d06');
     expect(bigvaseProduct.category).toBe('wazony-duze');
     const bigvaseItem = toAnalyticsItem(bigvaseProduct);
-    expect(bigvaseItem.item_name).toBe('Bigvase Nº 02');
+    expect(bigvaseItem.item_name).toBe('Bigvase Nº 01');
     expect(bigvaseItem.item_category).toBe('wazony-duze');
-    expect(bigvaseItem.item_variant).toBe('Nº 02');
+    expect(bigvaseItem.item_variant).toBe('Nº 01');
 
-    // miski-falowane → singularKey 'wavybowl' → 'Wavybowl Nº 16'
-    const wavybowlProduct = product('w16');
+    // miski-falowane → singularKey 'wavybowl'. w17 keeps its id, now Nº 10.
+    const wavybowlProduct = product('w17');
     expect(wavybowlProduct.category).toBe('miski-falowane');
     const wavybowlItem = toAnalyticsItem(wavybowlProduct);
-    expect(wavybowlItem.item_name).toBe('Wavybowl Nº 16');
+    expect(wavybowlItem.item_name).toBe('Wavybowl Nº 10');
     expect(wavybowlItem.item_category).toBe('miski-falowane');
-    expect(wavybowlItem.item_variant).toBe('Nº 16');
+    expect(wavybowlItem.item_variant).toBe('Nº 10');
   });
 
   it('item_category equals product.category directly (no round-trip indirection)', () => {

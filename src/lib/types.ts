@@ -8,6 +8,7 @@
 export type CategorySlug =
   | 'kubki'
   | 'wazony'
+  | 'wazony-srednie'
   | 'wazony-duze'
   | 'talerzyki'
   | 'talerze-duze'
@@ -23,6 +24,8 @@ export interface Product {
   num: string;
   /** Public image path, e.g. `/uploads/kubek-1.webp`. */
   image: string;
+  /** Additional images beyond the primary (gallery / second photos). */
+  gallery?: string[];
   /** Price in EUR. */
   price: number;
   /** Physical measurement, e.g. `9 × 9 cm · 300 ml`. */

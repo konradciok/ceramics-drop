@@ -24,6 +24,7 @@ export function ProductTile({ product, onOpen }: Props) {
 
   const name = t(`product.${CATEGORIES[product.category].singularKey}`);
   const displayName = `${name} Nº ${product.num}`;
+  const gallery = product.gallery ?? [];
 
   return (
     <div
@@ -37,6 +38,13 @@ export function ProductTile({ product, onOpen }: Props) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
+      {gallery.length > 0 && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="tile-alt" src={gallery[0]} srcSet={srcSet(gallery[0])} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt="" aria-hidden="true" loading="lazy" />
+          <span className="tile-multi" aria-hidden="true">{gallery.length + 1}</span>
+        </>
+      )}
       <div className="veil" />
       <span className="sold-tag">{t('gallery.sold')}</span>
       <div className="check">

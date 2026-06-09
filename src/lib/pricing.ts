@@ -4,6 +4,8 @@ import type { CategorySlug } from './types';
 export const PRICE_PLN: Record<CategorySlug, number> = {
   kubki: 90,
   wazony: 210,
+  // TODO(artystka): potwierdzić cenę "Średnich wazonów" — placeholder między małymi (210) a dużymi (395).
+  'wazony-srednie': 300,
   'wazony-duze': 395,
   talerzyki: 105,
   'talerze-duze': 270,

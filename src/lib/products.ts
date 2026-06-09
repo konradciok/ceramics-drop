@@ -2,31 +2,38 @@
    Product catalogue — registry + accessors
    ------------------------------------------------------------
    The CATEGORIES registry below is the structural site map of the
-   seven product families (slug, price, measure, count). It drives
+   eight product families (slug, price, measure, count). It drives
    routing, navigation and the collection pages.
 
-   getProducts() returns the full 96-piece Product[] built from SPECS:
-   image paths (mapped from upload filenames), sold flags, and per-piece
-   metadata (id, num, price, measure, noteIndex). Category descriptions
-   are wired through the i18n message catalogs.
+   getProducts() returns the full Product[] built in two passes:
+     1. buildBase() generates the original pieces with STABLE ids
+        (id never changes for a physical piece — it is the key used
+        by piece_state / orders in the DB).
+     2. applyInventoryReview() applies the artist's June inventory
+        review as a declarative diff (removals, recategorisations,
+        gallery merges), then renumbers the DISPLAY number (num) and
+        noteIndex per category. Stable ids survive; only num/category
+        change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '9 × 9 cm · 300 ml', count: 26 },
-  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '18 × 16 cm', count: 9 },
-  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '24 × 20 cm', count: 10 },
-  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '⌀ 12 cm', count: 15 },
-  'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 28 cm', count: 12 },
-  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '⌀ 26 × 14 cm', count: 7 },
-  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '⌀ 16 × 9 cm', count: 17 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 24 },
+  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 8 },
+  'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 4 },
+  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 4 },
+  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '12 × 12 × 3 cm', count: 14 },
+  'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
+  'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 5 },
+  'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
 export const CATEGORY_ORDER: CategorySlug[] = [
   'kubki',
   'wazony',
+  'wazony-srednie',
   'wazony-duze',
   'talerzyki',
   'talerze-duze',
@@ -47,10 +54,14 @@ type Spec = {
   slug: CategorySlug;
   prefix: string;
   imageBase: string;
-  /** Image file numbers, in display order (skips reflect missing files). */
+  /** Image file numbers, in original order (skips reflect missing files). */
   files: number[];
 };
 
+/* Original generation specs. These define the STABLE id of every physical
+   piece: id = prefix + pad(positionInFiles). Image stem is imageBase-file.
+   Never reorder/edit these to "fix" the catalogue — that would renumber
+   stable ids. Catalogue changes go through INVENTORY_REVIEW below. */
 const SPECS: Spec[] = [
   { slug: 'kubki', prefix: 'k', imageBase: 'kubek', files: range(1, 26) },
   { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 9) },
@@ -61,18 +72,99 @@ const SPECS: Spec[] = [
   { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 17) },
 ];
 
-function buildProducts(): Product[] {
-  const products: Product[] = [];
+/** Base piece: stable id + image, before the inventory review diff. */
+type BasePiece = { id: string; category: CategorySlug; image: string };
+
+function buildBase(): BasePiece[] {
+  const base: BasePiece[] = [];
   for (const spec of SPECS) {
-    const cat = CATEGORIES[spec.slug];
     spec.files.forEach((file, i) => {
-      const num = pad(i + 1);
-      const id = `${spec.prefix}${num}`;
-      products.push({
-        id,
+      base.push({
+        id: `${spec.prefix}${pad(i + 1)}`,
         category: spec.slug,
-        num,
         image: `/uploads/${spec.imageBase}-${file}.webp`,
+      });
+    });
+  }
+  return base;
+}
+
+/* ------------------------------------------------------------------
+   Inventory review — June drop (notatki ze spotkania z artystką).
+   Expressed as a diff over the stable base so that ids never shift.
+   ------------------------------------------------------------------ */
+
+/** Pieces removed from sale entirely (drop from catalogue + piece_state). */
+const REMOVED = new Set<string>([
+  'k15', 'k16',                          // kubki
+  'v08', 'd04', 'd08',                   // wazy: out / duplicate
+  't03',                                 // talerzyki
+  'p04', 'p06', 'p11',                   // talerze-duze
+  'b05', 'b06',                          // duże misy (galeria później)
+  'w01', 'w02', 'w04', 'w10',            // miski falowane: out
+  'w11', 'w13', 'w16',                   // miski falowane: scalone jako 2. zdjęcie
+]);
+
+/** Pieces moved to a different family (keep stable id, change category). */
+const RECATEGORISE: Record<string, CategorySlug> = {
+  // dawne "Duże wazony" rozbite na średnie + duże
+  d01: 'wazony-srednie', d02: 'wazony-srednie', d03: 'wazony-srednie', d05: 'wazony-srednie',
+  // swap między poziomami
+  d10: 'wazony',         // duże Nº10 → małe
+  v09: 'wazony-duze',    // nowa seria (waza-mala-9) → duże Nº04
+};
+
+/** Display order overrides: pieces appended to the END of a family, in order. */
+const APPEND_ORDER: Partial<Record<CategorySlug, string[]>> = {
+  wazony: ['d10'],
+  'wazony-duze': ['v09'],
+};
+
+/** Gallery merges: target id gets these extra image stems (second photos). */
+const GALLERY_MERGE: Record<string, string[]> = {
+  w12: ['/uploads/miski-falowane-11.webp'],
+  w14: ['/uploads/miski-falowane-13.webp'],
+  w15: ['/uploads/miski-falowane-16.webp'],
+};
+
+function buildProducts(): Product[] {
+  const base = buildBase().filter((p) => !REMOVED.has(p.id));
+
+  // Apply recategorisation.
+  for (const p of base) {
+    const next = RECATEGORISE[p.id];
+    if (next) p.category = next;
+  }
+
+  // Group per family, preserving base order, then appended movers.
+  const byCat = CATEGORY_ORDER.reduce(
+    (acc, slug) => {
+      acc[slug] = [];
+      return acc;
+    },
+    {} as Record<CategorySlug, BasePiece[]>,
+  );
+  for (const p of base) {
+    if (!APPEND_ORDER[p.category]?.includes(p.id)) byCat[p.category].push(p);
+  }
+  for (const slug of CATEGORY_ORDER) {
+    for (const id of APPEND_ORDER[slug] ?? []) {
+      const piece = base.find((p) => p.id === id);
+      if (piece) byCat[slug].push(piece);
+    }
+  }
+
+  // Materialise: assign sequential display num + noteIndex, attach gallery.
+  const products: Product[] = [];
+  for (const slug of CATEGORY_ORDER) {
+    const cat = CATEGORIES[slug];
+    byCat[slug].forEach((p, i) => {
+      products.push({
+        id: p.id,
+        category: slug,
+        num: pad(i + 1),
+        image: p.image,
+        ...(GALLERY_MERGE[p.id] ? { gallery: GALLERY_MERGE[p.id] } : {}),
         price: cat.price,
         measure: cat.measure,
         sold: false,
@@ -96,8 +188,8 @@ const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
 );
 
 /**
- * Returns every product — all 96 pieces across the seven categories,
- * each with image path, sold flag, price, measure, and display index.
+ * Returns every product across the eight categories, each with image
+ * path, optional gallery, sold flag, price, measure, and display index.
  */
 export function getProducts(): Product[] {
   return PRODUCTS;
