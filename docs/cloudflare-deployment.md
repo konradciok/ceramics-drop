@@ -133,6 +133,7 @@ Same values as `.env.local`. Do **not** add GCP / GTM API secrets.
 The build vars above are **not** the runtime secrets. Server-only secrets are set per-environment with `wrangler secret put <NAME>` (or `.dev.vars` locally) — see `.env.example` for the authoritative list and inline notes. Beyond Stripe/Supabase/InPost, the **returns + studio-email** flow needs:
 
 - `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (return labels, shipping confirmations); Resend template aliases are wired in `src/lib/email-layout.ts`.
+- `RESEND_WEBHOOK_SECRET` — Svix signing secret for `/api/resend/webhook`; get from the Resend dashboard → Webhooks → signing secret. **Required after deploying PR #44** or the endpoint returns `500`.
 - `STUDIO_RETURN_FIRST_NAME` / `_LAST_NAME` / `_PHONE` / `_ADDRESS_STREET` / `_BUILDING` / `_CITY` / `_POSTAL` / `_POINT` — the InPost return receiver. **All required**, or `POST /api/returns` returns `503`. `STUDIO_RETURN_EMAIL` defaults to `STUDIO_NOTIFY_EMAIL` when unset.
 
 ### npm version (lockfile)

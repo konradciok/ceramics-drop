@@ -38,8 +38,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'bad_signature' }, { status: 400 });
   }
 
+  // Reject oversized bodies early — Resend events are tiny (< 2 KB in practice).
+  const MAX_PAYLOAD_BYTES = 65_536;
+  const contentLength = req.headers.get('content-length');
+  if (contentLength !== null && parseInt(contentLength, 10) > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
+  }
+
   // Signature is over the raw bytes — read text before any parsing.
   const payload = await req.text();
+  if (payload.length > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
+  }
 
   const valid = await verifyResendSignature({
     secret: env.RESEND_WEBHOOK_SECRET,

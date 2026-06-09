@@ -95,7 +95,7 @@ export async function verifyResendSignature(params: {
 
   // `svix-signature` is a space-separated list of `version,signature` tokens
   // (e.g. `v1,abc v1,def`). Accept if any v1 signature matches.
-  for (const token of svixSignature.split(' ')) {
+  for (const token of svixSignature.trim().split(/\s+/)) {
     const comma = token.indexOf(',');
     if (comma === -1) continue;
     if (token.slice(0, comma) !== 'v1') continue;
