@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All 88 products are unique (no quantities) — once sold, they're gone. Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The June inventory review cut the catalogue to 78 standalone pieces. Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -34,7 +34,7 @@ npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 
 ### Product Registry
 
-All 88 products are defined statically in `src/lib/products.ts`. At module load time, three lookup structures are built: `PRODUCTS` (array), `PRODUCT_BY_ID` (map), `PRODUCTS_BY_CATEGORY` (map). The database (`piece_state` table) is the source of truth only for sold/reserved state — product metadata never lives in the DB.
+All products are defined statically in `src/lib/products.ts`. The registry is built in two passes: `buildBase()` generates pieces with stable ids, then `buildProducts()` applies the inventory-review diff (`REMOVED` / `RECATEGORISE` / `APPEND_ORDER` / `GALLERY_MERGE`) and assigns display `num` + `noteIndex`. At module load time three lookup structures are built: `PRODUCTS` (array), `PRODUCT_BY_ID` (map), `PRODUCTS_BY_CATEGORY` (map). The database (`piece_state` table) is the source of truth only for sold/reserved state — product metadata never lives in the DB.
 
 Each product has: `id` (e.g. `k01`, `v03`), `category` slug, `price` in PLN złoty (integer; converted to grosze at checkout via `toGrosze()`), image path, dimensions, and a `noteIndex` for i18n content lookup. The `sold` flag is NOT baked in at module load — `getSoldIds()` in `src/lib/inventory.ts` fetches it and is merged at render time on collection pages and via `/api/inventory` on the cart page.
 
@@ -106,7 +106,7 @@ See `.env.example` for the full list and setup notes. See `docs/cloudflare-deplo
 
 **Server vs client components:** Default to server components (async). Add `'use client'` only when needed for state, hooks, or browser APIs. Secrets (Stripe, Supabase admin) are never exposed to the client — all sensitive operations go through API routes.
 
-**Product IDs:** Single-letter category prefix + zero-padded number (`k01` = kubki 01). Category slugs: `kubki`, `wazony`, `wazony-duze`, `talerzyki`, `talerze-duze`, `duze-michy`, `miski-falowane`.
+**Product IDs:** Single-letter category prefix + zero-padded number (`k01` = kubki 01). The `id` is a STABLE token — it never renumbers when the catalogue is cut; the display `num` and `category` may change via the inventory-review diff in `products.ts`. Category slugs: `kubki`, `wazony`, `wazony-srednie`, `wazony-duze`, `talerzyki`, `talerze-duze`, `duze-michy`, `miski-falowane`.
 
 **CSS:** Token-driven via custom properties in `src/styles/tokens.css` (`--c-*` colors, `--f-*` fonts, `--gut` gutter, `--section-y` spacing, `--r-*` radii). No CSS-in-JS — plain CSS files colocated with components or in `src/styles/`.
 

@@ -1,7 +1,9 @@
-import { getProductById } from './products';
+import { getProductById, getProducts } from './products';
 import { toGrosze } from './pricing';
 
-export const MAX_CART = 78; // total catalog size — a hard sanity bound.
+// Hard sanity bound: a cart can never hold more than the whole (one-of-a-kind)
+// catalogue. Derived so it can't drift when the catalogue changes.
+export const MAX_CART = getProducts().length;
 
 export type CheckoutItem = { product_id: string; unit_price: number };
 export type ValidateResult =

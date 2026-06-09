@@ -3,9 +3,16 @@ import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze } 
 
 describe('pricing', () => {
   it('exposes PLN prices for all eight categories', () => {
-    expect(PRICE_PLN.kubki).toBe(90);
-    expect(PRICE_PLN['wazony-srednie']).toBe(300);
-    expect(PRICE_PLN['wazony-duze']).toBe(395);
+    expect(PRICE_PLN).toEqual({
+      kubki: 90,
+      wazony: 210,
+      'wazony-srednie': 300,
+      'wazony-duze': 395,
+      talerzyki: 105,
+      'talerze-duze': 270,
+      'duze-michy': 315,
+      'miski-falowane': 155,
+    });
   });
 
   it('exposes a per-method shipping price map', () => {

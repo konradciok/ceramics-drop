@@ -143,7 +143,15 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 const dy = e.clientY - pointerStart.current.y;
                 pointerStart.current = null;
                 if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-                  onStep(dx < 0 ? 1 : -1);
+                  const dir = dx < 0 ? 1 : -1;
+                  // On a multi-photo piece, swipe pages the gallery first; only
+                  // step to the prev/next piece once at the gallery's edge.
+                  const nextImg = imgIndex + dir;
+                  if (images.length > 1 && nextImg >= 0 && nextImg < images.length) {
+                    setImgIndex(nextImg);
+                  } else {
+                    onStep(dir);
+                  }
                 }
               }}
               onPointerCancel={() => { pointerStart.current = null; }}

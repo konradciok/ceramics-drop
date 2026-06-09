@@ -22,6 +22,13 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 
 **Not provisioned (v1):** D1, KV, Durable Objects, Queues, Hyperdrive, R2, Cloudflare Images. The app is fully static SSG; incremental cache uses `staticAssetsIncrementalCache` (see `open-next.config.ts`).
 
+> **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
+> `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy. Audit gaps with:
+> ```sql
+> -- catalogue ids are the source of truth; list any that lack a piece_state row
+> select unnest(:catalogue_ids) except select product_id from piece_state;
+> ```
+
 ## Prerequisites
 
 1. **Cloudflare login:** `npx wrangler whoami`
