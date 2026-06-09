@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 96 pieces', () => {
-    expect(getProducts()).toHaveLength(96);
+  it('builds exactly 78 pieces (post June inventory review)', () => {
+    expect(getProducts()).toHaveLength(78);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 26, wazony: 9, 'wazony-duze': 10, talerzyki: 15, 'talerze-duze': 12, 'duze-michy': 7, 'miski-falowane': 17 };
+    const counts = { kubki: 24, wazony: 8, 'wazony-srednie': 4, 'wazony-duze': 4, talerzyki: 14, 'talerze-duze': 9, 'duze-michy': 5, 'miski-falowane': 10 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -30,14 +30,9 @@ describe('getProducts', () => {
     expect(getProductById('v01')!.image).toBe('/uploads/waza-mala-1.webp');
     expect(getProductById('d02')!.image).toBe('/uploads/waza-duza-3.webp');
     expect(getProductById('p12')!.image).toBe('/uploads/talerz-duzy-13.webp');
-    expect(getProductById('w16')!.image).toBe('/uploads/miski-falowane-16.webp');
     // Newly added pieces
     expect(getProductById('k23')!.image).toBe('/uploads/kubek-23.webp');
-    expect(getProductById('k24')!.image).toBe('/uploads/kubek-24.webp');
-    expect(getProductById('k25')!.image).toBe('/uploads/kubek-25.webp');
     expect(getProductById('k26')!.image).toBe('/uploads/kubek-26.webp');
-    expect(getProductById('v09')!.image).toBe('/uploads/waza-mala-9.webp');
-    expect(getProductById('d10')!.image).toBe('/uploads/waza-duza-11.webp');
     expect(getProductById('b07')!.image).toBe('/uploads/duza-micha-7.webp');
     expect(getProductById('w17')!.image).toBe('/uploads/miski-falowane-17.webp');
   });
@@ -45,7 +40,6 @@ describe('getProducts', () => {
   it('sets price, measure and noteIndex from the category', () => {
     const k = getProductById('k01')!;
     expect(k).toMatchObject({ price: 90, measure: '9 × 9 cm · 300 ml', num: '01', noteIndex: 0 });
-    expect(getProductById('d02')!.noteIndex).toBe(1);
   });
 
   it('caches the registry — same reference across calls', () => {
@@ -56,6 +50,47 @@ describe('getProducts', () => {
   it('returns the registry instance from lookups', () => {
     const all = getProducts();
     expect(getProductById('k01')).toBe(all.find((p) => p.id === 'k01'));
+  });
+});
+
+describe('June inventory review', () => {
+  it('removes withdrawn pieces from the catalogue', () => {
+    for (const id of ['k15', 'k16', 'v08', 'd04', 'd08', 't03', 'p04', 'p06', 'p11', 'b05', 'b06', 'w01', 'w02', 'w04', 'w10', 'w11', 'w13', 'w16']) {
+      expect(getProductById(id), id).toBeUndefined();
+    }
+  });
+
+  it('keeps stable ids while resequencing display numbers', () => {
+    // p10 (the one ordered/sold piece) keeps its id but moves to Nº08 after p04/p06 are removed.
+    const p10 = getProductById('p10')!;
+    expect(p10.category).toBe('talerze-duze');
+    expect(p10.image).toBe('/uploads/talerz-duzy-10.webp');
+    expect(p10.num).toBe('08');
+  });
+
+  it('splits the large vases into medium + large and swaps the movers', () => {
+    // dawne duże d01–d03,d05 → średnie
+    for (const id of ['d01', 'd02', 'd03', 'd05']) {
+      expect(getProductById(id)!.category, id).toBe('wazony-srednie');
+    }
+    // d06,d07,d09 stay large; v09 moves in as the new Nº04
+    for (const id of ['d06', 'd07', 'd09', 'v09']) {
+      expect(getProductById(id)!.category, id).toBe('wazony-duze');
+    }
+    // d10 drops down to the small vases
+    expect(getProductById('d10')!.category).toBe('wazony');
+    expect(getProductById('v09')!.image).toBe('/uploads/waza-mala-9.webp');
+    expect(getProductById('d10')!.image).toBe('/uploads/waza-duza-11.webp');
+  });
+
+  it('merges second photos into the target piece gallery', () => {
+    expect(getProductById('w12')!.gallery).toEqual(['/uploads/miski-falowane-11.webp']);
+    expect(getProductById('w14')!.gallery).toEqual(['/uploads/miski-falowane-13.webp']);
+    expect(getProductById('w15')!.gallery).toEqual(['/uploads/miski-falowane-16.webp']);
+  });
+
+  it('leaves non-gallery pieces without a gallery field', () => {
+    expect(getProductById('k01')!.gallery).toBeUndefined();
   });
 });
 

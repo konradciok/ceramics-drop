@@ -387,6 +387,16 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .tile.sold .sold-tag { display:block; }
 
+/* galeria: drugie zdjęcie sztuki — podmiana na hover + wskaźnik liczby zdjęć */
+.tile-alt { opacity:0; transition:opacity .45s var(--ease), transform .8s var(--ease); }
+.tile:hover .tile-alt { opacity:1; }
+.tile-multi {
+  position:absolute; left:12px; bottom:46px; z-index:3; line-height:1;
+  font-family:var(--f-cond); font-size:10px; letter-spacing:.12em;
+  background:rgba(31,22,16,.6); color:var(--c-paper); padding:5px 8px; border-radius:999px;
+}
+.tile.sold .tile-multi { display:none; }
+
 /* ─── PASEK WYBORU (sticky) ───────────────────────────── */
 .selbar {
   position:fixed; left:0; right:0; bottom:0; z-index:60;
@@ -499,6 +509,11 @@ ul { list-style:none; padding:0; margin:0; }
 .lb-nav svg { width:20px; height:20px; stroke:var(--c-espresso); stroke-width:1.8; }
 .lb-prev { left:clamp(8px,2vw,24px); }
 .lb-next { right:clamp(8px,2vw,24px); }
+/* galeria: kropki przełączające zdjęcia w obrębie sztuki */
+.lb-dots { position:absolute; left:0; right:0; bottom:12px; z-index:4; display:flex; gap:8px; justify-content:center; }
+.lb-dot { width:9px; height:9px; border-radius:50%; background:rgba(250,246,236,.6); border:1px solid rgba(31,22,16,.25); transition:background .2s, transform .2s; }
+.lb-dot:hover { background:var(--c-paper); }
+.lb-dot.active { background:var(--c-espresso); transform:scale(1.15); }
 
 /* ============================================================
    KOSZYK / CHECKOUT

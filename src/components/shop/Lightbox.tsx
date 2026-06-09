@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
@@ -41,6 +41,18 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
   const name = cat ? t(`product.${cat.singularKey}`) : '';
   const rawNotes = product ? (t.raw(`notes.${product.category}`) as unknown) : undefined;
   const note = product && Array.isArray(rawNotes) ? (rawNotes[product.noteIndex] as string) ?? '' : '';
+
+  // Images for this piece: primary + any merged second photos (gallery).
+  const images = product ? [product.image, ...(product.gallery ?? [])] : [];
+  const [imgIndex, setImgIndex] = useState(0);
+  // Reset to the primary photo whenever the lightbox pages to another piece —
+  // adjust-state-during-render pattern (no effect) so it stays in sync with `index`.
+  const [imgFor, setImgFor] = useState(index);
+  if (index !== imgFor) {
+    setImgFor(index);
+    setImgIndex(0);
+  }
+  const currentImage = images[imgIndex] ?? product?.image ?? '';
 
   const cardRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
@@ -146,7 +158,20 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 <Icon name="chevron-right" />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:861px) min(50vw, 460px), 100vw" alt={`${name} Nº ${product.num}`} draggable={false} />
+              <img src={currentImage} srcSet={srcSet(currentImage)} sizes="(min-width:861px) min(50vw, 460px), 100vw" alt={`${name} Nº ${product.num}`} draggable={false} />
+              {images.length > 1 && (
+                <div className="lb-dots">
+                  {images.map((img, i) => (
+                    <button
+                      key={img}
+                      className={`lb-dot${i === imgIndex ? ' active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); setImgIndex(i); }}
+                      aria-label={`${t('aria.photo')} ${i + 1}`}
+                      aria-current={i === imgIndex}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="lb-body">
               <div className="eyebrow lb-eyebrow">

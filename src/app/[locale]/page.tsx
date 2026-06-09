@@ -18,6 +18,7 @@ type Props = { params: Promise<{ locale: string }> };
 const COVER: Record<CategorySlug, string> = {
   kubki: '/uploads/kubek-12.webp',
   wazony: '/uploads/waza-mala-3.webp',
+  'wazony-srednie': '/uploads/waza-duza-1.webp',
   'wazony-duze': '/uploads/waza-duza-7.webp',
   talerzyki: '/uploads/talerz-maly-2.webp',
   'talerze-duze': '/uploads/talerz-duzy-1.webp',

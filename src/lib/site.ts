@@ -13,6 +13,7 @@ export const SITE_PATHS = [
   '/talerze-duze',
   '/talerzyki',
   '/wazony',
+  '/wazony-srednie',
   '/wazony-duze',
   '/koszyk',
   '/o-studiu',
