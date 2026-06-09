@@ -128,12 +128,18 @@ describe('analytics ecommerce payloads', () => {
         event_name: 'AddToCart',
         content_ids: ['k01'],
         content_type: 'product',
+        contents: [{ id: 'k01', quantity: 1, item_price: 90 }],
         currency: ANALYTICS_CURRENCY,
         value: 90,
         num_items: 1,
         event_id: 'evt-atc-k01',
       },
     });
+  });
+
+  it('includes a Meta contents[] array with per-item price/quantity', () => {
+    const event = buildAddToCartEvent(product('k01'), { eventId: 'evt-atc-k01' });
+    expect(event.meta?.contents).toEqual([{ id: 'k01', quantity: 1, item_price: 90 }]);
   });
 
   it('builds begin_checkout with item subtotal for GA4 and order total for Meta', () => {
@@ -150,6 +156,10 @@ describe('analytics ecommerce payloads', () => {
     expect(event.meta).toMatchObject({
       event_name: 'InitiateCheckout',
       content_ids: ['k01', 'v01'],
+      contents: [
+        { id: 'k01', quantity: 1, item_price: 90 },
+        { id: 'v01', quantity: 1, item_price: 210 },
+      ],
       value: 318,
       num_items: 2,
       event_id: 'evt-checkout',
@@ -178,6 +188,10 @@ describe('analytics ecommerce payloads', () => {
     expect(event.meta).toMatchObject({
       event_name: 'Purchase',
       content_ids: ['k01', 'v01'],
+      contents: [
+        { id: 'k01', quantity: 1, item_price: 90 },
+        { id: 'v01', quantity: 1, item_price: 210 },
+      ],
       currency: ANALYTICS_CURRENCY,
       value: 318,
       order_id: 'ACC-1234',

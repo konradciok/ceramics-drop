@@ -345,6 +345,7 @@ ${dedupeBridgeSendSnippet('meta')}
     var params = {
       content_ids: meta.content_ids,
       content_type: meta.content_type,
+      contents: meta.contents,
       currency: meta.currency,
       value: meta.value,
       num_items: meta.num_items

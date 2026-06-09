@@ -31,10 +31,13 @@ export type EcommercePayload = {
   shipping?: number;
 };
 
+export type MetaContent = { id: string; quantity: 1; item_price: number };
+
 export type MetaPayload = {
   event_name: MetaStandardEvent;
   content_ids: string[];
   content_type: 'product';
+  contents: MetaContent[];
   currency: typeof ANALYTICS_CURRENCY;
   value: number;
   num_items: number;
@@ -364,6 +367,7 @@ function withMeta(
       event_name: eventName,
       content_ids: items.map((item) => item.item_id),
       content_type: 'product',
+      contents: items.map((item) => ({ id: item.item_id, quantity: 1 as const, item_price: item.price })),
       currency: ANALYTICS_CURRENCY,
       value: metaValue,
       num_items: items.length,
