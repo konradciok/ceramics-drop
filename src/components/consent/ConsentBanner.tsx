@@ -20,7 +20,8 @@ export function ConsentBanner() {
   if (dismissed || stored !== null) return null;
   const choose = (v: 'granted' | 'denied') => { setConsent(v); setDismissed(true); };
   return (
-    <div role="dialog" aria-label={t('title')} className="consent">
+    <div role="dialog" aria-labelledby="consent-title" className="consent">
+      <p id="consent-title" className="consent-title">{t('title')}</p>
       <p className="consent-body">{t('body')}</p>
       <div className="consent-actions">
         <button onClick={() => choose('granted')} className="consent-btn consent-accept">{t('accept')}</button>
