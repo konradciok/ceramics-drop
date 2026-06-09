@@ -20,6 +20,8 @@ export type WebhookDeps = {
   createShipment: (paymentIntentId: string) => Promise<void>;
   /** Bust a Next cache tag (e.g. 'inventory'). */
   revalidate: (tag: string) => void;
+  /** Fire server-side purchase conversions (Meta CAPI + GA4 MP). Best-effort: errors swallowed by the impl. */
+  trackPurchase: (paymentIntentId: string) => Promise<void>;
 };
 
 /** Extract a payment-intent id from a field that Stripe may expand or leave as a string. */
@@ -35,6 +37,7 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const pi = event.data.object as Stripe.PaymentIntent;
       const newlySold = await deps.markPaid(pi.id);
       if (newlySold) deps.revalidate('inventory');
+      await deps.trackPurchase(pi.id);
       await deps.ensureInvoiced(pi.id);
       // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
       // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.

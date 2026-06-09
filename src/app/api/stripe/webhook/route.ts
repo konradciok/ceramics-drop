@@ -10,6 +10,7 @@ import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio } from '@/lib/email';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
+import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
 
 export const dynamic = 'force-dynamic';
 
@@ -237,6 +238,50 @@ export async function POST(req: Request) {
       }
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),
+    trackPurchase: async (pi) => {
+      try {
+        const metaToken = env.META_CAPI_ACCESS_TOKEN;
+        const ga4Secret = env.GA4_API_SECRET;
+        const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+        const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+
+        const metaConfig = (metaToken && pixelId)
+          ? { pixelId, accessToken: metaToken, ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}) }
+          : undefined;
+        const ga4Config = (ga4Secret && measurementId)
+          ? { measurementId, apiSecret: ga4Secret }
+          : undefined;
+
+        if (!metaConfig && !ga4Config) return;
+
+        await sendPurchaseConversions(pi, {
+          loadOrder: async (paymentIntentId) => {
+            const { data } = await supabase
+              .from('orders')
+              .select(
+                'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
+                  'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
+              )
+              .eq('payment_intent_id', paymentIntentId)
+              .single();
+            if (!data) return null;
+            const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
+            const { data: itemRows } = await supabase
+              .from('order_items')
+              .select('product_id, unit_price')
+              .eq('order_id', orderRow.id);
+            return {
+              ...orderRow,
+              items: (itemRows as ConversionOrder['items'] | null) ?? [],
+            };
+          },
+          metaConfig,
+          ga4Config,
+        });
+      } catch (err) {
+        console.error('trackPurchase failed for', pi, err);
+      }
+    },
   });
 
   return NextResponse.json({ received: true });

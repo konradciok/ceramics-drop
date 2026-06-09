@@ -97,6 +97,7 @@ async function setupWorkspace() {
     customHtmlTag('ACC - GA4 base', ga4BaseHtml(ga4MeasurementId), [initTrigger.triggerId], {
       oncePerLoad: true,
       priority: 20,
+      consentTypes: ['analytics_storage'],
     }),
   );
   await upsertTag(
@@ -104,15 +105,20 @@ async function setupWorkspace() {
     customHtmlTag('ACC - Meta Pixel base', metaBaseHtml(metaPixelId), [initTrigger.triggerId], {
       oncePerLoad: true,
       priority: 10,
+      consentTypes: ['ad_storage'],
     }),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId]),
+    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId], {
+      consentTypes: ['analytics_storage'],
+    }),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId]),
+    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId], {
+      consentTypes: ['ad_storage'],
+    }),
   );
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
@@ -225,6 +231,14 @@ function customHtmlTag(name, html, firingTriggerId, options = {}) {
     ...(options.priority
       ? { priority: { key: 'priority', type: 'integer', value: String(options.priority) } }
       : {}),
+    ...(options.consentTypes
+      ? {
+          consentSettings: {
+            consentStatus: 'needed',
+            consentType: options.consentTypes.map((t) => ({ type: 'template', value: t })),
+          },
+        }
+      : {}),
   };
 }
 
@@ -314,7 +328,7 @@ ${dedupeBridgeSendSnippet('ga4')}
   if (!window.gtag) return;
   var params = {};
   for (var key in payload) {
-    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin') {
+    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin' && key !== 'user_data') {
       params[key] = payload[key];
     }
   }
@@ -324,6 +338,9 @@ ${dedupeBridgeSendSnippet('ga4')}
         params[ek] = payload.ecommerce[ek];
       }
     }
+  }
+  if (payload.user_data && payload.user_data.em) {
+    window.gtag('set', 'user_data', { sha256_email_address: payload.user_data.em });
   }
   window.gtag('event', payload.event, params);
 })();
@@ -336,6 +353,9 @@ function metaBridgeHtml(gtmPublicId) {
 ${resolveTriggeringEventSnippet(gtmPublicId)}
 ${dedupeBridgeSendSnippet('meta')}
   if (!window.fbq) return;
+  if (payload.user_data && payload.user_data.em) {
+    window.fbq('set', 'userData', { em: payload.user_data.em });
+  }
   if (payload.event === 'page_view') {
     window.fbq('track', 'PageView', {}, { eventID: payload.event_id });
     return;
@@ -345,6 +365,7 @@ ${dedupeBridgeSendSnippet('meta')}
     var params = {
       content_ids: meta.content_ids,
       content_type: meta.content_type,
+      contents: meta.contents,
       currency: meta.currency,
       value: meta.value,
       num_items: meta.num_items

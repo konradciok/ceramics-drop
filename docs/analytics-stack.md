@@ -38,7 +38,7 @@ The app pushes these events:
 
 GA4 ecommerce payloads use:
 
-- `currency: "EUR"`
+- `currency: "PLN"`
 - `ecommerce.value`: item subtotal
 - `ecommerce.shipping`: shipping cost on purchase
 - `order_total`: subtotal plus shipping as a custom parameter
@@ -124,7 +124,7 @@ If the return page has a Stripe-backed `order_id`, pass that through as the anal
 
 ## Production Note
 
-For production in the EU, connect this GTM workspace to a consent-management setup before publishing ad/analytics tags live. The app event contract is consent-agnostic; GTM should decide whether GA4 and Meta tags can fire after consent state is known.
+The app already implements Google Consent Mode v2 (`src/components/consent/`): defaults are denied and registered in a `beforeInteractive` script before GTM loads, and the consent banner calls `gtag('consent', 'update', …)` on the user's choice. The app event contract is consent-agnostic; GTM decides whether GA4 and Meta tags fire once consent state is known. Confirm the GA4/Meta tags in the container respect the consent signals before publishing ad/analytics tags live.
 
 ## Official References
 
@@ -132,3 +132,20 @@ For production in the EU, connect this GTM workspace to a consent-management set
 - Google Tag Manager custom event trigger help: https://support.google.com/tagmanager/answer/7679219
 - GA4 recommended ecommerce events: https://developers.google.com/analytics/devguides/collection/ga4/reference/events
 - Meta Pixel standard events: https://developers.facebook.com/docs/meta-pixel/reference#standard-events
+
+## Server-side Conversions
+
+The Stripe webhook fires `Purchase` (Meta CAPI) and `purchase` (GA4 Measurement Protocol) on a newly-paid order, deduplicated by the PaymentIntent ID:
+
+- **Meta CAPI event_id**: `purchase-<payment_intent_id>` — matches the browser `event_id` emitted at order confirmation, so Meta deduplicates the pixel event and the server event into one.
+- **GA4 transaction_id**: `<payment_intent_id>` — same value used in the browser `purchase` event.
+- **Consent gate**: both calls are skipped when `orders.marketing.consent !== 'granted'` (captured from the buyer's cookie state at checkout time).
+- **PII hashing**: email, phone, name, address fields are SHA-256 hashed per Meta spec before transmission.
+
+New runtime secrets required:
+
+| Secret | How to set | Description |
+|--------|-----------|-------------|
+| `META_CAPI_ACCESS_TOKEN` | `wrangler secret put META_CAPI_ACCESS_TOKEN` | Meta system-user token with `ads_management` + CAPI scope |
+| `GA4_API_SECRET` | `wrangler secret put GA4_API_SECRET` | GA4 Admin → Data Streams → Measurement Protocol API secrets |
+| `META_TEST_EVENT_CODE` | `wrangler secret put META_TEST_EVENT_CODE` | Optional; set during validation only, remove before going live |

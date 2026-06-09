@@ -34,6 +34,10 @@ interface CloudflareEnv {
   STUDIO_RETURN_ADDRESS_POSTAL?: string;
   /** Optional: paczkomat code pre-assigned as the return drop-off target (e.g. KRA010). */
   STUDIO_RETURN_POINT?: string;
+  // Server-side conversions (Meta CAPI + GA4 Measurement Protocol).
+  META_CAPI_ACCESS_TOKEN?: string;
+  META_TEST_EVENT_CODE?: string;
+  GA4_API_SECRET?: string;
   // Sentry (optional; server runtime falls back to NEXT_PUBLIC_SENTRY_DSN from the build).
   SENTRY_DSN?: string;
 }

@@ -29,6 +29,15 @@ describe('redactSensitiveUrl', () => {
     );
     expect(redactSensitiveUrl('/zwrot?order=abc-123')).toBe('/zwrot?order=redacted');
   });
+  it('redacts the Stripe payment_intent secret from the return url', () => {
+    expect(
+      redactSensitiveUrl(
+        '/pl/koszyk/return?payment_intent=pi_123&payment_intent_client_secret=pi_123_secret_xyz&redirect_status=succeeded',
+      ),
+    ).toBe(
+      '/pl/koszyk/return?payment_intent=redacted&payment_intent_client_secret=redacted&redirect_status=succeeded',
+    );
+  });
   it('leaves non-sensitive urls unchanged', () => {
     expect(redactSensitiveUrl('/pl/koszyk')).toBe('/pl/koszyk');
     expect(redactSensitiveUrl('https://anna-ciok.studio/pl')).toBe('https://anna-ciok.studio/pl');
@@ -119,12 +128,18 @@ describe('analytics ecommerce payloads', () => {
         event_name: 'AddToCart',
         content_ids: ['k01'],
         content_type: 'product',
+        contents: [{ id: 'k01', quantity: 1, item_price: 90 }],
         currency: ANALYTICS_CURRENCY,
         value: 90,
         num_items: 1,
         event_id: 'evt-atc-k01',
       },
     });
+  });
+
+  it('includes a Meta contents[] array with per-item price/quantity', () => {
+    const event = buildAddToCartEvent(product('k01'), { eventId: 'evt-atc-k01' });
+    expect(event.meta?.contents).toEqual([{ id: 'k01', quantity: 1, item_price: 90 }]);
   });
 
   it('builds begin_checkout with item subtotal for GA4 and order total for Meta', () => {
@@ -141,10 +156,22 @@ describe('analytics ecommerce payloads', () => {
     expect(event.meta).toMatchObject({
       event_name: 'InitiateCheckout',
       content_ids: ['k01', 'v01'],
+      contents: [
+        { id: 'k01', quantity: 1, item_price: 90 },
+        { id: 'v01', quantity: 1, item_price: 210 },
+      ],
       value: 318,
       num_items: 2,
       event_id: 'evt-checkout',
     });
+  });
+
+  it('attaches hashed user_data to begin_checkout when provided', () => {
+    const e = buildBeginCheckoutEvent([product('k01')], {
+      shippingCost: 18, shippingMethod: 'kurier', eventId: 'evt-bc',
+      userData: { em: 'HASH_EM' },
+    });
+    expect(e.user_data).toEqual({ em: 'HASH_EM' });
   });
 
   it('builds purchase with transaction id, shipping, subtotal and Meta Purchase value', () => {
@@ -169,6 +196,10 @@ describe('analytics ecommerce payloads', () => {
     expect(event.meta).toMatchObject({
       event_name: 'Purchase',
       content_ids: ['k01', 'v01'],
+      contents: [
+        { id: 'k01', quantity: 1, item_price: 90 },
+        { id: 'v01', quantity: 1, item_price: 210 },
+      ],
       currency: ANALYTICS_CURRENCY,
       value: 318,
       order_id: 'ACC-1234',
@@ -176,24 +207,23 @@ describe('analytics ecommerce payloads', () => {
     });
   });
 
-  it('default purchase event_id is collision-resistant and decoupled from orderNo', () => {
+  it('default purchase event_id is deterministic from orderNo for browser/server dedup', () => {
     const items = [product('k01'), product('v01')];
     const options = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier' };
 
     const event1 = buildPurchaseEvent(items, options);
     const event2 = buildPurchaseEvent(items, options);
 
-    // Two calls with the same orderNo must produce different event_ids
-    expect(event1.event_id).not.toBe(event2.event_id);
+    // Same orderNo must yield the SAME event_id: a server-side Meta CAPI / GA4
+    // Measurement Protocol replay only knows the orderNo, so it must be able to
+    // reconstruct this exact id to deduplicate against the browser event.
+    expect(event1.event_id).toBe(event2.event_id);
+    expect(event1.event_id).toBe('purchase-ACC-1234');
 
-    // The default event_id must NOT equal the plain orderNo / transaction_id
-    expect(event1.event_id).not.toBe(options.orderNo);
+    // transaction_id stays the raw orderNo
     expect(event1.ecommerce?.transaction_id).toBe('ACC-1234');
 
-    // The orderNo is still embedded for readability / traceability
-    expect(event1.event_id).toContain('purchase-ACC-1234');
-
-    // meta.event_id mirrors event.event_id
+    // meta.event_id (Meta's dedup key) mirrors event.event_id
     expect(event1.meta?.event_id).toBe(event1.event_id);
   });
 });

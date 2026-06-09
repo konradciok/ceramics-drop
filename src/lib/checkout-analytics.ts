@@ -10,6 +10,7 @@ import type { Product } from './types';
 type CheckoutStartOptions = {
   shippingCost: number;
   shippingMethod: string;
+  userData?: { em?: string };
   push?: (event: DataLayerEvent) => void;
 };
 
@@ -32,12 +33,13 @@ type CheckoutSnapshot = {
 
 export function pushCheckoutStarted(
   products: Product[],
-  { shippingCost, shippingMethod, push = pushDataLayer }: CheckoutStartOptions,
+  { shippingCost, shippingMethod, userData, push = pushDataLayer }: CheckoutStartOptions,
 ): void {
   push(
     buildBeginCheckoutEvent(products, {
       shippingCost,
       shippingMethod,
+      userData,
     }),
   );
 }

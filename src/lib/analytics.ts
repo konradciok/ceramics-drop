@@ -31,10 +31,13 @@ export type EcommercePayload = {
   shipping?: number;
 };
 
+export type MetaContent = { id: string; quantity: 1; item_price: number };
+
 export type MetaPayload = {
   event_name: MetaStandardEvent;
   content_ids: string[];
   content_type: 'product';
+  contents: MetaContent[];
   currency: typeof ANALYTICS_CURRENCY;
   value: number;
   num_items: number;
@@ -62,6 +65,7 @@ type EventOptions = {
 type CheckoutOptions = EventOptions & {
   shippingCost: number;
   shippingMethod: string;
+  userData?: { em?: string };
 };
 
 type PurchaseOptions = CheckoutOptions & {
@@ -197,6 +201,7 @@ export function buildBeginCheckoutEvent(
       event_id: eventId,
       shipping_tier: options.shippingMethod,
       checkout_total: orderTotal,
+      ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: ecommerce(items),
     },
     'InitiateCheckout',
@@ -209,7 +214,13 @@ export function buildPurchaseEvent(
   products: Product[],
   options: PurchaseOptions,
 ): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('purchase', options.orderNo);
+  // Deterministic id (no random suffix): a purchase is a single conversion, so
+  // the browser event_id must be reproducible server-side from the orderNo —
+  // that shared id is what lets a Meta CAPI / GA4 Measurement Protocol replay
+  // from the Stripe webhook deduplicate against this browser event. The client
+  // already fires at most once per payment intent (acc_purchase_pi: guard in
+  // checkout-analytics.ts), so collision-resistance here is unnecessary.
+  const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const items = products.map((product) => toAnalyticsItem(product));
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
@@ -245,8 +256,10 @@ export function buildEngagementEvent(
 
 /** Query params that carry a capability token / secret and must never reach the
  *  dataLayer (and thus GA4 / Meta). `order` is the return capability token used by
- *  /zwrot?order=<uuid> → POST /api/returns. */
-const SENSITIVE_QUERY_PARAMS = ['order'];
+ *  /zwrot?order=<uuid> → POST /api/returns. `payment_intent` /
+ *  `payment_intent_client_secret` are appended by Stripe to the /koszyk/return URL
+ *  and must not be logged or exposed to third parties. */
+const SENSITIVE_QUERY_PARAMS = ['order', 'payment_intent', 'payment_intent_client_secret'];
 
 /** Redact sensitive query params from an absolute or path-only URL before it is
  *  pushed to analytics. Returns the input unchanged if it has no sensitive param
@@ -356,6 +369,7 @@ function withMeta(
       event_name: eventName,
       content_ids: items.map((item) => item.item_id),
       content_type: 'product',
+      contents: items.map((item) => ({ id: item.item_id, quantity: 1 as const, item_price: item.price })),
       currency: ANALYTICS_CURRENCY,
       value: metaValue,
       num_items: items.length,
