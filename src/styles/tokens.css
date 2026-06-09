@@ -34,4 +34,10 @@
      height by HeaderHeightProbe at runtime; this static value is the SSR/first-
      paint fallback (~81px = real header, NOT announce, which scrolls away). */
   --header-h:81px;
+
+  /* Bottom inset used by .selbar to stack above the cookie banner. Overwritten
+     at runtime by ConsentBanner with the banner's occupied height while it is
+     visible, and reset to 0px when dismissed. Declared here for parity with
+     --header-h and to make the contract explicit. */
+  --consent-h:0px;
 }

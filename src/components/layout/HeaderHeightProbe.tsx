@@ -13,7 +13,7 @@ import { useEffect } from 'react';
  */
 export function HeaderHeightProbe() {
   useEffect(() => {
-    const header = document.querySelector('.header');
+    const header = document.getElementById('site-header');
     if (!header) return;
     const root = document.documentElement;
     const apply = () => {
@@ -23,7 +23,11 @@ export function HeaderHeightProbe() {
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(header);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      // hand control back to the static tokens.css fallback on unmount
+      root.style.removeProperty('--header-h');
+    };
   }, []);
   return null;
 }

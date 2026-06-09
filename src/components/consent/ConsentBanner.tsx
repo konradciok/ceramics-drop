@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { readConsent, setConsent } from './consent-mode';
@@ -8,6 +8,11 @@ import { readConsent, setConsent } from './consent-mode';
 // no-op; useSyncExternalStore is used purely to read a client-only value without
 // a hydration mismatch (server snapshot = null) and without set-state-in-effect.
 const noopSubscribe = () => () => {};
+
+// Measure before paint so the selbar never renders one frame at bottom:0 (under
+// the banner) on a first visit. Falls back to useEffect on the server to avoid
+// React's "useLayoutEffect does nothing on the server" warning.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export function ConsentBanner() {
   const t = useTranslations('consent');
@@ -23,12 +28,15 @@ export function ConsentBanner() {
   // Publish the banner's occupied bottom height to `--consent-h` so the selbar
   // (fixed, bottom-left overlap on collection pages) can sit above it. Zeroed on
   // cleanup — the component returns null once dismissed, so the offset must clear.
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const root = document.documentElement;
     const el = ref.current;
     if (!el) { root.style.setProperty('--consent-h', '0px'); return; }
     const apply = () => {
       const rect = el.getBoundingClientRect();
+      // distance from the viewport bottom up to the banner's top edge (the height
+      // it occupies, incl. its safe-area margin) + a 12px breathing gap so the
+      // selbar pill never butts up against the banner.
       const h = window.innerHeight - rect.top + 12;
       root.style.setProperty('--consent-h', `${Math.max(0, Math.round(h))}px`);
     };

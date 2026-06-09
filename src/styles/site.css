@@ -10,12 +10,6 @@
      @xl  — min-width: 1101px
    ============================================================ */
 
-/* All component styles live in a single `site` cascade layer, so future author
-   CSS can override them without specificity wars. One layer ⇒ internal source
-   order is preserved ⇒ behavior-preserving. tokens.css/fonts.css stay unlayered
-   (custom properties + @font-face don't collide with these selectors). */
-@layer site {
-
 /* ─── RESET ───────────────────────────────────────────── */
 *,*::before,*::after { box-sizing:border-box; }
 html,body { margin:0; padding:0; }
@@ -311,6 +305,9 @@ ul { list-style:none; padding:0; margin:0; }
   display:flex; flex-wrap:nowrap; gap:8px; flex-basis:100%; width:100%; min-width:0;
   overflow-x:auto; overscroll-behavior-x:contain;
   scroll-snap-type:x proximity;
+  /* keyboard users tabbing pills: the browser auto-scrolls the focused link into
+     view; this keeps it off the clipped edge (scrollbar is hidden below). */
+  scroll-padding-inline:var(--gut);
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
 }
@@ -351,10 +348,20 @@ ul { list-style:none; padding:0; margin:0; }
   position:relative; cursor:pointer; background:var(--c-bone); border-radius:2px; overflow:hidden;
   aspect-ratio:4/5; outline:0 solid var(--c-terracotta); transition:outline-width .18s var(--ease);
   outline-offset:-3px;
-  /* Skip rendering work for off-screen tiles (long galleries). Width comes from
-     the 1fr grid track + aspect-ratio:4/5 gives the height, so the intrinsic-size
-     is just the never-rendered fallback; `auto` remembers the real size after. */
-  content-visibility:auto; contain-intrinsic-size:auto 360px;
+  /* Skip rendering work for off-screen tiles (long galleries). The block fallback
+     mirrors the real tile height for the current column count — track width ×5/4
+     (aspect-ratio:4/5) — so never-rendered placeholders don't inflate the scroll
+     range; `auto` then remembers the true size after a tile first renders.
+     Base = 2 columns, gap 12px (see .gallery). */
+  content-visibility:auto;
+  contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 12px) / 2 * 1.25);
+}
+/* Keep the placeholder height honest as the gallery shifts to 3 / 4 columns. */
+@media (min-width:561px) {
+  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 2 * clamp(14px,1.6vw,24px)) / 3 * 1.25); }
+}
+@media (min-width:1101px) {
+  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.25); }
 }
 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .8s var(--ease); }
 .tile:hover img { transform:scale(1.04); }
@@ -875,5 +882,3 @@ ul { list-style:none; padding:0; margin:0; }
 .return-btn:disabled { opacity:.5; cursor:not-allowed; }
 .return-msg { font-family:var(--f-cond); font-size:14px; margin-top:4px; }
 .return-msg-error, .return-msg-ineligible { color:var(--c-terracotta-deep); }
-
-} /* @layer site */
