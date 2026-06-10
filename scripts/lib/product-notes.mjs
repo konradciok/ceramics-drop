@@ -106,7 +106,7 @@ export function saveCategoryDraft(draft, { dateStamp, outputDir }) {
   return outputPath;
 }
 
-export function applyCategoryDraftToMessages(messages, draft) {
+function applyCategoryDraftToMessages(messages, draft) {
   invariant(messages && typeof messages === 'object', 'Messages payload must be an object.');
   const currentNotes = ensureCategoryNotes(messages, draft.category);
   invariant(

@@ -41,14 +41,14 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--category') {
       const value = argv[i + 1];
-      if (!value) fail('Missing value after --category');
+      if (!value || value.startsWith('--')) fail('Missing value after --category');
       options.categories.push(value);
       i += 1;
       continue;
     }
     if (arg === '--draft') {
       const value = argv[i + 1];
-      if (!value) fail('Missing value after --draft');
+      if (!value || value.startsWith('--')) fail('Missing value after --draft');
       options.draftPath = path.resolve(process.cwd(), value);
       i += 1;
       continue;
@@ -77,12 +77,23 @@ function parseArgs(argv) {
   return options;
 }
 
+async function withConcurrency(items, concurrency, fn) {
+  const results = new Array(items.length);
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(batch.map((item, j) => fn(item, i + j)));
+    batchResults.forEach((r, j) => { results[i + j] = r; });
+  }
+  return results;
+}
+
 function loadCategoryProducts(categories) {
-  const tsxCli = path.join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+  const tsxBin = path.join(ROOT, 'node_modules', '.bin', 'tsx');
   const readerScript = path.join(ROOT, 'scripts', 'lib', 'read-category-products.ts');
-  const stdout = execFileSync(process.execPath, [tsxCli, readerScript, ...categories], {
+  const stdout = execFileSync(tsxBin, [readerScript, ...categories], {
     cwd: ROOT,
     encoding: 'utf8',
+    shell: process.platform === 'win32',
   });
   return JSON.parse(stdout);
 }
@@ -102,20 +113,30 @@ function toDataUrl(filePath) {
   return `data:image/${mimeType};base64,${data}`;
 }
 
-function extractStructuredOutput(response) {
+function extractStructuredOutput(response, productId) {
+  const tryParse = (text, source) => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(
+        `OpenAI response for ${productId} contained non-JSON in ${source}: ${text.slice(0, 200)}`,
+      );
+    }
+  };
+
   if (typeof response.output_text === 'string' && response.output_text.trim().length > 0) {
-    return JSON.parse(response.output_text);
+    return tryParse(response.output_text, 'output_text');
   }
 
   for (const item of response.output ?? []) {
     for (const content of item.content ?? []) {
       if (typeof content.text === 'string' && content.text.trim().length > 0) {
-        return JSON.parse(content.text);
+        return tryParse(content.text, 'output[].content[].text');
       }
     }
   }
 
-  throw new Error('OpenAI response did not include structured output text.');
+  throw new Error(`OpenAI response for ${productId} did not include structured output text.`);
 }
 
 async function generateNoteForProduct({ apiKey, category, model, product, referenceExamples }) {
@@ -151,7 +172,6 @@ async function generateNoteForProduct({ apiKey, category, model, product, refere
           },
         },
       },
-      verbosity: 'low',
     },
   };
 
@@ -170,7 +190,7 @@ async function generateNoteForProduct({ apiKey, category, model, product, refere
   }
 
   const data = await response.json();
-  const parsed = extractStructuredOutput(data);
+  const parsed = extractStructuredOutput(data, product.id);
 
   if (!parsed || typeof parsed.proposedNote !== 'string' || parsed.proposedNote.trim().length === 0) {
     throw new Error(`OpenAI response for ${product.id} did not include proposedNote.`);
@@ -194,11 +214,10 @@ async function runDraftMode({ categories }) {
   for (const category of categories) {
     const products = productsByCategory[category];
     const currentNotes = ensureCategoryNotes(messages, category);
-    const proposedNotes = [];
 
-    console.log(`Generating ${products.length} note(s) for "${category}" with model ${DEFAULT_MODEL}...`);
+    console.log(`Generating ${products.length} note(s) for "${category}" with model ${DEFAULT_MODEL} (concurrency 5)...`);
 
-    for (const product of products) {
+    const proposedNotes = await withConcurrency(products, 5, async (product) => {
       const proposedNote = await generateNoteForProduct({
         apiKey,
         category,
@@ -206,9 +225,9 @@ async function runDraftMode({ categories }) {
         product,
         referenceExamples,
       });
-      proposedNotes.push(proposedNote);
       console.log(`  ${product.id} -> draft ready`);
-    }
+      return proposedNote;
+    });
 
     const draft = buildCategoryDraft({
       category,

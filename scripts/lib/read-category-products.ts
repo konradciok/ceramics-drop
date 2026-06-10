@@ -7,7 +7,13 @@ if (categories.length === 0) {
 }
 
 const payload = Object.fromEntries(
-  categories.map((category) => [category, getProductsByCategory(category as Parameters<typeof getProductsByCategory>[0])]),
+  categories.map((category) => {
+    const products = getProductsByCategory(category as Parameters<typeof getProductsByCategory>[0]);
+    if (!products) {
+      throw new Error(`Unknown category slug: "${category}". Check CATEGORY_ORDER in src/lib/products.ts for valid slugs.`);
+    }
+    return [category, products];
+  }),
 );
 
 process.stdout.write(JSON.stringify(payload));
