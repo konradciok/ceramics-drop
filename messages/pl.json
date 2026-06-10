@@ -166,7 +166,7 @@
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
     "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
-    "heroSub": "Siedemdziesiąt osiem ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
+    "heroSub": "Dziewięćdziesiąt cztery ceramiczne prace z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
     "heroCta1": "Przeglądaj wszystkie prace",
     "heroMetaName": "Kubek Nº 02",
     "heroMetaDesc": "Błękitna palma",
@@ -177,7 +177,7 @@
       "prosto z pracowni"
     ],
     "colEyebrow": "Czerwcowy drop",
-    "colTitle": "Osiem kategorii, <em>siedemdziesiąt osiem historii.</em>",
+    "colTitle": "Osiem kategorii, <em>dziewięćdziesiąt cztery historie.</em>",
     "colLead": "Przeglądaj jak galerię, zaznacz ulubione prace i przejdź do kasy, kiedy Twój wybór będzie gotowy.",
     "card": {
       "mug": {
@@ -201,7 +201,7 @@
         "cta": "Wybierz duży wazon"
       },
       "dish": {
-        "num": "14 prac · 105 zł za sztukę",
+        "num": "30 prac · 105 zł za sztukę",
         "desc": "Małe talerzyki na biżuterię, oliwę, sól albo drobiazgi przy łóżku. Niewielkie, ale z bardzo własnym temperamentem.",
         "cta": "Wybierz talerzyk"
       },
@@ -227,7 +227,7 @@
     "storyTitle": "Najpierw był obraz, <em>dziś jest ceramika.</em>",
     "storyP1": "Jestem Anna. Maluję obrazy i ceramikę, a oba światy spotykają się w tej samej pracowni. Kubek, talerz czy wazon traktuję jak mały obraz użytkowy: można go wziąć do ręki, postawić na stole i używać bez specjalnej okazji.",
     "storyP2": "Pracuję sama, powoli, jeden egzemplarz po drugim. Ręka zostawia ślad w linii pędzla, w nierównej palmie i w pasku, który nie udaje idealnego. To właśnie sprawia, że każda praca ma swój charakter.",
-    "storyP3": "Czerwcowy drop powstał tej wiosny i liczy 78 prac. Gdy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "storyP3": "Czerwcowy drop powstał tej wiosny i liczy 94 prace. Gdy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
     "storyCta1": "Wybierz swój",
     "storyCta2": "Napisz do mnie",
     "craftEyebrow": "Jak to działa",
@@ -273,8 +273,8 @@
       "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
     },
     "talerzyki": {
-      "eyebrow": "Czerwcowy drop — 14 prac",
-      "title": "Talerzyki <em>Nº 01–14</em>",
+      "eyebrow": "Czerwcowy drop — 30 prac",
+      "title": "Talerzyki <em>Nº 01–30</em>",
       "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
     },
     "talerze-duze": {
@@ -318,7 +318,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Po szkliwieniu i malowaniu praca trafia do wypału, który utrwala kolor i zamienia powierzchnię w szklistą, użytkową warstwę.",
     "fact3K": "Czerwcowy drop",
-    "fact3V": "78 <em>prac</em>",
+    "fact3V": "94 <em>prace</em>",
     "fact3D": "Kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każda sztuka jest tylko jedna.",
     "fact4K": "Wysyłka",
     "fact4V": "1–3 <em>dni</em>",
@@ -525,7 +525,23 @@
       "Błękitna cytryna z białymi pestkami i czarne kreski z ogonkami. Chłodna, świeża i pogodna.",
       "Czarna gałązka z trzema jagodami i liśćmi w jodełkę. Surowa, zimowa i bardzo graficzna.",
       "Błękitny kaktus z terakotowym, falbankowym kołnierzem w kropki. Pustynny chłód w miniaturze.",
-      "Błękitna palma z terakotowymi owocami i kreskowanym brzegiem. Wakacje na małym talerzyku."
+      "Błękitna palma z terakotowymi owocami i kreskowanym brzegiem. Wakacje na małym talerzyku.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce.",
+      "Talerzyk — opis wkrótce."
     ],
     "talerze-duze": [
       "Brązowy osiołek z białą, wydrapywaną derką. Dookoła brzegu biegnie czarna, falista plecionka.",
@@ -577,7 +593,7 @@
       "wazony": "Ręcznie malowane małe wazony ceramiczne. Osiem pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
-      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Trzydzieści jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",

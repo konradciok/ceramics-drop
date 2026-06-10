@@ -166,7 +166,7 @@
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
     "heroTitle": "One piece, one original, <em>one trace of the hand.</em>",
-    "heroSub": "Seventy-eight ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is glazed and hand-painted separately, so you choose the exact one shown in the photo.",
+    "heroSub": "Ninety-four ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is glazed and hand-painted separately, so you choose the exact one shown in the photo.",
     "heroCta1": "Browse all pieces",
     "heroMetaName": "Mug Nº 02",
     "heroMetaDesc": "Blue palm",
@@ -177,7 +177,7 @@
       "straight from the studio"
     ],
     "colEyebrow": "June drop",
-    "colTitle": "Eight categories, <em>seventy-eight stories.</em>",
+    "colTitle": "Eight categories, <em>ninety-four stories.</em>",
     "colLead": "Browse it like a gallery, mark the pieces you love, and head to checkout when your selection feels right.",
     "card": {
       "mug": {
@@ -201,7 +201,7 @@
         "cta": "Choose a vase"
       },
       "dish": {
-        "num": "14 pieces · 105 zł each",
+        "num": "30 pieces · 105 zł each",
         "desc": "Small dishes for jewellery, olive oil, salt or the little things that gather by the bed. Small, but full of character.",
         "cta": "Choose a dish"
       },
@@ -227,7 +227,7 @@
     "storyTitle": "First came painting, <em>now ceramics.</em>",
     "storyP1": "I’m Anna. I paint canvases and ceramics, and both worlds meet in the same studio. I treat a mug, plate or vase like a small functional painting: something you can hold, place on the table and use without waiting for a special occasion.",
     "storyP2": "I work alone and slowly, one piece after another. The hand leaves its trace in the brush line, in an uneven palm and in a stripe that does not pretend to be perfect. That is where each piece gets its character.",
-    "storyP3": "The June drop is seventy-eight pieces made this spring. When one finds its home, it leaves the shop for good.",
+    "storyP3": "The June drop is ninety-four pieces made this spring. When one finds its home, it leaves the shop for good.",
     "storyCta1": "Choose a piece",
     "storyCta2": "Write to me",
     "craftEyebrow": "How it works",
@@ -273,8 +273,8 @@
       "lead": "Large ceramic vases, one of each. Strong forms for bouquets and interiors that welcome a visible brush trace."
     },
     "talerzyki": {
-      "eyebrow": "June drop — 14 pieces",
-      "title": "Small dishes <em>Nº 01–14</em>",
+      "eyebrow": "June drop — 30 pieces",
+      "title": "Small dishes <em>Nº 01–30</em>",
       "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
     },
     "talerze-duze": {
@@ -318,7 +318,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "After glazing and painting, each piece goes into the kiln, where the firing sets the colour and turns the surface into a glassy, functional layer.",
     "fact3K": "June drop",
-    "fact3V": "78 <em>pieces</em>",
+    "fact3V": "94 <em>pieces</em>",
     "fact3D": "Mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Every piece is one of a kind.",
     "fact4K": "Shipping",
     "fact4V": "1–3 <em>days</em>",
@@ -525,7 +525,23 @@
       "A blue lemon with white seeds and black marks with little tails. Cool, fresh and cheerful.",
       "A black branch with three berries and herringbone leaves. Raw, wintry and very graphic.",
       "A blue cactus with a dotted terracotta ruffle. A small piece of desert coolness.",
-      "A blue palm with terracotta fruit and a lined rim. A holiday on a small dish."
+      "A blue palm with terracotta fruit and a lined rim. A holiday on a small dish.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon.",
+      "Small plate — description coming soon."
     ],
     "talerze-duze": [
       "A brown donkey with a white scratched blanket. Around the rim runs a black wavy braid.",
@@ -577,7 +593,7 @@
       "wazony": "Small hand-painted ceramic vases. Eight round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "wazonySrednie": "Medium hand-painted ceramic vases. Four one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Four unique works from Anna Ciok's June 2026 drop.",
-      "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Fourteen one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
+      "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Thirty one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",

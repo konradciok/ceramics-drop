@@ -166,7 +166,7 @@
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
-    "heroSub": "Setenta y ocho piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se esmalta y se pinta a mano por separado, así que eliges exactamente el que ves en la foto.",
+    "heroSub": "Noventa y cuatro piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se esmalta y se pinta a mano por separado, así que eliges exactamente el que ves en la foto.",
     "heroCta1": "Ver todas las piezas",
     "heroMetaName": "Taza Nº 02",
     "heroMetaDesc": "Palmera azul",
@@ -177,7 +177,7 @@
       "directo del estudio"
     ],
     "colEyebrow": "Drop de junio",
-    "colTitle": "Ocho categorías, <em>setenta y ocho historias.</em>",
+    "colTitle": "Ocho categorías, <em>noventa y cuatro historias.</em>",
     "colLead": "Recorre el drop como una galería, marca tus piezas favoritas y pasa por caja cuando tu selección esté lista.",
     "card": {
       "mug": {
@@ -201,7 +201,7 @@
         "cta": "Elegir un jarrón"
       },
       "dish": {
-        "num": "14 piezas · 105 zł cada uno",
+        "num": "30 piezas · 105 zł cada uno",
         "desc": "Platitos para joyas, aceite de oliva, sal o pequeños objetos de la mesilla. Pequeños, pero con mucho carácter.",
         "cta": "Elegir un platito"
       },
@@ -227,7 +227,7 @@
     "storyTitle": "Primero llegó la pintura, <em>hoy está la cerámica.</em>",
     "storyP1": "Soy Anna. Pinto cuadros y cerámica, y esos dos mundos se encuentran en el mismo estudio. Trato una taza, un plato o un jarrón como un pequeño cuadro útil: puedes cogerlo, ponerlo en la mesa y usarlo sin esperar una ocasión especial.",
     "storyP2": "Trabajo sola y despacio, un ejemplar tras otro. La mano deja su huella en la línea del pincel, en una palmera irregular y en una raya que no intenta ser perfecta. Ahí es donde cada pieza encuentra su carácter.",
-    "storyP3": "El drop de junio son setenta y ocho piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
+    "storyP3": "El drop de junio son noventa y cuatro piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
     "storyCta1": "Elegir una pieza",
     "storyCta2": "Escríbeme",
     "craftEyebrow": "Cómo funciona",
@@ -273,8 +273,8 @@
       "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
     },
     "talerzyki": {
-      "eyebrow": "Drop de junio — 14 piezas",
-      "title": "Platitos <em>Nº 01–14</em>",
+      "eyebrow": "Drop de junio — 30 piezas",
+      "title": "Platitos <em>Nº 01–30</em>",
       "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
     },
     "talerze-duze": {
@@ -318,7 +318,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Después del esmaltado y la pintura, cada pieza pasa por el horno: la cocción fija el color y convierte la superficie en una capa vítrea y funcional.",
     "fact3K": "Drop de junio",
-    "fact3V": "78 <em>piezas</em>",
+    "fact3V": "94 <em>piezas</em>",
     "fact3D": "Tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada pieza es única.",
     "fact4K": "Envío",
     "fact4V": "1–3 <em>días</em>",
@@ -525,7 +525,23 @@
       "Un limón azul con semillas blancas y marcas negras con colitas. Fresco, claro y alegre.",
       "Una rama negra con tres bayas y hojas en espiga. Cruda, invernal y muy gráfica.",
       "Un cactus azul con un volante de terracota punteado. Frescor de desierto en miniatura.",
-      "Una palmera azul con frutos de terracota y borde rayado. Vacaciones en un platito."
+      "Una palmera azul con frutos de terracota y borde rayado. Vacaciones en un platito.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente.",
+      "Plato pequeño — descripción próximamente."
     ],
     "talerze-duze": [
       "Un burrito marrón con una manta blanca rascada. Por el borde corre una trenza negra y ondulada.",
@@ -577,7 +593,7 @@
       "wazony": "Jarrones pequeños de cerámica pintados a mano. Ocho piezas panzudas y únicas del drop de junio de Anna Ciok.",
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Cuatro piezas únicas del drop de junio de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Cuatro obras del drop de junio de Anna Ciok.",
-      "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
+      "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Treinta ejemplares únicos del drop de junio de Anna Ciok.",
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
