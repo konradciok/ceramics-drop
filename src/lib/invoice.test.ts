@@ -26,7 +26,7 @@ const ORDER = {
 const ITEMS = [{ order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
 
 const stripeMock = {
-  customers: { create: vi.fn() },
+  customers: { create: vi.fn(), list: vi.fn() },
   invoiceItems: { create: vi.fn() },
   invoices: {
     create: vi.fn(),
@@ -63,6 +63,7 @@ beforeEach(() => {
   orderRow = { ...ORDER };
   itemRows = [...ITEMS];
   updateEq.mockResolvedValue({ error: null });
+  stripeMock.customers.list.mockResolvedValue({ data: [] });
   stripeMock.customers.create.mockResolvedValue({ id: 'cus_1' });
   stripeMock.invoices.create.mockResolvedValue({ id: 'in_1', status: 'draft', total: 0 });
   stripeMock.invoiceItems.create.mockResolvedValue({ id: 'ii_1' });
@@ -138,6 +139,22 @@ describe('createOrderInvoice', () => {
     orderRow = { ...ORDER, status: 'pending' };
     await createOrderInvoice('pi_1');
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
+  });
+
+  it('reuses an existing Stripe customer when one is found by email', async () => {
+    stripeMock.customers.list.mockResolvedValue({ data: [{ id: 'cus_existing' }] });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.customers.list).toHaveBeenCalledWith({
+      email: ORDER.email,
+      limit: 1,
+    });
+    expect(stripeMock.customers.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoices.create).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: 'cus_existing' }),
+      expect.anything(),
+    );
   });
 
   it('throws when the invoice lands in an unexpected status', async () => {

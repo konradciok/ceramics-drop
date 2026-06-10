@@ -59,11 +59,13 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
-  const customer = await stripe.customers.create({
-    email: order.email,
-    shipping: customerShipping,
-    preferred_locales: ['pl'],
-  }, { idempotencyKey: `cust_${order.id}` });
+  const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
+  const customer = existingList.data.length > 0
+    ? existingList.data[0]
+    : await stripe.customers.create(
+        { email: order.email, shipping: customerShipping, preferred_locales: ['pl'] },
+        { idempotencyKey: `cust_${order.id}` },
+      );
 
   // "2" prefixes: the v1 flow left idempotency entries with different params
   // (pending-item style); reusing those keys would be rejected by Stripe.
