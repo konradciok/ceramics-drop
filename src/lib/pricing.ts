@@ -4,7 +4,6 @@ import type { CategorySlug } from './types';
 export const PRICE_PLN: Record<CategorySlug, number> = {
   kubki: 90,
   wazony: 210,
-  // TODO(artystka): potwierdzić cenę "Średnich wazonów" — placeholder między małymi (210) a dużymi (395).
   'wazony-srednie': 300,
   'wazony-duze': 395,
   talerzyki: 105,
@@ -48,15 +47,15 @@ export function orderAmountGrosze(itemGrosze: number[], method: DeliveryMethod):
  * Review with the artisan whenever PLN prices change significantly.
  */
 export const PRICE_EUR: Record<CategorySlug, number> = {
-  kubki: 22,
-  wazony: 50,
-  'wazony-srednie': 72,
-  'wazony-duze': 95,
-  talerzyki: 25,
-  'talerze-srednie': 29,
-  'talerze-duze': 65,
-  'duze-michy': 75,
-  'miski-falowane': 37,
+  kubki: 25,
+  wazony: 58,
+  'wazony-srednie': 68,
+  'wazony-duze': 88,
+  talerzyki: 18,
+  'talerze-srednie': 28,
+  'talerze-duze': 38,
+  'duze-michy': 88,
+  'miski-falowane': 48,
 };
 
 /* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.
