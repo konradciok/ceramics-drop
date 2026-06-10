@@ -33,11 +33,11 @@ const SRC_DIR = path.join(ROOT, 'design', 'uploads');
 const OUT_DIR = path.join(ROOT, 'public', 'uploads');
 
 const PRODUCT_PNG_REGEX =
-  /^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$/;
+  /^(kubek|waza-mala|waza-duza|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$/;
 
 /** Canonical base WebPs only — excludes -400w/-800w/-1600w siblings. */
 const PRODUCT_WEBP_REGEX =
-  /^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.webp$/;
+  /^(kubek|waza-mala|waza-duza|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.webp$/;
 
 /** Editorial JPEGs in public/uploads/ (e.g. 1ania.jpeg). */
 const EDITORIAL_JPEG_REGEX = /^[123]ania\.jpe?g$/i;

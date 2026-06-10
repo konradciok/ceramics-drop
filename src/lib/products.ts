@@ -196,7 +196,7 @@ const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
 );
 
 /**
- * Returns every product across the eight categories, each with image
+ * Returns every product across the nine categories, each with image
  * path, optional gallery, sold flag, price, measure, and display index.
  */
 export function getProducts(): Product[] {
