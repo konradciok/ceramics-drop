@@ -6,7 +6,7 @@
   "description": "Anna Ciok Ceramics — storefront (Next.js)",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
