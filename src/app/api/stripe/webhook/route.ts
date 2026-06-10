@@ -7,7 +7,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
         try {
           const { data: orderRow, error: orderErr } = await supabase
             .from('orders')
-            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point')
+            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale')
             .eq('id', orderId)
             .single();
           if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
@@ -105,13 +105,15 @@ export async function POST(req: Request) {
             .eq('order_id', orderId);
           if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
           if (orderRow) {
+            const orderRowTyped = orderRow as {
+              id: string; email: string | null; total: number; currency: string;
+              delivery_method: string; receiver_first_name: string | null;
+              receiver_last_name: string | null; inpost_target_point: string | null;
+              locale: string | null;
+            };
             const notifyOrder = {
               order: {
-                ...(orderRow as {
-                  id: string; email: string | null; total: number; currency: string;
-                  delivery_method: string; receiver_first_name: string | null;
-                  receiver_last_name: string | null; inpost_target_point: string | null;
-                }),
+                ...orderRowTyped,
                 items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
               },
             };
@@ -128,6 +130,17 @@ export async function POST(req: Request) {
               } catch (err) {
                 if (attempt === 2) throw err;
                 await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+              }
+            }
+
+            if (orderRowTyped.email) {
+              try {
+                await emailOrderConfirmationToCustomer({
+                  order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
+                  locale: orderRowTyped.locale ?? 'pl',
+                });
+              } catch (err) {
+                console.error('emailOrderConfirmationToCustomer failed for', orderId, err);
               }
             }
           }

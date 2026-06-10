@@ -488,6 +488,103 @@ export async function emailReturnLabelToCustomer(params: {
   });
 }
 
+// ── Customer order-confirmation email ────────────────────────────────────────
+
+export type OrderConfirmationOrder = {
+  id: string;
+  email: string | null;
+  receiver_first_name: string | null;
+};
+
+const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
+  subject: string;
+  greeting: (name: string | null) => string;
+  thankYou: string;
+  deliveryTitle: string;
+  deliveryP1: string;
+  deliveryP2: string;
+  deliveryP3: string;
+  signOff: string;
+}> = {
+  pl: {
+    subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
+    thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
+    deliveryTitle: 'Informacja o dostawie w lipcu',
+    deliveryP1: 'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
+    deliveryP2: 'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane w ciągu pierwszych pięciu dni po naszym przyjeździe. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
+    deliveryP3: 'Wysyłki będą realizowane w lipcu, po 10 lipca.',
+    signOff: 'Do zobaczenia! Anna Ciok Studio',
+  },
+  en: {
+    subject: 'Order confirmed — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
+    thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
+    deliveryTitle: 'July delivery information',
+    deliveryP1: 'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
+    deliveryP2: 'We arrive in Poland on 5 July. All orders placed earlier will be shipped within the first five days after our arrival. Orders placed later will be shipped within 1–3 days after the order is placed.',
+    deliveryP3: 'Shipping will take place in July, after 10 July.',
+    signOff: 'Talk soon! Anna Ciok Studio',
+  },
+  es: {
+    subject: 'Pedido confirmado — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
+    thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
+    deliveryTitle: 'Información sobre entregas en julio',
+    deliveryP1: 'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
+    deliveryP2: 'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán durante los primeros cinco días después de nuestra llegada. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
+    deliveryP3: 'Los envíos se realizarán en julio, después del 10 de julio.',
+    signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+};
+
+/** Pure function — builds localised subject + HTML for the customer order-confirmation email. */
+export function buildOrderConfirmationEmail(params: {
+  order: OrderConfirmationOrder;
+  locale: string;
+}): { subject: string; html: string; mainContent: string } {
+  const { order } = params;
+  const loc = resolveLocale(params.locale);
+  const t = I18N_ORDER_CONFIRMATION[loc];
+
+  const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
+  const greeting = t.greeting(firstName);
+
+  const mainContent = [
+    emailParagraph(`${greeting},`),
+    emailParagraph(t.thankYou),
+    emailParagraph(`<strong>${escapeHtml(t.deliveryTitle)}</strong>`),
+    emailParagraph(t.deliveryP1),
+    emailParagraph(t.deliveryP2),
+    emailMutedParagraph(t.deliveryP3),
+    emailMutedParagraph(t.signOff),
+  ].join('');
+
+  return { subject: t.subject, html: mainContent, mainContent };
+}
+
+/** Send the customer a localised order-confirmation email via Resend. No-op if email or API key is absent. */
+export async function emailOrderConfirmationToCustomer(params: {
+  order: OrderConfirmationOrder;
+  locale: string;
+}): Promise<void> {
+  const { env } = getCloudflareContext();
+  const { order } = params;
+
+  if (!env.RESEND_API_KEY || !order.email) return;
+
+  const { subject, mainContent } = buildOrderConfirmationEmail(params);
+
+  await sendResendTemplate({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [order.email],
+    subject,
+    templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
+    variables: { MAIN_CONTENT: mainContent },
+  });
+}
+
 /**
  * Send the customer a localised shipping-confirmation email via Resend.
  * Throws if config is missing, email is falsy, or Resend returns a non-ok response

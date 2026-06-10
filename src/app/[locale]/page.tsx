@@ -182,6 +182,16 @@ export default async function HomePage({ params }: Props) {
         </div>
       </section>
 
+      {/* ── JULY DELIVERY NOTICE ────────────────────────────────── */}
+      <section className="section delivery-notice">
+        <div className="section-inner">
+          <h3 className="delivery-notice-title">{t('deliveryNotice.title')}</h3>
+          <p>{t('deliveryNotice.p1')}</p>
+          <p>{t('deliveryNotice.p2')}</p>
+          <p className="delivery-notice-footer">{t('deliveryNotice.p3')}</p>
+        </div>
+      </section>
+
       {/* ── CONTACT BAND ─────────────────────────────────────────── */}
       <section className="section contact" id="kontakt">
         <div className="contact-inner">

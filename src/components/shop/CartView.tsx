@@ -495,6 +495,12 @@ export function CartView() {
           <span className="k">{t('cart.total')}</span>
           <span className="v">{fmt(total)}</span>
         </div>
+        <div className="cart-delivery-notice">
+          <strong>{t('deliveryNotice.title')}</strong>
+          <p>{t('deliveryNotice.p1')}</p>
+          <p>{t('deliveryNotice.p2')}</p>
+          <p>{t('deliveryNotice.p3')}</p>
+        </div>
         {clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
             <CheckoutForm returnUrl={returnUrl} />

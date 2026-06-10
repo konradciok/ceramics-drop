@@ -626,6 +626,12 @@
       "sklep": "Cała kolekcja Anny Ciok: 103 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
     }
   },
+  "deliveryNotice": {
+    "title": "Informacja o dostawie w lipcu",
+    "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
+    "p2": "Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane w ciągu pierwszych pięciu dni po naszym przyjeździe. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.",
+    "p3": "Wysyłki będą realizowane w lipcu, po 10 lipca."
+  },
   "consent": {
     "title": "Pliki cookie",
     "body": "Używam plików cookie do analityki i marketingu. Możesz odmówić — zakupy działają tak samo.",

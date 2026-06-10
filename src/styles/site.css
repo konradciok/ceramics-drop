@@ -252,6 +252,14 @@ ul { list-style:none; padding:0; margin:0; }
 .craft-item h4 em { font-style:italic; font-weight:400; color:var(--c-butter); }
 .craft-item p { font-size:15px; line-height:1.6; opacity:.78; margin:0; }
 
+/* ─── JULY DELIVERY NOTICE ────────────────────────────── */
+.delivery-notice { background:var(--c-bone); color:var(--c-espresso); }
+.delivery-notice .section-inner { max-width:62ch; }
+.delivery-notice-title { font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-terracotta); margin:0 0 16px; }
+.delivery-notice p { font-size:16px; line-height:1.65; margin:0 0 10px; opacity:.85; }
+.delivery-notice p:last-child { margin-bottom:0; }
+.delivery-notice-footer { font-size:14px !important; opacity:.65 !important; }
+
 /* ─── KONTAKT ─────────────────────────────────────────── */
 .contact { background:var(--c-sand); }
 .contact-inner { max-width:var(--max); margin:0 auto; display:grid; grid-template-columns:1fr; gap:clamp(40px,6vw,92px); align-items:center; }
@@ -636,6 +644,9 @@ ul { list-style:none; padding:0; margin:0; }
 .ship-opt.sel .ship-radio::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--c-terracotta); }
 .ship-opt .so-t { font-family:var(--f-cond); font-size:13px; letter-spacing:.04em; text-transform:uppercase; display:flex; justify-content:space-between; }
 .ship-opt .so-d { font-size:13px; opacity:.65; margin-top:3px; line-height:1.4; }
+.cart-delivery-notice { background:var(--c-bone); border-radius:var(--r-sharp); padding:16px; margin-top:16px; }
+.cart-delivery-notice strong { display:block; font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-espresso); margin-bottom:6px; }
+.cart-delivery-notice p { font-size:13px; line-height:1.55; margin:6px 0 0; opacity:.85; }
 .summary .btn-primary { width:100%; justify-content:center; margin-top:22px; }
 .summary .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
 .summary .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }
