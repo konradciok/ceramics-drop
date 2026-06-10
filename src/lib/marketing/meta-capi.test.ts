@@ -27,6 +27,16 @@ describe('buildMetaPurchasePayload', () => {
     expect(e.custom_data).toMatchObject({ currency: 'PLN', value: 318, num_items: 2, order_id: 'pi_1' });
     expect(e.custom_data.contents).toHaveLength(2);
   });
+
+  it('includes event_source_url when provided', () => {
+    const e = buildMetaPurchasePayload(input()).data[0];
+    expect(e.event_source_url).toBe('https://anna-ciok.studio/koszyk/return');
+  });
+
+  it('falls back to store homepage when eventSourceUrl is null', () => {
+    const e = buildMetaPurchasePayload({ ...input(), eventSourceUrl: null }).data[0];
+    expect(e.event_source_url).toBe('https://anna-ciok.studio');
+  });
 });
 
 describe('sendMetaPurchase', () => {

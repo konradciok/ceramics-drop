@@ -49,7 +49,7 @@ export function buildMetaPurchasePayload(input: MetaPurchaseInput) {
         event_time: input.eventTimeSecs,
         event_id: input.eventId,
         action_source: 'website',
-        ...(input.eventSourceUrl ? { event_source_url: input.eventSourceUrl } : {}),
+        event_source_url: input.eventSourceUrl ?? 'https://anna-ciok.studio',
         user_data: pruneUserData(input.userData),
         custom_data: {
           currency: input.currency,
