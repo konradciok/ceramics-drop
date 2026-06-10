@@ -164,4 +164,25 @@ describe('createOrderInvoice', () => {
     await expect(createOrderInvoice('pi_1')).rejects.toThrow(/unexpected status void/);
     expect(stripeMock.invoices.sendInvoice).not.toHaveBeenCalled();
   });
+
+  it('uses EUR currency for invoice and items when order.currency is eur', async () => {
+    const eurOrder = { ...ORDER, currency: 'eur', subtotal: 2200, shipping: 500, total: 2700 };
+    orderRow = eurOrder;
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 0 })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 2700 });
+    stripeMock.invoices.finalizeInvoice.mockResolvedValue({ id: 'in_1', status: 'open', total: 2700 });
+    stripeMock.invoices.pay.mockResolvedValue({ id: 'in_1', status: 'paid', total: 2700 });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.invoices.create).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'eur' }),
+      expect.anything(),
+    );
+    for (const call of stripeMock.invoiceItems.create.mock.calls) {
+      expect(call[0]).toMatchObject({ currency: 'eur' });
+    }
+  });
 });
