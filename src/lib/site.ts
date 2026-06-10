@@ -18,6 +18,7 @@ export const SITE_PATHS = [
   '/wazony-srednie',
   '/wazony-duze',
   '/koszyk',
+  '/inspiracje',
   '/o-studiu',
   '/kontakt',
   '/regulamin',
