@@ -234,16 +234,22 @@ describe('buildOrderConfirmationEmail — greeting', () => {
 });
 
 describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
-  it('mentions "10 lipca" in both p2 and p3 (PL)', () => {
+  it('uses "od 10 lipca" in both p2 and p3 — no contradictory "do 10 lipca" (PL)', () => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
-    expect(html).toContain('10 lipca');
-    expect(html).not.toContain('po 10 lipca');
+    expect(html).toContain('od 10 lipca');
+    expect(html).not.toContain('do 10 lipca');
   });
 
-  it('mentions "10 July" in both p2 and p3 (EN)', () => {
+  it('uses "from 10 July" in both p2 and p3 — no contradictory "by 10 July" (EN)', () => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'en' });
-    expect(html).toContain('10 July');
-    expect(html).not.toContain('after 10 July');
+    expect(html).toContain('from 10 July');
+    expect(html).not.toContain('by 10 July');
+  });
+
+  it('uses "a partir del 10 de julio" in both p2 and p3 — no contradictory "antes del" (ES)', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'es' });
+    expect(html).toContain('a partir del 10 de julio');
+    expect(html).not.toContain('antes del 10 de julio');
   });
 });
 
