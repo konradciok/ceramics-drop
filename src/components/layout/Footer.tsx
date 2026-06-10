@@ -80,9 +80,6 @@ export async function Footer() {
                   Instagram
                 </a>
               </li>
-              <li>
-                <Link href="/kontakt">{t('footer.odbior')}</Link>
-              </li>
             </ul>
           </div>
         </div>
