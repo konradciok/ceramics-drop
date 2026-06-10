@@ -170,7 +170,7 @@
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
     "heroTitle": "One piece, one original, <em>one trace of the hand.</em>",
-    "heroSub": "One hundred and three ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, medium plates, large plates, large bowls and wavy-rim bowls. Each piece is hand-painted and glazed separately, so you choose the exact one shown in the photo.",
+    "heroSub": "A hundred ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is hand-painted and glazed separately, so you choose the exact one shown in the photo.",
     "heroCta1": "Browse all pieces",
     "heroMetaName": "Mug Nº 02",
     "heroMetaDesc": "Blue palm",
@@ -190,7 +190,7 @@
         "cta": "Choose a mug"
       },
       "vase": {
-        "num": "8 pieces · 210 zł each",
+        "num": "9 pieces · 210 zł each",
         "desc": "Round-bellied vases for a single branch, a few tulips or a market bunch. Each one has its own rhythm of stripes and drawings.",
         "cta": "Choose a vase"
       },
@@ -200,7 +200,7 @@
         "cta": "Choose a vase"
       },
       "bigvase": {
-        "num": "5 pieces · 395 PLN each",
+        "num": "4 pieces · 395 PLN each",
         "desc": "Large forms with a strong presence: palms, shells, cacti, a lobster and small folk scenes on warm white.",
         "cta": "Choose a vase"
       },
@@ -267,8 +267,8 @@
       "lead": "Hand-painted mugs. Every mug is a single piece, so you choose the exact one that will land in your kitchen."
     },
     "wazony": {
-      "eyebrow": "June drop — 8 pieces",
-      "title": "Small vases <em>Nº 01–08</em>",
+      "eyebrow": "June drop — 9 pieces",
+      "title": "Small vases <em>Nº 01–09</em>",
       "lead": "Round-bellied, hand-painted vases. For flowers, branches or as a small painting standing on a shelf."
     },
     "wazony-srednie": {
@@ -277,8 +277,8 @@
       "lead": "Medium ceramic vases, one of each. A form between the small and the large — for a bouquet or a shelf."
     },
     "wazony-duze": {
-      "eyebrow": "June drop — 5 pieces",
-      "title": "Large vases <em>Nº 01–05</em>",
+      "eyebrow": "June drop — 4 pieces",
+      "title": "Large vases <em>Nº 01–04</em>",
       "lead": "Large ceramic vases, one of each. Strong forms for bouquets and interiors that welcome a visible brush trace."
     },
     "talerzyki": {
@@ -316,11 +316,11 @@
     "eyebrow": "Studio",
     "h1": "One studio, <em>one pair of hands.</em>",
     "lead": "A small ceramics studio in Tenerife. Here I paint, glaze and refine every piece myself, one by one. This June drop travelled with me to Poland for the summer.",
-    "storyImageAlt": "Anna Ciok — painter and ceramic artist",
+    "storyImageAlt": "Anna Ciok — painter and ceramicist",
     "workspaceImageAlt": "Anna Ciok's ceramics studio in Tenerife",
     "storyEyebrow": "Painting and ceramics",
     "storyH": "I paint <em>on ceramics.</em>",
-    "storyP1": "I’m Anna. I am a painter and ceramic artist. I still paint canvases, but for the past few years ceramics has drawn me in more and more. I love that a painting can step off the wall, land in your hand and become part of an ordinary day.",
+    "storyP1": "I’m Anna. I am a painter and ceramicist. I still paint canvases, but for the past few years ceramics has drawn me in more and more. I love that a painting can step off the wall, land in your hand and become part of an ordinary day.",
     "storyP2": "I came to ceramics slowly: first a course, then a shelf in someone else’s studio, and finally my own small place with a glazing table, brushes and a kiln. It is calm, physical work, and it refuses to be rushed.",
     "storyP3": "I paint by hand, without transfers or stencils. That is why a line sometimes wanders, a palm leans a little, and two similar motifs are never truly the same. For me, that is where the object starts to feel alive.",
     "factsEyebrow": "Studio details",
@@ -505,8 +505,7 @@
       "Black bull with a light garland on the side and terracotta strokes by the rim. The motif stands calmly on the light form, and a small rhythm at the top closes the mug.",
       "Black eye with a light center and four-pointed star on a cream mug. A leafy border with blue dots leads the motif around the form.",
       "Black flowers with light, radiating lines on a cream mug. The motif spreads freely along the walls, at times cut off at the edge.",
-      "Black palm with white incisions and terracotta fruits. Leaves fan out beneath small lines on the rim.",
-      "Blue flower with a round head and herringbone leaves on a light mug. A simple vertical stem calmly leads the motif through the center of the form."
+      "Black palm with white incisions and terracotta fruits. Leaves fan out beneath small lines on the rim."
     ],
     "wazony": [
       "Blue saguaro and a terracotta sun on a light, rounded vase. Along the rim, a terracotta wave with white dots carries a desert rhythm around.",
@@ -516,6 +515,7 @@
       "Blue palm with terracotta fruit and stripes on the rim. The leaves spread widely across the rounded form.",
       "Brown loops painted with a wide brush on a light, rounded vase. The motif runs around in a soft, undulating rhythm.",
       "Black palm with white lines and terracotta fruit. The leaves spread widely across the rounded form, while the rim catches a terracotta rhythm.",
+      "A black winding ribbon with thin light lines on a cream vase. The motif circles the bulbous form like a gentle wave.",
       "Black flowers with dotted centers, round berries, and leaves with white stripes. The motif climbs vertically up the light, rounded form."
     ],
     "wazony-srednie": [
@@ -529,8 +529,7 @@
       "A black lobster drawn with a broad line on a light, bulbous vase. Claws and armor segments wrap around the form in a strong, marine rhythm.",
       "A black moon, a branch in a herringbone pattern, and a figure in a striped skirt on a light form. Motifs arranged vertically create a calm, graphic rhythm.",
       "A terracotta palm with black fruit and vertical stripes at the rim. The motif spreads wide across the rounded form in a calm, holiday rhythm.",
-      "A black palm with terracotta fruit and a ruffled border at the edges. The leaves fan out, while rusty arches connect the motif around the form.",
-      "A black winding ribbon with thin light lines on a cream vase. The motif circles the bulbous form like a gentle wave."
+      "A black palm with terracotta fruit and a ruffled border at the edges. The leaves fan out, while rusty arches connect the motif around the form."
     ],
     "talerzyki": [
       "A black shell with white, vertical lines on the light background of the plate. Terracotta strokes on the wavy rim set the rhythm around the form.",
@@ -616,7 +615,7 @@
     "ogImageAlt": "Anna Ciok Ceramics — hand-painted ceramic mug",
     "collections": {
       "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 28 unique pieces from Anna Ciok's June 2026 drop.",
-      "wazony": "Small hand-painted ceramic vases. Eight round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
+      "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "wazonySrednie": "Medium hand-painted ceramic vases. Four one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
       "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Four unique works from Anna Ciok's June 2026 drop.",
       "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Fourteen one-of-a-kind pieces from Anna Ciok's June 2026 drop.",

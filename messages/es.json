@@ -66,7 +66,7 @@
     "hInfo": "Información",
     "hKontakt": "Contacto",
     "koszyk": "Carrito",
-    "oArtystce": "Sobre la artista",
+    "oArtystce": "Sobre la ceramista",
     "proces": "Cómo se hace",
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
@@ -170,7 +170,7 @@
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
-    "heroSub": "Ciento tres piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos medianos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se pinta a mano y se esmalta por separado, así que eliges exactamente el que ves en la foto.",
+    "heroSub": "Cien piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se pinta a mano y se esmalta por separado, así que eliges exactamente el que ves en la foto.",
     "heroCta1": "Ver todas las piezas",
     "heroMetaName": "Taza Nº 02",
     "heroMetaDesc": "Palmera azul",
@@ -190,7 +190,7 @@
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "8 piezas · 210 zł cada uno",
+        "num": "9 piezas · 210 zł cada uno",
         "desc": "Jarrones panzudos para una rama, unos tulipanes o un ramo del mercado. Cada uno tiene su propio ritmo de rayas y dibujos.",
         "cta": "Elegir un jarrón"
       },
@@ -200,7 +200,7 @@
         "cta": "Elegir un jarrón"
       },
       "bigvase": {
-        "num": "5 piezas · 395 PLN c/u",
+        "num": "4 piezas · 395 PLN c/u",
         "desc": "Formas grandes con carácter: palmeras, conchas, cactus, una langosta y pequeñas escenas folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
@@ -232,7 +232,7 @@
     },
     "storyImageAlt": "Anna Ciok en su estudio de cerámica",
     "editorialImageAlt": "Cerámica pintada a mano por Anna Ciok a la luz del sol",
-    "storyEyebrow": "Sobre la artista",
+    "storyEyebrow": "Sobre la ceramista",
     "storyTitle": "Primero llegó la pintura, <em>hoy está la cerámica.</em>",
     "storyP1": "Soy Anna. Pinto cuadros y cerámica, y esos dos mundos se encuentran en el mismo estudio. Trato una taza, un plato o un jarrón como un pequeño cuadro útil: puedes cogerlo, ponerlo en la mesa y usarlo sin esperar una ocasión especial.",
     "storyP2": "Trabajo sola y despacio, un ejemplar tras otro. La mano deja su huella en la línea del pincel, en una palmera irregular y en una raya que no intenta ser perfecta. Ahí es donde cada pieza encuentra su carácter.",
@@ -267,8 +267,8 @@
       "lead": "Tazas pintadas a mano. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
     },
     "wazony": {
-      "eyebrow": "Drop de junio — 8 piezas",
-      "title": "Jarrones pequeños <em>Nº 01–08</em>",
+      "eyebrow": "Drop de junio — 9 piezas",
+      "title": "Jarrones pequeños <em>Nº 01–09</em>",
       "lead": "Jarrones panzudos pintados a mano. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
     },
     "wazony-srednie": {
@@ -277,8 +277,8 @@
       "lead": "Jarrones medianos de cerámica, un ejemplar de cada uno. Una forma entre lo pequeño y lo grande — para un ramo o una estantería."
     },
     "wazony-duze": {
-      "eyebrow": "Drop de junio — 5 piezas",
-      "title": "Jarrones grandes <em>Nº 01–05</em>",
+      "eyebrow": "Drop de junio — 4 piezas",
+      "title": "Jarrones grandes <em>Nº 01–04</em>",
       "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
     },
     "talerzyki": {
@@ -316,11 +316,11 @@
     "eyebrow": "Estudio",
     "h1": "Un estudio, <em>un par de manos.</em>",
     "lead": "Un pequeño estudio de cerámica en Tenerife. Aquí pinto, esmalto y remato cada pieza yo misma, una tras otra. Este drop de junio viajó conmigo a Polonia para el verano.",
-    "storyImageAlt": "Anna Ciok — pintora y artista cerámica",
+    "storyImageAlt": "Anna Ciok — pintora y ceramista",
     "workspaceImageAlt": "Estudio de cerámica de Anna Ciok en Tenerife",
     "storyEyebrow": "Pintura y cerámica",
     "storyH": "Pinto <em>sobre cerámica.</em>",
-    "storyP1": "Soy Anna. Soy pintora y artista cerámica. Aunque sigo pintando cuadros, desde hace unos años la cerámica me atrae cada vez más. Me gusta que un cuadro pueda bajar de la pared, llegar a las manos y formar parte de lo cotidiano.",
+    "storyP1": "Soy Anna. Soy pintora y ceramista. Aunque sigo pintando cuadros, desde hace unos años la cerámica me atrae cada vez más. Me gusta que un cuadro pueda bajar de la pared, llegar a las manos y formar parte de lo cotidiano.",
     "storyP2": "Llegué a la cerámica despacio: primero un curso, luego una estantería en el estudio de otra persona y, por fin, mi propio lugar pequeño con mesa de esmaltado, pinceles y horno. Es un trabajo tranquilo y físico, imposible de acelerar del todo.",
     "storyP3": "Pinto a mano, sin calco y sin plantilla. Por eso una línea a veces se escapa un poco, una palmera sale algo torcida y dos motivos parecidos nunca son iguales. Para mí, ahí empieza la vida del objeto.",
     "factsEyebrow": "Detalles del estudio",
@@ -505,8 +505,7 @@
       "Toro negro con guirnalda clara en el lado y líneas de terracota cerca del borde. El motivo se posa tranquilo sobre la forma clara, y un pequeño ritmo en la parte superior cierra la taza.",
       "Ojo negro con centro claro y estrella de cuatro puntas sobre una taza crema. Un marco de hojas con puntos azul celeste recorre el motivo alrededor de la forma.",
       "Flores negras con líneas claras y radiadas sobre una taza crema. El motivo se expande libremente por la superficie, cortado a veces por el borde.",
-      "Palma negra con incisiones blancas y frutos de terracota. Las hojas se abren en abanico bajo pequeñas líneas en el borde.",
-      "Flor azul celeste con cabeza redonda y hojas en espiga sobre una taza clara. Un sencillo tallo vertical conduce el motivo tranquilamente por el centro de la forma."
+      "Palma negra con incisiones blancas y frutos de terracota. Las hojas se abren en abanico bajo pequeñas líneas en el borde."
     ],
     "wazony": [
       "Saguaro azul y sol de terracota sobre un jarrón claro y redondeado. En el borde, una ola de terracota con puntos blancos conduce el ritmo desértico alrededor.",
@@ -516,6 +515,7 @@
       "Palmera azul con frutos de terracota y franjas en el borde. Las hojas se abren ampliamente sobre la forma redondeada.",
       "Lazos marrones pintados con brocha ancha sobre el jarrón claro y redondeado. El motivo recorre todo en un ritmo suave y ondulante.",
       "Palmera negra con líneas blancas y frutos de terracota. Las hojas se abren ampliamente sobre la forma redondeada y el borde toma el ritmo de terracota.",
+      "Cinta negra sinuosa con finas líneas claras sobre un jarrón crema. El motivo rodea la forma abombada como una ola tranquila.",
       "Flores negras con centro punteado, bayas redondas y hojas con rayas blancas. El motivo asciende verticalmente sobre la forma clara y redondeada."
     ],
     "wazony-srednie": [
@@ -529,8 +529,7 @@
       "Langosta negra dibujada con una línea ancha sobre un jarrón claro y abombado. Las pinzas y los segmentos del caparazón envuelven la forma con un ritmo marino fuerte.",
       "Luna negra, ramita en espiguilla y figura con falda a rayas sobre una forma clara. Los motivos dispuestos verticalmente crean un ritmo gráfico y tranquilo.",
       "Palma de terracota con frutos negros y franjas verticales cerca del borde. El motivo se extiende ampliamente sobre la forma redondeada en un ritmo vacacional y sereno.",
-      "Palma negra con frutos de terracota y una cenefa ondulada en los bordes. Las hojas se abren en abanico y los arcos rojizos unen el motivo alrededor de la forma.",
-      "Cinta negra sinuosa con finas líneas claras sobre un jarrón crema. El motivo rodea la forma abombada como una ola tranquila."
+      "Palma negra con frutos de terracota y una cenefa ondulada en los bordes. Las hojas se abren en abanico y los arcos rojizos unen el motivo alrededor de la forma."
     ],
     "talerzyki": [
       "Concha negra con líneas blancas verticales sobre el fondo claro del plato. Trazos de terracota en el borde ondulado marcan el ritmo alrededor de la forma.",
@@ -616,7 +615,7 @@
     "ogImageAlt": "Anna Ciok Ceramics — taza de cerámica pintada a mano",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 28 piezas irrepetibles del drop de junio de Anna Ciok.",
-      "wazony": "Jarrones pequeños de cerámica pintados a mano. Ocho piezas panzudas y únicas del drop de junio de Anna Ciok.",
+      "wazony": "Jarrones pequeños de cerámica pintados a mano. Nueve piezas panzudas y únicas del drop de junio de Anna Ciok.",
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Cuatro piezas únicas del drop de junio de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Cuatro obras del drop de junio de Anna Ciok.",
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",

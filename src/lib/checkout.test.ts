@@ -32,9 +32,9 @@ describe('validateCart', () => {
   });
 
   it('resolves items to euro-cents when currency is eur', () => {
-    // k01 is kubki → PRICE_EUR.kubki = 22 → toEuroCents(22) = 2200
+    // k01 is kubki → PRICE_EUR.kubki = 25 → toEuroCents(25) = 2500
     const result = validateCart(['k01'], 'eur');
-    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2500 }] });
   });
 
   it('default currency (no arg) still produces grosze', () => {

@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 104 pieces (96 June drop + 7 segunda-partia additions + 1 smoke-test)', () => {
-    expect(getProducts()).toHaveLength(104);
+  it('builds exactly 103 pieces (96 June drop + 7 segunda-partia additions; smoke-test x01 removed)', () => {
+    expect(getProducts()).toHaveLength(103);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 29, wazony: 8, 'wazony-srednie': 5, 'wazony-duze': 5, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
+    const counts = { kubki: 28, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -95,10 +95,11 @@ describe('June inventory review', () => {
     for (const id of ['d01', 'd02', 'd03', 'd05']) {
       expect(getProductById(id)!.category, id).toBe('wazony-srednie');
     }
-    // d06,d07,d09 stay large; v09 moves in as the new Nº04
-    for (const id of ['d06', 'd07', 'd09', 'v09']) {
+    // d06,d07,d09 stay large; v09 reverted back to small vases (artist confirmed)
+    for (const id of ['d06', 'd07', 'd09']) {
       expect(getProductById(id)!.category, id).toBe('wazony-duze');
     }
+    expect(getProductById('v09')!.category, 'v09').toBe('wazony');
     // d10 drops down to the small vases
     expect(getProductById('d10')!.category).toBe('wazony');
     expect(getProductById('v09')!.image).toBe('/uploads/waza-mala-9.webp');

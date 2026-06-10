@@ -66,7 +66,7 @@
     "hInfo": "Informacje",
     "hKontakt": "Kontakt",
     "koszyk": "Koszyk",
-    "oArtystce": "O artystce",
+    "oArtystce": "O ceramiczce",
     "proces": "Jak powstają prace",
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
@@ -170,7 +170,7 @@
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
     "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
-    "heroSub": "Sto trzy ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, talerze średnie, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest ręcznie malowany i szkliwiony osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
+    "heroSub": "Sto ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest ręcznie malowany i szkliwiony osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
     "heroCta1": "Przeglądaj wszystkie prace",
     "heroMetaName": "Kubek Nº 02",
     "heroMetaDesc": "Błękitna palma",
@@ -190,7 +190,7 @@
         "cta": "Wybierz swój kubek"
       },
       "vase": {
-        "num": "8 prac · 210 zł za sztukę",
+        "num": "9 prac · 210 zł za sztukę",
         "desc": "Pękate wazony na pojedynczą gałązkę, kilka tulipanów albo bukiet z targu. Każdy ma własny rytm pasków i rysunków.",
         "cta": "Wybierz swój"
       },
@@ -200,7 +200,7 @@
         "cta": "Wybierz średni wazon"
       },
       "bigvase": {
-        "num": "5 prac · 395 zł każdy",
+        "num": "4 prace · 395 zł każdy",
         "desc": "Duże formy z mocnym charakterem: palmy, muszle, kaktusy, homar i małe folkowe sceny na ciepłej bieli.",
         "cta": "Wybierz duży wazon"
       },
@@ -232,7 +232,7 @@
     },
     "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
     "editorialImageAlt": "Ręcznie malowana ceramika Anny Ciok w świetle słonecznym",
-    "storyEyebrow": "O artystce",
+    "storyEyebrow": "O ceramiczce",
     "storyTitle": "Najpierw był obraz, <em>dziś jest ceramika.</em>",
     "storyP1": "Jestem Anna. Maluję obrazy i ceramikę, a oba światy spotykają się w tej samej pracowni. Kubek, talerz czy wazon traktuję jak mały obraz użytkowy: można go wziąć do ręki, postawić na stole i używać bez specjalnej okazji.",
     "storyP2": "Pracuję sama, powoli, jeden egzemplarz po drugim. Ręka zostawia ślad w linii pędzla, w nierównej palmie i w pasku, który nie udaje idealnego. To właśnie sprawia, że każda praca ma swój charakter.",
@@ -267,8 +267,8 @@
       "lead": "Ręcznie malowane kubki. Każdy jest osobnym egzemplarzem, więc wybierasz dokładnie ten, który ma trafić do Twojej kuchni."
     },
     "wazony": {
-      "eyebrow": "Czerwcowy drop — 8 prac",
-      "title": "Małe wazony <em>Nº 01–08</em>",
+      "eyebrow": "Czerwcowy drop — 9 prac",
+      "title": "Małe wazony <em>Nº 01–09</em>",
       "lead": "Pękate, ręcznie malowane wazony. Na kwiaty, gałązki albo jako mały obraz stojący na półce."
     },
     "wazony-srednie": {
@@ -277,8 +277,8 @@
       "lead": "Średnie wazony ceramiczne, każdy w jednym egzemplarzu. Forma pomiędzy kameralną a dużą — na bukiet i na półkę."
     },
     "wazony-duze": {
-      "eyebrow": "Czerwcowy drop — 5 prac",
-      "title": "Wazony duże <em>Nº 01–05</em>",
+      "eyebrow": "Czerwcowy drop — 4 prace",
+      "title": "Wazony duże <em>Nº 01–04</em>",
       "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
     },
     "talerzyki": {
@@ -316,11 +316,11 @@
     "eyebrow": "O studiu",
     "h1": "Jedna pracownia, <em>jedna para rąk.</em>",
     "lead": "Mała pracownia ceramiczna na Teneryfie. Tu maluję, szkliwię i dopracowuję każdą sztukę sama, jedną po drugiej. Ten czerwcowy drop przyjechał ze mną do Polski na wakacje.",
-    "storyImageAlt": "Anna Ciok — malarka i artystka ceramiczna",
+    "storyImageAlt": "Anna Ciok — malarka i ceramiczka",
     "workspaceImageAlt": "Pracownia ceramiczna Anny Ciok na Teneryfie",
     "storyEyebrow": "Obraz i ceramika",
     "storyH": "Maluję <em>na ceramice.</em>",
-    "storyP1": "Jestem Anna. Jestem malarką i artystką ceramiczną. Choć nadal maluję obrazy, od kilku lat coraz mocniej ciągnie mnie do ceramiki. Lubię to, że obraz może zejść ze ściany, trafić do dłoni i stać się częścią codzienności.",
+    "storyP1": "Jestem Anna. Jestem malarką i ceramiczką. Choć nadal maluję obrazy, od kilku lat coraz mocniej ciągnie mnie do ceramiki. Lubię to, że obraz może zejść ze ściany, trafić do dłoni i stać się częścią codzienności.",
     "storyP2": "Do ceramiki dochodziłam powoli: najpierw kurs, potem półka w cudzej pracowni, w końcu własne niewielkie miejsce ze stołem do szkliwienia, pędzlami i piecem. To spokojna, fizyczna praca, w której nie da się wszystkiego przyspieszyć.",
     "storyP3": "Maluję ręcznie, bez kalki i bez szablonu. Dlatego kreska czasem lekko ucieka, palma wychodzi trochę krzywo, a dwa podobne wzory i tak nie są takie same. Dla mnie właśnie tam zaczyna się życie przedmiotu.",
     "factsEyebrow": "Detale pracowni",
@@ -505,8 +505,7 @@
       "Czarny byk z jasną girlandą na boku i terakotowymi kreskami przy rancie. Motyw stoi spokojnie na jasnej formie, a drobny rytm u góry domyka kubek.",
       "Czarne oko z jasnym środkiem i czteroramienną gwiazdą na kremowym kubku. Liściasty otok z błękitnymi kropkami prowadzi motyw dookoła formy.",
       "Czarne kwiaty z jasnymi, promienistymi liniami na kremowym kubku. Motyw rozchodzi się swobodnie po ściankach, miejscami ucięty przy brzegu.",
-      "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie.",
-      "Błękitny kwiat z okrągłą główką i liśćmi w jodełkę na jasnym kubku. Prosty pion łodygi spokojnie prowadzi motyw przez środek formy."
+      "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie."
     ],
     "wazony": [
       "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła.",
@@ -516,6 +515,7 @@
       "Błękitna palma z terakotowymi owocami i pasami na rancie. Liście rozchodzą się szeroko po zaokrąglonej formie.",
       "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw biegnie dookoła w miękkim, falującym rytmie.",
       "Czarna palma z białymi liniami i terakotowymi owocami. Liście rozchodzą się szeroko po zaokrąglonej formie, a rant łapie terakotowy rytm.",
+      "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala.",
       "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie."
     ],
     "wazony-srednie": [
@@ -529,8 +529,7 @@
       "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
       "Czarny księżyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
       "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
-      "Czarna palma z terakotowymi owocami i falbankową bordiurą przy krawędziach. Liście rozchodzą się wachlarzem, a rdzawe łuki spinają motyw dookoła formy.",
-      "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala."
+      "Czarna palma z terakotowymi owocami i falbankową bordiurą przy krawędziach. Liście rozchodzą się wachlarzem, a rdzawe łuki spinają motyw dookoła formy."
     ],
     "talerzyki": [
       "Czarna muszla z białymi, pionowymi liniami na jasnym dnie talerzyka. Terakotowe kreski na falowanym brzegu prowadzą rytm dookoła formy.",
@@ -616,7 +615,7 @@
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 28 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
-      "wazony": "Ręcznie malowane małe wazony ceramiczne. Osiem pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",

@@ -426,7 +426,6 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* sprzedane */
 .tile.sold { cursor:default; }
-.tile.sold img { filter:grayscale(.85) brightness(1.04); opacity:.6; }
 .tile.sold .check,.tile.sold .tile-add { display:none; }
 .tile .sold-tag {
   position:absolute; top:12px; left:12px; z-index:3; display:none;
