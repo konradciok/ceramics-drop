@@ -1,3 +1,5 @@
+import { SITE_URL } from '@/lib/site';
+
 const GRAPH_API_VERSION = 'v21.0';
 
 export type MetaUserData = {
@@ -49,7 +51,7 @@ export function buildMetaPurchasePayload(input: MetaPurchaseInput) {
         event_time: input.eventTimeSecs,
         event_id: input.eventId,
         action_source: 'website',
-        event_source_url: input.eventSourceUrl ?? 'https://anna-ciok.studio',
+        event_source_url: input.eventSourceUrl ?? SITE_URL,
         user_data: pruneUserData(input.userData),
         custom_data: {
           currency: input.currency,

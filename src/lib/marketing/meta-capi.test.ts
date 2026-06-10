@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { SITE_URL } from '@/lib/site';
 import { buildMetaPurchasePayload, sendMetaPurchase, type MetaPurchaseInput } from './meta-capi';
 
 const input = (): MetaPurchaseInput => ({
@@ -35,7 +36,7 @@ describe('buildMetaPurchasePayload', () => {
 
   it('falls back to store homepage when eventSourceUrl is null', () => {
     const e = buildMetaPurchasePayload({ ...input(), eventSourceUrl: null }).data[0];
-    expect(e.event_source_url).toBe('https://anna-ciok.studio');
+    expect(e.event_source_url).toBe(SITE_URL);
   });
 });
 

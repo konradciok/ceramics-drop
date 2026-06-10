@@ -7,6 +7,7 @@ import { orderAmountGrosze, orderAmountEuroCents } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
+import { SITE_URL } from '@/lib/site';
 import type { MarketingContext } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
   };
   const origin = req.headers.get('origin') ?? '';
   const localePrefix = locale !== 'pl' ? `/${locale}` : '';
-  const eventSourceUrl = origin ? `${origin}${localePrefix}/koszyk/return` : null;
+  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
   const marketing: MarketingContext = {
     consent,
     fbp: str2(mc.fbp),

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import * as Sentry from '@sentry/nextjs';
 import { loadStripe } from '@stripe/stripe-js';
 import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
@@ -57,7 +58,10 @@ export default function ReturnPage() {
           }
         }
       })
-      .catch(() => setStatus('fail'));
+      .catch(() => {
+        Sentry.captureMessage('stripe_return_load_failed', 'warning');
+        setStatus('fail');
+      });
   }, [clear]);
 
   if (status === 'loading') return <main id="cart-root" />;
