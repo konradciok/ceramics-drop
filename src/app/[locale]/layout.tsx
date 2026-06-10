@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       images: [{ url: '/uploads/kubek-1.webp', width: 1200, height: 800, alt: t('meta.ogImageAlt') }],
     },
     twitter: { card: 'summary_large_image' },
-    icons: { apple: '/logotype.png' },
+    icons: { icon: '/favicon.ico', apple: '/logotype.png' },
   };
 }
 
