@@ -58,8 +58,8 @@ export default function ReturnPage() {
           }
         }
       })
-      .catch(() => {
-        Sentry.captureMessage('stripe_return_load_failed', 'warning');
+      .catch((err) => {
+        Sentry.captureException(err, { level: 'warning', tags: { context: 'stripe_return_load' } });
         setStatus('fail');
       });
   }, [clear]);
