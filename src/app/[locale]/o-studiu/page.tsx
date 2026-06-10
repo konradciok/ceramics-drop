@@ -31,15 +31,9 @@ export default async function StudioPage({ params }: Props) {
       {/* ── PAGE HEAD ────────────────────────────────────────────── */}
       <section className="page-head">
         <div className="page-head-inner">
-          <div className="page-head-copy">
-            <div className="eyebrow">{t('studio.eyebrow')}</div>
-            <h1>{t.rich('studio.h1', richTags)}</h1>
-            <p className="lead">{t('studio.lead')}</p>
-          </div>
-          <div className="page-head-art">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/2ania.webp" srcSet={srcSet('/uploads/2ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.workspaceImageAlt')} width={1366} height={2048} />
-          </div>
+          <div className="eyebrow">{t('studio.eyebrow')}</div>
+          <h1>{t.rich('studio.h1', richTags)}</h1>
+          <p className="lead">{t('studio.lead')}</p>
         </div>
       </section>
 
@@ -49,7 +43,8 @@ export default async function StudioPage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/1ania.webp" srcSet={srcSet('/uploads/1ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.storyImageAlt')} width={1366} height={2048} />
+              <img src="/uploads/waza-mala-1.webp" srcSet={srcSet('/uploads/waza-mala-1.webp')} sizes="(min-width:861px) 50vw, 100vw" alt="" />
+              <span className="signature">Anna</span>
             </div>
             <div className="story-text">
               <div className="section-eyebrow">{t('studio.storyEyebrow')}</div>

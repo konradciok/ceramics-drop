@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       images: [{ url: '/uploads/kubek-1.webp', width: 1200, height: 800, alt: t('meta.ogImageAlt') }],
     },
     twitter: { card: 'summary_large_image' },
-    icons: { icon: '/favicon.ico', apple: '/logotype.png' },
+    icons: { apple: '/logotype.png' },
   };
 }
 
@@ -67,8 +67,6 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale}>
       <head>
-        <meta name="google-site-verification" content="ODPOvFg6a6l64-89h-HcUeWIlCYAIMWrG7EnGzgJ2V4" />
-        <meta name="p:domain_verify" content="862d54c53b404182e314389f2433a3dc" />
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Variable-latin.woff2" />
         <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/Jost-Variable-latinExt.woff2" />
         {/* Hero <h1> uses an italic <em> ("malowana ręką.") above the fold — preload italic to avoid LCP swap */}
