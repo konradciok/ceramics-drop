@@ -19,10 +19,10 @@ import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
-  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 8 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 28 },
+  wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 9 },
   'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 5 },
-  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 5 },
+  'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 4 },
   talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '12 × 12 × 3 cm', count: 14 },
   'talerze-srednie': { slug: 'talerze-srednie', nameKey: 'nav.talerzeSrednie', singularKey: 'medplate', price: PRICE_PLN['talerze-srednie'], measure: '⌀ 18 cm', count: 18 },
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
@@ -105,6 +105,7 @@ function buildBase(): BasePiece[] {
 /** Pieces removed from sale entirely (drop from catalogue + piece_state). */
 const REMOVED = new Set<string>([
   'k15', 'k16',                          // kubki
+  'x01',                                 // smoke-test mug (prod payment verified)
   'v08', 'd04', 'd08',                   // wazy: out / duplicate
   't03',                                 // talerzyki
   'p04', 'p06', 'p11',                   // talerze-duze
@@ -119,7 +120,6 @@ const RECATEGORISE: Record<string, CategorySlug> = {
   d01: 'wazony-srednie', d02: 'wazony-srednie', d03: 'wazony-srednie', d05: 'wazony-srednie',
   // swap między poziomami
   d10: 'wazony',         // duże Nº10 → małe
-  v09: 'wazony-duze',    // nowa seria (waza-mala-9) → duże Nº04
   // nowe talerzyki średnie — t16–t31 przeniesione do nowej kategorii
   t16: 'talerze-srednie', t17: 'talerze-srednie', t18: 'talerze-srednie', t19: 'talerze-srednie',
   t20: 'talerze-srednie', t21: 'talerze-srednie', t22: 'talerze-srednie', t23: 'talerze-srednie',
@@ -130,7 +130,6 @@ const RECATEGORISE: Record<string, CategorySlug> = {
 /** Display order overrides: pieces appended to the END of a family, in order. */
 const APPEND_ORDER: Partial<Record<CategorySlug, string[]>> = {
   wazony: ['d10'],
-  'wazony-duze': ['v09'],
 };
 
 /** Gallery merges: target id gets these extra image stems (second photos). */
@@ -141,14 +140,10 @@ const GALLERY_MERGE: Record<string, string[]> = {
 };
 
 /** Per-product price overrides in PLN (used for test/one-off pieces). */
-const PRICE_OVERRIDE: Record<string, number> = {
-  x01: 8, // smoke-test piece (~2 EUR) — remove after prod payment verified
-};
+const PRICE_OVERRIDE: Record<string, number> = {};
 
 /** Per-product measure overrides. */
-const MEASURE_OVERRIDE: Record<string, string> = {
-  x01: '122 cm',
-};
+const MEASURE_OVERRIDE: Record<string, string> = {};
 
 function buildProducts(): Product[] {
   const base = buildBase().filter((p) => !REMOVED.has(p.id));

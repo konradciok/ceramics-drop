@@ -190,7 +190,7 @@
         "cta": "Wybierz swój kubek"
       },
       "vase": {
-        "num": "8 prac · 210 zł za sztukę",
+        "num": "9 prac · 210 zł za sztukę",
         "desc": "Pękate wazony na pojedynczą gałązkę, kilka tulipanów albo bukiet z targu. Każdy ma własny rytm pasków i rysunków.",
         "cta": "Wybierz swój"
       },
@@ -200,7 +200,7 @@
         "cta": "Wybierz średni wazon"
       },
       "bigvase": {
-        "num": "5 prac · 395 zł każdy",
+        "num": "4 prace · 395 zł każdy",
         "desc": "Duże formy z mocnym charakterem: palmy, muszle, kaktusy, homar i małe folkowe sceny na ciepłej bieli.",
         "cta": "Wybierz duży wazon"
       },
@@ -267,8 +267,8 @@
       "lead": "Ręcznie malowane kubki. Każdy jest osobnym egzemplarzem, więc wybierasz dokładnie ten, który ma trafić do Twojej kuchni."
     },
     "wazony": {
-      "eyebrow": "Czerwcowy drop — 8 prac",
-      "title": "Małe wazony <em>Nº 01–08</em>",
+      "eyebrow": "Czerwcowy drop — 9 prac",
+      "title": "Małe wazony <em>Nº 01–09</em>",
       "lead": "Pękate, ręcznie malowane wazony. Na kwiaty, gałązki albo jako mały obraz stojący na półce."
     },
     "wazony-srednie": {
@@ -277,8 +277,8 @@
       "lead": "Średnie wazony ceramiczne, każdy w jednym egzemplarzu. Forma pomiędzy kameralną a dużą — na bukiet i na półkę."
     },
     "wazony-duze": {
-      "eyebrow": "Czerwcowy drop — 5 prac",
-      "title": "Wazony duże <em>Nº 01–05</em>",
+      "eyebrow": "Czerwcowy drop — 4 prace",
+      "title": "Wazony duże <em>Nº 01–04</em>",
       "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
     },
     "talerzyki": {
@@ -616,7 +616,7 @@
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 28 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
-      "wazony": "Ręcznie malowane małe wazony ceramiczne. Osiem pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",

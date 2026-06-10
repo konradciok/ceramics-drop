@@ -190,7 +190,7 @@
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "8 piezas · 210 zł cada uno",
+        "num": "9 piezas · 210 zł cada uno",
         "desc": "Jarrones panzudos para una rama, unos tulipanes o un ramo del mercado. Cada uno tiene su propio ritmo de rayas y dibujos.",
         "cta": "Elegir un jarrón"
       },
@@ -200,7 +200,7 @@
         "cta": "Elegir un jarrón"
       },
       "bigvase": {
-        "num": "5 piezas · 395 PLN c/u",
+        "num": "4 piezas · 395 PLN c/u",
         "desc": "Formas grandes con carácter: palmeras, conchas, cactus, una langosta y pequeñas escenas folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
@@ -267,8 +267,8 @@
       "lead": "Tazas pintadas a mano. Cada taza es un ejemplar único, así que eliges exactamente la que llegará a tu cocina."
     },
     "wazony": {
-      "eyebrow": "Drop de junio — 8 piezas",
-      "title": "Jarrones pequeños <em>Nº 01–08</em>",
+      "eyebrow": "Drop de junio — 9 piezas",
+      "title": "Jarrones pequeños <em>Nº 01–09</em>",
       "lead": "Jarrones panzudos pintados a mano. Para flores, ramas o como un pequeño cuadro de pie en una estantería."
     },
     "wazony-srednie": {
@@ -277,8 +277,8 @@
       "lead": "Jarrones medianos de cerámica, un ejemplar de cada uno. Una forma entre lo pequeño y lo grande — para un ramo o una estantería."
     },
     "wazony-duze": {
-      "eyebrow": "Drop de junio — 5 piezas",
-      "title": "Jarrones grandes <em>Nº 01–05</em>",
+      "eyebrow": "Drop de junio — 4 piezas",
+      "title": "Jarrones grandes <em>Nº 01–04</em>",
       "lead": "Jarrones grandes de cerámica, un ejemplar de cada uno. Formas expresivas para ramos e interiores que agradecen una huella visible del pincel."
     },
     "talerzyki": {
@@ -616,7 +616,7 @@
     "ogImageAlt": "Anna Ciok Ceramics — taza de cerámica pintada a mano",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 28 piezas irrepetibles del drop de junio de Anna Ciok.",
-      "wazony": "Jarrones pequeños de cerámica pintados a mano. Ocho piezas panzudas y únicas del drop de junio de Anna Ciok.",
+      "wazony": "Jarrones pequeños de cerámica pintados a mano. Nueve piezas panzudas y únicas del drop de junio de Anna Ciok.",
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Cuatro piezas únicas del drop de junio de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única. Cuatro obras del drop de junio de Anna Ciok.",
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Catorce ejemplares únicos del drop de junio de Anna Ciok.",
