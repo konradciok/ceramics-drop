@@ -19,7 +19,7 @@ import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 28 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
   wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 8 },
   'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 5 },
   'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 5 },
@@ -74,6 +74,7 @@ const SPECS: Spec[] = [
   { slug: 'duze-michy', prefix: 'b', imageBase: 'duza-micha', files: range(1, 7) },
   { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 17) },
   { slug: 'kubki', prefix: 'c', imageBase: 'kubek-kolejny-nr', files: [1, 2, 3, 4] },
+  { slug: 'kubki', prefix: 'x', imageBase: 'kubek', files: [1] },  // smoke-test piece — remove after prod payment verified
   { slug: 'wazony-srednie', prefix: 'u', imageBase: 'sredni-wazon', files: [234] },
   { slug: 'wazony-duze', prefix: 'g', imageBase: 'duza-waza', files: [122] },
   { slug: 'duze-michy', prefix: 'h', imageBase: 'duza-miska', files: [23] },
@@ -139,6 +140,16 @@ const GALLERY_MERGE: Record<string, string[]> = {
   w15: ['/uploads/miski-falowane-16.webp'],
 };
 
+/** Per-product price overrides in PLN (used for test/one-off pieces). */
+const PRICE_OVERRIDE: Record<string, number> = {
+  x01: 8, // smoke-test piece (~2 EUR) — remove after prod payment verified
+};
+
+/** Per-product measure overrides. */
+const MEASURE_OVERRIDE: Record<string, string> = {
+  x01: '122 cm',
+};
+
 function buildProducts(): Product[] {
   const base = buildBase().filter((p) => !REMOVED.has(p.id));
 
@@ -177,8 +188,8 @@ function buildProducts(): Product[] {
         num: pad(i + 1),
         image: p.image,
         ...(GALLERY_MERGE[p.id] ? { gallery: GALLERY_MERGE[p.id] } : {}),
-        price: cat.price,
-        measure: cat.measure,
+        price: PRICE_OVERRIDE[p.id] ?? cat.price,
+        measure: MEASURE_OVERRIDE[p.id] ?? cat.measure,
         sold: false,
         noteIndex: i,
       });
