@@ -49,6 +49,7 @@ async function sendResendTemplate(params: {
   templateId: string;
   variables: Record<string, string>;
   attachments?: Array<{ filename: string; content: string }>;
+  signal?: AbortSignal;
 }): Promise<void> {
   const body: ResendSendBody = {
     from: params.from,
@@ -71,6 +72,7 @@ async function sendResendTemplate(params: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
+    ...(params.signal ? { signal: params.signal } : {}),
   });
 
   if (!res.ok) {
@@ -496,6 +498,9 @@ export type OrderConfirmationOrder = {
   receiver_first_name: string | null;
 };
 
+// Intentionally duplicates deliveryNotice.* from messages/*.json — the Workers
+// runtime cannot read filesystem files, so email builders carry their own i18n.
+// Keep in sync manually when July copy changes.
 const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
   subject: string;
   greeting: (name: string | null) => string;
@@ -563,7 +568,7 @@ export function buildOrderConfirmationEmail(params: {
   return { subject: t.subject, html: mainContent, mainContent };
 }
 
-/** Send the customer a localised order-confirmation email via Resend. No-op if email or API key is absent. */
+/** Send the customer a localised order-confirmation email via Resend. Throws if RESEND_API_KEY is missing (caller catches). */
 export async function emailOrderConfirmationToCustomer(params: {
   order: OrderConfirmationOrder;
   locale: string;
@@ -571,18 +576,27 @@ export async function emailOrderConfirmationToCustomer(params: {
   const { env } = getCloudflareContext();
   const { order } = params;
 
-  if (!env.RESEND_API_KEY || !order.email) return;
+  if (!env.RESEND_API_KEY) {
+    throw new Error('Resend not configured: RESEND_API_KEY missing');
+  }
+  if (!order.email) return;
 
   const { subject, mainContent } = buildOrderConfirmationEmail(params);
-
-  await sendResendTemplate({
-    apiKey: env.RESEND_API_KEY,
-    from: EMAIL_FROM,
-    to: [order.email],
-    subject,
-    templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
-    variables: { MAIN_CONTENT: mainContent },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    await sendResendTemplate({
+      apiKey: env.RESEND_API_KEY,
+      from: EMAIL_FROM,
+      to: [order.email],
+      subject,
+      templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
+      variables: { MAIN_CONTENT: mainContent },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
