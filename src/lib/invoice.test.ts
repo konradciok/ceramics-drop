@@ -152,8 +152,12 @@ describe('createOrderInvoice', () => {
       limit: 1,
     });
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
+    expect(stripeMock.customers.update).toHaveBeenCalledWith(
+      'cus_existing',
+      expect.objectContaining({ preferred_locales: ['pl'] }),
+    );
     expect(stripeMock.invoices.create).toHaveBeenCalledWith(
-      expect.objectContaining({ customer: 'cus_existing' }),
+      expect.objectContaining({ customer: 'cus_updated' }),
       expect.anything(),
     );
   });

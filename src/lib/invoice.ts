@@ -79,12 +79,10 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
   const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
   let customer: Stripe.Customer;
   if (existingList.data.length > 0) {
-    customer = customerShipping
-      ? await stripe.customers.update(existingList.data[0].id, {
-          shipping: customerShipping,
-          preferred_locales: [invoiceLocale],
-        })
-      : existingList.data[0];
+    customer = await stripe.customers.update(existingList.data[0].id, {
+      ...(customerShipping ? { shipping: customerShipping } : {}),
+      preferred_locales: [invoiceLocale],
+    });
   } else {
     customer = await stripe.customers.create(
       { email: order.email, shipping: customerShipping, preferred_locales: [invoiceLocale] },
