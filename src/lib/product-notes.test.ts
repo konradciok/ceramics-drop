@@ -53,7 +53,7 @@ describe('product notes drafts', () => {
     expect(draft.items.at(-1)).toMatchObject({
       productId: 'c04',
       displayNum: '28',
-      currentNote: 'Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie.',
+      currentNote: pl.notes.kubki.at(-1),
       proposedNote: 'Nowy opis c04',
     });
   });
