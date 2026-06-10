@@ -12,6 +12,8 @@
  *
  * Usage:
  *   node scripts/optimize-images.mjs
+ *   node scripts/optimize-images.mjs --editorial
+ *   node scripts/optimize-images.mjs --variants-only
  *
  * Source files must match the product regex:
  *   ^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$
@@ -37,10 +39,14 @@ const PRODUCT_PNG_REGEX =
 const PRODUCT_WEBP_REGEX =
   /^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.webp$/;
 
+/** Editorial JPEGs in public/uploads/ (e.g. 1ania.jpeg). */
+const EDITORIAL_JPEG_REGEX = /^[123]ania\.jpe?g$/i;
+
 // Keep in sync with IMG_WIDTHS in src/lib/images.ts (verified by images.test.ts)
 const IMG_WIDTHS = [400, 800, 1600];
 
 const variantsOnly = process.argv.includes('--variants-only');
+const editorialOnly = process.argv.includes('--editorial');
 
 // Ensure output directory exists
 fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -60,7 +66,31 @@ async function emitResponsiveVariants(input, baseName, logPrefix = '    ') {
 
 let totalBytes = 0;
 
-if (variantsOnly) {
+if (editorialOnly) {
+  const files = fs.readdirSync(OUT_DIR).filter((f) => EDITORIAL_JPEG_REGEX.test(f));
+  if (files.length === 0) {
+    console.error(`No editorial JPEGs found in ${OUT_DIR} (expected 1ania.jpeg, 2ania.jpeg, 3ania.jpeg)`);
+    process.exit(1);
+  }
+  console.log(`Found ${files.length} editorial JPEGs to convert.\n`);
+
+  for (const file of files) {
+    const input = path.join(OUT_DIR, file);
+    const baseName = path.basename(file, path.extname(file));
+
+    const output = path.join(OUT_DIR, `${baseName}.webp`);
+    await sharp(input).webp({ quality: 80 }).toFile(output);
+    const { size } = fs.statSync(output);
+    totalBytes += size;
+    console.log(`  ${file} → ${baseName}.webp  (${(size / 1024).toFixed(0)} KB)`);
+
+    totalBytes += await emitResponsiveVariants(input, baseName);
+  }
+
+  const totalMB = (totalBytes / 1024 / 1024).toFixed(2);
+  console.log(`\nDone. Converted ${files.length} editorial files (+ ${files.length * IMG_WIDTHS.length} responsive variants) → ${OUT_DIR}`);
+  console.log(`Total output size: ${totalMB} MB`);
+} else if (variantsOnly) {
   const bases = fs.readdirSync(OUT_DIR).filter((f) => PRODUCT_WEBP_REGEX.test(f));
   if (bases.length === 0) {
     console.error(`No canonical base WebPs found in ${OUT_DIR}`);

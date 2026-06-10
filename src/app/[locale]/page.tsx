@@ -117,14 +117,23 @@ export default async function HomePage({ params }: Props) {
         </div>
       </section>
 
+      {/* ── EDITORIAL ────────────────────────────────────────────── */}
+      <section className="section editorial">
+        <div className="section-inner">
+          <div className="editorial-shot">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/uploads/3ania.webp" srcSet={srcSet('/uploads/3ania.webp')} sizes="(min-width:861px) 720px, 100vw" alt={t('home.editorialImageAlt')} width={1086} height={1448} />
+          </div>
+        </div>
+      </section>
+
       {/* ── STUDIO STORY ─────────────────────────────────────────── */}
       <section className="section" id="studio">
         <div className="section-inner">
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/waza-mala-1.webp" srcSet={srcSet('/uploads/waza-mala-1.webp')} sizes="(min-width:861px) 50vw, 100vw" alt="" width={1600} height={2000} />
-              <span className="signature">Anna</span>
+              <img src="/uploads/1ania.webp" srcSet={srcSet('/uploads/1ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('home.storyImageAlt')} width={1366} height={2048} />
             </div>
             <div className="story-text">
               <div className="section-eyebrow">{t('home.storyEyebrow')}</div>

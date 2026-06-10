@@ -165,7 +165,7 @@
   },
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
-    "heroTitle": "Jedna praca, jedna sztuka, <em>jeden ślad ręki.</em>",
+    "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
     "heroSub": "Siedemdziesiąt osiem ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
     "heroCta1": "Przeglądaj wszystkie prace",
     "heroMetaName": "Kubek Nº 02",
@@ -221,6 +221,8 @@
         "cta": "Wybierz miskę"
       }
     },
+    "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
+    "editorialImageAlt": "Ręcznie malowana ceramika Anny Ciok w świetle słonecznym",
     "storyEyebrow": "O artystce",
     "storyTitle": "Najpierw był obraz, <em>dziś jest ceramika.</em>",
     "storyP1": "Jestem Anna. Maluję obrazy i ceramikę, a oba światy spotykają się w tej samej pracowni. Kubek, talerz czy wazon traktuję jak mały obraz użytkowy: można go wziąć do ręki, postawić na stole i używać bez specjalnej okazji.",
@@ -300,6 +302,8 @@
     "eyebrow": "O studiu",
     "h1": "Jedna pracownia, <em>jedna para rąk.</em>",
     "lead": "Mała pracownia ceramiczna na Teneryfie. Tu szkliwię, maluję i dopracowuję każdą sztukę sama, jedną po drugiej. Ten czerwcowy drop przyjechał ze mną do Polski na wakacje, dlatego odbiór osobisty umawiam w Warszawie.",
+    "storyImageAlt": "Anna Ciok — malarka i artystka ceramiczna",
+    "workspaceImageAlt": "Pracownia ceramiczna Anny Ciok na Teneryfie",
     "storyEyebrow": "Obraz i ceramika",
     "storyH": "Maluję <em>na ceramice.</em>",
     "storyP1": "Jestem Anna. Jestem malarką i artystką ceramiczną. Choć nadal maluję obrazy, od kilku lat coraz mocniej ciągnie mnie do ceramiki. Lubię to, że obraz może zejść ze ściany, trafić do dłoni i stać się częścią codzienności.",
