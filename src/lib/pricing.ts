@@ -8,6 +8,7 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'wazony-srednie': 300,
   'wazony-duze': 395,
   talerzyki: 105,
+  'talerze-srednie': 120,
   'talerze-duze': 270,
   'duze-michy': 315,
   'miski-falowane': 155,

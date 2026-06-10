@@ -21,6 +21,7 @@ const COVER: Record<CategorySlug, string> = {
   'wazony-srednie': '/uploads/waza-duza-1.webp',
   'wazony-duze': '/uploads/waza-duza-7.webp',
   talerzyki: '/uploads/talerz-maly-2.webp',
+  'talerze-srednie': '/uploads/sredni-talerz-17.webp',
   'talerze-duze': '/uploads/talerz-duzy-1.webp',
   'duze-michy': '/uploads/duza-micha-1.webp',
   'miski-falowane': '/uploads/miski-falowane-9.webp',
