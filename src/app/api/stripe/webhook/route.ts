@@ -95,7 +95,7 @@ export async function POST(req: Request) {
         try {
           const { data: orderRow, error: orderErr } = await supabase
             .from('orders')
-            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale')
+            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at')
             .eq('id', orderId)
             .single();
           if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
               id: string; email: string | null; total: number; currency: string;
               delivery_method: string; receiver_first_name: string | null;
               receiver_last_name: string | null; inpost_target_point: string | null;
-              locale: string | null;
+              locale: string | null; confirmation_email_sent_at: string | null;
             };
             const notifyOrder = {
               order: {
@@ -117,35 +117,54 @@ export async function POST(req: Request) {
                 items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
               },
             };
-            // Best-effort with bounded retries: this fires once (gated on newSale,
-            // so retried/duplicate webhook deliveries won't re-notify), which means
-            // a transient Resend blip would otherwise lose the notification for good.
-            // A few quick retries survive transient failures without risking dupes;
-            // the operational label email (InPost webhook) remains the backstop.
-            let sent = false;
-            for (let attempt = 0; attempt < 3 && !sent; attempt++) {
+            // Best-effort with bounded retries: fires once (gated on newSale, so
+            // retried/duplicate webhook deliveries won't re-notify). A few quick
+            // retries survive transient Resend blips; the operational label email
+            // (InPost webhook) remains the backstop. Log on final failure — do NOT
+            // throw (would skip the customer confirmation below).
+            let studioSent = false;
+            for (let attempt = 0; attempt < 3 && !studioSent; attempt++) {
               try {
                 await emailNewOrderToStudio(notifyOrder);
-                sent = true;
+                studioSent = true;
               } catch (err) {
-                if (attempt === 2) throw err;
-                await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+                if (attempt === 2) {
+                  console.error('emailNewOrderToStudio failed for', orderId, err);
+                } else {
+                  await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+                }
               }
             }
 
-            if (orderRowTyped.email) {
-              try {
-                await emailOrderConfirmationToCustomer({
-                  order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
-                  locale: orderRowTyped.locale ?? 'pl',
-                });
-              } catch (err) {
-                console.error('emailOrderConfirmationToCustomer failed for', orderId, err);
+            // confirmation_email_sent_at guards against duplicate sends on Stripe
+            // webhook retries — only send if we haven't successfully sent before.
+            if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
+              let confirmSent = false;
+              for (let attempt = 0; attempt < 3 && !confirmSent; attempt++) {
+                try {
+                  await emailOrderConfirmationToCustomer({
+                    order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
+                    locale: orderRowTyped.locale ?? 'pl',
+                  });
+                  confirmSent = true;
+                } catch (err) {
+                  if (attempt === 2) {
+                    console.error('emailOrderConfirmationToCustomer failed for', orderId, err);
+                  } else {
+                    await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+                  }
+                }
+              }
+              if (confirmSent) {
+                await supabase
+                  .from('orders')
+                  .update({ confirmation_email_sent_at: new Date().toISOString() })
+                  .eq('id', orderId);
               }
             }
           }
         } catch (err) {
-          console.error('emailNewOrderToStudio failed for', orderId, err);
+          console.error('newSale order processing failed for', orderId, err);
         }
       }
 

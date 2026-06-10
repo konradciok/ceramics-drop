@@ -512,8 +512,8 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
     deliveryTitle: 'Informacja o dostawie w lipcu',
     deliveryP1: 'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
-    deliveryP2: 'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane w ciągu pierwszych pięciu dni po naszym przyjeździe. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
-    deliveryP3: 'Wysyłki będą realizowane w lipcu, po 10 lipca.',
+    deliveryP2: 'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane do 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
+    deliveryP3: 'Wysyłki będą realizowane od 10 lipca.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
   en: {
@@ -522,8 +522,8 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
     deliveryTitle: 'July delivery information',
     deliveryP1: 'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
-    deliveryP2: 'We arrive in Poland on 5 July. All orders placed earlier will be shipped within the first five days after our arrival. Orders placed later will be shipped within 1–3 days after the order is placed.',
-    deliveryP3: 'Shipping will take place in July, after 10 July.',
+    deliveryP2: 'We arrive in Poland on 5 July. All orders placed earlier will be shipped by 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.',
+    deliveryP3: 'Shipping will take place in July, from 10 July.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
   es: {
@@ -532,8 +532,8 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
     deliveryTitle: 'Información sobre entregas en julio',
     deliveryP1: 'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
-    deliveryP2: 'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán durante los primeros cinco días después de nuestra llegada. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
-    deliveryP3: 'Los envíos se realizarán en julio, después del 10 de julio.',
+    deliveryP2: 'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán antes del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
+    deliveryP3: 'Los envíos se realizarán en julio, a partir del 10 de julio.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
   },
 };
