@@ -60,7 +60,7 @@
   },
   "footer": {
     "tagline": "Pintado despacio, una pieza a la vez.",
-    "blurb": "El pequeño estudio de cerámica de Anna Ciok. Cada motivo se crea por separado y se pinta a mano.",
+    "blurb": "El pequeño estudio de cerámica de Anna Ciok. Cada motivo se crea por separado, se pinta a mano y se esmalta.",
     "hShop": "Tienda",
     "hStudio": "Estudio",
     "hInfo": "Información",
@@ -170,7 +170,7 @@
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
-    "heroSub": "Ciento tres piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos medianos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se esmalta y se pinta a mano por separado, así que eliges exactamente el que ves en la foto.",
+    "heroSub": "Ciento tres piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos medianos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se pinta a mano y se esmalta por separado, así que eliges exactamente el que ves en la foto.",
     "heroCta1": "Ver todas las piezas",
     "heroMetaName": "Taza Nº 02",
     "heroMetaDesc": "Palmera azul",
@@ -315,7 +315,7 @@
   "studio": {
     "eyebrow": "Estudio",
     "h1": "Un estudio, <em>un par de manos.</em>",
-    "lead": "Un pequeño estudio de cerámica en Tenerife. Aquí esmalto, pinto y remato cada pieza yo misma, una tras otra. Este drop de junio viajó conmigo a Polonia para el verano, así que la recogida se acuerda en Varsovia.",
+    "lead": "Un pequeño estudio de cerámica en Tenerife. Aquí pinto, esmalto y remato cada pieza yo misma, una tras otra. Este drop de junio viajó conmigo a Polonia para el verano, así que la recogida se acuerda en Varsovia.",
     "storyImageAlt": "Anna Ciok — pintora y artista cerámica",
     "workspaceImageAlt": "Estudio de cerámica de Anna Ciok en Tenerife",
     "storyEyebrow": "Pintura y cerámica",
@@ -330,7 +330,7 @@
     "fact1D": "Una sala, una mesa de esmaltado, pinceles y un horno. Las piezas del drop de junio ya están en Polonia, así que la recogida se acuerda en Varsovia con cita previa.",
     "fact2K": "Cocción",
     "fact2V": "1040 <em>°C</em>",
-    "fact2D": "Después del esmaltado y la pintura, cada pieza pasa por el horno: la cocción fija el color y convierte la superficie en una capa vítrea y funcional.",
+    "fact2D": "Después de la pintura y el esmaltado, cada pieza pasa por el horno: la cocción fija el color y convierte la superficie en una capa vítrea y funcional.",
     "fact3K": "Drop de junio",
     "fact3V": "103 <em>piezas</em>",
     "fact3D": "Tazas, jarrones pequeños, medianos y grandes, platitos, platos medianos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada pieza es única.",
