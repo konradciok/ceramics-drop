@@ -2,7 +2,7 @@
    Product catalogue — registry + accessors
    ------------------------------------------------------------
    The CATEGORIES registry below is the structural site map of the
-   eight product families (slug, price, measure, count). It drives
+   nine product families (slug, price, measure, count). It drives
    routing, navigation and the collection pages.
 
    getProducts() returns the full Product[] built in two passes:

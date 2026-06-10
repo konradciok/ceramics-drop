@@ -1,7 +1,7 @@
 /**
  * optimize-images.mjs
  *
- * Converts the 88 product PNGs from design/uploads/ to optimized WebP files
+ * Converts product PNGs from design/uploads/ to optimized WebP files
  * in public/uploads/ at quality 80.
  *
  * For each source file, emits:
