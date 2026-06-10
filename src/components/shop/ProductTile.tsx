@@ -34,6 +34,8 @@ export function ProductTile({ product, onOpen }: Props) {
 
   return (
     <div
+      id={`piece-${product.id}`}
+      style={{ scrollMarginTop: 'calc(var(--header-h) + 16px)' }}
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
       onClick={() => {
         if (product.sold) {
