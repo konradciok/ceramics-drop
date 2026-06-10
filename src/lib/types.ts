@@ -27,7 +27,7 @@ export interface Product {
   image: string;
   /** Additional images beyond the primary (gallery / second photos). */
   gallery?: string[];
-  /** Price in EUR. */
+  /** Price in PLN (złoty). */
   price: number;
   /** Physical measurement, e.g. `9 × 9 cm · 300 ml`. */
   measure: string;
@@ -44,7 +44,7 @@ export interface Category {
   nameKey: string;
   /** i18n key for the singular product name (e.g. `mug`). */
   singularKey: string;
-  /** Flat price shared by every piece in the family (EUR). */
+  /** Flat price shared by every piece in the family (PLN). */
   price: number;
   /** Shared measurement string. */
   measure: string;
