@@ -6,7 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts, CATEGORIES } from '@/lib/products';
-import { pln } from '@/lib/format';
+import { pln, eur } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
@@ -24,7 +24,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, type DeliveryMethod } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, PRICE_EUR, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -143,15 +143,23 @@ export function CartView() {
 
   const products = resolveCartProducts(ids);
   const n = products.length;
-  const subtotal = products.reduce((s, p) => s + p.price, 0);
-  const shipCost = SHIPPING_PLN[ship];
+  const currency = locale === 'pl' ? 'pln' : 'eur';
+  const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
+  const fmt = currency === 'eur' ? eur : pln;
+  const priceOf = (p: ReturnType<typeof resolveCartProducts>[number]) =>
+    currency === 'eur' ? PRICE_EUR[p.category] : p.price;
+  const shippingOf = (method: ShipId) =>
+    currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
+  const subtotal = products.reduce((s, p) => s + priceOf(p), 0);
+  const shipCost = shippingOf(ship);
   const total = subtotal + shipCost;
   const productKey = products.map((p) => p.id).join('|');
 
   useEffect(() => {
     if (products.length === 0 || viewedCartKeys.current.has(productKey)) return;
     viewedCartKeys.current.add(productKey);
-    pushDataLayer(buildViewCartEvent(products));
+    pushDataLayer(buildViewCartEvent(products, { currency: analyticsCurrency, itemPrices: products.map(priceOf) }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productKey, products]);
 
   function handlePickShip(id: ShipId) {
@@ -212,7 +220,13 @@ export function CartView() {
     forgetRememberedCheckout();
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    pushCheckoutStarted(products, { shippingCost: shipCost, shippingMethod: ship, userData: em ? { em } : undefined });
+    pushCheckoutStarted(products, {
+      shippingCost: shipCost,
+      shippingMethod: ship,
+      userData: em ? { em } : undefined,
+      currency: analyticsCurrency,
+      itemPrices: products.map(priceOf),
+    });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -242,6 +256,8 @@ export function CartView() {
       rememberCheckoutForReturn(products.map((p) => p.id), {
         shippingCost: shipCost,
         shippingMethod: ship,
+        currency: analyticsCurrency,
+        itemPrices: products.map(priceOf),
       });
       setClientSecret(client_secret);
     } catch {
@@ -282,8 +298,8 @@ export function CartView() {
   }
 
   const priceLabel = (id: ShipId) => {
-    if (id === 'paczkomat') return t('ship.paczkomatPrice', { price: pln(SHIPPING_PLN.paczkomat) });
-    return SHIPPING_PLN[id] > 0 ? pln(SHIPPING_PLN[id]) : t('cart.free');
+    if (id === 'paczkomat') return t('ship.paczkomatPrice', { price: fmt(shippingOf('paczkomat')) });
+    return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
   };
 
   // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
@@ -316,7 +332,7 @@ export function CartView() {
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
-                  <span className="price">{pln(p.price)}</span>
+                  <span className="price">{fmt(priceOf(p))}</span>
                   <button
                     className="rm"
                     onClick={() => {
@@ -337,7 +353,7 @@ export function CartView() {
         <h3>{t('cart.summary')}</h3>
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
-          <span className="v">{pln(subtotal)}</span>
+          <span className="v">{fmt(subtotal)}</span>
         </div>
         <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
           <ShipOption
@@ -473,11 +489,11 @@ export function CartView() {
 
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
-          <span className="v">{shipCost > 0 ? pln(shipCost) : t('cart.free')}</span>
+          <span className="v">{shipCost > 0 ? fmt(shipCost) : t('cart.free')}</span>
         </div>
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
-          <span className="v">{pln(total)}</span>
+          <span className="v">{fmt(total)}</span>
         </div>
         {clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>

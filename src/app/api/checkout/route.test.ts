@@ -28,6 +28,7 @@ const validateDelivery = vi.fn(() => ({
 }));
 const getClientIp = vi.fn(() => '203.0.113.50');
 const orderAmountGrosze = vi.fn(() => 9_000);
+const orderAmountEuroCents = vi.fn(() => 2_200);
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -64,6 +65,7 @@ vi.mock('@/lib/client-ip', () => ({
 
 vi.mock('@/lib/pricing', () => ({
   orderAmountGrosze,
+  orderAmountEuroCents,
 }));
 
 describe('POST /api/checkout', () => {
@@ -130,5 +132,43 @@ describe('POST /api/checkout', () => {
       vi.unstubAllEnvs();
       getClientIp.mockReturnValue('203.0.113.50');
     }
+  });
+
+  it('uses EUR currency when locale is es', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['k01'],
+        locale: 'es',
+        delivery_method: 'odbior',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'eur' }),
+    );
+  });
+
+  it('uses PLN currency when locale is pl', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['k01'],
+        locale: 'pl',
+        delivery_method: 'odbior',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'pln' }),
+    );
   });
 });

@@ -1,4 +1,4 @@
-/* PLN prices (zloty) and grosze helpers. PLN is the charge currency. */
+/* PLN and EUR prices with helpers. PL locale → PLN; en/es locales → EUR. */
 import type { CategorySlug } from './types';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
@@ -41,4 +41,43 @@ export function shippingGrosze(method: DeliveryMethod): number {
 export function orderAmountGrosze(itemGrosze: number[], method: DeliveryMethod): number {
   const items = itemGrosze.reduce((s, g) => s + g, 0);
   return items + shippingGrosze(method);
+}
+
+/**
+ * Fixed EUR prices per category (whole euros). Approximate rate: 1 EUR ≈ 4.20 PLN (June 2026).
+ * Review with the artisan whenever PLN prices change significantly.
+ */
+export const PRICE_EUR: Record<CategorySlug, number> = {
+  kubki: 22,
+  wazony: 50,
+  'wazony-srednie': 72,
+  'wazony-duze': 95,
+  talerzyki: 25,
+  'talerze-srednie': 29,
+  'talerze-duze': 65,
+  'duze-michy': 75,
+  'miski-falowane': 37,
+};
+
+/* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.
+ * Kurier (30 zł ≈ 7.14 €) is set to 10 € — deliberate round-number buffer. */
+export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
+  paczkomat: 5,
+  kurier: 10,
+  odbior: 0,
+};
+
+/** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
+export function toEuroCents(euros: number): number {
+  return Math.round(euros * 100);
+}
+
+/** Shipping cost in euro-cents for the chosen delivery method. */
+export function shippingEuroCents(method: DeliveryMethod): number {
+  return toEuroCents(SHIPPING_EUR[method]);
+}
+
+/** Sum item amounts (euro-cents) + shipping for the chosen method. */
+export function orderAmountEuroCents(itemCents: number[], method: DeliveryMethod): number {
+  return itemCents.reduce((s, c) => s + c, 0) + shippingEuroCents(method);
 }

@@ -172,6 +172,34 @@ describe('checkout analytics semantics', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  it('stores EUR currency and itemPrices in the snapshot and replays with EUR', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+
+    rememberCheckoutForReturn(['k01'], {
+      shippingCost: 5,
+      shippingMethod: 'paczkomat',
+      currency: 'EUR',
+      itemPrices: [22],
+      storage: session,
+    });
+
+    const push = vi.fn();
+    pushConfirmedPurchaseFromRememberedCheckout('pi_eur', 'ord_eur', { push, storage: session });
+
+    expect(push).toHaveBeenCalledOnce();
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    expect(event.ecommerce).toMatchObject({
+      currency: 'EUR',
+      items: [expect.objectContaining({ price: 22 })],
+    });
+    expect(event.meta).toMatchObject({ currency: 'EUR' });
+  });
+
   it('does not emit purchase from remembered checkout when no snapshot exists', () => {
     const push = vi.fn();
     const storage = new Map<string, string>();

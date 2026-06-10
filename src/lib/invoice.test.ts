@@ -26,7 +26,7 @@ const ORDER = {
 const ITEMS = [{ order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
 
 const stripeMock = {
-  customers: { create: vi.fn() },
+  customers: { create: vi.fn(), list: vi.fn(), update: vi.fn() },
   invoiceItems: { create: vi.fn() },
   invoices: {
     create: vi.fn(),
@@ -63,7 +63,9 @@ beforeEach(() => {
   orderRow = { ...ORDER };
   itemRows = [...ITEMS];
   updateEq.mockResolvedValue({ error: null });
+  stripeMock.customers.list.mockResolvedValue({ data: [] });
   stripeMock.customers.create.mockResolvedValue({ id: 'cus_1' });
+  stripeMock.customers.update.mockResolvedValue({ id: 'cus_updated' });
   stripeMock.invoices.create.mockResolvedValue({ id: 'in_1', status: 'draft', total: 0 });
   stripeMock.invoiceItems.create.mockResolvedValue({ id: 'ii_1' });
   // First retrieve: live status after create; second: total check after items.
@@ -140,11 +142,92 @@ describe('createOrderInvoice', () => {
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
   });
 
+  it('reuses an existing Stripe customer when one is found by email', async () => {
+    stripeMock.customers.list.mockResolvedValue({ data: [{ id: 'cus_existing' }] });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.customers.list).toHaveBeenCalledWith({
+      email: ORDER.email,
+      limit: 1,
+    });
+    expect(stripeMock.customers.create).not.toHaveBeenCalled();
+    expect(stripeMock.customers.update).toHaveBeenCalledWith(
+      'cus_existing',
+      expect.objectContaining({ preferred_locales: ['pl'] }),
+    );
+    expect(stripeMock.invoices.create).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: 'cus_updated' }),
+      expect.anything(),
+    );
+  });
+
   it('throws when the invoice lands in an unexpected status', async () => {
     stripeMock.invoices.retrieve.mockReset();
     stripeMock.invoices.retrieve.mockResolvedValueOnce({ id: 'in_1', status: 'void', total: 0 });
 
     await expect(createOrderInvoice('pi_1')).rejects.toThrow(/unexpected status void/);
     expect(stripeMock.invoices.sendInvoice).not.toHaveBeenCalled();
+  });
+
+  it('uses EUR currency for invoice and items when order.currency is eur', async () => {
+    const eurOrder = { ...ORDER, currency: 'eur', subtotal: 2200, shipping: 500, total: 2700 };
+    orderRow = eurOrder;
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 0 })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 2700 });
+    stripeMock.invoices.finalizeInvoice.mockResolvedValue({ id: 'in_1', status: 'open', total: 2700 });
+    stripeMock.invoices.pay.mockResolvedValue({ id: 'in_1', status: 'paid', total: 2700 });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.invoices.create).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'eur' }),
+      expect.anything(),
+    );
+    for (const call of stripeMock.invoiceItems.create.mock.calls) {
+      expect(call[0]).toMatchObject({ currency: 'eur' });
+    }
+  });
+
+  it('uses en preferred_locales when order.locale is en', async () => {
+    orderRow = { ...ORDER, locale: 'en', currency: 'eur' };
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.customers.create).toHaveBeenCalledWith(
+      expect.objectContaining({ preferred_locales: ['en'] }),
+      expect.anything(),
+    );
+  });
+
+  it('updates shipping on reused customer when shipping address is present', async () => {
+    stripeMock.customers.list.mockResolvedValue({ data: [{ id: 'cus_existing' }] });
+    stripeMock.customers.update.mockResolvedValue({ id: 'cus_existing' });
+    orderRow = {
+      ...ORDER,
+      shipping_address: { street: 'Nowa', building_number: '1', city: 'Warsaw', post_code: '00-001', country_code: 'PL' },
+    };
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.customers.update).toHaveBeenCalledWith(
+      'cus_existing',
+      expect.objectContaining({
+        shipping: expect.objectContaining({ address: expect.objectContaining({ city: 'Warsaw' }) }),
+        preferred_locales: ['pl'],
+      }),
+    );
+    expect(stripeMock.customers.create).not.toHaveBeenCalled();
+  });
+
+  it('uses English product labels and shipping description for en locale', async () => {
+    orderRow = { ...ORDER, locale: 'en', currency: 'eur' };
+    await createOrderInvoice('pi_1');
+    const itemCall = stripeMock.invoiceItems.create.mock.calls.find(
+      (c: unknown[]) => (c[0] as Record<string, unknown>).description !== 'Shipping — Paczkomat InPost'
+    );
+    expect(itemCall?.[0]).toMatchObject({ description: expect.stringMatching(/^Mug Nº/) });
+    const shippingCall = stripeMock.invoiceItems.create.mock.calls.find(
+      (c: unknown[]) => (c[0] as Record<string, unknown>).description === 'Shipping — Paczkomat InPost'
+    );
+    expect(shippingCall).toBeDefined();
   });
 });

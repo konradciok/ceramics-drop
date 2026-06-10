@@ -30,4 +30,16 @@ describe('validateCart', () => {
     const many = Array.from({ length: MAX_CART + 1 }, (_, i) => `x${i}`);
     expect(validateCart(many).ok).toBe(false);
   });
+
+  it('resolves items to euro-cents when currency is eur', () => {
+    // k01 is kubki → PRICE_EUR.kubki = 22 → toEuroCents(22) = 2200
+    const result = validateCart(['k01'], 'eur');
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
+  });
+
+  it('default currency (no arg) still produces grosze', () => {
+    // k01 is kubki → product.price = PRICE_PLN.kubki = 90 → toGrosze(90) = 9000
+    const result = validateCart(['k01']);
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9000 }] });
+  });
 });

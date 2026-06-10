@@ -24,7 +24,7 @@ export type AnalyticsItem = {
 };
 
 export type EcommercePayload = {
-  currency: typeof ANALYTICS_CURRENCY;
+  currency: 'PLN' | 'EUR';
   value: number;
   items: AnalyticsItem[];
   transaction_id?: string;
@@ -38,7 +38,7 @@ export type MetaPayload = {
   content_ids: string[];
   content_type: 'product';
   contents: MetaContent[];
-  currency: typeof ANALYTICS_CURRENCY;
+  currency: 'PLN' | 'EUR';
   value: number;
   num_items: number;
   event_id: string;
@@ -60,6 +60,8 @@ export type DataLayerEntry = DataLayerEvent | DataLayerEcommerceClear;
 
 type EventOptions = {
   eventId?: string;
+  currency?: 'PLN' | 'EUR';
+  itemPrices?: number[];
 };
 
 type CheckoutOptions = EventOptions & {
@@ -82,7 +84,7 @@ const DEBUG_STORAGE_KEY = 'acc_analytics_debug';
 
 export function toAnalyticsItem(
   product: Product,
-  details: { index?: number; itemListId?: string; itemListName?: string } = {},
+  details: { index?: number; itemListId?: string; itemListName?: string; priceOverride?: number } = {},
 ): AnalyticsItem {
   const category = CATEGORIES[product.category];
   const singularLabel =
@@ -93,7 +95,7 @@ export function toAnalyticsItem(
     item_brand: BRAND,
     item_category: product.category,
     item_variant: `Nº ${product.num}`,
-    price: product.price,
+    price: details.priceOverride ?? product.price,
     quantity: 1,
     ...(details.index !== undefined ? { index: details.index } : {}),
     ...(details.itemListId ? { item_list_id: details.itemListId } : {}),
@@ -180,10 +182,14 @@ export function buildViewCartEvent(
   products: Product[],
   options: EventOptions = {},
 ): DataLayerEvent {
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const items = products.map((product, i) =>
+    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
+  );
   return {
     event: 'view_cart',
     event_id: options.eventId ?? createEventId('view_cart', products.map((p) => p.id).join('-')),
-    ecommerce: ecommerce(products.map((product) => toAnalyticsItem(product))),
+    ecommerce: ecommerce(items, currency),
   };
 }
 
@@ -193,7 +199,10 @@ export function buildBeginCheckoutEvent(
 ): DataLayerEvent {
   const eventId =
     options.eventId ?? createEventId('begin_checkout', products.map((p) => p.id).join('-'));
-  const items = products.map((product) => toAnalyticsItem(product));
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const items = products.map((product, i) =>
+    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
+  );
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
     {
@@ -202,7 +211,7 @@ export function buildBeginCheckoutEvent(
       shipping_tier: options.shippingMethod,
       checkout_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
-      ecommerce: ecommerce(items),
+      ecommerce: ecommerce(items, currency),
     },
     'InitiateCheckout',
     eventId,
@@ -221,7 +230,10 @@ export function buildPurchaseEvent(
   // already fires at most once per payment intent (acc_purchase_pi: guard in
   // checkout-analytics.ts), so collision-resistance here is unnecessary.
   const eventId = options.eventId ?? `purchase-${options.orderNo}`;
-  const items = products.map((product) => toAnalyticsItem(product));
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const items = products.map((product, i) =>
+    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
+  );
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
     {
@@ -230,7 +242,7 @@ export function buildPurchaseEvent(
       shipping_tier: options.shippingMethod,
       order_total: orderTotal,
       ecommerce: {
-        ...ecommerce(items),
+        ...ecommerce(items, currency),
         transaction_id: options.orderNo,
         shipping: options.shippingCost,
       },
@@ -347,9 +359,9 @@ function isDebugHost(): boolean {
   );
 }
 
-function ecommerce(items: AnalyticsItem[]): EcommercePayload {
+function ecommerce(items: AnalyticsItem[], currency: 'PLN' | 'EUR' = ANALYTICS_CURRENCY): EcommercePayload {
   return {
-    currency: ANALYTICS_CURRENCY,
+    currency,
     value: sumItems(items),
     items,
   };
@@ -370,7 +382,7 @@ function withMeta(
       content_ids: items.map((item) => item.item_id),
       content_type: 'product',
       contents: items.map((item) => ({ id: item.item_id, quantity: 1 as const, item_price: item.price })),
-      currency: ANALYTICS_CURRENCY,
+      currency: event.ecommerce?.currency ?? ANALYTICS_CURRENCY,
       value: metaValue,
       num_items: items.length,
       event_id: eventId,

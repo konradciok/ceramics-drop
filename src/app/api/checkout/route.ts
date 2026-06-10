@@ -3,7 +3,7 @@ import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -38,15 +38,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   }
 
-  const valid = validateCart(body.ids);
-  if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
-
   // Persist the buyer's locale so the shipping-confirmation email can be localised.
   const VALID_LOCALES = ['pl', 'en', 'es'] as const;
   const locale: string =
     typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
       ? body.locale
       : 'pl';
+  const currency: 'pln' | 'eur' = locale === 'pl' ? 'pln' : 'eur';
+
+  const valid = validateCart(body.ids, currency);
+  if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
 
   // Delivery details (method, receiver contact, locker/address) are collected
   // pre-payment so InPost has everything it needs once the order is paid.
@@ -54,7 +55,9 @@ export async function POST(req: Request) {
   if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
   const { method, contact, target_point, address } = delivery.delivery;
 
-  const amount = orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
+  const amount = currency === 'eur'
+    ? orderAmountEuroCents(valid.items.map((i) => i.unit_price), method)
+    : orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
   const ids = valid.items.map((i) => i.product_id);
 
   const supabase = getSupabaseAdmin();
@@ -79,7 +82,7 @@ export async function POST(req: Request) {
     // risk a second, duplicate Stripe receipt.
     paymentIntent = await stripe.paymentIntents.create({
       amount,
-      currency: 'pln',
+      currency,
       automatic_payment_methods: { enabled: true },
       metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
     });
@@ -119,7 +122,7 @@ export async function POST(req: Request) {
     id: orderId,
     payment_intent_id: paymentIntent.id,
     status: 'pending',
-    currency: 'pln',
+    currency,
     subtotal,
     shipping: amount - subtotal,
     total: amount,
