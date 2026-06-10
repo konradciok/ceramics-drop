@@ -15,6 +15,10 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
     tracesSampleRate: isDev ? 1.0 : 0.1,
     sendDefaultPii: false,
+    ignoreErrors: [
+      // Android WebView GC artifact from GTM/GA4 keyboard telemetry — not our code.
+      /Java object is gone/,
+    ],
   };
 }
 
