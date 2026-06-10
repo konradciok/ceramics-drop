@@ -12,6 +12,7 @@ import type { MarketingContext } from '@/lib/marketing/context';
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
+const STRIPE_PMC_ID = 'pmc_1QiwdYJ0KFK9lrjHUV93dONs';
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
 const TRUST_FORWARDED_IP = process.env.NODE_ENV !== 'production';
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
     paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
-      payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
+      payment_method_configuration: STRIPE_PMC_ID,
       metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
     });
   } catch {
