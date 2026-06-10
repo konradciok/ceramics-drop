@@ -11,6 +11,7 @@ export type CategorySlug =
   | 'wazony-srednie'
   | 'wazony-duze'
   | 'talerzyki'
+  | 'talerze-srednie'
   | 'talerze-duze'
   | 'duze-michy'
   | 'miski-falowane';

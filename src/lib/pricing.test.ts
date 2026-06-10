@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze } from './pricing';
 
 describe('pricing', () => {
-  it('exposes PLN prices for all eight categories', () => {
+  it('exposes PLN prices for all nine categories', () => {
     expect(PRICE_PLN).toEqual({
       kubki: 90,
       wazony: 210,
       'wazony-srednie': 300,
       'wazony-duze': 395,
       talerzyki: 105,
+      'talerze-srednie': 120,
       'talerze-duze': 270,
       'duze-michy': 315,
       'miski-falowane': 155,

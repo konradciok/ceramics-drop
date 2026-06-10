@@ -23,7 +23,8 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 8 },
   'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 4 },
   'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 4 },
-  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '12 × 12 × 3 cm', count: 30 },
+  talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '12 × 12 × 3 cm', count: 14 },
+  'talerze-srednie': { slug: 'talerze-srednie', nameKey: 'nav.talerzeSrednie', singularKey: 'medplate', price: PRICE_PLN['talerze-srednie'], measure: '⌀ 18 cm', count: 18 },
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 5 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
@@ -36,6 +37,7 @@ export const CATEGORY_ORDER: CategorySlug[] = [
   'wazony-srednie',
   'wazony-duze',
   'talerzyki',
+  'talerze-srednie',
   'talerze-duze',
   'duze-michy',
   'miski-falowane',
@@ -67,6 +69,7 @@ const SPECS: Spec[] = [
   { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 9) },
   { slug: 'wazony-duze', prefix: 'd', imageBase: 'waza-duza', files: [1, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
   { slug: 'talerzyki', prefix: 't', imageBase: 'talerz-maly', files: range(1, 31) },
+  { slug: 'talerze-srednie', prefix: 's', imageBase: 'sredni-talerz', files: [17, 18] },
   { slug: 'talerze-duze', prefix: 'p', imageBase: 'talerz-duzy', files: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13] },
   { slug: 'duze-michy', prefix: 'b', imageBase: 'duza-micha', files: range(1, 7) },
   { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 17) },
@@ -112,6 +115,11 @@ const RECATEGORISE: Record<string, CategorySlug> = {
   // swap między poziomami
   d10: 'wazony',         // duże Nº10 → małe
   v09: 'wazony-duze',    // nowa seria (waza-mala-9) → duże Nº04
+  // nowe talerzyki średnie — t16–t31 przeniesione do nowej kategorii
+  t16: 'talerze-srednie', t17: 'talerze-srednie', t18: 'talerze-srednie', t19: 'talerze-srednie',
+  t20: 'talerze-srednie', t21: 'talerze-srednie', t22: 'talerze-srednie', t23: 'talerze-srednie',
+  t24: 'talerze-srednie', t25: 'talerze-srednie', t26: 'talerze-srednie', t27: 'talerze-srednie',
+  t28: 'talerze-srednie', t29: 'talerze-srednie', t30: 'talerze-srednie', t31: 'talerze-srednie',
 };
 
 /** Display order overrides: pieces appended to the END of a family, in order. */
