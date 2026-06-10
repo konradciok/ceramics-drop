@@ -126,6 +126,7 @@
     "delivery": "Dostawa",
     "free": "Gratis",
     "total": "Razem",
+    "deliveryDetails": "Dane kontaktowe",
     "checkout": "Przejdź do kasy",
     "pay": "Zapłać teraz",
     "payProcessing": "Przetwarzanie…",

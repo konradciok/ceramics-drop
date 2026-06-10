@@ -310,7 +310,9 @@ export function CartView() {
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (
     <div className="cart-wrap">
-      <div>
+
+      {/* ── LEFT: task flow (heading, items, form, CTA) ────────────────── */}
+      <div className="cart-main">
         <div className="cart-head">
           <div className="eyebrow">{t('cart.eyebrow')}</div>
           <h1>
@@ -347,146 +349,193 @@ export function CartView() {
             );
           })}
         </div>
+
+        <div className="cart-section">
+          <div className="cart-section-label">{t('cart.delivery')}</div>
+          <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
+            <ShipOption
+              id="paczkomat"
+              active={ship === 'paczkomat'}
+              onPick={handlePickShip}
+              title={t('ship.paczkomatT')}
+              desc={t('ship.paczkomatD')}
+              price={priceLabel('paczkomat')}
+            />
+            <ShipOption
+              id="kurier"
+              active={ship === 'kurier'}
+              onPick={handlePickShip}
+              title={t('ship.courierT')}
+              desc={t('ship.courierD')}
+              price={priceLabel('kurier')}
+            />
+            <ShipOption
+              id="odbior"
+              active={ship === 'odbior'}
+              onPick={handlePickShip}
+              title={t('ship.pickupT')}
+              desc={t('ship.pickupD')}
+              price={priceLabel('odbior')}
+            />
+          </div>
+        </div>
+
+        {!clientSecret && (
+          <div className="cart-section">
+            <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
+            <div className="delivery-fields">
+              <div className="field-row">
+                <label className="field">
+                  <span>{t('delivery.firstName')}</span>
+                  <input
+                    value={contact.firstName}
+                    onChange={(e) => setContact((c) => ({ ...c, firstName: e.target.value }))}
+                    autoComplete="given-name"
+                  />
+                </label>
+                <label className="field">
+                  <span>{t('delivery.lastName')}</span>
+                  <input
+                    value={contact.lastName}
+                    onChange={(e) => setContact((c) => ({ ...c, lastName: e.target.value }))}
+                    autoComplete="family-name"
+                  />
+                </label>
+              </div>
+              <label className="field">
+                <span>{t('delivery.email')}</span>
+                <input
+                  type="email"
+                  value={contact.email}
+                  onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+                  autoComplete="email"
+                />
+              </label>
+              {ship !== 'odbior' && (
+                <label className="field">
+                  <span>{t('delivery.phone')}</span>
+                  <input
+                    type="tel"
+                    value={contact.phone}
+                    onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+                    autoComplete="tel"
+                  />
+                </label>
+              )}
+
+              {ship === 'paczkomat' && (
+                <div className="locker-pick">
+                  {locker && (
+                    <p className="locker-chosen" data-testid="selected-locker">
+                      {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
+                    </p>
+                  )}
+                  <GeowidgetPicker
+                    onSelect={(p) => {
+                      // Completion signal: the buyer got through InPost locker
+                      // selection (vs. merely picking the paczkomat method in A1).
+                      pushDataLayer(
+                        buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
+                      );
+                      setLocker(p);
+                    }}
+                    language={locale}
+                    unavailableLabel={t('delivery.lockerUnavailable')}
+                  />
+                </div>
+              )}
+
+              {ship === 'kurier' && (
+                <>
+                  <div className="field-row">
+                    <label className="field" style={{ flex: 2 }}>
+                      <span>{t('delivery.street')}</span>
+                      <input
+                        value={address.street}
+                        onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))}
+                        autoComplete="address-line1"
+                      />
+                    </label>
+                    <label className="field" style={{ flex: 1 }}>
+                      <span>{t('delivery.building')}</span>
+                      <input
+                        value={address.building}
+                        onChange={(e) => setAddress((a) => ({ ...a, building: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  <div className="field-row">
+                    <label className="field" style={{ flex: 1 }}>
+                      <span>{t('delivery.postCode')}</span>
+                      <input
+                        value={address.postCode}
+                        onChange={(e) => setAddress((a) => ({ ...a, postCode: e.target.value }))}
+                        autoComplete="postal-code"
+                      />
+                    </label>
+                    <label className="field" style={{ flex: 2 }}>
+                      <span>{t('delivery.city')}</span>
+                      <input
+                        value={address.city}
+                        onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
+                        autoComplete="address-level2"
+                      />
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="cart-cta">
+          {clientSecret ? (
+            <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
+              <CheckoutForm returnUrl={returnUrl} />
+            </Elements>
+          ) : (
+            <button
+              className="btn btn-primary"
+              id="checkout"
+              data-testid="checkout-button"
+              onClick={handleCheckout}
+              disabled={submitting || !deliveryReady}
+            >
+              {t('cart.checkout')} <Icon name="arrow" />
+            </button>
+          )}
+          {checkoutError && <p className="pay-error">{checkoutError}</p>}
+          <p className="fineprint">
+            {t.rich('cart.fineprint', richTags)}
+          </p>
+        </div>
       </div>
 
+      {/* ── RIGHT: sticky order summary ─────────────────────────────────── */}
       <aside className="summary">
         <h3>{t('cart.summary')}</h3>
+        <ul className="sum-items">
+          {products.map((p) => {
+            const cat = CATEGORIES[p.category];
+            const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
+            return (
+              <li key={p.id} className="sum-item">
+                <Link href={`/${p.category}`} className="sum-item-thumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
+                </Link>
+                <div className="sum-item-info">
+                  <span className="sum-item-name">{name} Nº {p.num}</span>
+                  <span className="sum-item-price">{fmt(priceOf(p))}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
           <span className="v">{fmt(subtotal)}</span>
         </div>
-        <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
-          <ShipOption
-            id="paczkomat"
-            active={ship === 'paczkomat'}
-            onPick={handlePickShip}
-            title={t('ship.paczkomatT')}
-            desc={t('ship.paczkomatD')}
-            price={priceLabel('paczkomat')}
-          />
-          <ShipOption
-            id="kurier"
-            active={ship === 'kurier'}
-            onPick={handlePickShip}
-            title={t('ship.courierT')}
-            desc={t('ship.courierD')}
-            price={priceLabel('kurier')}
-          />
-          <ShipOption
-            id="odbior"
-            active={ship === 'odbior'}
-            onPick={handlePickShip}
-            title={t('ship.pickupT')}
-            desc={t('ship.pickupD')}
-            price={priceLabel('odbior')}
-          />
-        </div>
-
-        {!clientSecret && (
-          <div className="delivery-fields">
-            <div className="field-row">
-              <label className="field">
-                <span>{t('delivery.firstName')}</span>
-                <input
-                  value={contact.firstName}
-                  onChange={(e) => setContact((c) => ({ ...c, firstName: e.target.value }))}
-                  autoComplete="given-name"
-                />
-              </label>
-              <label className="field">
-                <span>{t('delivery.lastName')}</span>
-                <input
-                  value={contact.lastName}
-                  onChange={(e) => setContact((c) => ({ ...c, lastName: e.target.value }))}
-                  autoComplete="family-name"
-                />
-              </label>
-            </div>
-            <label className="field">
-              <span>{t('delivery.email')}</span>
-              <input
-                type="email"
-                value={contact.email}
-                onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
-                autoComplete="email"
-              />
-            </label>
-            {ship !== 'odbior' && (
-              <label className="field">
-                <span>{t('delivery.phone')}</span>
-                <input
-                  type="tel"
-                  value={contact.phone}
-                  onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
-                  autoComplete="tel"
-                />
-              </label>
-            )}
-
-            {ship === 'paczkomat' && (
-              <div className="locker-pick">
-                {locker && (
-                  <p className="locker-chosen" data-testid="selected-locker">
-                    {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
-                  </p>
-                )}
-                <GeowidgetPicker
-                  onSelect={(p) => {
-                    // Completion signal: the buyer got through InPost locker
-                    // selection (vs. merely picking the paczkomat method in A1).
-                    pushDataLayer(
-                      buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
-                    );
-                    setLocker(p);
-                  }}
-                  language={locale}
-                  unavailableLabel={t('delivery.lockerUnavailable')}
-                />
-              </div>
-            )}
-
-            {ship === 'kurier' && (
-              <>
-                <div className="field-row">
-                  <label className="field" style={{ flex: 2 }}>
-                    <span>{t('delivery.street')}</span>
-                    <input
-                      value={address.street}
-                      onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))}
-                      autoComplete="address-line1"
-                    />
-                  </label>
-                  <label className="field" style={{ flex: 1 }}>
-                    <span>{t('delivery.building')}</span>
-                    <input
-                      value={address.building}
-                      onChange={(e) => setAddress((a) => ({ ...a, building: e.target.value }))}
-                    />
-                  </label>
-                </div>
-                <div className="field-row">
-                  <label className="field" style={{ flex: 1 }}>
-                    <span>{t('delivery.postCode')}</span>
-                    <input
-                      value={address.postCode}
-                      onChange={(e) => setAddress((a) => ({ ...a, postCode: e.target.value }))}
-                      autoComplete="postal-code"
-                    />
-                  </label>
-                  <label className="field" style={{ flex: 2 }}>
-                    <span>{t('delivery.city')}</span>
-                    <input
-                      value={address.city}
-                      onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
-                      autoComplete="address-level2"
-                    />
-                  </label>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
           <span className="v">{shipCost > 0 ? fmt(shipCost) : t('cart.free')}</span>
@@ -501,25 +550,6 @@ export function CartView() {
           <p>{t('deliveryNotice.p2')}</p>
           <p>{t('deliveryNotice.p3')}</p>
         </div>
-        {clientSecret ? (
-          <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
-            <CheckoutForm returnUrl={returnUrl} />
-          </Elements>
-        ) : (
-          <button
-            className="btn btn-primary"
-            id="checkout"
-            data-testid="checkout-button"
-            onClick={handleCheckout}
-            disabled={submitting || !deliveryReady}
-          >
-            {t('cart.checkout')} <Icon name="arrow" />
-          </button>
-        )}
-        {checkoutError && <p className="pay-error">{checkoutError}</p>}
-        <p className="fineprint">
-          {t.rich('cart.fineprint', richTags)}
-        </p>
       </aside>
     </div>
   );

@@ -647,9 +647,6 @@ ul { list-style:none; padding:0; margin:0; }
 .cart-delivery-notice { background:var(--c-bone); border-radius:var(--r-sharp); padding:16px; margin-top:16px; }
 .cart-delivery-notice strong { display:block; font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-espresso); margin-bottom:6px; }
 .cart-delivery-notice p { font-size:13px; line-height:1.55; margin:6px 0 0; opacity:.85; }
-.summary .btn-primary { width:100%; justify-content:center; margin-top:22px; }
-.summary .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
-.summary .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }
 
 /* dane do dostawy (InPost) */
 .delivery-fields { display:flex; flex-direction:column; gap:16px; margin:18px 0 4px; }
@@ -665,8 +662,37 @@ ul { list-style:none; padding:0; margin:0; }
 @media (min-width:561px) {
   .geowidget { height:min(70vh,500px); height:min(70dvh,500px); min-height:unset; }
 }
+@media (min-width:1101px) {
+  .geowidget { height:min(65dvh,480px); }
+}
 .geowidget inpost-geowidget { display:block; width:100%; height:100%; }
 .geowidget-msg { font-size:13px; opacity:.7; margin:0; }
+
+/* ── Left column: task sections ─────────────────────────────────────── */
+.cart-main { display:flex; flex-direction:column; }
+.cart-section { padding-top:36px; border-top:1px solid var(--c-line-soft); margin-top:36px; }
+.cart-section-label {
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--c-terracotta); margin-bottom:18px;
+  display:flex; align-items:center; gap:12px;
+}
+.cart-section-label::before { content:''; width:28px; height:1px; background:var(--c-terracotta); flex:none; }
+.cart-section .delivery-fields { margin-top:0; }
+.cart-cta { padding-top:36px; border-top:1px solid var(--c-line-soft); margin-top:36px; }
+.cart-cta .btn-primary { width:100%; justify-content:center; }
+.cart-cta .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
+.cart-cta .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }
+.cart-cta .pay-error { color:var(--c-terracotta); font-size:14px; margin:12px 0 0; text-align:center; }
+
+/* ── Summary sidebar compact item list ──────────────────────────────── */
+.sum-items { list-style:none; margin:0 0 18px; padding:0; display:flex; flex-direction:column; gap:12px; }
+.sum-item { display:grid; grid-template-columns:56px 1fr; gap:12px; align-items:center; }
+.sum-item-thumb { aspect-ratio:4/5; background:var(--c-bone); border-radius:var(--r-sharp); overflow:hidden; position:relative; display:block; }
+.sum-item-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.sum-item-info { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.sum-item-name { font-family:var(--f-display); font-style:italic; font-weight:400; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sum-item-price { font-family:var(--f-display); font-weight:400; font-size:15px; }
+.sum-items + .sum-row { border-top:1px solid var(--c-line-soft); padding-top:14px; }
 
 /* ekran potwierdzenia */
 .confirm { max-width:620px; margin:0 auto; padding:clamp(60px,9vw,130px) var(--gut); text-align:center; }
