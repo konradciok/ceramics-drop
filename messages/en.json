@@ -243,7 +243,7 @@
     "craft1H": "You pick <em>your favourites</em>",
     "craft1P": "In the gallery, click the pieces that pull you in. Every selected thumbnail lands in the bar at the bottom of the screen, so it is easy to come back to your choice.",
     "craft2H": "You go <em>to checkout</em>",
-    "craft2P": "In the cart, review your pieces, choose a parcel locker or courier delivery, and complete the order. Payment is handled by Stripe: card, BLIK or Przelewy24.",
+    "craft2P": "In the cart, review your pieces, choose a parcel locker or courier delivery, and complete the order. Payment is handled by Stripe: card or Przelewy24.",
     "craft3H": "I pack <em>and ship</em>",
     "craft3P": "I wrap each piece by hand and ship within 1–3 business days. Since there is only one of each, your purchase removes it from the shop — no one buys the same one.",
     "ctEyebrow": "Contact",

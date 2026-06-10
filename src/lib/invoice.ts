@@ -3,6 +3,16 @@ import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { getProductById, CATEGORIES } from './products';
 import plMessages from '../../messages/pl.json';
+import enMessages from '../../messages/en.json';
+import esMessages from '../../messages/es.json';
+
+const MESSAGES = { pl: plMessages, en: enMessages, es: esMessages } as const;
+
+const SHIPPING_LABELS: Record<string, { paczkomat: string; kurier: string }> = {
+  pl: { paczkomat: 'Wysyłka — Paczkomat InPost', kurier: 'Wysyłka — Kurier InPost' },
+  en: { paczkomat: 'Shipping — Paczkomat InPost', kurier: 'Shipping — InPost Courier' },
+  es: { paczkomat: 'Envío — Paczkomat InPost', kurier: 'Envío — Mensajería InPost' },
+};
 
 /**
  * Build a no-VAT invoice for a paid order and email it via Stripe.
@@ -59,13 +69,27 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
+  const invoiceLocale = (order.locale as string) === 'en' ? 'en'
+    : (order.locale as string) === 'es' ? 'es'
+    : 'pl';
+
+  const messages = MESSAGES[invoiceLocale as keyof typeof MESSAGES] ?? plMessages;
+
   const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
-  const customer = existingList.data.length > 0
-    ? existingList.data[0]
-    : await stripe.customers.create(
-        { email: order.email, shipping: customerShipping, preferred_locales: ['pl'] },
-        { idempotencyKey: `cust_${order.id}` },
-      );
+  let customer: Stripe.Customer;
+  if (existingList.data.length > 0) {
+    customer = customerShipping
+      ? await stripe.customers.update(existingList.data[0].id, {
+          shipping: customerShipping,
+          preferred_locales: [invoiceLocale],
+        })
+      : existingList.data[0];
+  } else {
+    customer = await stripe.customers.create(
+      { email: order.email, shipping: customerShipping, preferred_locales: [invoiceLocale] },
+      { idempotencyKey: `cust_${order.id}` },
+    );
+  }
 
   // "2" prefixes: the v1 flow left idempotency entries with different params
   // (pending-item style); reusing those keys would be rejected by Stripe.
@@ -85,7 +109,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
   if (invoice.status === 'draft') {
     for (const it of items) {
       const product = getProductById(it.product_id);
-      const productNames = plMessages.product as Record<string, string>;
+      const productNames = messages.product as Record<string, string>;
       const label = product
         ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
         : it.product_id;
@@ -98,10 +122,9 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       }, { idempotencyKey: `ii2_${order.id}_${it.product_id}` });
     }
     if (order.shipping > 0) {
+      const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
       const shippingLabel =
-        order.delivery_method === 'paczkomat'
-          ? 'Wysyłka — Paczkomat InPost'
-          : 'Wysyłka — Kurier InPost';
+        order.delivery_method === 'paczkomat' ? labels.paczkomat : labels.kurier;
       await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,

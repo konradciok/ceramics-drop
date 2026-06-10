@@ -243,7 +243,7 @@
     "craft1H": "Eliges <em>tus favoritas</em>",
     "craft1P": "En la galería haces clic en las piezas que te atraen. Cada miniatura seleccionada aparece en la barra inferior, así que es fácil volver a tu selección.",
     "craft2H": "Vas <em>a la caja</em>",
-    "craft2P": "En el carrito revisas las piezas elegidas, seleccionas Paczkomat o mensajería y finalizas el pedido. El pago lo gestiona Stripe: tarjeta, BLIK o Przelewy24.",
+    "craft2P": "En el carrito revisas las piezas elegidas, seleccionas Paczkomat o mensajería y finalizas el pedido. El pago lo gestiona Stripe: tarjeta o Przelewy24.",
     "craft3H": "Embalo <em>y envío</em>",
     "craft3P": "Envuelvo cada pieza a mano y la envío en 1–3 días laborables. Como solo hay una de cada, tu compra la retira de la tienda — nadie compra la misma.",
     "ctEyebrow": "Contacto",

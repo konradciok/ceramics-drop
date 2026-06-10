@@ -1,4 +1,4 @@
-/* PLN prices (zloty) and grosze helpers. PLN is the charge currency. */
+/* PLN and EUR prices with helpers. PL locale → PLN; en/es locales → EUR. */
 import type { CategorySlug } from './types';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
