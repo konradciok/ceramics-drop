@@ -12,7 +12,7 @@
     "error": "Coś poszło nie tak. Spróbuj za chwilę albo napisz na hej@ciok.art.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
-  "announce": "Czerwcowy drop 2026: 96 ręcznie malowanych prac, każda unikalna",
+  "announce": "Czerwcowy drop 2026: 103 ręcznie malowanych prac, każda unikalna",
   "title": {
     "home": "Anna Ciok Ceramics — czerwcowy drop 2026",
     "kubki": "Kubki",
@@ -170,7 +170,7 @@
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
     "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
-    "heroSub": "Dziewięćdziesiąt sześć ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, talerze średnie, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
+    "heroSub": "Sto trzy ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, talerze średnie, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest szkliwiony i ręcznie malowany osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
     "heroCta1": "Przeglądaj wszystkie prace",
     "heroMetaName": "Kubek Nº 02",
     "heroMetaDesc": "Błękitna palma",
@@ -181,11 +181,11 @@
       "prosto z pracowni"
     ],
     "colEyebrow": "Czerwcowy drop",
-    "colTitle": "Dziewięć kategorii, <em>dziewięćdziesiąt sześć historii.</em>",
+    "colTitle": "Dziewięć kategorii, <em>sto trzy historie.</em>",
     "colLead": "Przeglądaj jak galerię, zaznacz ulubione prace i przejdź do kasy, kiedy Twój wybór będzie gotowy.",
     "card": {
       "mug": {
-        "num": "24 prace · 90 zł za sztukę",
+        "num": "28 prac · 90 zł za sztukę",
         "desc": "Kubki na codzienną kawę i herbatę. Palmy, cytryny, muszle i kaktusy malowane szkliwem na jasnej glinie.",
         "cta": "Wybierz swój kubek"
       },
@@ -195,12 +195,12 @@
         "cta": "Wybierz swój"
       },
       "midvase": {
-        "num": "4 prace · 300 zł za sztukę",
+        "num": "5 prac · 300 zł za sztukę",
         "desc": "Średnie wazony o wyrazistym charakterze — coś pomiędzy kameralnym a dużym formatem.",
         "cta": "Wybierz średni wazon"
       },
       "bigvase": {
-        "num": "4 prace · 395 zł każdy",
+        "num": "5 prac · 395 zł każdy",
         "desc": "Duże formy z mocnym charakterem: palmy, muszle, kaktusy, homar i małe folkowe sceny na ciepłej bieli.",
         "cta": "Wybierz duży wazon"
       },
@@ -220,7 +220,7 @@
         "cta": "Wybierz swój talerz"
       },
       "largebowl": {
-        "num": "5 prac · 315 zł za sztukę",
+        "num": "6 prac · 315 zł za sztukę",
         "desc": "Pojemne misy do owoców, sałat i rzeczy, które lubią stać na stole. W środku kobaltowe ogrody, palmy i liście.",
         "cta": "Wybierz misę"
       },
@@ -236,7 +236,7 @@
     "storyTitle": "Najpierw był obraz, <em>dziś jest ceramika.</em>",
     "storyP1": "Jestem Anna. Maluję obrazy i ceramikę, a oba światy spotykają się w tej samej pracowni. Kubek, talerz czy wazon traktuję jak mały obraz użytkowy: można go wziąć do ręki, postawić na stole i używać bez specjalnej okazji.",
     "storyP2": "Pracuję sama, powoli, jeden egzemplarz po drugim. Ręka zostawia ślad w linii pędzla, w nierównej palmie i w pasku, który nie udaje idealnego. To właśnie sprawia, że każda praca ma swój charakter.",
-    "storyP3": "Czerwcowy drop powstał tej wiosny i liczy 96 prac. Gdy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "storyP3": "Czerwcowy drop powstał tej wiosny i liczy 103 prace. Gdy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
     "storyCta1": "Wybierz swój",
     "storyCta2": "Napisz do mnie",
     "craftEyebrow": "Jak to działa",
@@ -262,8 +262,8 @@
   "collection": {
     "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
     "kubki": {
-      "eyebrow": "Czerwcowy drop — 24 prace",
-      "title": "Kubki <em>Nº 01–24</em>",
+      "eyebrow": "Czerwcowy drop — 28 prace",
+      "title": "Kubki <em>Nº 01–28</em>",
       "lead": "Ręcznie malowane kubki. Każdy jest osobnym egzemplarzem, więc wybierasz dokładnie ten, który ma trafić do Twojej kuchni."
     },
     "wazony": {
@@ -272,13 +272,13 @@
       "lead": "Pękate, ręcznie malowane wazony. Na kwiaty, gałązki albo jako mały obraz stojący na półce."
     },
     "wazony-srednie": {
-      "eyebrow": "Czerwcowy drop — 4 prace",
-      "title": "Średnie wazony <em>Nº 01–04</em>",
+      "eyebrow": "Czerwcowy drop — 5 prac",
+      "title": "Średnie wazony <em>Nº 01–05</em>",
       "lead": "Średnie wazony ceramiczne, każdy w jednym egzemplarzu. Forma pomiędzy kameralną a dużą — na bukiet i na półkę."
     },
     "wazony-duze": {
-      "eyebrow": "Czerwcowy drop — 4 prace",
-      "title": "Wazony duże <em>Nº 01–04</em>",
+      "eyebrow": "Czerwcowy drop — 5 prac",
+      "title": "Wazony duże <em>Nº 01–05</em>",
       "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
     },
     "talerzyki": {
@@ -297,8 +297,8 @@
       "lead": "Duże talerze. Do podania, do wyeksponowania albo na ścianę, jeśli wolisz ceramikę oglądać jak obraz."
     },
     "duze-michy": {
-      "eyebrow": "Czerwcowy drop — 5 prac",
-      "title": "Duże misy <em>Nº 01–05</em>",
+      "eyebrow": "Czerwcowy drop — 6 prac",
+      "title": "Duże misy <em>Nº 01–06</em>",
       "lead": "Pojemne, ręcznie malowane misy. Każda jest gotowa na owoce, sałatę albo centralne miejsce na stole."
     },
     "miski-falowane": {
@@ -307,7 +307,7 @@
       "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
     },
     "sklep": {
-      "eyebrow": "Czerwcowy drop — 96 prac",
+      "eyebrow": "Czerwcowy drop — 103 prace",
       "title": "Wszystkie <em>prace</em>",
       "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
     }
@@ -332,7 +332,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Po szkliwieniu i malowaniu praca trafia do wypału, który utrwala kolor i zamienia powierzchnię w szklistą, użytkową warstwę.",
     "fact3K": "Czerwcowy drop",
-    "fact3V": "96 <em>prac</em>",
+    "fact3V": "103 <em>prace</em>",
     "fact3D": "Kubki, małe, średnie i duże wazony, talerzyki, talerze średnie, duże talerze, duże misy i miski z falowanym brzegiem. Każda sztuka jest tylko jedna.",
     "fact4K": "Wysyłka",
     "fact4V": "1–3 <em>dni</em>",
@@ -501,7 +501,11 @@
       "Czarny kwiat o sześciu główkach na wysokiej łodydze. Wokół niego falująca, prążkowana wstęga.",
       "Czarny tulipan z wachlarzem płatków i liśćmi w jodełkę. Wydrapywane żyłki dodają mu światła.",
       "Czarne oko w wieńcu płatków. Mały talizman malowany jednym pędzlem.",
-      "Czarny mak na smukłej łodydze, z liśćmi w jodełkę. Graficzny, prosty i mocny."
+      "Czarny mak na smukłej łodydze, z liśćmi w jodełkę. Graficzny, prosty i mocny.",
+      "Kubek — opis wkrótce.",
+      "Kubek — opis wkrótce.",
+      "Kubek — opis wkrótce.",
+      "Kubek — opis wkrótce."
     ],
     "wazony": [
       "Błękitne kaktusy i terakotowe słońce na brzuchu wazonu. Pustynny krajobraz w małej formie.",
@@ -517,13 +521,15 @@
       "Czarne kaktusy i terakotowe słońca otaczają brzusiec. W środku karbowany, terakotowy kołnierz.",
       "Czarny mak na terakotowej łodydze w jodełkę. Wydrapywane żyłki i prążkowany brzeg dodają mu lekkości.",
       "Czarna muszla zwijana linia po linii, z błękitnym rantem. Morska cisza na dużej formie.",
-      "Czarny saguaro z białymi, wydrapywanymi igłami. U góry terakotowy kołnierz o karbowanym rytmie."
+      "Czarny saguaro z białymi, wydrapywanymi igłami. U góry terakotowy kołnierz o karbowanym rytmie.",
+      "Wazon średni — opis wkrótce."
     ],
     "wazony-duze": [
       "Homar kreślony jednym pędzlem, od czułków po ogon. Morski ukłon w stronę dużej formy.",
       "Księżyc, gałązka w jodełkę i mężczyzna w kapeluszu. Mała, obrotowa opowieść na brzuścu.",
       "Terakotowa palma w jodełkę z czarnymi owocami. Brzeg w paski wygląda jak markiza w słońcu.",
-      "Czarna wstęga biegnie dookoła brzuśca i wypełnia się drobnym prążkiem. Jeden ruch, dużo cierpliwości."
+      "Czarna wstęga biegnie dookoła brzuśca i wypełnia się drobnym prążkiem. Jeden ruch, dużo cierpliwości.",
+      "Wazon duży — opis wkrótce."
     ],
     "talerzyki": [
       "Czarna muszla pośrodku i terakotowe kreski na brzegu. Dobry talerzyk na pierścionki, sól albo oliwę.",
@@ -577,7 +583,8 @@
       "Czarne maki i terakotowe liście w jodełkę. Jesienna gałązka rozsypana po dnie dużej misy.",
       "Terakotowe palmy w jodełkę z czarnymi owocami. Wakacyjny rytm prowadzony dookoła misy.",
       "Terakotowe saguaro i małe czarne romby. Pustynia rozłożona na szerokiej, jasnej formie.",
-      "Czarny ogród we wnętrzu: kwiat w kropki, gwiazdki i liście w jodełkę. Cała opowieść na dnie misy."
+      "Czarny ogród we wnętrzu: kwiat w kropki, gwiazdki i liście w jodełkę. Cała opowieść na dnie misy.",
+      "Duża misa — opis wkrótce."
     ],
     "miski-falowane": [
       "Czarne saguaro i terakotowe słońce. Falbankowy brzeg układa się jak ceramiczny płatek.",
@@ -604,10 +611,10 @@
     "shop": "Przejdź do sklepu"
   },
   "meta": {
-    "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 96 prac, każda tylko jedna.",
+    "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 103 prace, każda tylko jedna.",
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
-      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 24 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 28 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazony": "Ręcznie malowane małe wazony ceramiczne. Osiem pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
@@ -616,7 +623,7 @@
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "sklep": "Cała kolekcja Anny Ciok: 96 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
+      "sklep": "Cała kolekcja Anny Ciok: 103 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
     }
   },
   "consent": {

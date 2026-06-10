@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 96 pieces (post June inventory review + 16 new talerzyki + 2 new talerze-srednie)', () => {
-    expect(getProducts()).toHaveLength(96);
+  it('builds exactly 103 pieces (96 June drop + 7 segunda-partia additions)', () => {
+    expect(getProducts()).toHaveLength(103);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 24, wazony: 8, 'wazony-srednie': 4, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 5, 'miski-falowane': 10 };
+    const counts = { kubki: 28, wazony: 8, 'wazony-srednie': 5, 'wazony-duze': 5, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -39,6 +39,12 @@ describe('getProducts', () => {
     expect(getProductById('t16')!.image).toBe('/uploads/talerz-maly-16.webp');
     expect(getProductById('s01')!.image).toBe('/uploads/sredni-talerz-17.webp');
     expect(getProductById('s02')!.image).toBe('/uploads/sredni-talerz-18.webp');
+    // segunda partia
+    expect(getProductById('c01')!.image).toBe('/uploads/kubek-kolejny-nr-1.webp');
+    expect(getProductById('c04')!.image).toBe('/uploads/kubek-kolejny-nr-4.webp');
+    expect(getProductById('u01')!.image).toBe('/uploads/sredni-wazon-234.webp');
+    expect(getProductById('g01')!.image).toBe('/uploads/duza-waza-122.webp');
+    expect(getProductById('h01')!.image).toBe('/uploads/duza-miska-23.webp');
   });
 
   it('sets price, measure and noteIndex from the category', () => {
