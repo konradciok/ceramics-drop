@@ -26,6 +26,7 @@
     "miskiFalowane": "Wavy-rim bowls",
     "koszyk": "Cart",
     "studio": "Studio",
+    "inspiracje": "Inspirations — ceramics in context",
     "kontakt": "Contact",
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
@@ -44,7 +45,19 @@
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "studio": "Studio",
+    "inspiracje": "Inspirations",
     "kontakt": "Contact"
+  },
+  "inspiracje": {
+    "eyebrow": "Inspirations",
+    "h1": "Ceramics in context",
+    "intro": "Interiors that show them off. Each arrangement is its own story — and a few pieces you can take home.",
+    "metaDesc": "Anna Ciok ceramics in interior settings — styling inspiration and pieces available to buy.",
+    "lookLabel": "The Look",
+    "shopThisLook": "Shop this look",
+    "comingSoon": "Coming soon.",
+    "ctaH": "Every form is one of a kind",
+    "ctaBtn": "Browse the shop"
   },
   "aria": {
     "cart": "Cart",

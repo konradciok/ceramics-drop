@@ -26,6 +26,7 @@
     "miskiFalowane": "Miski z falowanym brzegiem",
     "koszyk": "Koszyk",
     "studio": "O studiu",
+    "inspiracje": "Inspiracje — ceramika w kontekście",
     "kontakt": "Kontakt",
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
@@ -44,7 +45,19 @@
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "studio": "O studiu",
+    "inspiracje": "Inspiracje",
     "kontakt": "Kontakt"
+  },
+  "inspiracje": {
+    "eyebrow": "Inspiracje",
+    "h1": "Ceramika w kontekście",
+    "intro": "Wnętrza, które ją pokazują. Każde ułożenie to osobna historia — i kilka kawałków, które możesz zabrać do siebie.",
+    "metaDesc": "Ceramika Anny Ciok w kontekście wnętrz — inspiracje stylistyczne i kawałki do kupienia.",
+    "lookLabel": "Zestaw",
+    "shopThisLook": "Kup ten zestaw",
+    "comingSoon": "Już wkrótce.",
+    "ctaH": "Każda forma jest jedyna w swoim rodzaju",
+    "ctaBtn": "Przeglądaj sklep"
   },
   "aria": {
     "cart": "Koszyk",

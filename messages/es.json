@@ -26,6 +26,7 @@
     "miskiFalowane": "Cuencos de borde ondulado",
     "koszyk": "Carrito",
     "studio": "Estudio",
+    "inspiracje": "Inspiraciones — cerámica en contexto",
     "kontakt": "Contacto",
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
@@ -44,7 +45,19 @@
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "studio": "Estudio",
+    "inspiracje": "Inspiraciones",
     "kontakt": "Contacto"
+  },
+  "inspiracje": {
+    "eyebrow": "Inspiraciones",
+    "h1": "Cerámica en contexto",
+    "intro": "Interiores que la muestran. Cada composición es su propia historia — y algunas piezas que puedes llevarte a casa.",
+    "metaDesc": "Cerámica de Anna Ciok en ambientes interiores — inspiración y piezas disponibles.",
+    "lookLabel": "El conjunto",
+    "shopThisLook": "Compra este conjunto",
+    "comingSoon": "Muy pronto.",
+    "ctaH": "Cada forma es única en su clase",
+    "ctaBtn": "Explorar tienda"
   },
   "aria": {
     "cart": "Carrito",
