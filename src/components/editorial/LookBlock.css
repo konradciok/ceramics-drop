@@ -1,0 +1,180 @@
+/* ============================================================
+   LookBlock — editorial "Inspiracje" section component
+   ============================================================ */
+
+.look-block {
+  padding: var(--section-y) 0;
+  border-bottom: 1px solid var(--c-line);
+}
+
+/* Two-column grid: text (1fr) | photo (1.55fr). DOM order is text-then-photo. */
+.look-block__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.55fr;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  margin-bottom: clamp(24px, 3vw, 36px);
+}
+
+/* Reverse layout (odd-index looks): swap columns visually via `order` while
+   keeping the DOM/tab order text-first. Track sizes are mirrored so the photo
+   stays the wide column on both sides. */
+.look-block--reverse .look-block__grid {
+  grid-template-columns: 1.55fr 1fr;
+}
+.look-block--reverse .look-block__photo-wrap {
+  order: 1;
+}
+.look-block--reverse .look-block__text {
+  order: 2;
+}
+
+/* ── Text column ───────────────────────────────────────────── */
+
+.look-block__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-terracotta);
+  margin-bottom: 14px;
+}
+
+.look-block__title {
+  font-family: var(--f-display);
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--c-espresso);
+  margin-bottom: 18px;
+}
+
+.look-block__editorial {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--c-espresso);
+  margin-bottom: 24px;
+}
+
+.look-block__cta {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-terracotta);
+  border-bottom: 1px solid var(--c-terracotta);
+  padding-bottom: 2px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* ── Photo column ──────────────────────────────────────────── */
+
+.look-block__photo-wrap {
+  position: relative;
+}
+
+.look-block__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-sharp);
+  display: block;
+  object-fit: cover;
+}
+
+/* Numbered marker circles pinned on the photo. x/y arrive as inline % styles. */
+.look-block__marker {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  background: var(--c-terracotta);
+  color: var(--c-paper);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  user-select: none;
+}
+
+.look-block__marker--sold {
+  opacity: 0.45;
+}
+
+/* ── Legend row ────────────────────────────────────────────── */
+
+.look-block__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding-top: 16px;
+}
+
+.look-block__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--c-espresso);
+  text-decoration: none;
+}
+
+a.look-block__legend-item:hover .look-block__legend-name {
+  color: var(--c-terracotta);
+}
+
+.look-block__legend-item--sold {
+  opacity: 0.55;
+}
+
+.look-block__legend-num {
+  width: 22px;
+  height: 22px;
+  background: var(--c-terracotta);
+  color: var(--c-paper);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.look-block__legend-name {
+  font-weight: 500;
+}
+
+.look-block__legend-price {
+  color: color-mix(in srgb, var(--c-espresso) 60%, var(--c-paper));
+}
+
+.look-block__legend-sold {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--c-espresso) 60%, var(--c-paper));
+}
+
+.look-block__legend-arrow {
+  color: var(--c-line);
+  font-size: 11px;
+}
+
+/* ── Mobile (< 861px) ──────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  /* Single column; clear the desktop order/track swaps so text stacks above photo. */
+  .look-block__grid,
+  .look-block--reverse .look-block__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .look-block--reverse .look-block__photo-wrap,
+  .look-block--reverse .look-block__text {
+    order: 0;
+  }
+}
