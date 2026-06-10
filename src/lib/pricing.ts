@@ -59,6 +59,8 @@ export const PRICE_EUR: Record<CategorySlug, number> = {
   'miski-falowane': 37,
 };
 
+/* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.
+ * Kurier (30 zł ≈ 7.14 €) is set to 10 € — deliberate round-number buffer. */
 export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
   paczkomat: 5,
   kurier: 10,

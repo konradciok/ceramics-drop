@@ -74,6 +74,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     : 'pl';
 
   const messages = MESSAGES[invoiceLocale as keyof typeof MESSAGES] ?? plMessages;
+  const orderCurrency: 'pln' | 'eur' = order.currency === 'eur' ? 'eur' : 'pln';
 
   const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
   let customer: Stripe.Customer;
@@ -97,7 +98,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     customer: customer.id,
     collection_method: 'send_invoice',
     days_until_due: 30,
-    currency: (order.currency as 'pln' | 'eur') ?? 'pln',
+    currency: orderCurrency,
     auto_advance: false,
     metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
   }, { idempotencyKey: `inv2_${order.id}` });
@@ -117,7 +118,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         customer: customer.id,
         invoice: invoice.id as string,
         amount: it.unit_price,
-        currency: (order.currency as 'pln' | 'eur') ?? 'pln',
+        currency: orderCurrency,
         description: label,
       }, { idempotencyKey: `ii2_${order.id}_${it.product_id}` });
     }
@@ -129,7 +130,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         customer: customer.id,
         invoice: invoice.id as string,
         amount: order.shipping,
-        currency: (order.currency as 'pln' | 'eur') ?? 'pln',
+        currency: orderCurrency,
         description: shippingLabel,
       }, { idempotencyKey: `ii2_${order.id}_shipping` });
     }
