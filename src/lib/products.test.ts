@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 78 pieces (post June inventory review)', () => {
-    expect(getProducts()).toHaveLength(78);
+  it('builds exactly 94 pieces (post June inventory review + 16 new talerzyki)', () => {
+    expect(getProducts()).toHaveLength(94);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 24, wazony: 8, 'wazony-srednie': 4, 'wazony-duze': 4, talerzyki: 14, 'talerze-duze': 9, 'duze-michy': 5, 'miski-falowane': 10 };
+    const counts = { kubki: 24, wazony: 8, 'wazony-srednie': 4, 'wazony-duze': 4, talerzyki: 30, 'talerze-duze': 9, 'duze-michy': 5, 'miski-falowane': 10 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
