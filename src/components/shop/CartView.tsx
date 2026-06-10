@@ -144,6 +144,7 @@ export function CartView() {
   const products = resolveCartProducts(ids);
   const n = products.length;
   const currency = locale === 'pl' ? 'pln' : 'eur';
+  const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
   const fmt = currency === 'eur' ? eur : pln;
   const priceOf = (p: ReturnType<typeof resolveCartProducts>[number]) =>
     currency === 'eur' ? PRICE_EUR[p.category] : p.price;
@@ -157,7 +158,8 @@ export function CartView() {
   useEffect(() => {
     if (products.length === 0 || viewedCartKeys.current.has(productKey)) return;
     viewedCartKeys.current.add(productKey);
-    pushDataLayer(buildViewCartEvent(products));
+    pushDataLayer(buildViewCartEvent(products, { currency: analyticsCurrency, itemPrices: products.map(priceOf) }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productKey, products]);
 
   function handlePickShip(id: ShipId) {
@@ -218,7 +220,13 @@ export function CartView() {
     forgetRememberedCheckout();
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    pushCheckoutStarted(products, { shippingCost: shipCost, shippingMethod: ship, userData: em ? { em } : undefined });
+    pushCheckoutStarted(products, {
+      shippingCost: shipCost,
+      shippingMethod: ship,
+      userData: em ? { em } : undefined,
+      currency: analyticsCurrency,
+      itemPrices: products.map(priceOf),
+    });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -248,6 +256,8 @@ export function CartView() {
       rememberCheckoutForReturn(products.map((p) => p.id), {
         shippingCost: shipCost,
         shippingMethod: ship,
+        currency: analyticsCurrency,
+        itemPrices: products.map(priceOf),
       });
       setClientSecret(client_secret);
     } catch {

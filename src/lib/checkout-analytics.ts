@@ -13,6 +13,8 @@ type CheckoutStartOptions = {
   shippingMethod: string;
   userData?: { em?: string };
   push?: (event: DataLayerEvent) => void;
+  currency?: 'PLN' | 'EUR';
+  itemPrices?: number[];
 };
 
 type ConfirmedPurchaseOptions = CheckoutStartOptions & {
@@ -31,30 +33,36 @@ type CheckoutSnapshot = {
   ids: string[];
   shippingCost: number;
   shippingMethod: string;
+  currency?: 'PLN' | 'EUR';
+  itemPrices?: number[];
 };
 
 export function pushCheckoutStarted(
   products: Product[],
-  { shippingCost, shippingMethod, userData, push = pushDataLayer }: CheckoutStartOptions,
+  { shippingCost, shippingMethod, userData, currency, itemPrices, push = pushDataLayer }: CheckoutStartOptions,
 ): void {
   push(
     buildBeginCheckoutEvent(products, {
       shippingCost,
       shippingMethod,
       userData,
+      currency,
+      itemPrices,
     }),
   );
 }
 
 export function pushConfirmedPurchase(
   products: Product[],
-  { orderNo, shippingCost, shippingMethod, push = pushDataLayer }: ConfirmedPurchaseOptions,
+  { orderNo, shippingCost, shippingMethod, currency, itemPrices, push = pushDataLayer }: ConfirmedPurchaseOptions,
 ): void {
   push(
     buildPurchaseEvent(products, {
       orderNo,
       shippingCost,
       shippingMethod,
+      currency,
+      itemPrices,
     }),
   );
 }
@@ -107,6 +115,8 @@ export function rememberCheckoutForReturn(
     ids,
     shippingCost: options.shippingCost,
     shippingMethod: options.shippingMethod,
+    ...(options.currency ? { currency: options.currency } : {}),
+    ...(options.itemPrices ? { itemPrices: options.itemPrices } : {}),
   };
   safeSetItem(storage, CHECKOUT_SNAPSHOT_KEY, JSON.stringify(snapshot));
 }
@@ -138,6 +148,8 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
     orderNo,
     shippingCost: snapshot.shippingCost,
     shippingMethod: snapshot.shippingMethod,
+    currency: snapshot.currency,
+    itemPrices: snapshot.itemPrices,
     push: options.push,
     storage,
   });
@@ -163,10 +175,20 @@ function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null 
       'shippingMethod' in parsed &&
       typeof parsed.shippingMethod === 'string'
     ) {
+      const currency =
+        'currency' in parsed && (parsed.currency === 'PLN' || parsed.currency === 'EUR')
+          ? parsed.currency
+          : undefined;
+      const itemPrices =
+        'itemPrices' in parsed && Array.isArray(parsed.itemPrices)
+          ? (parsed.itemPrices as unknown[]).filter((x): x is number => typeof x === 'number')
+          : undefined;
       return {
         ids: parsed.ids.filter((id): id is string => typeof id === 'string'),
         shippingCost: parsed.shippingCost,
         shippingMethod: parsed.shippingMethod,
+        ...(currency ? { currency } : {}),
+        ...(itemPrices ? { itemPrices } : {}),
       };
     }
   } catch {

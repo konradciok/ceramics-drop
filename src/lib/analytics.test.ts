@@ -166,6 +166,27 @@ describe('analytics ecommerce payloads', () => {
     });
   });
 
+  it('uses EUR currency and EUR item prices when currency option is EUR', () => {
+    const items = [product('k01')];
+    const event = buildBeginCheckoutEvent(items, {
+      eventId: 'evt-eur',
+      shippingCost: 5,
+      shippingMethod: 'paczkomat',
+      currency: 'EUR',
+      itemPrices: [22],
+    });
+
+    expect(event.ecommerce).toMatchObject({
+      currency: 'EUR',
+      value: 22,
+      items: [expect.objectContaining({ price: 22 })],
+    });
+    expect(event.meta).toMatchObject({
+      currency: 'EUR',
+      value: 27,
+    });
+  });
+
   it('attaches hashed user_data to begin_checkout when provided', () => {
     const e = buildBeginCheckoutEvent([product('k01')], {
       shippingCost: 18, shippingMethod: 'kurier', eventId: 'evt-bc',
