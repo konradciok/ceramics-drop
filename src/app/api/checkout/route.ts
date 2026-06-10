@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
-      automatic_payment_methods: { enabled: true },
+      payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
       metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
     });
   } catch {
