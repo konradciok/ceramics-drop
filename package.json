@@ -16,6 +16,7 @@
     "gtm:list": "node scripts/gtm-api.mjs list",
     "gtm:setup": "node scripts/gtm-api.mjs setup",
     "optimize-images": "node scripts/optimize-images.mjs",
+    "notes:generate": "node scripts/generate-product-notes.mjs",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -52,6 +53,7 @@
     "prettier": "^3.8.3",
     "schema-dts": "^2.0.0",
     "sharp": "^0.34.5",
+    "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "vitest": "^2.1.9",
     "wrangler": "^4.97.0"
