@@ -9,12 +9,14 @@ import { Announce } from './Announce';
 import { LangSwitch } from './LangSwitch';
 import { CartCount } from './CartCount';
 import { MobileMenu } from './MobileMenu';
+import { LOOKS } from '@/lib/looks';
 
 export async function Header() {
   const t = await getTranslations();
 
   const mobileLinks = [
     { href: '/sklep', label: t('nav.sklep') },
+    ...(LOOKS.length > 0 ? [{ href: '/inspiracje', label: t('nav.inspiracje') }] : []),
     { href: '/o-studiu', label: t('nav.studio') },
     { href: '/kontakt', label: t('nav.kontakt') },
   ];
@@ -34,6 +36,9 @@ export async function Header() {
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}
           <nav className="nav-left">
             <Link className="nav-link" href="/sklep">{t('nav.sklep')}</Link>
+            {LOOKS.length > 0 && (
+              <Link className="nav-link" href="/inspiracje">{t('nav.inspiracje')}</Link>
+            )}
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
           </nav>
           <MobileMenu links={mobileLinks} aria={mobileAria} />

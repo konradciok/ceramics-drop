@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import { EMAIL } from '@/lib/email-addresses';
+import { LOOKS } from '@/lib/looks';
 
 export async function Footer() {
   const t = await getTranslations();
@@ -46,6 +47,11 @@ export async function Footer() {
               <li>
                 <Link href="/o-studiu#proces">{t('footer.proces')}</Link>
               </li>
+              {LOOKS.length > 0 && (
+                <li>
+                  <Link href="/inspiracje">{t('nav.inspiracje')}</Link>
+                </li>
+              )}
               <li>
                 <Link href="/kontakt">{t('nav.kontakt')}</Link>
               </li>
