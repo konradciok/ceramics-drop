@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "category": "miski-falowane",
+  "generatedAt": "2026-06-10T18:02:07.901Z",
+  "itemCount": 10,
+  "model": "gpt-5.5",
+  "items": [
+    {
+      "category": "miski-falowane",
+      "productId": "w03",
+      "displayNum": "01",
+      "image": "/uploads/miski-falowane-3.webp",
+      "currentNote": "Czarne saguaro i terakotowe słońce. Falbankowy brzeg układa się jak ceramiczny płatek.",
+      "proposedNote": "Czarne saguaro z drobnymi terakotowymi wypustkami i okrągłymi słońcami. Pustynny motyw rozchodzi się po falowanym wnętrzu misy."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w05",
+      "displayNum": "02",
+      "image": "/uploads/miski-falowane-5.webp",
+      "currentNote": "Czarne muszle wokół terakotowej rozgwiazdy. Morski motyw na falowanym brzegu.",
+      "proposedNote": "Czarne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Falowany brzeg prowadzi morski motyw miękkim rytmem dookoła."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w06",
+      "displayNum": "03",
+      "image": "/uploads/miski-falowane-6.webp",
+      "currentNote": "Duże czarne kaktusy i rdzawe kropki. Najodważniejsza z pustynnych misek.",
+      "proposedNote": "Czarne kaktusy z jasnymi nacięciami i terakotowe owale na jasnym tle. Motyw krąży po wnętrzu misy, podążając za falowanym brzegiem."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w07",
+      "displayNum": "04",
+      "image": "/uploads/miski-falowane-7.webp",
+      "currentNote": "Czarne i terakotowe liście w jodełkę. Jesienna gałązka prowadzona po bokach.",
+      "proposedNote": "Czarne maki z cienkimi żyłkami i terakotowe liście w jodełkę. Motyw krąży po jasnym wnętrzu, podkreślając falowany brzeg misy."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w08",
+      "displayNum": "05",
+      "image": "/uploads/miski-falowane-8.webp",
+      "currentNote": "Błękitne kaktusy i terakotowe słońca. Chłodna, pogodna pustynia do codziennego używania.",
+      "proposedNote": "Błękitne kaktusy z białymi nacięciami i terakotowe kropki na jasnym wnętrzu misy. Pustynny motyw płynie po falowanym brzegu lekkim, nieregularnym rytmem."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w09",
+      "displayNum": "06",
+      "image": "/uploads/miski-falowane-9.webp",
+      "currentNote": "Błękitna palma z terakotowymi owocami i falą u dołu. Wakacyjna, lekka, z ruchem.",
+      "proposedNote": "Błękitne palmy z terakotowymi owocami na jasnym wnętrzu misy. Motyw płynie dookoła po falowanym brzegu."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w12",
+      "displayNum": "07",
+      "image": "/uploads/miski-falowane-12.webp",
+      "currentNote": "Terakotowa palma z czarnymi owocami. Ciepły, suchy klimat na falowanej formie.",
+      "proposedNote": "Terakotowe palmy w jodełkę z czarnymi owocami. Wakacyjny rytm płynie dookoła falowanej misy."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w14",
+      "displayNum": "08",
+      "image": "/uploads/miski-falowane-14.webp",
+      "currentNote": "Błękitne muszle i terakotowa fala u dołu. Każdy zawijas prowadzony linia po linii.",
+      "proposedNote": "Błękitne muszle wokół terakotowej rozgwiazdy na dnie misy. Falowany brzeg prowadzi morski rytm dookoła jasnej formy."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w15",
+      "displayNum": "09",
+      "image": "/uploads/miski-falowane-15.webp",
+      "currentNote": "Błękitne cytryny w białe kropki, widziane od góry. Lato zamknięte w miseczce.",
+      "proposedNote": "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi."
+    },
+    {
+      "category": "miski-falowane",
+      "productId": "w17",
+      "displayNum": "10",
+      "image": "/uploads/miski-falowane-17.webp",
+      "currentNote": "Czarne gałązki z jagodami i liśćmi w jodełkę. Falowany brzeg wygląda jak miękki płatek.",
+      "proposedNote": "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+    }
+  ]
+}

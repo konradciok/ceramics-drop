@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "category": "kubki",
+  "generatedAt": "2026-06-10T17:31:54.514Z",
+  "itemCount": 29,
+  "model": "gpt-4.1-mini",
+  "items": [
+    {
+      "category": "kubki",
+      "productId": "k01",
+      "displayNum": "01",
+      "image": "/uploads/kubek-1.webp",
+      "currentNote": "Wysoki, niebieski kwiat na smukłej łodydze. Prosty gest pędzla, dużo oddechu.",
+      "proposedNote": "Błękitny kwiat z dwoma liśćmi w jodełkę na beżowym tle. Delikatne gałązki układają się spokojnie wokół naczynia."
+    },
+    {
+      "category": "kubki",
+      "productId": "k02",
+      "displayNum": "02",
+      "image": "/uploads/kubek-2.webp",
+      "currentNote": "Błękitna palma z terakotowymi owocami. Małe lato do porannej kawy.",
+      "proposedNote": "Błękitna palma z brązowymi owocami. Spokojny rytm rozchylonych liści wokół kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k03",
+      "displayNum": "03",
+      "image": "/uploads/kubek-3.webp",
+      "currentNote": "Wachlarz cienkich linii jak słońce tuż przed wschodem. Delikatny i spokojny.",
+      "proposedNote": "Błękitny kwiat z brązowym pniem i liśćmi oraz brązowe kropki na kremowym tle. Minimalistyczny i spokojny układ motywu na cylindrycznej formie."
+    },
+    {
+      "category": "kubki",
+      "productId": "k04",
+      "displayNum": "04",
+      "image": "/uploads/kubek-4.webp",
+      "currentNote": "Błękitna cytryna i czarne kreski przy brzegu. Minimalny wzór z pogodnym rytmem.",
+      "proposedNote": "Duże niebieskie płatki z białymi żyłkami. Motyw fali rozlewa się łagodnie wokół kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k05",
+      "displayNum": "05",
+      "image": "/uploads/kubek-5.webp",
+      "currentNote": "Brąz i błękit prowadzone od góry do dołu. Najprostsze paski, ale każdy żyje własną linią.",
+      "proposedNote": "Błękitna cytryna z białymi plamkami na białym tle. Czarny rytm kropek i prostokątów układa się po krawędziach kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k06",
+      "displayNum": "06",
+      "image": "/uploads/kubek-6.webp",
+      "currentNote": "Brązowa muszla rysowana linia po linii. Wzór, w którym łatwo się na chwilę zgubić.",
+      "proposedNote": "Pionowe pasy w brązowym i błękitnym kolorze na kremowym tle. Rytmiczne przeplatanie barw tworzy spokojny, powtarzalny wzór na kubku."
+    },
+    {
+      "category": "kubki",
+      "productId": "k07",
+      "displayNum": "07",
+      "image": "/uploads/kubek-7.webp",
+      "currentNote": "Niebieska muszla z rdzawą kropką z boku. Cicha, morska i lekko asymetryczna.",
+      "proposedNote": "Brązowy kłos z białymi prążkami i pojedyncza błękitna kropka. Motyw prowadzi oko wzdłuż prostej, pionowej linii kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k08",
+      "displayNum": "08",
+      "image": "/uploads/kubek-8.webp",
+      "currentNote": "Druga błękitna muszla, podobna tylko z daleka. Jej zawijas skręca po swojemu.",
+      "proposedNote": "Błękitny kaktus ze złamanymi białymi liniami na jasnym tle. Motyw płynnie otacza kubek, tworząc łagodny rytm."
+    },
+    {
+      "category": "kubki",
+      "productId": "k09",
+      "displayNum": "09",
+      "image": "/uploads/kubek-9.webp",
+      "currentNote": "Duża błękitna muszla zajmuje cały bok kubka. Mój ulubiony ceramiczny zawijas.",
+      "proposedNote": "Błękitny kaktus z delikatnymi białymi żyłkami. Spokojny rytm pustynnego motywu na gładkiej, prostej formie."
+    },
+    {
+      "category": "kubki",
+      "productId": "k10",
+      "displayNum": "10",
+      "image": "/uploads/kubek-10.webp",
+      "currentNote": "Niebieska cytryna w ramce z terakotowych cegiełek. Chłód błękitu i ciepły rant.",
+      "proposedNote": "Błękitny liść z białymi żyłkami i pojedyncza terakotowa kropka obok. Kompozycja delikatnie opływa cylindryczną formę kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k11",
+      "displayNum": "11",
+      "image": "/uploads/kubek-11.webp",
+      "currentNote": "Błękitna mozaika z trójkątów i gwiazd. Pracochłonna, drobna i bardzo rytmiczna.",
+      "proposedNote": "Błękitna cytryna z małymi białymi kropkami po bokach. Rytmiczne brązowe prostokąty tworzą ramę u góry i u dołu kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k12",
+      "displayNum": "12",
+      "image": "/uploads/kubek-12.webp",
+      "currentNote": "Pół słońca z błękitnych promieni. Reszta zostaje jasna, gładka i spokojna.",
+      "proposedNote": "Błękitne gwiazdy z paskami i białymi kropkami, otoczone terakotowymi plamkami na górnym brzegu. Geometryczny rytm powtarza się rytmicznie wokół kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k13",
+      "displayNum": "13",
+      "image": "/uploads/kubek-13.webp",
+      "currentNote": "Terakotowa cytryna i błękitne groszki przy brzegu. Ciepła, lekka, trochę wakacyjna.",
+      "proposedNote": "Błękitny motyw w kształcie rozłożonego płatka z białymi liniami. Układ tworzy rytmiczne pociągnięcia, które otulają kubek."
+    },
+    {
+      "category": "kubki",
+      "productId": "k14",
+      "displayNum": "14",
+      "image": "/uploads/kubek-14.webp",
+      "currentNote": "Błękitna palma z owocami. Klasyczny motyw, do którego wracam najchętniej.",
+      "proposedNote": "Terakotowa cytryna z białymi akcentami po bokach. Spokojny rytm przerwany niebieskimi kropkami wokół krawędzi."
+    },
+    {
+      "category": "kubki",
+      "productId": "k17",
+      "displayNum": "15",
+      "image": "/uploads/kubek-17.webp",
+      "currentNote": "Terakotowy kwiat na długiej łodydze. Ziemisty, prosty i bardzo spokojny.",
+      "proposedNote": "Terakotowa palma z czarnymi owocami. Ciepły, suchy klimat na falowanej formie."
+    },
+    {
+      "category": "kubki",
+      "productId": "k18",
+      "displayNum": "16",
+      "image": "/uploads/kubek-18.webp",
+      "currentNote": "Terakotowa cytryna i czarne cegiełki przy brzegu. Mały kontrast, który trzyma całość.",
+      "proposedNote": "Terakotowy kwiat z cienkim łodyżkiem i szerokimi liśćmi z detalami. Motyw rozciąga się poziomo, tworząc spokojny, harmonijny rytm."
+    },
+    {
+      "category": "kubki",
+      "productId": "k19",
+      "displayNum": "17",
+      "image": "/uploads/kubek-19.webp",
+      "currentNote": "Brązowe pętle jedna za drugą. Wyglądają jak pismo, którego nie trzeba odczytywać.",
+      "proposedNote": "Terakotowy owoc z drobnymi białymi plamkami na jasnym tle. Geometryczny rytm czarnych kwadratów na krawędziach podkreśla strukturę kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k20",
+      "displayNum": "18",
+      "image": "/uploads/kubek-20.webp",
+      "currentNote": "Brązowa muszla i czarne kropki u góry. Surowa, ciepła, z mocnym konturem.",
+      "proposedNote": "Brązowe pętle namalowane w poziome pasy na jasnym tle kubka. Powtarzalny motyw tworzy spokojny rytm wokół formy."
+    },
+    {
+      "category": "kubki",
+      "productId": "k21",
+      "displayNum": "19",
+      "image": "/uploads/kubek-21.webp",
+      "currentNote": "Terakotowy kaktus z białymi igłami. Suchy klimat, miękka linia pędzla.",
+      "proposedNote": "Terakotowa muszla z białymi, delikatnymi liniami wydrapanymi w szkliwie. Spokojny, naturalny rytm motywu otacza kubek wokół."
+    },
+    {
+      "category": "kubki",
+      "productId": "k22",
+      "displayNum": "20",
+      "image": "/uploads/kubek-22.webp",
+      "currentNote": "Brązowe zawijasy w trzech rzędach. Rytm pisany ręką, bez idealnej powtarzalności.",
+      "proposedNote": "Terakotowy kaktus z białymi kolcami na kremowym tle. Surowy, pustynny spokój oplata całą powierzchnię kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "k23",
+      "displayNum": "21",
+      "image": "/uploads/kubek-23.webp",
+      "currentNote": "Czarny kwiat o sześciu główkach na wysokiej łodydze. Wokół niego falująca, prążkowana wstęga.",
+      "proposedNote": "Czarny kwiat z pięcioma okrągłymi zakończeniami i falistym liściem z pionowymi kreskami. Motyw rozciąga się szeroko wokół kubka, tworząc spokojny, rytmiczny wzór."
+    },
+    {
+      "category": "kubki",
+      "productId": "k24",
+      "displayNum": "22",
+      "image": "/uploads/kubek-24.webp",
+      "currentNote": "Czarny tulipan z wachlarzem płatków i liśćmi w jodełkę. Wydrapywane żyłki dodają mu światła.",
+      "proposedNote": "Czarne pąki i liście z białymi żyłkami. Motyw kwiatowy rozłożony symetrycznie na kremowym kubku."
+    },
+    {
+      "category": "kubki",
+      "productId": "k25",
+      "displayNum": "23",
+      "image": "/uploads/kubek-25.webp",
+      "currentNote": "Czarne oko w wieńcu płatków. Mały talizman malowany jednym pędzlem.",
+      "proposedNote": "Czarne oko w otoczeniu konturowanych płatków. Motyw układa się symetrycznie, tworząc wyrazisty ornament."
+    },
+    {
+      "category": "kubki",
+      "productId": "k26",
+      "displayNum": "24",
+      "image": "/uploads/kubek-26.webp",
+      "currentNote": "Czarny mak na smukłej łodydze, z liśćmi w jodełkę. Graficzny, prosty i mocny.",
+      "proposedNote": "Czarny kwiat z dwoma liśćmi o geometrycznych wzorach. Minimalistyczna forma skupiona na prostych, wyraźnych liniach."
+    },
+    {
+      "category": "kubki",
+      "productId": "c01",
+      "displayNum": "25",
+      "image": "/uploads/kubek-kolejny-nr-1.webp",
+      "currentNote": "Niebieska muszla z rdzawym kołnierzem przy brzegu. Zawinięta do góry, jakby coś miało się zaraz otworzyć.",
+      "proposedNote": "Czarny, stylizowany byk z białym sznurem na szyi. Motyw prowadzony spokojną, graficzną linią na jasnej, gładkiej powierzchni."
+    },
+    {
+      "category": "kubki",
+      "productId": "c02",
+      "displayNum": "26",
+      "image": "/uploads/kubek-kolejny-nr-2.webp",
+      "currentNote": "Terakotowy mniszek i opadające nasionka. Letnia łąka namalowana jedną ciepłą barwą.",
+      "proposedNote": "Duże czarne oko z białym krzyżem i otoczone liśćmi w jodełkę z niebieskimi kropeczkami. Kompozycja układa się centralnie, tworząc mocny i rytmiczny akcent."
+    },
+    {
+      "category": "kubki",
+      "productId": "c03",
+      "displayNum": "27",
+      "image": "/uploads/kubek-kolejny-nr-3.webp",
+      "currentNote": "Czarna mozaika trójkątów i rombów wokół brzuśca. Powolna w malowaniu, szybka w przykuwaniu wzroku.",
+      "proposedNote": "Czarne kwiaty z białymi żyłkami na kremowym tle. Motyw rozmieszczony nieregularnie, tworzący lekki, organiczny rytm."
+    },
+    {
+      "category": "kubki",
+      "productId": "c04",
+      "displayNum": "28",
+      "image": "/uploads/kubek-kolejny-nr-4.webp",
+      "currentNote": "Niebieska figa z białymi kropkami i terakotowym kreskowanym brzegiem. Letni nastrój w wysokiej, okrągłej formie.",
+      "proposedNote": "Czarna palma z terakotowymi owocami i białymi liniami na pniu. Motyw roślinny prowadzony centralnie na powierzchni kubka."
+    },
+    {
+      "category": "kubki",
+      "productId": "x01",
+      "displayNum": "29",
+      "image": "/uploads/kubek-1.webp",
+      "currentNote": "Testowy egzemplarz.",
+      "proposedNote": "Błękitny kwiat z dwoma liśćmi i długim łodygą. Prosty, geometryczny motyw tworzy spokojny rytm na jasnej powierzchni."
+    }
+  ]
+}

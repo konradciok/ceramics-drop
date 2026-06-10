@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "category": "talerzyki",
+  "generatedAt": "2026-06-10T17:58:09.066Z",
+  "itemCount": 14,
+  "model": "gpt-5.5",
+  "items": [
+    {
+      "category": "talerzyki",
+      "productId": "t01",
+      "displayNum": "01",
+      "image": "/uploads/talerz-maly-1.webp",
+      "currentNote": "Czarna muszla pośrodku i terakotowe kreski na brzegu. Dobry talerzyk na pierścionki, sól albo oliwę.",
+      "proposedNote": "Czarna muszla z białymi, pionowymi liniami na jasnym dnie talerzyka. Terakotowe kreski na falowanym brzegu prowadzą rytm dookoła formy."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t02",
+      "displayNum": "02",
+      "image": "/uploads/talerz-maly-2.webp",
+      "currentNote": "Czarny kaktus i karbowany, terakotowy rant w kropki. Maleńka pustynia na dłoni.",
+      "proposedNote": "Czarne saguaro z białymi nacięciami i terakotowy rant w kropki. Pustynny motyw siedzi w środku, a falowany brzeg prowadzi rytm dookoła."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t04",
+      "displayNum": "03",
+      "image": "/uploads/talerz-maly-4.webp",
+      "currentNote": "Czarny mak na terakotowej łodydze w jodełkę. Kreskowany brzeg trzyma wzór w spokojnej ramie.",
+      "proposedNote": "Czarny kwiat na terakotowej łodydze i liście w jodełkę. Terakotowe kreski biegną równym rytmem dookoła falowanego rantu."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t05",
+      "displayNum": "04",
+      "image": "/uploads/talerz-maly-5.webp",
+      "currentNote": "Błękitno-czarna palma z terakotowymi owocami. Dookoła cienkie prążki prowadzone ręką.",
+      "proposedNote": "Czarna palma z jasnym unerwieniem i terakotowymi owocami. Rdzawe paski na brzegu prowadzą wakacyjny rytm dookoła talerzyka."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t06",
+      "displayNum": "05",
+      "image": "/uploads/talerz-maly-6.webp",
+      "currentNote": "Terakotowa muszla i czarno-biały, szachownicowy brzeg. Ciepła i morska jednocześnie.",
+      "proposedNote": "Terakotowa muszla z białymi liniami na środku talerzyka. Czarne prostokąty na falowanym rancie prowadzą spokojny, morski rytm."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t07",
+      "displayNum": "06",
+      "image": "/uploads/talerz-maly-7.webp",
+      "currentNote": "Terakotowy mak nad czarnymi liśćmi w jodełkę. Jeden z najprostszych, najbardziej cichych kwiatów.",
+      "proposedNote": "Terakotowy kwiat na czarnej łodydze z liśćmi w jodełkę. Motyw biegnie przez środek talerzyka, a falowany brzeg miękko go domyka."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t08",
+      "displayNum": "07",
+      "image": "/uploads/talerz-maly-8.webp",
+      "currentNote": "Terakotowy kaktus z białymi igłami i czarnym rantem w kropki. Suchy klimat, miękka linia.",
+      "proposedNote": "Terakotowe saguaro z białymi nacięciami na jasnym dnie i czarnym rantem w kropki. Pustynny motyw wyrasta pionowo w środku falowanej formy."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t09",
+      "displayNum": "08",
+      "image": "/uploads/talerz-maly-9.webp",
+      "currentNote": "Palma w terakocie i czerni, z czarnymi owocami. Grafitowy brzeg dodaje jej rytmu.",
+      "proposedNote": "Terakotowa palma z czarnymi owocami i kreskowanymi liśćmi. Czarne półkola na rancie prowadzą rytm dookoła talerzyka."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t10",
+      "displayNum": "09",
+      "image": "/uploads/talerz-maly-10.webp",
+      "currentNote": "Druga terakotowa muszla z grafitowymi kreskami przy brzegu. Zawijas, który lubi skupiać wzrok.",
+      "proposedNote": "Terakotowa muszla z jasnymi, wydrapanymi liniami na dnie talerzyka. Falowany brzeg powtarza miękki ruch morskiego zawijasa."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t11",
+      "displayNum": "10",
+      "image": "/uploads/talerz-maly-11.webp",
+      "currentNote": "Błękitna figa w białe kropki i czarne słupki na rancie. Lato w małej, ceramicznej skali.",
+      "proposedNote": "Błękitna cytryna w białe kropki na środku talerzyka i czarne pionowe paski na rancie. Prosty rytm obiega brzeg, zostawiając jasny środek dla owocowego motywu."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t12",
+      "displayNum": "11",
+      "image": "/uploads/talerz-maly-12.webp",
+      "currentNote": "Błękitna cytryna z białymi pestkami i czarne kreski z ogonkami. Chłodna, świeża i pogodna.",
+      "proposedNote": "Błękitna cytryna w środku i czarne pasy z jasnymi kreskami na falowanym brzegu. Motyw zbiera się spokojnie w centrum, a rant prowadzi go dookoła rytmicznymi znakami."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t13",
+      "displayNum": "12",
+      "image": "/uploads/talerz-maly-13.webp",
+      "currentNote": "Czarna gałązka z trzema jagodami i liśćmi w jodełkę. Surowa, zimowa i bardzo graficzna.",
+      "proposedNote": "Czarna gałązka z trzema okrągłymi owocami i liśćmi w jodełkę. Motyw wyrasta ze środka i spokojnie rozkłada się po jasnym wnętrzu."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t14",
+      "displayNum": "13",
+      "image": "/uploads/talerz-maly-14.webp",
+      "currentNote": "Błękitny kaktus z terakotowym, falbankowym kołnierzem w kropki. Pustynny chłód w miniaturze.",
+      "proposedNote": "Błękitny kaktus w środku i terakotowa falbanka z białymi kropkami przy rancie. Pustynny motyw spokojnie rozkłada się na jasnym wnętrzu talerzyka."
+    },
+    {
+      "category": "talerzyki",
+      "productId": "t15",
+      "displayNum": "14",
+      "image": "/uploads/talerz-maly-15.webp",
+      "currentNote": "Błękitna palma z terakotowymi owocami i kreskowanym brzegiem. Wakacje na małym talerzyku.",
+      "proposedNote": "Błękitna palma z terakotowymi owocami i kropkami na rancie. Wakacyjny motyw rozkłada się lekko po jasnym dnie talerzyka."
+    }
+  ]
+}
