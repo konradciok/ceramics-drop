@@ -502,10 +502,10 @@
       "Un tulipán negro con pétalos en abanico y hojas en espiga. Las vetas rascadas le dan un poco de luz.",
       "Un ojo negro en una corona de pétalos. Un pequeño talismán pintado con un solo pincel.",
       "Una amapola negra sobre un tallo fino, con hojas en espiga. Gráfica, sencilla y fuerte.",
-      "Taza — descripción próximamente.",
-      "Taza — descripción próximamente.",
-      "Taza — descripción próximamente.",
-      "Taza — descripción próximamente."
+      "Una concha azul con un collar oxidado cerca del borde. El rizo mira hacia arriba, como algo a punto de abrirse.",
+      "Un diente de león de terracota y semillas cayendo. Un prado de verano pintado en un solo color cálido.",
+      "Un mosaico negro de triángulos y rombos alrededor del vientre. Lento de pintar, rápido de atrapar la mirada.",
+      "Un higo azul con puntos blancos y un borde de terracota rayado. Un ambiente veraniego en una forma alta y redonda."
     ],
     "wazony": [
       "Cactus azules y un sol de terracota en el cuerpo del jarrón. Un paisaje de desierto en formato pequeño.",
@@ -522,14 +522,14 @@
       "Una amapola negra sobre un tallo de terracota en espiga. Las vetas rascadas y el borde a rayas le dan ligereza.",
       "Una concha negra enroscada línea a línea, con borde azul. Calma marina sobre una forma grande.",
       "Un saguaro negro con púas blancas rascadas. Arriba, un cuello de terracota con ritmo acanalado.",
-      "Jarrón mediano — descripción próximamente."
+      "Un saguaro de terracota y líneas azules que rodean el vientre. Un horizonte desértico extendido alrededor de un jarrón mediano."
     ],
     "wazony-duze": [
       "Una langosta trazada con un solo pincel, de las antenas a la cola. Un guiño al mar en una pieza grande.",
       "Una luna, una rama en espiga y un hombre con sombrero. Una pequeña historia que gira alrededor del cuerpo.",
       "Una palmera de terracota en espiga con frutos negros. El borde a rayas parece un toldo al sol.",
       "Una cinta negra rodea el cuerpo y se llena de rayas finas. Un movimiento, mucha paciencia.",
-      "Jarrón grande — descripción próximamente."
+      "Hojas negras apiladas en largas filas desde la base hasta el cuello. Una subida tranquila y rítmica en un jarrón grande."
     ],
     "talerzyki": [
       "Una concha negra en el centro y marcas de terracota en el borde. Un buen platito para anillos, sal o aceite de oliva.",
@@ -548,24 +548,24 @@
       "Una palmera azul con frutos de terracota y borde rayado. Vacaciones en un platito."
     ],
     "talerze-srednie": [
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente.",
-      "Plato mediano — descripción próximamente."
+      "Una amapola de terracota con hojas en espiga negra. El amplio borde blanco le da espacio al motivo para respirar.",
+      "Una palmera azul y frutos de terracota sobre un fondo generoso. El borde punteado rodea el plato por completo.",
+      "Una concha negra dibujada línea a línea. El ancho del plato le da al motivo espacio para enroscarse.",
+      "Un limón azul con semillas blancas y un fino borde negro. Limpio, fresco y seguro en un formato más amplio.",
+      "Dos cactus negros frente a frente sobre un centro blanco. Una banda punteada de terracota cierra el borde.",
+      "Un sol de terracota construido con anillos de rayos. El formato más amplio deja respirar a cada anillo.",
+      "Una rama negra con tres bayas y hojas en espiga. Invernal y gráfica sobre un fondo claro.",
+      "Un higo azul con semillas grabadas. El borde lleva finas barras de terracota alrededor.",
+      "Un cactus de terracota con agujas blancas y borde estriado negro. Un desierto sereno en un plato generoso.",
+      "Un diente de león negro y pétalos cayendo cerca del borde. Un prado disperso por la cara del plato.",
+      "Una palmera azul con rayas negras en el borde. El motivo al que más vuelvo, ahora con espacio para abrirse.",
+      "Una concha de terracota sobre un fondo pálido y amplio. El borde estriado la enmarca como un detalle decorativo discreto.",
+      "Una amapola negra en un tallo de terracota con hojas en espiga. Una primavera serena sobre esmalte blanco.",
+      "Un saguaro azul con agujas blancas grabadas. El amplio borde lleva un ritmo de terracota en espiga.",
+      "Tres puntos — negros y de terracota — en un arco suelto. Un motivo mínimo sobre un fondo generoso.",
+      "Un limón de terracota con colas negras y borde azul. Cálido y fresco en un equilibrio simple y contenido.",
+      "Una flor negra con pétalos muy abiertos y borde rayado. Un gesto de pincel y un horizonte tranquilo.",
+      "Una concha azul y un borde de terracota en espiga. Sencillez marina sobre la cara del plato."
     ],
     "talerze-duze": [
       "Un burrito marrón con una manta blanca rascada. Por el borde corre una trenza negra y ondulada.",
@@ -584,7 +584,7 @@
       "Palmeras de terracota en espiga con frutos negros. Un ritmo de vacaciones que rodea todo el cuenco.",
       "Saguaros de terracota y pequeños rombos negros. Un desierto extendido sobre una forma amplia y clara.",
       "Un jardín negro en el interior: flor de puntos, estrellitas y hojas en espiga. Toda una historia en el fondo del cuenco.",
-      "Bol grande — descripción próximamente."
+      "Soles de terracota y hojas en espiga negra dispersos por el fondo del bol. Un paisaje cálido en una forma amplia."
     ],
     "miski-falowane": [
       "Un saguaro negro y un sol de terracota. El borde ondulado se abre como un pétalo de cerámica.",
