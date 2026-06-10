@@ -171,4 +171,25 @@ describe('POST /api/checkout', () => {
       expect.objectContaining({ currency: 'pln' }),
     );
   });
+
+  it('passes the payment_method_configuration to Stripe', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['k01'],
+        locale: 'pl',
+        delivery_method: 'odbior',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
+      }),
+    );
+  });
 });
