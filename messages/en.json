@@ -626,6 +626,12 @@
       "sklep": "Anna Ciok's full collection: 103 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
     }
   },
+  "deliveryNotice": {
+    "title": "July delivery information",
+    "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
+    "p2": "We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.",
+    "p3": "Shipping will take place in July, from 10 July."
+  },
   "consent": {
     "title": "Cookies",
     "body": "I use cookies for analytics and marketing. You can accept or reject — rejecting doesn't block purchases.",

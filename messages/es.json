@@ -626,6 +626,12 @@
       "sklep": "La colección completa de Anna Ciok: 103 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta."
     }
   },
+  "deliveryNotice": {
+    "title": "Información sobre entregas en julio",
+    "p1": "Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.",
+    "p2": "Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.",
+    "p3": "Los envíos se realizarán en julio, a partir del 10 de julio."
+  },
   "consent": {
     "title": "Cookies",
     "body": "Uso cookies para analítica y marketing. Puedes aceptar o rechazar — rechazar no bloquea las compras.",

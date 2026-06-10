@@ -3,10 +3,12 @@ import { EMAIL, EMAIL_FROM } from './email-addresses';
 import {
   buildLabelToStudioEmail,
   buildNewOrderToStudioEmail,
+  buildOrderConfirmationEmail,
   buildReturnLabelEmail,
   buildShippingConfirmation,
   type CustomerShippingOrder,
   type LabelEmailOrder,
+  type OrderConfirmationOrder,
   type ReturnLabelOrder,
 } from './email';
 
@@ -186,5 +188,76 @@ describe('buildReturnLabelEmail — HTML escaping', () => {
     });
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
+  });
+});
+
+const confirmOrder: OrderConfirmationOrder = {
+  id: 'ord-confirm-1',
+  email: 'buyer@example.com',
+  receiver_first_name: 'Anna',
+};
+
+describe('buildOrderConfirmationEmail — subject localisation', () => {
+  it('returns Polish subject for pl', () => {
+    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
+    expect(subject).toBe('Zamówienie przyjęte — Anna Ciok Ceramics');
+  });
+
+  it('returns English subject for en', () => {
+    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'en' });
+    expect(subject).toBe('Order confirmed — Anna Ciok Ceramics');
+  });
+
+  it('returns Spanish subject for es', () => {
+    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'es' });
+    expect(subject).toBe('Pedido confirmado — Anna Ciok Ceramics');
+  });
+
+  it('falls back to Polish for an unknown locale', () => {
+    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'de' });
+    expect(subject).toBe('Zamówienie przyjęte — Anna Ciok Ceramics');
+  });
+});
+
+describe('buildOrderConfirmationEmail — greeting', () => {
+  it('includes the first name in the greeting when present', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
+    expect(html).toContain('Cześć Anna');
+  });
+
+  it('uses a generic greeting when first name is null', () => {
+    const noName: OrderConfirmationOrder = { ...confirmOrder, receiver_first_name: null };
+    const { html } = buildOrderConfirmationEmail({ order: noName, locale: 'pl' });
+    expect(html).toContain('Cześć,');
+    expect(html).not.toContain('Cześć null');
+  });
+});
+
+describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
+  it('uses "od 10 lipca" in both p2 and p3 — no contradictory "do 10 lipca" (PL)', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
+    expect(html).toContain('od 10 lipca');
+    expect(html).not.toContain('do 10 lipca');
+  });
+
+  it('uses "from 10 July" in both p2 and p3 — no contradictory "by 10 July" (EN)', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'en' });
+    expect(html).toContain('from 10 July');
+    expect(html).not.toContain('by 10 July');
+  });
+
+  it('uses "a partir del 10 de julio" in both p2 and p3 — no contradictory "antes del" (ES)', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'es' });
+    expect(html).toContain('a partir del 10 de julio');
+    expect(html).not.toContain('antes del 10 de julio');
+  });
+});
+
+describe('buildOrderConfirmationEmail — HTML escaping', () => {
+  it('escapes HTML special chars in receiver_first_name', () => {
+    const xssOrder: OrderConfirmationOrder = { ...confirmOrder, receiver_first_name: '<b>x' };
+    const { html } = buildOrderConfirmationEmail({ order: xssOrder, locale: 'pl' });
+    expect(html).not.toContain('<b>x');
+    expect(html).toContain('&lt;b&gt;x');
   });
 });
