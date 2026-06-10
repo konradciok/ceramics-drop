@@ -350,35 +350,37 @@ export function CartView() {
           })}
         </div>
 
-        <div className="cart-section">
-          <div className="cart-section-label">{t('cart.delivery')}</div>
-          <div className="ship-opts" role="radiogroup" aria-label={t('cart.summary')}>
-            <ShipOption
-              id="paczkomat"
-              active={ship === 'paczkomat'}
-              onPick={handlePickShip}
-              title={t('ship.paczkomatT')}
-              desc={t('ship.paczkomatD')}
-              price={priceLabel('paczkomat')}
-            />
-            <ShipOption
-              id="kurier"
-              active={ship === 'kurier'}
-              onPick={handlePickShip}
-              title={t('ship.courierT')}
-              desc={t('ship.courierD')}
-              price={priceLabel('kurier')}
-            />
-            <ShipOption
-              id="odbior"
-              active={ship === 'odbior'}
-              onPick={handlePickShip}
-              title={t('ship.pickupT')}
-              desc={t('ship.pickupD')}
-              price={priceLabel('odbior')}
-            />
+        {!clientSecret && (
+          <div className="cart-section">
+            <div className="cart-section-label">{t('cart.delivery')}</div>
+            <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
+              <ShipOption
+                id="paczkomat"
+                active={ship === 'paczkomat'}
+                onPick={handlePickShip}
+                title={t('ship.paczkomatT')}
+                desc={t('ship.paczkomatD')}
+                price={priceLabel('paczkomat')}
+              />
+              <ShipOption
+                id="kurier"
+                active={ship === 'kurier'}
+                onPick={handlePickShip}
+                title={t('ship.courierT')}
+                desc={t('ship.courierD')}
+                price={priceLabel('kurier')}
+              />
+              <ShipOption
+                id="odbior"
+                active={ship === 'odbior'}
+                onPick={handlePickShip}
+                title={t('ship.pickupT')}
+                desc={t('ship.pickupD')}
+                price={priceLabel('odbior')}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {!clientSecret && (
           <div className="cart-section">
@@ -489,6 +491,12 @@ export function CartView() {
         )}
 
         <div className="cart-cta">
+          {!clientSecret && (
+            <div className="cart-cta-total">
+              <span className="k">{t('cart.total')}</span>
+              <span className="v">{fmt(total)}</span>
+            </div>
+          )}
           {clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
               <CheckoutForm returnUrl={returnUrl} />

@@ -679,16 +679,20 @@ ul { list-style:none; padding:0; margin:0; }
 .cart-section-label::before { content:''; width:28px; height:1px; background:var(--c-terracotta); flex:none; }
 .cart-section .delivery-fields { margin-top:0; }
 .cart-cta { padding-top:36px; border-top:1px solid var(--c-line-soft); margin-top:36px; }
-.cart-cta .btn-primary { width:100%; justify-content:center; }
+.cart-cta .btn-primary { width:100%; justify-content:center; margin-top:22px; }
 .cart-cta .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
 .cart-cta .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }
 .cart-cta .pay-error { color:var(--c-terracotta); font-size:14px; margin:12px 0 0; text-align:center; }
+.cart-cta-total { display:flex; justify-content:space-between; align-items:baseline; padding-bottom:20px; }
+.cart-cta-total .k { font-family:var(--f-display); font-weight:300; font-size:20px; }
+.cart-cta-total .v { font-family:var(--f-display); font-weight:400; font-size:26px; }
+@media (min-width:1101px) { .cart-cta-total { display:none; } }
 
 /* ── Summary sidebar compact item list ──────────────────────────────── */
 .sum-items { list-style:none; margin:0 0 18px; padding:0; display:flex; flex-direction:column; gap:12px; }
 .sum-item { display:grid; grid-template-columns:56px 1fr; gap:12px; align-items:center; }
 .sum-item-thumb { aspect-ratio:4/5; background:var(--c-bone); border-radius:var(--r-sharp); overflow:hidden; position:relative; display:block; }
-.sum-item-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.sum-item-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
 .sum-item-info { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .sum-item-name { font-family:var(--f-display); font-style:italic; font-weight:400; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sum-item-price { font-family:var(--f-display); font-weight:400; font-size:15px; }
