@@ -64,7 +64,7 @@ describe('analytics ecommerce payloads', () => {
       item_brand: 'Anna Ciok Ceramics',
       item_category: 'kubki',
       item_variant: 'Nº 01',
-      price: 90,
+      price: 95,
       quantity: 1,
     });
   });
@@ -106,7 +106,7 @@ describe('analytics ecommerce payloads', () => {
       itemListName: 'Kubki',
     });
     expect(item.item_id).toBe('k01');
-    expect(item.price).toBe(90);
+    expect(item.price).toBe(95);
     expect(item.quantity).toBe(1);
     expect(item.index).toBe(3);
     expect(item.item_list_id).toBe('collection-kubki');
@@ -121,16 +121,16 @@ describe('analytics ecommerce payloads', () => {
       event_id: 'evt-atc-k01',
       ecommerce: {
         currency: ANALYTICS_CURRENCY,
-        value: 90,
+        value: 95,
         items: [toAnalyticsItem(product('k01'))],
       },
       meta: {
         event_name: 'AddToCart',
         content_ids: ['k01'],
         content_type: 'product',
-        contents: [{ id: 'k01', quantity: 1, item_price: 90 }],
+        contents: [{ id: 'k01', quantity: 1, item_price: 95 }],
         currency: ANALYTICS_CURRENCY,
-        value: 90,
+        value: 95,
         num_items: 1,
         event_id: 'evt-atc-k01',
       },
@@ -139,7 +139,7 @@ describe('analytics ecommerce payloads', () => {
 
   it('includes a Meta contents[] array with per-item price/quantity', () => {
     const event = buildAddToCartEvent(product('k01'), { eventId: 'evt-atc-k01' });
-    expect(event.meta?.contents).toEqual([{ id: 'k01', quantity: 1, item_price: 90 }]);
+    expect(event.meta?.contents).toEqual([{ id: 'k01', quantity: 1, item_price: 95 }]);
   });
 
   it('builds begin_checkout with item subtotal for GA4 and order total for Meta', () => {
@@ -150,17 +150,17 @@ describe('analytics ecommerce payloads', () => {
       shippingMethod: 'kurier',
     });
 
-    expect(event.ecommerce?.value).toBe(300);
-    expect(event.checkout_total).toBe(318);
+    expect(event.ecommerce?.value).toBe(334);
+    expect(event.checkout_total).toBe(352);
     expect(event.shipping_tier).toBe('kurier');
     expect(event.meta).toMatchObject({
       event_name: 'InitiateCheckout',
       content_ids: ['k01', 'v01'],
       contents: [
-        { id: 'k01', quantity: 1, item_price: 90 },
-        { id: 'v01', quantity: 1, item_price: 210 },
+        { id: 'k01', quantity: 1, item_price: 95 },
+        { id: 'v01', quantity: 1, item_price: 239 },
       ],
-      value: 318,
+      value: 352,
       num_items: 2,
       event_id: 'evt-checkout',
     });
@@ -209,20 +209,20 @@ describe('analytics ecommerce payloads', () => {
     expect(event.ecommerce).toMatchObject({
       transaction_id: 'ACC-1234',
       currency: ANALYTICS_CURRENCY,
-      value: 300,
+      value: 334,
       shipping: 18,
       items: items.map((p) => toAnalyticsItem(p)),
     });
-    expect(event.order_total).toBe(318);
+    expect(event.order_total).toBe(352);
     expect(event.meta).toMatchObject({
       event_name: 'Purchase',
       content_ids: ['k01', 'v01'],
       contents: [
-        { id: 'k01', quantity: 1, item_price: 90 },
-        { id: 'v01', quantity: 1, item_price: 210 },
+        { id: 'k01', quantity: 1, item_price: 95 },
+        { id: 'v01', quantity: 1, item_price: 239 },
       ],
       currency: ANALYTICS_CURRENCY,
-      value: 318,
+      value: 352,
       order_id: 'ACC-1234',
       event_id: 'evt-purchase',
     });

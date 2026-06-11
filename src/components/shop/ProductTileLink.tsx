@@ -1,16 +1,16 @@
 import { Link } from '@/i18n/navigation';
 import { srcSet } from '@/lib/images';
-import { pln } from '@/lib/format';
 import type { Product } from '@/lib/types';
 
 type Props = {
   product: Product;
   displayName: string;
   soldLabel: string;
+  priceLabel: string;
 };
 
 /** Static linked tile used in "More from this collection" — no client state. */
-export function ProductTileLink({ product, displayName, soldLabel }: Props) {
+export function ProductTileLink({ product, displayName, soldLabel, priceLabel }: Props) {
   return (
     <Link
       href={`/${product.category}/${product.id}`}
@@ -27,7 +27,7 @@ export function ProductTileLink({ product, displayName, soldLabel }: Props) {
       />
       <div className="tile-static-meta">
         <span>{displayName}</span>
-        <span>{pln(product.price)}</span>
+        <span>{priceLabel}</span>
       </div>
       {product.sold && <span className="sold-tag">{soldLabel}</span>}
     </Link>

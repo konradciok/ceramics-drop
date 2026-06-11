@@ -7,8 +7,8 @@ describe('validateCart', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.items.map((i) => i.product_id)).toEqual(['k01', 'v01']);
-      expect(r.items[0].unit_price).toBe(9000);   // kubki 90 zł
-      expect(r.items[1].unit_price).toBe(21000);  // wazony 210 zł
+      expect(r.items[0].unit_price).toBe(9500);   // kubki 95 zł
+      expect(r.items[1].unit_price).toBe(23900);  // wazony 239 zł
     }
   });
 
@@ -38,8 +38,8 @@ describe('validateCart', () => {
   });
 
   it('default currency (no arg) still produces grosze', () => {
-    // k01 is kubki → product.price = PRICE_PLN.kubki = 90 → toGrosze(90) = 9000
+    // k01 is kubki → product.price = PRICE_PLN.kubki = 95 → toGrosze(95) = 9500
     const result = validateCart(['k01']);
-    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9000 }] });
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
   });
 });

@@ -1,10 +1,11 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
-import { pln } from '@/lib/format';
+import { eur, pln } from '@/lib/format';
+import { priceOf } from '@/lib/pricing';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -25,6 +26,8 @@ type Props = {
 /** Gallery tile — Google-Photos-style select + a distinct "add" button. */
 export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
+  const locale = useLocale();
+  const fmt = locale !== 'pl' ? eur : pln;
   const selected = useCart((s) => s.ids.includes(product.id));
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -116,7 +119,7 @@ export function ProductTile({ product, onOpen }: Props) {
       </button>
       <div className="tile-meta">
         <span className="nm">{displayName}</span>
-        <span className="pr">{pln(product.price)}</span>
+        <span className="pr">{fmt(priceOf(product, locale))}</span>
       </div>
     </div>
   );

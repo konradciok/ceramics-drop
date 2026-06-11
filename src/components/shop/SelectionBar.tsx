@@ -1,9 +1,10 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts } from '@/lib/products';
-import { pln } from '@/lib/format';
+import { eur, pln } from '@/lib/format';
+import { priceOf } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
@@ -11,12 +12,14 @@ import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 /** Sticky bottom bar summarising the current selection. */
 export function SelectionBar() {
   const t = useTranslations();
+  const locale = useLocale();
+  const fmt = locale !== 'pl' ? eur : pln;
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
   const products = resolveCartProducts(ids);
   const n = products.length;
-  const total = products.reduce((sum, p) => sum + p.price, 0);
+  const total = products.reduce((sum, p) => sum + priceOf(p, locale), 0);
 
   return (
     <div className={`selbar${n > 0 ? ' show' : ''}`}>
@@ -25,7 +28,7 @@ export function SelectionBar() {
           <span className="cnt">
             <em>{n}</em> {t('selbar.word', { count: n })}
           </span>
-          <span className="sum">{`${t('selbar.total')} ${pln(total)}`}</span>
+          <span className="sum">{`${t('selbar.total')} ${fmt(total)}`}</span>
         </div>
         <div className="selbar-actions">
           <button

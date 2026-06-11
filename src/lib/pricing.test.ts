@@ -6,15 +6,15 @@ import type { CategorySlug } from './types';
 describe('pricing', () => {
   it('exposes PLN prices for all nine categories', () => {
     expect(PRICE_PLN).toEqual({
-      kubki: 90,
-      wazony: 210,
-      'wazony-srednie': 300,
-      'wazony-duze': 395,
-      talerzyki: 105,
-      'talerze-srednie': 120,
-      'talerze-duze': 270,
-      'duze-michy': 315,
-      'miski-falowane': 155,
+      kubki: 95,
+      wazony: 239,
+      'wazony-srednie': 289,
+      'wazony-duze': 379,
+      talerzyki: 69,
+      'talerze-srednie': 119,
+      'talerze-duze': 160,
+      'duze-michy': 345,
+      'miski-falowane': 195,
     });
   });
 
