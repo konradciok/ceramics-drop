@@ -583,11 +583,14 @@ async function runEmails(orders, { dryRun, verbose, env, supabase }) {
         env.RESEND_API_KEY,
       );
 
-      // Stamp the DB
+      // Stamp the DB. The .is() guard makes this a conditional claim: if a
+      // concurrent live webhook already stamped the row, the UPDATE matches 0
+      // rows (not an error in supabase-js) and we pass silently — no double-stamp.
       const { error: dbErr } = await supabase
         .from('orders')
         .update({ confirmation_email_sent_at: new Date().toISOString() })
-        .eq('id', order.id);
+        .eq('id', order.id)
+        .is('confirmation_email_sent_at', null);
       if (dbErr) {
         err(
           `EMAIL SENT but DB stamp failed for order ${order.id} — the customer received the email, ` +
@@ -804,7 +807,9 @@ async function runLabels(orders, { dryRun, env, supabase }) {
       continue;
     }
 
-    // Stamp the DB
+    // Stamp the DB. The .is() guard makes this a conditional claim: if a
+    // concurrent live webhook already stamped the row, the UPDATE matches 0
+    // rows (not an error in supabase-js) and we pass silently — no double-stamp.
     const { error: dbErr } = await supabase
       .from('orders')
       .update({
@@ -812,7 +817,8 @@ async function runLabels(orders, { dryRun, env, supabase }) {
         inpost_tracking_number: trackingNumber,
         delivery_status: LABEL_READY_STATUS,
       })
-      .eq('id', order.id);
+      .eq('id', order.id)
+      .is('inpost_label_emailed_at', null);
     if (dbErr) {
       err(
         `LABEL EMAILED but DB stamp failed for order ${order.id} — the label was emailed to the studio, ` +

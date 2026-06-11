@@ -107,8 +107,13 @@ export async function createOrderShipment(
       const dispatchOrder = await deps.inpost.createDispatchOrder(dispatchPayload);
       await deps.saveDispatchOrderId(order.id, String(dispatchOrder.id));
     }
-    // Retry buy if the shipment was never confirmed (e.g. prior webhook died after
-    // createShipment but before buyShipment completed).
+    // Retry buy if the shipment was not yet confirmed. This gate is intentionally
+    // broad: it catches genuinely-stuck pre-buy orders (e.g. prior webhook died
+    // after createShipment but before buyShipment). The narrow window where a
+    // shipment was just bought but the InPost confirmation webhook hasn't landed
+    // yet is safe: ShipX rejects a duplicate /buy with a non-retryable offer
+    // error (offer_unavailable / offer_not_found), which shouldRethrowShipmentError
+    // swallows — returning 200 to Stripe and stopping further retries.
     if (order.delivery_status !== LABEL_READY_STATUS) {
       await buyShipmentWhenReady(deps.inpost, order.inpost_shipment_id);
     }

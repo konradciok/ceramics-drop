@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createOrderShipment, buyShipmentWhenReady, type CreateShipmentDeps } from './shipment';
+import { ShipxApiError } from './shipx-errors';
 import type { OrderForShipment } from './shipx';
 import type { InPostClient } from './inpost';
 
@@ -276,5 +277,33 @@ describe('buyShipmentWhenReady', () => {
     // With 3 attempts: sleep after attempt 0 and 1 → 2 sleeps (not 3).
     expect(sleepSpy).toHaveBeenCalledTimes(2);
     expect(sleepSpy).toHaveBeenCalledWith(99);
+  });
+
+  it('propagates a non-retryable offer error (duplicate-buy idempotency contract)', async () => {
+    // A duplicate buy on an already-bought shipment surfaces a non-retryable offer
+    // error (offer_unavailable / offer_not_found) from ShipX, which the webhook
+    // route's shouldRethrowShipmentError gate swallows — returning 200 to Stripe.
+    // This test ensures buyShipmentWhenReady does NOT swallow it itself; the error
+    // must propagate so the gate can make the decision.
+    const offerError = new ShipxApiError(
+      'POST',
+      '/v1/shipments/42/buy',
+      422,
+      JSON.stringify({ error: 'offer_unavailable', message: 'Offer is no longer available' }),
+    );
+    const getShipment = vi.fn().mockResolvedValue({
+      id: '42',
+      status: 'created',
+      tracking_number: null,
+      offers: [{ id: 99, status: 'available' }],
+    });
+    const buyShipment = vi.fn().mockRejectedValue(offerError);
+    const inpost = { getShipment, buyShipment } as unknown as InPostClient;
+
+    await expect(
+      buyShipmentWhenReady(inpost, '42', { delayMs: 0 }),
+    ).rejects.toThrow(offerError);
+
+    expect(buyShipment).toHaveBeenCalledOnce();
   });
 });
