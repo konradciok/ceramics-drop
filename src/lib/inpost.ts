@@ -17,6 +17,8 @@ export type ShipxShipment = {
   status: string;
   tracking_number: string | null;
   service?: string;
+  offers?: Array<{ id: number | string; status?: string; service?: { id?: string } }>;
+  selected_offer?: { id: number | string } | null;
   [key: string]: unknown;
 };
 

@@ -296,7 +296,7 @@ export async function POST(req: Request) {
               .select(
                 'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
                   'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id, ' +
-                  'inpost_dispatch_order_id',
+                  'inpost_dispatch_order_id, delivery_status',
               )
               .eq('payment_intent_id', paymentIntentId)
               .single();
