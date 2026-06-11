@@ -67,6 +67,8 @@ export function ProductTile({ product, onOpen }: Props) {
         className="tile-link"
         tabIndex={-1}
         aria-hidden="true"
+        // Unsold: prevent navigation so the div's onClick opens the lightbox instead.
+        // Sold: let the link through — the PDP is the natural fallback destination.
         onClick={(e) => { if (!product.sold) e.preventDefault(); }}
       />
       {/* eslint-disable-next-line @next/next/no-img-element */}

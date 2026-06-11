@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ locale: string; slug: string; id: string }> };
 
+/** Builds `<title>`, `<meta description>`, hreflang alternates, and OG image for a product page. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug, id } = await params;
   const product = getProductById(id);
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** Product detail page — server-rendered with force-dynamic so live sold state is always fresh. */
 export default async function Page({ params }: Props) {
   const { locale, slug, id } = await params;
   setRequestLocale(locale);
@@ -48,7 +50,10 @@ export default async function Page({ params }: Props) {
 
   const [t, soldIds] = await Promise.all([
     getTranslations({ locale }),
-    getSoldIds().catch(() => [] as string[]),
+    getSoldIds().catch((err) => {
+      console.error('getSoldIds failed on PDP', { locale, slug, id, err });
+      return [] as string[];
+    }),
   ]);
 
   const product = soldIds.includes(base.id) ? { ...base, sold: true } : base;
