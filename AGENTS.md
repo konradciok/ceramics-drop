@@ -21,11 +21,13 @@ npm run optimize-images  # Convert design/uploads/*.png → public/uploads/*.web
 ```
 
 Run a single unit test file:
+
 ```bash
 npx vitest run src/lib/products.test.ts
 ```
 
 Run a single E2E spec:
+
 ```bash
 npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 ```
