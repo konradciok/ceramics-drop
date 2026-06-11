@@ -35,8 +35,7 @@ npm run i18n:check    # diagnose Notion token / database access / sharing
 ```
 messages/            next-intl catalogs (pl/en/es) — trilingual content
 public/fonts         Jost* variable webfonts (.woff2) + OFL license
-public/icons         line-icon SVGs
-public/uploads/      88 product images (WebP)
+public/uploads/      product images (WebP — canonical + 400/800/1600w variants)
 src/
   app/[locale]/      routes: home, 7 collections, koszyk (+ /return), o-studiu, kontakt, 3 legal pages
   app/api/           checkout · inventory · stripe/webhook
@@ -55,7 +54,7 @@ Content-complete, payments-enabled, and deployed to Cloudflare Workers.
 **Done:**
 
 - **Content** — all pages built with real markup & copy; trilingual catalogs (PL/EN/ES) in
-  `messages/`; 88 one-of-a-kind pieces from `getProducts()` in `src/lib/products.ts`; product
+  `messages/`; 103 one-of-a-kind pieces from `getProducts()` in `src/lib/products.ts`; product
   images in `public/uploads/` (WebP, via `npm run optimize-images`).
 - **Payments** — embedded Stripe Payment Element checkout in PLN. `/api/checkout` atomically
   reserves the selected pieces (15-min hold) before creating the PaymentIntent;

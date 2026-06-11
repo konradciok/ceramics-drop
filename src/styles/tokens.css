@@ -5,10 +5,10 @@
     them but its own :root omitted them.)
    ============================================================ */
 :root {
-  --c-periwinkle:#8AA4D6; --c-periwinkle-deep:#6F8AC4;
+  --c-periwinkle:#8AA4D6;
   --c-terracotta:#9C5A2C; --c-terracotta-deep:#7D4520;
   --c-sand:#D9C89E; --c-butter:#E6DD8A; --c-espresso:#3A2818;
-  --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2; --c-ink:#1F1610;
+  --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2;
   --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);
   --f-display:'Jost','Helvetica Neue',Arial,sans-serif;
   --f-cond:'Jost','Helvetica Neue',Arial,sans-serif;
