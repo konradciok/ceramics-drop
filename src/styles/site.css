@@ -1071,7 +1071,7 @@ ul { list-style:none; padding:0; margin:0; }
   display:flex; justify-content:space-between; align-items:flex-end;
   font-family:var(--f-cond); font-size:12px; letter-spacing:.08em;
 }
-.tile-static-meta .sold-tag {
+.tile-static > .sold-tag {
   position:absolute; top:10px; left:10px; right:auto;
   font-family:var(--f-cond); font-size:10px; letter-spacing:.16em;
   text-transform:uppercase; background:rgba(58,40,24,.65);
