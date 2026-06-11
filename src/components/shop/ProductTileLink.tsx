@@ -6,10 +6,11 @@ import type { Product } from '@/lib/types';
 type Props = {
   product: Product;
   displayName: string;
+  soldLabel: string;
 };
 
 /** Static linked tile used in "More from this collection" — no client state. */
-export function ProductTileLink({ product, displayName }: Props) {
+export function ProductTileLink({ product, displayName, soldLabel }: Props) {
   return (
     <Link
       href={`/${product.category}/${product.id}`}
@@ -28,7 +29,7 @@ export function ProductTileLink({ product, displayName }: Props) {
         <span>{displayName}</span>
         <span>{pln(product.price)}</span>
       </div>
-      {product.sold && <span className="sold-tag" aria-label="sold" />}
+      {product.sold && <span className="sold-tag">{soldLabel}</span>}
     </Link>
   );
 }

@@ -23,7 +23,7 @@ export function AddToCartButton({ product }: Props) {
   if (product.sold) {
     return (
       <button className="btn btn-primary lb-add" disabled aria-disabled="true">
-        {t('product.sold')}
+        {t('gallery.sold')}
       </button>
     );
   }

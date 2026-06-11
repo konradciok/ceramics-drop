@@ -126,8 +126,10 @@ export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph 
       },
       {
         '@type': 'Product',
+        '@id': productUrl,
         name,
         description,
+        sku: product.id,
         image: images,
         category: categoryName,
         offers: {

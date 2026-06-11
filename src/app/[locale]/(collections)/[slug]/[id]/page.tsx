@@ -18,7 +18,7 @@ type Props = { params: Promise<{ locale: string; slug: string; id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug, id } = await params;
   const product = getProductById(id);
-  if (!product || product.category !== slug) return {};
+  if (!product || product.category !== slug) notFound();
 
   const t = await getTranslations({ locale });
   const cat = CATEGORIES[product.category];
@@ -63,7 +63,7 @@ export default async function Page({ params }: Props) {
           tRaw: (key: string) => t.raw(key),
         })}
       />
-      <ProductPageScreen product={product} />
+      <ProductPageScreen product={product} soldIds={soldIds} />
     </main>
   );
 }

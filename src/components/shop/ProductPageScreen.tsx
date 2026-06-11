@@ -2,16 +2,18 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { pln } from '@/lib/format';
 import { CATEGORIES, getProductsByCategory } from '@/lib/products';
+import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
+import { ProductViewAnalytics } from './ProductViewAnalytics';
 import type { Product } from '@/lib/types';
 
-type Props = { product: Product };
+type Props = { product: Product; soldIds: readonly string[] };
 
 /** Full product detail page layout — server component with client islands. */
-export async function ProductPageScreen({ product }: Props) {
+export async function ProductPageScreen({ product, soldIds }: Props) {
   const t = await getTranslations();
 
   const cat = CATEGORIES[product.category];
@@ -22,18 +24,22 @@ export async function ProductPageScreen({ product }: Props) {
   const note = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
 
   const images = [product.image, ...(product.gallery ?? [])];
+  const soldSet = new Set(soldIds);
+  const soldLabel = t('gallery.sold');
 
-  // Up to 4 sibling pieces from the same category, excluding the current one
+  // Up to 4 sibling pieces from the same category with live sold overlay applied
   const siblings = getProductsByCategory(product.category)
     .filter((p) => p.id !== product.id)
+    .map((p) => (soldSet.has(p.id) ? { ...p, sold: true } : p))
     .slice(0, 4);
 
   return (
     <>
+      <ProductViewAnalytics product={product} />
       <article className="pdp">
         <div className="pdp-inner">
           <nav className="pdp-breadcrumb" aria-label="breadcrumb">
-            <Link href="/">{t('nav.sklep').split(' ')[0]}</Link>
+            <Link href="/">{SITE_NAME}</Link>
             <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
             <Link href={`/${product.category}`}>{categoryName}</Link>
             <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
@@ -83,6 +89,7 @@ export async function ProductPageScreen({ product }: Props) {
                     key={p.id}
                     product={p}
                     displayName={`${t(`product.${CATEGORIES[p.category].singularKey}`)} Nº ${p.num}`}
+                    soldLabel={soldLabel}
                   />
                 ))}
               </div>
