@@ -11,7 +11,7 @@ const t = (key: string) => key;
  * schema-dts types are deliberately strict unions that can't be index-accessed
  * directly; in tests we treat the emitted schema as the plain JSON it serialises to.
  */
-type Offer = { priceCurrency: string; availability: string };
+type Offer = { priceCurrency: string; availability: string; url: string };
 type Node = {
   '@type': string;
   numberOfItems?: number;
@@ -54,6 +54,7 @@ describe('collectionSchema', () => {
         : 'https://schema.org/InStock';
       expect(item.offers.priceCurrency).toBe('PLN');
       expect(item.offers.availability).toBe(expected);
+      expect(item.offers.url).toBe(`${SITE_URL}/kubki/${products[i].id}`);
       expect(item.image.startsWith(`${SITE_URL}/`)).toBe(true);
     });
   });

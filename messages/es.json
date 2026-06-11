@@ -82,7 +82,10 @@
     "medplate": "Plato mediano",
     "plate": "Plato grande",
     "largebowl": "Cuenco grande",
-    "wavybowl": "Cuenco de borde ondulado"
+    "wavybowl": "Cuenco de borde ondulado",
+    "moreFrom": "Más de esta colección",
+    "seeAll": "Ver todo",
+    "sold": "Ya tiene dueño"
   },
   "gallery": {
     "sold": "Ya encontró casa"
@@ -102,7 +105,8 @@
     "specCopy": "Ejemplar",
     "specTechVal": "Esmaltada y pintada a mano",
     "specCopyVal": "Único ejemplar",
-    "approx": "aprox."
+    "approx": "aprox.",
+    "permalink": "Ver esta pieza →"
   },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",

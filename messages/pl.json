@@ -82,7 +82,10 @@
     "medplate": "Talerz średni",
     "plate": "Duży talerz",
     "largebowl": "Duża misa",
-    "wavybowl": "Miska z falowanym brzegiem"
+    "wavybowl": "Miska z falowanym brzegiem",
+    "moreFrom": "Więcej z kolekcji",
+    "seeAll": "Zobacz wszystkie",
+    "sold": "Już znalazła dom"
   },
   "gallery": {
     "sold": "Już znalazła dom"
@@ -102,7 +105,8 @@
     "specCopy": "Egzemplarz",
     "specTechVal": "Szkliwo nakładane i ręcznie malowane",
     "specCopyVal": "Jedyny egzemplarz",
-    "approx": "ok."
+    "approx": "ok.",
+    "permalink": "Strona tej pracy →"
   },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",

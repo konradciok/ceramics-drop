@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
+import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { pln } from '@/lib/format';
 import { CATEGORIES } from '@/lib/products';
@@ -60,6 +61,14 @@ export function ProductTile({ product, onOpen }: Props) {
       data-price={product.price}
       data-sold={product.sold ? 'true' : undefined}
     >
+      {/* Crawlable href for search engines; JS click is intercepted by the div handler above */}
+      <Link
+        href={`/${product.category}/${product.id}`}
+        className="tile-link"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={(e) => { if (!product.sold) e.preventDefault(); }}
+      />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
       {gallery.length > 0 && (
