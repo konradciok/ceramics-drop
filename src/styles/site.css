@@ -704,14 +704,6 @@ ul { list-style:none; padding:0; margin:0; }
 .confirm h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(38px,5vw,64px); line-height:1; margin:0 0 20px; letter-spacing:-.01em; }
 .confirm h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .confirm p { font-size:17px; line-height:1.65; opacity:.85; max-width:46ch; margin:0 auto 14px; }
-.confirm .order-no { font-family:var(--f-cond); font-size:12px; letter-spacing:.2em; text-transform:uppercase; opacity:.6; margin:26px 0 32px; }
-
-.sim-banner {
-  background:var(--c-butter); color:var(--c-espresso); font-family:var(--f-cond);
-  font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-align:center;
-  padding:9px var(--gut); display:flex; align-items:center; justify-content:center; gap:10px;
-}
-.sim-banner svg { width:15px; height:15px; stroke-width:1.7; }
 
 /* ─── FADE-IN ─────────────────────────────────────────── */
 .fade-in { opacity:0; transform:translateY(20px); transition:opacity .8s ease,transform .8s ease; }
@@ -1022,14 +1014,6 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-price { font-family:var(--f-display); font-weight:400; font-size:22px; margin:0 0 22px; }
 .pdp-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
 .pdp-body .lb-specs { margin-top:auto; }
-
-/* Permalink link (on product page below CTA) */
-.pdp-permalink {
-  margin-top:16px; text-align:center;
-  font-family:var(--f-cond); font-size:11px; letter-spacing:.14em;
-  text-transform:uppercase; opacity:.45;
-}
-.pdp-permalink:hover { opacity:.7; text-decoration:underline; }
 
 /* Lightbox permalink link */
 .lb-permalink {
