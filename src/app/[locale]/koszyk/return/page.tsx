@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import * as Sentry from '@sentry/nextjs';
-import { loadStripe } from '@stripe/stripe-js';
 import { useCart } from '@/store/cart';
+import { getStripe } from '@/lib/stripe-client';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
@@ -14,7 +14,7 @@ import {
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripe();
 type Status = 'loading' | 'ok' | 'processing' | 'fail';
 
 export default function ReturnPage() {
