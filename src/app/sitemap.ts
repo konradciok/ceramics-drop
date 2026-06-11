@@ -7,6 +7,7 @@ import { getProducts } from '@/lib/products';
 /** Stable per-build timestamp — avoids churning every entry's lastmod on each request. */
 const LAST_MODIFIED = new Date();
 
+/** Generates all site URLs for search-engine crawlers: category pages + individual product pages across all three locales. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [];
   const paths = SITE_PATHS.filter((path) => !NOINDEX_PATHS.includes(path));
