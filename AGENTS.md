@@ -4,7 +4,7 @@ Guidance for AI coding agents (Claude Code, Codex, Cursor, Copilot, …) working
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~103 standalone pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). Trilingual and **dual-currency** (PLN for `/pl`, EUR for `/en` and `/es`). Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~103 standalone pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). Trilingual and **dual-currency** (PLN for the default Polish locale at unprefixed `/`, EUR for `/en` and `/es`). Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -67,7 +67,7 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 
 `src/lib/webhook.ts` → `handleStripeEvent()` handles Stripe webhooks at `/api/stripe/webhook` (snapshot / full-payload event destination).
 
-**API-version ritual:** `src/lib/stripe.ts` does not pin `apiVersion`, so the SDK uses the account-default version, and the SDK's generated types track the version bundled with the installed `stripe` package (`^22.2.0` → `2026-05-27.dahlia`). Keep the snapshot webhook endpoint's API version (set in the Stripe Dashboard) matched to that bundled version, and when you bump the `stripe` package update the Dashboard endpoint in lockstep so incoming event payloads stay aligned with the SDK types.
+**API-version ritual:** `src/lib/stripe.ts` does not pin `apiVersion`, so the SDK uses the account-default version, and the SDK's generated types track the version bundled with the installed `stripe` package (`^22.2.0` → `2026-05-27.dahlia`). Keep the snapshot webhook endpoint's API version (set in the Stripe Dashboard) matched to that bundled version, and when you bump the `stripe` package update the Dashboard endpoint in lockstep so incoming event payloads stay aligned with the SDK types. (Confirm the exact bundled version from the installed `stripe` package / `package-lock.json` after a bump — it is not inferable from the `^` range in `package.json`.)
 
 Event handling:
 - `payment_intent.succeeded` → `markPaid` (idempotent; also sends the customer order-confirmation email + studio new-order email, guarded by `confirmation_email_sent_at`), then `trackPurchase` (server-side Meta CAPI + GA4 MP, consent-gated, skipped unless `order.status = paid`), then `ensureInvoiced` (errors swallowed — Stripe gets 200, no retry), then `createShipment` (re-throws retryable errors so Stripe retries up to 3 days)
@@ -97,7 +97,7 @@ Dual-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN` and `PRICE_EUR` give
 ### Analytics & Conversions
 
 - **Client (browser):** GA4 + Meta Pixel via Google Tag Manager, gated by Consent Mode v2 (default-deny until the banner is accepted). Ecommerce events use major-currency values (never grosze) and locale-correct currency. Custom GA4 funnel/demand events route through a single `site_engagement` event keyed by `engagement_type` (delivery-method selects, locker selected, `sold_item_view`, `checkout_error`, `payment_failed`).
-- **Server-side:** `src/lib/marketing/` sends Purchase to the **Meta Conversions API** (`meta-capi.ts`) and **GA4 Measurement Protocol** (`ga4-mp.ts`) from the webhook (`conversions.ts`), consent-gated, with SHA-256 hashed match data (`hash.ts`) captured at checkout (`context.ts`, `client-cookies.ts`). The browser and server share a **deterministic `purchase` event_id** (`purchase-<orderNo>`) so the two are deduplicated.
+- **Server-side:** `src/lib/marketing/` sends Purchase to the **Meta Conversions API** (`meta-capi.ts`) and **GA4 Measurement Protocol** (`ga4-mp.ts`) from the webhook (`conversions.ts`), consent-gated, with SHA-256 hashed match data (`hash.ts`) captured at checkout (`context.ts`, `client-cookies.ts`). The browser and server share a **deterministic `purchase` event_id** — `purchase-<payment_intent_id>` (the browser defaults `orderNo` to the PaymentIntent id on `/koszyk/return`; server CAPI in `conversions.ts` uses the same key) — so the two are deduplicated. ⚠️ Passing a distinct client `orderNo` without updating `conversions.ts` breaks dedup. See `docs/analytics-stack.md`.
 
 ### Environment Variables
 
@@ -144,6 +144,6 @@ Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`)
 
 `worker.ts` wraps the OpenNext handler and adds the cron scheduled handler. It **must** re-export `DOQueueHandler`, `DOShardedTagCache`, and `BucketCachePurge` from `.open-next/worker.js` — omitting these breaks deployment.
 
-`middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this).
+`middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this). See `docs/superpowers/plans/2026-06-08-go-to-market-execution.md` (Task 8, cancelled).
 
 New migrations go in `supabase/migrations/` with timestamp prefix. Docs for deployment, E2E testing design, and analytics setup are in `docs/`.
