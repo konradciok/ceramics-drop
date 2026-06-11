@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { collectionSchema, organizationSchema, productSchema } from './structured-data';
 import { getProductsByCategory } from '@/lib/products';
+import { PRICE_EUR } from '@/lib/pricing';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
 
@@ -56,6 +57,15 @@ describe('collectionSchema', () => {
       expect(item.offers.availability).toBe(expected);
       expect(item.offers.url).toBe(`${SITE_URL}/kubki/${products[i].id}`);
       expect(item.image.startsWith(`${SITE_URL}/`)).toBe(true);
+    });
+  });
+
+  it('en locale emits EUR currency and PRICE_EUR price in collection offers', () => {
+    const enGraph = collectionSchema({ slug: 'kubki', locale: 'en', t });
+    const enNodes = enGraph['@graph'] as unknown as Node[];
+    (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
+      expect(item.offers.priceCurrency).toBe('EUR');
+      expect((item.offers as unknown as { price: number }).price).toBe(PRICE_EUR.kubki);
     });
   });
 
@@ -127,5 +137,13 @@ describe('productSchema', () => {
     const enNodes = enGraph['@graph'] as unknown as Record<string, unknown>[];
     const enOffer = enNodes[1]['offers'] as { url: string };
     expect(enOffer.url).toBe(`${SITE_URL}/en/kubki/${product.id}`);
+  });
+
+  it('en locale emits EUR currency and PRICE_EUR price in product offer', () => {
+    const enGraph = productSchema({ product, locale: 'en', t, tRaw });
+    const enNodes = enGraph['@graph'] as unknown as Record<string, unknown>[];
+    const enOffer = enNodes[1]['offers'] as { priceCurrency: string; price: number };
+    expect(enOffer.priceCurrency).toBe('EUR');
+    expect(enOffer.price).toBe(PRICE_EUR.kubki);
   });
 });

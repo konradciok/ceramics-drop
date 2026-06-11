@@ -82,9 +82,11 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
         index: index ?? undefined,
         itemListId: product.category,
         itemListName: product.category,
+        currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR',
+        priceOverride: priceOf(product, locale),
       }),
     );
-  }, [index, product]);
+  }, [index, product]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard (Escape) + scroll lock + focus management
   useEffect(() => {
@@ -238,7 +240,8 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
-                    pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
+                    const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+                    pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
                   }
                 }}
               >

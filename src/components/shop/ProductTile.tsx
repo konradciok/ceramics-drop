@@ -61,15 +61,15 @@ export function ProductTile({ product, onOpen }: Props) {
       data-testid="product-tile"
       data-product-id={product.id}
       data-category={product.category}
-      data-price={product.price}
+      data-price={priceOf(product, locale)}
       data-sold={product.sold ? 'true' : undefined}
     >
       {/* Crawlable href for search engines; JS click is intercepted by the div handler above */}
       <Link
         href={`/${product.category}/${product.id}`}
         className="tile-link"
-        tabIndex={-1}
-        aria-hidden="true"
+        tabIndex={product.sold ? 0 : -1}
+        aria-hidden={!product.sold}
         // Unsold: prevent navigation so the div's onClick opens the lightbox instead.
         // Sold: let the link through — the PDP is the natural fallback destination.
         onClick={(e) => { if (!product.sold) e.preventDefault(); }}
@@ -108,7 +108,8 @@ export function ProductTile({ product, onOpen }: Props) {
           }
           const isPresent = useCart.getState().ids.includes(product.id);
           if (wasPresent !== isPresent) {
-            pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
+            const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+            pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
           }
         }}
       >

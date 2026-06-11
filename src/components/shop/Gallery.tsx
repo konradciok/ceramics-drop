@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocale } from 'next-intl';
 import type { Product } from '@/lib/types';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
+import { priceOf } from '@/lib/pricing';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
@@ -13,6 +15,8 @@ type Props = {
 
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
 export function Gallery({ products }: Props) {
+  const locale = useLocale();
+  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
   // Memoised so the array reference is stable across renders (only changes when
   // the `products` prop changes), which lets us use `available` directly in
   // useEffect deps without triggering the effect on every render.
@@ -35,6 +39,8 @@ export function Gallery({ products }: Props) {
       buildViewItemListEvent(available, {
         itemListId: listId,
         itemListName: listName,
+        currency: analyticsCurrency,
+        itemPrices: available.map((p) => priceOf(p, locale)),
       }),
     );
   }, [listId, listName, available]);
@@ -60,6 +66,8 @@ export function Gallery({ products }: Props) {
                   index,
                   itemListId: listId,
                   itemListName: listName,
+                  currency: analyticsCurrency,
+                  priceOverride: priceOf(prod, locale),
                 }),
               );
               setOpenIndex(index);

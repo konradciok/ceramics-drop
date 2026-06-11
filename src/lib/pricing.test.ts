@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze } from './pricing';
+import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import type { CategorySlug } from './types';
 
@@ -46,6 +46,32 @@ describe('pricing', () => {
 
   it('charges no shipping for pickup', () => {
     expect(orderAmountGrosze([9000], 'odbior')).toBe(9000);
+  });
+});
+
+describe('priceOf', () => {
+  const ALL_CATEGORIES: CategorySlug[] = [
+    'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
+    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  ];
+
+  it('returns PLN price for pl locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'pl')).toBe(PRICE_PLN.kubki);
+  });
+
+  it('returns EUR price for en locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'en')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('returns EUR price for es locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'es')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('resolves all nine categories correctly for pl and en', () => {
+    for (const cat of ALL_CATEGORIES) {
+      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'pl')).toBe(PRICE_PLN[cat]);
+      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'en')).toBe(PRICE_EUR[cat]);
+    }
   });
 });
 
