@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { pln } from '@/lib/format';
@@ -241,6 +242,12 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 {inCart ? t('lightbox.in') : t('lightbox.add')}
                 <Icon name={inCart ? 'check' : 'arrow'} className="btn-arrow" />
               </button>
+              <Link
+                href={`/${product.category}/${product.id}`}
+                className="lb-permalink"
+              >
+                {t('lightbox.permalink')}
+              </Link>
             </div>
           </div>
         )}

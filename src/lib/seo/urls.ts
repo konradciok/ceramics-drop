@@ -38,3 +38,8 @@ export function alternatesFor(locale: Locale, path: string): Metadata['alternate
     languages: languageAlternates(path),
   };
 }
+
+/** Canonical + hreflang alternates for an individual product page. */
+export function productAlternates(locale: Locale, slug: string, id: string): Metadata['alternates'] {
+  return alternatesFor(locale, `/${slug}/${id}`);
+}

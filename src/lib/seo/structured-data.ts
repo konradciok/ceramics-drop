@@ -1,6 +1,6 @@
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
-import type { CategorySlug } from '@/lib/types';
+import type { CategorySlug, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
@@ -81,10 +81,64 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
               price: category.price,
               priceCurrency: 'PLN',
               availability: availabilityFor(p.sold || sold.has(p.id)),
-              url: collectionUrl,
+              url: absoluteUrl(locale, `/${slug}/${p.id}`),
             },
           },
         })),
+      },
+    ],
+  };
+}
+
+type ProductArgs = {
+  product: Product;
+  locale: Locale;
+  t: (key: string) => string;
+  tRaw: (key: string) => unknown;
+};
+
+/**
+ * `@graph` for an individual product page: a `BreadcrumbList` (Home → category → product)
+ * plus a `Product` node with images, description, and PLN offer.
+ */
+export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph {
+  const category = getCategory(product.category);
+  const singular = t(`product.${category.singularKey}`);
+  const categoryName = t(category.nameKey);
+  const name = `${singular} Nº ${product.num}`;
+  const rawNotes = tRaw(`notes.${product.category}`);
+  const description = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
+  const homeUrl = absoluteUrl(locale, '/');
+  const collectionUrl = absoluteUrl(locale, `/${product.category}`);
+  const productUrl = absoluteUrl(locale, `/${product.category}/${product.id}`);
+  const images = [product.image, ...(product.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
+          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
+          { '@type': 'ListItem', position: 3, name, item: productUrl },
+        ],
+      },
+      {
+        '@type': 'Product',
+        '@id': productUrl,
+        name,
+        description,
+        sku: product.id,
+        image: images,
+        category: categoryName,
+        offers: {
+          '@type': 'Offer',
+          price: product.price,
+          priceCurrency: 'PLN',
+          availability: availabilityFor(product.sold),
+          url: productUrl,
+        },
       },
     ],
   };

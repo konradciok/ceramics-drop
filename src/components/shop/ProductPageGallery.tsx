@@ -1,0 +1,46 @@
+'use client';
+
+import { useState } from 'react';
+import { srcSet } from '@/lib/images';
+import { useTranslations } from 'next-intl';
+
+type Props = {
+  images: string[];
+  alt: string;
+};
+
+/** Image gallery for the product detail page with dot navigation. */
+export function ProductPageGallery({ images, alt }: Props) {
+  const t = useTranslations();
+  const [index, setIndex] = useState(0);
+  const current = images[index] ?? images[0];
+
+  return (
+    <div className="pdp-images">
+      <div className="pdp-img-main">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={current}
+          src={current}
+          srcSet={srcSet(current)}
+          sizes="(min-width:861px) min(55vw, 720px), 100vw"
+          alt={index === 0 ? alt : ''}
+          aria-hidden={index !== 0}
+        />
+      </div>
+      {images.length > 1 && (
+        <div className="pdp-img-dots" role="group" aria-label={t('aria.photo')}>
+          {images.map((img, i) => (
+            <button
+              key={img}
+              className={`pdp-img-dot${i === index ? ' active' : ''}`}
+              onClick={() => setIndex(i)}
+              aria-label={`${t('aria.photo')} ${i + 1}`}
+              aria-current={i === index}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

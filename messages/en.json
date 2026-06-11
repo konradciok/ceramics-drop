@@ -82,7 +82,9 @@
     "medplate": "Medium plate",
     "plate": "Large plate",
     "largebowl": "Large bowl",
-    "wavybowl": "Wavy-rim bowl"
+    "wavybowl": "Wavy-rim bowl",
+    "moreFrom": "More from this collection",
+    "seeAll": "See all"
   },
   "gallery": {
     "sold": "Found a home"
@@ -102,7 +104,8 @@
     "specCopy": "Edition",
     "specTechVal": "Glazed and painted by hand",
     "specCopyVal": "Only one made",
-    "approx": "approx."
+    "approx": "approx.",
+    "permalink": "View product page →"
   },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",

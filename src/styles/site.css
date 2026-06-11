@@ -969,3 +969,111 @@ ul { list-style:none; padding:0; margin:0; }
 .return-btn:disabled { opacity:.5; cursor:not-allowed; }
 .return-msg { font-family:var(--f-cond); font-size:14px; margin-top:4px; }
 .return-msg-error, .return-msg-ineligible { color:var(--c-terracotta-deep); }
+
+/* ─── PRODUCT DETAIL PAGE (PDP) ──────────────────────────── */
+.pdp { padding:clamp(32px,5vw,64px) var(--gut) var(--section-y); }
+.pdp-inner { max-width:var(--max); margin:0 auto; }
+
+/* Breadcrumb */
+.pdp-breadcrumb {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+  opacity:.6; margin-bottom:clamp(28px,4vw,48px);
+}
+.pdp-breadcrumb a:hover { opacity:.8; text-decoration:underline; }
+.pdp-breadcrumb-sep { opacity:.4; }
+
+/* Two-column layout */
+.pdp-layout {
+  display:grid; grid-template-columns:1fr; gap:clamp(32px,5vw,64px);
+}
+@media (min-width:861px) {
+  .pdp-layout { grid-template-columns:1.1fr 0.9fr; align-items:start; }
+}
+
+/* Image area */
+.pdp-images { position:relative; }
+.pdp-img-main {
+  position:relative; background:var(--c-bone);
+  border-radius:var(--r-sharp); overflow:hidden;
+}
+.pdp-img-main img {
+  width:100%; height:auto; display:block; object-fit:contain;
+}
+.pdp-img-dots {
+  display:flex; justify-content:center; gap:8px; margin-top:14px;
+}
+.pdp-img-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--c-line); border:0; cursor:pointer; padding:0;
+  transition:background .2s;
+}
+.pdp-img-dot.active { background:var(--c-espresso); }
+
+/* Body / metadata */
+.pdp-body { display:flex; flex-direction:column; }
+.pdp-body .eyebrow { margin-bottom:18px; }
+.pdp-body h1 {
+  font-family:var(--f-display); font-weight:300;
+  font-size:clamp(30px,3vw,46px); line-height:1; margin:0 0 6px;
+  letter-spacing:-.01em;
+}
+.pdp-body h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
+.pdp-price { font-family:var(--f-display); font-weight:400; font-size:22px; margin:0 0 22px; }
+.pdp-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
+.pdp-body .lb-specs { margin-top:auto; }
+
+/* Permalink link (on product page below CTA) */
+.pdp-permalink {
+  margin-top:16px; text-align:center;
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; opacity:.45;
+}
+.pdp-permalink:hover { opacity:.7; text-decoration:underline; }
+
+/* Lightbox permalink link */
+.lb-permalink {
+  display:block; text-align:center; margin-top:14px;
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; opacity:.45; transition:opacity .2s;
+}
+.lb-permalink:hover { opacity:.75; }
+
+/* SEO-crawlable overlay anchor inside each tile */
+.tile { position:relative; }
+.tile-link { position:absolute; inset:0; z-index:0; }
+
+/* More from this collection */
+.pdp-more { padding:var(--section-y) var(--gut); background:var(--c-cream); }
+.pdp-more-inner { max-width:var(--max); margin:0 auto; }
+.pdp-more-inner > h2 {
+  font-family:var(--f-display); font-weight:300;
+  font-size:clamp(26px,3vw,40px); line-height:1.05;
+  letter-spacing:-.01em; margin:0 0 clamp(24px,3vw,40px);
+}
+.pdp-more .gallery { padding-bottom:0; }
+.pdp-more-cta { margin-top:clamp(28px,3vw,40px); display:flex; justify-content:center; }
+
+/* Static product tile link (used in "more from" strip) */
+.tile-static {
+  display:block; position:relative; background:var(--c-bone);
+  border-radius:var(--r-sharp); overflow:hidden;
+  aspect-ratio:4/5; cursor:pointer;
+  transition:opacity .2s;
+}
+.tile-static:hover { opacity:.88; }
+.tile-static img { width:100%; height:100%; object-fit:cover; display:block; }
+.tile-static-meta {
+  position:absolute; bottom:0; left:0; right:0;
+  padding:28px 12px 12px;
+  background:linear-gradient(to top,rgba(58,40,24,.55) 0%,transparent 100%);
+  color:var(--c-paper);
+  display:flex; justify-content:space-between; align-items:flex-end;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.08em;
+}
+.tile-static > .sold-tag {
+  position:absolute; top:10px; left:10px; right:auto;
+  font-family:var(--f-cond); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; background:rgba(58,40,24,.65);
+  color:var(--c-paper); padding:4px 8px; border-radius:var(--r-pill);
+}
