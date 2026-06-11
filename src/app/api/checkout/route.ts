@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
@@ -8,6 +9,7 @@ import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
 import { SITE_URL } from '@/lib/site';
+import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import type { MarketingContext } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
@@ -153,6 +155,27 @@ export async function POST(req: Request) {
       .update({ status: 'available', reserved_until: null, order_id: null })
       .eq('order_id', orderId);
     return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
+  }
+
+  // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
+  // cart.checkout_started). Best-effort and non-blocking: waitUntil lets it finish
+  // after the response so it adds no latency to the pay request, and any Resend
+  // failure is logged — never fails checkout.
+  try {
+    const { ctx } = getCloudflareContext();
+    ctx.waitUntil(
+      sendCheckoutStartedEvent({
+        orderId,
+        email: contact.email,
+        locale,
+        currency,
+        totalMinor: amount,
+        firstName: contact.first_name,
+        origin,
+      }).catch((err) => console.error('sendCheckoutStartedEvent failed for', orderId, err)),
+    );
+  } catch (err) {
+    console.error('sendCheckoutStartedEvent dispatch failed for', orderId, err);
   }
 
   return NextResponse.json({ client_secret: paymentIntent.client_secret });

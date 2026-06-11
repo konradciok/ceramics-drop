@@ -8,6 +8,7 @@ import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
+import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
@@ -161,6 +162,16 @@ export async function POST(req: Request) {
                   .update({ confirmation_email_sent_at: new Date().toISOString() })
                   .eq('id', orderId);
               }
+            }
+
+            // Cancel any pending abandoned-checkout recovery for this buyer
+            // (cart.purchased → the automation's wait_for_event). Best-effort:
+            // awaited like the emails above, but never throws so fulfillment and
+            // inventory updates are unaffected.
+            try {
+              await sendPurchasedEvent({ orderId, email: orderRowTyped.email });
+            } catch (err) {
+              console.error('sendPurchasedEvent failed for', orderId, err);
             }
           }
         } catch (err) {
