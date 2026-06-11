@@ -31,20 +31,35 @@ export class ShipxApiError extends Error {
 }
 
 /**
- * Organisation-level setup errors that cannot be fixed by retrying the webhook.
- * The sale is already committed — callers should return 200 to Stripe and surface
- * the failure as a high-severity alert so the InPost account can be corrected.
+ * Errors that cannot be fixed by retrying the webhook; the reconcile script
+ * handles them out of band. The sale is already committed — callers should
+ * return 200 to Stripe and surface the failure as a high-severity alert.
  *
- * `missing_trucker_id` means the InPost organisation does not have the courier
- * dispatch feature enabled. Fix: configure the organisation in Manager Paczek so
- * that `POST /v1/organizations/{id}/dispatch_orders` stops returning this code.
+ * - `missing_trucker_id` — InPost organisation does not have courier dispatch
+ *   enabled. Fix: configure the organisation in Manager Paczek.
+ * - `offer_expired` / `offer_unavailable` / `offer_not_found` — the buy offer
+ *   is no longer valid; retrying the webhook will never succeed. The reconcile
+ *   script re-creates the shipment and buys a fresh offer.
  */
+const NON_RETRYABLE_CODES = new Set([
+  'missing_trucker_id',
+  'offer_expired',
+  'offer_unavailable',
+  'offer_not_found',
+]);
+
 export function isNonRetryableShipxError(err: unknown): boolean {
   if (err instanceof ShipxApiError) {
-    return err.code === 'missing_trucker_id';
+    return err.code !== null && NON_RETRYABLE_CODES.has(err.code);
   }
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes('missing_trucker_id') || msg.includes('trucker_ID_is_not_set_for_organization');
+  return (
+    msg.includes('missing_trucker_id') ||
+    msg.includes('trucker_ID_is_not_set_for_organization') ||
+    msg.includes('offer_expired') ||
+    msg.includes('offer_unavailable') ||
+    msg.includes('offer_not_found')
+  );
 }
 
 /** Stripe webhook: rethrow only when a retry might succeed (transient / unknown errors). */

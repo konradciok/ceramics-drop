@@ -132,6 +132,24 @@ export const DEFAULT_COURIER_PARCEL = {
 /** ShipX status at which the printable label becomes available. */
 export const LABEL_READY_STATUS = 'confirmed';
 
+/**
+ * Pick the offer id to pass to `buyShipment`. Returns the id as a string, or
+ * null when no buyable offer exists. Priority: `selected_offer` first, then
+ * the first offer with status `'available'` or `'selected'`.
+ */
+export function pickBuyableOffer(shipment: {
+  offers?: Array<{ id: number | string; status?: string; service?: { id?: string } }>;
+  selected_offer?: { id: number | string } | null;
+}): string | null {
+  if (shipment.selected_offer?.id !== undefined && shipment.selected_offer.id !== null) {
+    return String(shipment.selected_offer.id);
+  }
+  const found = (shipment.offers ?? []).find(
+    (o) => o.status === 'available' || o.status === 'selected',
+  );
+  return found !== undefined ? String(found.id) : null;
+}
+
 // ── Dispatch orders (courier pickup scheduling) ──────────────────────────────
 
 export type DispatchOrderPayload = {
@@ -237,6 +255,9 @@ export type ShipxStatusEvent = {
  * Parse an inbound ShipX status webhook. The payload may carry the fields at the
  * top level or nested under `payload` — read defensively and return null if the
  * essentials (shipment id + status) are missing.
+ *
+ * Also handles `{ event: 'shipment_confirmed', payload: { shipment_id, tracking_number } }`
+ * — confirmation webhooks carry no `status` field; the event name implies `LABEL_READY_STATUS`.
  */
 export function parseShipxWebhook(raw: unknown): ShipxStatusEvent | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -249,13 +270,20 @@ export function parseShipxWebhook(raw: unknown): ShipxStatusEvent | null {
   const idRaw = nested.shipment_id ?? nested.id ?? root.shipment_id;
   if (idRaw === undefined || idRaw === null || idRaw === '') return null;
 
-  const status = nested.status ?? root.status;
-  if (typeof status !== 'string' || status.length === 0) return null;
+  let status = nested.status ?? root.status;
+  if (typeof status !== 'string' || status.length === 0) {
+    // No status field — check for a recognized event name as a fallback.
+    if (root.event === 'shipment_confirmed') {
+      status = LABEL_READY_STATUS;
+    } else {
+      return null;
+    }
+  }
 
   const tracking = nested.tracking_number ?? root.tracking_number ?? null;
   return {
     shipmentId: String(idRaw),
-    status,
+    status: status as string,
     trackingNumber: typeof tracking === 'string' && tracking.length > 0 ? tracking : null,
   };
 }
@@ -274,6 +302,8 @@ export type OrderForShipment = {
   inpost_shipment_id: string | null;
   /** Set once a dispatch order exists — used to retry dispatch when shipment succeeded but dispatch failed. */
   inpost_dispatch_order_id: string | null;
+  /** Latest ShipX delivery status (e.g. 'created', 'confirmed') — used to retry buy on idempotent replays. */
+  delivery_status?: string | null;
 };
 
 export type ShipmentPayload = {
