@@ -2,15 +2,15 @@
 import type { CategorySlug } from './types';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
-  kubki: 90,
-  wazony: 210,
-  'wazony-srednie': 300,
-  'wazony-duze': 395,
-  talerzyki: 105,
-  'talerze-srednie': 120,
-  'talerze-duze': 270,
-  'duze-michy': 315,
-  'miski-falowane': 155,
+  kubki: 95,
+  wazony: 239,
+  'wazony-srednie': 289,
+  'wazony-duze': 379,
+  talerzyki: 69,
+  'talerze-srednie': 119,
+  'talerze-duze': 160,
+  'duze-michy': 345,
+  'miski-falowane': 195,
 };
 
 /** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
@@ -65,6 +65,11 @@ export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
   kurier: 10,
   odbior: 0,
 };
+
+/** Returns the display price for a product in the correct currency for the given locale. */
+export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
+  return locale !== 'pl' ? PRICE_EUR[product.category] : product.price;
+}
 
 /** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
 export function toEuroCents(euros: number): number {

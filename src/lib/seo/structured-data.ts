@@ -2,6 +2,7 @@ import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
+import { PRICE_EUR } from '@/lib/pricing';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
@@ -78,8 +79,8 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
             category: categoryName,
             offers: {
               '@type': 'Offer',
-              price: category.price,
-              priceCurrency: 'PLN',
+              price: locale !== 'pl' ? PRICE_EUR[slug] : category.price,
+              priceCurrency: locale !== 'pl' ? 'EUR' : 'PLN',
               availability: availabilityFor(p.sold || sold.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
             },
@@ -134,8 +135,8 @@ export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph 
         category: categoryName,
         offers: {
           '@type': 'Offer',
-          price: product.price,
-          priceCurrency: 'PLN',
+          price: locale !== 'pl' ? PRICE_EUR[product.category] : product.price,
+          priceCurrency: locale !== 'pl' ? 'EUR' : 'PLN',
           availability: availabilityFor(product.sold),
           url: productUrl,
         },

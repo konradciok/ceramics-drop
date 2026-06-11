@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { pln } from '@/lib/format';
+import { eur, pln } from '@/lib/format';
+import { priceOf } from '@/lib/pricing';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -30,6 +31,8 @@ type Props = {
 /** Product detail popup with keyboard, swipe, and focus-trap support. */
 export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props) {
   const t = useTranslations();
+  const locale = useLocale();
+  const fmt = locale !== 'pl' ? eur : pln;
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -79,9 +82,11 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
         index: index ?? undefined,
         itemListId: product.category,
         itemListName: product.category,
+        currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR',
+        priceOverride: priceOf(product, locale),
       }),
     );
-  }, [index, product]);
+  }, [index, product]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard (Escape) + scroll lock + focus management
   useEffect(() => {
@@ -212,7 +217,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 {cat ? `${t(cat.nameKey)} — ${t('lightbox.drop')}` : ''}
               </div>
               <h3>{name} <em>Nº {product.num}</em></h3>
-              <div className="lb-price">{pln(product.price)}</div>
+              <div className="lb-price">{fmt(priceOf(product, locale))}</div>
               <p className="lb-note">{note}</p>
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -235,7 +240,8 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
-                    pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
+                    const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+                    pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
                   }
                 }}
               >

@@ -1,10 +1,11 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
-import { pln } from '@/lib/format';
+import { eur, pln } from '@/lib/format';
+import { priceOf } from '@/lib/pricing';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -25,6 +26,8 @@ type Props = {
 /** Gallery tile — Google-Photos-style select + a distinct "add" button. */
 export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
+  const locale = useLocale();
+  const fmt = locale !== 'pl' ? eur : pln;
   const selected = useCart((s) => s.ids.includes(product.id));
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -58,15 +61,15 @@ export function ProductTile({ product, onOpen }: Props) {
       data-testid="product-tile"
       data-product-id={product.id}
       data-category={product.category}
-      data-price={product.price}
+      data-price={priceOf(product, locale)}
       data-sold={product.sold ? 'true' : undefined}
     >
       {/* Crawlable href for search engines; JS click is intercepted by the div handler above */}
       <Link
         href={`/${product.category}/${product.id}`}
         className="tile-link"
-        tabIndex={-1}
-        aria-hidden="true"
+        tabIndex={product.sold ? 0 : -1}
+        aria-hidden={!product.sold}
         // Unsold: prevent navigation so the div's onClick opens the lightbox instead.
         // Sold: let the link through — the PDP is the natural fallback destination.
         onClick={(e) => { if (!product.sold) e.preventDefault(); }}
@@ -105,7 +108,8 @@ export function ProductTile({ product, onOpen }: Props) {
           }
           const isPresent = useCart.getState().ids.includes(product.id);
           if (wasPresent !== isPresent) {
-            pushDataLayer(isPresent ? buildAddToCartEvent(product) : buildRemoveFromCartEvent(product));
+            const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+            pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
           }
         }}
       >
@@ -116,7 +120,7 @@ export function ProductTile({ product, onOpen }: Props) {
       </button>
       <div className="tile-meta">
         <span className="nm">{displayName}</span>
-        <span className="pr">{pln(product.price)}</span>
+        <span className="pr">{fmt(priceOf(product, locale))}</span>
       </div>
     </div>
   );

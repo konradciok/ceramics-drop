@@ -49,10 +49,10 @@ describe('getProducts', () => {
 
   it('sets price, measure and noteIndex from the category', () => {
     const k = getProductById('k01')!;
-    expect(k).toMatchObject({ price: 90, measure: '8 × 8 × 10 cm', num: '01', noteIndex: 0 });
+    expect(k).toMatchObject({ price: 95, measure: '8 × 8 × 10 cm', num: '01', noteIndex: 0 });
     // t16 was recategorised from talerzyki → talerze-srednie; must carry the new price/measure
     const t16 = getProductById('t16')!;
-    expect(t16).toMatchObject({ price: 120, measure: '⌀ 18 cm', category: 'talerze-srednie' });
+    expect(t16).toMatchObject({ price: 119, measure: '⌀ 18 cm', category: 'talerze-srednie' });
   });
 
   it('caches the registry — same reference across calls', () => {

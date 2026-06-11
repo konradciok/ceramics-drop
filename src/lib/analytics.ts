@@ -108,12 +108,13 @@ export function buildAddToCartEvent(
   options: EventOptions = {},
 ): DataLayerEvent {
   const eventId = options.eventId ?? createEventId('add_to_cart', product.id);
-  const item = toAnalyticsItem(product);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const item = toAnalyticsItem(product, { priceOverride: options.itemPrices?.[0] });
   return withMeta(
     {
       event: 'add_to_cart',
       event_id: eventId,
-      ecommerce: ecommerce([item]),
+      ecommerce: ecommerce([item], currency),
     },
     'AddToCart',
     eventId,
@@ -125,16 +126,18 @@ export function buildRemoveFromCartEvent(
   options: EventOptions = {},
 ): DataLayerEvent {
   const eventId = options.eventId ?? createEventId('remove_from_cart', product.id);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const item = toAnalyticsItem(product, { priceOverride: options.itemPrices?.[0] });
   return {
     event: 'remove_from_cart',
     event_id: eventId,
-    ecommerce: ecommerce([toAnalyticsItem(product)]),
+    ecommerce: ecommerce([item], currency),
   };
 }
 
 export function buildViewItemEvent(
   product: Product,
-  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string } = {},
+  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: 'PLN' | 'EUR'; priceOverride?: number } = {},
 ): DataLayerEvent {
   const eventId = details.eventId ?? createEventId('view_item', product.id);
   const item = toAnalyticsItem(product, details);
@@ -142,7 +145,7 @@ export function buildViewItemEvent(
     {
       event: 'view_item',
       event_id: eventId,
-      ecommerce: ecommerce([item]),
+      ecommerce: ecommerce([item], details.currency),
     },
     'ViewContent',
     eventId,
@@ -151,30 +154,31 @@ export function buildViewItemEvent(
 
 export function buildViewItemListEvent(
   products: Product[],
-  details: { itemListId: string; itemListName: string; eventId?: string },
+  details: { itemListId: string; itemListName: string; eventId?: string; currency?: 'PLN' | 'EUR'; itemPrices?: number[] },
 ): DataLayerEvent {
   const items = products.map((product, index) =>
     toAnalyticsItem(product, {
       index,
       itemListId: details.itemListId,
       itemListName: details.itemListName,
+      priceOverride: details.itemPrices?.[index],
     }),
   );
   return {
     event: 'view_item_list',
     event_id: details.eventId ?? createEventId('view_item_list', details.itemListId),
-    ecommerce: ecommerce(items),
+    ecommerce: ecommerce(items, details.currency),
   };
 }
 
 export function buildSelectItemEvent(
   product: Product,
-  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string } = {},
+  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: 'PLN' | 'EUR'; priceOverride?: number } = {},
 ): DataLayerEvent {
   return {
     event: 'select_item',
     event_id: details.eventId ?? createEventId('select_item', product.id),
-    ecommerce: ecommerce([toAnalyticsItem(product, details)]),
+    ecommerce: ecommerce([toAnalyticsItem(product, details)], details.currency),
   };
 }
 

@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze } from './pricing';
+import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
   it('exposes PLN prices for all nine categories', () => {
     expect(PRICE_PLN).toEqual({
-      kubki: 90,
-      wazony: 210,
-      'wazony-srednie': 300,
-      'wazony-duze': 395,
-      talerzyki: 105,
-      'talerze-srednie': 120,
-      'talerze-duze': 270,
-      'duze-michy': 315,
-      'miski-falowane': 155,
+      kubki: 95,
+      wazony: 239,
+      'wazony-srednie': 289,
+      'wazony-duze': 379,
+      talerzyki: 69,
+      'talerze-srednie': 119,
+      'talerze-duze': 160,
+      'duze-michy': 345,
+      'miski-falowane': 195,
     });
   });
 
@@ -46,6 +46,32 @@ describe('pricing', () => {
 
   it('charges no shipping for pickup', () => {
     expect(orderAmountGrosze([9000], 'odbior')).toBe(9000);
+  });
+});
+
+describe('priceOf', () => {
+  const ALL_CATEGORIES: CategorySlug[] = [
+    'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
+    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  ];
+
+  it('returns PLN price for pl locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'pl')).toBe(PRICE_PLN.kubki);
+  });
+
+  it('returns EUR price for en locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'en')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('returns EUR price for es locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'es')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('resolves all nine categories correctly for pl and en', () => {
+    for (const cat of ALL_CATEGORIES) {
+      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'pl')).toBe(PRICE_PLN[cat]);
+      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'en')).toBe(PRICE_EUR[cat]);
+    }
   });
 });
 

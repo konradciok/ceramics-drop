@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { Product, CategorySlug } from '@/lib/types';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
+import { priceOf } from '@/lib/pricing';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
@@ -22,6 +23,8 @@ type Props = {
  */
 export function GroupedGallery({ products }: Props) {
   const t = useTranslations();
+  const locale = useLocale();
+  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
 
   // Flat list of purchasable pieces — index space shared by the lightbox and
   // the select_item analytics event (matches the per-category Gallery).
@@ -46,7 +49,12 @@ export function GroupedGallery({ products }: Props) {
   useEffect(() => {
     if (available.length === 0) return;
     pushDataLayer(
-      buildViewItemListEvent(available, { itemListId: 'sklep', itemListName: 'sklep' }),
+      buildViewItemListEvent(available, {
+        itemListId: 'sklep',
+        itemListName: 'sklep',
+        currency: analyticsCurrency,
+        itemPrices: available.map((p) => priceOf(p, locale)),
+      }),
     );
   }, [available]);
 
@@ -110,7 +118,13 @@ export function GroupedGallery({ products }: Props) {
     triggerRef.current = document.activeElement as HTMLElement;
     const index = available.findIndex((a) => a.id === prod.id);
     pushDataLayer(
-      buildSelectItemEvent(prod, { index, itemListId: 'sklep', itemListName: 'sklep' }),
+      buildSelectItemEvent(prod, {
+        index,
+        itemListId: 'sklep',
+        itemListName: 'sklep',
+        currency: analyticsCurrency,
+        priceOverride: priceOf(prod, locale),
+      }),
     );
     setOpenIndex(index);
   };
