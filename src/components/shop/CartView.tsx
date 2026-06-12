@@ -258,6 +258,7 @@ export function CartView() {
         shippingMethod: ship,
         currency: analyticsCurrency,
         itemPrices: products.map(priceOf),
+        userData: em ? { em } : undefined,
       });
       setClientSecret(client_secret);
     } catch {
