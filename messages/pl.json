@@ -93,26 +93,86 @@
   },
   "galleryPage": {
     "eyebrow": "Galeria editorialowa",
-    "title": "Światło, glina i <em>ślad ręki.</em>",
-    "lead": "Spokojny zapis nastroju wokół czerwcowego dropu: ręcznie malowane powierzchnie, światło, półki i małe decyzje, przez które każda praca jest inna.",
+    "title": "Nowe ujęcia, <em>ten sam ślad ręki.</em>",
+    "lead": "Lookbook z nowej serii zdjęć: portrety, taras, pracownia i detale naczyń pokazane poza klasycznym kadrem produktowym.",
     "ctaShop": "Zobacz prace",
     "ctaStudio": "O studiu",
     "sequenceLabel": "Zdjęcia editorialowe",
     "items": {
-      "sunlight": {
-        "alt": "Ręcznie malowana ceramika Anny Ciok w świetle",
-        "title": "Słońce na szkliwie",
-        "caption": "Gotowe prace fotografowane jak przedmioty do codziennego używania, nie anonimowe zdjęcia produktowe."
+      "photo01": {
+        "alt": "Talerze Anny Ciok na plecionym dywanie",
+        "title": "Ptak na talerzu",
+        "caption": "Detal malunku widziany z bliska, jeszcze bez katalogowej ciszy białego tła."
       },
-      "maker": {
-        "alt": "Anna Ciok w swojej pracowni ceramicznej",
-        "title": "Przy stole",
-        "caption": "Malarstwo i ceramika spotykają się w jednym pokoju: pędzle, szkliwo, małe poprawki i czas."
+      "photo02": {
+        "alt": "Stos ręcznie malowanych misek i kubków Anny Ciok",
+        "title": "Warstwy kolekcji",
+        "caption": "Naczynia stoją razem: linie, rytmy i brązy układają się w jedną opowieść."
       },
-      "workspace": {
-        "alt": "Pracownia ceramiczna Anny Ciok na Teneryfie",
-        "title": "Rytm pracowni",
-        "caption": "Robocza półka, stół do szkliwienia i spokojne powtórzenia stojące za każdą jedyną pracą."
+      "photo03": {
+        "alt": "Ceramika Anny Ciok ustawiona przy oknie",
+        "title": "Półka przy świetle",
+        "caption": "Pracowniany kadr z gotowymi pracami, lampą i miękkim światłem z okna."
+      },
+      "photo04": {
+        "alt": "Anna Ciok trzyma ręcznie malowaną miskę przed twarzą",
+        "title": "Miska jak horyzont",
+        "caption": "Portret z naczyniem potraktowanym jak rekwizyt, osłona i fragment pejzażu."
+      },
+      "photo05": {
+        "alt": "Anna Ciok trzyma talerz nad głową na tarasie",
+        "title": "Nad tarasem",
+        "caption": "Ceramika wychodzi z pracowni: wiatr, niebo i swobodny gest zamiast katalogu."
+      },
+      "photo06": {
+        "alt": "Anna Ciok siedzi w pracowni z ręcznie malowanym wazonem",
+        "title": "Portret z wazonem",
+        "caption": "Skala pracy najlepiej pokazuje się w rękach, blisko twarzy i ciała."
+      },
+      "photo07": {
+        "alt": "Anna Ciok trzyma talerz z czarnym motywem oka",
+        "title": "Oko na brzegu",
+        "caption": "Mały talerz staje się graficznym znakiem, nie tylko przedmiotem do stołu."
+      },
+      "photo08": {
+        "alt": "Ręcznie malowane talerze i kubki Anny Ciok na stole",
+        "title": "Stół znaków",
+        "caption": "Zbliżenie na kolekcję w naturalnym świetle: palmy, ptaki, liście i cienie."
+      },
+      "photo09": {
+        "alt": "Anna Ciok siedzi wśród ręcznie malowanej ceramiki",
+        "title": "W środku kolekcji",
+        "caption": "Jedna osoba, wiele naczyń i widoczna skala pracy przed czerwcowym dropem."
+      },
+      "photo10": {
+        "alt": "Krzesło i stół w jasnej pracowni ceramicznej",
+        "title": "Cisza pracowni",
+        "caption": "Puste miejsce pracy przypomina, że między sesjami zdjęciowymi wraca normalny rytm."
+      },
+      "photo11": {
+        "alt": "Talerz z motywem palmy w cieniu na plecionym dywanie",
+        "title": "Cień palmy",
+        "caption": "Graficzny motyw spotyka prawdziwy cień, przez co talerz traci produktową sztywność."
+      },
+      "photo12": {
+        "alt": "Anna Ciok siedzi na tarasie z ręcznie malowaną miską",
+        "title": "Na zewnątrz",
+        "caption": "Miska pokazana w ruchu i świetle, bliżej codziennego przedmiotu niż ekspozycji."
+      },
+      "photo13": {
+        "alt": "Anna Ciok stoi przy oknie z ręcznie malowaną miską",
+        "title": "Przy oknie",
+        "caption": "Prosty portret i neutralne światło pozwalają zobaczyć kształt bez teatralności."
+      },
+      "photo14": {
+        "alt": "Anna Ciok stoi w pracowni z ręcznie malowaną miską",
+        "title": "Cała sylwetka",
+        "caption": "Szerszy kadr pokazuje przestrzeń, ciało i naczynie w jednej pracownianej osi."
+      },
+      "photo15": {
+        "alt": "Anna Ciok trzyma ręcznie malowany wazon na wietrze",
+        "title": "Wiatr i wazon",
+        "caption": "Ostatni kadr zostawia pracę w ruchu: blisko dłoni, światła i pogody."
       }
     }
   },
@@ -642,7 +702,7 @@
   },
   "meta": {
     "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 103 prace, każda tylko jedna.",
-    "gallery": "Editorialowe zdjęcia z pracowni ceramicznej Anny Ciok: światło, półki, szkliwo i ręczny nastrój czerwcowego dropu 2026.",
+    "gallery": "Nowa seria editorialowych zdjęć Anny Ciok: portrety, taras, pracownia, światło i ręcznie malowana ceramika z czerwcowego dropu 2026.",
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 28 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",

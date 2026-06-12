@@ -6,25 +6,15 @@ import { richTags } from '@/components/ui/richTags';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { SITE_URL } from '@/lib/site';
+import { GALLERY_EDITORIAL_IMAGES } from '@/lib/editorial-images';
 
 type Props = { params: Promise<{ locale: string }> };
-
-type EditorialImage = {
-  key: 'sunlight' | 'maker' | 'workspace';
-  src: string;
-  width: number;
-  height: number;
-};
-
-const EDITORIAL_IMAGES: EditorialImage[] = [
-  { key: 'sunlight', src: '/uploads/3ania.webp', width: 1086, height: 1448 },
-  { key: 'maker', src: '/uploads/1ania.webp', width: 1366, height: 2048 },
-  { key: 'workspace', src: '/uploads/2ania.webp', width: 1366, height: 2048 },
-];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
+  const hero = GALLERY_EDITORIAL_IMAGES[0];
   return {
     title: t('title.gallery'),
     description: t('meta.gallery'),
@@ -32,10 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       images: [
         {
-          url: EDITORIAL_IMAGES[0].src,
-          width: EDITORIAL_IMAGES[0].width,
-          height: EDITORIAL_IMAGES[0].height,
-          alt: t('galleryPage.items.sunlight.alt'),
+          url: `${SITE_URL}${hero.src}`,
+          width: hero.width,
+          height: hero.height,
+          alt: t(`galleryPage.items.${hero.key}.alt`),
         },
       ],
     },
@@ -48,7 +38,7 @@ export default async function GalleryPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
-  const [hero, ...lookbook] = EDITORIAL_IMAGES;
+  const [hero, ...lookbook] = GALLERY_EDITORIAL_IMAGES;
 
   return (
     <main>

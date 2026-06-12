@@ -20,6 +20,7 @@ import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getProducts } from './products';
 import { IMG_WIDTHS } from './images';
+import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
@@ -27,12 +28,6 @@ const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
  *  Keep this list tiny and justify every entry — an unexplained entry
  *  defeats the guardrail. */
 const ALLOWLIST = new Set([
-  // Editorial / homepage portraits — rendered directly in
-  // app/[locale]/page.tsx and o-studiu/page.tsx via srcSet(), not via
-  // the product registry.
-  '1ania',
-  '2ania',
-  '3ania',
   // duże misy b05/b06 — withdrawn from the catalogue in the June
   // inventory review but images retained pending a possible
   // gallery-merge re-add (see products.ts REMOVED + project notes).
@@ -56,13 +51,18 @@ function registryImagePaths(): string[] {
   return paths;
 }
 
+/** Direct editorial assets rendered by home, studio, and gallery pages. */
+function editorialImagePaths(): string[] {
+  return DIRECT_EDITORIAL_IMAGES.map((image) => image.src);
+}
+
 describe('product asset hygiene', () => {
-  it('every registry image (+ responsive variants) exists on disk', () => {
+  it('every registry/editorial image (+ responsive variants) exists on disk', () => {
     const missing: string[] = [];
-    for (const rel of registryImagePaths()) {
+    for (const rel of [...registryImagePaths(), ...editorialImagePaths()]) {
       const full = path.join(process.cwd(), 'public', rel);
       if (!existsSync(full)) missing.push(rel);
-      // Each product image is served through srcSet() — the variants must exist.
+      // Each listed image is served through srcSet() — the variants must exist.
       const dot = full.lastIndexOf('.');
       for (const w of IMG_WIDTHS) {
         const variant = `${full.slice(0, dot)}-${w}w${full.slice(dot)}`;
@@ -74,7 +74,7 @@ describe('product asset hygiene', () => {
 
   it('no orphan WebPs in public/uploads (every base is referenced or allowlisted)', () => {
     const referenced = new Set(
-      registryImagePaths().map((p) => baseStem(path.basename(p))),
+      [...registryImagePaths(), ...editorialImagePaths()].map((p) => baseStem(path.basename(p))),
     );
     const orphans = [
       ...new Set(

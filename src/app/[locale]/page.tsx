@@ -12,6 +12,7 @@ import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
+import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE } from '@/lib/editorial-images';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -48,6 +49,8 @@ export default async function HomePage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
+  const editorialImage = HOME_EDITORIAL_IMAGE;
+  const storyImage = HOME_STORY_IMAGE;
 
   return (
     <main>
@@ -123,7 +126,7 @@ export default async function HomePage({ params }: Props) {
         <div className="section-inner">
           <div className="editorial-shot">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/3ania.webp" srcSet={srcSet('/uploads/3ania.webp')} sizes="(min-width:861px) 720px, 100vw" alt={t('home.editorialImageAlt')} width={1086} height={1448} />
+            <img src={editorialImage.src} srcSet={srcSet(editorialImage.src)} sizes="(min-width:861px) 720px, 100vw" alt={t('home.editorialImageAlt')} width={editorialImage.width} height={editorialImage.height} />
           </div>
         </div>
       </section>
@@ -134,7 +137,7 @@ export default async function HomePage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/1ania.webp" srcSet={srcSet('/uploads/1ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('home.storyImageAlt')} width={1366} height={2048} />
+              <img src={storyImage.src} srcSet={srcSet(storyImage.src)} sizes="(min-width:861px) 50vw, 100vw" alt={t('home.storyImageAlt')} width={storyImage.width} height={storyImage.height} />
             </div>
             <div className="story-text">
               <div className="section-eyebrow">{t('home.storyEyebrow')}</div>
