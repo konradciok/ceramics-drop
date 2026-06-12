@@ -44,8 +44,10 @@ export function GroupedGallery({ products }: Props) {
   // clickable set is identical whether the view is "all" or "available".
   const visible = useMemo(() => filterByStatus(products, status), [products, status]);
 
-  // Group products by category, preserving CATEGORY_ORDER and dropping empty
-  // categories (defensive — the June catalogue fills all eight).
+  // Group the visible pieces by category, preserving CATEGORY_ORDER and dropping
+  // empty categories. Under the active filter this is load-bearing, not just
+  // defensive: a category with no available (or no sold) pieces drops out, and
+  // its jump-nav pill is hidden by the effect below.
   const groups = useMemo(() => {
     const byCat = new Map<CategorySlug, Product[]>();
     for (const p of visible) {
