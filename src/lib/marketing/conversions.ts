@@ -123,7 +123,22 @@ export async function sendPurchaseConversions(
   if (deps.ga4Config) {
     try {
       const result = await sendGa4(deps.ga4Config, ga4Input);
-      if (!result.skipped && !result.ok) {
+      if (result.skipped) {
+        // Reached only past the consent + paid gates above, so consent is granted and
+        // the order is paid — yet GA4 MP was skipped because ga_client_id was null
+        // (cookie missing or cleared by Safari ITP before checkout). The server-side
+        // GA4 purchase never fires; flag it as a warning so the attribution gap is
+        // searchable in Sentry instead of audit-only.
+        console.warn('ga4 mp purchase skipped (consent granted, no clientId) for', paymentIntentId);
+        Sentry.captureMessage('ga4 mp purchase skipped (consent granted, no clientId)', {
+          level: 'warning',
+          extra: {
+            payment_intent_id: paymentIntentId,
+            channel: 'ga4_mp',
+            reason: 'no_client_id',
+          },
+        });
+      } else if (!result.ok) {
         console.error('ga4 mp purchase http error for', paymentIntentId, result.status);
         Sentry.captureMessage(`ga4 mp purchase http error ${result.status} for ${paymentIntentId}`);
       }

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
 import { sendPurchaseConversions, type ConversionOrder } from './conversions';
+
+vi.mock('@sentry/nextjs', () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}));
 
 const baseOrder = (over: Partial<ConversionOrder> = {}): ConversionOrder => ({
   payment_intent_id: 'pi_1',
@@ -101,6 +107,36 @@ describe('sendPurchaseConversions', () => {
     );
     expect(d.sendGa4).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  it('warns and captures to Sentry when GA4 MP is skipped (consent granted, no clientId)', async () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const d = deps({ sendGa4: vi.fn().mockResolvedValue({ ok: false, skipped: true }) });
+
+    await sendPurchaseConversions('pi_1', d);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ga4 mp purchase skipped'),
+      'pi_1',
+    );
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('ga4 mp purchase skipped'),
+      {
+        level: 'warning',
+        extra: { payment_intent_id: 'pi_1', channel: 'ga4_mp', reason: 'no_client_id' },
+      },
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('does not capture a skip warning when GA4 MP succeeds', async () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const d = deps({ sendGa4: vi.fn().mockResolvedValue({ ok: true, status: 204 }) });
+
+    await sendPurchaseConversions('pi_1', d);
+
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 
   it('skips Meta when only ga4Config is provided', async () => {

@@ -26,6 +26,7 @@ type SimpleStorage = Pick<Storage, 'getItem' | 'setItem'> & {
 };
 
 const PURCHASE_DEDUPE_PREFIX = 'acc_purchase_pi:';
+const PURCHASE_GAP_DEDUPE_PREFIX = 'acc_purchase_gap_pi:';
 const PAYMENT_FAILED_DEDUPE_PREFIX = 'acc_payment_failed_pi:';
 const CHECKOUT_SNAPSHOT_KEY = 'acc_checkout_snapshot';
 
@@ -84,6 +85,60 @@ export function pushConfirmedPurchaseByIdsOnce(
   pushConfirmedPurchase(products, options);
   safeSetItem(storage, key, '1');
   return true;
+}
+
+/**
+ * Whether the purchase event has already been fired for this PaymentIntent.
+ * Reads the same per-intent dedupe key set by {@link pushConfirmedPurchaseByIdsOnce};
+ * the key survives `forgetRememberedCheckout` (which only clears the snapshot), so
+ * this stays `true` across return-page refreshes. The return page uses it to tell a
+ * benign refresh (snapshot already consumed, purchase already fired) apart from a
+ * genuine "succeeded PI, but the purchase event never fired" gap worth alerting on.
+ */
+export function hasFiredPurchaseOnce(
+  paymentIntentId: string,
+  storage: SimpleStorage | undefined = getDefaultStorage(),
+): boolean {
+  return safeGetItem(storage, `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`) === '1';
+}
+
+export type PurchaseGapReason = 'snapshot_missing' | 'unresolvable_ids';
+
+/**
+ * Decide whether a succeeded PaymentIntent whose browser purchase event never fired
+ * is a genuine, not-yet-reported attribution gap — and if so, mark it reported so the
+ * alert fires at most once per intent (mirrors the dedupe in `pushPaymentFailedOnce` /
+ * `pushConfirmedPurchaseByIdsOnce`; survives return-page refreshes and React Strict Mode
+ * double-mounts, which would otherwise re-emit the same warning).
+ *
+ * Returns `null` when there is nothing new to alert on:
+ *  - the purchase event already fired for this intent (a benign refresh), or
+ *  - a gap was already reported for this intent.
+ *
+ * Otherwise returns the reason the event is missing — distinguishing a truly lost
+ * snapshot from one that survived but holds ids that no longer resolve, so the alert
+ * does not blame snapshot loss for a catalogue/data problem:
+ *  - `snapshot_missing`  — neither sessionStorage nor the hardening cookie held a snapshot
+ *  - `unresolvable_ids`  — a snapshot exists but its product ids did not resolve to products
+ */
+export function reportPurchaseGapOnce(
+  paymentIntentId: string,
+  storage: SimpleStorage | undefined = getDefaultStorage(),
+): { reason: PurchaseGapReason } | null {
+  // Purchase actually fired (e.g. user refreshed the success page) — not a gap.
+  if (hasFiredPurchaseOnce(paymentIntentId, storage)) return null;
+
+  const gapKey = `${PURCHASE_GAP_DEDUPE_PREFIX}${paymentIntentId}`;
+  if (safeGetItem(storage, gapKey) === '1') return null;
+
+  // Reaching here means the purchase never fired for this intent. If a snapshot is
+  // still present, the only way it failed to fire is unresolvable ids; otherwise the
+  // snapshot was lost from both sessionStorage and the hardening cookie.
+  const reason: PurchaseGapReason = readCheckoutSnapshot(storage)
+    ? 'unresolvable_ids'
+    : 'snapshot_missing';
+  safeSetItem(storage, gapKey, '1');
+  return { reason };
 }
 
 /**
