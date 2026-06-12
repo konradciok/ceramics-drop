@@ -236,6 +236,97 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .editorial-shot img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 
+/* ── Editorial /gallery lookbook ───────────────────────────── */
+.gallery-page-head {
+  background:var(--c-cream);
+  padding:clamp(48px,7vw,116px) var(--gut) clamp(36px,6vw,92px);
+}
+.gallery-page-head-inner {
+  max-width:var(--max);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:clamp(34px,5vw,84px);
+  align-items:center;
+}
+@media (min-width:861px) {
+  .gallery-page-head-inner { grid-template-columns:minmax(0,.82fr) minmax(0,1fr); }
+}
+.gallery-page-copy h1 {
+  font-size:clamp(44px,8vw,124px);
+  line-height:.9;
+  max-width:9ch;
+  margin:12px 0 0;
+  letter-spacing:0;
+}
+.gallery-page-copy h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
+.gallery-page-copy .lead {
+  font-size:17px;
+  line-height:1.65;
+  max-width:52ch;
+  margin:24px 0 0;
+  opacity:.86;
+}
+.gallery-page-actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:30px; }
+.gallery-hero-figure,
+.lookbook-item figure { margin:0; }
+.gallery-hero-frame,
+.lookbook-frame {
+  position:relative;
+  overflow:hidden;
+  background:var(--c-bone);
+  border-radius:var(--r-sharp);
+}
+.gallery-hero-frame img,
+.lookbook-frame img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.gallery-hero-figure figcaption,
+.lookbook-item figcaption {
+  margin-top:14px;
+  font-size:14px;
+  line-height:1.55;
+  max-width:52ch;
+  color:var(--c-espresso-muted);
+}
+.gallery-hero-figure figcaption span,
+.lookbook-item figcaption span {
+  display:block;
+  font-family:var(--f-cond);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--c-terracotta-deep);
+  margin-bottom:3px;
+}
+.lookbook {
+  background:var(--c-paper);
+  padding:clamp(48px,7vw,110px) var(--gut) clamp(86px,10vw,150px);
+}
+.lookbook-inner { max-width:var(--max); margin:0 auto; }
+.lookbook-stack {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:clamp(42px,7vw,92px);
+}
+@media (min-width:861px) {
+  .lookbook-stack {
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:clamp(42px,7vw,96px) clamp(24px,4vw,64px);
+    align-items:start;
+  }
+  .lookbook-item:nth-child(6n+1) { grid-column:1 / 6; }
+  .lookbook-item:nth-child(6n+2) { grid-column:6 / 13; margin-top:clamp(42px,6vw,108px); }
+  .lookbook-item:nth-child(6n+3) { grid-column:2 / 8; }
+  .lookbook-item:nth-child(6n+4) { grid-column:8 / 13; margin-top:clamp(30px,5vw,88px); }
+  .lookbook-item:nth-child(6n+5) { grid-column:1 / 7; }
+  .lookbook-item:nth-child(6n) { grid-column:7 / 12; margin-top:clamp(54px,7vw,124px); }
+}
+
 /* ─── JAK TO DZIAŁA ───────────────────────────────────── */
 .craft { background:var(--c-espresso); color:var(--c-paper); }
 .craft .section-title { color:var(--c-paper); }

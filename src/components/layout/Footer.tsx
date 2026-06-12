@@ -44,6 +44,9 @@ export async function Footer() {
                 <Link href="/o-studiu">{t('footer.oArtystce')}</Link>
               </li>
               <li>
+                <Link href="/gallery">{t('nav.gallery')}</Link>
+              </li>
+              <li>
                 <Link href="/o-studiu#proces">{t('footer.proces')}</Link>
               </li>
               <li>

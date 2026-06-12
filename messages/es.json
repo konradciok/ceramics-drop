@@ -30,10 +30,12 @@
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
-    "sklep": "Todas las piezas"
+    "sklep": "Todas las piezas",
+    "gallery": "Galería"
   },
   "nav": {
     "sklep": "Tienda",
+    "gallery": "Galería",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
     "wazonySrednie": "Jarrones medianos",
@@ -88,6 +90,91 @@
   },
   "gallery": {
     "sold": "Ya encontró casa"
+  },
+  "galleryPage": {
+    "eyebrow": "Galería editorial",
+    "title": "Nuevos encuadres, <em>la misma huella de la mano.</em>",
+    "lead": "Un lookbook de una nueva serie de fotos: retratos, luz de terraza, rincones del estudio y detalles de cerámica fuera del encuadre clásico de producto.",
+    "ctaShop": "Ver las piezas",
+    "ctaStudio": "Sobre el estudio",
+    "sequenceLabel": "Fotografías editoriales",
+    "items": {
+      "photo01": {
+        "alt": "Platos de Anna Ciok sobre una alfombra tejida",
+        "title": "Pájaro en el plato",
+        "caption": "Un detalle cercano del dibujo, antes del silencio de un fondo blanco de producto."
+      },
+      "photo02": {
+        "alt": "Una pila de cuencos y tazas de Anna Ciok pintados a mano",
+        "title": "Capas de colección",
+        "caption": "Las piezas juntas: líneas, ritmos y marrones que forman una sola historia."
+      },
+      "photo03": {
+        "alt": "Cerámica de Anna Ciok colocada cerca de una ventana",
+        "title": "Estante con luz",
+        "caption": "Un encuadre de estudio con piezas terminadas, una lámpara y luz suave de ventana."
+      },
+      "photo04": {
+        "alt": "Anna Ciok sostiene un cuenco pintado a mano delante de su cara",
+        "title": "Cuenco como horizonte",
+        "caption": "Un retrato donde la pieza es objeto, sombra y fragmento de paisaje."
+      },
+      "photo05": {
+        "alt": "Anna Ciok sostiene un plato sobre la cabeza en una terraza",
+        "title": "Sobre la terraza",
+        "caption": "La cerámica sale del estudio: viento, cielo y un gesto suelto en vez de quietud de catálogo."
+      },
+      "photo06": {
+        "alt": "Anna Ciok sentada en el estudio con un jarrón pintado a mano",
+        "title": "Retrato con jarrón",
+        "caption": "La escala de una pieza se entiende mejor en las manos, cerca del rostro y del cuerpo."
+      },
+      "photo07": {
+        "alt": "Anna Ciok sostiene un plato con un motivo negro de ojo",
+        "title": "Ojo en el borde",
+        "caption": "Un plato pequeño se vuelve signo gráfico, no solo objeto para la mesa."
+      },
+      "photo08": {
+        "alt": "Platos y tazas de Anna Ciok pintados a mano sobre una mesa",
+        "title": "Mesa de marcas",
+        "caption": "Una vista cercana de la colección con luz natural: palmeras, pájaros, hojas y sombras."
+      },
+      "photo09": {
+        "alt": "Anna Ciok sentada entre cerámicas pintadas a mano",
+        "title": "Dentro de la colección",
+        "caption": "Una creadora, muchas piezas y la escala visible del trabajo detrás del drop de junio."
+      },
+      "photo10": {
+        "alt": "Una silla y una mesa en un estudio de cerámica luminoso",
+        "title": "Silencio del estudio",
+        "caption": "Un puesto vacío recuerda el ritmo normal que vuelve entre sesiones de fotos."
+      },
+      "photo11": {
+        "alt": "Un plato con motivo de palmera en sombra sobre una alfombra tejida",
+        "title": "Sombra de palmera",
+        "caption": "Un motivo gráfico se encuentra con una sombra real y libera el plato de la pose de producto."
+      },
+      "photo12": {
+        "alt": "Anna Ciok sentada en una terraza con un cuenco pintado a mano",
+        "title": "Afuera",
+        "caption": "El cuenco aparece en movimiento y luz, más cerca del uso diario que de la exposición."
+      },
+      "photo13": {
+        "alt": "Anna Ciok junto a una ventana con un cuenco pintado a mano",
+        "title": "Junto a la ventana",
+        "caption": "Un retrato simple y luz neutra dejan que la forma hable sin teatralidad."
+      },
+      "photo14": {
+        "alt": "Anna Ciok de pie en el estudio con un cuenco pintado a mano",
+        "title": "Figura completa",
+        "caption": "El encuadre amplio reúne habitación, cuerpo y pieza en una misma línea de estudio."
+      },
+      "photo15": {
+        "alt": "Anna Ciok sostiene un jarrón pintado a mano con viento",
+        "title": "Viento y jarrón",
+        "caption": "El último encuadre deja la pieza en movimiento: cerca de manos, luz y clima."
+      }
+    }
   },
   "filter": {
     "label": "Filtrar piezas",
@@ -623,6 +710,7 @@
   },
   "meta": {
     "description": "Cerámica funcional pintada a mano por Anna Ciok: tazas, jarrones, cuencos y platos. Drop de junio 2026, 103 piezas únicas.",
+    "gallery": "Nueva serie de fotografías editoriales de Anna Ciok: retratos, luz de terraza, rincones del estudio y cerámica pintada a mano del drop de junio 2026.",
     "ogImageAlt": "Anna Ciok Ceramics — taza de cerámica pintada a mano",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 28 piezas irrepetibles del drop de junio de Anna Ciok.",

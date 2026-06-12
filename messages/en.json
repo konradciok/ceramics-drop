@@ -30,10 +30,12 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
-    "sklep": "All pieces"
+    "sklep": "All pieces",
+    "gallery": "Gallery"
   },
   "nav": {
     "sklep": "Shop",
+    "gallery": "Gallery",
     "kubki": "Mugs",
     "wazony": "Small vases",
     "wazonySrednie": "Medium vases",
@@ -88,6 +90,91 @@
   },
   "gallery": {
     "sold": "Found a home"
+  },
+  "galleryPage": {
+    "eyebrow": "Editorial gallery",
+    "title": "New frames, <em>the same trace of the hand.</em>",
+    "lead": "A lookbook from a new photo series: portraits, terrace light, studio corners and ceramic details shown outside the classic product frame.",
+    "ctaShop": "Browse the pieces",
+    "ctaStudio": "About the studio",
+    "sequenceLabel": "Editorial photographs",
+    "items": {
+      "photo01": {
+        "alt": "Anna Ciok plates on a woven rug",
+        "title": "Bird on a plate",
+        "caption": "A close detail of the drawing, before the quiet of a white product background."
+      },
+      "photo02": {
+        "alt": "A stack of Anna Ciok hand-painted bowls and mugs",
+        "title": "Collection layers",
+        "caption": "Pieces gathered together: lines, rhythms and browns folding into one story."
+      },
+      "photo03": {
+        "alt": "Anna Ciok ceramics arranged near a window",
+        "title": "Shelf by the light",
+        "caption": "A studio frame with finished pieces, a lamp and soft window light."
+      },
+      "photo04": {
+        "alt": "Anna Ciok holding a hand-painted bowl in front of her face",
+        "title": "Bowl as horizon",
+        "caption": "A portrait where the vessel becomes prop, shade and a piece of landscape."
+      },
+      "photo05": {
+        "alt": "Anna Ciok holding a plate above her head on a terrace",
+        "title": "Above the terrace",
+        "caption": "The ceramics leave the studio: wind, sky and an easy gesture instead of catalogue stillness."
+      },
+      "photo06": {
+        "alt": "Anna Ciok seated in the studio with a hand-painted vase",
+        "title": "Portrait with vase",
+        "caption": "The scale of a piece reads best in hands, close to a face and body."
+      },
+      "photo07": {
+        "alt": "Anna Ciok holding a plate with a black eye motif",
+        "title": "Eye on the rim",
+        "caption": "A small plate becomes a graphic sign, not only an object for the table."
+      },
+      "photo08": {
+        "alt": "Anna Ciok hand-painted plates and mugs on a table",
+        "title": "Table of marks",
+        "caption": "A close view of the collection in natural light: palms, birds, leaves and shadows."
+      },
+      "photo09": {
+        "alt": "Anna Ciok seated among hand-painted ceramics",
+        "title": "Inside the collection",
+        "caption": "One maker, many pieces and the visible scale of work behind the June drop."
+      },
+      "photo10": {
+        "alt": "A chair and table in a bright ceramics studio",
+        "title": "Studio quiet",
+        "caption": "An empty workstation hints at the normal rhythm that returns between photo sessions."
+      },
+      "photo11": {
+        "alt": "A palm-motif plate in shadow on a woven rug",
+        "title": "Palm shadow",
+        "caption": "A graphic motif meets a real shadow, loosening the plate from a strict product pose."
+      },
+      "photo12": {
+        "alt": "Anna Ciok seated on a terrace with a hand-painted bowl",
+        "title": "Outside",
+        "caption": "The bowl is shown in movement and light, closer to daily use than display."
+      },
+      "photo13": {
+        "alt": "Anna Ciok standing near a window with a hand-painted bowl",
+        "title": "By the window",
+        "caption": "A simple portrait and neutral light let the shape speak without theatrical styling."
+      },
+      "photo14": {
+        "alt": "Anna Ciok standing in the studio with a hand-painted bowl",
+        "title": "Full figure",
+        "caption": "The wider frame holds the room, body and vessel in one studio line."
+      },
+      "photo15": {
+        "alt": "Anna Ciok holding a hand-painted vase in the wind",
+        "title": "Wind and vase",
+        "caption": "The final frame leaves the piece in motion: close to hands, light and weather."
+      }
+    }
   },
   "filter": {
     "label": "Filter pieces",
@@ -623,6 +710,7 @@
   },
   "meta": {
     "description": "Hand-painted functional ceramics by Anna Ciok: mugs, vases, bowls and plates. June 2026 drop, 103 one-of-a-kind pieces.",
+    "gallery": "A new editorial photo series from Anna Ciok: portraits, terrace light, studio corners and hand-painted ceramics from the June 2026 drop.",
     "ogImageAlt": "Anna Ciok Ceramics — hand-painted ceramic mug",
     "collections": {
       "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 28 unique pieces from Anna Ciok's June 2026 drop.",

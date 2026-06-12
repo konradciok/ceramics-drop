@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { STUDIO_HEAD_IMAGE, STUDIO_STORY_IMAGE } from '@/lib/editorial-images';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -25,6 +26,8 @@ export default async function StudioPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
+  const headImage = STUDIO_HEAD_IMAGE;
+  const storyImage = STUDIO_STORY_IMAGE;
 
   return (
     <main>
@@ -38,7 +41,7 @@ export default async function StudioPage({ params }: Props) {
           </div>
           <div className="page-head-art">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/uploads/2ania.webp" srcSet={srcSet('/uploads/2ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.workspaceImageAlt')} width={1366} height={2048} />
+            <img src={headImage.src} srcSet={srcSet(headImage.src)} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.workspaceImageAlt')} width={headImage.width} height={headImage.height} />
           </div>
         </div>
       </section>
@@ -49,7 +52,7 @@ export default async function StudioPage({ params }: Props) {
           <div className="story">
             <div className="story-art">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/1ania.webp" srcSet={srcSet('/uploads/1ania.webp')} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.storyImageAlt')} width={1366} height={2048} />
+              <img src={storyImage.src} srcSet={srcSet(storyImage.src)} sizes="(min-width:861px) 50vw, 100vw" alt={t('studio.storyImageAlt')} width={storyImage.width} height={storyImage.height} />
             </div>
             <div className="story-text">
               <div className="section-eyebrow">{t('studio.storyEyebrow')}</div>
