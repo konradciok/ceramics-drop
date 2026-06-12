@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { useFilter } from '@/store/filter';
+import { filterByStatus } from '@/lib/status-filter';
+import { useMounted } from '@/lib/use-mounted';
 import type { Product } from '@/lib/types';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { priceOf } from '@/lib/pricing';
@@ -21,6 +24,13 @@ export function Gallery({ products }: Props) {
   // the `products` prop changes), which lets us use `available` directly in
   // useEffect deps without triggering the effect on every render.
   const available = useMemo(() => products.filter((p) => !p.sold), [products]);
+  const t = useTranslations();
+  const mounted = useMounted();
+  const storedStatus = useFilter((s) => s.status);
+  const status = mounted ? storedStatus : 'all';
+  // Rendered tiles. `available` stays the full unsold set (lightbox/analytics
+  // index space) — sold tiles are never clickable, so it is unaffected by view.
+  const visible = useMemo(() => filterByStatus(products, status), [products, status]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   // Derive listId from the full products array so it remains stable even when
   // every piece in the category is sold (available[0] would be undefined then).
@@ -52,29 +62,35 @@ export function Gallery({ products }: Props) {
 
   return (
     <>
-      <div className="gallery" data-count={products.length}>
-        {products.map((p) => (
-          <ProductTile
-            key={p.id}
-            product={p}
-            onOpen={(prod) => {
-              // Capture the focused element (the tile button) before state update
-              triggerRef.current = document.activeElement as HTMLElement;
-              const index = available.findIndex((a) => a.id === prod.id);
-              pushDataLayer(
-                buildSelectItemEvent(prod, {
-                  index,
-                  itemListId: listId,
-                  itemListName: listName,
-                  currency: analyticsCurrency,
-                  priceOverride: priceOf(prod, locale),
-                }),
-              );
-              setOpenIndex(index);
-            }}
-          />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        <p className="shop-empty">
+          {status === 'sold' ? t('filter.emptySold') : t('filter.emptyAvailable')}
+        </p>
+      ) : (
+        <div className="gallery" data-count={visible.length}>
+          {visible.map((p) => (
+            <ProductTile
+              key={p.id}
+              product={p}
+              onOpen={(prod) => {
+                // Capture the focused element (the tile button) before state update
+                triggerRef.current = document.activeElement as HTMLElement;
+                const index = available.findIndex((a) => a.id === prod.id);
+                pushDataLayer(
+                  buildSelectItemEvent(prod, {
+                    index,
+                    itemListId: listId,
+                    itemListName: listName,
+                    currency: analyticsCurrency,
+                    priceOverride: priceOf(prod, locale),
+                  }),
+                );
+                setOpenIndex(index);
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <Lightbox
         products={available}

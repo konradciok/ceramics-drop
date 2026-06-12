@@ -35,6 +35,7 @@ type CheckoutSnapshot = {
   shippingMethod: string;
   currency?: 'PLN' | 'EUR';
   itemPrices?: number[];
+  userData?: { em?: string };
 };
 
 export function pushCheckoutStarted(
@@ -54,13 +55,14 @@ export function pushCheckoutStarted(
 
 export function pushConfirmedPurchase(
   products: Product[],
-  { orderNo, shippingCost, shippingMethod, currency, itemPrices, push = pushDataLayer }: ConfirmedPurchaseOptions,
+  { orderNo, shippingCost, shippingMethod, userData, currency, itemPrices, push = pushDataLayer }: ConfirmedPurchaseOptions,
 ): void {
   push(
     buildPurchaseEvent(products, {
       orderNo,
       shippingCost,
       shippingMethod,
+      userData,
       currency,
       itemPrices,
     }),
@@ -117,12 +119,16 @@ export function rememberCheckoutForReturn(
     shippingMethod: options.shippingMethod,
     ...(options.currency ? { currency: options.currency } : {}),
     ...(options.itemPrices ? { itemPrices: options.itemPrices } : {}),
+    ...(options.userData ? { userData: options.userData } : {}),
   };
-  safeSetItem(storage, CHECKOUT_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  const json = JSON.stringify(snapshot);
+  safeSetItem(storage, CHECKOUT_SNAPSHOT_KEY, json);
+  writeCookieSnapshot(json);
 }
 
 export function forgetRememberedCheckout(storage = getDefaultStorage()): void {
   safeRemoveItem(storage, CHECKOUT_SNAPSHOT_KEY);
+  clearCookieSnapshot();
 }
 
 export function pushConfirmedPurchaseFromRememberedCheckout(
@@ -150,6 +156,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
     shippingMethod: snapshot.shippingMethod,
     currency: snapshot.currency,
     itemPrices: snapshot.itemPrices,
+    userData: snapshot.userData,
     push: options.push,
     storage,
   });
@@ -159,10 +166,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
   return fired;
 }
 
-function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null {
-  const raw = safeGetItem(storage, CHECKOUT_SNAPSHOT_KEY);
-  if (!raw) return null;
-
+function parseSnapshotJson(raw: string): CheckoutSnapshot | null {
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (
@@ -183,12 +187,19 @@ function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null 
         'itemPrices' in parsed && Array.isArray(parsed.itemPrices)
           ? (parsed.itemPrices as unknown[]).filter((x): x is number => typeof x === 'number')
           : undefined;
+      const userData =
+        'userData' in parsed &&
+        typeof parsed.userData === 'object' &&
+        parsed.userData !== null
+          ? (parsed.userData as { em?: string })
+          : undefined;
       return {
         ids: parsed.ids.filter((id): id is string => typeof id === 'string'),
         shippingCost: parsed.shippingCost,
         shippingMethod: parsed.shippingMethod,
         ...(currency ? { currency } : {}),
         ...(itemPrices ? { itemPrices } : {}),
+        ...(userData ? { userData } : {}),
       };
     }
   } catch {
@@ -196,6 +207,58 @@ function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null 
   }
 
   return null;
+}
+
+function readCheckoutSnapshot(storage?: SimpleStorage): CheckoutSnapshot | null {
+  // Try cookie first — survives iOS Safari tab eviction during cross-site redirect
+  // (e.g. Przelewy24) where sessionStorage is cleared.
+  const fromCookie = readCookieSnapshot();
+  if (fromCookie !== null) {
+    const parsed = parseSnapshotJson(fromCookie);
+    if (parsed) return parsed;
+  }
+
+  const raw = safeGetItem(storage, CHECKOUT_SNAPSHOT_KEY);
+  if (!raw) return null;
+  return parseSnapshotJson(raw);
+}
+
+function writeCookieSnapshot(json: string): void {
+  if (typeof document === 'undefined') return;
+  try {
+    document.cookie =
+      'acc_checkout_snapshot=' +
+      encodeURIComponent(json) +
+      '; SameSite=Lax; Secure; Path=/; Max-Age=1800';
+  } catch {
+    // Best-effort: cookie writes may fail in restricted environments.
+  }
+}
+
+function readCookieSnapshot(): string | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const prefix = 'acc_checkout_snapshot=';
+    for (const part of document.cookie.split(';')) {
+      const trimmed = part.trim();
+      if (trimmed.startsWith(prefix)) {
+        return decodeURIComponent(trimmed.slice(prefix.length));
+      }
+    }
+  } catch {
+    // Best-effort: cookie reads may fail in restricted environments.
+  }
+  return null;
+}
+
+function clearCookieSnapshot(): void {
+  if (typeof document === 'undefined') return;
+  try {
+    document.cookie =
+      'acc_checkout_snapshot=; SameSite=Lax; Secure; Path=/; Max-Age=0';
+  } catch {
+    // Best-effort: cookie removal may fail in restricted environments.
+  }
 }
 
 function getDefaultStorage(): SimpleStorage | undefined {

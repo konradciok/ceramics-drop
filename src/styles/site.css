@@ -432,6 +432,48 @@ ul { list-style:none; padding:0; margin:0; }
 .shop-switch a:hover { border-color:var(--c-espresso); }
 .shop-switch a.active { background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso); }
 
+/* Status filter — connected segmented control (all / available / sold).
+   A single pill-shaped capsule with joined segments, distinct from the
+   outlined .shop-switch category pills. */
+.status-filter {
+  display:inline-flex; flex:none; align-self:center;
+  border:1px solid var(--c-line); border-radius:var(--r-pill); overflow:hidden;
+  background:var(--c-paper);
+}
+.status-filter button {
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  white-space:nowrap; cursor:pointer; color:var(--c-espresso);
+  padding:11px 18px; border:0; background:transparent;
+  border-left:1px solid var(--c-line-soft); transition:all .25s var(--ease);
+}
+.status-filter button:first-child { border-left:0; }
+.status-filter button:hover { background:var(--c-bone); }
+.status-filter button.on { background:var(--c-espresso); color:var(--c-paper); }
+.status-filter button:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-2px; }
+
+/* Rows that host both category pills (left) and the status filter (right).
+   Used by /sklep's sticky nav (.shop-nav-track) and the collection switcher
+   (.shop-switch-row). Mobile-first: on a phone the row wraps so the scrolling
+   pill row keeps its full width and the filter drops to its own line below.
+   From @sm up it is a single nowrap row — the pills fill the left (wrapping
+   internally) and the filter stays pinned to the right, vertically centred. */
+.shop-nav-track.has-filter,
+.shop-switch-row {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 16px;
+}
+.shop-nav-track.has-filter > .shop-switch,
+.shop-switch-row > .shop-switch { flex:1 1 auto; width:auto; min-width:0; }
+@media (min-width:561px) {
+  .shop-nav-track.has-filter,
+  .shop-switch-row { flex-wrap:nowrap; }
+}
+
+/* Empty-state message when a filter yields no pieces. */
+.shop-empty {
+  max-width:var(--max); margin:clamp(40px,6vw,96px) auto; padding:0 var(--gut);
+  text-align:center; font-family:var(--f-cond); font-size:15px; letter-spacing:.04em; opacity:.7;
+}
+
 .shop-hint {
   max-width:var(--max); margin:0 auto; padding:0 var(--gut);
   display:flex; align-items:center; gap:12px; margin-top:clamp(28px,4vw,48px);

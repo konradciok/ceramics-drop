@@ -176,6 +176,14 @@
       }
     }
   },
+  "filter": {
+    "label": "Filter pieces",
+    "all": "All",
+    "available": "Available",
+    "sold": "Sold",
+    "emptyAvailable": "Every piece here has already found a home.",
+    "emptySold": "Nothing has sold yet."
+  },
   "selbar": {
     "clear": "Clear",
     "go": "Go to checkout",

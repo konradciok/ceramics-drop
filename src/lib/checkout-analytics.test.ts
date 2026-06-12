@@ -306,6 +306,72 @@ describe('checkout analytics semantics', () => {
   });
 });
 
+describe('cookie-hardened snapshot and user_data on purchase event', () => {
+  const makeSession = () => {
+    const storage = new Map<string, string>();
+    return {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => { storage.set(key, value); },
+      removeItem: (key: string) => { storage.delete(key); },
+    };
+  };
+
+  it('user_data.em flows through snapshot into purchase event', () => {
+    const push = vi.fn();
+    const session = makeSession();
+
+    rememberCheckoutForReturn(['k01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      userData: { em: 'abc123hash' },
+      storage: session,
+    });
+
+    pushConfirmedPurchaseFromRememberedCheckout('pi_ud', { push, storage: session });
+
+    expect(push).toHaveBeenCalledOnce();
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({ user_data: { em: 'abc123hash' } }),
+    );
+  });
+
+  it('purchase fires normally when snapshot has no userData (backwards compat)', () => {
+    const push = vi.fn();
+    const session = makeSession();
+
+    rememberCheckoutForReturn(['k01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      storage: session,
+    });
+
+    pushConfirmedPurchaseFromRememberedCheckout('pi_noem', { push, storage: session });
+
+    expect(push).toHaveBeenCalledOnce();
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    expect(Object.prototype.hasOwnProperty.call(event, 'user_data')).toBe(false);
+  });
+
+  it('purchase still fires when storage is empty but snapshot was written (simulates sessionStorage eviction)', () => {
+    // In the browser, the cookie path fills this gap; in tests the cookie API is
+    // absent so this correctly returns false.
+    const push = vi.fn();
+    const emptyStorage = {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+
+    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_evicted', {
+      push,
+      storage: emptyStorage,
+    });
+
+    expect(fired).toBe(false);
+    expect(push).not.toHaveBeenCalled();
+  });
+});
+
 describe('checkout analytics never breaks the storefront when storage throws', () => {
   const throwingStorage = {
     getItem: () => {

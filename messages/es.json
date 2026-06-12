@@ -176,6 +176,14 @@
       }
     }
   },
+  "filter": {
+    "label": "Filtrar piezas",
+    "all": "Todas",
+    "available": "Disponibles",
+    "sold": "Vendidas",
+    "emptyAvailable": "Todas las piezas de esta colección ya encontraron casa.",
+    "emptySold": "Aún no se ha vendido nada."
+  },
   "selbar": {
     "clear": "Vaciar",
     "go": "Ir a la caja",
