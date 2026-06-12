@@ -30,10 +30,12 @@
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
-    "sklep": "Wszystkie prace"
+    "sklep": "Wszystkie prace",
+    "gallery": "Galeria"
   },
   "nav": {
     "sklep": "Sklep",
+    "gallery": "Galeria",
     "kubki": "Kubki",
     "wazony": "Małe wazony",
     "wazonySrednie": "Średnie wazony",
@@ -88,6 +90,31 @@
   },
   "gallery": {
     "sold": "Już znalazła dom"
+  },
+  "galleryPage": {
+    "eyebrow": "Galeria editorialowa",
+    "title": "Światło, glina i <em>ślad ręki.</em>",
+    "lead": "Spokojny zapis nastroju wokół czerwcowego dropu: ręcznie malowane powierzchnie, światło, półki i małe decyzje, przez które każda praca jest inna.",
+    "ctaShop": "Zobacz prace",
+    "ctaStudio": "O studiu",
+    "sequenceLabel": "Zdjęcia editorialowe",
+    "items": {
+      "sunlight": {
+        "alt": "Ręcznie malowana ceramika Anny Ciok w świetle",
+        "title": "Słońce na szkliwie",
+        "caption": "Gotowe prace fotografowane jak przedmioty do codziennego używania, nie anonimowe zdjęcia produktowe."
+      },
+      "maker": {
+        "alt": "Anna Ciok w swojej pracowni ceramicznej",
+        "title": "Przy stole",
+        "caption": "Malarstwo i ceramika spotykają się w jednym pokoju: pędzle, szkliwo, małe poprawki i czas."
+      },
+      "workspace": {
+        "alt": "Pracownia ceramiczna Anny Ciok na Teneryfie",
+        "title": "Rytm pracowni",
+        "caption": "Robocza półka, stół do szkliwienia i spokojne powtórzenia stojące za każdą jedyną pracą."
+      }
+    }
   },
   "selbar": {
     "clear": "Wyczyść",
@@ -615,6 +642,7 @@
   },
   "meta": {
     "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 103 prace, każda tylko jedna.",
+    "gallery": "Editorialowe zdjęcia z pracowni ceramicznej Anny Ciok: światło, półki, szkliwo i ręczny nastrój czerwcowego dropu 2026.",
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 28 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",

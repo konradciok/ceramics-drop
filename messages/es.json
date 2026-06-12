@@ -30,10 +30,12 @@
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
-    "sklep": "Todas las piezas"
+    "sklep": "Todas las piezas",
+    "gallery": "Galería"
   },
   "nav": {
     "sklep": "Tienda",
+    "gallery": "Galería",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
     "wazonySrednie": "Jarrones medianos",
@@ -88,6 +90,31 @@
   },
   "gallery": {
     "sold": "Ya encontró casa"
+  },
+  "galleryPage": {
+    "eyebrow": "Galería editorial",
+    "title": "Luz, barro y <em>la huella de la mano.</em>",
+    "lead": "Una mirada tranquila al ambiente del estudio alrededor del drop de junio: superficies pintadas a mano, luz, estantes y pequeñas decisiones que hacen distinta cada pieza.",
+    "ctaShop": "Ver las piezas",
+    "ctaStudio": "Sobre el estudio",
+    "sequenceLabel": "Fotografías editoriales",
+    "items": {
+      "sunlight": {
+        "alt": "Cerámica de Anna Ciok pintada a mano bajo la luz",
+        "title": "Sol sobre el esmalte",
+        "caption": "Las piezas terminadas fotografiadas como objetos para usar cada día, no como fotos de producto anónimas."
+      },
+      "maker": {
+        "alt": "Anna Ciok en su estudio de cerámica",
+        "title": "En la mesa",
+        "caption": "La pintura y la cerámica se encuentran en la misma habitación: pinceles, esmalte, pequeñas correcciones y tiempo."
+      },
+      "workspace": {
+        "alt": "El estudio de cerámica de Anna Ciok en Tenerife",
+        "title": "Ritmo del estudio",
+        "caption": "Un estante de trabajo, una mesa de esmaltado y la repetición tranquila detrás de cada pieza única."
+      }
+    }
   },
   "selbar": {
     "clear": "Vaciar",
@@ -615,6 +642,7 @@
   },
   "meta": {
     "description": "Cerámica funcional pintada a mano por Anna Ciok: tazas, jarrones, cuencos y platos. Drop de junio 2026, 103 piezas únicas.",
+    "gallery": "Fotografías editoriales del estudio de cerámica de Anna Ciok: luz, estantes, esmalte y el ambiente hecho a mano del drop de junio 2026.",
     "ogImageAlt": "Anna Ciok Ceramics — taza de cerámica pintada a mano",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 28 piezas irrepetibles del drop de junio de Anna Ciok.",

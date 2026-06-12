@@ -15,6 +15,7 @@ export async function Header() {
 
   const mobileLinks = [
     { href: '/sklep', label: t('nav.sklep') },
+    { href: '/gallery', label: t('nav.gallery') },
     { href: '/o-studiu', label: t('nav.studio') },
     { href: '/kontakt', label: t('nav.kontakt') },
   ];
@@ -34,6 +35,7 @@ export async function Header() {
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}
           <nav className="nav-left">
             <Link className="nav-link" href="/sklep">{t('nav.sklep')}</Link>
+            <Link className="nav-link" href="/gallery">{t('nav.gallery')}</Link>
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
           </nav>
           <MobileMenu links={mobileLinks} aria={mobileAria} />
