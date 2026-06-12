@@ -21,6 +21,14 @@ export function StatusFilter() {
   const active: Status = mounted ? stored : 'all';
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Static keys (not a runtime-built `filter.${status}`) so next-intl can
+  // resolve them and a renamed key would surface at build time.
+  const labels: Record<Status, string> = {
+    all: t('filter.all'),
+    available: t('filter.available'),
+    sold: t('filter.sold'),
+  };
+
   const choose = (status: Status) => {
     if (status === active) return;
     setStatus(status);
@@ -54,7 +62,7 @@ export function StatusFilter() {
             onClick={() => choose(status)}
             onKeyDown={(e) => onKeyDown(e, i)}
           >
-            {t(`filter.${status}`)}
+            {labels[status]}
           </button>
         );
       })}
