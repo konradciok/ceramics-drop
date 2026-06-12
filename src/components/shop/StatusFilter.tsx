@@ -37,11 +37,30 @@ export function StatusFilter() {
     pushDataLayer(buildEngagementEvent('shop_filter', { filter_status: status }));
   };
 
+  // WAI-ARIA radiogroup keys: arrows wrap to next/previous, Home/End jump to
+  // the ends. Selecting also moves focus (roving tabindex).
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const last = STATUS_FILTERS.length - 1;
+    let next: number;
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (index + 1) % STATUS_FILTERS.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (index - 1 + STATUS_FILTERS.length) % STATUS_FILTERS.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = last;
+        break;
+      default:
+        return;
+    }
     e.preventDefault();
-    const dir = e.key === 'ArrowRight' ? 1 : -1;
-    const next = (index + dir + STATUS_FILTERS.length) % STATUS_FILTERS.length;
     choose(STATUS_FILTERS[next]);
     refs.current[next]?.focus();
   };
