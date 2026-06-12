@@ -291,7 +291,7 @@ ul { list-style:none; padding:0; margin:0; }
   font-size:14px;
   line-height:1.55;
   max-width:52ch;
-  color:rgba(58,40,24,.74);
+  color:var(--c-espresso-muted);
 }
 .gallery-hero-figure figcaption span,
 .lookbook-item figcaption span {
