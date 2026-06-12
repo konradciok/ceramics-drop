@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { getProductById } from './products';
 import {
   forgetRememberedCheckout,
+  hasFiredPurchaseOnce,
   rememberCheckoutForReturn,
   pushCheckoutStarted,
   pushConfirmedPurchase,
@@ -278,6 +279,43 @@ describe('checkout analytics semantics', () => {
         status: 'requires_payment_method',
       }),
     );
+  });
+
+  it('hasFiredPurchaseOnce tracks the per-intent dedupe key and survives forgetting the snapshot', () => {
+    const store = new Map<string, string>();
+    const session = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value); },
+      removeItem: (key: string) => { store.delete(key); },
+    };
+
+    // Before any purchase: not fired.
+    expect(hasFiredPurchaseOnce('pi_dedupe', session)).toBe(false);
+
+    rememberCheckoutForReturn(['k01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      storage: session,
+    });
+    pushConfirmedPurchaseFromRememberedCheckout('pi_dedupe', { push: vi.fn(), storage: session });
+
+    // After firing: true, and it stays true even after the snapshot is forgotten —
+    // this is what lets the return page treat a refresh as benign rather than a gap.
+    expect(hasFiredPurchaseOnce('pi_dedupe', session)).toBe(true);
+    forgetRememberedCheckout(session);
+    expect(hasFiredPurchaseOnce('pi_dedupe', session)).toBe(true);
+
+    // A different intent is unaffected.
+    expect(hasFiredPurchaseOnce('pi_other', session)).toBe(false);
+  });
+
+  it('hasFiredPurchaseOnce returns false (never throws) when storage access throws', () => {
+    const throwing = {
+      getItem: () => { throw new Error('blocked'); },
+      setItem: () => {},
+    };
+    expect(() => hasFiredPurchaseOnce('pi_x', throwing)).not.toThrow();
+    expect(hasFiredPurchaseOnce('pi_x', throwing)).toBe(false);
   });
 
   it('can explicitly forget a remembered checkout snapshot', () => {

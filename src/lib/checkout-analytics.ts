@@ -87,6 +87,21 @@ export function pushConfirmedPurchaseByIdsOnce(
 }
 
 /**
+ * Whether the purchase event has already been fired for this PaymentIntent.
+ * Reads the same per-intent dedupe key set by {@link pushConfirmedPurchaseByIdsOnce};
+ * the key survives `forgetRememberedCheckout` (which only clears the snapshot), so
+ * this stays `true` across return-page refreshes. The return page uses it to tell a
+ * benign refresh (snapshot already consumed, purchase already fired) apart from a
+ * genuine "succeeded PI, but the purchase event never fired" gap worth alerting on.
+ */
+export function hasFiredPurchaseOnce(
+  paymentIntentId: string,
+  storage: SimpleStorage | undefined = getDefaultStorage(),
+): boolean {
+  return safeGetItem(storage, `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`) === '1';
+}
+
+/**
  * Fire `payment_failed` at most once per PaymentIntent. The return page mounts on
  * every visit/refresh (and twice under React Strict Mode in dev), so without this
  * guard a buyer reloading the failure screen would inflate the count — mirrors the
