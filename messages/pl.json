@@ -89,6 +89,14 @@
   "gallery": {
     "sold": "Już znalazła dom"
   },
+  "filter": {
+    "label": "Filtruj prace",
+    "all": "Wszystkie",
+    "available": "Dostępne",
+    "sold": "Sprzedane",
+    "emptyAvailable": "Wszystkie prace z tej kolekcji znalazły już dom.",
+    "emptySold": "Nic jeszcze nie zostało sprzedane."
+  },
   "selbar": {
     "clear": "Wyczyść",
     "go": "Przejdź do kasy",
