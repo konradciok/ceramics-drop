@@ -130,10 +130,14 @@ export async function sendPurchaseConversions(
         // GA4 purchase never fires; flag it as a warning so the attribution gap is
         // searchable in Sentry instead of audit-only.
         console.warn('ga4 mp purchase skipped (consent granted, no clientId) for', paymentIntentId);
-        Sentry.captureMessage(
-          `ga4 mp purchase skipped (consent granted, no clientId) for ${paymentIntentId}`,
-          'warning',
-        );
+        Sentry.captureMessage('ga4 mp purchase skipped (consent granted, no clientId)', {
+          level: 'warning',
+          extra: {
+            payment_intent_id: paymentIntentId,
+            channel: 'ga4_mp',
+            reason: 'no_client_id',
+          },
+        });
       } else if (!result.ok) {
         console.error('ga4 mp purchase http error for', paymentIntentId, result.status);
         Sentry.captureMessage(`ga4 mp purchase http error ${result.status} for ${paymentIntentId}`);

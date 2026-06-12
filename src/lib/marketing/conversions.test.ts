@@ -122,7 +122,10 @@ describe('sendPurchaseConversions', () => {
     );
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
       expect.stringContaining('ga4 mp purchase skipped'),
-      'warning',
+      {
+        level: 'warning',
+        extra: { payment_intent_id: 'pi_1', channel: 'ga4_mp', reason: 'no_client_id' },
+      },
     );
     warnSpy.mockRestore();
   });

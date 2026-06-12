@@ -46,13 +46,11 @@ export async function sendGa4Purchase(
   input: Ga4PurchaseInput,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ ok: boolean; status?: number; skipped?: boolean }> {
-  if (!input.clientId) {
-    // No GA client id (cookie missing or cleared) — the MP purchase cannot be
-    // attributed. Leave a Cloudflare Workers log line; conversions.ts escalates the
-    // skip to a Sentry warning once it knows consent was granted.
-    console.warn('ga4-mp: skipping purchase (no clientId)', { transactionId: input.transactionId });
-    return { ok: false, skipped: true };
-  }
+  // No GA client id (cookie missing or cleared) — the MP purchase cannot be attributed.
+  // Reported as `skipped` so the only caller (conversions.ts) can escalate it to a
+  // console.warn + Sentry warning once it knows consent was granted; logging here too
+  // would double every skip in the Workers logs.
+  if (!input.clientId) return { ok: false, skipped: true };
   const url =
     `https://www.google-analytics.com/mp/collect` +
     `?measurement_id=${encodeURIComponent(config.measurementId)}` +

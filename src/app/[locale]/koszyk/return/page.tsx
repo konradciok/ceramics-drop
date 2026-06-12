@@ -9,9 +9,9 @@ import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import {
-  hasFiredPurchaseOnce,
   pushConfirmedPurchaseFromRememberedCheckout,
   pushPaymentFailedOnce,
+  reportPurchaseGapOnce,
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
@@ -35,20 +35,26 @@ export default function ReturnPage() {
             // Fires the purchase event once per payment intent and clears the
             // remembered snapshot internally on success.
             const fired = pushConfirmedPurchaseFromRememberedCheckout(paymentIntent.id, {});
-            if (!fired && !hasFiredPurchaseOnce(paymentIntent.id)) {
-              // The PI succeeded but no purchase event fired AND none ever fired for
-              // this intent (so this is not a benign refresh) — the checkout snapshot
-              // was lost from both sessionStorage and the hardening cookie. The browser
-              // GA4/Meta Pixel conversion is silently missing; surface it in Sentry so
-              // the attribution gap is searchable instead of audit-only. Best-effort —
-              // never let telemetry break the success screen.
-              try {
-                Sentry.captureMessage(
-                  'purchase event not fired on return page (snapshot lost, succeeded PI)',
-                  { level: 'warning', extra: { payment_intent_id: paymentIntent.id } },
-                );
-              } catch {
-                // Swallow: Sentry must never break the confirmation render.
+            if (!fired) {
+              // The PI succeeded but the browser purchase event did not fire. reportPurchaseGapOnce
+              // returns null for benign cases (purchase already fired — a refresh — or the gap was
+              // already reported for this intent) and otherwise the reason it is missing, so the GA4 /
+              // Meta Pixel attribution gap is searchable in Sentry instead of audit-only, at most once
+              // per intent. Best-effort — never let telemetry break the success screen.
+              const gap = reportPurchaseGapOnce(paymentIntent.id);
+              if (gap) {
+                try {
+                  Sentry.captureMessage('purchase event not fired on return page', {
+                    level: 'warning',
+                    extra: {
+                      payment_intent_id: paymentIntent.id,
+                      channel: 'browser',
+                      reason: gap.reason,
+                    },
+                  });
+                } catch {
+                  // Swallow: Sentry must never break the confirmation render.
+                }
               }
             }
             clear();
