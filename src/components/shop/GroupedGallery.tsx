@@ -6,6 +6,9 @@ import type { Product, CategorySlug } from '@/lib/types';
 import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { priceOf } from '@/lib/pricing';
+import { useFilter } from '@/store/filter';
+import { filterByStatus } from '@/lib/status-filter';
+import { useMounted } from '@/lib/use-mounted';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
@@ -32,11 +35,20 @@ export function GroupedGallery({ products }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Active filter view, deferred until after hydration (SSR renders "all").
+  const mounted = useMounted();
+  const storedStatus = useFilter((s) => s.status);
+  const status = mounted ? storedStatus : 'all';
+  // Tiles to render. NOTE: `available` (lightbox / analytics index space) stays
+  // the full unsold set on purpose — sold tiles are never clickable, so the
+  // clickable set is identical whether the view is "all" or "available".
+  const visible = useMemo(() => filterByStatus(products, status), [products, status]);
+
   // Group products by category, preserving CATEGORY_ORDER and dropping empty
   // categories (defensive — the June catalogue fills all eight).
   const groups = useMemo(() => {
     const byCat = new Map<CategorySlug, Product[]>();
-    for (const p of products) {
+    for (const p of visible) {
       const list = byCat.get(p.category) ?? [];
       list.push(p);
       byCat.set(p.category, list);
@@ -44,7 +56,20 @@ export function GroupedGallery({ products }: Props) {
     return CATEGORY_ORDER
       .map((slug) => ({ slug, items: byCat.get(slug) ?? [] }))
       .filter((g) => g.items.length > 0);
-  }, [products]);
+  }, [visible]);
+
+  // Keep the sticky #shop-nav honest: hide pills whose category has no visible
+  // pieces under the active filter. The nav is server-rendered by
+  // AllPiecesScreen; GroupedGallery already owns it for scroll-spy.
+  useEffect(() => {
+    const visibleSlugs = new Set<string>(groups.map((g) => g.slug));
+    document
+      .querySelectorAll<HTMLAnchorElement>('#shop-nav a[href^="#"]')
+      .forEach((a) => {
+        const slug = decodeURIComponent(a.getAttribute('href')!.slice(1));
+        a.hidden = !visibleSlugs.has(slug);
+      });
+  }, [groups]);
 
   useEffect(() => {
     if (available.length === 0) return;
@@ -131,16 +156,22 @@ export function GroupedGallery({ products }: Props) {
 
   return (
     <>
-      {groups.map(({ slug, items }) => (
-        <section key={slug} id={slug} className="gallery-group">
-          <h2 className="gallery-group-head">{t(CATEGORIES[slug].nameKey)}</h2>
-          <div className="gallery" data-count={items.length}>
-            {items.map((p) => (
-              <ProductTile key={p.id} product={p} onOpen={openTile} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {groups.length === 0 ? (
+        <p className="shop-empty">
+          {status === 'sold' ? t('filter.emptySold') : t('filter.emptyAvailable')}
+        </p>
+      ) : (
+        groups.map(({ slug, items }) => (
+          <section key={slug} id={slug} className="gallery-group">
+            <h2 className="gallery-group-head">{t(CATEGORIES[slug].nameKey)}</h2>
+            <div className="gallery" data-count={items.length}>
+              {items.map((p) => (
+                <ProductTile key={p.id} product={p} onOpen={openTile} />
+              ))}
+            </div>
+          </section>
+        ))
+      )}
 
       <Lightbox
         products={available}
