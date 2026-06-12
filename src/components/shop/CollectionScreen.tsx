@@ -9,6 +9,7 @@ import { getSoldIds } from '@/lib/inventory';
 import type { CategorySlug } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { Gallery } from './Gallery';
+import { StatusFilter } from './StatusFilter';
 import { richTags } from '@/components/ui/richTags';
 
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
@@ -32,12 +33,15 @@ export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
             <h1>{t.rich(`collection.${slug}.title`, richTags)}</h1>
             <p className="lead">{t(`collection.${slug}.lead`)}</p>
           </div>
-          <div className="shop-switch">
-            {CATEGORY_ORDER.map((s) => (
-              <Link key={s} href={`/${s}`} className={s === slug ? 'active' : undefined}>
-                {t(CATEGORIES[s].nameKey)}
-              </Link>
-            ))}
+          <div className="shop-switch-row">
+            <div className="shop-switch">
+              {CATEGORY_ORDER.map((s) => (
+                <Link key={s} href={`/${s}`} className={s === slug ? 'active' : undefined}>
+                  {t(CATEGORIES[s].nameKey)}
+                </Link>
+              ))}
+            </div>
+            <StatusFilter />
           </div>
         </div>
       </section>
