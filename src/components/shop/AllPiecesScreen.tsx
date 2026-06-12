@@ -9,6 +9,7 @@ import type { Product } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { GroupedGallery } from './GroupedGallery';
+import { StatusFilter } from './StatusFilter';
 
 export async function AllPiecesScreen({ products }: { products: Product[] }) {
   const t = await getTranslations();
@@ -30,12 +31,15 @@ export async function AllPiecesScreen({ products }: { products: Product[] }) {
           header while the user scrolls the galleries. GroupedGallery's
           scroll-spy toggles aria-current on these anchors. */}
       <nav id="shop-nav" className="shop-nav-sticky" aria-label={t('nav.sklep')}>
-        <div className="shop-switch shop-nav-track">
-          {CATEGORY_ORDER.map((s) => (
-            <a key={s} href={`#${s}`}>
-              {t(CATEGORIES[s].nameKey)}
-            </a>
-          ))}
+        <div className="shop-nav-track has-filter">
+          <div className="shop-switch">
+            {CATEGORY_ORDER.map((s) => (
+              <a key={s} href={`#${s}`}>
+                {t(CATEGORIES[s].nameKey)}
+              </a>
+            ))}
+          </div>
+          <StatusFilter />
         </div>
       </nav>
 
