@@ -362,14 +362,20 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* Rows that host both category pills (left) and the status filter (right).
    Used by /sklep's sticky nav (.shop-nav-track) and the collection switcher
-   (.shop-switch-row). Wraps so on a phone the scrolling pill row keeps its full
-   width and the filter drops to its own line below. */
+   (.shop-switch-row). Mobile-first: on a phone the row wraps so the scrolling
+   pill row keeps its full width and the filter drops to its own line below.
+   From @sm up it is a single nowrap row — the pills fill the left (wrapping
+   internally) and the filter stays pinned to the right, vertically centred. */
 .shop-nav-track.has-filter,
 .shop-switch-row {
   display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 16px;
 }
 .shop-nav-track.has-filter > .shop-switch,
 .shop-switch-row > .shop-switch { flex:1 1 auto; min-width:0; }
+@media (min-width:561px) {
+  .shop-nav-track.has-filter,
+  .shop-switch-row { flex-wrap:nowrap; }
+}
 
 /* Empty-state message when a filter yields no pieces. */
 .shop-empty {
