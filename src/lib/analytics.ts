@@ -245,6 +245,7 @@ export function buildPurchaseEvent(
       event_id: eventId,
       shipping_tier: options.shippingMethod,
       order_total: orderTotal,
+      ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: {
         ...ecommerce(items, currency),
         transaction_id: options.orderNo,
