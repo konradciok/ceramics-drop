@@ -18,7 +18,6 @@ export function filterByStatus(products: Product[], status: StatusFilter): Produ
       return products.filter((p) => !p.sold);
     case 'sold':
       return products.filter((p) => p.sold);
-    case 'all':
     default:
       return products;
   }

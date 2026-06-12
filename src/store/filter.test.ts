@@ -1,11 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { useFilter } from './filter';
 
 describe('useFilter store', () => {
-  beforeEach(() => {
-    useFilter.setState({ status: 'all' });
-  });
-
   it('defaults to "all"', () => {
     expect(useFilter.getState().status).toBe('all');
   });
