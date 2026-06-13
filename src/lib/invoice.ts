@@ -2,6 +2,9 @@ import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { getProductById, CATEGORIES } from './products';
+import { getPrintById } from './prints';
+import { variantLabel } from './print-cart';
+import type { PrintVariantSelection } from './types';
 import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
 import esMessages from '../../messages/es.json';
@@ -107,18 +110,29 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   if (invoice.status === 'draft') {
     for (const it of items) {
-      const product = getProductById(it.product_id);
       const productNames = messages.product as Record<string, string>;
-      const label = product
-        ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
-        : it.product_id;
+      const variant = (it.variant ?? null) as (PrintVariantSelection & { sku: string }) | null;
+      let label: string;
+      if (variant) {
+        // Fine-art print: design name + chosen variant. The SKU also disambiguates
+        // the idempotency key so two variants of the same design both invoice.
+        const design = getPrintById(it.product_id);
+        const printName = productNames['print'] ?? 'Fine-art print';
+        label = `${printName} Nº ${design?.num ?? ''}`.trim()
+          + ` — ${variantLabel(variant, invoiceLocale)} (${variant.sku})`;
+      } else {
+        const product = getProductById(it.product_id);
+        label = product
+          ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
+          : it.product_id;
+      }
       await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}` });
+      }, { idempotencyKey: `ii2_${order.id}_${variant?.sku ?? it.product_id}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
