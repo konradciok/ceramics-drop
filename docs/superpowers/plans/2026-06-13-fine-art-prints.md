@@ -463,7 +463,13 @@ const { count: expectedCount } = await supabase
 
 ## Otwarte pytania
 
-1. **Edycja: open czy limited?** MVP zakłada **open edition** (zawsze dostępne, bez stocku). Czy printy mają mieć **limity nakładu** (numerowane, „X z N")? Jeśli tak — faza 2 (tabela `print_stock` + RPC) wchodzi do pierwszego release'u, co rozszerza zakres DB/checkout/webhook.
+> **Decyzje (2026-06-13, właściciel):**
+> - **p.1 — OPEN EDITION wybrane na stałe.** Printy zostają open edition (bez stocku, bez numeracji „X z N"). **Faza 2 (limited edition: tabela `print_stock` + RPC `claim_print_units()` + rollback w webhooku + badge nakładu + reconcile dostępności) jest ANULOWANA — nie „odłożona".** Etap 6 / Migracja B nie wchodzą. Nie budować spekulacyjnie.
+> - **p.2 — osie/ceny: placeholdery zostają.** Realne projekty/ceny/obrazy dostarcza studio „za parę dni"; do tego czasu pracujemy na placeholderach (obrazy `fap-*.webp` wygenerowane jako placeholdery dev — patrz `scripts/gen-print-placeholders.mjs`).
+> - **p.3 — logistyka ram: NADAL OTWARTE** (decyzja produktowa/operacyjna, nie inżynierska).
+> - **p.7 — admin (Faza 3): pozostaje opcjonalny/odłożony**, nie blokuje MVP.
+
+1. **Edycja: open czy limited?** ~~MVP zakłada **open edition**…~~ → **ROZSTRZYGNIĘTE: open edition na stałe (Faza 2 anulowana).**
 2. **Konkretne osie i wartości:** finalne rozmiary (A4/A3/A2? większe?), rodzaje papieru (mat/satyna/bawełniany giclée?), opcje ram (kolory/materiały) oraz **ceny PLN i EUR** dla baz i delt. W planie placeholdery.
 3. **Logistyka ram:** czy oprawiony print ma inny koszt/sposób wysyłki i dłuższy lead time niż ceramika? Czy obecne metody (paczkomat/kurier InPost) obsłużą oprawione, kruche przesyłki, czy potrzeba osobnej stawki/kuriera?
 4. **Hub `/sklep`:** czy printy mają pojawić się w zbiorczym `/sklep` (scroll-spy) w MVP, czy tylko jako osobna kolekcja?
