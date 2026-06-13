@@ -14,14 +14,15 @@ import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
+  analyticsItemsForIds,
   buildEngagementEvent,
   buildRemoveFromCartEvent,
-  buildViewCartEvent,
+  buildViewCartEventFromItems,
   pushDataLayer,
 } from '@/lib/analytics';
 import {
   forgetRememberedCheckout,
-  pushCheckoutStarted,
+  pushCheckoutStartedItems,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
@@ -134,11 +135,18 @@ export function CartView() {
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // Prune already-sold items from the cart on mount
+  // Prune already-sold items + stale tokens from the cart on mount
   useEffect(() => {
+    // Drop any stored id that can never resolve to a buyable line — malformed or
+    // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
+    // from what's rendered (server validateCart stays the hard gate regardless).
+    const current = useCart.getState().ids;
+    const valid = new Set(resolveCartLines(current).map((l) => l.id));
+    current.forEach((id) => { if (!valid.has(id)) remove(id); });
+
     fetch('/api/inventory')
       .then((r) => r.json())
-      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
+      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
       .catch(() => {});
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,15 +157,12 @@ export function CartView() {
   const currency = locale === 'pl' ? 'pln' : 'eur';
   const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
   const fmt = currency === 'eur' ? eur : pln;
-  // Ceramic subset feeds the existing GA item-level cart analytics unchanged;
-  // print line value is captured authoritatively server-side at purchase.
-  const ceramicProducts = lines.flatMap((l) => (l.kind === 'ceramic' ? [l.product] : []));
-  const productPrice = (p: (typeof ceramicProducts)[number]) =>
-    currency === 'eur' ? PRICE_EUR[p.category] : p.price;
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
       ? priceOfVariant(l.design, l.sel, currency)
-      : productPrice(l.product);
+      : currency === 'eur'
+        ? PRICE_EUR[l.product.category]
+        : l.product.price;
   const shippingOf = (method: ShipId) =>
     currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
@@ -166,9 +171,10 @@ export function CartView() {
   const cartKey = lines.map((l) => l.id).join('|');
 
   useEffect(() => {
-    if (ceramicProducts.length === 0 || viewedCartKeys.current.has(cartKey)) return;
+    if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
     viewedCartKeys.current.add(cartKey);
-    pushDataLayer(buildViewCartEvent(ceramicProducts, { currency: analyticsCurrency, itemPrices: ceramicProducts.map(productPrice) }));
+    const items = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartKey, lines]);
 
@@ -230,14 +236,14 @@ export function CartView() {
     forgetRememberedCheckout();
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    // begin_checkout item-level analytics stays ceramic-only (prints are valued
-    // authoritatively server-side); the PaymentIntent total includes prints.
-    pushCheckoutStarted(ceramicProducts, {
+    // begin_checkout itemises the whole cart (ceramics + prints); print items are
+    // resolved from their tokens with server-equal prices.
+    const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushCheckoutStartedItems(checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
-      itemPrices: ceramicProducts.map(productPrice),
     });
     try {
       const res = await fetch('/api/checkout', {
@@ -267,11 +273,13 @@ export function CartView() {
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
-      rememberCheckoutForReturn(ceramicProducts.map((p) => p.id), {
+      // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
+      // event for print-only and mixed carts (and never false-alarms a "purchase gap").
+      rememberCheckoutForReturn(lines.map((l) => l.id), {
         shippingCost: shipCost,
         shippingMethod: ship,
         currency: analyticsCurrency,
-        itemPrices: ceramicProducts.map(productPrice),
+        itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
       });
       setClientSecret(client_secret);

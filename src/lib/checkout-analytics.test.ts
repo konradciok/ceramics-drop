@@ -87,6 +87,59 @@ describe('checkout analytics semantics', () => {
     );
   });
 
+  it('fires a complete purchase for a print-only order and does not false-alarm a gap', () => {
+    const push = vi.fn();
+    const map = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => map.set(k, v),
+    };
+
+    const fired = pushConfirmedPurchaseByIdsOnce('pi_print', ['print:fap01:a3:satin:oak'], {
+      orderNo: 'ACC-PRINT',
+      shippingCost: 20,
+      shippingMethod: 'paczkomat',
+      itemPrices: [350],
+      push,
+      storage,
+    });
+
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'purchase',
+        ecommerce: expect.objectContaining({
+          items: [expect.objectContaining({ item_id: 'fap01', item_variant: 'a3 / satin / oak', price: 350 })],
+        }),
+      }),
+    );
+    // Purchase fired ⇒ reportPurchaseGapOnce must NOT report a gap.
+    expect(reportPurchaseGapOnce('pi_print', storage)).toBeNull();
+  });
+
+  it('mixed ceramic + print cart itemises both lines in the purchase payload', () => {
+    const push = vi.fn();
+    const map = new Map<string, string>();
+    pushConfirmedPurchaseByIdsOnce('pi_mixed', ['k01', 'print:fap01:a4:matte:none'], {
+      orderNo: 'ACC-MIX',
+      shippingCost: 20,
+      shippingMethod: 'paczkomat',
+      itemPrices: [95, 120],
+      push,
+      storage: { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => map.set(k, v) },
+    });
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ecommerce: expect.objectContaining({
+          items: [
+            expect.objectContaining({ item_id: 'k01' }),
+            expect.objectContaining({ item_id: 'fap01', item_category: 'fine-art-prints' }),
+          ],
+        }),
+      }),
+    );
+  });
+
   it('confirmed payment by ids can be guarded to fire only once per payment intent', () => {
     const push = vi.fn();
     const storage = new Map<string, string>();

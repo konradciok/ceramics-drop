@@ -1,5 +1,10 @@
 -- Fine-art print support on order_items (plan "Migracja A", phase 1).
 --
+-- ⚠️ DEPLOY ORDER: apply this migration to Supabase BEFORE the Worker code that
+-- writes order_items.variant ships. The new code inserts a `variant` column and
+-- relies on the surrogate PK; deploying the code first makes every checkout
+-- order_items insert fail (missing column / PK conflict for two variants).
+--
 -- 1) Print line items carry the chosen variant (size/paper/frame/sku).
 --    NULL = a one-of-a-kind ceramic (unchanged).
 alter table order_items add column variant jsonb;

@@ -19,6 +19,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getProducts } from './products';
+import { getPrintDesigns } from './prints';
 import { IMG_WIDTHS } from './images';
 import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
 
@@ -56,7 +57,20 @@ function editorialImagePaths(): string[] {
   return DIRECT_EDITORIAL_IMAGES.map((image) => image.src);
 }
 
+/** Fine-art print image/gallery paths (separate registry, not in getProducts()). */
+function printImagePaths(): string[] {
+  const paths: string[] = [];
+  for (const d of getPrintDesigns()) {
+    paths.push(d.image);
+    for (const g of d.gallery ?? []) paths.push(g);
+  }
+  return paths;
+}
+
 describe('product asset hygiene', () => {
+  // NOTE: print images are deliberately NOT in this existence check yet — the
+  // fine-art-prints catalogue ships with placeholder paths until the studio
+  // provides art. When real `fap-*.webp` land, add printImagePaths() here too.
   it('every registry/editorial image (+ responsive variants) exists on disk', () => {
     const missing: string[] = [];
     for (const rel of [...registryImagePaths(), ...editorialImagePaths()]) {
@@ -73,8 +87,12 @@ describe('product asset hygiene', () => {
   });
 
   it('no orphan WebPs in public/uploads (every base is referenced or allowlisted)', () => {
+    // Include print paths so future `fap-*.webp` (added when art lands) are
+    // recognised as referenced rather than flagged as orphans.
     const referenced = new Set(
-      [...registryImagePaths(), ...editorialImagePaths()].map((p) => baseStem(path.basename(p))),
+      [...registryImagePaths(), ...editorialImagePaths(), ...printImagePaths()].map((p) =>
+        baseStem(path.basename(p)),
+      ),
     );
     const orphans = [
       ...new Set(

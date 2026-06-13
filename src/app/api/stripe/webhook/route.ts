@@ -323,7 +323,7 @@ export async function POST(req: Request) {
             const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
             const { data: itemRows } = await supabase
               .from('order_items')
-              .select('product_id, unit_price')
+              .select('product_id, unit_price, variant')
               .eq('order_id', orderRow.id);
             return {
               ...orderRow,

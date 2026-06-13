@@ -1,4 +1,6 @@
-import { CATEGORIES } from './products';
+import { CATEGORIES, getProductById } from './products';
+import { getPrintById } from './prints';
+import { decodePrintToken, isPrintToken } from './print-cart';
 import type { Product } from './types';
 
 export const ANALYTICS_CURRENCY = 'PLN';
@@ -101,6 +103,39 @@ export function toAnalyticsItem(
     ...(details.itemListId ? { item_list_id: details.itemListId } : {}),
     ...(details.itemListName ? { item_list_name: details.itemListName } : {}),
   };
+}
+
+/**
+ * Resolve a cart id — a bare ceramic id (`k01`) or a print token
+ * (`print:fap01:a3:satin:oak`) — to an AnalyticsItem, or null if unresolvable.
+ * Lets the cart/checkout/purchase events itemise prints alongside ceramics.
+ */
+export function analyticsItemForId(id: string, priceOverride?: number): AnalyticsItem | null {
+  if (isPrintToken(id)) {
+    const dec = decodePrintToken(id);
+    if (!dec) return null;
+    const design = getPrintById(dec.designId);
+    if (!design) return null;
+    return {
+      item_id: design.id,
+      item_name: `Print Nº ${design.num}`,
+      item_brand: BRAND,
+      item_category: 'fine-art-prints',
+      item_variant: `${dec.sel.size} / ${dec.sel.paper} / ${dec.sel.frame}`,
+      price: priceOverride ?? 0,
+      quantity: 1,
+    };
+  }
+  const product = getProductById(id);
+  if (!product) return null;
+  return toAnalyticsItem(product, { priceOverride });
+}
+
+/** Resolve a positional ids + prices pair to AnalyticsItems, dropping unresolvable ids. */
+export function analyticsItemsForIds(ids: string[], itemPrices?: number[]): AnalyticsItem[] {
+  return ids
+    .map((id, i) => analyticsItemForId(id, itemPrices?.[i]))
+    .filter((it): it is AnalyticsItem => it !== null);
 }
 
 export function buildAddToCartEvent(
@@ -213,31 +248,37 @@ export function buildSelectItemEvent(
   };
 }
 
-export function buildViewCartEvent(
-  products: Product[],
-  options: EventOptions = {},
+/** view_cart from pre-resolved AnalyticsItems (ceramics + prints). */
+export function buildViewCartEventFromItems(
+  items: AnalyticsItem[],
+  options: { currency?: 'PLN' | 'EUR'; eventId?: string } = {},
 ): DataLayerEvent {
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const items = products.map((product, i) =>
-    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
-  );
   return {
     event: 'view_cart',
-    event_id: options.eventId ?? createEventId('view_cart', products.map((p) => p.id).join('-')),
+    event_id: options.eventId ?? createEventId('view_cart', items.map((i) => i.item_id).join('-')),
     ecommerce: ecommerce(items, currency),
   };
 }
 
-export function buildBeginCheckoutEvent(
+export function buildViewCartEvent(
   products: Product[],
-  options: CheckoutOptions,
+  options: EventOptions = {},
 ): DataLayerEvent {
-  const eventId =
-    options.eventId ?? createEventId('begin_checkout', products.map((p) => p.id).join('-'));
-  const currency = options.currency ?? ANALYTICS_CURRENCY;
   const items = products.map((product, i) =>
     toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
   );
+  return buildViewCartEventFromItems(items, { currency: options.currency, eventId: options.eventId });
+}
+
+/** begin_checkout from pre-resolved AnalyticsItems (ceramics + prints). */
+export function buildBeginCheckoutEventFromItems(
+  items: AnalyticsItem[],
+  options: CheckoutOptions,
+): DataLayerEvent {
+  const eventId =
+    options.eventId ?? createEventId('begin_checkout', items.map((i) => i.item_id).join('-'));
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
     {
@@ -254,8 +295,19 @@ export function buildBeginCheckoutEvent(
   );
 }
 
-export function buildPurchaseEvent(
+export function buildBeginCheckoutEvent(
   products: Product[],
+  options: CheckoutOptions,
+): DataLayerEvent {
+  const items = products.map((product, i) =>
+    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
+  );
+  return buildBeginCheckoutEventFromItems(items, options);
+}
+
+/** purchase from pre-resolved AnalyticsItems (ceramics + prints). */
+export function buildPurchaseEventFromItems(
+  items: AnalyticsItem[],
   options: PurchaseOptions,
 ): DataLayerEvent {
   // Deterministic id (no random suffix): a purchase is a single conversion, so
@@ -266,9 +318,6 @@ export function buildPurchaseEvent(
   // checkout-analytics.ts), so collision-resistance here is unnecessary.
   const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const items = products.map((product, i) =>
-    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
-  );
   const orderTotal = sumItems(items) + options.shippingCost;
   return withMeta(
     {
@@ -288,6 +337,16 @@ export function buildPurchaseEvent(
     orderTotal,
     options.orderNo,
   );
+}
+
+export function buildPurchaseEvent(
+  products: Product[],
+  options: PurchaseOptions,
+): DataLayerEvent {
+  const items = products.map((product, i) =>
+    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
+  );
+  return buildPurchaseEventFromItems(items, options);
 }
 
 export function buildEngagementEvent(
