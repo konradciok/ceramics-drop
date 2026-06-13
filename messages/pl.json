@@ -31,7 +31,8 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "sklep": "Wszystkie prace",
-    "gallery": "Galeria"
+    "gallery": "Galeria",
+    "fineArtPrints": "Printy fine art"
   },
   "nav": {
     "sklep": "Sklep",
@@ -46,7 +47,8 @@
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "studio": "O studiu",
-    "kontakt": "Kontakt"
+    "kontakt": "Kontakt",
+    "fineArtPrints": "Printy"
   },
   "aria": {
     "cart": "Koszyk",
@@ -86,7 +88,8 @@
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
     "moreFrom": "Więcej z kolekcji",
-    "seeAll": "Zobacz wszystkie"
+    "seeAll": "Zobacz wszystkie",
+    "print": "Print"
   },
   "gallery": {
     "sold": "Już znalazła dom"
@@ -408,6 +411,11 @@
       "eyebrow": "Czerwcowy drop — 103 prace",
       "title": "Wszystkie <em>prace</em>",
       "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Reprodukcje fine art",
+      "title": "Printy <em>fine art</em>",
+      "lead": "Druk giclée na papierze archiwalnym. Każdy projekt dostępny w kilku rozmiarach, na wybranym papierze, z oprawą lub bez."
     }
   },
   "studio": {
@@ -695,6 +703,11 @@
       "Błękitne muszle wokół terakotowej rozgwiazdy na dnie misy. Falowany brzeg prowadzi morski rytm dookoła jasnej formy.",
       "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi.",
       "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+    ],
+    "fine-art-prints": [
+      "Pierwszy projekt z serii fine art — reprodukcja autorskiej kompozycji w stonowanej palecie.",
+      "Drugi projekt z serii — wyrazista forma i ręcznie malowane detale przeniesione na papier archiwalny.",
+      "Trzeci projekt z serii fine art."
     ]
   },
   "error": {
@@ -722,7 +735,8 @@
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "sklep": "Cała kolekcja Anny Ciok: 103 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
+      "sklep": "Cała kolekcja Anny Ciok: 103 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna.",
+      "fineArtPrints": "Reprodukcje fine art prac Anny Ciok — druk giclée na papierze archiwalnym. Wybierz rozmiar, papier i oprawę."
     }
   },
   "deliveryNotice": {
@@ -737,5 +751,45 @@
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"
+  },
+  "print": {
+    "from": "od {price}",
+    "axis": {
+      "size": "Rozmiar",
+      "paper": "Papier",
+      "frame": "Oprawa"
+    },
+    "size": {
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2"
+    },
+    "sizeHint": {
+      "a4": "21 × 29,7 cm",
+      "a3": "29,7 × 42 cm",
+      "a2": "42 × 59,4 cm"
+    },
+    "paper": {
+      "matte": "Matowy",
+      "satin": "Satynowy"
+    },
+    "frame": {
+      "none": "Bez ramy",
+      "oak": "Rama dębowa",
+      "black": "Rama czarna"
+    },
+    "addToCart": "Dodaj do koszyka",
+    "inCart": "W koszyku",
+    "unavailable": "Niedostępne w tej kombinacji",
+    "priceLabel": "Cena",
+    "sectionDetails": "Szczegóły",
+    "sectionEdition": "Edycja",
+    "sectionDelivery": "Dostawa i realizacja",
+    "sectionCare": "Pielęgnacja",
+    "editionOpen": "Edycja otwarta — druk na zamówienie.",
+    "technique": "Druk giclée, atramenty pigmentowe, papier archiwalny.",
+    "deliveryNote": "Druk na zamówienie — realizacja do 7–10 dni roboczych. Oprawione printy wysyłamy kurierem.",
+    "careNote": "Chroń przed bezpośrednim słońcem i wilgocią. Najlepiej eksponować w oprawie pod szkłem.",
+    "moreFrom": "Więcej z kolekcji printów"
   }
 }

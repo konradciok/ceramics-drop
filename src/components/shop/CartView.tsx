@@ -5,20 +5,24 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, CATEGORIES } from '@/lib/products';
+import { CATEGORIES } from '@/lib/products';
+import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
+import { priceOfVariant } from '@/lib/print-pricing';
+import { variantLabel } from '@/lib/print-cart';
 import { pln, eur } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
+  analyticsItemsForIds,
   buildEngagementEvent,
   buildRemoveFromCartEvent,
-  buildViewCartEvent,
+  buildViewCartEventFromItems,
   pushDataLayer,
 } from '@/lib/analytics';
 import {
   forgetRememberedCheckout,
-  pushCheckoutStarted,
+  pushCheckoutStartedItems,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
@@ -131,36 +135,48 @@ export function CartView() {
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // Prune already-sold items from the cart on mount
+  // Prune already-sold items + stale tokens from the cart on mount
   useEffect(() => {
+    // Drop any stored id that can never resolve to a buyable line — malformed or
+    // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
+    // from what's rendered (server validateCart stays the hard gate regardless).
+    const current = useCart.getState().ids;
+    const valid = new Set(resolveCartLines(current).map((l) => l.id));
+    current.forEach((id) => { if (!valid.has(id)) remove(id); });
+
     fetch('/api/inventory')
       .then((r) => r.json())
-      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
+      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
       .catch(() => {});
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const products = resolveCartProducts(ids);
-  const n = products.length;
+  const lines = resolveCartLines(ids);
+  const n = lines.length;
   const currency = locale === 'pl' ? 'pln' : 'eur';
   const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
   const fmt = currency === 'eur' ? eur : pln;
-  const priceOf = (p: ReturnType<typeof resolveCartProducts>[number]) =>
-    currency === 'eur' ? PRICE_EUR[p.category] : p.price;
+  const priceOfLine = (l: CartLine) =>
+    l.kind === 'print'
+      ? priceOfVariant(l.design, l.sel, currency)
+      : currency === 'eur'
+        ? PRICE_EUR[l.product.category]
+        : l.product.price;
   const shippingOf = (method: ShipId) =>
     currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
-  const subtotal = products.reduce((s, p) => s + priceOf(p), 0);
+  const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   const shipCost = shippingOf(ship);
   const total = subtotal + shipCost;
-  const productKey = products.map((p) => p.id).join('|');
+  const cartKey = lines.map((l) => l.id).join('|');
 
   useEffect(() => {
-    if (products.length === 0 || viewedCartKeys.current.has(productKey)) return;
-    viewedCartKeys.current.add(productKey);
-    pushDataLayer(buildViewCartEvent(products, { currency: analyticsCurrency, itemPrices: products.map(priceOf) }));
+    if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
+    viewedCartKeys.current.add(cartKey);
+    const items = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productKey, products]);
+  }, [cartKey, lines]);
 
   function handlePickShip(id: ShipId) {
     // Fire only on an actual change — re-clicking the active option must not
@@ -214,24 +230,28 @@ export function CartView() {
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (products.length === 0 || submitting || !deliveryReady) return;
+    if (lines.length === 0 || submitting || !deliveryReady) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    pushCheckoutStarted(products, {
+    // begin_checkout itemises the whole cart (ceramics + prints); print items are
+    // resolved from their tokens with server-equal prices.
+    const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushCheckoutStartedItems(checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
-      itemPrices: products.map(priceOf),
     });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: products.map((p) => p.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies() }),
+        // Send EVERY line id — bare ceramic ids and print tokens alike; the server
+        // (validateCart) resolves and prices both.
+        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies() }),
       });
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
@@ -253,11 +273,13 @@ export function CartView() {
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
-      rememberCheckoutForReturn(products.map((p) => p.id), {
+      // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
+      // event for print-only and mixed carts (and never false-alarms a "purchase gap").
+      rememberCheckoutForReturn(lines.map((l) => l.id), {
         shippingCost: shipCost,
         shippingMethod: ship,
         currency: analyticsCurrency,
-        itemPrices: products.map(priceOf),
+        itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
       });
       setClientSecret(client_secret);
@@ -321,11 +343,34 @@ export function CartView() {
           </h1>
         </div>
         <div className="cart-list">
-          {products.map((p) => {
+          {lines.map((l) => {
+            if (l.kind === 'print') {
+              const d = l.design;
+              const name = `${t('product.print')} Nº ${d.num}`;
+              return (
+                <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
+                  <Link href={`/fine-art-prints/${d.id}`} className="thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={d.image} srcSet={srcSet(d.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
+                  </Link>
+                  <div>
+                    <h4>{name}</h4>
+                    <div className="meta">{variantLabel(l.sel, locale)}</div>
+                  </div>
+                  <div className="right">
+                    <span className="price">{fmt(priceOfLine(l))}</span>
+                    <button className="rm" onClick={() => remove(l.id)}>
+                      <Icon name="trash" /> {t('cart.remove')}
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
-              <div key={p.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
+              <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
                 <Link href={`/${p.category}`} className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
@@ -335,7 +380,7 @@ export function CartView() {
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
-                  <span className="price">{fmt(priceOf(p))}</span>
+                  <span className="price">{fmt(priceOfLine(l))}</span>
                   <button
                     className="rm"
                     onClick={() => {
@@ -524,18 +569,34 @@ export function CartView() {
       <aside className="summary">
         <h3>{t('cart.summary')}</h3>
         <ul className="sum-items">
-          {products.map((p) => {
+          {lines.map((l) => {
+            if (l.kind === 'print') {
+              const d = l.design;
+              return (
+                <li key={l.id} className="sum-item">
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
+                  </Link>
+                  <div className="sum-item-info">
+                    <span className="sum-item-name">{t('product.print')} Nº {d.num} · {variantLabel(l.sel, locale)}</span>
+                    <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
+                  </div>
+                </li>
+              );
+            }
+            const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
-              <li key={p.id} className="sum-item">
+              <li key={l.id} className="sum-item">
                 <Link href={`/${p.category}`} className="sum-item-thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
                 </Link>
                 <div className="sum-item-info">
                   <span className="sum-item-name">{name} Nº {p.num}</span>
-                  <span className="sum-item-price">{fmt(priceOf(p))}</span>
+                  <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                 </div>
               </li>
             );

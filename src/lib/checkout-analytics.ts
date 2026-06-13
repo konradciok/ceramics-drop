@@ -1,11 +1,14 @@
 import {
+  analyticsItemsForIds,
   buildBeginCheckoutEvent,
+  buildBeginCheckoutEventFromItems,
   buildEngagementEvent,
   buildPurchaseEvent,
+  buildPurchaseEventFromItems,
   pushDataLayer,
+  type AnalyticsItem,
   type DataLayerEvent,
 } from './analytics';
-import { resolveKnownProducts } from './products';
 import type { Product } from './types';
 
 type CheckoutStartOptions = {
@@ -54,6 +57,14 @@ export function pushCheckoutStarted(
   );
 }
 
+/** begin_checkout from pre-resolved AnalyticsItems (mixed ceramic + print carts). */
+export function pushCheckoutStartedItems(
+  items: AnalyticsItem[],
+  { shippingCost, shippingMethod, userData, currency, push = pushDataLayer }: CheckoutStartOptions,
+): void {
+  push(buildBeginCheckoutEventFromItems(items, { shippingCost, shippingMethod, userData, currency }));
+}
+
 export function pushConfirmedPurchase(
   products: Product[],
   { orderNo, shippingCost, shippingMethod, userData, currency, itemPrices, push = pushDataLayer }: ConfirmedPurchaseOptions,
@@ -79,10 +90,13 @@ export function pushConfirmedPurchaseByIdsOnce(
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
   if (safeGetItem(storage, key) === '1') return false;
 
-  const products = resolveKnownProducts(ids);
-  if (products.length === 0) return false;
+  // Resolve both ceramic ids and print tokens; a print-only order would otherwise
+  // produce zero items here, skipping the browser purchase event (and tripping a
+  // false reportPurchaseGapOnce 'unresolvable_ids' alert).
+  const items = analyticsItemsForIds(ids, options.itemPrices);
+  if (items.length === 0) return false;
 
-  pushConfirmedPurchase(products, options);
+  (options.push ?? pushDataLayer)(buildPurchaseEventFromItems(items, options));
   safeSetItem(storage, key, '1');
   return true;
 }

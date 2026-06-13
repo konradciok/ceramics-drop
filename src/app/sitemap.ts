@@ -3,6 +3,7 @@ import { routing } from '@/i18n/routing';
 import { absoluteUrl, languageAlternates } from '@/lib/seo/urls';
 import { NOINDEX_PATHS, SITE_PATHS } from '@/lib/site';
 import { getProducts } from '@/lib/products';
+import { getPrintDesigns } from '@/lib/prints';
 
 /** Stable per-build timestamp — avoids churning every entry's lastmod on each request. */
 const LAST_MODIFIED = new Date();
@@ -24,6 +25,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   for (const product of getProducts()) {
     const path = `/${product.category}/${product.id}`;
+    for (const locale of routing.locales) {
+      entries.push({
+        url: absoluteUrl(locale, path),
+        lastModified: LAST_MODIFIED,
+        alternates: { languages: languageAlternates(path) },
+      });
+    }
+  }
+
+  // Fine-art print PDPs (separate registry, not in getProducts()).
+  for (const design of getPrintDesigns()) {
+    const path = `/fine-art-prints/${design.id}`;
     for (const locale of routing.locales) {
       entries.push({
         url: absoluteUrl(locale, path),

@@ -6,6 +6,8 @@
  * NOTE: the `from` domains must be verified in Resend (ciok.art).
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { variantLabel } from './print-cart';
+import type { PrintFrame, PrintPaper, PrintSize } from './types';
 import {
   RESEND_TEMPLATE_ALIASES,
   emailButton,
@@ -205,7 +207,11 @@ export type NewOrderEmailOrder = {
   receiver_first_name: string | null;
   receiver_last_name: string | null;
   inpost_target_point: string | null;
-  items: Array<{ product_id: string; unit_price: number }>;
+  items: Array<{
+    product_id: string;
+    unit_price: number;
+    variant?: { size: PrintSize; paper: PrintPaper; frame: PrintFrame; sku: string } | null;
+  }>;
 };
 
 function formatGrosze(grosze: number, currency: string): string {
@@ -238,7 +244,13 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
 
   const itemLines = order.items
-    .map((it) => `${escapeHtml(it.product_id)} — ${formatGrosze(it.unit_price, order.currency)}`)
+    .map((it) => {
+      // Prints add a variant label + SKU so the studio knows exactly what to produce.
+      const label = it.variant
+        ? `${escapeHtml(it.product_id)} · ${escapeHtml(variantLabel(it.variant, 'pl'))} (${escapeHtml(it.variant.sku)})`
+        : escapeHtml(it.product_id);
+      return `${label} — ${formatGrosze(it.unit_price, order.currency)}`;
+    })
     .join('<br />');
 
   const mainContent = [

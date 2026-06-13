@@ -14,7 +14,10 @@ describe('getProducts', () => {
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 28, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
+    // fine-art-prints is a separate (non-ceramic) registry and is absent from
+    // CATEGORY_ORDER, so it has zero pieces here; the entry keeps `counts[slug]`
+    // exhaustive for the CategorySlug index type.
+    const counts = { kubki: 28, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }

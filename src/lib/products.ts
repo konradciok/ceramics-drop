@@ -17,6 +17,7 @@
    ============================================================ */
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
+import { getPrintDesigns } from './prints';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 28 },
@@ -28,6 +29,11 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
+  // Fine-art prints are a separate (variant-priced, reproducible) family living
+  // in src/lib/prints.ts. This entry exists only because CategorySlug is exhaustive
+  // here; it is intentionally absent from CATEGORY_ORDER so the ceramic grids,
+  // /sklep hub and footer never iterate it. price/measure are display-only "from".
+  'fine-art-prints': { slug: 'fine-art-prints', nameKey: 'nav.fineArtPrints', singularKey: 'print', price: PRICE_PLN['fine-art-prints'], measure: 'A4 · A3 · A2', count: getPrintDesigns().length },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
@@ -214,7 +220,9 @@ export function getProducts(): Product[] {
 }
 
 export function getProductsByCategory(slug: CategorySlug): Product[] {
-  return PRODUCTS_BY_CATEGORY[slug];
+  // `fine-art-prints` is not in CATEGORY_ORDER, so it has no grouping — return
+  // an empty array rather than undefined for any such non-ceramic slug.
+  return PRODUCTS_BY_CATEGORY[slug] ?? [];
 }
 
 export function getProductById(id: string): Product | undefined {

@@ -5,6 +5,8 @@ export type Ga4Item = {
   quantity: number;
   item_category: string;
   item_brand: string;
+  /** Print variant, e.g. "a3 / satin / oak". Omitted for one-of-a-kind ceramics. */
+  item_variant?: string;
 };
 
 export type Ga4PurchaseInput = {

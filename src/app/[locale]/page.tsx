@@ -26,6 +26,9 @@ const COVER: Record<CategorySlug, string> = {
   'talerze-duze': '/uploads/talerz-duzy-1.webp',
   'duze-michy': '/uploads/duza-micha-1.webp',
   'miski-falowane': '/uploads/miski-falowane-9.webp',
+  // Required because CategorySlug is exhaustive. Never read: fine-art-prints is
+  // not in CATEGORY_ORDER, so the homepage collections grid does not iterate it.
+  'fine-art-prints': '/uploads/fap-01.webp',
 };
 
 

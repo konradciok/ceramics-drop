@@ -30,6 +30,10 @@ export async function Footer() {
                   <Link href={`/${slug}`}>{t(CATEGORIES[slug].nameKey)}</Link>
                 </li>
               ))}
+              {/* Prints live outside CATEGORY_ORDER (separate registry) — link explicitly. */}
+              <li>
+                <Link href="/fine-art-prints">{t('nav.fineArtPrints')}</Link>
+              </li>
               <li>
                 <Link href="/koszyk">{t('footer.koszyk')}</Link>
               </li>

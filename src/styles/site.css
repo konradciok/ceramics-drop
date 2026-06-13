@@ -1194,3 +1194,37 @@ ul { list-style:none; padding:0; margin:0; }
   text-transform:uppercase; background:rgba(58,40,24,.65);
   color:var(--c-paper); padding:4px 8px; border-radius:var(--r-pill);
 }
+
+/* ── Fine-art prints ──────────────────────────────────────────────────────
+   Print tiles reuse .tile (uniform 4:5 grid, like ceramics) but are a single
+   link to the PDP — no select/add overlay. The configurator lives on the PDP. */
+.tile-print { display:block; text-decoration:none; }
+
+/* PDP configurator: size / paper / frame segmented selectors + live price. */
+.print-config { display:flex; flex-direction:column; gap:18px; margin:22px 0 8px; }
+.print-axis { border:0; padding:0; margin:0; }
+.print-axis-label {
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--c-espresso-muted); padding:0; margin:0 0 8px;
+}
+.print-opts { display:flex; flex-wrap:wrap; gap:8px; }
+.print-opt {
+  font-family:var(--f-cond); font-size:13px; letter-spacing:.04em;
+  padding:9px 16px; border:1px solid var(--c-line); border-radius:var(--r-pill);
+  background:transparent; color:var(--c-espresso); cursor:pointer;
+  transition:border-color .15s ease, background .15s ease, color .15s ease, opacity .15s ease;
+}
+.print-opt:hover { border-color:var(--c-terracotta); }
+.print-opt.active { background:var(--c-terracotta); border-color:var(--c-terracotta); color:var(--c-paper); }
+.print-opt:disabled { opacity:.35; cursor:not-allowed; text-decoration:line-through; }
+.print-opt:disabled:hover { border-color:var(--c-line); }
+.print-price {
+  display:flex; align-items:baseline; justify-content:space-between;
+  padding-top:6px; border-top:1px solid var(--c-line-soft);
+}
+.print-price .k {
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--c-espresso-muted);
+}
+.print-price .v { font-family:var(--f-display); font-size:24px; }
+.print-specs { margin-top:24px; }

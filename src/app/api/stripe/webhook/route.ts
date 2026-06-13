@@ -12,6 +12,7 @@ import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
+import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,15 +70,22 @@ export async function POST(req: Request) {
         .select('*', { count: 'exact', head: true })
         .eq('order_id', orderId)
         .eq('status', 'sold');
-      const { count: expectedCount, error: expectedErr } = await supabase
-        .from('order_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('order_id', orderId);
+      // Count ONLY ceramic line items (variant IS NULL): each maps to one
+      // piece_state row that must end up 'sold'. Prints are open-edition and have
+      // no piece_state, so counting them here would make every print order look
+      // under-fulfilled → auto-refund. A print-only order has expected = 0 = fulfilled.
+      // (countCeramicOrderItems is unit-tested in fulfillment.test.ts.)
+      // Cast to the helper's narrow structural client: Supabase's builder generics
+      // otherwise explode TS structural matching (TS2589) for this head-count query.
+      const { count: expectedCount, error: expectedErr } = await countCeramicOrderItems(
+        supabase as unknown as CeramicCountClient,
+        orderId,
+      );
       if (fulfilledErr || expectedErr || fulfilledCount == null || expectedCount == null) {
         throw new Error(`fulfillment count failed for order ${orderId}`);
       }
 
-      if (fulfilledCount < expectedCount) {
+      if (isUnderfulfilled(fulfilledCount, expectedCount)) {
         try {
           await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
         } catch (err) {
@@ -102,7 +110,7 @@ export async function POST(req: Request) {
           if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
           const { data: itemRows, error: itemsErr } = await supabase
             .from('order_items')
-            .select('product_id, unit_price')
+            .select('product_id, unit_price, variant')
             .eq('order_id', orderId);
           if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
           if (orderRow) {
@@ -115,7 +123,11 @@ export async function POST(req: Request) {
             const notifyOrder = {
               order: {
                 ...orderRowTyped,
-                items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
+                items: (itemRows as Array<{
+                  product_id: string;
+                  unit_price: number;
+                  variant?: { size: 'a4' | 'a3' | 'a2'; paper: 'matte' | 'satin'; frame: 'none' | 'oak' | 'black'; sku: string } | null;
+                }> | null) ?? [],
               },
             };
             // Best-effort with bounded retries: fires once (gated on newSale, so
@@ -311,7 +323,7 @@ export async function POST(req: Request) {
             const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
             const { data: itemRows } = await supabase
               .from('order_items')
-              .select('product_id, unit_price')
+              .select('product_id, unit_price, variant')
               .eq('order_id', orderRow.id);
             return {
               ...orderRow,

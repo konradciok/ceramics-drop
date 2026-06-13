@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { collectionSchema, organizationSchema, productSchema } from './structured-data';
+import {
+  collectionSchema,
+  organizationSchema,
+  printCollectionSchema,
+  printProductSchema,
+  productSchema,
+} from './structured-data';
 import { getProductsByCategory } from '@/lib/products';
+import { getPrintById, getPrintDesigns } from '@/lib/prints';
 import { PRICE_EUR } from '@/lib/pricing';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
@@ -145,5 +152,65 @@ describe('productSchema', () => {
     const enOffer = enNodes[1]['offers'] as { priceCurrency: string; price: number };
     expect(enOffer.priceCurrency).toBe('EUR');
     expect(enOffer.price).toBe(PRICE_EUR.kubki);
+  });
+});
+
+type AggOffer = {
+  '@type': string;
+  priceCurrency: string;
+  lowPrice: number;
+  highPrice: number;
+  offerCount: number;
+  availability: string;
+};
+
+describe('printCollectionSchema', () => {
+  const graph = printCollectionSchema({ locale: 'pl', t });
+  const nodes = graph['@graph'] as unknown as Array<{
+    '@type': string;
+    numberOfItems?: number;
+    itemListElement?: { item: { offers: AggOffer } }[];
+  }>;
+
+  it('contains a BreadcrumbList and an ItemList of published designs', () => {
+    expect(nodes.map((n) => n['@type'])).toEqual(['BreadcrumbList', 'ItemList']);
+    expect(nodes[1].numberOfItems).toBe(getPrintDesigns().length);
+  });
+
+  it('emits an AggregateOffer per design with low/high across sellable variants (PLN)', () => {
+    const offer = nodes[1].itemListElement![0].item.offers;
+    expect(offer['@type']).toBe('AggregateOffer');
+    expect(offer.priceCurrency).toBe('PLN');
+    // fap01: cheapest a4+matte+none=120; dearest a2+satin+oak=260+20+150=430.
+    expect(offer.lowPrice).toBe(120);
+    expect(offer.highPrice).toBe(430);
+    expect(offer.offerCount).toBeGreaterThan(0);
+  });
+});
+
+describe('printProductSchema', () => {
+  const design = getPrintById('fap01')!;
+  const tRaw = (key: string) => (key === 'notes.fine-art-prints' ? ['note0'] : key);
+
+  it('emits a Product node with an AggregateOffer and breadcrumb to the prints collection', () => {
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw });
+    const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
+    expect((nodes[0] as { '@type': string })['@type']).toBe('BreadcrumbList');
+    const productNode = nodes[1] as { '@type': string; sku: string; offers: AggOffer };
+    expect(productNode['@type']).toBe('Product');
+    expect(productNode.sku).toBe('fap01');
+    expect(productNode.offers['@type']).toBe('AggregateOffer');
+    expect(productNode.offers.lowPrice).toBe(120);
+    expect(productNode.offers.highPrice).toBe(430);
+  });
+
+  it('en locale prices the AggregateOffer in EUR', () => {
+    const graph = printProductSchema({ design, locale: 'en', t, tRaw });
+    const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
+    const offer = (nodes[1] as { offers: AggOffer }).offers;
+    expect(offer.priceCurrency).toBe('EUR');
+    // cheapest a4+matte+none=29; dearest a2+satin+oak=62+5+36=103.
+    expect(offer.lowPrice).toBe(29);
+    expect(offer.highPrice).toBe(103);
   });
 });

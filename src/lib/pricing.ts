@@ -11,6 +11,10 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'talerze-duze': 160,
   'duze-michy': 345,
   'miski-falowane': 195,
+  // Prints are variant-priced; this is a display-only "from" figure (cheapest
+  // variant). The amount actually charged is computed by priceOfVariant() in
+  // print-pricing.ts — never from this map. Placeholder until studio confirms.
+  'fine-art-prints': 120,
 };
 
 /** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
@@ -56,6 +60,8 @@ export const PRICE_EUR: Record<CategorySlug, number> = {
   'talerze-duze': 38,
   'duze-michy': 88,
   'miski-falowane': 48,
+  // Display-only "from" figure (see PRICE_PLN note). Placeholder.
+  'fine-art-prints': 29,
 };
 
 /* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.
@@ -66,7 +72,12 @@ export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
-/** Returns the display price for a product in the correct currency for the given locale. */
+/**
+ * Returns the display price for a product in the correct currency for the given
+ * locale. For ceramics this is the exact price. For fine-art prints the real
+ * amount is variant-dependent (see priceOfVariant in print-pricing.ts) and this
+ * map only yields the "from" figure; print surfaces show it as "od X / from Y".
+ */
 export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
   return locale !== 'pl' ? PRICE_EUR[product.category] : product.price;
 }
