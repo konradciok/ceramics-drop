@@ -14,7 +14,11 @@ export type CategorySlug =
   | 'talerze-srednie'
   | 'talerze-duze'
   | 'duze-michy'
-  | 'miski-falowane';
+  | 'miski-falowane'
+  // Fine-art prints — reproducible, configurable (size × paper × frame), NOT 1/1.
+  // Deliberately kept OUT of CATEGORY_ORDER: prints live in a separate registry
+  // (src/lib/prints.ts) so the one-of-a-kind ceramic machinery is untouched.
+  | 'fine-art-prints';
 
 /** A single one-of-a-kind ceramic piece. */
 export interface Product {
@@ -35,6 +39,53 @@ export interface Product {
   sold: boolean;
   /** 0-based index into the category's `notes` array (description lookup). */
   noteIndex: number;
+}
+
+/* ============================================================
+   Fine-art prints — a configurable design (size × paper × frame).
+   Unlike `Product` (a 1/1 piece), a print is reproducible: the same
+   design sells in many variant combinations, each with its own price
+   and SKU. Kept as a SEPARATE type (not a discriminated union over
+   `Product`) to contain the blast radius to print-specific code.
+   ============================================================ */
+
+/** Print size axis. Placeholder values — confirm with the studio. */
+export type PrintSize = 'a4' | 'a3' | 'a2';
+/** Paper axis. Placeholder values — confirm with the studio. */
+export type PrintPaper = 'matte' | 'satin';
+/** Frame axis. Placeholder values — confirm with the studio. */
+export type PrintFrame = 'none' | 'oak' | 'black';
+
+/** A single resolved variant choice across the three axes. */
+export interface PrintVariantSelection {
+  size: PrintSize;
+  paper: PrintPaper;
+  frame: PrintFrame;
+}
+
+/** A fine-art print design (reproducible, configurable). */
+export interface PrintDesign {
+  /** Stable id, prefix `fap`, e.g. `fap01`. */
+  id: string;
+  category: 'fine-art-prints';
+  /** Display number within the family, e.g. `01`. */
+  num: string;
+  /** Primary image (the artwork reproduction). */
+  image: string;
+  /** Room mockups, paper/frame close-ups. */
+  gallery?: string[];
+  /** 0-based index into notes['fine-art-prints'][] (description lookup). */
+  noteIndex: number;
+  /** Axes offered for THIS design (a subset of the global axes may be disabled). */
+  sizes: PrintSize[];
+  papers: PrintPaper[];
+  frames: PrintFrame[];
+  /** Excluded combinations, keyed by `${size}:${paper}:${frame}` (variantKey). */
+  unavailable?: string[];
+  /** Published designs are sellable; false hides the design entirely. */
+  published: boolean;
+  /** Display-only "from" price in PLN (listing / sorting / SEO). */
+  fromPLN: number;
 }
 
 /** Structural metadata for a product family / collection page. */

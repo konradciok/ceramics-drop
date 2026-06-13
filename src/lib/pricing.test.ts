@@ -4,7 +4,7 @@ import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEur
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
-  it('exposes PLN prices for all nine categories', () => {
+  it('exposes PLN prices for every category (nine ceramics + prints "from")', () => {
     expect(PRICE_PLN).toEqual({
       kubki: 95,
       wazony: 239,
@@ -15,6 +15,7 @@ describe('pricing', () => {
       'talerze-duze': 160,
       'duze-michy': 345,
       'miski-falowane': 195,
+      'fine-art-prints': 120,
     });
   });
 
