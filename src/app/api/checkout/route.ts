@@ -62,20 +62,26 @@ export async function POST(req: Request) {
   const amount = currency === 'eur'
     ? orderAmountEuroCents(valid.items.map((i) => i.unit_price), method)
     : orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
-  const ids = valid.items.map((i) => i.product_id);
+  // Only ceramics carry a piece_state row to reserve; prints are open-edition.
+  const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
+  const productIds = valid.items.map((i) => i.product_id);
+  const hasPrints = valid.items.some((i) => i.variant);
 
   const supabase = getSupabaseAdmin();
   const orderId = crypto.randomUUID();
 
-  // Reserve atomically BEFORE creating the PaymentIntent.
-  const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
-    p_ids: ids,
-    p_order_id: orderId,
-    p_ttl_secs: RESERVE_TTL_SECS,
-  });
-  if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
-  if (Array.isArray(conflicts) && conflicts.length > 0) {
-    return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+  // Reserve ceramics atomically BEFORE creating the PaymentIntent. Prints skip
+  // reservation entirely (always available), so a print-only cart reserves nothing.
+  if (ceramicIds.length > 0) {
+    const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
+      p_ids: ceramicIds,
+      p_order_id: orderId,
+      p_ttl_secs: RESERVE_TTL_SECS,
+    });
+    if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (Array.isArray(conflicts) && conflicts.length > 0) {
+      return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+    }
   }
 
   const stripe = getStripe();
@@ -88,7 +94,14 @@ export async function POST(req: Request) {
       amount,
       currency,
       payment_method_configuration: STRIPE_PMC_ID,
-      metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
+      // product_ids is auxiliary (≤500 chars); for prints it carries the design
+      // id only — order_items.variant is the source of truth for the full variant.
+      metadata: {
+        order_id: orderId,
+        product_ids: productIds.join(','),
+        delivery_method: method,
+        ...(hasPrints ? { has_prints: '1' } : {}),
+      },
     });
   } catch {
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
@@ -144,7 +157,12 @@ export async function POST(req: Request) {
   let itemsErr = null;
   if (!orderErr) {
     const r = await supabase.from('order_items').insert(
-      valid.items.map((i) => ({ order_id: orderId, product_id: i.product_id, unit_price: i.unit_price })),
+      valid.items.map((i) => ({
+        order_id: orderId,
+        product_id: i.product_id,
+        unit_price: i.unit_price,
+        variant: i.variant ?? null,
+      })),
     );
     itemsErr = r.error;
   }
