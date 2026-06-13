@@ -1,11 +1,30 @@
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
-import type { CategorySlug, Product } from '@/lib/types';
+import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
+import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
 import { PRICE_EUR } from '@/lib/pricing';
+import { priceOfVariant } from '@/lib/print-pricing';
+import { PRINT_FRAMES, PRINT_PAPERS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
+
+const PRINTS_SLUG = 'fine-art-prints';
+
+/** Prices (major units, given currency) of every sellable variant of a design. */
+function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur'): number[] {
+  const prices: number[] = [];
+  for (const size of PRINT_SIZES) {
+    for (const paper of PRINT_PAPERS) {
+      for (const frame of PRINT_FRAMES) {
+        const sel = { size, paper, frame };
+        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(design, sel, currency));
+      }
+    }
+  }
+  return prices;
+}
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
 function availabilityFor(sold: boolean) {
@@ -86,6 +105,125 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
             },
           },
         })),
+      },
+    ],
+  };
+}
+
+type PrintCollectionArgs = {
+  locale: Locale;
+  t: (key: string) => string;
+};
+
+/**
+ * `@graph` for the fine-art-prints collection: a `BreadcrumbList` plus an
+ * `ItemList` of published designs. Each design is a `Product` with an
+ * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
+ * print is configurable, not a single SKU.
+ */
+export function printCollectionSchema({ locale, t }: PrintCollectionArgs): Graph {
+  const designs = getPrintDesigns();
+  const currency = locale !== 'pl' ? 'eur' : 'pln';
+  const priceCurrency = locale !== 'pl' ? 'EUR' : 'PLN';
+  const categoryName = t('nav.fineArtPrints');
+  const singular = t('product.print');
+  const homeUrl = absoluteUrl(locale, '/');
+  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
+          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
+        ],
+      },
+      {
+        '@type': 'ItemList',
+        name: categoryName,
+        numberOfItems: designs.length,
+        itemListElement: designs.map((d, i) => {
+          const prices = sellableVariantPrices(d, currency);
+          return {
+            '@type': 'ListItem',
+            position: i + 1,
+            item: {
+              '@type': 'Product',
+              name: `${singular} Nº ${d.num}`,
+              image: `${SITE_URL}${d.image}`,
+              category: categoryName,
+              offers: {
+                '@type': 'AggregateOffer',
+                priceCurrency,
+                lowPrice: Math.min(...prices),
+                highPrice: Math.max(...prices),
+                offerCount: prices.length,
+                availability: 'https://schema.org/InStock',
+                url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
+              },
+            },
+          };
+        }),
+      },
+    ],
+  };
+}
+
+type PrintProductArgs = {
+  design: PrintDesign;
+  locale: Locale;
+  t: (key: string) => string;
+  tRaw: (key: string) => unknown;
+};
+
+/**
+ * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
+ * `AggregateOffer` spanning the cheapest→priciest sellable variant.
+ */
+export function printProductSchema({ design, locale, t, tRaw }: PrintProductArgs): Graph {
+  const currency = locale !== 'pl' ? 'eur' : 'pln';
+  const priceCurrency = locale !== 'pl' ? 'EUR' : 'PLN';
+  const categoryName = t('nav.fineArtPrints');
+  const singular = t('product.print');
+  const name = `${singular} Nº ${design.num}`;
+  const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
+  const description = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
+  const homeUrl = absoluteUrl(locale, '/');
+  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+  const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
+  const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
+  const prices = sellableVariantPrices(design, currency);
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
+          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
+          { '@type': 'ListItem', position: 3, name, item: productUrl },
+        ],
+      },
+      {
+        '@type': 'Product',
+        '@id': productUrl,
+        name,
+        description,
+        sku: design.id,
+        image: images,
+        category: categoryName,
+        offers: {
+          '@type': 'AggregateOffer',
+          priceCurrency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability: 'https://schema.org/InStock',
+          url: productUrl,
+        },
       },
     ],
   };

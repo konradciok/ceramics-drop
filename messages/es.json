@@ -31,7 +31,8 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "sklep": "Todas las piezas",
-    "gallery": "Galería"
+    "gallery": "Galería",
+    "fineArtPrints": "Láminas fine art"
   },
   "nav": {
     "sklep": "Tienda",
@@ -46,7 +47,8 @@
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "studio": "Estudio",
-    "kontakt": "Contacto"
+    "kontakt": "Contacto",
+    "fineArtPrints": "Láminas"
   },
   "aria": {
     "cart": "Carrito",
@@ -86,7 +88,8 @@
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
     "moreFrom": "Más de esta colección",
-    "seeAll": "Ver todo"
+    "seeAll": "Ver todo",
+    "print": "Lámina"
   },
   "gallery": {
     "sold": "Ya encontró casa"
@@ -408,6 +411,11 @@
       "eyebrow": "Drop de junio — 103 piezas",
       "title": "Todas las <em>piezas</em>",
       "lead": "Toda la colección en un solo lugar: tazas, jarrones, platos y cuencos. Cada pieza es única. Explora por categoría y marca tus favoritas."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Reproducciones fine art",
+      "title": "Láminas <em>fine art</em>",
+      "lead": "Impresión giclée en papel de archivo. Cada diseño en varios tamaños, en el papel que elijas, con marco o sin él."
     }
   },
   "studio": {
@@ -695,6 +703,11 @@
       "Conchas azules alrededor de una estrella de mar de terracota en el fondo del cuenco. El borde ondulado conduce el ritmo marino alrededor de la forma clara.",
       "Limones azules con pequeñas líneas blancas en el interior claro. El ritmo frutal recorre el borde ondulado y desciende hacia el centro.",
       "Ramitas negras con bayas redondas y hojas en espiga. El motivo se extiende por el interior claro, y el borde ondulado lo guía con un ritmo suave."
+    ],
+    "fine-art-prints": [
+      "El primer diseño de la serie fine art — reproducción de una composición original en una paleta sobria.",
+      "El segundo diseño — una forma expresiva con detalle pintado a mano, llevada al papel de archivo.",
+      "El tercer diseño de la serie fine art."
     ]
   },
   "error": {
@@ -722,7 +735,8 @@
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
-      "sklep": "La colección completa de Anna Ciok: 103 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta."
+      "sklep": "La colección completa de Anna Ciok: 103 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta.",
+      "fineArtPrints": "Reproducciones fine art de la obra de Anna Ciok — impresión giclée en papel de archivo. Elige tamaño, papel y marco."
     }
   },
   "deliveryNotice": {
@@ -737,5 +751,45 @@
     "accept": "Acepto",
     "reject": "Rechazo",
     "more": "Política de privacidad"
+  },
+  "print": {
+    "from": "desde {price}",
+    "axis": {
+      "size": "Tamaño",
+      "paper": "Papel",
+      "frame": "Marco"
+    },
+    "size": {
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2"
+    },
+    "sizeHint": {
+      "a4": "21 × 29,7 cm",
+      "a3": "29,7 × 42 cm",
+      "a2": "42 × 59,4 cm"
+    },
+    "paper": {
+      "matte": "Mate",
+      "satin": "Satinado"
+    },
+    "frame": {
+      "none": "Sin marco",
+      "oak": "Marco de roble",
+      "black": "Marco negro"
+    },
+    "addToCart": "Añadir al carrito",
+    "inCart": "En el carrito",
+    "unavailable": "No disponible en esta combinación",
+    "priceLabel": "Precio",
+    "sectionDetails": "Detalles",
+    "sectionEdition": "Edición",
+    "sectionDelivery": "Envío y plazo",
+    "sectionCare": "Cuidado",
+    "editionOpen": "Edición abierta — impresión bajo pedido.",
+    "technique": "Impresión giclée, tintas pigmentadas, papel de archivo.",
+    "deliveryNote": "Impresión bajo pedido — lista en 7–10 días hábiles. Las láminas enmarcadas se envían por mensajería.",
+    "careNote": "Protégela de la luz solar directa y la humedad. Mejor expuesta enmarcada bajo cristal.",
+    "moreFrom": "Más de la colección de láminas"
   }
 }

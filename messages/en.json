@@ -31,7 +31,8 @@
     "regulamin": "Terms",
     "polityka": "Privacy policy",
     "sklep": "All pieces",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "fineArtPrints": "Fine-art prints"
   },
   "nav": {
     "sklep": "Shop",
@@ -46,7 +47,8 @@
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "studio": "Studio",
-    "kontakt": "Contact"
+    "kontakt": "Contact",
+    "fineArtPrints": "Prints"
   },
   "aria": {
     "cart": "Cart",
@@ -86,7 +88,8 @@
     "largebowl": "Large bowl",
     "wavybowl": "Wavy-rim bowl",
     "moreFrom": "More from this collection",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "print": "Print"
   },
   "gallery": {
     "sold": "Found a home"
@@ -408,6 +411,11 @@
       "eyebrow": "June drop — 103 pieces",
       "title": "All <em>pieces</em>",
       "lead": "The whole collection in one place — mugs, vases, plates and bowls. Every item is one of a kind. Browse by category and mark your favourites."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Fine-art reproductions",
+      "title": "Fine-art <em>prints</em>",
+      "lead": "Giclée printed on archival paper. Each design comes in several sizes, on the paper you choose, framed or unframed."
     }
   },
   "studio": {
@@ -695,6 +703,11 @@
       "Blue shells around a terracotta starfish on the bowl’s base. The wavy rim leads the marine rhythm around the light form.",
       "Blue lemons with small white strokes on the bright interior. The fruit rhythm circles the wavy rim and descends toward the center.",
       "Black twigs with round berries and herringbone leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm."
+    ],
+    "fine-art-prints": [
+      "The first design in the fine-art series — a reproduction of an original composition in a muted palette.",
+      "The second design — a bold form with hand-painted detail, brought to archival paper.",
+      "The third design in the fine-art series."
     ]
   },
   "error": {
@@ -722,7 +735,8 @@
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
-      "sklep": "Anna Ciok's full collection: 103 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
+      "sklep": "Anna Ciok's full collection: 103 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
+      "fineArtPrints": "Fine-art reproductions of Anna Ciok's work — giclée printed on archival paper. Choose size, paper and framing."
     }
   },
   "deliveryNotice": {
@@ -737,5 +751,45 @@
     "accept": "Accept",
     "reject": "Reject",
     "more": "Privacy policy"
+  },
+  "print": {
+    "from": "from {price}",
+    "axis": {
+      "size": "Size",
+      "paper": "Paper",
+      "frame": "Framing"
+    },
+    "size": {
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2"
+    },
+    "sizeHint": {
+      "a4": "21 × 29.7 cm",
+      "a3": "29.7 × 42 cm",
+      "a2": "42 × 59.4 cm"
+    },
+    "paper": {
+      "matte": "Matte",
+      "satin": "Satin"
+    },
+    "frame": {
+      "none": "No frame",
+      "oak": "Oak frame",
+      "black": "Black frame"
+    },
+    "addToCart": "Add to cart",
+    "inCart": "In cart",
+    "unavailable": "Not available in this combination",
+    "priceLabel": "Price",
+    "sectionDetails": "Details",
+    "sectionEdition": "Edition",
+    "sectionDelivery": "Delivery & lead time",
+    "sectionCare": "Care",
+    "editionOpen": "Open edition — printed to order.",
+    "technique": "Giclée print, pigment inks, archival paper.",
+    "deliveryNote": "Printed to order — made within 7–10 business days. Framed prints ship by courier.",
+    "careNote": "Keep away from direct sunlight and damp. Best displayed framed under glass.",
+    "moreFrom": "More from the prints collection"
   }
 }

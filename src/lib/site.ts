@@ -18,6 +18,7 @@ export const SITE_PATHS = [
   '/wazony',
   '/wazony-srednie',
   '/wazony-duze',
+  '/fine-art-prints',
   '/koszyk',
   '/o-studiu',
   '/kontakt',
