@@ -218,6 +218,41 @@ describe('createOrderInvoice', () => {
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
   });
 
+  it('keys two variants of the same print design by variant_key so both invoice lines are created', async () => {
+    // Same design (fap01), two variants → same product_id but distinct variant_key.
+    // The invoice-item idempotency key must include variant_key, or Stripe would
+    // dedupe the second line and the buyer would be billed for one print.
+    itemRows = [
+      {
+        order_id: 'ord-1', product_id: 'fap01', unit_price: 12000,
+        variant: { size: 'a4', paper: 'matte', frame: 'none', sku: 'FAP-01-A4-MATTE-NONE' },
+        variant_key: 'FAP-01-A4-MATTE-NONE',
+      },
+      {
+        order_id: 'ord-1', product_id: 'fap01', unit_price: 18000,
+        variant: { size: 'a3', paper: 'matte', frame: 'none', sku: 'FAP-01-A3-MATTE-NONE' },
+        variant_key: 'FAP-01-A3-MATTE-NONE',
+      },
+    ];
+    orderRow = { ...ORDER, shipping: 0, total: 30000 };
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 0 })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 30000 });
+    stripeMock.invoices.finalizeInvoice.mockResolvedValue({ id: 'in_1', status: 'open', total: 30000 });
+    stripeMock.invoices.pay.mockResolvedValue({ id: 'in_1', status: 'paid', total: 30000 });
+
+    await createOrderInvoice('pi_1');
+
+    // Two print lines, no shipping line (shipping: 0).
+    expect(stripeMock.invoiceItems.create).toHaveBeenCalledTimes(2);
+    const keys = stripeMock.invoiceItems.create.mock.calls.map(
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey,
+    );
+    expect(keys).toEqual(['ii2_ord-1_FAP-01-A4-MATTE-NONE', 'ii2_ord-1_FAP-01-A3-MATTE-NONE']);
+    expect(new Set(keys).size).toBe(2);
+  });
+
   it('uses English product labels and shipping description for en locale', async () => {
     orderRow = { ...ORDER, locale: 'en', currency: 'eur' };
     await createOrderInvoice('pi_1');

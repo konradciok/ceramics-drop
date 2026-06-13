@@ -162,6 +162,7 @@ export async function POST(req: Request) {
         product_id: i.product_id,
         unit_price: i.unit_price,
         variant: i.variant ?? null,
+        variant_key: i.variant_key ?? null,
       })),
     );
     itemsErr = r.error;

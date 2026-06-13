@@ -12,7 +12,13 @@ export const MAX_CART = getProducts().length + 50;
 
 /** A resolved print variant persisted on the order line (null/absent for ceramics). */
 export type CheckoutVariant = PrintVariantSelection & { sku: string };
-export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant };
+/**
+ * `variant_key` is the print SKU promoted to a scalar (e.g. `FAP-01-A3-SATIN-OAK`):
+ * design-specific, so it keys both the order_items exact-variant unique index and
+ * the Stripe invoice-item idempotency key without cross-design collisions. Absent
+ * for one-of-a-kind ceramics (they dedupe on product_id alone).
+ */
+export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant; variant_key?: string };
 export type ValidateResult =
   | { ok: true; items: CheckoutItem[] }
   | { ok: false; reason: 'empty' | 'too_many' | 'unknown' };
@@ -42,7 +48,8 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): 
       seen.add(raw);
       const major = priceOfVariant(design, dec.sel, currency);
       const unit_price = currency === 'eur' ? toEuroCents(major) : toGrosze(major);
-      items.push({ product_id: dec.designId, unit_price, variant: { ...dec.sel, sku: skuOf(design, dec.sel) } });
+      const sku = skuOf(design, dec.sel);
+      items.push({ product_id: dec.designId, unit_price, variant: { ...dec.sel, sku }, variant_key: sku });
       continue;
     }
 

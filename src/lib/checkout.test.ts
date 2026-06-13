@@ -55,6 +55,7 @@ describe('validateCart — fine-art prints', () => {
         product_id: 'fap01',
         unit_price: 35000,
         variant: { size: 'a3', paper: 'satin', frame: 'oak', sku: 'FAP-01-A3-SATIN-OAK' },
+        variant_key: 'FAP-01-A3-SATIN-OAK',
       });
     }
   });
@@ -75,14 +76,28 @@ describe('validateCart — fine-art prints', () => {
         product_id: 'fap01',
         unit_price: 12000, // a4 base 120 zł
         variant: { size: 'a4', paper: 'matte', frame: 'none', sku: 'FAP-01-A4-MATTE-NONE' },
+        variant_key: 'FAP-01-A4-MATTE-NONE',
       });
     }
   });
 
-  it('keeps two different variants of the same design as separate lines', () => {
+  it('keeps two different variants of the same design as separate lines with distinct variant keys', () => {
     const r = validateCart(['print:fap01:a4:matte:none', 'print:fap01:a3:matte:none']);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.items).toHaveLength(2);
+    if (r.ok) {
+      expect(r.items).toHaveLength(2);
+      // The scalar variant_key (KTD1) is what the order_items exact-variant unique
+      // index and the Stripe invoice idempotency key key off, so two variants of one
+      // design must carry distinct, design-specific keys.
+      expect(r.items[0].variant_key).toBe('FAP-01-A4-MATTE-NONE');
+      expect(r.items[1].variant_key).toBe('FAP-01-A3-MATTE-NONE');
+    }
+  });
+
+  it('leaves variant_key absent for one-of-a-kind ceramic lines', () => {
+    const r = validateCart(['k01']);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.items[0].variant_key).toBeUndefined();
   });
 
   it('rejects a structurally invalid token', () => {

@@ -126,13 +126,18 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
           ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
           : it.product_id;
       }
+      // Key by the scalar variant_key (the print SKU) so two variants of one design
+      // get distinct keys and both lines are created; ceramics fall back to
+      // product_id. variant?.sku is a defensive fallback for any pre-migration row
+      // whose variant_key was not backfilled.
+      const itemKey = (it.variant_key as string | null) ?? variant?.sku ?? it.product_id;
       await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${variant?.sku ?? it.product_id}` });
+      }, { idempotencyKey: `ii2_${order.id}_${itemKey}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
