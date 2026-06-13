@@ -121,6 +121,37 @@ export function buildAddToCartEvent(
   );
 }
 
+/**
+ * add_to_cart for a fine-art print variant. Prints aren't `Product`s, so this
+ * builds the AnalyticsItem directly: item_id = design id, item_variant = the
+ * chosen size/paper/frame label, price = the resolved variant price (major units).
+ */
+export function buildPrintAddToCartEvent(
+  print: { id: string; num: string; variantLabel: string; price: number },
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('add_to_cart', `${print.id}-${print.variantLabel}`);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  const item: AnalyticsItem = {
+    item_id: print.id,
+    item_name: `Print Nº ${print.num}`,
+    item_brand: BRAND,
+    item_category: 'fine-art-prints',
+    item_variant: print.variantLabel,
+    price: print.price,
+    quantity: 1,
+  };
+  return withMeta(
+    {
+      event: 'add_to_cart',
+      event_id: eventId,
+      ecommerce: ecommerce([item], currency),
+    },
+    'AddToCart',
+    eventId,
+  );
+}
+
 export function buildRemoveFromCartEvent(
   product: Product,
   options: EventOptions = {},
