@@ -15,6 +15,10 @@ export const sel = {
   checkoutButton: '[data-testid="checkout-button"]',
   paymentSubmit: '[data-testid="payment-submit"]',
   checkoutSuccess: '[data-testid="checkout-success"]',
+  printTile: '[data-testid="print-tile"]',
+  printConfigurator: '[data-testid="print-configurator"]',
+  printPrice: '[data-testid="print-price"]',
+  printAdd: '[data-testid="print-add"]',
 } as const;
 
 /**
@@ -48,6 +52,24 @@ export async function addFirstUnsoldFromCategory(page: Page, category: string): 
 
 export async function goToCart(page: Page): Promise<void> {
   await page.goto('/koszyk');
+}
+
+/**
+ * Configure a fine-art print on its PDP (size/paper/frame) and add it to the cart.
+ * Returns the composite cart token so callers can assert against it.
+ */
+export async function addPrintVariant(
+  page: Page,
+  designId: string,
+  v: { size: string; paper: string; frame: string },
+): Promise<string> {
+  await page.goto(`/fine-art-prints/${designId}`);
+  await expect(page.locator(sel.printConfigurator)).toBeVisible();
+  await page.locator(`[data-testid="opt-size-${v.size}"]`).click();
+  await page.locator(`[data-testid="opt-paper-${v.paper}"]`).click();
+  await page.locator(`[data-testid="opt-frame-${v.frame}"]`).click();
+  await page.locator(sel.printAdd).click();
+  return `print:${designId}:${v.size}:${v.paper}:${v.frame}`;
 }
 
 export async function selectPaczkomat(page: Page): Promise<void> {
