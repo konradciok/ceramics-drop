@@ -1457,7 +1457,13 @@ function customHtmlTag(name, html, firingTriggerId, options = {}) {
       ? {
           consentSettings: {
             consentStatus: 'needed',
-            consentType: options.consentTypes.map((t) => templateParam('', t)).map((p) => ({ type: 'template', value: p.value })),
+            // Tag Manager API v2: consentType is a SINGLE Parameter, not a repeating
+            // field. Carry one-or-more consent types as a list-type Parameter, else
+            // the API rejects with "Proto field is not repeating, cannot start list".
+            consentType: {
+              type: 'list',
+              list: options.consentTypes.map((t) => ({ type: 'template', value: t })),
+            },
           },
         }
       : {}),
