@@ -13,6 +13,8 @@ import gbMessages from '../../messages/gb.json';
 
 export type FeedLocale = Locale;
 
+export const FEED_LOCALES: FeedLocale[] = ['pl', 'en', 'es', 'de', 'gb'];
+
 type Messages = typeof enMessages;
 
 const LOCALE_MESSAGES: Record<FeedLocale, Messages> = {
@@ -38,6 +40,7 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
+// Values are already-escaped XML entities (& → &amp;, > → &gt;) — insert directly without re-escaping.
 const GOOGLE_CATEGORY: Record<CategorySlug, string> = {
   kubki: 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Cups &amp; Mugs',
   wazony: 'Home &amp; Garden &gt; Decor &gt; Vases',
@@ -140,7 +143,7 @@ function itemToMetaXml(item: FeedItem): string {
 
 function channelHeader(locale: FeedLocale): string {
   const msg = LOCALE_MESSAGES[locale];
-  const description = (msg.meta as { description: string }).description;
+  const description = (msg.meta as { description?: string }).description ?? '';
   return `  <title>${escapeXml(SITE_NAME)}</title>
   <link>${SITE_URL}</link>
   <description>${escapeXml(description)}</description>`;

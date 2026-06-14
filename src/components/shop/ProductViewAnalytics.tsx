@@ -11,7 +11,7 @@ type Props = { product: Product };
 /** Fires view_item on PDP load — mirrors the event Lightbox fires on open. */
 export function ProductViewAnalytics({ product }: Props) {
   const locale = useLocale();
-  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
+  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
 
   useEffect(() => {
     pushDataLayer(

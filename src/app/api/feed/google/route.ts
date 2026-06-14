@@ -1,13 +1,11 @@
 import { getSoldIds } from '@/lib/inventory';
-import { buildFeedItems, buildGoogleXml, type FeedLocale } from '@/lib/feed';
+import { buildFeedItems, buildGoogleXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_LOCALES: FeedLocale[] = ['pl', 'en', 'es', 'de', 'gb'];
-
 export async function GET(request: Request) {
   const param = new URL(request.url).searchParams.get('locale') ?? 'pl';
-  const locale: FeedLocale = (VALID_LOCALES as string[]).includes(param)
+  const locale: FeedLocale = (FEED_LOCALES as string[]).includes(param)
     ? (param as FeedLocale)
     : 'pl';
 
