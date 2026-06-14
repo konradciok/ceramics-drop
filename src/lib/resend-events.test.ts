@@ -60,11 +60,14 @@ describe('buildAbandonedCartEmail — subject localisation', () => {
     const { subject } = buildAbandonedCartEmail({ locale: 'es', firstName: 'Anna', cartUrl: 'x' });
     expect(subject).toBe('Tu cesta te espera');
   });
-  it('falls back to English for de/gb locales', () => {
-    const { subject: de } = buildAbandonedCartEmail({ locale: 'de', firstName: 'Anna', cartUrl: 'x' });
-    expect(de).toBe('Your cart is waiting');
-    const { subject: gb } = buildAbandonedCartEmail({ locale: 'gb', firstName: 'Anna', cartUrl: 'x' });
-    expect(gb).toBe('Your cart is waiting');
+  it('returns the German subject for de', () => {
+    const { subject } = buildAbandonedCartEmail({ locale: 'de', firstName: 'Anna', cartUrl: 'x' });
+    expect(subject).toBe('Dein Warenkorb wartet');
+  });
+
+  it('falls back to English for gb locale', () => {
+    const { subject } = buildAbandonedCartEmail({ locale: 'gb', firstName: 'Anna', cartUrl: 'x' });
+    expect(subject).toBe('Your cart is waiting');
   });
 
   it('falls back to Polish for a truly unknown locale', () => {
@@ -87,6 +90,9 @@ describe('subject drift guard', () => {
     );
     expect(buildAbandonedCartEmail({ locale: 'es', firstName: null, cartUrl: 'x' }).subject).toBe(
       AUTOMATION_SUBJECTS.es,
+    );
+    expect(buildAbandonedCartEmail({ locale: 'de', firstName: null, cartUrl: 'x' }).subject).toBe(
+      AUTOMATION_SUBJECTS.de,
     );
   });
 });

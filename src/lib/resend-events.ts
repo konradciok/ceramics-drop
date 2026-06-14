@@ -24,11 +24,11 @@ export const ABANDONED_CART_EVENTS = {
   purchased: 'cart.purchased',
 } as const;
 
-type SupportedLocale = 'pl' | 'en' | 'es';
+type SupportedLocale = 'pl' | 'en' | 'es' | 'de';
 
 function resolveLocale(locale: string): SupportedLocale {
-  if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
-  if (locale === 'gb' || locale === 'de') return 'en'; // gb/de → English confirmation emails
+  if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
+  if (locale === 'gb') return 'en'; // gb → English abandoned-cart emails
   return 'pl';
 }
 
@@ -47,6 +47,7 @@ export const AUTOMATION_SUBJECTS: Record<SupportedLocale, string> = {
   pl: 'Twój koszyk czeka',
   en: 'Your cart is waiting',
   es: 'Tu cesta te espera',
+  de: 'Dein Warenkorb wartet',
 };
 
 const I18N_ABANDONED: Record<SupportedLocale, {
@@ -76,6 +77,13 @@ const I18N_ABANDONED: Record<SupportedLocale, {
     body2: 'Cada pieza es única — cuando se va, se va para siempre.',
     cta: 'Completar tu pedido',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+  de: {
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    body1: 'Die von dir gewählten Stücke warten noch in deinem Warenkorb.',
+    body2: 'Jedes Stück ist ein Unikat — wenn es weg ist, ist es für immer weg.',
+    cta: 'Bestellung abschließen',
+    signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
 
