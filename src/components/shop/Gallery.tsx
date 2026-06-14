@@ -19,7 +19,7 @@ type Props = {
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
 export function Gallery({ products }: Props) {
   const locale = useLocale();
-  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
+  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
   // Memoised so the array reference is stable across renders (only changes when
   // the `products` prop changes), which lets us use `available` directly in
   // useEffect deps without triggering the effect on every render.

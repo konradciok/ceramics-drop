@@ -27,7 +27,7 @@ type Props = {
 export function GroupedGallery({ products }: Props) {
   const t = useTranslations();
   const locale = useLocale();
-  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
+  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
 
   // Flat list of purchasable pieces — index space shared by the lightbox and
   // the select_item analytics event (matches the per-category Gallery).

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
+import { PRICE_GBP, SHIPPING_GBP, toGBPPence, shippingGBPPence, orderAmountGBPPence } from './pricing';
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
@@ -67,11 +68,75 @@ describe('priceOf', () => {
     expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'es')).toBe(PRICE_EUR.kubki);
   });
 
+  it('returns EUR price for de locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'de')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('returns GBP price for gb locale', () => {
+    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'gb')).toBe(PRICE_GBP.kubki);
+  });
+
   it('resolves all nine categories correctly for pl and en', () => {
     for (const cat of ALL_CATEGORIES) {
       expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'pl')).toBe(PRICE_PLN[cat]);
       expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'en')).toBe(PRICE_EUR[cat]);
     }
+  });
+});
+
+describe('GBP pricing helpers', () => {
+  const ALL_CATEGORIES: CategorySlug[] = [
+    'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
+    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  ];
+
+  it('PRICE_GBP covers every category with the expected values', () => {
+    expect(PRICE_GBP).toEqual({
+      kubki: 22,
+      wazony: 50,
+      'wazony-srednie': 58,
+      'wazony-duze': 75,
+      talerzyki: 15,
+      'talerze-srednie': 24,
+      'talerze-duze': 32,
+      'duze-michy': 75,
+      'miski-falowane': 42,
+    });
+  });
+
+  it('priceOf resolves all nine categories for gb', () => {
+    for (const cat of ALL_CATEGORIES) {
+      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'gb')).toBe(PRICE_GBP[cat]);
+    }
+  });
+
+  it('toGBPPence multiplies by 100', () => {
+    expect(toGBPPence(22)).toBe(2200);
+    expect(toGBPPence(0)).toBe(0);
+  });
+
+  it('SHIPPING_GBP has expected values for all methods', () => {
+    expect(SHIPPING_GBP.paczkomat).toBe(5);
+    expect(SHIPPING_GBP.kurier).toBe(12);
+    expect(SHIPPING_GBP.odbior).toBe(0);
+  });
+
+  it('shippingGBPPence returns correct pence for all methods', () => {
+    expect(shippingGBPPence('paczkomat')).toBe(500);
+    expect(shippingGBPPence('kurier')).toBe(1200);
+    expect(shippingGBPPence('odbior')).toBe(0);
+  });
+
+  it('orderAmountGBPPence sums items + paczkomat shipping', () => {
+    expect(orderAmountGBPPence([2200, 5000], 'paczkomat')).toBe(7700); // 2200+5000+500
+  });
+
+  it('orderAmountGBPPence handles kurier shipping', () => {
+    expect(orderAmountGBPPence([2200], 'kurier')).toBe(3400); // 2200+1200
+  });
+
+  it('orderAmountGBPPence handles odbior (free)', () => {
+    expect(orderAmountGBPPence([5000], 'odbior')).toBe(5000);
   });
 });
 

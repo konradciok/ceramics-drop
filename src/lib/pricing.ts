@@ -1,4 +1,4 @@
-/* PLN and EUR prices with helpers. PL locale → PLN; en/es locales → EUR. */
+/* PLN, EUR, and GBP prices with helpers. PL locale → PLN; gb locale → GBP; en/es/de locales → EUR. */
 import type { CategorySlug } from './types';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
@@ -66,9 +66,48 @@ export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
+/**
+ * Fixed GBP prices per category (whole pounds). Approximate rate: 1 GBP ≈ 1.18 EUR (June 2026).
+ * Review with the artisan whenever EUR prices change significantly.
+ */
+export const PRICE_GBP: Record<CategorySlug, number> = {
+  kubki: 22,
+  wazony: 50,
+  'wazony-srednie': 58,
+  'wazony-duze': 75,
+  talerzyki: 15,
+  'talerze-srednie': 24,
+  'talerze-duze': 32,
+  'duze-michy': 75,
+  'miski-falowane': 42,
+};
+
+export const SHIPPING_GBP: Record<DeliveryMethod, number> = {
+  paczkomat: 5,
+  kurier: 12,
+  odbior: 0,
+};
+
+/** Pounds (integer) → pence. */
+export function toGBPPence(pounds: number): number {
+  return Math.round(pounds * 100);
+}
+
+/** Shipping cost in pence for the chosen delivery method. */
+export function shippingGBPPence(method: DeliveryMethod): number {
+  return toGBPPence(SHIPPING_GBP[method]);
+}
+
+/** Sum item amounts (pence) + shipping for the chosen method. */
+export function orderAmountGBPPence(itemPence: number[], method: DeliveryMethod): number {
+  return itemPence.reduce((s, p) => s + p, 0) + shippingGBPPence(method);
+}
+
 /** Returns the display price for a product in the correct currency for the given locale. */
 export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
-  return locale !== 'pl' ? PRICE_EUR[product.category] : product.price;
+  if (locale === 'pl') return product.price;
+  if (locale === 'gb') return PRICE_GBP[product.category];
+  return PRICE_EUR[product.category];
 }
 
 /** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
