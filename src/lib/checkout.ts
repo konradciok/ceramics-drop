@@ -1,5 +1,5 @@
 import { getProductById, getProducts } from './products';
-import { PRICE_EUR, toEuroCents, toGrosze } from './pricing';
+import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
 
 // Hard sanity bound: a cart can never hold more than the whole (one-of-a-kind)
 // catalogue. Derived so it can't drift when the catalogue changes.
@@ -12,9 +12,9 @@ export type ValidateResult =
 
 /**
  * Resolve raw cart ids to deduped, catalog-known items.
- * unit_price is in grosze (PLN) or euro-cents (EUR) depending on currency.
+ * unit_price is in grosze (PLN), euro-cents (EUR), or pence (GBP) depending on currency.
  */
-export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): ValidateResult {
+export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 'pln'): ValidateResult {
   if (!Array.isArray(rawIds) || rawIds.length === 0) return { ok: false, reason: 'empty' };
   if (rawIds.length > MAX_CART) return { ok: false, reason: 'too_many' };
 
@@ -25,9 +25,10 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): 
     const product = getProductById(id);
     if (!product) return { ok: false, reason: 'unknown' };
     seen.add(id);
-    const unit_price = currency === 'eur'
-      ? toEuroCents(PRICE_EUR[product.category])
-      : toGrosze(product.price);
+    const unit_price =
+      currency === 'eur' ? toEuroCents(PRICE_EUR[product.category]) :
+      currency === 'gbp' ? toGBPPence(PRICE_GBP[product.category]) :
+      toGrosze(product.price);
     items.push({ product_id: id, unit_price });
   }
   if (items.length === 0) return { ok: false, reason: 'empty' };

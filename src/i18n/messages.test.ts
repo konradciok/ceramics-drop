@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import pl from '../../messages/pl.json';
 import en from '../../messages/en.json';
 import es from '../../messages/es.json';
+import de from '../../messages/de.json';
+import gb from '../../messages/gb.json';
 import { SHIPPING_PLN } from '@/lib/pricing';
 import { pln } from '@/lib/format';
 
@@ -23,9 +25,12 @@ describe('locale message files', () => {
 
     expect(shape(en)).toEqual(referenceShape);
     expect(shape(es)).toEqual(referenceShape);
+    expect(shape(de)).toEqual(referenceShape);
+    expect(shape(gb)).toEqual(referenceShape);
   });
 
   it('keep current shipping timing and courier pricing in public copy', () => {
+    // pl/en/es shipping pages reference PLN prices (en.json keeps zł for consistency with the Polish market)
     for (const messages of [pl, en, es]) {
       const serialized = JSON.stringify(messages);
 

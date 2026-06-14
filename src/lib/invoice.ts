@@ -5,13 +5,15 @@ import { getProductById, CATEGORIES } from './products';
 import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
 import esMessages from '../../messages/es.json';
+import deMessages from '../../messages/de.json';
 
-const MESSAGES = { pl: plMessages, en: enMessages, es: esMessages } as const;
+const MESSAGES = { pl: plMessages, en: enMessages, es: esMessages, de: deMessages } as const;
 
 const SHIPPING_LABELS: Record<string, { paczkomat: string; kurier: string }> = {
   pl: { paczkomat: 'Wysyłka — Paczkomat InPost', kurier: 'Wysyłka — Kurier InPost' },
   en: { paczkomat: 'Shipping — Paczkomat InPost', kurier: 'Shipping — InPost Courier' },
   es: { paczkomat: 'Envío — Paczkomat InPost', kurier: 'Envío — Mensajería InPost' },
+  de: { paczkomat: 'Versand — Paczkomat InPost', kurier: 'Versand — InPost Kurier' },
 };
 
 /**
@@ -69,12 +71,13 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
-  const invoiceLocale = (order.locale as string) === 'en' ? 'en'
+  const invoiceLocale = (order.locale as string) === 'en' || (order.locale as string) === 'gb' ? 'en'
     : (order.locale as string) === 'es' ? 'es'
+    : (order.locale as string) === 'de' ? 'de'
     : 'pl';
 
   const messages = MESSAGES[invoiceLocale as keyof typeof MESSAGES] ?? plMessages;
-  const orderCurrency: 'pln' | 'eur' = order.currency === 'eur' ? 'eur' : 'pln';
+  const orderCurrency: 'pln' | 'eur' | 'gbp' = order.currency === 'eur' ? 'eur' : order.currency === 'gbp' ? 'gbp' : 'pln';
 
   const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
   let customer: Stripe.Customer;

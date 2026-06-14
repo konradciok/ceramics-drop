@@ -4,7 +4,7 @@ import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -43,12 +43,13 @@ export async function POST(req: Request) {
   }
 
   // Persist the buyer's locale so the shipping-confirmation email can be localised.
-  const VALID_LOCALES = ['pl', 'en', 'es'] as const;
+  const VALID_LOCALES = ['pl', 'en', 'es', 'de', 'gb'] as const;
   const locale: string =
     typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
       ? body.locale
       : 'pl';
-  const currency: 'pln' | 'eur' = locale === 'pl' ? 'pln' : 'eur';
+  const currency: 'pln' | 'eur' | 'gbp' =
+    locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
 
   const valid = validateCart(body.ids, currency);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
@@ -59,9 +60,11 @@ export async function POST(req: Request) {
   if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
   const { method, contact, target_point, address } = delivery.delivery;
 
-  const amount = currency === 'eur'
-    ? orderAmountEuroCents(valid.items.map((i) => i.unit_price), method)
-    : orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
+  const unitPrices = valid.items.map((i) => i.unit_price);
+  const amount =
+    currency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
+    currency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
+    orderAmountGrosze(unitPrices, method);
   const ids = valid.items.map((i) => i.product_id);
 
   const supabase = getSupabaseAdmin();

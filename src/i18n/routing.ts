@@ -1,8 +1,8 @@
 import { defineRouting } from 'next-intl/routing';
 
 export const routing = defineRouting({
-  // The storefront is trilingual; Polish is the default (no URL prefix).
-  locales: ['pl', 'en', 'es'],
+  // The storefront supports five locales; Polish is the default (no URL prefix).
+  locales: ['pl', 'en', 'es', 'de', 'gb'],
   defaultLocale: 'pl',
   // `/` → PL, `/en`, `/es`. Only non-default locales get a prefix.
   localePrefix: 'as-needed',

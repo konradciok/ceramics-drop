@@ -42,4 +42,10 @@ describe('validateCart', () => {
     const result = validateCart(['k01']);
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
   });
+
+  it('resolves items to pence when currency is gbp', () => {
+    // k01 is kubki → PRICE_GBP.kubki = 22 → toGBPPence(22) = 2200
+    const result = validateCart(['k01'], 'gbp');
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
+  });
 });

@@ -28,6 +28,7 @@ type SupportedLocale = 'pl' | 'en' | 'es';
 
 function resolveLocale(locale: string): SupportedLocale {
   if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
+  if (locale === 'gb' || locale === 'de') return 'en'; // gb/de → English confirmation emails
   return 'pl';
 }
 
@@ -78,15 +79,18 @@ const I18N_ABANDONED: Record<SupportedLocale, {
   },
 };
 
+const KNOWN_LOCALES = new Set(['pl', 'en', 'es', 'de', 'gb']);
+
 /**
  * Build an absolute, locale-aware cart URL. Polish (default) is unprefixed;
- * en/es are prefixed. `origin` (e.g. the checkout request origin) wins when
- * present, otherwise the canonical SITE_URL is used.
+ * all other known locales are prefixed. Unknown locales fall back to the
+ * unprefixed (Polish) URL. `origin` (e.g. the checkout request origin) wins
+ * when present, otherwise the canonical SITE_URL is used.
  */
 export function cartUrlForLocale(locale: string, origin?: string): string {
-  const loc = resolveLocale(locale);
   const base = origin && origin.length > 0 ? origin : SITE_URL;
-  const prefix = loc === 'pl' ? '' : `/${loc}`;
+  const knownLocale = KNOWN_LOCALES.has(locale) ? locale : 'pl';
+  const prefix = knownLocale === 'pl' ? '' : `/${knownLocale}`;
   return `${base}${prefix}/koszyk`;
 }
 

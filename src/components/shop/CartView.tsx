@@ -6,7 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts, CATEGORIES } from '@/lib/products';
-import { pln, eur } from '@/lib/format';
+import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
@@ -24,7 +24,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, SHIPPING_EUR, PRICE_EUR, type DeliveryMethod } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, PRICE_EUR, PRICE_GBP, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -143,13 +143,13 @@ export function CartView() {
 
   const products = resolveCartProducts(ids);
   const n = products.length;
-  const currency = locale === 'pl' ? 'pln' : 'eur';
-  const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
-  const fmt = currency === 'eur' ? eur : pln;
+  const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
+  const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
+  const fmt = currency === 'eur' ? eur : currency === 'gbp' ? gbp : pln;
   const priceOf = (p: ReturnType<typeof resolveCartProducts>[number]) =>
-    currency === 'eur' ? PRICE_EUR[p.category] : p.price;
+    currency === 'eur' ? PRICE_EUR[p.category] : currency === 'gbp' ? PRICE_GBP[p.category] : p.price;
   const shippingOf = (method: ShipId) =>
-    currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
+    currency === 'eur' ? SHIPPING_EUR[method] : currency === 'gbp' ? SHIPPING_GBP[method] : SHIPPING_PLN[method];
   const subtotal = products.reduce((s, p) => s + priceOf(p), 0);
   const shipCost = shippingOf(ship);
   const total = subtotal + shipCost;
@@ -303,10 +303,11 @@ export function CartView() {
     return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
   };
 
-  // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
-  const stripeLocale = (['pl', 'en', 'es'] as string[]).includes(locale)
-    ? (locale as 'pl' | 'en' | 'es')
-    : 'auto';
+  // Stripe Elements UI in the buyer's language. de is a valid Stripe locale; gb maps to en.
+  const stripeLocale = locale === 'gb' ? 'en'
+    : (['pl', 'en', 'es', 'de'] as string[]).includes(locale)
+      ? (locale as 'pl' | 'en' | 'es' | 'de')
+      : 'auto';
 
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (

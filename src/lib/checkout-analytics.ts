@@ -13,7 +13,7 @@ type CheckoutStartOptions = {
   shippingMethod: string;
   userData?: { em?: string };
   push?: (event: DataLayerEvent) => void;
-  currency?: 'PLN' | 'EUR';
+  currency?: 'PLN' | 'EUR' | 'GBP';
   itemPrices?: number[];
 };
 
@@ -34,7 +34,7 @@ type CheckoutSnapshot = {
   ids: string[];
   shippingCost: number;
   shippingMethod: string;
-  currency?: 'PLN' | 'EUR';
+  currency?: 'PLN' | 'EUR' | 'GBP';
   itemPrices?: number[];
   userData?: { em?: string };
 };

@@ -27,8 +27,13 @@ describe('cartUrlForLocale', () => {
     expect(cartUrlForLocale('es')).toBe(`${SITE_URL}/es/koszyk`);
   });
 
-  it('falls back to Polish (unprefixed) for an unknown locale', () => {
-    expect(cartUrlForLocale('de')).toBe(`${SITE_URL}/koszyk`);
+  it('prefixes the locale for de/gb', () => {
+    expect(cartUrlForLocale('de')).toBe(`${SITE_URL}/de/koszyk`);
+    expect(cartUrlForLocale('gb')).toBe(`${SITE_URL}/gb/koszyk`);
+  });
+
+  it('falls back to Polish (unprefixed) for a truly unknown locale', () => {
+    expect(cartUrlForLocale('xx')).toBe(`${SITE_URL}/koszyk`);
   });
 
   it('uses an explicit origin override when given', () => {
@@ -55,8 +60,15 @@ describe('buildAbandonedCartEmail — subject localisation', () => {
     const { subject } = buildAbandonedCartEmail({ locale: 'es', firstName: 'Anna', cartUrl: 'x' });
     expect(subject).toBe('Tu cesta te espera');
   });
-  it('falls back to Polish for an unknown locale', () => {
-    const { subject } = buildAbandonedCartEmail({ locale: 'de', firstName: 'Anna', cartUrl: 'x' });
+  it('falls back to English for de/gb locales', () => {
+    const { subject: de } = buildAbandonedCartEmail({ locale: 'de', firstName: 'Anna', cartUrl: 'x' });
+    expect(de).toBe('Your cart is waiting');
+    const { subject: gb } = buildAbandonedCartEmail({ locale: 'gb', firstName: 'Anna', cartUrl: 'x' });
+    expect(gb).toBe('Your cart is waiting');
+  });
+
+  it('falls back to Polish for a truly unknown locale', () => {
+    const { subject } = buildAbandonedCartEmail({ locale: 'xx', firstName: 'Anna', cartUrl: 'x' });
     expect(subject).toBe('Twój koszyk czeka');
   });
 });
