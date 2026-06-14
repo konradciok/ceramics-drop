@@ -4,7 +4,7 @@ import en from '../../messages/en.json';
 import es from '../../messages/es.json';
 import de from '../../messages/de.json';
 import gb from '../../messages/gb.json';
-import { SHIPPING_PLN } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP } from '@/lib/pricing';
 import { pln } from '@/lib/format';
 
 type MessageTree = Record<string, unknown>;
@@ -40,5 +40,19 @@ describe('locale message files', () => {
       expect(serialized).toContain(pln(SHIPPING_PLN.kurier));
       expect(serialized).toContain(pln(SHIPPING_PLN.paczkomat));
     }
+  });
+
+  it('de locale references EUR shipping prices', () => {
+    const serialized = JSON.stringify(de);
+    expect(serialized).toContain('1–3');
+    expect(serialized).toContain(`${SHIPPING_EUR.kurier} €`);
+    expect(serialized).toContain(`${SHIPPING_EUR.paczkomat} €`);
+  });
+
+  it('gb locale references GBP shipping prices', () => {
+    const serialized = JSON.stringify(gb);
+    expect(serialized).toContain('1–3');
+    expect(serialized).toContain(`£${SHIPPING_GBP.kurier}`);
+    expect(serialized).toContain(`£${SHIPPING_GBP.paczkomat}`);
   });
 });

@@ -77,12 +77,13 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
   // Analytics: fire view_item on each index change
   useEffect(() => {
     if (!product) return;
+    const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
     pushDataLayer(
       buildViewItemEvent(product, {
         index: index ?? undefined,
         itemListId: product.category,
         itemListName: product.category,
-        currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR',
+        currency: analyticsCurrency,
         priceOverride: priceOf(product, locale),
       }),
     );
@@ -240,7 +241,8 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
-                    const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+                    const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
+                    const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOf(product, locale)] };
                     pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
                   }
                 }}

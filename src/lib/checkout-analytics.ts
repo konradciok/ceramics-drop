@@ -235,7 +235,8 @@ function parseSnapshotJson(raw: string): CheckoutSnapshot | null {
       typeof parsed.shippingMethod === 'string'
     ) {
       const currency =
-        'currency' in parsed && (parsed.currency === 'PLN' || parsed.currency === 'EUR')
+        'currency' in parsed &&
+        (parsed.currency === 'PLN' || parsed.currency === 'EUR' || parsed.currency === 'GBP')
           ? parsed.currency
           : undefined;
       const itemPrices =
