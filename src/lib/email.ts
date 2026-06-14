@@ -277,10 +277,11 @@ export type CustomerShippingOrder = {
   inpost_target_point: string | null;
 };
 
-type SupportedLocale = 'pl' | 'en' | 'es';
+type SupportedLocale = 'pl' | 'en' | 'es' | 'de';
 
 function resolveLocale(locale: string): SupportedLocale {
-  if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
+  if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
+  if (locale === 'gb') return 'en'; // gb → English emails
   return 'pl';
 }
 
@@ -327,6 +328,17 @@ const I18N: Record<SupportedLocale, {
     returnsLabel: '¿Quieres devolver tu pedido? Tienes 14 días desde la entrega.',
     returnsLink: 'Iniciar devolución',
     signOff: '¡Gracias! Anna Ciok Studio',
+  },
+  de: {
+    subject: 'Deine Bestellung wurde versandt',
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    body1: 'Deine Bestellung wurde versandt und ist auf dem Weg.',
+    trackingLabel: 'Sendungsnummer',
+    trackLink: 'Sendung verfolgen',
+    paczkomatLabel: 'Paketfach',
+    returnsLabel: 'Möchtest du deine Bestellung zurückgeben? Du hast 14 Tage ab Lieferung.',
+    returnsLink: 'Rücksendung starten',
+    signOff: 'Danke! Anna Ciok Studio',
   },
 };
 
@@ -423,6 +435,14 @@ const I18N_RETURN: Record<SupportedLocale, {
       'Imprime la etiqueta o muéstrala en un punto de recogida InPost para enviar tu devolución.',
     signOff: '¡Gracias! Anna Ciok Studio',
     filename: 'devolucion',
+  },
+  de: {
+    subject: 'Rücksendeetikett — Bestellung',
+    intro: 'Deine Rücksendeanfrage wurde akzeptiert. Das Rücksendeetikett findest du im Anhang.',
+    instructions:
+      'Drucke das Etikett aus oder zeige den QR-Code an einem InPost-Paketfach, um dein Paket aufzugeben.',
+    signOff: 'Danke! Anna Ciok Studio',
+    filename: 'ruecksendung',
   },
 };
 
@@ -540,6 +560,16 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     deliveryP2: 'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
     deliveryP3: 'Los envíos se realizarán en julio, a partir del 10 de julio.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+  de: {
+    subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    thankYou: 'Danke für deine Bestellung! Ich habe sie bestätigt und werde bald mit dem Einpacken beginnen.',
+    deliveryTitle: 'Lieferinformationen für Juli',
+    deliveryP1: 'Alle Bestellungen in Polen werden über InPost — per Kurier oder an Paczkomat-Paketfächer — versandt.',
+    deliveryP2: 'Wir kommen am 5. Juli nach Polen. Alle früher aufgegebenen Bestellungen werden ab dem 10. Juli versandt. Später aufgegebene Bestellungen werden innerhalb von 1–3 Tagen nach Bestelleingang versandt.',
+    deliveryP3: 'Der Versand erfolgt im Juli, ab dem 10. Juli.',
+    signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
 
