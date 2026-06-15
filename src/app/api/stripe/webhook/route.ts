@@ -218,9 +218,23 @@ export async function POST(req: Request) {
         .eq('status', 'pending')
         .select('id, private_sale_id');
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
-      if (rows && rows.length > 0) {
+      // Retry-safe: on a Stripe re-delivery the order is already `failed`, so the
+      // update above matches nothing. Fall back to fetching it (mirrors markPaid's
+      // already-processed path) so a release that threw on the first attempt is
+      // retried, not silently skipped — otherwise the pieces stay stuck `reserved`.
+      const order =
+        rows?.[0] ??
+        ((
+          await supabase
+            .from('orders')
+            .select('id, private_sale_id')
+            .eq('payment_intent_id', pi)
+            .eq('status', 'failed')
+            .maybeSingle()
+        ).data as { id: string; private_sale_id: string | null } | null);
+      if (order) {
         // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
-        await releaseReservedPieces(supabase, rows[0]);
+        await releaseReservedPieces(supabase, order);
       }
     },
     releaseSale: async (pi) => {

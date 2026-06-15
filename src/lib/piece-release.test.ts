@@ -90,6 +90,8 @@ describe('releaseReservedPieces', () => {
 
   it('throws on a piece_state failure so the caller can surface it (no silent stuck holds)', async () => {
     const { supabase } = fakeSupabase({ data: null, error: { message: 'db down' } });
-    await expect(releaseReservedPieces(supabase, { id: 'o4', private_sale_id: null })).rejects.toThrow('db down');
+    await expect(releaseReservedPieces(supabase, { id: 'o4', private_sale_id: null })).rejects.toThrow(
+      /releaseReservedPieces failed for order o4: db down/,
+    );
   });
 });
