@@ -12,7 +12,7 @@ import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
-import { releaseTargetStatus } from '@/lib/piece-release';
+import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 
@@ -220,11 +220,7 @@ export async function POST(req: Request) {
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (rows && rows.length > 0) {
         // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
-        await supabase
-          .from('piece_state')
-          .update({ status: releaseTargetStatus(rows[0]), reserved_until: null, order_id: null })
-          .eq('order_id', rows[0].id)
-          .eq('status', 'reserved');
+        await releaseReservedPieces(supabase, rows[0]);
       }
     },
     releaseSale: async (pi) => {
