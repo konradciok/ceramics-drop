@@ -232,6 +232,7 @@
     "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
     "checkoutError": "Nie udało się rozpocząć płatności. Spróbuj za chwilę.",
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
+    "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24."
   },
   "ship": {

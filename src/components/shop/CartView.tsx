@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, CATEGORIES } from '@/lib/products';
+import { resolveCartProducts, resolveKnownProducts, CATEGORIES } from '@/lib/products';
 import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -101,11 +101,24 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function CartView() {
+export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
+  const replace = useCart((s) => s.replace);
+
+  // Private-sale mode: this cart was opened from a `/koszyk?sale=<TOKEN>` link.
+  // The token survives reloads / the Stripe step via sessionStorage. In this mode
+  // the cart is a locked bundle of (already-`sold`) pieces — seeded from the link,
+  // not pruned against live inventory, and not editable.
+  const [saleToken] = useState<string | null>(() => {
+    if (propSaleToken) return propSaleToken;
+    if (typeof window !== 'undefined') return sessionStorage.getItem('acc_private_sale_token');
+    return null;
+  });
+  const privateSale = saleToken !== null;
+  const [privateSaleError, setPrivateSaleError] = useState(false);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
   const [ship, setShip] = useState<ShipId>(() => {
@@ -131,8 +144,17 @@ export function CartView() {
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // Prune already-sold items from the cart on mount
+  // On mount: private sale → seed the cart from the link's bundle (never prune,
+  // these pieces ARE sold); normal cart → prune already-sold items.
   useEffect(() => {
+    if (privateSale) {
+      sessionStorage.setItem('acc_private_sale_token', saleToken);
+      fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
+        .then(({ product_ids }: { product_ids: string[] }) => replace(product_ids))
+        .catch(() => setPrivateSaleError(true));
+      return;
+    }
     fetch('/api/inventory')
       .then((r) => r.json())
       .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
@@ -141,7 +163,8 @@ export function CartView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const products = resolveCartProducts(ids);
+  // Private-sale carts keep their (sold) pieces; normal carts drop sold ids.
+  const products = privateSale ? resolveKnownProducts(ids) : resolveCartProducts(ids);
   const n = products.length;
   const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
   const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
@@ -231,10 +254,28 @@ export function CartView() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: products.map((p) => p.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies() }),
+        body: JSON.stringify({
+          ids: products.map((p) => p.id),
+          ...deliveryBody(),
+          ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}),
+          marketing_cookies: collectMarketingCookies(),
+        }),
       });
+      // Expired/invalid private-sale link — never strip the locked bundle, just explain.
+      if (res.status === 410) {
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'private_sale_invalid', status: 410 }));
+        setCheckoutError(t('cart.privateSaleInvalid'));
+        return;
+      }
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
+        // In private-sale mode a 409 means the bundle no longer matches — don't
+        // remove items (the cart is a fixed package); surface the link error.
+        if (privateSale) {
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'private_sale_invalid', status: 409 }));
+          setCheckoutError(t('cart.privateSaleInvalid'));
+          return;
+        }
         sold.forEach((id) => remove(id));
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
@@ -275,6 +316,15 @@ export function CartView() {
     typeof window !== 'undefined'
       ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
       : '/koszyk/return';
+
+  // ── Invalid / expired private-sale link ───────────────────────────────────
+  if (privateSale && privateSaleError) {
+    return (
+      <div className="cart-empty">
+        <h2>{t('cart.privateSaleInvalid')}</h2>
+      </div>
+    );
+  }
 
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
@@ -337,15 +387,18 @@ export function CartView() {
                 </div>
                 <div className="right">
                   <span className="price">{fmt(priceOf(p))}</span>
-                  <button
-                    className="rm"
-                    onClick={() => {
-                      remove(p.id);
-                      pushDataLayer(buildRemoveFromCartEvent(p));
-                    }}
-                  >
-                    <Icon name="trash" /> {t('cart.remove')}
-                  </button>
+                  {/* Private-sale bundles are fixed — no per-item removal. */}
+                  {!privateSale && (
+                    <button
+                      className="rm"
+                      onClick={() => {
+                        remove(p.id);
+                        pushDataLayer(buildRemoveFromCartEvent(p));
+                      }}
+                    >
+                      <Icon name="trash" /> {t('cart.remove')}
+                    </button>
+                  )}
                 </div>
               </div>
             );
