@@ -3,6 +3,8 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
+import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
+import { releaseTargetStatus } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
@@ -70,15 +72,41 @@ export async function POST(req: Request) {
   const supabase = getSupabaseAdmin();
   const orderId = crypto.randomUUID();
 
+  // A private-sale token unlocks buying specific already-`sold` pieces via a secret
+  // link, without relisting them in the shop. It uses a dedicated atomic RPC that
+  // requires the cart to exactly match the link's bundle; normal carts reserve as usual.
+  const privateSaleToken = normalizeToken(body.private_sale_token);
+  let privateSaleId: string | null = null;
+
   // Reserve atomically BEFORE creating the PaymentIntent.
-  const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
-    p_ids: ids,
-    p_order_id: orderId,
-    p_ttl_secs: RESERVE_TTL_SECS,
-  });
-  if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
-  if (Array.isArray(conflicts) && conflicts.length > 0) {
-    return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+  if (privateSaleToken) {
+    const sale = await loadActivePrivateSale(supabase, privateSaleToken);
+    if (!sale) return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+    privateSaleId = sale.id;
+    const { data: psConflicts, error: psErr } = await supabase.rpc('reserve_private_sale_pieces', {
+      p_token: privateSaleToken,
+      p_ids: ids,
+      p_order_id: orderId,
+      p_ttl_secs: RESERVE_TTL_SECS,
+    });
+    if (psErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    const conflictArr = Array.isArray(psConflicts) ? (psConflicts as string[]) : [];
+    if (conflictArr.includes(INVALID_TOKEN_SENTINEL)) {
+      return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+    }
+    if (conflictArr.length > 0) {
+      return NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 });
+    }
+  } else {
+    const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
+      p_ids: ids,
+      p_order_id: orderId,
+      p_ttl_secs: RESERVE_TTL_SECS,
+    });
+    if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (Array.isArray(conflicts) && conflicts.length > 0) {
+      return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+    }
   }
 
   const stripe = getStripe();
@@ -91,11 +119,18 @@ export async function POST(req: Request) {
       amount,
       currency,
       payment_method_configuration: STRIPE_PMC_ID,
-      metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
+      metadata: {
+        order_id: orderId,
+        product_ids: ids.join(','),
+        delivery_method: method,
+        ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
+      },
     });
   } catch {
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
-    await supabase.from('piece_state').update({ status: 'available', reserved_until: null, order_id: null })
+    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
+    await supabase.from('piece_state')
+      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
       .eq('order_id', orderId);
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
@@ -143,6 +178,7 @@ export async function POST(req: Request) {
     shipping_address: address ?? null,
     locale,
     marketing,
+    private_sale_id: privateSaleId,
   });
   let itemsErr = null;
   if (!orderErr) {
@@ -154,8 +190,9 @@ export async function POST(req: Request) {
   if (orderErr || itemsErr) {
     // Persisting the order failed ÔÇö undo so we never collect money without a record.
     try { await stripe.paymentIntents.cancel(paymentIntent.id); } catch {}
+    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
     await supabase.from('piece_state')
-      .update({ status: 'available', reserved_until: null, order_id: null })
+      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
       .eq('order_id', orderId);
     return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
   }

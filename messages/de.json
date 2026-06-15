@@ -232,6 +232,7 @@
     "rateLimited": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
     "checkoutError": "Zahlung konnte nicht gestartet werden. Bitte versuche es in Kürze erneut.",
     "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
+    "privateSaleInvalid": "Dieser Bestelllink ist abgelaufen oder wurde bereits verwendet. Bitte kontaktiere das Studio.",
     "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden."
   },
   "ship": {

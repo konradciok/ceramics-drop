@@ -12,6 +12,7 @@ import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
+import { releaseTargetStatus } from '@/lib/piece-release';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,23 +40,31 @@ export async function POST(req: Request) {
         .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+        .select('id, private_sale_id')) as {
+          data: Array<{ id: string; private_sale_id: string | null }> | null;
+          error: { message: string } | null;
+        };
 
       if (orderErr) throw new Error(`markPaid orders update failed: ${orderErr.message}`);
 
       let orderId: string;
+      // Fetched up front (not just in the newSale branch) so the single-use token is
+      // consumed on Stripe retries too, where the order is already `paid`.
+      let privateSaleId: string | null = null;
       let newSale = false;
       if (orderData && orderData.length > 0) {
         orderId = orderData[0].id;
+        privateSaleId = orderData[0].private_sale_id;
         newSale = true;
       } else {
         const { data: existing } = await supabase
           .from('orders')
-          .select('id, status')
+          .select('id, status, private_sale_id')
           .eq('payment_intent_id', pi)
-          .single() as { data: { id: string; status: string } | null };
+          .single() as { data: { id: string; status: string; private_sale_id: string | null } | null };
         if (!existing || existing.status !== 'paid') return false;
         orderId = existing.id;
+        privateSaleId = existing.private_sale_id;
       }
 
       await supabase
@@ -85,7 +94,7 @@ export async function POST(req: Request) {
         }
         await supabase
           .from('piece_state')
-          .update({ status: 'available', reserved_until: null, order_id: null })
+          .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
           .eq('order_id', orderId)
           .eq('status', 'sold');
         await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
@@ -112,6 +121,7 @@ export async function POST(req: Request) {
               receiver_last_name: string | null; inpost_target_point: string | null;
               locale: string | null; confirmation_email_sent_at: string | null;
             };
+
             const notifyOrder = {
               order: {
                 ...orderRowTyped,
@@ -179,6 +189,20 @@ export async function POST(req: Request) {
         }
       }
 
+      // Burn the single-use private-sale link now that the order is `paid`. Runs for
+      // new sales AND Stripe retries (order already `paid`), and only this far — never
+      // on the under-fulfillment path above, which returns early so the link stays
+      // usable for a retry. `consumed_at IS NULL` keeps it idempotent; we THROW on a
+      // real failure so Stripe replays the webhook until the token is consumed.
+      if (privateSaleId) {
+        const { error: consumeErr } = await supabase
+          .from('private_sales')
+          .update({ consumed_at: new Date().toISOString() })
+          .eq('id', privateSaleId)
+          .is('consumed_at', null);
+        if (consumeErr) throw new Error(`private_sales consume failed for ${orderId}: ${consumeErr.message}`);
+      }
+
       return newSale;
     },
     releaseHold: async (pi) => {
@@ -187,12 +211,13 @@ export async function POST(req: Request) {
         .update({ status: 'failed' })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id');
-      const rows = data as Array<{ id: string }> | null;
+        .select('id, private_sale_id');
+      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (rows && rows.length > 0) {
+        // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
         await supabase
           .from('piece_state')
-          .update({ status: 'available', reserved_until: null, order_id: null })
+          .update({ status: releaseTargetStatus(rows[0]), reserved_until: null, order_id: null })
           .eq('order_id', rows[0].id)
           .eq('status', 'reserved');
       }
@@ -203,9 +228,12 @@ export async function POST(req: Request) {
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
-        .select('id');
-      const rows = data as Array<{ id: string }> | null;
+        .select('id, private_sale_id');
+      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (!rows || rows.length === 0) return false;
+      // Private-sale pieces were sold privately (already hidden from the shop) and must
+      // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
+      if (releaseTargetStatus(rows[0]) === 'sold') return true;
       // Throw on a piece_state failure (don't return true): otherwise the caller
       // would revalidate inventory and advertise a piece as available while it is
       // still 'sold' in the DB. A 5xx makes Stripe retry until the relist sticks.

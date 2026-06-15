@@ -232,6 +232,7 @@
     "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "checkoutError": "No se pudo iniciar el pago. Inténtalo de nuevo en un momento.",
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
+    "privateSaleInvalid": "Este enlace de pedido ha caducado o ya se ha utilizado. Ponte en contacto con el estudio.",
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
   },
   "ship": {

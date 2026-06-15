@@ -8,6 +8,7 @@ import { default as handler } from './.open-next/worker.js';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orders';
+import { releaseTargetStatus } from './src/lib/piece-release';
 import { isProbePath } from './src/lib/probe-paths';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
@@ -74,13 +75,14 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         .update({ status: 'expired' })
         .eq('id', orderId)
         .eq('status', 'pending')
-        .select('id');
+        .select('id, private_sale_id');
       if (error) throw new Error(`expireOrder update failed for ${orderId}: ${error.message}`);
-      const rows = data as Array<{ id: string }> | null;
+      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (!rows || rows.length === 0) return false;
+      // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
       const { error: pieceErr } = await supabase
         .from('piece_state')
-        .update({ status: 'available', reserved_until: null, order_id: null })
+        .update({ status: releaseTargetStatus(rows[0]), reserved_until: null, order_id: null })
         .eq('order_id', orderId)
         .eq('status', 'reserved');
       if (pieceErr) throw new Error(`expireOrder piece release failed for ${orderId}: ${pieceErr.message}`);

@@ -12,6 +12,8 @@ interface CartState {
   ids: string[];
   add: (id: string) => void;
   remove: (id: string) => void;
+  /** Set the cart to exactly these ids (used to seed a private-sale link bundle). */
+  replace: (ids: string[]) => void;
   clear: () => void;
 }
 
@@ -22,6 +24,7 @@ export const useCart = create<CartState>()(
       add: (id) =>
         set((s) => (s.ids.includes(id) ? s : { ids: [...s.ids, id] })),
       remove: (id) => set((s) => ({ ids: s.ids.filter((x) => x !== id) })),
+      replace: (ids) => set({ ids: [...new Set(ids)] }),
       clear: () => set({ ids: [] }),
     }),
     { name: 'acc_cart_v1' },
