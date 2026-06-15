@@ -19,7 +19,7 @@ import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
-  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 28 },
+  kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
   wazony: { slug: 'wazony', nameKey: 'nav.wazony', singularKey: 'vase', price: PRICE_PLN['wazony'], measure: '19,5 × 15 × 15 cm', count: 9 },
   'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 5 },
   'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 4 },
@@ -65,7 +65,7 @@ type Spec = {
    Never reorder/edit these to "fix" the catalogue — that would renumber
    stable ids. Catalogue changes go through INVENTORY_REVIEW below. */
 const SPECS: Spec[] = [
-  { slug: 'kubki', prefix: 'k', imageBase: 'kubek', files: range(1, 26) },
+  { slug: 'kubki', prefix: 'k', imageBase: 'kubek', files: [...range(1, 26), 31] },
   { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 9) },
   { slug: 'wazony-duze', prefix: 'd', imageBase: 'waza-duza', files: [1, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
   { slug: 'talerzyki', prefix: 't', imageBase: 'talerz-maly', files: range(1, 31) },
