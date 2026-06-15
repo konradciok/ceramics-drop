@@ -52,7 +52,7 @@ describe('product notes drafts', () => {
     });
     expect(draft.items.at(-1)).toMatchObject({
       productId: 'c04',
-      displayNum: '28',
+      displayNum: '29',
       currentNote: pl.notes.kubki.at(-1),
       proposedNote: 'Nowy opis c04',
     });
@@ -126,7 +126,7 @@ describe('product notes drafts', () => {
         products,
         proposedNotes,
       }),
-    ).toThrow('Expected 28 proposed notes for category "kubki"');
+    ).toThrow('Expected 29 proposed notes for category "kubki"');
   });
 
   it('fails validation when a product image is missing', () => {
