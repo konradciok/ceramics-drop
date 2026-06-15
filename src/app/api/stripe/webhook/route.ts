@@ -40,23 +40,31 @@ export async function POST(req: Request) {
         .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+        .select('id, private_sale_id')) as {
+          data: Array<{ id: string; private_sale_id: string | null }> | null;
+          error: { message: string } | null;
+        };
 
       if (orderErr) throw new Error(`markPaid orders update failed: ${orderErr.message}`);
 
       let orderId: string;
+      // Fetched up front (not just in the newSale branch) so the single-use token is
+      // consumed on Stripe retries too, where the order is already `paid`.
+      let privateSaleId: string | null = null;
       let newSale = false;
       if (orderData && orderData.length > 0) {
         orderId = orderData[0].id;
+        privateSaleId = orderData[0].private_sale_id;
         newSale = true;
       } else {
         const { data: existing } = await supabase
           .from('orders')
-          .select('id, status')
+          .select('id, status, private_sale_id')
           .eq('payment_intent_id', pi)
-          .single() as { data: { id: string; status: string } | null };
+          .single() as { data: { id: string; status: string; private_sale_id: string | null } | null };
         if (!existing || existing.status !== 'paid') return false;
         orderId = existing.id;
+        privateSaleId = existing.private_sale_id;
       }
 
       await supabase
@@ -86,7 +94,7 @@ export async function POST(req: Request) {
         }
         await supabase
           .from('piece_state')
-          .update({ status: 'available', reserved_until: null, order_id: null })
+          .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
           .eq('order_id', orderId)
           .eq('status', 'sold');
         await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
@@ -97,7 +105,7 @@ export async function POST(req: Request) {
         try {
           const { data: orderRow, error: orderErr } = await supabase
             .from('orders')
-            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at, private_sale_id')
+            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at')
             .eq('id', orderId)
             .single();
           if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
@@ -112,20 +120,8 @@ export async function POST(req: Request) {
               delivery_method: string; receiver_first_name: string | null;
               receiver_last_name: string | null; inpost_target_point: string | null;
               locale: string | null; confirmation_email_sent_at: string | null;
-              private_sale_id: string | null;
             };
 
-            // Single-use private-sale link: burn the token now that payment landed
-            // (gated on newSale + `consumed_at is null` so retries can't double-consume,
-            // and an abandoned checkout never burns it). Best-effort — never blocks fulfilment.
-            if (orderRowTyped.private_sale_id) {
-              const { error: consumeErr } = await supabase
-                .from('private_sales')
-                .update({ consumed_at: new Date().toISOString() })
-                .eq('id', orderRowTyped.private_sale_id)
-                .is('consumed_at', null);
-              if (consumeErr) console.error('private_sales consume failed for', orderId, consumeErr);
-            }
             const notifyOrder = {
               order: {
                 ...orderRowTyped,
@@ -191,6 +187,20 @@ export async function POST(req: Request) {
         } catch (err) {
           console.error('newSale order processing failed for', orderId, err);
         }
+      }
+
+      // Burn the single-use private-sale link now that the order is `paid`. Runs for
+      // new sales AND Stripe retries (order already `paid`), and only this far — never
+      // on the under-fulfillment path above, which returns early so the link stays
+      // usable for a retry. `consumed_at IS NULL` keeps it idempotent; we THROW on a
+      // real failure so Stripe replays the webhook until the token is consumed.
+      if (privateSaleId) {
+        const { error: consumeErr } = await supabase
+          .from('private_sales')
+          .update({ consumed_at: new Date().toISOString() })
+          .eq('id', privateSaleId)
+          .is('consumed_at', null);
+        if (consumeErr) throw new Error(`private_sales consume failed for ${orderId}: ${consumeErr.message}`);
       }
 
       return newSale;

@@ -4,6 +4,7 @@ import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
+import { releaseTargetStatus } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
@@ -118,11 +119,18 @@ export async function POST(req: Request) {
       amount,
       currency,
       payment_method_configuration: STRIPE_PMC_ID,
-      metadata: { order_id: orderId, product_ids: ids.join(','), delivery_method: method },
+      metadata: {
+        order_id: orderId,
+        product_ids: ids.join(','),
+        delivery_method: method,
+        ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
+      },
     });
   } catch {
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
-    await supabase.from('piece_state').update({ status: 'available', reserved_until: null, order_id: null })
+    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
+    await supabase.from('piece_state')
+      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
       .eq('order_id', orderId);
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
@@ -182,8 +190,9 @@ export async function POST(req: Request) {
   if (orderErr || itemsErr) {
     // Persisting the order failed ÔÇö undo so we never collect money without a record.
     try { await stripe.paymentIntents.cancel(paymentIntent.id); } catch {}
+    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
     await supabase.from('piece_state')
-      .update({ status: 'available', reserved_until: null, order_id: null })
+      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
       .eq('order_id', orderId);
     return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
   }

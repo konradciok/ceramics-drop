@@ -15,8 +15,9 @@
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { getProductById } from '../src/lib/products';
+import { SITE_URL } from '../src/lib/site';
 
-const DEFAULT_BASE_URL = 'https://anna-ciok.studio';
+const DEFAULT_BASE_URL = SITE_URL;
 
 function parseEnvFile(filePath: string): Record<string, string> {
   if (!fs.existsSync(filePath)) return {};
@@ -79,6 +80,21 @@ async function main(): Promise<void> {
   const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
+
+  // Operational guard: a private-sale link is only meaningful for pieces that are
+  // actually `sold` in piece_state. Minting one for an `available`/missing piece would
+  // produce a link that 409s at checkout, so fail loudly here instead.
+  const { data: stateRows, error: stateErr } = await supabase
+    .from('piece_state')
+    .select('product_id, status')
+    .in('product_id', ids);
+  if (stateErr) throw new Error(`piece_state lookup failed: ${stateErr.message}`);
+  const statusById = new Map((stateRows ?? []).map((r) => [r.product_id as string, r.status as string]));
+  const notSold = ids.filter((id) => statusById.get(id) !== 'sold');
+  if (notSold.length > 0) {
+    const detail = notSold.map((id) => `${id} (${statusById.get(id) ?? 'missing'})`).join(', ');
+    throw new Error(`These pieces are not 'sold' in piece_state, so the link would 409 at checkout: ${detail}`);
+  }
 
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();

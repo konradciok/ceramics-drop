@@ -9,13 +9,23 @@ create table private_sales (
   product_ids text[] not null,
   expires_at  timestamptz not null,
   consumed_at timestamptz,                 -- set on payment success; single-use link
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  -- The exact-set contract requires a non-empty array with no NULL ids.
+  constraint private_sales_product_ids_not_empty check (cardinality(product_ids) > 0),
+  constraint private_sales_product_ids_no_nulls  check (array_position(product_ids, null) is null)
 );
 
 -- Link an order back to the private sale that authorised it. NULL for normal orders.
 -- Release paths (releaseHold / releaseSale / expire / admin release) read this to
 -- decide whether freed pieces return to `sold` (private sale) or `available`.
 alter table orders add column private_sale_id uuid references private_sales(id);
+
+-- Hard single-use backstop: at most one PAID order may exist per private sale, even
+-- if the webhook's `consumed_at` write is delayed or fails. Pairs with the RPC's
+-- paid-order check and the `consumed_at IS NULL` lookup filter.
+create unique index private_sales_one_paid_order
+  on orders (private_sale_id)
+  where status = 'paid' and private_sale_id is not null;
 
 -- Atomic reservation for a private sale. Unlike reserve_pieces (which rejects
 -- `sold`), this allows reserving `sold` pieces, but ONLY for the exact set of ids
@@ -32,19 +42,26 @@ create or replace function reserve_private_sale_pieces(
 language plpgsql
 as $$
 declare
+  v_sale_id  uuid;
   v_sale_ids text[];
   conflicts  text[];
   v_found    integer;
 begin
   -- Lock the active sale row for this token.
-  select product_ids into v_sale_ids
+  select id, product_ids into v_sale_id, v_sale_ids
   from private_sales
   where token = p_token
     and consumed_at is null
     and expires_at > now()
   for update;
 
-  if v_sale_ids is null then
+  if v_sale_id is null then
+    return array['__invalid_token__'];
+  end if;
+
+  -- Defense in depth against a double sale: if the link already produced a paid
+  -- order, it is spent — even if `consumed_at` was never written. Treat as invalid.
+  if exists (select 1 from orders where private_sale_id = v_sale_id and status = 'paid') then
     return array['__invalid_token__'];
   end if;
 

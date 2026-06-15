@@ -108,17 +108,18 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const remove = useCart((s) => s.remove);
   const replace = useCart((s) => s.replace);
 
-  // Private-sale mode: this cart was opened from a `/koszyk?sale=<TOKEN>` link.
-  // The token survives reloads / the Stripe step via sessionStorage. In this mode
-  // the cart is a locked bundle of (already-`sold`) pieces — seeded from the link,
-  // not pruned against live inventory, and not editable.
-  const [saleToken] = useState<string | null>(() => {
-    if (propSaleToken) return propSaleToken;
-    if (typeof window !== 'undefined') return sessionStorage.getItem('acc_private_sale_token');
-    return null;
-  });
+  // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
+  // the server component). We deliberately do NOT fall back to sessionStorage — a
+  // leftover token must never turn a plain `/koszyk` visit into a private sale. The
+  // URL carries the token across reloads and through the Stripe step (same route), so
+  // no client persistence is needed. The cart is a locked bundle of (already-`sold`)
+  // pieces: seeded from the link, not pruned against inventory, and not editable.
+  const saleToken = propSaleToken ?? null;
   const privateSale = saleToken !== null;
   const [privateSaleError, setPrivateSaleError] = useState(false);
+  // True until the bundle fetch settles, so we show a placeholder instead of briefly
+  // flashing the normal empty-cart state while the cart is still empty.
+  const [privateSaleLoading, setPrivateSaleLoading] = useState<boolean>(propSaleToken != null);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
   const [ship, setShip] = useState<ShipId>(() => {
@@ -147,12 +148,14 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   // On mount: private sale → seed the cart from the link's bundle (never prune,
   // these pieces ARE sold); normal cart → prune already-sold items.
   useEffect(() => {
-    if (privateSale) {
-      sessionStorage.setItem('acc_private_sale_token', saleToken);
+    if (saleToken !== null) {
+      // privateSaleLoading starts true (initial state) when entering in private mode,
+      // so no synchronous setState here; we only flip it off once the fetch settles.
       fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
         .then(({ product_ids }: { product_ids: string[] }) => replace(product_ids))
-        .catch(() => setPrivateSaleError(true));
+        .catch(() => setPrivateSaleError(true))
+        .finally(() => setPrivateSaleLoading(false));
       return;
     }
     fetch('/api/inventory')
@@ -316,6 +319,13 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     typeof window !== 'undefined'
       ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
       : '/koszyk/return';
+
+  // ── Seeding a private-sale bundle ──────────────────────────────────────────
+  // Hold a neutral placeholder until the fetch settles so we never flash the
+  // normal "your cart is empty" state before replace() lands.
+  if (privateSale && privateSaleLoading) {
+    return <div className="cart-empty" aria-busy="true" />;
+  }
 
   // ── Invalid / expired private-sale link ───────────────────────────────────
   if (privateSale && privateSaleError) {
