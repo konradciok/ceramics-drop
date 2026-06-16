@@ -56,10 +56,14 @@
     "sharp": "^0.34.5",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.9",
+    "vitest": "^4.1.8",
     "wrangler": "^4.97.0"
   },
   "allowScripts": {
     "sharp@0.34.5": true
+  },
+  "overrides": {
+    "esbuild": ">=0.28.1",
+    "postcss": ">=8.5.10"
   }
 }

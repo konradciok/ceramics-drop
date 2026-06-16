@@ -1,5 +1,5 @@
 import { getProducts, CATEGORIES } from './products';
-import { priceOf } from './pricing';
+import { priceOf, SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP } from './pricing';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME } from './site';
 import type { CategorySlug } from './types';
@@ -40,6 +40,38 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
+const PRICE_TIER: Record<CategorySlug, string> = {
+  talerzyki: 'budget',
+  kubki: 'standard',
+  'talerze-srednie': 'standard',
+  'talerze-duze': 'standard',
+  'miski-falowane': 'standard',
+  wazony: 'premium',
+  'wazony-srednie': 'premium',
+  'wazony-duze': 'premium',
+  'duze-michy': 'premium',
+};
+
+const PRODUCT_FAMILY: Record<CategorySlug, string> = {
+  kubki: 'tableware',
+  talerzyki: 'tableware',
+  'talerze-srednie': 'tableware',
+  'talerze-duze': 'tableware',
+  wazony: 'vessels',
+  'wazony-srednie': 'vessels',
+  'wazony-duze': 'vessels',
+  'duze-michy': 'bowls',
+  'miski-falowane': 'bowls',
+};
+
+const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
+  pl: 'PL',
+  en: 'IE',
+  es: 'ES',
+  de: 'DE',
+  gb: 'GB',
+};
+
 // Values are already-escaped XML entities (& → &amp;, > → &gt;) — insert directly without re-escaping.
 const GOOGLE_CATEGORY: Record<CategorySlug, string> = {
   kubki: 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Cups &amp; Mugs',
@@ -63,6 +95,12 @@ export type FeedItem = {
   availability: 'in stock' | 'out of stock';
   price: string;
   category: CategorySlug;
+  material: string;
+  productType: string;
+  customLabel0: string;
+  customLabel1: string;
+  customLabel2: string;
+  shipping: Array<{ country: string; service: string; price: string }>;
 };
 
 export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedItem[] {
@@ -87,6 +125,14 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
     const price = priceOf(product, locale);
     const priceStr = `${price}.00 ${cur}`;
 
+    const shippingRates =
+      locale === 'pl' ? SHIPPING_PLN : locale === 'gb' ? SHIPPING_GBP : SHIPPING_EUR;
+    const shippingCountry = SHIPPING_COUNTRY[locale];
+    const shipping = [
+      { country: shippingCountry, service: 'InPost Paczkomat', price: `${shippingRates.paczkomat}.00 ${cur}` },
+      { country: shippingCountry, service: 'InPost Kurier', price: `${shippingRates.kurier}.00 ${cur}` },
+    ];
+
     return {
       id: product.id,
       title,
@@ -97,6 +143,12 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
       availability: soldIds.has(product.id) ? 'out of stock' : 'in stock',
       price: priceStr,
       category: product.category,
+      material: 'Ceramics',
+      productType: `Ceramics > ${singularName}`,
+      customLabel0: PRICE_TIER[product.category],
+      customLabel1: PRODUCT_FAMILY[product.category],
+      customLabel2: product.category,
+      shipping,
     };
   });
 }
@@ -104,6 +156,13 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
 function itemToGoogleXml(item: FeedItem): string {
   const additionalImages = item.additionalImages
     .map((url) => `    <g:additional_image_link>${escapeXml(url)}</g:additional_image_link>`)
+    .join('\n');
+
+  const shippingXml = item.shipping
+    .map(
+      (s) =>
+        `    <g:shipping>\n      <g:country>${s.country}</g:country>\n      <g:service>${escapeXml(s.service)}</g:service>\n      <g:price>${escapeXml(s.price)}</g:price>\n    </g:shipping>`,
+    )
     .join('\n');
 
   return `  <item>
@@ -117,8 +176,13 @@ function itemToGoogleXml(item: FeedItem): string {
     <g:brand>Anna Ciok</g:brand>
     <g:condition>new</g:condition>
     <g:identifier_exists>no</g:identifier_exists>
+    <g:material>${escapeXml(item.material)}</g:material>
     <g:google_product_category>${GOOGLE_CATEGORY[item.category]}</g:google_product_category>
-    <g:product_type>Ceramics &gt; ${escapeXml(item.title.split(' #')[0])}</g:product_type>${additionalImages ? '\n' + additionalImages : ''}
+    <g:product_type>${escapeXml(item.productType)}</g:product_type>
+    <g:custom_label_0>${escapeXml(item.customLabel0)}</g:custom_label_0>
+    <g:custom_label_1>${escapeXml(item.customLabel1)}</g:custom_label_1>
+    <g:custom_label_2>${escapeXml(item.customLabel2)}</g:custom_label_2>
+${shippingXml}${additionalImages ? '\n' + additionalImages : ''}
   </item>`;
 }
 
@@ -137,7 +201,13 @@ function itemToMetaXml(item: FeedItem): string {
     <g:price>${escapeXml(item.price)}</g:price>
     <g:brand>Anna Ciok</g:brand>
     <g:condition>new</g:condition>
-    <g:google_product_category>${GOOGLE_CATEGORY[item.category]}</g:google_product_category>${additionalImages ? '\n' + additionalImages : ''}
+    <g:identifier_exists>no</g:identifier_exists>
+    <g:material>${escapeXml(item.material)}</g:material>
+    <g:google_product_category>${GOOGLE_CATEGORY[item.category]}</g:google_product_category>
+    <g:product_type>${escapeXml(item.productType)}</g:product_type>
+    <g:custom_label_0>${escapeXml(item.customLabel0)}</g:custom_label_0>
+    <g:custom_label_1>${escapeXml(item.customLabel1)}</g:custom_label_1>
+    <g:custom_label_2>${escapeXml(item.customLabel2)}</g:custom_label_2>${additionalImages ? '\n' + additionalImages : ''}
   </item>`;
 }
 

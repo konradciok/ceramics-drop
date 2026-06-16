@@ -47,6 +47,15 @@ describe('buildGoogleXml', () => {
     availability: 'in stock',
     price: '25.00 EUR',
     category: 'kubki',
+    material: 'Ceramics',
+    productType: 'Ceramics > Mug',
+    customLabel0: 'standard',
+    customLabel1: 'tableware',
+    customLabel2: 'kubki',
+    shipping: [
+      { country: 'IE', service: 'InPost Paczkomat', price: '5.00 EUR' },
+      { country: 'IE', service: 'InPost Kurier', price: '10.00 EUR' },
+    ],
   };
 
   it('escapes XML special characters in title and description', () => {
@@ -85,11 +94,17 @@ describe('buildMetaXml', () => {
     availability: 'in stock',
     price: '58.00 EUR',
     category: 'wazony',
+    material: 'Ceramics',
+    productType: 'Ceramics > Vase',
+    customLabel0: 'premium',
+    customLabel1: 'vessels',
+    customLabel2: 'wazony',
+    shipping: [],
   };
 
-  it('does NOT include g:identifier_exists (Meta feed omits it)', () => {
+  it('includes g:identifier_exists=no for handmade pieces', () => {
     const xml = buildMetaXml([sampleItem], 'en');
-    expect(xml).not.toContain('g:identifier_exists');
+    expect(xml).toContain('<g:identifier_exists>no</g:identifier_exists>');
   });
 
   it('includes g:additional_image_link for gallery images', () => {
