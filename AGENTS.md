@@ -4,7 +4,7 @@ Guidance for AI coding agents (Claude Code, Codex, Cursor, Copilot, …) working
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~125 standalone pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). Trilingual and **dual-currency** (PLN for the default Polish locale at unprefixed `/`, EUR for `/en` and `/es`). Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~104 live pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). **Five locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de` `/gb`) and **tri-currency** (PLN for `pl`, GBP for `gb`, EUR for `en`/`es`/`de`). Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -32,6 +32,8 @@ Run a single E2E spec:
 npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 ```
 
+Operational / one-off scripts (full list in `package.json`): `npm run private-sale:create` (mint a re-sale link for sold pieces), `npm run notes:generate` (draft product notes), `npm run i18n:pull` / `i18n:push` (sync UI strings with Notion — see `docs/notion-i18n.md`), `npm run gtm:setup` / `gtm:list` (Google Tag Manager API), `npm run generate-image-variants` (variant-only image optimise), `npm run cf-typegen` (regenerate Cloudflare env types).
+
 ## Architecture
 
 ### Product Registry
@@ -44,7 +46,7 @@ Each product has: `id` (e.g. `k01`, `v03`), `category` slug, `price` in **PLN z�
 
 - **Collection pages** — one per category (`/{category}`), grouped grids of tiles.
 - **`/sklep` hub** — every piece grouped by category in a single `GroupedGallery` with a sticky category jump-nav (scroll-spy). The homepage hero is a single "browse all" CTA pointing here; the nav Shop link points here.
-- **Individual product pages** — `/{category}/{id}` (e.g. `/kubki/k01`) in the `(pdp)` route group. Indexable URLs with SEO metadata, `Product` + `BreadcrumbList` JSON-LD, hreflang across all 3 locales, a two-column layout, gallery, specs, add-to-cart island, and a live "more from this collection" strip. The `(pdp)` group deliberately has **no** `loading.tsx` so `notFound()` returns a real HTTP 404 (a parent Suspense boundary otherwise forces 200).
+- **Individual product pages** — `/{category}/{id}` (e.g. `/kubki/k01`) in the `(pdp)` route group. Indexable URLs with SEO metadata, `Product` + `BreadcrumbList` JSON-LD, hreflang across all locales, a two-column layout, gallery, specs, add-to-cart island, and a live "more from this collection" strip. The `(pdp)` group deliberately has **no** `loading.tsx` so `notFound()` returns a real HTTP 404 (a parent Suspense boundary otherwise forces 200).
 - **Lightbox** — quick-view modal on tiles; links to the product page permalink. Product photos always render at natural ratio, never cropped.
 
 ### Cart
@@ -55,10 +57,10 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 
 1. **Client:** User fills delivery details, clicks pay → POST `/api/checkout`
 2. **Server (`src/app/api/checkout/route.ts`):**
-   - Derives **currency from locale**: `pl → PLN`, `en`/`es → EUR`
+   - Derives **currency from locale**: `pl → PLN`, `gb → GBP`, `en`/`es`/`de → EUR`
    - Validates cart items (`validateCart` in `src/lib/checkout.ts`, currency-aware) and delivery details (`validateDelivery` in `src/lib/shipx.ts`)
-   - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict
-   - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR) with `payment_method_configuration: STRIPE_PMC_ID` (`pmc_…`, hardcoded constant) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
+   - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict. An optional **private-sale token** (`src/lib/private-sale.ts`) instead reserves already-sold pieces via `reserve_private_sale_pieces()`
+   - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration: STRIPE_PMC_ID` (`pmc_…`, hardcoded constant) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
    - Captures marketing context (cookies, IP, UA, consent) into `orders.marketing` for server-side conversions
    - Persists `orders` + `order_items` rows
    - Returns `client_secret` to client (or `502` with `{ error: 'stripe_failed' }` if PI creation fails)
@@ -79,22 +81,32 @@ Event handling:
 
 A Cloudflare Worker cron (`worker.ts`, every 15 min) expires abandoned orders older than 1 hour: cancels the Stripe PaymentIntent and frees reserved pieces.
 
+### Other API Routes
+
+Beyond `checkout` and `stripe/webhook`, `src/app/api/` exposes:
+- **`/api/inventory`** — live sold/reserved IDs for client-side cart reconciliation.
+- **`/api/feed/google`** + **`/api/feed/meta`** — Google Shopping & Meta Catalog product feeds, one variant per locale/currency (`FEED_LOCALES` in `src/lib/feed.ts` covers all 5 locales).
+- **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Spec: `docs/plans/private-sale-cart-link.md`.
+- **`/api/returns`** — creates a return shipment (requires `STUDIO_RETURN_*`).
+- **`/api/inpost/webhook`** + **`/api/resend/webhook`** — delivery-status and email-event receivers.
+
 ### Internationalization
 
-Trilingual: Polish (default, no prefix), English (`/en`), Spanish (`/es`). Configured in `src/i18n/routing.ts`. All UI strings — including per-product `notes` — live in `messages/{pl,en,es}.json`. Server components use `getTranslations()`, client components use `useTranslations()`. Always import `Link` and `useRouter` from `src/i18n/navigation.ts` (not Next.js directly) to preserve locale.
+Five locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), German (`/de`), British English (`/gb`). Configured in `src/i18n/routing.ts` (`localePrefix: 'as-needed'`). All UI strings — including per-product `notes` — live in `messages/{pl,en,es,de,gb}.json`. Server components use `getTranslations()`, client components use `useTranslations()`. Always import `Link` and `useRouter` from `src/i18n/navigation.ts` (not Next.js directly) to preserve locale.
 
 ### Database Schema (Supabase)
 
 - `piece_state`: `product_id` PK, `status` (available|reserved|sold), `reserved_until`, `order_id`
-- `orders`: UUID id, `payment_intent_id`, `status` (pending|paid|failed|expired|refunded), totals in minor units, contact JSON, `delivery_method`, `locale`, `currency` (pln|eur), `marketing` (jsonb — server-conversion context), `confirmation_email_sent_at`
+- `orders`: UUID id, `payment_intent_id`, `status` (pending|paid|failed|expired|refunded), totals in minor units, contact JSON, `delivery_method`, `locale`, `currency` (pln|eur|gbp), `marketing` (jsonb — server-conversion context), `confirmation_email_sent_at`, `private_sale_id` (nullable FK)
 - `order_items`: `order_id`, `product_id`, `unit_price` (minor units, in the order's currency)
-- `reserve_pieces()` RPC: atomically reserves rows; returns array of conflicting product IDs (empty = success)
+- `private_sales`: `id`, `token`, `product_ids`, `expires_at`, `consumed_at` — single-use re-sale links for sold pieces (one paid order per token, enforced by a partial unique index)
+- `reserve_pieces()` RPC: atomically reserves rows; returns array of conflicting product IDs (empty = success). `reserve_private_sale_pieces()` does the same for sold pieces behind a valid token
 
 RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmin()`).
 
 ### Pricing & Shipping
 
-Dual-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN` and `PRICE_EUR` give per-category prices (whole units); `priceOf(product, locale)` returns the display price in the right currency (`pl → PLN`, otherwise EUR). Conversion to minor units happens at checkout via `toGrosze()` (PLN×100) / `toEuroCents()` (EUR×100). Shipping: Paczkomat **20 zł / 5 €**, Kurier **30 zł / 10 €**, Odbiór osobisty (Warsaw) **0** (`SHIPPING_PLN` / `SHIPPING_EUR`). Delivery details are validated in `src/lib/shipx.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `src/components/shop/GeowidgetPicker.tsx` for locker selection.
+Tri-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `PRICE_GBP` give per-category prices (whole units); `priceOf(product, locale)` returns the display price in the right currency (`pl → PLN`, `gb → GBP`, otherwise EUR). Conversion to minor units happens at checkout via `toGrosze()` (PLN×100) / `toEuroCents()` (EUR×100) / `toGBPPence()` (GBP×100). Shipping: Paczkomat **20 zł / 5 € / 5 £**, Kurier **30 zł / 10 € / 12 £**, Odbiór osobisty (Warsaw) **0** (`SHIPPING_PLN` / `SHIPPING_EUR` / `SHIPPING_GBP`). Delivery details are validated in `src/lib/shipx.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `src/components/shop/GeowidgetPicker.tsx` for locker selection.
 
 ### Analytics & Conversions
 
@@ -122,7 +134,7 @@ See `.env.example` for the full list and setup notes. See `docs/cloudflare-deplo
 
 ## Key Conventions
 
-**Monetary values:** PLN in grosze, EUR in euro-cents — always integers. Use `pln()` from `src/lib/format.ts` for PLN display, and `priceOf(product, locale)` to pick the right currency/value for a locale. Grosze/euro-cents are a checkout/Stripe-only rule; the analytics layer uses major units.
+**Monetary values:** PLN in grosze, EUR in euro-cents, GBP in pence — always integers. Use `pln()` from `src/lib/format.ts` for PLN display, and `priceOf(product, locale)` to pick the right currency/value for a locale. Grosze/euro-cents are a checkout/Stripe-only rule; the analytics layer uses major units.
 
 **Server vs client components:** Default to server components (async). Add `'use client'` only when needed for state, hooks, or browser APIs. Secrets (Stripe, Supabase admin, conversion tokens) are never exposed to the client — all sensitive operations go through API routes or the webhook.
 
@@ -149,31 +161,3 @@ Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`)
 `middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this). See `docs/superpowers/plans/2026-06-08-go-to-market-execution.md` (Task 8, cancelled).
 
 New migrations go in `supabase/migrations/` with timestamp prefix. Docs for deployment, E2E testing design, and analytics setup are in `docs/`.
-
-<!-- stripe-projects-cli managed:agents-md:start -->
-## Stripe Projects CLI
-
-Third-party credentials for this repo are managed via [Stripe Projects](https://docs.stripe.com/stripe-cli) (CLI plugin). The project hub lives in **`stripe-project/`** (project id `project_61UqcsrZjx777DJ2X16RsKaNHOCQMrZcm7NJ121hAIk4`, Stripe account Anna Ciok Studio). Run all `stripe projects …` commands from that directory unless re-initializing.
-
-Agent skill: `.agents/skills/stripe-projects-cli/SKILL.md`. Cursor rule: `.cursor/rules/stripe-projects-cli.mdc`.
-
-**Named environments**
-
-| Environment | Output file | Use |
-|-------------|-------------|-----|
-| `local` (active) | `stripe-project/.env.local` | Local dev — `npm run projects:env-pull` |
-| `default` | `stripe-project/.env` | Fallback / legacy |
-
-CLI output must be `.env` or `.env.*` inside `stripe-project/`; it cannot write directly to repo-root `.dev.vars`. For Wrangler local preview (`npm run preview:cf`), copy Projects-managed vars into repo-root **`.dev.vars`** (already gitignored).
-
-**Env var mapping** (Projects resource → app convention in `.env.example`)
-
-| Projects injects | App expects | Notes |
-|------------------|-------------|-------|
-| `SENTRY_DSN` | `NEXT_PUBLIC_SENTRY_DSN` (build) + `SENTRY_DSN` (runtime) | Set both to the same DSN for Next.js client + server |
-| `SENTRY_AUTH_TOKEN` | `SENTRY_AUTH_TOKEN` | Source map uploads during build |
-| `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL` | — | Sentry CLI / dashboard; not required at runtime |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (staging) | same names | Staging only when provisioned; **do not replace prod** |
-
-Never read or hand-edit `stripe-project/.projects/` or generated env files — use `stripe projects env` / `stripe projects env --pull` only.
-<!-- stripe-projects-cli managed:agents-md:end -->

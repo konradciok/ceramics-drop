@@ -309,7 +309,7 @@
         "cta": "Choose a dish"
       },
       "medplate": {
-        "num": "18 pieces · 120 zł each",
+        "num": "39 pieces · 120 zł each",
         "desc": "Medium plates, each hand-painted separately. For snacking, serving or displaying — ⌀ 18 cm.",
         "cta": "Choose a medium plate"
       },
@@ -335,7 +335,7 @@
     "storyTitle": "First came painting, <em>now ceramics.</em>",
     "storyP1": "I’m Anna. I paint canvases and ceramics, and both worlds meet in the same studio. I treat a mug, plate or vase like a small functional painting: something you can hold, place on the table and use without waiting for a special occasion.",
     "storyP2": "I work alone and slowly, one piece after another. The hand leaves its trace in the brush line, in an uneven palm and in a stripe that does not pretend to be perfect. That is where each piece gets its character.",
-    "storyP3": "The June drop is one hundred and three pieces made this spring. When one finds its home, it leaves the shop for good.",
+    "storyP3": "The June drop is one hundred and twenty-five pieces made this spring. When one finds its home, it leaves the shop for good.",
     "storyCta1": "Choose a piece",
     "storyCta2": "Write to me",
     "craftEyebrow": "How it works",
@@ -386,8 +386,8 @@
       "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
     },
     "talerze-srednie": {
-      "eyebrow": "June drop — 18 pieces",
-      "title": "Medium plates <em>Nº 01–18</em>",
+      "eyebrow": "June drop — 39 pieces",
+      "title": "Medium plates <em>Nº 01–39</em>",
       "lead": "Medium plates, each hand-painted separately. For snacking, serving or as decoration on the shelf."
     },
     "talerze-duze": {

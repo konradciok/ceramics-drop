@@ -309,7 +309,7 @@
         "cta": "Wybierz talerzyk"
       },
       "medplate": {
-        "num": "18 prac · 120 zł za sztukę",
+        "num": "39 prac · 120 zł za sztukę",
         "desc": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja — ⌀ 18 cm.",
         "cta": "Wybierz talerz średni"
       },
@@ -386,8 +386,8 @@
       "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
     },
     "talerze-srednie": {
-      "eyebrow": "Czerwcowy drop — 18 prac",
-      "title": "Talerze średnie <em>Nº 01–18</em>",
+      "eyebrow": "Czerwcowy drop — 39 prac",
+      "title": "Talerze średnie <em>Nº 01–39</em>",
       "lead": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja na półce."
     },
     "talerze-duze": {
@@ -736,7 +736,7 @@
     "gallery": "Nowa seria editorialowych zdjęć Anny Ciok: portrety, taras, pracownia, światło i ręcznie malowana ceramika z czerwcowego dropu 2026.",
     "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
     "collections": {
-      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",

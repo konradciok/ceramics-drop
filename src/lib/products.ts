@@ -137,14 +137,6 @@ const GALLERY_MERGE: Record<string, string[]> = {
   w12: ['/uploads/miski-falowane-11.webp'],
   w14: ['/uploads/miski-falowane-13.webp'],
   w15: ['/uploads/miski-falowane-16.webp'],
-  // waza-mala editorial still-life gallery images (seedream_v4_5 batch 2026-06-15)
-  v01: ['/uploads/waza-mala-1-editorial-2.webp'],
-  v02: ['/uploads/waza-mala-2-editorial-2.webp'],
-  v03: ['/uploads/waza-mala-3-editorial-2.webp'],
-  v04: ['/uploads/waza-mala-4-editorial-2.webp'],
-  v06: ['/uploads/waza-mala-6-editorial-2.webp'],
-  v07: ['/uploads/waza-mala-7-editorial-2.webp'],
-  v09: ['/uploads/waza-mala-9-editorial-2.webp'],
 };
 
 /** Per-product price overrides in PLN (used for test/one-off pieces). */

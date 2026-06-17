@@ -12,7 +12,7 @@
     "error": "Etwas ist schiefgelaufen. Bitte versuche es in Kürze erneut.",
     "moreInfo": "Mehr über Versand & Rücksendungen"
   },
-  "announce": "Juni-2026-Drop — 103 Stücke, jedes ein Unikat",
+  "announce": "Juni-2026-Drop — 125 Stücke, jedes ein Unikat",
   "title": {
     "home": "Anna Ciok Ceramics — Juni-2026-Drop",
     "kubki": "Tassen",
@@ -309,7 +309,7 @@
         "cta": "Schälchen wählen"
       },
       "medplate": {
-        "num": "18 Stück · 28 € das Stück",
+        "num": "39 Stück · 28 € das Stück",
         "desc": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Snacken, Servieren oder Dekorieren — ⌀ 18 cm.",
         "cta": "Mittleren Teller wählen"
       },
@@ -335,7 +335,7 @@
     "storyTitle": "Zuerst kam die Malerei, <em>jetzt Keramik.</em>",
     "storyP1": "Ich bin Anna. Ich bemale Leinwände und Keramik, und beide Welten begegnen sich im selben Studio. Ich behandle eine Tasse, einen Teller oder eine Vase wie ein kleines funktionales Gemälde: etwas, das man halten, auf den Tisch stellen und ohne besonderen Anlass benutzen kann.",
     "storyP2": "Ich arbeite allein und langsam, Stück für Stück. Die Hand hinterlässt ihre Spur in der Pinselllinie, in einer ungleichmäßigen Palme und in einem Streifen, der nicht vorgibt, perfekt zu sein. Dort bekommt jedes Stück seinen Charakter.",
-    "storyP3": "Der Juni-Drop umfasst hundertdrei Stücke, die diesen Frühling entstanden sind. Wenn eines ein Zuhause findet, verlässt es den Shop für immer.",
+    "storyP3": "Der Juni-Drop umfasst hundertfünfundzwanzig Stücke, die diesen Frühling entstanden sind. Wenn eines ein Zuhause findet, verlässt es den Shop für immer.",
     "storyCta1": "Stück wählen",
     "storyCta2": "Schreib mir",
     "craftEyebrow": "So funktioniert es",
@@ -386,8 +386,8 @@
       "lead": "Kleine Schälchen. Für Olivenöl, Schmuck, Schlüssel und alles, was auf handbemalter Keramik besser aussieht."
     },
     "talerze-srednie": {
-      "eyebrow": "Juni-Drop — 18 Stücke",
-      "title": "Mittlere Teller <em>Nº 01–18</em>",
+      "eyebrow": "Juni-Drop — 39 Stücke",
+      "title": "Mittlere Teller <em>Nº 01–39</em>",
       "lead": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Snacken, Servieren oder als Dekoration im Regal."
     },
     "talerze-duze": {
@@ -406,7 +406,7 @@
       "lead": "Schüsseln mit Wellenrand. Für Frühstück, Snacks und kleine häusliche Rituale, wobei jedes Stück ein bisschen anders ist."
     },
     "sklep": {
-      "eyebrow": "Juni-Drop — 103 Stücke",
+      "eyebrow": "Juni-Drop — 125 Stücke",
       "title": "Alle <em>Stücke</em>",
       "lead": "Die gesamte Kollektion an einem Ort — Tassen, Vasen, Teller und Schüsseln. Jedes Stück ist ein Unikat. Nach Kategorie stöbern und Favoriten markieren."
     }
@@ -431,7 +431,7 @@
     "fact2V": "1040 <em>°C</em>",
     "fact2D": "Nach dem Bemalen und Glasieren kommt jedes Stück in den Brennofen, wo das Brennen die Farbe fixiert und die Oberfläche in eine glasige, funktionale Schicht verwandelt.",
     "fact3K": "Juni-Drop",
-    "fact3V": "103 <em>Stücke</em>",
+    "fact3V": "125 <em>Stücke</em>",
     "fact3D": "Tassen, kleine, mittlere und große Vasen, kleine Schälchen, mittlere Teller, große Teller, große Schüsseln und Schüsseln mit Wellenrand. Jedes Stück ist ein Unikat.",
     "fact4K": "Versand",
     "fact4V": "1–3 <em>Tage</em>",
@@ -665,7 +665,28 @@
       "Eine braune Palme mit hellen Kerben und blauen Früchten. Blaue Rechtecke verlaufen um den Rand wie ein ruhiger, Urlaubsrhythmus.",
       "Eine blaue Muschel mit dünnen hellen Linien und einem braunen welligen Rand. Das Motiv erhebt sich in Schichten vom Tellerboden, und der Rand führt es mit einem sanften Rhythmus.",
       "Eine schwarze Flasche mit einem weißen Streifenband, ein Kelch und ein Stern auf einem hellen Teller. Die Motive stehen nebeneinander wie ein ruhiges, nächtliches Stillleben.",
-      "Ein schwarzer Zweig mit einer runden Frucht und Blattpaaren in feinen hellen Linien. Das vertikale Motiv ordnet sich ruhig durch die Mitte des Tellers."
+      "Ein schwarzer Zweig mit einer runden Frucht und Blattpaaren in feinen hellen Linien. Das vertikale Motiv ordnet sich ruhig durch die Mitte des Tellers.",
+      "Ein brauner Zweig mit einer runden Frucht und Fischgrätblättern mit hellen Linien. Das vertikale Motiv breitet sich ruhig durch die Mitte des Tellers aus.",
+      "Ein schwarzer Zweig mit fünf runden Beeren und zwei Blättern mit welligen weißen Linien. Das Motiv wächst vertikal über den hellen Tellerboden.",
+      "Eine schwarze Zitrone mit weißen Linien in der Mitte und Terrakotta-Strahlen mit einem weißen Punkt am Rand. Ein urlaubsähnlicher Rhythmus breitet sich gleichmäßig um den Rand aus.",
+      "Eine Terrakotta-Muschel mit dünnen hellen Linien in der Mitte und schwarzen Strahlen mit einem weißen Punkt am Rand. Das Motiv windet sich spiralig in der Mitte, und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Eine schwarze, gewundene Linie mit heller Schraffur und einem Terrakotta-Punkt darüber. Das abstrakte Motiv verläuft frei über den hellen Tellerboden.",
+      "Eine Terrakotta-Palme mit weißer Schraffur, schwarzen Früchten und einem schwarzen Frill mit weißen Punkten am Rand. Die Blätter fächern sich auf, und der Rand leitet den Rhythmus um den Teller.",
+      "Eine schwarze Spiralenmuschel mit hellen Linien und einem welligen Terrakotta-Rand mit weißen Streifen. Das Motiv rollt sich von der Mitte aus, und der Rand führt es mit einem sanften Rhythmus.",
+      "Eine Terrakotta-Frucht mit kleinen weißen Linien in der Mitte und schwarzen Strahlen mit einem weißen Punkt am Rand. Das Motiv steht fest in der Mitte, und der Rand schlägt einen gleichmäßigen, kontrastierenden Rhythmus.",
+      "Eine schwarze Figur in einem breiten Hut und welligem Kragen, umgeben von Terrakotta-Strichen am Rand. Das folkloristische Motiv steht ruhig in der Mitte, und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Eine schwarze Figur in einem breiten Hut und einem weiten Rock mit hellem Muster, umgeben von braunen Rechtecken mit einem weißen Punkt am Rand. Das Motiv verläuft vertikal durch die Mitte des Tellers.",
+      "Ein schwarzer Esel mit einem weißen Muster an der Seite und einem Terrakotta-Frill mit weißen Punkten am Rand. Das Motiv steht ruhig in der Mitte, und der Rand leitet den Rhythmus herum.",
+      "Eine schwarze Palme mit weißer Schraffur, Terrakotta-Früchten und Terrakotta-Bändern am Rand. Das urlaubsähnliche Motiv breitet sich in einem Blätterfächer aus, und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Eine schwarze Blume mit einem gestreiften Schild, gepunktetem Zentrum und zwei welligen Blättern. Der vertikale Stiel ordnet das Motiv auf dem hellen Teller.",
+      "Ein schwarzer Esel mit einem weißen Geschirrmuster und einem welligen Terrakotta-Rand mit weißen Linien. Das Motiv steht ruhig im Profil, und der Rand leitet den Rhythmus herum.",
+      "Eine braune Palme mit hellen Adern, blauen Früchten und einem blauen Frill mit weißen Punkten. Das urlaubsähnliche Motiv breitet sich weit über den hellen Tellerboden aus.",
+      "Eine Terrakotta-Palme mit weißen Linien, schwarzen Früchten und einem schwarzen welligen Rand mit hellen Strichen. Das Wüstenmotiv steht in der Mitte, und der Rand führt es mit einem sanften Rhythmus.",
+      "Ein schwarzer Esel mit einer weißen Girlande an der Seite und einem Terrakotta-Frill mit weißen Punkten am Rand. Das folkloristische Motiv steht in der Mitte des Tellers, und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Eine schwarze Blume mit gepunktetem Zentrum, runden Blütenblättern und Fischgrätblättern. Die gerade Vertikale des Stiels ordnet das Motiv ruhig auf dem hellen Teller.",
+      "Eine schwarze Palme mit weißen Linien, braunen Früchten und einem braunen Frill mit weißen Punkten. Die Blätter breiten sich weit aus, und der Rand leitet einen urlaubsähnlichen Rhythmus herum.",
+      "Eine schwarze Figur in einem breiten Hut und einem Rock in hellem Karomuster, umgeben von einem Terrakotta-Frill mit weißen Linien. Das folkloristische Motiv steht vertikal in der Mitte des Tellers.",
+      "Eine schwarze Figur in einem breiten Hut und gestreifter Jacke mit karierten Hosen. Terrakotta-Striche am Rand schlagen einen gleichmäßigen Rhythmus um den Rand."
     ],
     "talerze-duze": [
       "Brauner Esel mit einer weißen Girlande an der Seite und einer schwarzen Welle nahe dem Rand. Das Motiv steht ruhig in der Mitte, und der gestreifte Rand trägt den Rhythmus um die Form.",
@@ -711,7 +732,7 @@
     "shop": "Zum Shop"
   },
   "meta": {
-    "description": "Handbemalte funktionale Keramik von Anna Ciok: Tassen, Vasen, Schüsseln und Teller. Juni-2026-Drop, 103 Unikate.",
+    "description": "Handbemalte funktionale Keramik von Anna Ciok: Tassen, Vasen, Schüsseln und Teller. Juni-2026-Drop, 125 Unikate.",
     "gallery": "Eine neue redaktionelle Fotoserie von Anna Ciok: Porträts, Terrassenlicht, Studioecken und handbemalte Keramik aus dem Juni-2026-Drop.",
     "ogImageAlt": "Anna Ciok Ceramics — handbemalte Keramiktasse",
     "collections": {
@@ -720,11 +741,11 @@
       "wazonySrednie": "Mittlere handbemalte Keramikvasen. Fünf einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
       "wazonyDuze": "Große handbemalte Keramikvasen — Blickfang, jede ein Unikat. Vier einzigartige Werke aus Anna Cioks Juni-2026-Drop.",
       "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Vierzehn einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Achtzehn einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
+      "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Neununddreißig einmalige Stücke aus Anna Cioks Kollektion.",
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Neun einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig. Sechs einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat. Zehn einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "sklep": "Anna Cioks vollständige Kollektion: 103 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig."
+      "sklep": "Anna Cioks vollständige Kollektion: 125 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig."
     }
   },
   "deliveryNotice": {

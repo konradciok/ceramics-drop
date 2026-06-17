@@ -309,7 +309,7 @@
         "cta": "Elegir un platito"
       },
       "medplate": {
-        "num": "18 piezas · 120 zł cada uno",
+        "num": "39 piezas · 120 zł cada uno",
         "desc": "Platos medianos, cada uno pintado a mano por separado. Para aperitivos, servir o decorar — ⌀ 18 cm.",
         "cta": "Elegir un plato mediano"
       },
@@ -335,7 +335,7 @@
     "storyTitle": "Primero llegó la pintura, <em>hoy está la cerámica.</em>",
     "storyP1": "Soy Anna. Pinto cuadros y cerámica, y esos dos mundos se encuentran en el mismo estudio. Trato una taza, un plato o un jarrón como un pequeño cuadro útil: puedes cogerlo, ponerlo en la mesa y usarlo sin esperar una ocasión especial.",
     "storyP2": "Trabajo sola y despacio, un ejemplar tras otro. La mano deja su huella en la línea del pincel, en una palmera irregular y en una raya que no intenta ser perfecta. Ahí es donde cada pieza encuentra su carácter.",
-    "storyP3": "El drop de junio son ciento tres piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
+    "storyP3": "El drop de junio son ciento veinticinco piezas hechas esta primavera. Cuando una encuentra su hogar, desaparece de la tienda para siempre.",
     "storyCta1": "Elegir una pieza",
     "storyCta2": "Escríbeme",
     "craftEyebrow": "Cómo funciona",
@@ -386,8 +386,8 @@
       "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
     },
     "talerze-srednie": {
-      "eyebrow": "Drop de junio — 18 piezas",
-      "title": "Platos medianos <em>Nº 01–18</em>",
+      "eyebrow": "Drop de junio — 39 piezas",
+      "title": "Platos medianos <em>Nº 01–39</em>",
       "lead": "Platos medianos, cada uno pintado a mano por separado. Para aperitivos, servir o como decoración en la estantería."
     },
     "talerze-duze": {
