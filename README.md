@@ -54,7 +54,7 @@ Content-complete, payments-enabled, and deployed to Cloudflare Workers.
 **Done:**
 
 - **Content** — all pages built with real markup & copy; trilingual catalogs (PL/EN/ES) in
-  `messages/`; 103 one-of-a-kind pieces from `getProducts()` in `src/lib/products.ts`; product
+  `messages/`; 125 one-of-a-kind pieces from `getProducts()` in `src/lib/products.ts`; product
   images in `public/uploads/` (WebP, via `npm run optimize-images`).
 - **Payments** — embedded Stripe Payment Element checkout in PLN. `/api/checkout` atomically
   reserves the selected pieces (15-min hold) before creating the PaymentIntent;

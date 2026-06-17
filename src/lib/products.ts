@@ -24,7 +24,7 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'wazony-srednie': { slug: 'wazony-srednie', nameKey: 'nav.wazonySrednie', singularKey: 'midvase', price: PRICE_PLN['wazony-srednie'], measure: '25 × 16 × 16 cm', count: 5 },
   'wazony-duze': { slug: 'wazony-duze', nameKey: 'nav.wazonyDuze', singularKey: 'bigvase', price: PRICE_PLN['wazony-duze'], measure: '28 × 19 × 19 cm', count: 4 },
   talerzyki: { slug: 'talerzyki', nameKey: 'nav.talerzyki', singularKey: 'dish', price: PRICE_PLN['talerzyki'], measure: '12 × 12 × 3 cm', count: 14 },
-  'talerze-srednie': { slug: 'talerze-srednie', nameKey: 'nav.talerzeSrednie', singularKey: 'medplate', price: PRICE_PLN['talerze-srednie'], measure: '⌀ 18 cm', count: 18 },
+  'talerze-srednie': { slug: 'talerze-srednie', nameKey: 'nav.talerzeSrednie', singularKey: 'medplate', price: PRICE_PLN['talerze-srednie'], measure: '⌀ 18 cm', count: 39 },
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
@@ -69,7 +69,7 @@ const SPECS: Spec[] = [
   { slug: 'wazony', prefix: 'v', imageBase: 'waza-mala', files: range(1, 9) },
   { slug: 'wazony-duze', prefix: 'd', imageBase: 'waza-duza', files: [1, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
   { slug: 'talerzyki', prefix: 't', imageBase: 'talerz-maly', files: range(1, 31) },
-  { slug: 'talerze-srednie', prefix: 's', imageBase: 'sredni-talerz', files: [17, 18] },
+  { slug: 'talerze-srednie', prefix: 's', imageBase: 'sredni-talerz', files: range(17, 39) },
   { slug: 'talerze-duze', prefix: 'p', imageBase: 'talerz-duzy', files: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13] },
   { slug: 'duze-michy', prefix: 'b', imageBase: 'duza-micha', files: range(1, 7) },
   { slug: 'miski-falowane', prefix: 'w', imageBase: 'miski-falowane', files: range(1, 17) },
@@ -137,6 +137,14 @@ const GALLERY_MERGE: Record<string, string[]> = {
   w12: ['/uploads/miski-falowane-11.webp'],
   w14: ['/uploads/miski-falowane-13.webp'],
   w15: ['/uploads/miski-falowane-16.webp'],
+  // waza-mala editorial still-life gallery images (seedream_v4_5 batch 2026-06-15)
+  v01: ['/uploads/waza-mala-1-editorial-2.webp'],
+  v02: ['/uploads/waza-mala-2-editorial-2.webp'],
+  v03: ['/uploads/waza-mala-3-editorial-2.webp'],
+  v04: ['/uploads/waza-mala-4-editorial-2.webp'],
+  v06: ['/uploads/waza-mala-6-editorial-2.webp'],
+  v07: ['/uploads/waza-mala-7-editorial-2.webp'],
+  v09: ['/uploads/waza-mala-9-editorial-2.webp'],
 };
 
 /** Per-product price overrides in PLN (used for test/one-off pieces). */

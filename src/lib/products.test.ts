@@ -9,12 +9,12 @@ import {
 } from './products';
 
 describe('getProducts', () => {
-  it('builds exactly 104 pieces (96 June drop + 8 segunda-partia additions; smoke-test x01 removed)', () => {
-    expect(getProducts()).toHaveLength(104);
+  it('builds exactly 125 pieces (104 prior catalogue + 21 new talerze-srednie s03–s23)', () => {
+    expect(getProducts()).toHaveLength(125);
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 18, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
+    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -39,9 +39,14 @@ describe('getProducts', () => {
     expect(getProductById('t16')!.image).toBe('/uploads/talerz-maly-16.webp');
     expect(getProductById('s01')!.image).toBe('/uploads/sredni-talerz-17.webp');
     expect(getProductById('s02')!.image).toBe('/uploads/sredni-talerz-18.webp');
+    expect(getProductById('s03')!.image).toBe('/uploads/sredni-talerz-19.webp');
+    expect(getProductById('s23')!.image).toBe('/uploads/sredni-talerz-39.webp');
     // segunda partia
     expect(getProductById('c01')!.image).toBe('/uploads/kubek-kolejny-nr-1.webp');
     expect(getProductById('c04')!.image).toBe('/uploads/kubek-kolejny-nr-4.webp');
+    expect(getProductById('k27')!.image).toBe('/uploads/kubek-31.webp');
+    expect(getProductById('k27')!.num).toBe('25');
+    expect(getProductById('k27')!.noteIndex).toBe(24);
     expect(getProductById('u01')!.image).toBe('/uploads/sredni-wazon-234.webp');
     expect(getProductById('g01')!.image).toBe('/uploads/duza-waza-122.webp');
     expect(getProductById('h01')!.image).toBe('/uploads/duza-miska-23.webp');
@@ -73,8 +78,8 @@ describe('June inventory review', () => {
     }
   });
 
-  it('recategorises t16–t31 and s01–s02 to talerze-srednie', () => {
-    for (const id of ['t16', 't31', 's01', 's02']) {
+  it('recategorises t16–t31 and s01–s23 to talerze-srednie', () => {
+    for (const id of ['t16', 't31', 's01', 's02', 's03', 's23']) {
       expect(getProductById(id)!.category, id).toBe('talerze-srednie');
     }
     // talerzyki retains t01–t15 minus t03 = 14 pieces

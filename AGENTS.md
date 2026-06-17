@@ -4,7 +4,7 @@ Guidance for AI coding agents (Claude Code, Codex, Cursor, Copilot, …) working
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~103 standalone pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). Trilingual and **dual-currency** (PLN for the default Polish locale at unprefixed `/`, EUR for `/en` and `/es`). Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~125 standalone pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). Trilingual and **dual-currency** (PLN for the default Polish locale at unprefixed `/`, EUR for `/en` and `/es`). Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -149,3 +149,31 @@ Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`)
 `middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this). See `docs/superpowers/plans/2026-06-08-go-to-market-execution.md` (Task 8, cancelled).
 
 New migrations go in `supabase/migrations/` with timestamp prefix. Docs for deployment, E2E testing design, and analytics setup are in `docs/`.
+
+<!-- stripe-projects-cli managed:agents-md:start -->
+## Stripe Projects CLI
+
+Third-party credentials for this repo are managed via [Stripe Projects](https://docs.stripe.com/stripe-cli) (CLI plugin). The project hub lives in **`stripe-project/`** (project id `project_61UqcsrZjx777DJ2X16RsKaNHOCQMrZcm7NJ121hAIk4`, Stripe account Anna Ciok Studio). Run all `stripe projects …` commands from that directory unless re-initializing.
+
+Agent skill: `.agents/skills/stripe-projects-cli/SKILL.md`. Cursor rule: `.cursor/rules/stripe-projects-cli.mdc`.
+
+**Named environments**
+
+| Environment | Output file | Use |
+|-------------|-------------|-----|
+| `local` (active) | `stripe-project/.env.local` | Local dev — `npm run projects:env-pull` |
+| `default` | `stripe-project/.env` | Fallback / legacy |
+
+CLI output must be `.env` or `.env.*` inside `stripe-project/`; it cannot write directly to repo-root `.dev.vars`. For Wrangler local preview (`npm run preview:cf`), copy Projects-managed vars into repo-root **`.dev.vars`** (already gitignored).
+
+**Env var mapping** (Projects resource → app convention in `.env.example`)
+
+| Projects injects | App expects | Notes |
+|------------------|-------------|-------|
+| `SENTRY_DSN` | `NEXT_PUBLIC_SENTRY_DSN` (build) + `SENTRY_DSN` (runtime) | Set both to the same DSN for Next.js client + server |
+| `SENTRY_AUTH_TOKEN` | `SENTRY_AUTH_TOKEN` | Source map uploads during build |
+| `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL` | — | Sentry CLI / dashboard; not required at runtime |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (staging) | same names | Staging only when provisioned; **do not replace prod** |
+
+Never read or hand-edit `stripe-project/.projects/` or generated env files — use `stripe projects env` / `stripe projects env --pull` only.
+<!-- stripe-projects-cli managed:agents-md:end -->
