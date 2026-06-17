@@ -4,14 +4,18 @@ export const SITE_URL = 'https://anna-ciok.studio';
 /** Brand name — a proper noun, identical across locales. Single source for metadata + JSON-LD. */
 export const SITE_NAME = 'Anna Ciok Ceramics';
 
-/** App routes under `[locale]` (path segment only, leading slash). */
+/** App routes under `[locale]` (path segment only, leading slash).
+ *
+ *  The collection routes list ONLY the public (visible) families — withdrawn
+ *  families (wazony-srednie, wazony-duze, talerze-duze, duze-michy,
+ *  miski-falowane) are omitted so they stay out of the sitemap and hreflang
+ *  alternates. This is kept static (not derived from VISIBLE_CATEGORY_ORDER) so
+ *  `site.ts` stays a dependency-free leaf; a test in `site.test.ts` enforces it
+ *  never drifts from the product registry. */
 export const SITE_PATHS = [
   '/',
   '/sklep',
   '/gallery',
-  // Public collection routes only — withdrawn families (wazony-srednie,
-  // wazony-duze, talerze-duze, duze-michy, miski-falowane) are excluded so
-  // they stay out of the sitemap and hreflang alternates.
   '/kubki',
   '/talerzyki',
   '/talerze-srednie',
