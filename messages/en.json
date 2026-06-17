@@ -231,6 +231,7 @@
     "soldOut": "Some pieces were just sold and have been removed from your cart.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "checkoutError": "Couldn’t start payment. Please try again shortly.",
+    "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",
     "payError": "Payment failed. Please try again.",
     "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."

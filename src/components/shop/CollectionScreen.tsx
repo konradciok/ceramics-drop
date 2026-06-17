@@ -2,10 +2,10 @@
    CollectionScreen — shop head + family switcher + hint + gallery.
    Server component; copy comes from i18n message catalogs.
    ============================================================ */
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getProductsByCategory, isCategoryHidden } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getProductsByCategory } from '@/lib/products';
+import { assertCategoryPublic } from '@/lib/category-guard';
 import { getSoldIds } from '@/lib/inventory';
 import type { CategorySlug } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
@@ -16,7 +16,7 @@ import { richTags } from '@/components/ui/richTags';
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
   // Withdrawn families are not browsable — return a real 404 (no loading.tsx in
   // this route group, so notFound() yields HTTP 404, not a 200 shell).
-  if (isCategoryHidden(slug)) notFound();
+  assertCategoryPublic(slug);
 
   const t = await getTranslations();
   const [base, soldIds] = await Promise.all([

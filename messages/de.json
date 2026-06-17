@@ -231,6 +231,7 @@
     "soldOut": "Einige Stücke wurden gerade verkauft und wurden aus deinem Warenkorb entfernt.",
     "rateLimited": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
     "checkoutError": "Zahlung konnte nicht gestartet werden. Bitte versuche es in Kürze erneut.",
+    "notForSale": "Dieses Stück wurde aus dem Verkauf genommen und kann nicht mehr gekauft werden.",
     "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "privateSaleInvalid": "Dieser Bestelllink ist abgelaufen oder wurde bereits verwendet. Bitte kontaktiere das Studio.",
     "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden."

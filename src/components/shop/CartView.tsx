@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, resolveKnownProducts, isCategoryHidden, CATEGORIES } from '@/lib/products';
+import { resolveCartProducts, resolveKnownProducts, getProductById, isCategoryHidden, CATEGORIES } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
@@ -157,7 +157,20 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       // so no synchronous setState here; we only flip it off once the fetch settles.
       fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
-        .then(({ product_ids }: { product_ids: string[] }) => replace(product_ids))
+        .then(({ product_ids }: { product_ids: string[] }) => {
+          // A link that bundles a withdrawn-family piece can never be paid
+          // (checkout returns not_for_sale), so treat it as invalid up front
+          // instead of rendering a payable cart that fails at the pay step.
+          const hasHidden = product_ids.some((id) => {
+            const p = getProductById(id);
+            return p !== undefined && isCategoryHidden(p.category);
+          });
+          if (hasHidden) {
+            setPrivateSaleError(true);
+            return;
+          }
+          replace(product_ids);
+        })
         .catch(() => setPrivateSaleError(true))
         .finally(() => setPrivateSaleLoading(false));
       return;
@@ -299,6 +312,22 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited', status: 429 }));
         setCheckoutError(t('cart.rateLimited'));
         return;
+      }
+      if (res.status === 400) {
+        // A withdrawn-family piece reached checkout (stale cart / private-sale
+        // link). Self-heal a normal cart by pruning the hidden ids, and show a
+        // specific message instead of the generic "payment failed".
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (body.error === 'not_for_sale') {
+          if (!privateSale) {
+            resolveKnownProducts(ids).forEach((p) => {
+              if (isCategoryHidden(p.category)) remove(p.id);
+            });
+          }
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'not_for_sale', status: 400 }));
+          setCheckoutError(t('cart.notForSale'));
+          return;
+        }
       }
       if (!res.ok) {
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));

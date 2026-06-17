@@ -134,6 +134,29 @@ describe('POST /api/checkout', () => {
     }
   });
 
+  it('rejects a withdrawn-family piece with 400 not_for_sale before reserving or charging', async () => {
+    validateCart.mockReturnValueOnce(
+      { ok: false, reason: 'not_for_sale' } as unknown as ReturnType<typeof validateCart>,
+    );
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['w03'],
+        locale: 'pl',
+        delivery_method: 'odbior',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'not_for_sale' });
+    // The payment boundary: no reservation, no Stripe PaymentIntent.
+    expect(reserveRpc).not.toHaveBeenCalled();
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+  });
+
   it('uses EUR currency when locale is es', async () => {
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {

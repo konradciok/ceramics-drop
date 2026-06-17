@@ -139,12 +139,18 @@ describe('hidden categories', () => {
     expect(VISIBLE_CATEGORY_ORDER).toEqual(['kubki', 'wazony', 'talerzyki', 'talerze-srednie']);
   });
 
-  it('getPublicProducts drops every hidden-family piece (125 − 34 = 91)', () => {
+  it('getPublicProducts drops every hidden-family piece, keeps the rest', () => {
     const pub = getPublicProducts();
-    expect(pub).toHaveLength(91);
-    expect(pub.some((p) => isCategoryHidden(p.category))).toBe(false);
+    // The invariant that matters: no hidden category survives in the public set.
+    expect(pub.every((p) => !isCategoryHidden(p.category))).toBe(true);
+    // Count derived from category sizes so a future catalogue edit can't make
+    // this drift silently (vs. a hardcoded magic number).
+    const hiddenCount = [...HIDDEN_CATEGORIES].reduce(
+      (n, slug) => n + getProductsByCategory(slug).length,
+      0,
+    );
+    expect(pub).toHaveLength(getProducts().length - hiddenCount);
     // The full catalogue is untouched — hidden pieces still resolve by id.
-    expect(getProducts()).toHaveLength(125);
     expect(getProductById('w03')!.category).toBe('miski-falowane');
   });
 });
