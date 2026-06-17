@@ -4,7 +4,7 @@
    Server component; copy comes from i18n message catalogs.
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
-import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import type { Product } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
@@ -33,7 +33,7 @@ export async function AllPiecesScreen({ products }: { products: Product[] }) {
       <nav id="shop-nav" className="shop-nav-sticky" aria-label={t('nav.sklep')}>
         <div className="shop-nav-track has-filter">
           <div className="shop-switch">
-            {CATEGORY_ORDER.map((s) => (
+            {VISIBLE_CATEGORY_ORDER.map((s) => (
               <a key={s} href={`#${s}`}>
                 {t(CATEGORIES[s].nameKey)}
               </a>

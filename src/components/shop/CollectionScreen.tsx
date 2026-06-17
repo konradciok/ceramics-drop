@@ -4,7 +4,8 @@
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORIES, CATEGORY_ORDER, getProductsByCategory } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getProductsByCategory } from '@/lib/products';
+import { assertCategoryPublic } from '@/lib/category-guard';
 import { getSoldIds } from '@/lib/inventory';
 import type { CategorySlug } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
@@ -13,6 +14,10 @@ import { StatusFilter } from './StatusFilter';
 import { richTags } from '@/components/ui/richTags';
 
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
+  // Withdrawn families are not browsable — return a real 404 (no loading.tsx in
+  // this route group, so notFound() yields HTTP 404, not a 200 shell).
+  assertCategoryPublic(slug);
+
   const t = await getTranslations();
   const [base, soldIds] = await Promise.all([
     Promise.resolve(getProductsByCategory(slug)),
@@ -35,7 +40,7 @@ export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
           </div>
           <div className="shop-switch-row">
             <div className="shop-switch">
-              {CATEGORY_ORDER.map((s) => (
+              {VISIBLE_CATEGORY_ORDER.map((s) => (
                 <Link key={s} href={`/${s}`} className={s === slug ? 'active' : undefined}>
                   {t(CATEGORIES[s].nameKey)}
                 </Link>

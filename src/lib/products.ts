@@ -47,6 +47,39 @@ export function getCategory(slug: CategorySlug): Category {
   return CATEGORIES[slug];
 }
 
+/* ------------------------------------------------------------------
+   Hidden categories — withdrawn from the public storefront.
+   ------------------------------------------------------------------
+   These families stay in the registry (stable ids, historical orders,
+   invoices, webhooks and analytics keep working) but are removed from
+   every public browsing surface: nav/footer, homepage, /sklep, the
+   collection + product pages (HTTP 404), sitemap and the merchant feeds.
+   The checkout API also hard-blocks them server-side (validateCart →
+   `not_for_sale`) so a stale cart or private-sale link can never buy one.
+   Un-hiding a family is a one-line change here. */
+export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
+  'wazony-srednie',
+  'wazony-duze',
+  'talerze-duze',
+  'duze-michy',
+  'miski-falowane',
+]);
+
+/** Whether a category is withdrawn from the public storefront. */
+export function isCategoryHidden(slug: CategorySlug): boolean {
+  return HIDDEN_CATEGORIES.has(slug);
+}
+
+/** Whether a piece may be bought — not sold and not in a hidden family. */
+export function isProductPurchasable(product: Product): boolean {
+  return !product.sold && !isCategoryHidden(product.category);
+}
+
+/** CATEGORY_ORDER minus hidden families — nav / footer / switcher / jump-nav. */
+export const VISIBLE_CATEGORY_ORDER: CategorySlug[] = CATEGORY_ORDER.filter(
+  (slug) => !isCategoryHidden(slug),
+);
+
 
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 const range = (a: number, b: number) =>
@@ -213,6 +246,15 @@ export function getProducts(): Product[] {
   return PRODUCTS;
 }
 
+/**
+ * Products shown on public browsing surfaces (shop, sitemap, merchant feeds) —
+ * the full catalogue minus the hidden families. Sold pieces are kept (the sold
+ * overlay is applied at render time; feeds mark them out-of-stock).
+ */
+export function getPublicProducts(): Product[] {
+  return PRODUCTS.filter((p) => !isCategoryHidden(p.category));
+}
+
 export function getProductsByCategory(slug: CategorySlug): Product[] {
   return PRODUCTS_BY_CATEGORY[slug];
 }
@@ -230,9 +272,10 @@ export function resolveKnownProducts(ids: string[]): Product[] {
 
 /**
  * Resolves a list of cart ids to the products that may actually be bought —
- * dropping unknown ids and sold (one-of-a-kind, already-gone) pieces. Used by
- * the cart surfaces so stale localStorage can never reintroduce sold inventory.
+ * dropping unknown ids, sold (one-of-a-kind, already-gone) pieces, and pieces
+ * in hidden (withdrawn) families. Used by the cart surfaces so stale
+ * localStorage can never reintroduce sold or withdrawn inventory.
  */
 export function resolveCartProducts(ids: string[]): Product[] {
-  return resolveKnownProducts(ids).filter((p) => !p.sold);
+  return resolveKnownProducts(ids).filter(isProductPurchasable);
 }

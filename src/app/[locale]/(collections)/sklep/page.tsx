@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AllPiecesScreen } from '@/components/shop/AllPiecesScreen';
-import { getProducts } from '@/lib/products';
+import { getPublicProducts } from '@/lib/products';
 import { getSoldIds } from '@/lib/inventory';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
@@ -28,7 +28,7 @@ export default async function Page({ params }: Props) {
   const sold = new Set(soldIds);
   // Sold overlay is best-effort: a Supabase outage must not take the storefront
   // down. Fall back to "nothing sold" — reserve_pieces is the double-sale guard.
-  const products = getProducts().map((p) => (sold.has(p.id) ? { ...p, sold: true } : p));
+  const products = getPublicProducts().map((p) => (sold.has(p.id) ? { ...p, sold: true } : p));
 
   return (
     <main>

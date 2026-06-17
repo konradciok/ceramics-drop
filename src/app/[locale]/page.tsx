@@ -5,7 +5,7 @@ import { Marquee } from '@/components/ui/Marquee';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
-import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import { pln } from '@/lib/format';
 import { srcSet } from '@/lib/images';
@@ -98,7 +98,7 @@ export default async function HomePage({ params }: Props) {
             }
           />
           <div className="collection-grid">
-            {CATEGORY_ORDER.map((slug) => {
+            {VISIBLE_CATEGORY_ORDER.map((slug) => {
               const cat = CATEGORIES[slug];
               const sk = cat.singularKey;
               return (

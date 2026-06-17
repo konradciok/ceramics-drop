@@ -231,6 +231,7 @@
     "soldOut": "Część prac została już sprzedana, więc usunęłam je z Twojego koszyka.",
     "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
     "checkoutError": "Nie udało się rozpocząć płatności. Spróbuj za chwilę.",
+    "notForSale": "Ta praca została wycofana ze sprzedaży i nie można jej już kupić.",
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
     "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24."

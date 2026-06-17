@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
   getProducts,
+  getPublicProducts,
   getProductsByCategory,
   getProductById,
   resolveCartProducts,
   resolveKnownProducts,
+  isCategoryHidden,
   CATEGORY_ORDER,
+  VISIBLE_CATEGORY_ORDER,
+  HIDDEN_CATEGORIES,
 } from './products';
 
 describe('getProducts', () => {
@@ -122,6 +126,35 @@ describe('June inventory review', () => {
   });
 });
 
+describe('hidden categories', () => {
+  it('hides exactly the five withdrawn families', () => {
+    expect([...HIDDEN_CATEGORIES].sort()).toEqual(
+      ['duze-michy', 'miski-falowane', 'talerze-duze', 'wazony-duze', 'wazony-srednie'].sort(),
+    );
+    expect(isCategoryHidden('wazony-duze')).toBe(true);
+    expect(isCategoryHidden('kubki')).toBe(false);
+  });
+
+  it('VISIBLE_CATEGORY_ORDER keeps only the four public families, in order', () => {
+    expect(VISIBLE_CATEGORY_ORDER).toEqual(['kubki', 'wazony', 'talerzyki', 'talerze-srednie']);
+  });
+
+  it('getPublicProducts drops every hidden-family piece, keeps the rest', () => {
+    const pub = getPublicProducts();
+    // The invariant that matters: no hidden category survives in the public set.
+    expect(pub.every((p) => !isCategoryHidden(p.category))).toBe(true);
+    // Count derived from category sizes so a future catalogue edit can't make
+    // this drift silently (vs. a hardcoded magic number).
+    const hiddenCount = [...HIDDEN_CATEGORIES].reduce(
+      (n, slug) => n + getProductsByCategory(slug).length,
+      0,
+    );
+    expect(pub).toHaveLength(getProducts().length - hiddenCount);
+    // The full catalogue is untouched — hidden pieces still resolve by id.
+    expect(getProductById('w03')!.category).toBe('miski-falowane');
+  });
+});
+
 describe('resolveCartProducts', () => {
   it('resolves ids to products, preserving order', () => {
     expect(resolveCartProducts(['v01', 'k01']).map((p) => p.id)).toEqual(['v01', 'k01']);
@@ -134,6 +167,11 @@ describe('resolveCartProducts', () => {
   it('includes previously-sold ids when sold flag is false (DB is source of truth)', () => {
     // All products now have sold: false; resolveCartProducts only filters unknown ids and sold items.
     expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01', 'k04']);
+  });
+
+  it('drops pieces in hidden (withdrawn) families', () => {
+    // w03 = miski-falowane, g01 = wazony-duze — both hidden; k01 stays.
+    expect(resolveCartProducts(['k01', 'w03', 'g01']).map((p) => p.id)).toEqual(['k01']);
   });
 });
 

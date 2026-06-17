@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { collectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
 import { getSoldIds } from '@/lib/inventory';
+import { assertCategoryPublic } from '@/lib/category-guard';
 import type { Locale } from '@/i18n/routing';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,9 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
+  // Withdrawn family: 404 the metadata too, so no title/description/hreflang
+  // leaks onto the 404 shell (the page body 404s via CollectionScreen).
+  assertCategoryPublic('wazony-srednie');
   const t = await getTranslations({ locale });
   return {
     title: t('title.wazonySrednie'),

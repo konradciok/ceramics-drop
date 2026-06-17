@@ -4,7 +4,7 @@
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { EMAIL } from '@/lib/email-addresses';
 
 export async function Footer() {
@@ -25,7 +25,7 @@ export async function Footer() {
           <div className="footer-col">
             <h5>{t('footer.hShop')}</h5>
             <ul>
-              {CATEGORY_ORDER.map((slug) => (
+              {VISIBLE_CATEGORY_ORDER.map((slug) => (
                 <li key={slug}>
                   <Link href={`/${slug}`}>{t(CATEGORIES[slug].nameKey)}</Link>
                 </li>

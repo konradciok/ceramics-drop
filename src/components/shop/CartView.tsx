@@ -5,7 +5,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, resolveKnownProducts, CATEGORIES } from '@/lib/products';
+import { resolveCartProducts, resolveKnownProducts, getProductById, isCategoryHidden, CATEGORIES } from '@/lib/products';
+import type { CategorySlug } from '@/lib/types';
 import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -84,18 +85,21 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
   );
 }
 
-/** Empty-state see-* buttons: maps CATEGORY_ORDER slugs to i18n keys. */
-const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
-  { key: 'seeMugs',       href: '/kubki',          primary: true },
-  { key: 'seeVases',      href: '/wazony' },
-  { key: 'seeMidvases',   href: '/wazony-srednie' },
-  { key: 'seeBigvases',   href: '/wazony-duze' },
-  { key: 'seeDishes',     href: '/talerzyki' },
-  { key: 'seeMedplates',  href: '/talerze-srednie' },
-  { key: 'seePlates',     href: '/talerze-duze' },
-  { key: 'seeLargebowls', href: '/duze-michy' },
-  { key: 'seeWavybowls',  href: '/miski-falowane' },
+/** Empty-state see-* buttons: maps category slugs to i18n keys. Withdrawn
+ *  families (hidden categories) are dropped so the empty cart never links to a
+ *  page that 404s. */
+const SEE_ENTRIES: { key: string; slug: CategorySlug; primary?: boolean }[] = [
+  { key: 'seeMugs',       slug: 'kubki',           primary: true },
+  { key: 'seeVases',      slug: 'wazony' },
+  { key: 'seeMidvases',   slug: 'wazony-srednie' },
+  { key: 'seeBigvases',   slug: 'wazony-duze' },
+  { key: 'seeDishes',     slug: 'talerzyki' },
+  { key: 'seeMedplates',  slug: 'talerze-srednie' },
+  { key: 'seePlates',     slug: 'talerze-duze' },
+  { key: 'seeLargebowls', slug: 'duze-michy' },
+  { key: 'seeWavybowls',  slug: 'miski-falowane' },
 ];
+const SEE_KEYS = SEE_ENTRIES.filter((s) => !isCategoryHidden(s.slug));
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -153,11 +157,29 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       // so no synchronous setState here; we only flip it off once the fetch settles.
       fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
-        .then(({ product_ids }: { product_ids: string[] }) => replace(product_ids))
+        .then(({ product_ids }: { product_ids: string[] }) => {
+          // A link that bundles a withdrawn-family piece can never be paid
+          // (checkout returns not_for_sale), so treat it as invalid up front
+          // instead of rendering a payable cart that fails at the pay step.
+          const hasHidden = product_ids.some((id) => {
+            const p = getProductById(id);
+            return p !== undefined && isCategoryHidden(p.category);
+          });
+          if (hasHidden) {
+            setPrivateSaleError(true);
+            return;
+          }
+          replace(product_ids);
+        })
         .catch(() => setPrivateSaleError(true))
         .finally(() => setPrivateSaleLoading(false));
       return;
     }
+    // Drop any withdrawn-family pieces a stale cart may still hold (their
+    // collections now 404 and checkout hard-rejects them).
+    resolveKnownProducts(ids).forEach((p) => {
+      if (isCategoryHidden(p.category)) remove(p.id);
+    });
     fetch('/api/inventory')
       .then((r) => r.json())
       .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
@@ -291,6 +313,22 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
+      if (res.status === 400) {
+        // A withdrawn-family piece reached checkout (stale cart / private-sale
+        // link). Self-heal a normal cart by pruning the hidden ids, and show a
+        // specific message instead of the generic "payment failed".
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (body.error === 'not_for_sale') {
+          if (!privateSale) {
+            resolveKnownProducts(ids).forEach((p) => {
+              if (isCategoryHidden(p.category)) remove(p.id);
+            });
+          }
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'not_for_sale', status: 400 }));
+          setCheckoutError(t('cart.notForSale'));
+          return;
+        }
+      }
       if (!res.ok) {
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
         setCheckoutError(t('cart.checkoutError'));
@@ -343,10 +381,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {SEE_KEYS.map(({ key, href, primary }) => (
+          {SEE_KEYS.map(({ key, slug, primary }) => (
             <Link
               key={key}
-              href={href}
+              href={`/${slug}`}
               className={primary ? 'btn btn-primary' : 'btn btn-ghost'}
             >
               {t(`cart.${key}` as Parameters<typeof t>[0])}
