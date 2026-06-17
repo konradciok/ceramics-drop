@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Product, CategorySlug } from '@/lib/types';
-import { CATEGORIES, CATEGORY_ORDER } from '@/lib/products';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { priceOf } from '@/lib/pricing';
 import { useFilter } from '@/store/filter';
@@ -55,7 +55,7 @@ export function GroupedGallery({ products }: Props) {
       list.push(p);
       byCat.set(p.category, list);
     }
-    return CATEGORY_ORDER
+    return VISIBLE_CATEGORY_ORDER
       .map((slug) => ({ slug, items: byCat.get(slug) ?? [] }))
       .filter((g) => g.items.length > 0);
   }, [visible]);

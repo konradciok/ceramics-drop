@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { routing } from '@/i18n/routing';
 import { absoluteUrl, languageAlternates } from '@/lib/seo/urls';
 import { NOINDEX_PATHS, SITE_PATHS } from '@/lib/site';
-import { getProducts } from '@/lib/products';
+import { getPublicProducts } from '@/lib/products';
 
 /** Stable per-build timestamp — avoids churning every entry's lastmod on each request. */
 const LAST_MODIFIED = new Date();
@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  for (const product of getProducts()) {
+  for (const product of getPublicProducts()) {
     const path = `/${product.category}/${product.id}`;
     for (const locale of routing.locales) {
       entries.push({

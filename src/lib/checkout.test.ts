@@ -20,6 +20,14 @@ describe('validateCart', () => {
     expect(validateCart(['nope']).ok).toBe(false);
   });
 
+  it('rejects pieces in withdrawn (hidden) families', () => {
+    // w03 = miski-falowane, a hidden family — must never reach reservation/Stripe.
+    const r = validateCart(['w03']);
+    expect(r).toEqual({ ok: false, reason: 'not_for_sale' });
+    // Mixed cart: one hidden piece is enough to reject the whole checkout.
+    expect(validateCart(['k01', 'w03'])).toEqual({ ok: false, reason: 'not_for_sale' });
+  });
+
   it('dedupes repeated ids (1/1 — one each)', () => {
     const r = validateCart(['k01', 'k01']);
     expect(r.ok).toBe(true);

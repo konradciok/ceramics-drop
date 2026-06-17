@@ -9,15 +9,13 @@ export const SITE_PATHS = [
   '/',
   '/sklep',
   '/gallery',
+  // Public collection routes only — withdrawn families (wazony-srednie,
+  // wazony-duze, talerze-duze, duze-michy, miski-falowane) are excluded so
+  // they stay out of the sitemap and hreflang alternates.
   '/kubki',
-  '/duze-michy',
-  '/miski-falowane',
-  '/talerze-duze',
   '/talerzyki',
   '/talerze-srednie',
   '/wazony',
-  '/wazony-srednie',
-  '/wazony-duze',
   '/koszyk',
   '/o-studiu',
   '/kontakt',

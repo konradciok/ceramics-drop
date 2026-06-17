@@ -1,4 +1,4 @@
-import { getProducts, CATEGORIES } from './products';
+import { getPublicProducts, CATEGORIES } from './products';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP } from './pricing';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME } from './site';
@@ -106,7 +106,7 @@ export type FeedItem = {
 export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedItem[] {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale);
-  const products = getProducts();
+  const products = getPublicProducts();
 
   return products.map((product) => {
     const cat = CATEGORIES[product.category];

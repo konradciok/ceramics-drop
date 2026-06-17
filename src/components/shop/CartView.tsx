@@ -5,7 +5,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, resolveKnownProducts, CATEGORIES } from '@/lib/products';
+import { resolveCartProducts, resolveKnownProducts, isCategoryHidden, CATEGORIES } from '@/lib/products';
+import type { CategorySlug } from '@/lib/types';
 import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -84,18 +85,21 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
   );
 }
 
-/** Empty-state see-* buttons: maps CATEGORY_ORDER slugs to i18n keys. */
-const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
-  { key: 'seeMugs',       href: '/kubki',          primary: true },
-  { key: 'seeVases',      href: '/wazony' },
-  { key: 'seeMidvases',   href: '/wazony-srednie' },
-  { key: 'seeBigvases',   href: '/wazony-duze' },
-  { key: 'seeDishes',     href: '/talerzyki' },
-  { key: 'seeMedplates',  href: '/talerze-srednie' },
-  { key: 'seePlates',     href: '/talerze-duze' },
-  { key: 'seeLargebowls', href: '/duze-michy' },
-  { key: 'seeWavybowls',  href: '/miski-falowane' },
+/** Empty-state see-* buttons: maps category slugs to i18n keys. Withdrawn
+ *  families (hidden categories) are dropped so the empty cart never links to a
+ *  page that 404s. */
+const SEE_ENTRIES: { key: string; slug: CategorySlug; primary?: boolean }[] = [
+  { key: 'seeMugs',       slug: 'kubki',           primary: true },
+  { key: 'seeVases',      slug: 'wazony' },
+  { key: 'seeMidvases',   slug: 'wazony-srednie' },
+  { key: 'seeBigvases',   slug: 'wazony-duze' },
+  { key: 'seeDishes',     slug: 'talerzyki' },
+  { key: 'seeMedplates',  slug: 'talerze-srednie' },
+  { key: 'seePlates',     slug: 'talerze-duze' },
+  { key: 'seeLargebowls', slug: 'duze-michy' },
+  { key: 'seeWavybowls',  slug: 'miski-falowane' },
 ];
+const SEE_KEYS = SEE_ENTRIES.filter((s) => !isCategoryHidden(s.slug));
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -158,6 +162,11 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         .finally(() => setPrivateSaleLoading(false));
       return;
     }
+    // Drop any withdrawn-family pieces a stale cart may still hold (their
+    // collections now 404 and checkout hard-rejects them).
+    resolveKnownProducts(ids).forEach((p) => {
+      if (isCategoryHidden(p.category)) remove(p.id);
+    });
     fetch('/api/inventory')
       .then((r) => r.json())
       .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
@@ -343,10 +352,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {SEE_KEYS.map(({ key, href, primary }) => (
+          {SEE_KEYS.map(({ key, slug, primary }) => (
             <Link
               key={key}
-              href={href}
+              href={`/${slug}`}
               className={primary ? 'btn btn-primary' : 'btn btn-ghost'}
             >
               {t(`cart.${key}` as Parameters<typeof t>[0])}
