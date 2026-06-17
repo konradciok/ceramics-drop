@@ -34,6 +34,7 @@
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/supabase-js": "^2.107.0",
+    "@swc/helpers": "^0.5.23",
     "next": "^16.2.7",
     "next-intl": "^4.13.0",
     "react": "^19.2.7",
