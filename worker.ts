@@ -10,6 +10,7 @@ import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orders';
 import { releaseTargetStatus } from './src/lib/piece-release';
 import { isProbePath } from './src/lib/probe-paths';
+import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
 const BATCH_LIMIT = 100;
@@ -19,6 +20,12 @@ export default {
     const url = new URL(request.url);
     if (isProbePath(url.pathname)) {
       return new Response('Not found', { status: 404 });
+    }
+    if (isAdminPath(url.pathname)) {
+      const result = await verifyAdminAccess(request, env);
+      if (!result.ok) {
+        return new Response('Not found', { status: result.status });
+      }
     }
     return handler.fetch(request, env, ctx);
   },
