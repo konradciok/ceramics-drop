@@ -15,13 +15,23 @@ function getJwks(teamDomain: string) {
 }
 
 function isPrivateHost(hostname: string): boolean {
-  return (
+  if (
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
+    hostname === '::1' ||
     hostname.startsWith('192.168.') ||
     hostname.startsWith('10.') ||
     hostname.endsWith('.local')
-  );
+  ) {
+    return true;
+  }
+  // 172.16.0.0/12 — second octet 16–31
+  const parts = hostname.split('.');
+  if (parts.length === 4 && parts[0] === '172') {
+    const second = parseInt(parts[1], 10);
+    if (second >= 16 && second <= 31) return true;
+  }
+  return false;
 }
 
 export function isAdminPath(pathname: string): boolean {

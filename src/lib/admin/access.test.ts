@@ -128,8 +128,8 @@ describe('verifyAdminAccess', () => {
   it('allows valid JWT with no email allowlist', async () => {
     vi.mocked(jwtVerify).mockResolvedValueOnce({
       payload: { email: 'admin@ciok.art', sub: 'user-1' },
-      protectedHeader: {},
-    } as Awaited<ReturnType<typeof jwtVerify>>);
+      protectedHeader: { alg: 'RS256' },
+    } as unknown as Awaited<ReturnType<typeof jwtVerify>>);
 
     const req = makeRequest('https://anna-ciok.studio/admin', {
       'Cf-Access-Jwt-Assertion': 'valid.jwt.token',
@@ -142,8 +142,8 @@ describe('verifyAdminAccess', () => {
   it('allows valid JWT with email on allowlist', async () => {
     vi.mocked(jwtVerify).mockResolvedValueOnce({
       payload: { email: 'admin@ciok.art', sub: 'user-1' },
-      protectedHeader: {},
-    } as Awaited<ReturnType<typeof jwtVerify>>);
+      protectedHeader: { alg: 'RS256' },
+    } as unknown as Awaited<ReturnType<typeof jwtVerify>>);
 
     const req = makeRequest('https://anna-ciok.studio/admin', {
       'Cf-Access-Jwt-Assertion': 'valid.jwt.token',
@@ -158,8 +158,8 @@ describe('verifyAdminAccess', () => {
   it('denies valid JWT with email NOT on allowlist', async () => {
     vi.mocked(jwtVerify).mockResolvedValueOnce({
       payload: { email: 'other@example.com', sub: 'user-2' },
-      protectedHeader: {},
-    } as Awaited<ReturnType<typeof jwtVerify>>);
+      protectedHeader: { alg: 'RS256' },
+    } as unknown as Awaited<ReturnType<typeof jwtVerify>>);
 
     const req = makeRequest('https://anna-ciok.studio/admin', {
       'Cf-Access-Jwt-Assertion': 'valid.jwt.token',
