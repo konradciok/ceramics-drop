@@ -35,14 +35,18 @@ const SUCCESS_CARD = '4242424242424242';
 const GEOWIDGET_MODE = process.env.E2E_GEOWIDGET_MODE === 'real' ? 'real' : 'mock';
 const BUYER_EMAIL = 'e2e+playwright@example.com';
 
-// Mirrors VISIBLE_CATEGORY_ORDER in src/lib/products.ts — only public families
-// are browsable (the five withdrawn families 404), so the stock probe must
-// stick to these or it would hit a hidden collection page.
+// Mirrors VISIBLE_CATEGORY_ORDER in src/lib/products.ts — all nine families
+// are now public, so the stock probe covers the full catalogue.
 const ALL_CATEGORIES = [
   'kubki',
   'wazony',
+  'wazony-srednie',
+  'wazony-duze',
   'talerzyki',
   'talerze-srednie',
+  'talerze-duze',
+  'duze-michy',
+  'miski-falowane',
 ] as const;
 
 // ── Shared state across the serial pair (preflight → purchase) ──────────────

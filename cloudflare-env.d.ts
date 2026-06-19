@@ -40,6 +40,15 @@ interface CloudflareEnv {
   GA4_API_SECRET?: string;
   // Sentry (optional; server runtime falls back to NEXT_PUBLIC_SENTRY_DSN from the build).
   SENTRY_DSN?: string;
+  // Cloudflare Access — admin route protection (worker.ts auth guard + src/lib/admin/access.ts).
+  // CF_ACCESS_TEAM_DOMAIN: full issuer origin, e.g. https://<team>.cloudflareaccess.com
+  // CF_ACCESS_AUD: Application Audience tag from the Access application settings.
+  // ADMIN_ALLOWED_EMAILS: optional comma-separated allowlist for defense in depth.
+  // STUDIO_ADMIN_LOCAL_BYPASS: set to "true" only for local dev — NEVER in production.
+  CF_ACCESS_TEAM_DOMAIN?: string;
+  CF_ACCESS_AUD?: string;
+  ADMIN_ALLOWED_EMAILS?: string;
+  STUDIO_ADMIN_LOCAL_BYPASS?: string;
 }
 
 declare namespace Cloudflare {
