@@ -27,7 +27,10 @@
     "i18n:organize": "node scripts/notion-i18n/organize.mjs",
     "i18n:setup": "node scripts/notion-i18n/setup.mjs",
     "i18n:push": "node scripts/notion-i18n/push.mjs",
-    "i18n:pull": "node scripts/notion-i18n/pull.mjs"
+    "i18n:pull": "node scripts/notion-i18n/pull.mjs",
+    "admin:dev:lan": "next dev --port 3010 --hostname 0.0.0.0",
+    "admin:proxy": "docker compose -f local-admin/compose.yaml up -d",
+    "admin:proxy:down": "docker compose -f local-admin/compose.yaml down"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.56.0",

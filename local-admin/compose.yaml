@@ -1,0 +1,16 @@
+# nginx front for Studio Admin — mirrors ha-dashboard (nginx) + dash-react (dynamic upstream).
+# Start Next first: npm run admin:dev:lan
+# Then: npm run admin:proxy
+
+services:
+  studio-admin-nginx:
+    image: nginx:alpine
+    container_name: ceramics-studio-admin-nginx
+    restart: unless-stopped
+    ports:
+      # Bind on all interfaces so LAN clients (and HA Caddy at 192.168.188.34) can reach this host.
+      - "0.0.0.0:8090:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

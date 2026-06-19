@@ -3,6 +3,11 @@ import { withSentryConfig } from '@sentry/nextjs';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    'studio-admin-konradciok.local',
+    'studio-admin.local',
+    'studio-admin.home.arpa',
+  ],
   async headers() {
     return [
       {
