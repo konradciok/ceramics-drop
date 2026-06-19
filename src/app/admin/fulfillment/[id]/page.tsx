@@ -68,7 +68,7 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
       <div className="adm-fulfillment-head">
         <div>
           <h1 className="adm-h1">
-            Pakowanie <span className="adm-mono" style={{ fontSize: '.6em' }}>{shortId(order.id)}</span>
+            Pakowanie <span className="adm-mono">{shortId(order.id)}</span>
           </h1>
           <p className="adm-sub">
             {position.index >= 0 ? `${position.index + 1} z ${position.total}` : 'Poza kolejką'} · {formatDateTime(order.paid_at ?? order.created_at)} ·{' '}

@@ -63,14 +63,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     <>
       <Link className="adm-back" href="/admin/orders">← Zamówienia</Link>
       <h1 className="adm-h1">
-        Zamówienie <span className="adm-mono" style={{ fontSize: '.6em' }}>{shortId(order.id)}</span>{' '}
+        Zamówienie <span className="adm-mono">{shortId(order.id)}</span>{' '}
         <StatusPill status={order.status} />
       </h1>
       <p className="adm-sub">{formatDateTime(order.created_at)} · {order.items.length} {order.items.length === 1 ? 'pozycja' : 'pozycji'} · {formatMoney(order.total, order.currency)}</p>
 
       <div className="adm-detail-grid">
         {/* Items */}
-        <div className="adm-panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="adm-panel adm-panel--wide">
           <h3>Pozycje</h3>
           {order.items.map((it) => {
             const ref = productRef(it.product_id);
@@ -86,7 +86,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </div>
             );
           })}
-          <div className="adm-item" style={{ fontWeight: 600 }}>
+          <div className="adm-item adm-item--strong">
             <div className="adm-item-meta">Razem (z dostawą {formatMoney(order.shipping, order.currency)})</div>
             <div className="adm-num">{formatMoney(order.total, order.currency)}</div>
           </div>
