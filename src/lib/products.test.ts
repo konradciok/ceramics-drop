@@ -127,16 +127,17 @@ describe('June inventory review', () => {
 });
 
 describe('hidden categories', () => {
-  it('hides exactly the five withdrawn families', () => {
-    expect([...HIDDEN_CATEGORIES].sort()).toEqual(
-      ['duze-michy', 'miski-falowane', 'talerze-duze', 'wazony-duze', 'wazony-srednie'].sort(),
-    );
-    expect(isCategoryHidden('wazony-duze')).toBe(true);
+  it('no families are withdrawn — all nine are public', () => {
+    expect([...HIDDEN_CATEGORIES]).toHaveLength(0);
+    expect(isCategoryHidden('wazony-duze')).toBe(false);
     expect(isCategoryHidden('kubki')).toBe(false);
   });
 
-  it('VISIBLE_CATEGORY_ORDER keeps only the four public families, in order', () => {
-    expect(VISIBLE_CATEGORY_ORDER).toEqual(['kubki', 'wazony', 'talerzyki', 'talerze-srednie']);
+  it('VISIBLE_CATEGORY_ORDER contains all nine families in CATEGORY_ORDER', () => {
+    expect(VISIBLE_CATEGORY_ORDER).toEqual([
+      'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
+      'talerzyki', 'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+    ]);
   });
 
   it('getPublicProducts drops every hidden-family piece, keeps the rest', () => {
@@ -169,9 +170,9 @@ describe('resolveCartProducts', () => {
     expect(resolveCartProducts(['k01', 'k04']).map((p) => p.id)).toEqual(['k01', 'k04']);
   });
 
-  it('drops pieces in hidden (withdrawn) families', () => {
-    // w03 = miski-falowane, g01 = wazony-duze — both hidden; k01 stays.
-    expect(resolveCartProducts(['k01', 'w03', 'g01']).map((p) => p.id)).toEqual(['k01']);
+  it('resolves pieces from formerly-withdrawn families (now public)', () => {
+    // w03 = miski-falowane, g01 = wazony-duze — both now public; all three resolve.
+    expect(resolveCartProducts(['k01', 'w03', 'g01']).map((p) => p.id)).toEqual(['k01', 'w03', 'g01']);
   });
 });
 
