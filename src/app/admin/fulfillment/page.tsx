@@ -72,7 +72,7 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
             {activeOrders.length === 0 ? (
               <div className="adm-empty">Brak zamówień w tej sekcji.</div>
             ) : (
-              <table className="adm-table adm-fulfillment-table">
+              <table className="adm-table adm-fulfillment-table adm-table--stack">
                 <thead>
                   <tr>
                     <th>Zamówienie</th>
@@ -87,9 +87,9 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
                 <tbody>
                   {activeOrders.map((order) => (
                     <tr key={order.id}>
-                      <td><Link className="adm-mono" href={`/admin/fulfillment/${order.id}`}>{shortId(order.id)}</Link></td>
-                      <td className="adm-num">{formatDateTime(order.paid_at ?? order.created_at)}</td>
-                      <td>
+                      <td data-label="Zamówienie"><Link className="adm-mono" href={`/admin/fulfillment/${order.id}`}>{shortId(order.id)}</Link></td>
+                      <td className="adm-num" data-label="Opłacone">{formatDateTime(order.paid_at ?? order.created_at)}</td>
+                      <td data-label="Prace">
                         <div className="adm-queue-pieces">
                           <div className="adm-queue-thumbs">
                             {order.itemsEnriched.slice(0, 4).map((item) => (
@@ -105,13 +105,13 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Klient">
                         <div>{customerName(order)}</div>
                         <PhoneLink phone={order.receiver_phone} />
                       </td>
-                      <td>{deliveryLine(order)}</td>
-                      <td><span className={`adm-pill ${order.stage}`}>{STAGE_LABEL[order.stage]}</span></td>
-                      <td><FulfillmentActions orderId={order.id} stage={order.stage} compact /></td>
+                      <td data-label="Dostawa">{deliveryLine(order)}</td>
+                      <td data-label="Status"><span className={`adm-pill ${order.stage}`}>{STAGE_LABEL[order.stage]}</span></td>
+                      <td data-label="Akcja"><FulfillmentActions orderId={order.id} stage={order.stage} compact /></td>
                     </tr>
                   ))}
                 </tbody>

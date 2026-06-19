@@ -47,7 +47,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
       <div className="adm-toolbar">
         {chip('Wszystkie', undefined)}
         {ORDER_STATUSES.map((s) => chip(s, s))}
-        <form className="adm-search" method="get" style={{ padding: 0, border: 'none', marginLeft: 'auto' }}>
+        <form className="adm-search-form" method="get">
           {activeStatus ? <input type="hidden" name="status" value={activeStatus} /> : null}
           <input className="adm-search" type="search" name="q" defaultValue={q ?? ''} placeholder="Szukaj: e-mail, telefon, ID, nazwisko…" />
         </form>
@@ -57,7 +57,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
         {orders.length === 0 ? (
           <div className="adm-empty">Brak zamówień dla wybranych filtrów.</div>
         ) : (
-          <table className="adm-table">
+          <table className="adm-table adm-table--stack">
             <thead>
               <tr>
                 <th>Data</th><th>Zamówienie</th><th>Status</th><th>Klient</th>
@@ -67,13 +67,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
             <tbody>
               {orders.map((o) => (
                 <tr key={o.id}>
-                  <td className="adm-num">{formatDateTime(o.created_at)}</td>
-                  <td><Link className="adm-mono" href={`/admin/orders/${o.id}`}>{shortId(o.id)}</Link></td>
-                  <td><StatusPill status={o.status} /></td>
-                  <td><ClientContact email={o.email} phone={o.receiver_phone} /></td>
-                  <td className="adm-num">{formatMoney(o.total, o.currency)}</td>
-                  <td>{deliveryLabel(o.delivery_method)}</td>
-                  <td className="adm-muted">{o.delivery_status ?? (o.delivery_method === 'odbior' ? '—' : 'oczekuje')}</td>
+                  <td className="adm-num" data-label="Data">{formatDateTime(o.created_at)}</td>
+                  <td data-label="Zamówienie"><Link className="adm-mono" href={`/admin/orders/${o.id}`}>{shortId(o.id)}</Link></td>
+                  <td data-label="Status"><StatusPill status={o.status} /></td>
+                  <td data-label="Klient"><ClientContact email={o.email} phone={o.receiver_phone} /></td>
+                  <td className="adm-num" data-label="Kwota">{formatMoney(o.total, o.currency)}</td>
+                  <td data-label="Dostawa">{deliveryLabel(o.delivery_method)}</td>
+                  <td className="adm-muted" data-label="Wysyłka">{o.delivery_status ?? (o.delivery_method === 'odbior' ? '—' : 'oczekuje')}</td>
                 </tr>
               ))}
             </tbody>

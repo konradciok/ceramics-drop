@@ -58,6 +58,7 @@ design/
 
 # local Claude Code config + worktrees
 .claude/
+.worktrees/
 
 # Brainstorming visual companion (local only)
 .superpowers/

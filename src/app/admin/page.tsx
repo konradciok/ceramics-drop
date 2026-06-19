@@ -42,11 +42,11 @@ export default async function AdminOverview() {
 
         <div className="adm-kpi">
           <p className="adm-kpi-label">Zamówienia wg statusu</p>
-          <div className="adm-kpi-value" style={{ fontSize: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="adm-kpi-value adm-kpi-value--sm">
             {(['paid', 'pending', 'failed', 'expired', 'refunded'] as const)
               .filter((s) => kpis.ordersByStatus[s] > 0)
               .map((s) => (
-                <span key={s} style={{ display: 'inline-flex', gap: '6px', alignItems: 'baseline' }}>
+                <span key={s} className="adm-kpi-status-item">
                   <StatusPill status={s} />
                   {kpis.ordersByStatus[s]}
                 </span>
@@ -61,7 +61,7 @@ export default async function AdminOverview() {
           <div className="adm-tablewrap"><div className="adm-empty">Brak zamówień.</div></div>
         ) : (
           <div className="adm-tablewrap">
-            <table className="adm-table">
+            <table className="adm-table adm-table--stack">
               <thead>
                 <tr>
                   <th>Data</th><th>Zamówienie</th><th>Status</th><th>Klient</th><th>Kwota</th><th>Dostawa</th>
@@ -70,12 +70,12 @@ export default async function AdminOverview() {
               <tbody>
                 {kpis.recent.map((o) => (
                   <tr key={o.id}>
-                    <td className="adm-num">{formatDateTime(o.created_at)}</td>
-                    <td><Link className="adm-mono" href={`/admin/orders/${o.id}`}>{shortId(o.id)}</Link></td>
-                    <td><StatusPill status={o.status} /></td>
-                    <td><ClientContact email={o.email} phone={o.receiver_phone} /></td>
-                    <td className="adm-num">{formatMoney(o.total, o.currency)}</td>
-                    <td>{deliveryLabel(o.delivery_method)}</td>
+                    <td className="adm-num" data-label="Data">{formatDateTime(o.created_at)}</td>
+                    <td data-label="Zamówienie"><Link className="adm-mono" href={`/admin/orders/${o.id}`}>{shortId(o.id)}</Link></td>
+                    <td data-label="Status"><StatusPill status={o.status} /></td>
+                    <td data-label="Klient"><ClientContact email={o.email} phone={o.receiver_phone} /></td>
+                    <td className="adm-num" data-label="Kwota">{formatMoney(o.total, o.currency)}</td>
+                    <td data-label="Dostawa">{deliveryLabel(o.delivery_method)}</td>
                   </tr>
                 ))}
               </tbody>

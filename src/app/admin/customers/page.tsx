@@ -17,7 +17,7 @@ export default async function CustomersPage() {
         {customers.length === 0 ? (
           <div className="adm-empty">Brak klientów.</div>
         ) : (
-          <table className="adm-table">
+          <table className="adm-table adm-table--stack">
             <thead>
               <tr>
                 <th>Klient</th><th>E-mail</th><th>Telefon</th><th>Zamówienia</th>
@@ -27,25 +27,25 @@ export default async function CustomersPage() {
             <tbody>
               {customers.map((c) => (
                 <tr key={c.email}>
-                  <td>{c.name ?? <span className="adm-muted">—</span>}</td>
-                  <td>
+                  <td data-label="Klient">{c.name ?? <span className="adm-muted">—</span>}</td>
+                  <td data-label="E-mail">
                     {c.emailKnown ? (
                       <Link href={`/admin/orders?email=${encodeURIComponent(c.email)}`}>{c.email}</Link>
                     ) : (
                       <span className="adm-muted">{c.email}</span>
                     )}
                   </td>
-                  <td><PhoneLink phone={c.phone} /></td>
-                  <td className="adm-num">{c.orders}{c.paidOrders !== c.orders ? <span className="adm-muted"> ({c.paidOrders} opł.)</span> : null}</td>
-                  <td className="adm-num">
+                  <td data-label="Telefon"><PhoneLink phone={c.phone} /></td>
+                  <td className="adm-num" data-label="Zamówienia">{c.orders}{c.paidOrders !== c.orders ? <span className="adm-muted"> ({c.paidOrders} opł.)</span> : null}</td>
+                  <td className="adm-num" data-label="Wydane (opłacone)">
                     {Object.keys(c.spendByCurrency).length === 0
                       ? <span className="adm-muted">—</span>
                       : Object.entries(c.spendByCurrency).map(([cur, v], i) => (
                           <span key={cur}>{i > 0 ? ' + ' : ''}{formatMoney(v, cur)}</span>
                         ))}
                   </td>
-                  <td className="adm-num">{formatDateTime(c.lastOrderAt)}</td>
-                  <td>{c.locale ?? '—'}</td>
+                  <td className="adm-num" data-label="Ostatnie">{formatDateTime(c.lastOrderAt)}</td>
+                  <td data-label="Język">{c.locale ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
