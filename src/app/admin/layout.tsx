@@ -1,8 +1,8 @@
 /*
- * LOCAL-ONLY admin dashboard root layout. Lives OUTSIDE [locale] so it carries
- * none of the storefront i18n chrome; it is its own root layout (own <html>/
- * <body>) since the storefront's root layout is [locale]/layout.tsx. Never
- * committed/deployed (gitignored + middleware skip-worktree).
+ * Studio admin dashboard root layout. Lives OUTSIDE [locale] so it carries none
+ * of the storefront i18n chrome; it is its own root layout (own <html>/<body>)
+ * since the storefront's root layout is [locale]/layout.tsx. Production access
+ * is gated by Cloudflare Access JWT verification in worker.ts.
  */
 import '@/styles/fonts.css';
 import '@/styles/tokens.css';
@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <header className="adm-top">
             <span className="adm-brand">Anna&nbsp;Ciok · <b>Admin</b></span>
             <AdminNav />
-            <span className="adm-top-tag">local only</span>
+            <span className="adm-top-tag">studio</span>
           </header>
           <main className="adm-main">{children}</main>
         </div>

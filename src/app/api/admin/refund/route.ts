@@ -30,7 +30,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const refund = await adminStripe().refunds.create({ payment_intent: data.payment_intent_id });
+    const pi = data.payment_intent_id;
+    const refund = await adminStripe().refunds.create(
+      { payment_intent: pi },
+      { idempotencyKey: `admin_refund_${pi}` },
+    );
     return NextResponse.json({ message: `Zwrot utworzony (${refund.id}). Status zaktualizuje webhook.` });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Stripe refund failed' }, { status: 502 });
