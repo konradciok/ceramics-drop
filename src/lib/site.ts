@@ -6,20 +6,23 @@ export const SITE_NAME = 'Anna Ciok Ceramics';
 
 /** App routes under `[locale]` (path segment only, leading slash).
  *
- *  The collection routes list ONLY the public (visible) families — withdrawn
- *  families (wazony-srednie, wazony-duze, talerze-duze, duze-michy,
- *  miski-falowane) are omitted so they stay out of the sitemap and hreflang
- *  alternates. This is kept static (not derived from VISIBLE_CATEGORY_ORDER) so
- *  `site.ts` stays a dependency-free leaf; a test in `site.test.ts` enforces it
- *  never drifts from the product registry. */
+ *  The collection routes list all visible families. This is kept static (not
+ *  derived from VISIBLE_CATEGORY_ORDER) so `site.ts` stays a dependency-free
+ *  leaf; a test in `site.test.ts` enforces it never drifts from the product
+ *  registry. */
 export const SITE_PATHS = [
   '/',
   '/sklep',
   '/gallery',
   '/kubki',
+  '/wazony',
+  '/wazony-srednie',
+  '/wazony-duze',
   '/talerzyki',
   '/talerze-srednie',
-  '/wazony',
+  '/talerze-duze',
+  '/duze-michy',
+  '/miski-falowane',
   '/koszyk',
   '/o-studiu',
   '/kontakt',
