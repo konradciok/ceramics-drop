@@ -57,13 +57,7 @@ export function getCategory(slug: CategorySlug): Category {
    The checkout API also hard-blocks them server-side (validateCart →
    `not_for_sale`) so a stale cart or private-sale link can never buy one.
    Un-hiding a family is a one-line change here. */
-export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
-  'wazony-srednie',
-  'wazony-duze',
-  'talerze-duze',
-  'duze-michy',
-  'miski-falowane',
-]);
+export const HIDDEN_CATEGORIES = new Set<CategorySlug>([]);
 
 /** Whether a category is withdrawn from the public storefront. */
 export function isCategoryHidden(slug: CategorySlug): boolean {
