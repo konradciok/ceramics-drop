@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { Product, CategorySlug } from '@/lib/types';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import { useFilter } from '@/store/filter';
 import { filterByStatus } from '@/lib/status-filter';
@@ -27,7 +28,7 @@ type Props = {
 export function GroupedGallery({ products }: Props) {
   const t = useTranslations();
   const locale = useLocale();
-  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
+  const { currency: analyticsCurrency } = localeFormatter(locale);
 
   // Flat list of purchasable pieces — index space shared by the lightbox and
   // the select_item analytics event (matches the per-category Gallery).

@@ -5,7 +5,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
-import { Announce } from './Announce';
 import { LangSwitch } from './LangSwitch';
 import { CartCount } from './CartCount';
 import { MobileMenu } from './MobileMenu';
@@ -28,7 +27,7 @@ export async function Header() {
 
   return (
     <>
-      <Announce>{t('announce')}</Announce>
+      <div className="announce"><span className="dot" />{t('announce')}<span className="dot" /></div>
 
       <header id="site-header" className="header">
         <div className="header-inner">

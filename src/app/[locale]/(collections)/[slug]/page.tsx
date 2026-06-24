@@ -5,24 +5,32 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { collectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
 import { getSoldIds } from '@/lib/inventory';
+import { VISIBLE_CATEGORY_ORDER } from '@/lib/products';
+import { assertCategoryPublic } from '@/lib/category-guard';
 import type { Locale } from '@/i18n/routing';
+import type { CategorySlug } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }> };
+
+export function generateStaticParams() {
+  return VISIBLE_CATEGORY_ORDER.map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
+  const { locale, slug } = await params;
+  assertCategoryPublic(slug as CategorySlug);
   const t = await getTranslations({ locale });
   return {
-    title: t('title.wazonyDuze'),
-    description: t('meta.collections.wazonyDuze'),
-    alternates: alternatesFor(locale as Locale, '/wazony-duze'),
+    title: t(`title.${slug}`),
+    description: t(`meta.collections.${slug}`),
+    alternates: alternatesFor(locale as Locale, `/${slug}`),
   };
 }
 
 export default async function Page({ params }: Props) {
-  const { locale } = await params;
+  const { locale, slug } = await params;
   setRequestLocale(locale);
   const [t, soldIds] = await Promise.all([
     getTranslations({ locale }),
@@ -30,8 +38,8 @@ export default async function Page({ params }: Props) {
   ]);
   return (
     <main>
-      <JsonLd data={collectionSchema({ slug: 'wazony-duze', locale: locale as Locale, t, soldIds })} />
-      <CollectionScreen slug="wazony-duze" />
+      <JsonLd data={collectionSchema({ slug: slug as CategorySlug, locale: locale as Locale, t, soldIds })} />
+      <CollectionScreen slug={slug as CategorySlug} />
     </main>
   );
 }

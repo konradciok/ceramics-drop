@@ -2,6 +2,7 @@ import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
+import { localeFormatter } from '@/lib/format';
 import { PRICE_EUR, PRICE_GBP } from '@/lib/pricing';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
@@ -80,7 +81,7 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
             offers: {
               '@type': 'Offer',
               price: locale === 'pl' ? category.price : locale === 'gb' ? PRICE_GBP[slug] : PRICE_EUR[slug],
-              priceCurrency: locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR',
+              priceCurrency: localeFormatter(locale).currency,
               availability: availabilityFor(p.sold || sold.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
             },
@@ -136,7 +137,7 @@ export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph 
         offers: {
           '@type': 'Offer',
           price: locale === 'pl' ? product.price : locale === 'gb' ? PRICE_GBP[product.category] : PRICE_EUR[product.category],
-          priceCurrency: locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR',
+          priceCurrency: localeFormatter(locale).currency,
           availability: availabilityFor(product.sold),
           url: productUrl,
         },
