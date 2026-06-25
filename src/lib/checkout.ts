@@ -40,7 +40,7 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): 
       const design = getPrintById(dec.designId);
       if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
       seen.add(raw);
-      const major = priceOfVariant(design, dec.sel, currency);
+      const major = priceOfVariant(dec.sel, currency);
       const unit_price = currency === 'eur' ? toEuroCents(major) : toGrosze(major);
       items.push({ product_id: dec.designId, unit_price, variant: { ...dec.sel, sku: skuOf(design, dec.sel) } });
       continue;

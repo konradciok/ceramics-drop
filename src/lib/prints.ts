@@ -27,7 +27,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     papers: ['matte', 'satin'],
     frames: ['none', 'oak', 'black'],
     published: true,
-    fromPLN: 120,
+    fromPLN: 105,
   },
   {
     id: 'fap02',
@@ -42,7 +42,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     // The black frame is not offered on the satin A3 of this design.
     unavailable: ['a3:satin:black'],
     published: true,
-    fromPLN: 120,
+    fromPLN: 105,
   },
   {
     // Unpublished example: resolvable by id (so checkout can reject it) but
@@ -56,7 +56,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     papers: ['matte', 'satin'],
     frames: ['none', 'oak', 'black'],
     published: false,
-    fromPLN: 120,
+    fromPLN: 105,
   },
 ];
 

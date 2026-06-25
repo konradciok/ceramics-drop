@@ -46,24 +46,24 @@ describe('validateCart', () => {
 
 describe('validateCart — fine-art prints', () => {
   it('prices a print variant server-side (PLN) and attaches the resolved variant', () => {
-    // fap01 a3+satin+oak = 180+20+150 = 350 zł → 35000 grosze
+    // fap01 a3+satin+oak = 150+0+0 = 150 zł → 15000 grosze
     const r = validateCart(['print:fap01:a3:satin:oak']);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.items).toHaveLength(1);
       expect(r.items[0]).toEqual({
         product_id: 'fap01',
-        unit_price: 35000,
+        unit_price: 15000,
         variant: { size: 'a3', paper: 'satin', frame: 'oak', sku: 'FAP-01-A3-SATIN-OAK' },
       });
     }
   });
 
   it('prices a print variant in euro-cents when currency is eur', () => {
-    // fap01 a3+satin+oak = 43+5+36 = 84 € → 8400 cents
+    // fap01 a3+satin+oak = 35+0+0 = 35 € → 3500 cents
     const r = validateCart(['print:fap01:a3:satin:oak'], 'eur');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.items[0].unit_price).toBe(8400);
+    if (r.ok) expect(r.items[0].unit_price).toBe(3500);
   });
 
   it('handles a mixed ceramic + print cart with correct per-line prices', () => {
@@ -73,7 +73,7 @@ describe('validateCart — fine-art prints', () => {
       expect(r.items[0]).toEqual({ product_id: 'k01', unit_price: 9500 });
       expect(r.items[1]).toEqual({
         product_id: 'fap01',
-        unit_price: 12000, // a4 base 120 zł
+        unit_price: 10500, // a4 base 105 zł
         variant: { size: 'a4', paper: 'matte', frame: 'none', sku: 'FAP-01-A4-MATTE-NONE' },
       });
     }

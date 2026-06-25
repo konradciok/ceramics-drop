@@ -159,7 +159,7 @@ export function CartView() {
   const fmt = currency === 'eur' ? eur : pln;
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
-      ? priceOfVariant(l.design, l.sel, currency)
+      ? priceOfVariant(l.sel, currency)
       : currency === 'eur'
         ? PRICE_EUR[l.product.category]
         : l.product.price;

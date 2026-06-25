@@ -42,7 +42,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const [sel, setSel] = useState<PrintVariantSelection>(() => firstAvailable(design));
 
   const available = isVariantAvailable(design, sel);
-  const price = priceOfVariant(design, sel, currency);
+  const price = priceOfVariant(sel, currency);
   const token = encodePrintToken(design.id, sel);
 
   const ids = useCart((s) => s.ids);

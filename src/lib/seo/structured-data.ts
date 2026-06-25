@@ -19,7 +19,7 @@ function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur'): nu
     for (const paper of PRINT_PAPERS) {
       for (const frame of PRINT_FRAMES) {
         const sel = { size, paper, frame };
-        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(design, sel, currency));
+        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(sel, currency));
       }
     }
   }
