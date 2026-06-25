@@ -7,6 +7,7 @@ import { filterByStatus } from '@/lib/status-filter';
 import { useMounted } from '@/lib/use-mounted';
 import type { Product } from '@/lib/types';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
@@ -19,7 +20,7 @@ type Props = {
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
 export function Gallery({ products }: Props) {
   const locale = useLocale();
-  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
+  const { currency: analyticsCurrency } = localeFormatter(locale);
   // Memoised so the array reference is stable across renders (only changes when
   // the `products` prop changes), which lets us use `available` directly in
   // useEffect deps without triggering the effect on every render.

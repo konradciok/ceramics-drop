@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { eur, gbp, pln } from '@/lib/format';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
@@ -16,7 +16,7 @@ type Props = { product: Product; soldIds: readonly string[] };
 /** Full product detail page layout — server component with client islands. */
 export async function ProductPageScreen({ product, soldIds }: Props) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
-  const fmt = locale === 'pl' ? pln : locale === 'gb' ? gbp : eur;
+  const { fmt } = localeFormatter(locale);
 
   const cat = CATEGORIES[product.category];
   const name = t(`product.${cat.singularKey}`);

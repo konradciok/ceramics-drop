@@ -1,5 +1,12 @@
-import { CollectionSkeleton } from '@/components/shop/CollectionSkeleton';
-
 export default function Loading() {
-  return <CollectionSkeleton />;
+  return (
+    <>
+      <span className="sr-only" role="status">Loading…</span>
+      <div className="gallery skel-gallery" aria-hidden="true">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="skel-tile" />
+        ))}
+      </div>
+    </>
+  );
 }

@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
-import { eur, gbp, pln } from '@/lib/format';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import { CATEGORIES } from '@/lib/products';
 import {
@@ -27,7 +27,7 @@ type Props = {
 export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
   const locale = useLocale();
-  const fmt = locale === 'pl' ? pln : locale === 'gb' ? gbp : eur;
+  const { fmt, currency: analyticsCurrency } = localeFormatter(locale);
   const selected = useCart((s) => s.ids.includes(product.id));
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -108,7 +108,6 @@ export function ProductTile({ product, onOpen }: Props) {
           }
           const isPresent = useCart.getState().ids.includes(product.id);
           if (wasPresent !== isPresent) {
-            const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
             const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOf(product, locale)] };
             pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
           }

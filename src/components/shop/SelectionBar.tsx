@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts } from '@/lib/products';
-import { eur, gbp, pln } from '@/lib/format';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
@@ -13,7 +13,7 @@ import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 export function SelectionBar() {
   const t = useTranslations();
   const locale = useLocale();
-  const fmt = locale === 'pl' ? pln : locale === 'gb' ? gbp : eur;
+  const { fmt } = localeFormatter(locale);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 

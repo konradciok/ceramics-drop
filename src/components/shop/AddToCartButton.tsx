@@ -8,6 +8,7 @@ import {
   buildRemoveFromCartEvent,
   pushDataLayer,
 } from '@/lib/analytics';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import type { Product } from '@/lib/types';
 
@@ -17,7 +18,7 @@ type Props = { product: Product };
 export function AddToCartButton({ product }: Props) {
   const t = useTranslations();
   const locale = useLocale();
-  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
+  const { currency: analyticsCurrency } = localeFormatter(locale);
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);

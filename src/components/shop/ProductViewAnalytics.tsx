@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { buildViewItemEvent, pushDataLayer } from '@/lib/analytics';
+import { localeFormatter } from '@/lib/format';
 import { priceOf } from '@/lib/pricing';
 import type { Product } from '@/lib/types';
 
@@ -11,7 +12,7 @@ type Props = { product: Product };
 /** Fires view_item on PDP load — mirrors the event Lightbox fires on open. */
 export function ProductViewAnalytics({ product }: Props) {
   const locale = useLocale();
-  const analyticsCurrency = locale === 'pl' ? 'PLN' as const : locale === 'gb' ? 'GBP' as const : 'EUR' as const;
+  const { currency: analyticsCurrency } = localeFormatter(locale);
 
   useEffect(() => {
     pushDataLayer(
