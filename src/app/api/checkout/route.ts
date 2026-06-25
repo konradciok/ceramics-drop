@@ -4,7 +4,7 @@ import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents } from '@/lib/pricing';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -43,13 +43,12 @@ export async function POST(req: Request) {
   }
 
   // Persist the buyer's locale so the shipping-confirmation email can be localised.
-  const VALID_LOCALES = ['pl', 'en', 'es', 'de', 'gb'] as const;
+  const VALID_LOCALES = ['pl', 'en', 'es'] as const;
   const locale: string =
     typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
       ? body.locale
       : 'pl';
-  const currency: 'pln' | 'eur' | 'gbp' =
-    locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
+  const currency: 'pln' | 'eur' = locale === 'pl' ? 'pln' : 'eur';
 
   const valid = validateCart(body.ids, currency);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
@@ -62,7 +61,6 @@ export async function POST(req: Request) {
 
   const amount =
     currency === 'eur' ? orderAmountEuroCents(valid.items.map((i) => i.unit_price), method) :
-    currency === 'gbp' ? orderAmountGBPPence(valid.items.map((i) => i.unit_price), method) :
     orderAmountGrosze(valid.items.map((i) => i.unit_price), method);
   // Only ceramics carry a piece_state row to reserve; prints are open-edition.
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);

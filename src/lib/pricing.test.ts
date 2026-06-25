@@ -16,7 +16,7 @@ describe('pricing', () => {
       'talerze-duze': 160,
       'duze-michy': 345,
       'miski-falowane': 195,
-      'fine-art-prints': 120,
+      'fine-art-prints': 105,
     });
   });
 

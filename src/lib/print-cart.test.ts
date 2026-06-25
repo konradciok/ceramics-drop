@@ -60,7 +60,7 @@ describe('variantLabel', () => {
     expect(variantLabel({ size: 'a4', paper: 'matte', frame: 'none' }, 'es')).toBe('A4 · mate · sin marco');
   });
 
-  it('falls back to Polish for an unknown locale', () => {
-    expect(variantLabel(sel, 'de')).toBe(variantLabel(sel, 'pl'));
+  it('renders German labels for de locale', () => {
+    expect(variantLabel(sel, 'de')).toBe('A3 · satin · Eichenrahmen');
   });
 });

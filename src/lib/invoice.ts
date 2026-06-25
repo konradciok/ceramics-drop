@@ -72,12 +72,13 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
-  const invoiceLocale = (order.locale as string) === 'en' ? 'en'
+  const invoiceLocale = (order.locale as string) === 'en' || (order.locale as string) === 'gb' ? 'en'
     : (order.locale as string) === 'es' ? 'es'
     : 'pl';
 
   const messages = MESSAGES[invoiceLocale as keyof typeof MESSAGES] ?? plMessages;
-  const orderCurrency: 'pln' | 'eur' = order.currency === 'eur' ? 'eur' : 'pln';
+  const orderCurrency: 'pln' | 'eur' | 'gbp' =
+    order.currency === 'eur' ? 'eur' : order.currency === 'gbp' ? 'gbp' : 'pln';
 
   const existingList = await stripe.customers.list({ email: order.email as string, limit: 1 });
   let customer: Stripe.Customer;

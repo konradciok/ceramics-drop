@@ -181,9 +181,9 @@ describe('printCollectionSchema', () => {
     const offer = nodes[1].itemListElement![0].item.offers;
     expect(offer['@type']).toBe('AggregateOffer');
     expect(offer.priceCurrency).toBe('PLN');
-    // fap01: cheapest a4+matte+none=120; dearest a2+satin+oak=260+20+150=430.
-    expect(offer.lowPrice).toBe(120);
-    expect(offer.highPrice).toBe(430);
+    // fap01: cheapest a4+matte+none=105; dearest a2+satin+oak=190 (deltas zeroed).
+    expect(offer.lowPrice).toBe(105);
+    expect(offer.highPrice).toBe(190);
     expect(offer.offerCount).toBeGreaterThan(0);
   });
 });
@@ -200,8 +200,8 @@ describe('printProductSchema', () => {
     expect(productNode['@type']).toBe('Product');
     expect(productNode.sku).toBe('fap01');
     expect(productNode.offers['@type']).toBe('AggregateOffer');
-    expect(productNode.offers.lowPrice).toBe(120);
-    expect(productNode.offers.highPrice).toBe(430);
+    expect(productNode.offers.lowPrice).toBe(105);
+    expect(productNode.offers.highPrice).toBe(190);
   });
 
   it('en locale prices the AggregateOffer in EUR', () => {
@@ -209,8 +209,8 @@ describe('printProductSchema', () => {
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     const offer = (nodes[1] as { offers: AggOffer }).offers;
     expect(offer.priceCurrency).toBe('EUR');
-    // cheapest a4+matte+none=29; dearest a2+satin+oak=62+5+36=103.
-    expect(offer.lowPrice).toBe(29);
-    expect(offer.highPrice).toBe(103);
+    // cheapest a4+matte+none=25; dearest a2+satin+oak=45 (deltas zeroed).
+    expect(offer.lowPrice).toBe(25);
+    expect(offer.highPrice).toBe(45);
   });
 });
