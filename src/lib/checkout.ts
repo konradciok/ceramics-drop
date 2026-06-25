@@ -2,7 +2,7 @@ import { getProductById, getProducts } from './products';
 import { getPrintById, isVariantAvailable, skuOf } from './prints';
 import { decodePrintToken, isPrintToken } from './print-cart';
 import { priceOfVariant } from './print-pricing';
-import { PRICE_EUR, toEuroCents, toGrosze } from './pricing';
+import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
 import type { PrintVariantSelection } from './types';
 
 // Hard sanity bound: ceramics are one-of-a-kind (≤ whole catalogue), but prints
@@ -25,7 +25,7 @@ export type ValidateResult =
  * The client never sends a price; an invalid/unavailable token is rejected as 'unknown'.
  * unit_price is in grosze (PLN) or euro-cents (EUR) depending on currency.
  */
-export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): ValidateResult {
+export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 'pln'): ValidateResult {
   if (!Array.isArray(rawIds) || rawIds.length === 0) return { ok: false, reason: 'empty' };
   if (rawIds.length > MAX_CART) return { ok: false, reason: 'too_many' };
 
@@ -41,7 +41,10 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): 
       if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
       seen.add(raw);
       const major = priceOfVariant(dec.sel, currency);
-      const unit_price = currency === 'eur' ? toEuroCents(major) : toGrosze(major);
+      const unit_price =
+        currency === 'eur' ? toEuroCents(major) :
+        currency === 'gbp' ? toGBPPence(major) :
+        toGrosze(major);
       items.push({ product_id: dec.designId, unit_price, variant: { ...dec.sel, sku: skuOf(design, dec.sel) } });
       continue;
     }
@@ -49,9 +52,10 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' = 'pln'): 
     const product = getProductById(raw);
     if (!product) return { ok: false, reason: 'unknown' };
     seen.add(raw);
-    const unit_price = currency === 'eur'
-      ? toEuroCents(PRICE_EUR[product.category])
-      : toGrosze(product.price);
+    const unit_price =
+      currency === 'eur' ? toEuroCents(PRICE_EUR[product.category]) :
+      currency === 'gbp' ? toGBPPence(PRICE_GBP[product.category]) :
+      toGrosze(product.price);
     items.push({ product_id: raw, unit_price });
   }
   if (items.length === 0) return { ok: false, reason: 'empty' };

@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { eur, pln } from '@/lib/format';
+import { eur, gbp, pln } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
 import { encodePrintToken, variantLabel } from '@/lib/print-cart';
@@ -36,8 +36,8 @@ function firstAvailable(design: PrintDesign): PrintVariantSelection {
 export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const t = useTranslations();
   const locale = useLocale();
-  const currency: 'pln' | 'eur' = locale === 'pl' ? 'pln' : 'eur';
-  const fmt = locale === 'pl' ? pln : eur;
+  const currency: 'pln' | 'eur' | 'gbp' = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
+  const fmt = locale === 'pl' ? pln : locale === 'gb' ? gbp : eur;
 
   const [sel, setSel] = useState<PrintVariantSelection>(() => firstAvailable(design));
 
@@ -111,7 +111,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
               pushDataLayer(
                 buildPrintAddToCartEvent(
                   { id: design.id, num: design.num, variantLabel: variantLabel(sel, locale), price },
-                  { currency: currency === 'eur' ? 'EUR' : 'PLN' },
+                  { currency: currency === 'eur' ? 'EUR' : currency === 'gbp' ? 'GBP' : 'PLN' },
                 ),
               );
             }

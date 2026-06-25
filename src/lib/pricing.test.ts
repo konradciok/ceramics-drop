@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
+import { PRICE_GBP, SHIPPING_GBP, toGBPPence, shippingGBPPence, orderAmountGBPPence } from './pricing';
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
@@ -120,5 +121,47 @@ describe('EUR pricing helpers', () => {
 
   it('orderAmountEuroCents handles odbior (free)', () => {
     expect(orderAmountEuroCents([5000], 'odbior')).toBe(5000); // 5000 + 0
+  });
+});
+
+describe('GBP pricing helpers', () => {
+  const ALL_CATEGORIES: CategorySlug[] = [
+    'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
+    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  ];
+
+  it('PRICE_GBP covers every category with a positive value', () => {
+    for (const cat of ALL_CATEGORIES) {
+      expect(PRICE_GBP[cat]).toBeGreaterThan(0);
+    }
+  });
+
+  it('toGBPPence multiplies by 100', () => {
+    expect(toGBPPence(22)).toBe(2200);
+    expect(toGBPPence(0)).toBe(0);
+  });
+
+  it('SHIPPING_GBP has expected values for all methods', () => {
+    expect(SHIPPING_GBP.paczkomat).toBe(5);
+    expect(SHIPPING_GBP.kurier).toBe(12);
+    expect(SHIPPING_GBP.odbior).toBe(0);
+  });
+
+  it('shippingGBPPence returns correct pence for all methods', () => {
+    expect(shippingGBPPence('paczkomat')).toBe(500);
+    expect(shippingGBPPence('kurier')).toBe(1200);
+    expect(shippingGBPPence('odbior')).toBe(0);
+  });
+
+  it('orderAmountGBPPence sums items + paczkomat shipping', () => {
+    expect(orderAmountGBPPence([2200, 5500], 'paczkomat')).toBe(2200 + 5500 + 500);
+  });
+
+  it('orderAmountGBPPence handles kurier shipping', () => {
+    expect(orderAmountGBPPence([2200], 'kurier')).toBe(3400); // 2200 + 1200
+  });
+
+  it('orderAmountGBPPence handles odbior (free)', () => {
+    expect(orderAmountGBPPence([5000], 'odbior')).toBe(5000);
   });
 });

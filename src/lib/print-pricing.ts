@@ -11,26 +11,26 @@
    ============================================================ */
 import type { PrintFrame, PrintPaper, PrintSize, PrintVariantSelection } from './types';
 
-type Money = { pln: number; eur: number };
+type Money = { pln: number; eur: number; gbp: number };
 
 /** Base price per size (the largest cost driver). */
 export const PRINT_SIZE_BASE: Record<PrintSize, Money> = {
-  a4: { pln: 105, eur: 25 },
-  a3: { pln: 150, eur: 35 },
-  a2: { pln: 190, eur: 45 },
+  a4: { pln: 105, eur: 25, gbp: 22 },
+  a3: { pln: 150, eur: 35, gbp: 30 },
+  a2: { pln: 190, eur: 45, gbp: 38 },
 };
 
 /** Surcharge per paper relative to the cheapest paper (matte). */
 export const PRINT_PAPER_DELTA: Record<PrintPaper, Money> = {
-  matte: { pln: 0, eur: 0 },
-  satin: { pln: 0, eur: 0 },
+  matte: { pln: 0, eur: 0, gbp: 0 },
+  satin: { pln: 0, eur: 0, gbp: 0 },
 };
 
 /** Surcharge per frame option (none = unframed, the baseline). */
 export const PRINT_FRAME_DELTA: Record<PrintFrame, Money> = {
-  none: { pln: 0, eur: 0 },
-  oak: { pln: 0, eur: 0 },
-  black: { pln: 0, eur: 0 },
+  none:  { pln: 0, eur: 0, gbp: 0 },
+  oak:   { pln: 0, eur: 0, gbp: 0 },
+  black: { pln: 0, eur: 0, gbp: 0 },
 };
 
 /**
@@ -40,12 +40,12 @@ export const PRINT_FRAME_DELTA: Record<PrintFrame, Money> = {
  */
 export function priceOfVariant(
   sel: PrintVariantSelection,
-  currency: 'pln' | 'eur',
+  currency: 'pln' | 'eur' | 'gbp',
 ): number {
   const base = PRINT_SIZE_BASE[sel.size];
   const paper = PRINT_PAPER_DELTA[sel.paper];
   const frame = PRINT_FRAME_DELTA[sel.frame];
-  return currency === 'eur'
-    ? base.eur + paper.eur + frame.eur
-    : base.pln + paper.pln + frame.pln;
+  if (currency === 'gbp') return base.gbp + paper.gbp + frame.gbp;
+  if (currency === 'eur') return base.eur + paper.eur + frame.eur;
+  return base.pln + paper.pln + frame.pln;
 }
