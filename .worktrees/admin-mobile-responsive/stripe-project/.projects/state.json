@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "providers": {
+    "sentry": {
+      "name": "Sentry"
+    }
+  },
+  "resources": {
+    "ceramics-drop": {
+      "name": "ceramics-drop",
+      "providerName": "Sentry",
+      "serviceId": "project"
+    },
+    "sentry-plan": {
+      "name": "sentry-plan",
+      "providerName": "Sentry",
+      "serviceId": "developer"
+    }
+  },
+  "environments": {
+    "default": {
+      "output": ".env",
+      "resources": [
+        {
+          "resourceName": "ceramics-drop"
+        },
+        {
+          "resourceName": "sentry-plan"
+        }
+      ]
+    },
+    "local": {
+      "output": ".env.local",
+      "resources": [
+        {
+          "resourceName": "ceramics-drop"
+        },
+        {
+          "resourceName": "sentry-plan"
+        }
+      ]
+    }
+  }
+}

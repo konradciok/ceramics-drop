@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ceramics-drop",
+  "workers_dev": false,
+  "main": "./worker.ts",
+  "build": {
+    "command": "npx opennextjs-cloudflare build"
+  },
+  "compatibility_date": "2026-06-02",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Expire abandoned checkout orders (cancel open PI, free reserved pieces) every 15 minutes.
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "ceramics-drop"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "anna-ciok.studio",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.anna-ciok.studio",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 0.25
+    }
+  }
+}

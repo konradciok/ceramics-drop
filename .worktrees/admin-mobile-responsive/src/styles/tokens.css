@@ -1,0 +1,44 @@
+/* ============================================================
+   ANNA CIOK CERAMICS — design tokens
+   Ported from design/assets/site.css :root + design/colors_and_type.css.
+   (`--r-pill` / `--r-sharp` are restored here — site.css references
+    them but its own :root omitted them.)
+   ============================================================ */
+:root {
+  --c-periwinkle:#8AA4D6;
+  --c-terracotta:#9C5A2C; --c-terracotta-deep:#7D4520;
+  --c-sand:#D9C89E; --c-butter:#E6DD8A; --c-espresso:#3A2818;
+  --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2;
+  --c-espresso-muted:rgba(58,40,24,.74);
+  --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);
+  --f-display:'Jost','Helvetica Neue',Arial,sans-serif;
+  --f-cond:'Jost','Helvetica Neue',Arial,sans-serif;
+  --f-body:'Jost','Helvetica Neue',Arial,sans-serif;
+  --max:1480px; --gut:clamp(20px,3vw,48px); --section-y:clamp(72px,9vw,144px);
+  --ease:cubic-bezier(.7,0,.2,1);
+  --r-sharp:2px; --r-pill:999px;
+
+  /* Breakpoints — documentation tokens. Plain CSS @media cannot consume custom
+     properties in the media condition, so the literal px values stay in the
+     @media rules (the authoritative list is the header comment in site.css).
+     These mirror them as the single documented source + any JS/matchMedia use. */
+  --bp-sm:561px; --bp-md:861px; --bp-lg:981px; --bp-xl:1101px;
+
+  /* Z-index scale — tiered, ascending by layer. Replaces ad-hoc literals in
+     site.css. Local in-component stacking (1–4) stays inline. */
+  --z-header:50; --z-selbar:60; --z-consent:70;
+  --z-mobnav:80; --z-mobdrawer:81;
+  --z-lb-scrim:90; --z-lb:91;
+  --z-skip:100;
+
+  /* Sticky/anchor offset. Reactively corrected to the measured sticky .header
+     height by HeaderHeightProbe at runtime; this static value is the SSR/first-
+     paint fallback (~81px = real header, NOT announce, which scrolls away). */
+  --header-h:81px;
+
+  /* Bottom inset used by .selbar to stack above the cookie banner. Overwritten
+     at runtime by ConsentBanner with the banner's occupied height while it is
+     visible, and reset to 0px when dismissed. Declared here for parity with
+     --header-h and to make the contract explicit. */
+  --consent-h:0px;
+}

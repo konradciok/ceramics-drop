@@ -1,0 +1,765 @@
+{
+  "returns": {
+    "eyebrow": "Returns",
+    "heading": "Start a return",
+    "intro": "Enter your order number (it's in your shipping-confirmation email) and I'll prepare a return label. You have 14 days from delivery.",
+    "label": "Order number",
+    "button": "Start a return",
+    "success": "Return request received. I'll email your label once InPost confirms the shipment.",
+    "ineligible": "No return-eligible order found. Check the number or write to hej@ciok.art.",
+    "unavailable": "Returns are temporarily unavailable. Try again later or write to hej@ciok.art.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
+    "error": "Something went wrong. Please try again shortly.",
+    "moreInfo": "More about shipping & returns"
+  },
+  "announce": "June 2026 drop — 125 pieces, each one of a kind",
+  "title": {
+    "home": "Anna Ciok Ceramics — June 2026 drop",
+    "kubki": "Mugs",
+    "wazony": "Small vases",
+    "wazonySrednie": "Medium vases",
+    "wazonyDuze": "Large vases",
+    "talerzyki": "Small dishes",
+    "talerzeSrednie": "Medium plates",
+    "talerzeDuze": "Large plates",
+    "duzeMichy": "Large bowls",
+    "miskiFalowane": "Wavy-rim bowls",
+    "koszyk": "Cart",
+    "studio": "Studio",
+    "kontakt": "Contact",
+    "dostawa": "Shipping & returns",
+    "regulamin": "Terms",
+    "polityka": "Privacy policy",
+    "sklep": "All pieces",
+    "gallery": "Gallery"
+  },
+  "nav": {
+    "sklep": "Shop",
+    "gallery": "Gallery",
+    "kubki": "Mugs",
+    "wazony": "Small vases",
+    "wazonySrednie": "Medium vases",
+    "wazonyDuze": "Large vases",
+    "talerzyki": "Small dishes",
+    "talerzeSrednie": "Medium plates",
+    "talerzeDuze": "Large plates",
+    "duzeMichy": "Large bowls",
+    "miskiFalowane": "Wavy-rim bowls",
+    "studio": "Studio",
+    "kontakt": "Contact"
+  },
+  "aria": {
+    "cart": "Cart",
+    "zoom": "View",
+    "close": "Close",
+    "prev": "Previous",
+    "next": "Next",
+    "photo": "Photo",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menuLabel": "Navigation menu",
+    "skipToContent": "Skip to main content"
+  },
+  "footer": {
+    "tagline": "Painted slowly, one piece at a time.",
+    "blurb": "Anna Ciok’s small ceramics studio. Every motif is created separately, painted by hand and glazed.",
+    "hShop": "Shop",
+    "hStudio": "Studio",
+    "hInfo": "Information",
+    "hKontakt": "Contact",
+    "koszyk": "Cart",
+    "oArtystce": "About the maker",
+    "proces": "How it’s made",
+    "dostawa": "Shipping & returns",
+    "regulamin": "Terms",
+    "polityka": "Privacy policy",
+    "copy": "© 2026 Anna Ciok Ceramics — every piece one of a kind"
+  },
+  "product": {
+    "mug": "Mug",
+    "vase": "Small vase",
+    "midvase": "Medium vase",
+    "bigvase": "Large vase",
+    "dish": "Small dish",
+    "medplate": "Medium plate",
+    "plate": "Large plate",
+    "largebowl": "Large bowl",
+    "wavybowl": "Wavy-rim bowl",
+    "moreFrom": "More from this collection",
+    "seeAll": "See all"
+  },
+  "gallery": {
+    "sold": "Found a home"
+  },
+  "galleryPage": {
+    "eyebrow": "Editorial gallery",
+    "title": "New frames, <em>the same trace of the hand.</em>",
+    "lead": "A lookbook from a new photo series: portraits, terrace light, studio corners and ceramic details shown outside the classic product frame.",
+    "ctaShop": "Browse the pieces",
+    "ctaStudio": "About the studio",
+    "sequenceLabel": "Editorial photographs",
+    "items": {
+      "photo01": {
+        "alt": "Anna Ciok plates on a woven rug",
+        "title": "Bird on a plate",
+        "caption": "A close detail of the drawing, before the quiet of a white product background."
+      },
+      "photo02": {
+        "alt": "A stack of Anna Ciok hand-painted bowls and mugs",
+        "title": "Collection layers",
+        "caption": "Pieces gathered together: lines, rhythms and browns folding into one story."
+      },
+      "photo03": {
+        "alt": "Anna Ciok ceramics arranged near a window",
+        "title": "Shelf by the light",
+        "caption": "A studio frame with finished pieces, a lamp and soft window light."
+      },
+      "photo04": {
+        "alt": "Anna Ciok holding a hand-painted bowl in front of her face",
+        "title": "Bowl as horizon",
+        "caption": "A portrait where the vessel becomes prop, shade and a piece of landscape."
+      },
+      "photo05": {
+        "alt": "Anna Ciok holding a plate above her head on a terrace",
+        "title": "Above the terrace",
+        "caption": "The ceramics leave the studio: wind, sky and an easy gesture instead of catalogue stillness."
+      },
+      "photo06": {
+        "alt": "Anna Ciok seated in the studio with a hand-painted vase",
+        "title": "Portrait with vase",
+        "caption": "The scale of a piece reads best in hands, close to a face and body."
+      },
+      "photo07": {
+        "alt": "Anna Ciok holding a plate with a black eye motif",
+        "title": "Eye on the rim",
+        "caption": "A small plate becomes a graphic sign, not only an object for the table."
+      },
+      "photo08": {
+        "alt": "Anna Ciok hand-painted plates and mugs on a table",
+        "title": "Table of marks",
+        "caption": "A close view of the collection in natural light: palms, birds, leaves and shadows."
+      },
+      "photo09": {
+        "alt": "Anna Ciok seated among hand-painted ceramics",
+        "title": "Inside the collection",
+        "caption": "One maker, many pieces and the visible scale of work behind the June drop."
+      },
+      "photo10": {
+        "alt": "A chair and table in a bright ceramics studio",
+        "title": "Studio quiet",
+        "caption": "An empty workstation hints at the normal rhythm that returns between photo sessions."
+      },
+      "photo11": {
+        "alt": "A palm-motif plate in shadow on a woven rug",
+        "title": "Palm shadow",
+        "caption": "A graphic motif meets a real shadow, loosening the plate from a strict product pose."
+      },
+      "photo12": {
+        "alt": "Anna Ciok seated on a terrace with a hand-painted bowl",
+        "title": "Outside",
+        "caption": "The bowl is shown in movement and light, closer to daily use than display."
+      },
+      "photo13": {
+        "alt": "Anna Ciok standing near a window with a hand-painted bowl",
+        "title": "By the window",
+        "caption": "A simple portrait and neutral light let the shape speak without theatrical styling."
+      },
+      "photo14": {
+        "alt": "Anna Ciok standing in the studio with a hand-painted bowl",
+        "title": "Full figure",
+        "caption": "The wider frame holds the room, body and vessel in one studio line."
+      },
+      "photo15": {
+        "alt": "Anna Ciok holding a hand-painted vase in the wind",
+        "title": "Wind and vase",
+        "caption": "The final frame leaves the piece in motion: close to hands, light and weather."
+      }
+    }
+  },
+  "filter": {
+    "label": "Filter pieces",
+    "all": "All",
+    "available": "Available",
+    "sold": "Sold",
+    "emptyAvailable": "Every piece here has already found a home.",
+    "emptySold": "Nothing has sold yet."
+  },
+  "selbar": {
+    "clear": "Clear",
+    "go": "Go to checkout",
+    "word": "{count, plural, one {piece selected} other {pieces selected}}",
+    "total": "· total"
+  },
+  "lightbox": {
+    "drop": "June drop",
+    "add": "Add to cart",
+    "in": "In cart",
+    "specDims": "Dimensions",
+    "specTech": "Technique",
+    "specCopy": "Edition",
+    "specTechVal": "Glazed and painted by hand",
+    "specCopyVal": "Only one made",
+    "approx": "approx.",
+    "permalink": "View product page →"
+  },
+  "cart": {
+    "emptyH": "Your cart is <em>empty</em>",
+    "emptyP": "Choose pieces from the June drop. Click a thumbnail to add it to your selection.",
+    "seeMugs": "See mugs",
+    "seeVases": "See small vases",
+    "seeMidvases": "See medium vases",
+    "seeBigvases": "See large vases",
+    "seeDishes": "See small dishes",
+    "seeMedplates": "See medium plates",
+    "seePlates": "See plates",
+    "seeLargebowls": "See large bowls",
+    "seeWavybowls": "See wavy-rim bowls",
+    "eyebrow": "Your selection",
+    "label": "Cart",
+    "word": "{count, plural, one {piece} other {pieces}}",
+    "oneoff": "· one of a kind",
+    "remove": "Remove",
+    "summary": "Summary",
+    "pieces": "Pieces",
+    "delivery": "Delivery",
+    "free": "Free",
+    "total": "Total",
+    "deliveryDetails": "Your details",
+    "checkout": "Go to payment",
+    "pay": "Pay now",
+    "payProcessing": "Processing…",
+    "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
+    "checkoutError": "Couldn’t start payment. Please try again shortly.",
+    "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",
+    "payError": "Payment failed. Please try again.",
+    "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
+    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
+  },
+  "ship": {
+    "paczkomatT": "InPost Parcel Locker",
+    "paczkomatD": "Pick up from your chosen parcel locker, usually 1–2 business days after I hand the parcel over.",
+    "paczkomatPrice": "from {price}",
+    "courierT": "InPost Courier",
+    "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
+    "pickupT": "Personal pickup",
+    "pickupD": "In Warsaw, by appointment."
+  },
+  "delivery": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "street": "Street",
+    "building": "No.",
+    "postCode": "Post code",
+    "city": "City",
+    "lockerChosen": "Chosen locker:",
+    "lockerUnavailable": "Parcel locker picker is temporarily unavailable."
+  },
+  "return": {
+    "okH": "Thank you — <em>order received.</em>",
+    "okP": "Payment went through. I’ll send the confirmation and invoice to your email.",
+    "processingH": "Payment in progress…",
+    "processingP": "We're waiting for confirmation from your bank. You can refresh this page in a moment.",
+    "failH": "Payment failed",
+    "failP": "No funds were taken. Go back to the cart and try again — the selected pieces are still waiting for you.",
+    "back": "Back to home",
+    "cart": "Back to cart"
+  },
+  "home": {
+    "heroEyebrow": "June 2026 drop — Nº 01",
+    "heroTitle": "One piece, one original, <em>one trace of the hand.</em>",
+    "heroSub": "A hundred ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is hand-painted and glazed separately, so you choose the exact one shown in the photo.",
+    "heroCta1": "Browse all pieces",
+    "heroMetaName": "Mug Nº 02",
+    "heroMetaDesc": "Blue palm",
+    "marquee": [
+      "painted by hand",
+      "one of a kind",
+      "glazed separately",
+      "straight from the studio"
+    ],
+    "colEyebrow": "June drop",
+    "colTitle": "Nine categories, <em>ninety-six stories.</em>",
+    "colLead": "Browse it like a gallery, mark the pieces you love, and head to checkout when your selection feels right.",
+    "card": {
+      "mug": {
+        "num": "29 pieces · 90 PLN each",
+        "desc": "Mugs for everyday coffee and tea. Palms, lemons, shells and cacti painted in glaze on pale clay.",
+        "cta": "Choose a mug"
+      },
+      "vase": {
+        "num": "9 pieces · 210 zł each",
+        "desc": "Round-bellied vases for a single branch, a few tulips or a market bunch. Each one has its own rhythm of stripes and drawings.",
+        "cta": "Choose a vase"
+      },
+      "midvase": {
+        "num": "5 pieces · 300 PLN each",
+        "desc": "Medium vases with a clear character — somewhere between the small and the large format.",
+        "cta": "Choose a vase"
+      },
+      "bigvase": {
+        "num": "4 pieces · 395 PLN each",
+        "desc": "Large forms with a strong presence: palms, shells, cacti, a lobster and small folk scenes on warm white.",
+        "cta": "Choose a vase"
+      },
+      "dish": {
+        "num": "14 pieces · 105 zł each",
+        "desc": "Small dishes for jewellery, olive oil, salt or the little things that gather by the bed. Small, but full of character.",
+        "cta": "Choose a dish"
+      },
+      "medplate": {
+        "num": "39 pieces · 120 zł each",
+        "desc": "Medium plates, each hand-painted separately. For snacking, serving or displaying — ⌀ 18 cm.",
+        "cta": "Choose a medium plate"
+      },
+      "plate": {
+        "num": "9 pieces · 270 zł each",
+        "desc": "Large plates for serving, collecting or hanging on the wall. A donkey, palms, eyes, shells and painted rims.",
+        "cta": "Choose a plate"
+      },
+      "largebowl": {
+        "num": "6 pieces · 315 PLN each",
+        "desc": "Generous bowls for fruit, salads and the things that like to live on the table. Inside: cobalt gardens, palms and leaves.",
+        "cta": "Choose a bowl"
+      },
+      "wavybowl": {
+        "num": "10 pieces · 155 zł each",
+        "desc": "Wavy-rim bowls for breakfast, snacks and small everyday rituals. Each one waves a little differently.",
+        "cta": "Choose a bowl"
+      }
+    },
+    "storyImageAlt": "Anna Ciok in her ceramics studio",
+    "editorialImageAlt": "Hand-painted Anna Ciok ceramics in sunlight",
+    "storyEyebrow": "About the maker",
+    "storyTitle": "First came painting, <em>now ceramics.</em>",
+    "storyP1": "I’m Anna. I paint canvases and ceramics, and both worlds meet in the same studio. I treat a mug, plate or vase like a small functional painting: something you can hold, place on the table and use without waiting for a special occasion.",
+    "storyP2": "I work alone and slowly, one piece after another. The hand leaves its trace in the brush line, in an uneven palm and in a stripe that does not pretend to be perfect. That is where each piece gets its character.",
+    "storyP3": "The June drop is one hundred and twenty-five pieces made this spring. When one finds its home, it leaves the shop for good.",
+    "storyCta1": "Choose a piece",
+    "storyCta2": "Write to me",
+    "craftEyebrow": "How it works",
+    "craftTitle": "From thumbnail <em>to your shelf.</em>",
+    "craft1H": "You pick <em>your favourites</em>",
+    "craft1P": "In the gallery, click the pieces that pull you in. Every selected thumbnail lands in the bar at the bottom of the screen, so it is easy to come back to your choice.",
+    "craft2H": "You go <em>to checkout</em>",
+    "craft2P": "In the cart, review your pieces, choose a parcel locker or courier delivery, and complete the order. Payment is handled by Stripe: card or Przelewy24.",
+    "craft3H": "I pack <em>and ship</em>",
+    "craft3P": "I wrap each piece by hand and ship within 1–3 business days. Since there is only one of each, your purchase removes it from the shop — no one buys the same one.",
+    "ctEyebrow": "Contact",
+    "ctH": "Got a question? <em>I reply myself.</em>",
+    "ctP": "Want to see a piece or order something for a special occasion? Write to me — the fastest way to reach me is by email or on Instagram.",
+    "ctBtn": "Write a message",
+    "ctLEmail": "Email",
+    "ctLIg": "Instagram",
+    "ctVIg": "@ania.ciok.art",
+    "ctLStudio": "Pickup",
+    "ctVStudio": "Warsaw — pickup by appointment",
+    "ctLShip": "Shipping",
+    "ctVShip": "Poland · ships in 1–3 business days"
+  },
+  "collection": {
+    "hint": "Click a thumbnail or title to see the piece’s <b>details</b>. Add it with the <b>“Add to cart”</b> button on the tile or in the preview. Selected pieces gather in the bar at the bottom of the page.",
+    "kubki": {
+      "eyebrow": "June drop — 29 pieces",
+      "title": "Mugs <em>Nº 01–29</em>",
+      "lead": "Hand-painted mugs. Every mug is a single piece, so you choose the exact one that will land in your kitchen."
+    },
+    "wazony": {
+      "eyebrow": "June drop — 9 pieces",
+      "title": "Small vases <em>Nº 01–09</em>",
+      "lead": "Round-bellied, hand-painted vases. For flowers, branches or as a small painting standing on a shelf."
+    },
+    "wazony-srednie": {
+      "eyebrow": "June drop — 5 pieces",
+      "title": "Medium vases <em>Nº 01–05</em>",
+      "lead": "Medium ceramic vases, one of each. A form between the small and the large — for a bouquet or a shelf."
+    },
+    "wazony-duze": {
+      "eyebrow": "June drop — 4 pieces",
+      "title": "Large vases <em>Nº 01–04</em>",
+      "lead": "Large ceramic vases, one of each. Strong forms for bouquets and interiors that welcome a visible brush trace."
+    },
+    "talerzyki": {
+      "eyebrow": "June drop — 14 pieces",
+      "title": "Small dishes <em>Nº 01–14</em>",
+      "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
+    },
+    "talerze-srednie": {
+      "eyebrow": "June drop — 39 pieces",
+      "title": "Medium plates <em>Nº 01–39</em>",
+      "lead": "Medium plates, each hand-painted separately. For snacking, serving or as decoration on the shelf."
+    },
+    "talerze-duze": {
+      "eyebrow": "June drop — 9 pieces",
+      "title": "Large plates <em>Nº 01–09</em>",
+      "lead": "Large plates. For serving, displaying or hanging on the wall if you like looking at ceramics as much as using them."
+    },
+    "duze-michy": {
+      "eyebrow": "June drop — 6 pieces",
+      "title": "Large bowls <em>Nº 01–06</em>",
+      "lead": "Generous hand-painted bowls. Each one is ready for fruit, salad or the centre of the table."
+    },
+    "miski-falowane": {
+      "eyebrow": "June drop — 10 pieces",
+      "title": "Wavy-rim bowls <em>Nº 01–10</em>",
+      "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
+    },
+    "sklep": {
+      "eyebrow": "June drop — 125 pieces",
+      "title": "All <em>pieces</em>",
+      "lead": "The whole collection in one place — mugs, vases, plates and bowls. Every item is one of a kind. Browse by category and mark your favourites."
+    }
+  },
+  "studio": {
+    "eyebrow": "Studio",
+    "h1": "One studio, <em>one pair of hands.</em>",
+    "lead": "A small ceramics studio in Tenerife. Here I paint, glaze and refine every piece myself, one by one. This June drop travelled with me to Poland for the summer.",
+    "storyImageAlt": "Anna Ciok — painter and ceramicist",
+    "workspaceImageAlt": "Anna Ciok's ceramics studio in Tenerife",
+    "storyEyebrow": "Painting and ceramics",
+    "storyH": "I paint <em>on ceramics.</em>",
+    "storyP1": "I’m Anna. I am a painter and ceramicist. I still paint canvases, but for the past few years ceramics has drawn me in more and more. I love that a painting can step off the wall, land in your hand and become part of an ordinary day.",
+    "storyP2": "I came to ceramics slowly: first a course, then a shelf in someone else’s studio, and finally my own small place with a glazing table, brushes and a kiln. It is calm, physical work, and it refuses to be rushed.",
+    "storyP3": "I paint by hand, without transfers or stencils. That is why a line sometimes wanders, a palm leans a little, and two similar motifs are never truly the same. For me, that is where the object starts to feel alive.",
+    "factsEyebrow": "Studio details",
+    "factsH": "A few numbers <em>and facts.</em>",
+    "fact1K": "Studio",
+    "fact1V": "Tenerife",
+    "fact1D": "One room, a glazing table, brushes and a kiln.",
+    "fact2K": "Firing",
+    "fact2V": "1040 <em>°C</em>",
+    "fact2D": "After painting and glazing, each piece goes into the kiln, where the firing sets the colour and turns the surface into a glassy, functional layer.",
+    "fact3K": "June drop",
+    "fact3V": "125 <em>pieces</em>",
+    "fact3D": "Mugs, small, medium and large vases, small dishes, medium plates, large plates, large bowls and wavy-rim bowls. Every piece is one of a kind.",
+    "fact4K": "Shipping",
+    "fact4V": "1–3 <em>days</em>",
+    "fact4D": "I pack every parcel by hand and ship across Poland.",
+    "procEyebrow": "How a piece is made",
+    "procH": "From the first layer <em>to a finished piece.</em>",
+    "p1H": "I prepare <em>the surface</em>",
+    "p1P": "I start by looking over each piece, planning the motif and choosing the glaze colours. Then comes quiet work, layer by layer.",
+    "p2H": "I glaze <em>and paint</em>",
+    "p2P": "On the pale ceramic surface I apply glaze and paint the motif with a brush: palms, lemons, shells, cacti, stripes. This is when each piece finds its own rhythm.",
+    "p3H": "I fire <em>and sign</em>",
+    "p3P": "The firing sets the glaze and colour. I look the finished piece over carefully, sign the base and place it on the shelf, where it waits for its home.",
+    "ctaH": "Each one leaves <em>only once.</em>",
+    "ctaP": "When a piece finds its home, it leaves the shop for good. Take a look at what’s waiting in the June drop.",
+    "ctaB1": "See mugs",
+    "ctaB2": "See vases"
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "h1": "Got a question? <em>I reply myself.</em>",
+    "lead": "Want to see a piece in person or order something for a special occasion? Write to me — I read every message personally and usually reply the same day.",
+    "fName": "Your name",
+    "fNamePh": "Your first name",
+    "fEmail": "Email address",
+    "fEmailPh": "you@example.com",
+    "fTopic": "What’s it about",
+    "topic1": "Question about a drop piece",
+    "topic2": "Pickup in Warsaw",
+    "topic3": "Order for a special occasion",
+    "topic4": "Collaboration / wholesale",
+    "topic5": "Something else",
+    "fMsg": "Your message",
+    "fMsgPh": "Tell me how I can help…",
+    "submit": "Send message",
+    "note": "The fastest way to reach me is straight to my inbox — <strong>hej@ciok.art</strong> — or on Instagram.",
+    "sentH": "Almost there — <em>check your email app.</em>",
+    "sentP": "Your email should have opened with the message ready to send. If nothing popped up, write to me directly at <link>hej@ciok.art</link> or on Instagram — I usually answer the same day.",
+    "mailtoSubject": "[Anna Ciok Ceramics] {topic}",
+    "mailtoTruncated": "Message truncated — please paste the rest before sending",
+    "sideH": "Fastest ways to reach me",
+    "lEmail": "Email",
+    "lIg": "Instagram",
+    "vIg": "@ania.ciok.art",
+    "lStudio": "Pickup",
+    "vStudio": "Warsaw — pickup by appointment",
+    "lShip": "Shipping",
+    "vShip": "Poland · ships in 1–3 business days",
+    "lReply": "I reply",
+    "vReply": "Usually the same day"
+  },
+  "shipping": {
+    "eyebrow": "Help",
+    "h1": "Shipping <em>& returns.</em>",
+    "lead": "How I pack, how long the parcel takes, and what to do if a piece arrives damaged. Everything before you click “buy”.",
+    "toc": "On this page",
+    "toc1": "Shipping",
+    "toc2": "Turnaround",
+    "toc3": "Packing",
+    "toc4": "Pickup in Warsaw",
+    "toc5": "Returns",
+    "toc6": "Damage",
+    "updated": "Updated: June 2026",
+    "s1H": "Shipping",
+    "s1P": "I ship by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1Li1": "InPost Parcel Locker, all of Poland — from 20 zł",
+    "s1Li1b": "InPost courier, all of Poland — 30 zł",
+    "s1Li2": "Pickup in Warsaw — free",
+    "s1Li3": "International shipping — write to me and I’ll arrange it individually",
+    "s2H": "Turnaround",
+    "s2P": "The June-drop pieces are finished and already waiting in Poland, so there’s no production time. I send the parcel within <strong>1–3 business days</strong> of the payment clearing, and the courier usually delivers the next day.",
+    "s2Note": "I pack everything myself, between studio work and the next firings. If you need a specific date, write to me and I’ll check what is possible.",
+    "s3H": "Packing",
+    "s3P": "The ceramics travel wrapped by hand — film, cardboard and plenty of padding so nothing moves. I label the box as fragile. I try to limit plastic wherever I can, without risking the piece.",
+    "s4H": "Pickup in Warsaw",
+    "s4P": "Live in Warsaw or passing through? You can collect your order in person — then shipping is free. We arrange the pickup by email for a specific day and time; this is not a fixed-hours pickup point.",
+    "s5H": "Returns",
+    "s5P": "As a consumer you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the parcel, with no reason needed. You can start your return on the <zlink>returns page</zlink> — just your order number. You can also write to <link>hej@ciok.art</link>.",
+    "s5Li1": "The piece should come back undamaged, ideally in its original packaging",
+    "s5Li2": "The cost of return shipping is on the buyer",
+    "s5Li3": "I refund within 14 days of receiving the piece back",
+    "s6H": "If something arrives damaged",
+    "s6P": "Ceramics can be fragile, and couriers vary. If a parcel arrives broken, please photograph the contents and the packaging and send the photos to me the same day. I’ll replace the piece with another from the drop or refund the full amount including shipping — your choice."
+  },
+  "terms": {
+    "eyebrow": "Documents",
+    "h1": "Shop <em>terms.</em>",
+    "lead": "The rules for buying at Anna Ciok Ceramics. Written plainly, without the legal fog — so you can actually read them.",
+    "toc": "Contents",
+    "toc1": "§1 General provisions",
+    "toc2": "§2 Orders",
+    "toc3": "§3 Prices & payment",
+    "toc4": "§4 Fulfilment & shipping",
+    "toc5": "§5 Right of withdrawal",
+    "toc6": "§6 Complaints",
+    "toc7": "§7 Final provisions",
+    "updated": "Version: June 2026",
+    "s1H": "§1 General provisions",
+    "s1P1": "The Anna Ciok Ceramics online shop is run by the ceramics studio of Anna Ciok, based in Warsaw. You can contact the seller at <link>hej@ciok.art</link>.",
+    "s1P2": "The items for sale are hand-painted ceramic pieces. Each piece is the only copy — once sold it disappears from the offer and is not remade.",
+    "s2H": "§2 Orders",
+    "s2P": "You place an order by adding selected pieces to the cart and confirming the purchase. The sale contract is concluded the moment the order is confirmed and the payment clears.",
+    "s2Li1": "Because each piece is unique, any given piece can be sold only once",
+    "s2Li2": "If for reasons beyond my control I cannot fulfil an order, I inform you immediately and refund the full amount",
+    "s3H": "§3 Prices & payment",
+    "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment is handled by a secure external payment provider, Stripe.",
+    "s4H": "§4 Fulfilment & shipping",
+    "s4P": "I send orders within 1–3 business days of the payment clearing. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
+    "s5H": "§5 Right of withdrawal",
+    "s5P": "A consumer has the right to withdraw from the purchase within 14 days of receiving the piece, without giving a reason. The statement can simply be sent by email. The returned piece should be undamaged; the buyer covers the return shipping, and the refund is made within 14 days.",
+    "s6H": "§6 Complaints",
+    "s6P": "If a piece arrives damaged or not as described, you can file a complaint by email, attaching photos. I review it within 14 days and — depending on your choice — replace the piece or refund the full amount including shipping.",
+    "s7H": "§7 Final provisions",
+    "s7P": "Matters not covered by these terms are governed by Polish law, including the Consumer Rights Act and the Civil Code. Any changes to the terms do not affect orders placed before they take effect."
+  },
+  "privacy": {
+    "eyebrow": "Documents",
+    "h1": "Privacy <em>policy.</em>",
+    "lead": "What data I collect, what for, and for how long. Short, because there isn’t much data — this is a small studio, not a corporation.",
+    "toc": "Contents",
+    "toc1": "Controller",
+    "toc2": "What data",
+    "toc3": "Purpose & basis",
+    "toc4": "Retention",
+    "toc5": "Cookies",
+    "toc6": "Your rights",
+    "updated": "Updated: June 2026",
+    "s1H": "Data controller",
+    "s1P": "The controller of your data is the ceramics studio of Anna Ciok, based in Warsaw. For matters relating to personal data, write to <link>hej@ciok.art</link>.",
+    "s2H": "What data I collect",
+    "s2Li1": "Data needed to fulfil an order — name, shipping address, email and phone number",
+    "s2Li2": "The content of any message you send me by email",
+    "s2Li4": "Payment data needed to complete your order — processed directly by <link>Stripe</link>; your full payment details never reach my servers",
+    "s2Li3": "Basic technical browser data needed for the site and cart to work",
+    "s2P": "I don’t collect data I don’t need, and I don’t sell it to anyone.",
+    "s3H": "Purpose & legal basis",
+    "s3P": "I process data to fulfil an order, reply to a message, handle payment and meet tax obligations. Payments are handled by <link>Stripe</link> as an external provider — I never see or store your full card details. The basis is performance of the contract and, for accounting, a legal obligation.",
+    "s4H": "Retention",
+    "s4P": "I keep order data for as long as tax regulations require. I delete email correspondence once the matter is settled, unless further correspondence requires keeping it.",
+    "s5H": "Cookies",
+    "s5P": "The site uses essential cookies and browser storage to remember the contents of your cart. If you consent, analytics and marketing tools may also run. During checkout, <link>Stripe</link> sets its own cookies needed to process payment securely and prevent fraud.",
+    "s6H": "Your rights",
+    "s6P": "You have the right to access your data, correct it, delete it and restrict its processing. Just write to me — I’ll reply as fast as I can."
+  },
+  "notes": {
+    "kubki": [
+      "A blue flower with a round head and herringbone leaves. A simple motif runs vertically through the light mug.",
+      "A blue palm with brown fruits and striped leaves. The motif spreads widely across the light mug, accented by small brown touches at the rim.",
+      "A blue flower on a brown stem, with herringbone leaves and dots at the rim. The motif spreads symmetrically on the light side of the mug.",
+      "A blue fan with light, radiant lines on the side of the mug. The motif descends from beneath the upper edge in a wide, calm arc.",
+      "A blue lemon with white incisions on a light mug. Black lines at the rim and bottom create a simple, graphic rhythm.",
+      "Wide brown stripes and thin blue lines on a light form. A vertical rhythm runs from the bottom to the slightly uneven edge.",
+      "Brown leaves with light veins and blue dashes at the rim. The motif runs diagonally across the light form like a calm branch.",
+      "A blue prickly pear cactus with light engraved lines on a cream mug. The motif runs diagonally along the side, with a small terracotta dot and accents at the rim.",
+      "Blue leaves with light veins on a cream mug and small terracotta incisions at the rim. The motif climbs diagonally along the side, creating a calm, plant-like rhythm.",
+      "A blue shell with white grooves and terracotta accents at the rim. The lines fan out like a calm sea rhythm.",
+      "A blue lemon with white dashes and terracotta rectangles at the edges of the mug. The motif holds the center, and the rusty marks form a calm rhythm around it.",
+      "Blue fish arranged around a light starfish, with terracotta dots at the rim. The motif flows along the side of the mug in a wavering, marine rhythm.",
+      "A blue semicircle with light rays descends from the mug’s rim. The motif fans out over the white, simple form.",
+      "A terracotta lemon with light incisions and blue rectangles at the edges. An even rhythm of blue spots circles the mug at the top and bottom.",
+      "A terracotta palm with white lines and black fruits under a dotted rim. The leaves spread widely along the side of the mug in a calm, holiday rhythm.",
+      "A terracotta flower on a long stem and herringbone leaves. The motif runs vertically through the mug, interrupted by a calm horizontal rhythm.",
+      "A terracotta lemon with white dashes on a light mug. Black rectangles at the rim and bottom keep the motif in a calm rhythm.",
+      "Brown loops painted with a broad, transparent gesture on a light mug. The motif runs in horizontal bands, like a soft ribbon wrapping the form.",
+      "Terracotta cacti with light, vertical grooves on a cream mug. Black semicircles on the rim lead a calm rhythm around the form.",
+      "Terracotta saguaro with white, scratched lines on a light mug. The desert motif climbs vertically along the rounded form.",
+      "A black flower with round heads and striped leaves on a light mug. The motif grows vertically, and the leaves spread widely around the form.",
+      "A black flower with one grey petal and dots above the crown. Herringbone leaves lead the motif vertically along the light mug.",
+      "A black flower with an eye and a light star in the center. The petals radiate across the rounded side of the mug.",
+      "A black flower with a round head, light spot, and herringbone leaves. The vertical stem leads the motif calmly through the light mug.",
+      "A black flower with a wavy centre ringed by small dotted petals on a light mug. A vertical stem and two leaves with light etched veining emphasise a calm, graphic rhythm.",
+      "A black bull with a light garland on the side and terracotta dashes at the rim. The motif stands calmly on the light form, and a small rhythm at the top closes the mug.",
+      "A black eye with a light center and a four-pointed star on a cream mug. A leafy border with blue dots leads the motif around the form.",
+      "Black flowers with light, radiant lines on a cream mug. The motif spreads freely across the sides, cut off at points near the rim.",
+      "A black palm with white incisions and terracotta fruits. The leaves fan out beneath small dashes at the rim."
+    ],
+    "wazony": [
+      "Blue saguaro and terracotta sun on a light, rounded vase. At the rim, a terracotta wave with white dots carries a desert rhythm around.",
+      "Blue palm with terracotta fruits and vertical stripes at the edge. The motif spreads broadly on the rounded form in a calm, holiday rhythm.",
+      "Brown stripes and thin blue lines run vertically on a light vase. The rhythm narrows at the neck and spreads out on the convex sides.",
+      "Blue pads of prickly pear with light lines on a cream vase, with terracotta interior visible at the opening. The soft rhythm of oval segments climbs diagonally up the rounded form.",
+      "Blue palm with terracotta fruits and bands at the rim. Leaves spread widely across the rounded form.",
+      "Brown loops painted with a wide brush on a light, rounded vase. The motif forms horizontal bands and runs around the shape in a soft, undulating rhythm.",
+      "Black palm with white veining and terracotta fruits on a light, rounded vase. The leaves spread broadly over the form, with terracotta vertical lines and small dots repeating at the rim.",
+      "Black winding ribbon with thin light lines on a cream vase. The motif circles the plump form like a calm wave.",
+      "Black flowers with dotted centers, round berries, and leaves in white stripes. The motif climbs vertically on the light, rounded form."
+    ],
+    "wazony-srednie": [
+      "Black saguaro and terracotta suns on a light, rounded belly. Desert rhythm climbs vertically under the terracotta rim with white dots.",
+      "A black flower on a terracotta stem, with chevroned leaves and dots above the petals. Vertical lines by the rim repeat the rhythm of the veins on the leaves.",
+      "A black shell with light vertical lines and a blue rim. A spiral motif climbs the rounded side in a calm rhythm.",
+      "Large black cacti with light notches and a terracotta pattern under the edge. The desert motif climbs vertically along the rounded form.",
+      "A black shell with light vertical lines on a cream vase and a blue rim. Grooved rhythm climbs the rounded form like a calm wave."
+    ],
+    "wazony-duze": [
+      "A black lobster drawn with a wide line on a light, rounded vase. Claws and armor segments wrap around the form with a strong, marine rhythm.",
+      "A black crescent moon, a herringbone branch, and a figure in a striped skirt on a light form. The motifs placed vertically create a calm, graphic rhythm.",
+      "A terracotta palm with black fruits and vertical stripes by the rim. The motif spreads wide on the rounded form in a calm, holiday rhythm.",
+      "A black palm with light veining and terracotta fruits on a cream form. Ruffled terracotta borders with small light dots lead the motif at the upper and lower edge."
+    ],
+    "talerzyki": [
+      "Black shell with white, vertical lines on the light bottom of the plate. Terracotta strokes on the wavy rim lead the rhythm around the form.",
+      "Black saguaro with white incisions and a terracotta wavy rim with white dots. The desert motif is in the center, and the decorative edge leads the rhythm around.",
+      "Black flower on a terracotta stem and herringbone leaf. Terracotta strokes run in an even rhythm around the wavy rim.",
+      "Black palm with light veining and terracotta fruits. Rust-colored stripes on the edge carry a holiday rhythm around the plate.",
+      "Terracotta shell with white lines in the center of the plate. Black rectangles on the wavy rim create a calm, marine rhythm.",
+      "Terracotta flower on a black stem with herringbone leaves. The motif runs through the center of the plate, and the wavy edge softly closes it.",
+      "Terracotta saguaro with white incisions on a light bottom and a black rim with white dots. The desert motif grows vertically in the center of the wavy form.",
+      "Terracotta palm with black fruits and striped leaves. Black semicircles on the rim lead the rhythm around the plate.",
+      "Terracotta shell with light, scratched lines on the bottom of the plate. The wavy edge repeats the soft movement of a marine spiral.",
+      "Blue lemon with white dots in the center of the plate and black vertical stripes on the rim. A simple rhythm runs around the edge, leaving the light center for the fruit motif.",
+      "Blue lemon in the center and black bands with light lines on the wavy rim. The motif gathers calmly in the center, and the rim carries it around with rhythmic marks.",
+      "Black twig with three round fruits and herringbone leaves. The motif grows from the center and spreads calmly over the light interior.",
+      "Blue cactus in the center and a terracotta frill with white dots by the rim. The desert motif unfolds gently across the light interior of the plate.",
+      "Blue palm with terracotta fruits and dots on the rim. The holiday motif spreads lightly over the light bottom of the plate."
+    ],
+    "talerze-srednie": [
+      "Terracotta cactus with light lines and black rectangles on the rim. The desert motif stands firmly in the center of the plate, and the edge beats an even rhythm.",
+      "Black saguaro with terracotta spines on a light plate background. A terracotta frill with white dots leads the rhythm around the rim.",
+      "A black figure in a wide hat and striped trousers on a light plate background. A terracotta frill with white dots leads the rhythm around the edge.",
+      "A black donkey with a white garland on its side and terracotta rectangular marks with a light dot on the rim. The motif stands quietly in the center, and the edge beats an even rhythm around the plate.",
+      "Black saguaro with white lines and terracotta rectangles on the rim. The desert motif stands in the center, and the edge beats an even, warm rhythm.",
+      "A black palm with white hatching, terracotta fruits and a wavy terracotta border at the edge. The leaves spread out in a fan shape, and a ribbed band leads the rhythm around the plate.",
+      "Black figure in a wide hat and striped skirt on a light background. Terracotta wavy rim with white dots leads the rhythm around the plate.",
+      "A black flower with a striped disc and leaves on a straight stem. The motif grows vertically through the light plate, calmly and rhythmically.",
+      "Black flower with a dotted center and two herringbone leaves. The straight vertical of the stem organizes the motif on the light plate.",
+      "A black, vertical motif with three circles and wavy wings with white lines. The drawing is spread symmetrically in the center of the light plate.",
+      "A blue palm with brown fruits and a radiant rim in brown lines with light dots. The leaves spread wide, and the edge beats an even, sunny rhythm.",
+      "A brown shell with thin light lines and a blue wavy rim with white dots. The edge swirls repeat the shell's spiral movement.",
+      "A brown cactus with small blue shoots and a wavy blue frame. The desert motif grows vertically in the center of the plate, and the rim guides it with a soft wave.",
+      "Blue lemon with small white lines in the middle of the plate. Brown rectangles with a white dot and thin line arrange themselves on the rim in an even, radiant rhythm.",
+      "Brown palm with light notches and blue fruits. Blue rectangles run around the rim like a calm, holiday rhythm.",
+      "A blue shell with thin light lines and a brown wavy border. The motif grows in layers from the bottom of the plate, and the edge guides it with a gentle rhythm.",
+      "Black bottle with a white band of lines, a chalice, and a star on a light plate. The motifs stand next to each other like a quiet, nocturnal still life.",
+      "A black branch with a round fruit and pairs of leaves in small, light lines. The vertical motif arranges itself calmly through the center of the plate.",
+      "A brown branch with a round fruit and herringbone leaves with light lines. The vertical motif spreads calmly through the center of the plate.",
+      "A black twig with five round berries and two leaves filled with wavy white lines. The motif grows vertically across the light bottom of the plate.",
+      "A black lemon with white lines in the center and terracotta rays with a white dot on the rim. A holiday rhythm spreads evenly around the edge.",
+      "A terracotta shell with thin light lines in the center and black rays with a white dot on the rim. The motif spirals in the center, and the edge beats an even rhythm.",
+      "A black, winding line with light hatching and a terracotta dot above it. The abstract motif runs freely across the light bottom of the plate.",
+      "A terracotta palm with white hatching, black fruits and a black frill with white dots at the edge. The leaves spread in a fan, and the rim leads the rhythm around the plate.",
+      "A black spiral shell with light lines and a terracotta wavy border with white stripes. The motif curls from the center, and the edge guides it with a soft rhythm.",
+      "A terracotta fruit with small white lines in the center and black rays with a white dot on the rim. The motif stands firmly in the middle, and the edge beats an even, contrasting rhythm.",
+      "A black figure in a wide hat and wavy collar, surrounded by terracotta strokes on the rim. The folk motif stands quietly in the center, and the edge beats an even rhythm.",
+      "A black figure in a wide hat and a wide skirt with a light pattern, surrounded by brown rectangles with a white dot on the rim. The motif draws vertically through the center of the plate.",
+      "A black donkey with a white pattern on its side and a terracotta frill with white dots at the edge. The motif stands quietly in the center, and the rim leads the rhythm around.",
+      "A black palm with white hatching, terracotta fruits and terracotta bands on the rim. The holiday motif spreads in a fan of leaves, and the edge beats an even rhythm.",
+      "A black flower with a striped disc, dotted center and two wavy leaves. The vertical stem organizes the motif on the light plate.",
+      "A black donkey with a white harness pattern and a terracotta wavy border with white lines. The motif stands quietly in profile, and the edge leads the rhythm around.",
+      "A brown palm with light veining, blue fruits and a blue frill with white dots. The holiday motif spreads wide across the light bottom of the plate.",
+      "A terracotta palm with white lines, black fruits and a black wavy border with light strokes. The desert motif stands in the center, and the edge guides it with a soft rhythm.",
+      "A black donkey with a white garland on its side and a terracotta frill with white dots on the edge. The folk motif stands in the center of the plate, and the rim beats an even rhythm.",
+      "A black flower with a dotted center, round petals and herringbone leaves. The straight vertical of the stem arranges the motif calmly on the light plate.",
+      "A black palm with white lines, brown fruits and a brown frill with white dots. The leaves spread wide, and the edge leads a holiday rhythm around.",
+      "A black figure in a wide hat and a skirt in a light grid, surrounded by a terracotta frill with white lines. The folk motif stands vertically in the center of the plate.",
+      "A black figure in a wide hat and a striped jacket with checkered trousers. Terracotta strokes on the rim beat an even rhythm around the edge."
+    ],
+    "talerze-duze": [
+      "Brown donkey with a white garland on its side and a black wave at the rim. The motif stands calmly in the center, while the striped edge leads a rhythm around.",
+      "Terracotta shell with white lines on a bright background of the plate. A black wavy border with light hatching leads a rhythm around the edge.",
+      "Terracotta shell in the center of the plate, crossed by light vertical lines. A black wavy rim leads a rhythm of short strokes around it.",
+      "Black cactus with light incised thorns and a terracotta wave at the edge. The desert motif stands in the middle of the plate, and the wavy border leads a rhythm around.",
+      "Blue flowers with light centers and thin lines of petals. The motif scatters across the wide plate in a calm, soft rhythm.",
+      "Blue lemon in the center and black bands on the wide rim. The rhythm of the border leads the eye to light incisions scattered on the fruit.",
+      "Blue leaf with light veins crosses the bright bottom of the plate. Lines run calmly along the shape, from the narrow stem to the rounded edge.",
+      "Blue wreath of leaves with white hatching and a white star in the center. Terracotta marks with light incisions on the rim beat an even rhythm around the plate.",
+      "Terracotta eye with radiating lines and blue rectangles on the rim. The motif spreads from the center, and the edge beats an even, light rhythm."
+    ],
+    "duze-michy": [
+      "Blue flowers, leaves, and a shell are arranged within the light-colored bowl. A wavy blue band on the outside leads a calm rhythm around the form.",
+      "Black flowers on thin stems and terracotta herringbone leaves. The motif runs lightly along the interior and the wavy edge of the bowl.",
+      "Terracotta palms with fine linework and black fruits. The motif circles the interior, and the wavy rim adds movement.",
+      "Brown saguaro cacti and black diamonds with a terracotta dot. The desert motif runs around the light interior of the bowl.",
+      "A black garden in the center of the bowl: a dotted flower, herringbone leaves, and flexible stems. The motif spreads freely across the light interior and reaches up to the rounded rim.",
+      "Black palms with white veining and terracotta fruits on the light interior of the bowl. The motif sways across the interior, and a terracotta wavy line near the outer rim adds a soft rhythm."
+    ],
+    "miski-falowane": [
+      "Black saguaro with small terracotta protrusions and round suns. A desert motif spreads across the wavy interior of the bowl.",
+      "Black shells around a terracotta starfish on the light bottom of the bowl. The wavy rim leads the sea motif around with a soft rhythm.",
+      "Black cacti with light incisions and terracotta ovals on a light background. The motif circles inside the bowl, following the wavy edge.",
+      "Black poppies with thin veins and terracotta chevron leaves. The motif circles the light interior, emphasizing the wavy edge of the bowl.",
+      "Blue cacti with white incisions and terracotta dots on the light interior of the bowl. The desert motif flows along the wavy rim in a light, irregular rhythm.",
+      "Blue palms with terracotta fruits on the light interior of the bowl. The motif flows around along the wavy rim.",
+      "Terracotta palms with light chevron hatching and black fruits on the light interior of the bowl. The motif flows around the wavy form, and a black wavy band on the outside echoes the rhythm.",
+      "Blue shells around a terracotta starfish on the light bottom of the bowl. A terracotta wavy band on the outside emphasizes the rim and leads the sea rhythm around the form.",
+      "Blue lemons with small white lines on the light interior. The fruity rhythm circles along the wavy rim and descends toward the center.",
+      "Black branches with round berries and chevron leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm."
+    ]
+  },
+  "error": {
+    "heading": "Something went wrong",
+    "body": "The page ran into an error. Please refresh it — that usually helps.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "heading": "Page not found",
+    "body": "This page may have moved or may never have existed. Head back to the shop — all available pieces are waiting there.",
+    "home": "Home",
+    "shop": "Go to shop"
+  },
+  "meta": {
+    "description": "Hand-painted functional ceramics by Anna Ciok: mugs, vases, bowls and plates. June 2026 drop, 125 one-of-a-kind pieces.",
+    "gallery": "A new editorial photo series from Anna Ciok: portraits, terrace light, studio corners and hand-painted ceramics from the June 2026 drop.",
+    "ogImageAlt": "Anna Ciok Ceramics — hand-painted ceramic mug",
+    "collections": {
+      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 29 unique pieces from Anna Ciok's June 2026 drop.",
+      "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
+      "wazonySrednie": "Medium hand-painted ceramic vases. Four one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
+      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Four unique works from Anna Ciok's June 2026 drop.",
+      "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Fourteen one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
+      "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. Thirty-nine one-of-a-kind pieces in Anna Ciok's collection.",
+      "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
+      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
+      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
+      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
+    }
+  },
+  "deliveryNotice": {
+    "title": "July delivery information",
+    "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
+    "p2": "We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.",
+    "p3": "Shipping will take place in July, from 10 July."
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "I use cookies for analytics and marketing. You can accept or reject — rejecting doesn't block purchases.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "more": "Privacy policy"
+  }
+}

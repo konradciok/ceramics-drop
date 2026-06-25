@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "category": "talerze-srednie",
+  "generatedAt": "2026-06-10T17:59:39.153Z",
+  "itemCount": 18,
+  "model": "gpt-5.5",
+  "items": [
+    {
+      "category": "talerze-srednie",
+      "productId": "t16",
+      "displayNum": "01",
+      "image": "/uploads/talerz-maly-16.webp",
+      "currentNote": "Terakotowy mak z czarnymi liśćmi w jodełkę. Szeroki biały brzeg daje motywowi przestrzeń do oddychania.",
+      "proposedNote": "Terakotowy kaktus z jasnymi liniami i czarnymi prostokątami na rancie. Pustynny motyw stoi mocno pośrodku talerza, a brzeg wybija równy rytm."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t17",
+      "displayNum": "02",
+      "image": "/uploads/talerz-maly-17.webp",
+      "currentNote": "Niebieska palma i terakotowe owoce na szerokim tle. Kropkowany brzeg obchodzi krawędź dookoła.",
+      "proposedNote": "Czarne saguaro z terakotowymi kolcami na jasnym dnie talerza. Terakotowa falbanka z białymi kropkami prowadzi rytm dookoła brzegu."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t18",
+      "displayNum": "03",
+      "image": "/uploads/talerz-maly-18.webp",
+      "currentNote": "Czarna muszla rysowana linia po linii. Szerokość talerza daje motywowi miejsce, by się zwinął i osiadł.",
+      "proposedNote": "Czarna postać w szerokim kapeluszu i pasiasych spodniach na jasnym dnie talerza. Terakotowa falbanka z białymi kropkami prowadzi rytm wokół brzegu."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t19",
+      "displayNum": "04",
+      "image": "/uploads/talerz-maly-19.webp",
+      "currentNote": "Niebieska cytryna z białymi pestkami i cienkim czarnym brzegiem. Czysta, chłodna i pewna siebie.",
+      "proposedNote": "Czarny osioł z białą girlandą na boku i terakotowe znaki na rancie. Motyw stoi spokojnie w środku, a brzeg wybija równy rytm dookoła talerza."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t20",
+      "displayNum": "05",
+      "image": "/uploads/talerz-maly-20.webp",
+      "currentNote": "Dwa czarne kaktusy naprzeciw siebie przez białe centrum. Terakotowy pas z kropkami zamyka krawędź.",
+      "proposedNote": "Czarne saguaro z białymi kreskami i terakotowe prostokąty na rancie. Pustynny motyw stoi w centrum, a brzeg wybija równy, ciepły rytm."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t21",
+      "displayNum": "06",
+      "image": "/uploads/talerz-maly-21.webp",
+      "currentNote": "Terakotowe słońce z promieni ułożonych w kręgi. Szerszy format pozwala każdemu kręgowi oddychać.",
+      "proposedNote": "Czarna palma z terakotowymi owocami i falistą bordiurą przy brzegu. Liście rozchodzą się wachlarzem, a ząbkowana linia prowadzi rytm dookoła talerza."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t22",
+      "displayNum": "07",
+      "image": "/uploads/talerz-maly-22.webp",
+      "currentNote": "Czarna gałązka z trzema jagodami i liśćmi w jodełkę. Zimowa i graficzna na jasnym tle.",
+      "proposedNote": "Czarna postać w szerokim kapeluszu i pasiastej spódnicy na jasnym tle. Terakotowy falowany rant z białymi kropkami prowadzi rytm dookoła talerza."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t23",
+      "displayNum": "08",
+      "image": "/uploads/talerz-maly-23.webp",
+      "currentNote": "Niebieska figa z wydrapanymi pestkami. Brzeg niesie cienkie terakotowe pasy dookoła.",
+      "proposedNote": "Czarny kwiat z pasiastą tarczą i liśćmi na prostej łodydze. Motyw rośnie pionowo przez jasny talerz, spokojnie i rytmicznie."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t24",
+      "displayNum": "09",
+      "image": "/uploads/talerz-maly-24.webp",
+      "currentNote": "Terakotowy kaktus z białymi kolcami i czarnym żebrowanym brzegiem. Spokojna pustynia na szerokim talerzu.",
+      "proposedNote": "Czarny kwiat z kropkowanym środkiem i dwoma liśćmi w jodełkę. Prosty pion łodygi porządkuje motyw na jasnym talerzu."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t25",
+      "displayNum": "10",
+      "image": "/uploads/talerz-maly-25.webp",
+      "currentNote": "Czarny mniszek i opadające płatki przy brzegu. Łąka rozsypana po powierzchni talerza.",
+      "proposedNote": "Czarny, pionowy motyw z trzema kółkami i falistymi skrzydłami z białymi kreskami. Rysunek rozkłada się symetrycznie pośrodku jasnego talerza."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t26",
+      "displayNum": "11",
+      "image": "/uploads/talerz-maly-26.webp",
+      "currentNote": "Niebieska palma z czarnymi paskami na brzegu. Motyw, do którego wracam najczęściej — teraz z miejscem, by się otworzyć.",
+      "proposedNote": "Błękitna palma z brązowymi owocami i promienistym rantem w ciemne kreski. Liście rozkładają się szeroko, a brzeg wybija równy, słoneczny rytm."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t27",
+      "displayNum": "12",
+      "image": "/uploads/talerz-maly-27.webp",
+      "currentNote": "Terakotowa muszla na szerokim jasnym tle. Żebrowany brzeg otacza ją jak cicha dekoracyjna ramka.",
+      "proposedNote": "Brązowa muszla z cienkimi jasnymi liniami i błękitny falowany rant w białe kropki. Zawijasy brzegu powtarzają spiralny ruch muszli."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t28",
+      "displayNum": "13",
+      "image": "/uploads/talerz-maly-28.webp",
+      "currentNote": "Czarny mak na terakotowej łodydze z liśćmi w jodełkę. Spokojna wiosna na białym szkliwie.",
+      "proposedNote": "Brązowy kaktus z drobnymi błękitnymi pędami i falowaną błękitną ramką. Pustynny motyw rośnie pionowo w środku talerza, a brzeg prowadzi go miękką falą."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t29",
+      "displayNum": "14",
+      "image": "/uploads/talerz-maly-29.webp",
+      "currentNote": "Niebieski saguaro z wydrapanymi białymi kolcami. Szeroki brzeg niesie terakotowy rytm w jodełkę.",
+      "proposedNote": "Błękitna cytryna w środku i brązowe prostokąty z białymi kropkami na rancie. Obrzeże układa się w równy, promienisty rytm."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t30",
+      "displayNum": "15",
+      "image": "/uploads/talerz-maly-30.webp",
+      "currentNote": "Trzy kropki — czarne i terakotowe — ułożone w luźny łuk. Minimalny motyw na szerokim tle.",
+      "proposedNote": "Brązowa palma z jasnymi nacięciami i błękitnymi owocami. Błękitne prostokąty biegną dookoła rantu jak spokojny, wakacyjny rytm."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "t31",
+      "displayNum": "16",
+      "image": "/uploads/talerz-maly-31.webp",
+      "currentNote": "Terakotowa cytryna z czarnymi ogonkami i niebieskim brzegiem. Ciepło i chłód w prostej, spokojnej równowadze.",
+      "proposedNote": "Błękitna muszla z cienkimi jasnymi liniami i brązowa falowana obwódka. Motyw rośnie warstwami od dna talerza, a brzeg prowadzi go miękkim rytmem."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "s01",
+      "displayNum": "17",
+      "image": "/uploads/sredni-talerz-17.webp",
+      "currentNote": "Czarny kwiat z szeroko rozstawionymi płatkami i pasiastym brzegiem. Jeden gest pędzlem i cichy horyzont.",
+      "proposedNote": "Czarna butelka z białym pasem kresek, kielich i gwiazda na jasnym talerzu. Motywy stoją obok siebie jak spokojna, nocna martwa natura."
+    },
+    {
+      "category": "talerze-srednie",
+      "productId": "s02",
+      "displayNum": "18",
+      "image": "/uploads/sredni-talerz-18.webp",
+      "currentNote": "Niebieska muszla i terakotowy brzeg w jodełkę. Morski spokój i prostota na powierzchni talerza.",
+      "proposedNote": "Czarna gałązka z okrągłym owocem i parami liści w drobne, jasne kreski. Pionowy motyw układa się spokojnie przez środek talerza."
+    }
+  ]
+}

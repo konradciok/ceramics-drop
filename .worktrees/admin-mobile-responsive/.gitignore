@@ -1,0 +1,65 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/out/
+.open-next/
+.wrangler/
+.dev.vars
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env
+.env*.local
+
+# Notion i18n sync state (local page IDs + timestamps)
+.notion-i18n/
+.env.sentry-build-plugin
+
+# local google credentials
+.secrets/
+gtm-oauth-client.json
+docs/gtm-api.json
+*-service-account*.json
+
+# ad-hoc debug/log exports — never commit (may contain tokens/DSN keys in headers)
+docs/logs-*.json
+
+# playwright
+/test-results/
+/playwright-report/
+/e2e/REPORT.md
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+worker-configuration.d.ts
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+design/
+
+# local Claude Code config + worktrees
+.claude/
+.worktrees/
+
+# Brainstorming visual companion (local only)
+.superpowers/
+1Password Emergency Kit.pdf

@@ -1,0 +1,351 @@
+{
+  "snapshotAt": "2026-06-20T20:06:13.729Z",
+  "label": "2026-06-20-five-categories",
+  "categories": [
+    "duze-michy",
+    "wazony-duze",
+    "wazony-srednie",
+    "talerze-duze",
+    "miski-falowane"
+  ],
+  "summary": {
+    "duze-michy": {
+      "total": 6,
+      "available": 5,
+      "reserved": 0,
+      "sold": 1
+    },
+    "wazony-duze": {
+      "total": 4,
+      "available": 4,
+      "reserved": 0,
+      "sold": 0
+    },
+    "wazony-srednie": {
+      "total": 5,
+      "available": 5,
+      "reserved": 0,
+      "sold": 0
+    },
+    "talerze-duze": {
+      "total": 9,
+      "available": 7,
+      "reserved": 0,
+      "sold": 2
+    },
+    "miski-falowane": {
+      "total": 10,
+      "available": 9,
+      "reserved": 0,
+      "sold": 1
+    }
+  },
+  "pieces": [
+    {
+      "product_id": "b01",
+      "category": "duze-michy",
+      "num": "01",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "b02",
+      "category": "duze-michy",
+      "num": "02",
+      "status": "sold",
+      "reserved_until": null,
+      "order_id": "ee61f7cb-b86b-40a9-a5f8-eb6c2d87590b",
+      "available": false
+    },
+    {
+      "product_id": "b03",
+      "category": "duze-michy",
+      "num": "03",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "b04",
+      "category": "duze-michy",
+      "num": "04",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "b07",
+      "category": "duze-michy",
+      "num": "05",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "h01",
+      "category": "duze-michy",
+      "num": "06",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d06",
+      "category": "wazony-duze",
+      "num": "01",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d07",
+      "category": "wazony-duze",
+      "num": "02",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d09",
+      "category": "wazony-duze",
+      "num": "03",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "g01",
+      "category": "wazony-duze",
+      "num": "04",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d01",
+      "category": "wazony-srednie",
+      "num": "01",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d02",
+      "category": "wazony-srednie",
+      "num": "02",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d03",
+      "category": "wazony-srednie",
+      "num": "03",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "d05",
+      "category": "wazony-srednie",
+      "num": "04",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "u01",
+      "category": "wazony-srednie",
+      "num": "05",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p01",
+      "category": "talerze-duze",
+      "num": "01",
+      "status": "sold",
+      "reserved_until": null,
+      "order_id": "d37991ea-de8c-4492-be72-c91d9787328e",
+      "available": false
+    },
+    {
+      "product_id": "p02",
+      "category": "talerze-duze",
+      "num": "02",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p03",
+      "category": "talerze-duze",
+      "num": "03",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p05",
+      "category": "talerze-duze",
+      "num": "04",
+      "status": "sold",
+      "reserved_until": null,
+      "order_id": "ee61f7cb-b86b-40a9-a5f8-eb6c2d87590b",
+      "available": false
+    },
+    {
+      "product_id": "p07",
+      "category": "talerze-duze",
+      "num": "05",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p08",
+      "category": "talerze-duze",
+      "num": "06",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p09",
+      "category": "talerze-duze",
+      "num": "07",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p10",
+      "category": "talerze-duze",
+      "num": "08",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "p12",
+      "category": "talerze-duze",
+      "num": "09",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w03",
+      "category": "miski-falowane",
+      "num": "01",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w05",
+      "category": "miski-falowane",
+      "num": "02",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w06",
+      "category": "miski-falowane",
+      "num": "03",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w07",
+      "category": "miski-falowane",
+      "num": "04",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w08",
+      "category": "miski-falowane",
+      "num": "05",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w09",
+      "category": "miski-falowane",
+      "num": "06",
+      "status": "sold",
+      "reserved_until": null,
+      "order_id": "1d5d74bb-3ff1-4894-86d5-b1e3fb622f54",
+      "available": false
+    },
+    {
+      "product_id": "w12",
+      "category": "miski-falowane",
+      "num": "07",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w14",
+      "category": "miski-falowane",
+      "num": "08",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w15",
+      "category": "miski-falowane",
+      "num": "09",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    },
+    {
+      "product_id": "w17",
+      "category": "miski-falowane",
+      "num": "10",
+      "status": "available",
+      "reserved_until": null,
+      "order_id": null,
+      "available": true
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "category": "wazony",
+  "generatedAt": "2026-06-10T17:54:46.325Z",
+  "itemCount": 8,
+  "model": "gpt-5.5",
+  "items": [
+    {
+      "category": "wazony",
+      "productId": "v01",
+      "displayNum": "01",
+      "image": "/uploads/waza-mala-1.webp",
+      "currentNote": "Błękitne kaktusy i terakotowe słońce na brzuchu wazonu. Pustynny krajobraz w małej formie.",
+      "proposedNote": "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła."
+    },
+    {
+      "category": "wazony",
+      "productId": "v02",
+      "displayNum": "02",
+      "image": "/uploads/waza-mala-2.webp",
+      "currentNote": "Błękitna palma, rdzawe owoce i prążkowany kołnierz. Jeden z tych wzorów, które od razu mają nastrój.",
+      "proposedNote": "Błękitna palma z terakotowymi owocami i pionowe paski przy brzegu. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie."
+    },
+    {
+      "category": "wazony",
+      "productId": "v03",
+      "displayNum": "03",
+      "image": "/uploads/waza-mala-3.webp",
+      "currentNote": "Brązowo-błękitne pasy biegną do góry jak tkanina rozpięta w słońcu.",
+      "proposedNote": "Brązowe pasy i cienkie błękitne linie biegną pionowo po jasnym wazonie. Rytm zwęża się przy szyjce i rozchodzi na wypukłych bokach."
+    },
+    {
+      "category": "wazony",
+      "productId": "v04",
+      "displayNum": "04",
+      "image": "/uploads/waza-mala-4.webp",
+      "currentNote": "Błękitne liście układają się warstwami. Spokojny wazon na jedną gałązkę albo kilka kwiatów.",
+      "proposedNote": "Błękitne płaty opuncji z jasnymi liniami na kremowym wazonie. Miękki rytm owalnych segmentów wspina się po zaokrąglonej formie."
+    },
+    {
+      "category": "wazony",
+      "productId": "v05",
+      "displayNum": "05",
+      "image": "/uploads/waza-mala-5.webp",
+      "currentNote": "Palma i prążkowany brzeg. Lekki, wakacyjny, gotowy na coś zielonego.",
+      "proposedNote": "Błękitna palma z terakotowymi owocami i pasami na rancie. Liście rozchodzą się szeroko po zaokrąglonej formie."
+    },
+    {
+      "category": "wazony",
+      "productId": "v06",
+      "displayNum": "06",
+      "image": "/uploads/waza-mala-6.webp",
+      "currentNote": "Brązowe pętle oplatają cały brzusiec. Jedna linia, która zamienia się w taniec.",
+      "proposedNote": "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw biegnie dookoła w miękkim, falującym rytmie."
+    },
+    {
+      "category": "wazony",
+      "productId": "v07",
+      "displayNum": "07",
+      "image": "/uploads/waza-mala-7.webp",
+      "currentNote": "Czarna palma z rdzawymi owocami. Graficzny motyw na ciepłej bieli szkliwa.",
+      "proposedNote": "Czarna palma z białymi liniami i terakotowymi owocami. Liście rozchodzą się szeroko po zaokrąglonej formie, a rant łapie terakotowy rytm."
+    },
+    {
+      "category": "wazony",
+      "productId": "d10",
+      "displayNum": "08",
+      "image": "/uploads/waza-duza-11.webp",
+      "currentNote": "Czarne dmuchawce i opadające kwiaty wokół brzuśca. Łąka narysowana cienką, ciemną linią.",
+      "proposedNote": "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie."
+    }
+  ]
+}

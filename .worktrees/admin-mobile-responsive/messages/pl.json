@@ -1,0 +1,765 @@
+{
+  "returns": {
+    "eyebrow": "Zwroty",
+    "heading": "Zgłoś zwrot",
+    "intro": "Wpisz numer zamówienia z maila z potwierdzeniem wysyłki, a przygotuję etykietę zwrotną. Na zgłoszenie masz 14 dni od odebrania paczki.",
+    "label": "Numer zamówienia",
+    "button": "Zgłoś zwrot",
+    "success": "Zgłoszenie przyjęte. Etykietę wyślę na Twój e-mail, gdy InPost potwierdzi przesyłkę.",
+    "ineligible": "Nie znalazłam zamówienia z takim numerem. Sprawdź, czy wszystko się zgadza, albo napisz bezpośrednio na hej@ciok.art.",
+    "unavailable": "Zwroty są teraz chwilowo niedostępne. Napisz proszę bezpośrednio na hej@ciok.art.",
+    "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
+    "error": "Coś poszło nie tak. Spróbuj za chwilę albo napisz na hej@ciok.art.",
+    "moreInfo": "Więcej o dostawie i zwrotach"
+  },
+  "announce": "Czerwcowy drop 2026: 125 ręcznie malowanych prac, każda unikalna",
+  "title": {
+    "home": "Anna Ciok Ceramics — czerwcowy drop 2026",
+    "kubki": "Kubki",
+    "wazony": "Małe wazony",
+    "wazonySrednie": "Średnie wazony",
+    "wazonyDuze": "Duże wazony",
+    "talerzyki": "Talerzyki",
+    "talerzeSrednie": "Talerze średnie",
+    "talerzeDuze": "Duże talerze",
+    "duzeMichy": "Duże misy",
+    "miskiFalowane": "Miski z falowanym brzegiem",
+    "koszyk": "Koszyk",
+    "studio": "O studiu",
+    "kontakt": "Kontakt",
+    "dostawa": "Dostawa i zwroty",
+    "regulamin": "Regulamin",
+    "polityka": "Polityka prywatności",
+    "sklep": "Wszystkie prace",
+    "gallery": "Galeria"
+  },
+  "nav": {
+    "sklep": "Sklep",
+    "gallery": "Galeria",
+    "kubki": "Kubki",
+    "wazony": "Małe wazony",
+    "wazonySrednie": "Średnie wazony",
+    "wazonyDuze": "Duże wazony",
+    "talerzyki": "Talerzyki",
+    "talerzeSrednie": "Talerze średnie",
+    "talerzeDuze": "Duże talerze",
+    "duzeMichy": "Duże misy",
+    "miskiFalowane": "Miski z falowanym brzegiem",
+    "studio": "O studiu",
+    "kontakt": "Kontakt"
+  },
+  "aria": {
+    "cart": "Koszyk",
+    "zoom": "Zobacz szczegóły",
+    "close": "Zamknij",
+    "prev": "Poprzednia praca",
+    "next": "Następna praca",
+    "photo": "Zdjęcie",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu",
+    "menuLabel": "Menu nawigacyjne",
+    "skipToContent": "Przejdź do treści"
+  },
+  "footer": {
+    "tagline": "Malowane powoli, jedna sztuka naraz.",
+    "blurb": "Mała pracownia ceramiczna Anny Ciok. Każdy wzór powstaje osobno, jest malowany ręcznie i szkliwiony.",
+    "hShop": "Sklep",
+    "hStudio": "Studio",
+    "hInfo": "Informacje",
+    "hKontakt": "Kontakt",
+    "koszyk": "Koszyk",
+    "oArtystce": "O ceramiczce",
+    "proces": "Jak powstają prace",
+    "dostawa": "Dostawa i zwroty",
+    "regulamin": "Regulamin",
+    "polityka": "Polityka prywatności",
+    "copy": "© 2026 Anna Ciok Ceramics — każda praca jedyna w swoim rodzaju"
+  },
+  "product": {
+    "mug": "Kubek",
+    "vase": "Mały wazon",
+    "midvase": "Średni wazon",
+    "bigvase": "Duży wazon",
+    "dish": "Talerzyk",
+    "medplate": "Talerz średni",
+    "plate": "Duży talerz",
+    "largebowl": "Duża misa",
+    "wavybowl": "Miska z falowanym brzegiem",
+    "moreFrom": "Więcej z kolekcji",
+    "seeAll": "Zobacz wszystkie"
+  },
+  "gallery": {
+    "sold": "Już znalazła dom"
+  },
+  "galleryPage": {
+    "eyebrow": "Galeria editorialowa",
+    "title": "Nowe ujęcia, <em>ten sam ślad ręki.</em>",
+    "lead": "Lookbook z nowej serii zdjęć: portrety, taras, pracownia i detale naczyń pokazane poza klasycznym kadrem produktowym.",
+    "ctaShop": "Zobacz prace",
+    "ctaStudio": "O studiu",
+    "sequenceLabel": "Zdjęcia editorialowe",
+    "items": {
+      "photo01": {
+        "alt": "Talerze Anny Ciok na plecionym dywanie",
+        "title": "Ptak na talerzu",
+        "caption": "Detal malunku widziany z bliska, jeszcze bez katalogowej ciszy białego tła."
+      },
+      "photo02": {
+        "alt": "Stos ręcznie malowanych misek i kubków Anny Ciok",
+        "title": "Warstwy kolekcji",
+        "caption": "Naczynia stoją razem: linie, rytmy i brązy układają się w jedną opowieść."
+      },
+      "photo03": {
+        "alt": "Ceramika Anny Ciok ustawiona przy oknie",
+        "title": "Półka przy świetle",
+        "caption": "Pracowniany kadr z gotowymi pracami, lampą i miękkim światłem z okna."
+      },
+      "photo04": {
+        "alt": "Anna Ciok trzyma ręcznie malowaną miskę przed twarzą",
+        "title": "Miska jak horyzont",
+        "caption": "Portret z naczyniem potraktowanym jak rekwizyt, osłona i fragment pejzażu."
+      },
+      "photo05": {
+        "alt": "Anna Ciok trzyma talerz nad głową na tarasie",
+        "title": "Nad tarasem",
+        "caption": "Ceramika wychodzi z pracowni: wiatr, niebo i swobodny gest zamiast katalogu."
+      },
+      "photo06": {
+        "alt": "Anna Ciok siedzi w pracowni z ręcznie malowanym wazonem",
+        "title": "Portret z wazonem",
+        "caption": "Skala pracy najlepiej pokazuje się w rękach, blisko twarzy i ciała."
+      },
+      "photo07": {
+        "alt": "Anna Ciok trzyma talerz z czarnym motywem oka",
+        "title": "Oko na brzegu",
+        "caption": "Mały talerz staje się graficznym znakiem, nie tylko przedmiotem do stołu."
+      },
+      "photo08": {
+        "alt": "Ręcznie malowane talerze i kubki Anny Ciok na stole",
+        "title": "Stół znaków",
+        "caption": "Zbliżenie na kolekcję w naturalnym świetle: palmy, ptaki, liście i cienie."
+      },
+      "photo09": {
+        "alt": "Anna Ciok siedzi wśród ręcznie malowanej ceramiki",
+        "title": "W środku kolekcji",
+        "caption": "Jedna osoba, wiele naczyń i widoczna skala pracy przed czerwcowym dropem."
+      },
+      "photo10": {
+        "alt": "Krzesło i stół w jasnej pracowni ceramicznej",
+        "title": "Cisza pracowni",
+        "caption": "Puste miejsce pracy przypomina, że między sesjami zdjęciowymi wraca normalny rytm."
+      },
+      "photo11": {
+        "alt": "Talerz z motywem palmy w cieniu na plecionym dywanie",
+        "title": "Cień palmy",
+        "caption": "Graficzny motyw spotyka prawdziwy cień, przez co talerz traci produktową sztywność."
+      },
+      "photo12": {
+        "alt": "Anna Ciok siedzi na tarasie z ręcznie malowaną miską",
+        "title": "Na zewnątrz",
+        "caption": "Miska pokazana w ruchu i świetle, bliżej codziennego przedmiotu niż ekspozycji."
+      },
+      "photo13": {
+        "alt": "Anna Ciok stoi przy oknie z ręcznie malowaną miską",
+        "title": "Przy oknie",
+        "caption": "Prosty portret i neutralne światło pozwalają zobaczyć kształt bez teatralności."
+      },
+      "photo14": {
+        "alt": "Anna Ciok stoi w pracowni z ręcznie malowaną miską",
+        "title": "Cała sylwetka",
+        "caption": "Szerszy kadr pokazuje przestrzeń, ciało i naczynie w jednej pracownianej osi."
+      },
+      "photo15": {
+        "alt": "Anna Ciok trzyma ręcznie malowany wazon na wietrze",
+        "title": "Wiatr i wazon",
+        "caption": "Ostatni kadr zostawia pracę w ruchu: blisko dłoni, światła i pogody."
+      }
+    }
+  },
+  "filter": {
+    "label": "Filtruj prace",
+    "all": "Wszystkie",
+    "available": "Dostępne",
+    "sold": "Sprzedane",
+    "emptyAvailable": "Wszystkie prace z tej kolekcji znalazły już dom.",
+    "emptySold": "Nic jeszcze nie zostało sprzedane."
+  },
+  "selbar": {
+    "clear": "Wyczyść",
+    "go": "Przejdź do kasy",
+    "word": "{count, plural, one {wybrana praca} few {wybrane prace} many {wybranych prac} other {wybranych prac}}",
+    "total": "· razem"
+  },
+  "lightbox": {
+    "drop": "Czerwcowy drop",
+    "add": "Dodaj do koszyka",
+    "in": "W koszyku",
+    "specDims": "Wymiary",
+    "specTech": "Technika",
+    "specCopy": "Egzemplarz",
+    "specTechVal": "Szkliwo nakładane i ręcznie malowane",
+    "specCopyVal": "Jedyny egzemplarz",
+    "approx": "ok.",
+    "permalink": "Strona tej pracy →"
+  },
+  "cart": {
+    "emptyH": "Koszyk jest <em>pusty</em>",
+    "emptyP": "Wybierz prace z czerwcowego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",
+    "seeMugs": "Zobacz kubki",
+    "seeVases": "Zobacz małe wazony",
+    "seeMidvases": "Zobacz średnie wazony",
+    "seeBigvases": "Zobacz duże wazony",
+    "seeDishes": "Zobacz talerzyki",
+    "seeMedplates": "Zobacz talerze średnie",
+    "seePlates": "Zobacz duże talerze",
+    "seeLargebowls": "Zobacz duże misy",
+    "seeWavybowls": "Zobacz miski z falowanym brzegiem",
+    "eyebrow": "Twój wybór",
+    "label": "Koszyk",
+    "word": "{count, plural, one {praca} few {prace} many {prac} other {prac}}",
+    "oneoff": "· jedyny egzemplarz",
+    "remove": "Usuń",
+    "summary": "Podsumowanie",
+    "pieces": "Prace",
+    "delivery": "Dostawa",
+    "free": "Gratis",
+    "total": "Razem",
+    "deliveryDetails": "Dane kontaktowe",
+    "checkout": "Przejdź do kasy",
+    "pay": "Zapłać teraz",
+    "payProcessing": "Przetwarzanie…",
+    "soldOut": "Część prac została już sprzedana, więc usunęłam je z Twojego koszyka.",
+    "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
+    "checkoutError": "Nie udało się rozpocząć płatności. Spróbuj za chwilę.",
+    "notForSale": "Ta praca została wycofana ze sprzedaży i nie można jej już kupić.",
+    "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
+    "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
+    "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24."
+  },
+  "ship": {
+    "paczkomatT": "Paczkomat InPost",
+    "paczkomatD": "Odbiór w wybranym paczkomacie, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "paczkomatPrice": "od {price}",
+    "courierT": "Kurier InPost",
+    "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "pickupT": "Odbiór osobisty",
+    "pickupD": "W Warszawie, po wcześniejszym umówieniu terminu."
+  },
+  "delivery": {
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "street": "Ulica",
+    "building": "Nr",
+    "postCode": "Kod pocztowy",
+    "city": "Miasto",
+    "lockerChosen": "Wybrany paczkomat:",
+    "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny."
+  },
+  "return": {
+    "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
+    "okP": "Płatność się udała. Potwierdzenie i fakturę wyślę na Twój adres e-mail.",
+    "processingH": "Płatność jest w toku…",
+    "processingP": "Czekam na potwierdzenie z banku. Możesz odświeżyć stronę za chwilę.",
+    "failH": "Płatność nie przeszła",
+    "failP": "Nic nie zostało pobrane z Twojego konta. Wróć do koszyka i spróbuj jeszcze raz — wybrane prace nadal na Ciebie czekają.",
+    "back": "Wróć na stronę główną",
+    "cart": "Wróć do koszyka"
+  },
+  "home": {
+    "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
+    "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
+    "heroSub": "Sto ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest ręcznie malowany i szkliwiony osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
+    "heroCta1": "Przeglądaj wszystkie prace",
+    "heroMetaName": "Kubek Nº 02",
+    "heroMetaDesc": "Błękitna palma",
+    "marquee": [
+      "ręcznie malowane",
+      "tylko jeden egzemplarz",
+      "szkliwione osobno",
+      "prosto z pracowni"
+    ],
+    "colEyebrow": "Czerwcowy drop",
+    "colTitle": "Dziewięć kategorii, <em>sto trzy historie.</em>",
+    "colLead": "Przeglądaj jak galerię, zaznacz ulubione prace i przejdź do kasy, kiedy Twój wybór będzie gotowy.",
+    "card": {
+      "mug": {
+        "num": "29 prac · 90 zł za sztukę",
+        "desc": "Kubki na codzienną kawę i herbatę. Palmy, cytryny, muszle i kaktusy malowane szkliwem na jasnej glinie.",
+        "cta": "Wybierz swój kubek"
+      },
+      "vase": {
+        "num": "9 prac · 210 zł za sztukę",
+        "desc": "Pękate wazony na pojedynczą gałązkę, kilka tulipanów albo bukiet z targu. Każdy ma własny rytm pasków i rysunków.",
+        "cta": "Wybierz swój"
+      },
+      "midvase": {
+        "num": "5 prac · 300 zł za sztukę",
+        "desc": "Średnie wazony o wyrazistym charakterze — coś pomiędzy kameralnym a dużym formatem.",
+        "cta": "Wybierz średni wazon"
+      },
+      "bigvase": {
+        "num": "4 prace · 395 zł każdy",
+        "desc": "Duże formy z mocnym charakterem: palmy, muszle, kaktusy, homar i małe folkowe sceny na ciepłej bieli.",
+        "cta": "Wybierz duży wazon"
+      },
+      "dish": {
+        "num": "14 prac · 105 zł za sztukę",
+        "desc": "Małe talerzyki na biżuterię, oliwę, sól albo drobiazgi przy łóżku. Niewielkie, ale z bardzo własnym temperamentem.",
+        "cta": "Wybierz talerzyk"
+      },
+      "medplate": {
+        "num": "39 prac · 120 zł za sztukę",
+        "desc": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja — ⌀ 18 cm.",
+        "cta": "Wybierz talerz średni"
+      },
+      "plate": {
+        "num": "9 prac · 270 zł za sztukę",
+        "desc": "Duże talerze do podania, do kolekcji albo na ścianę. Osiołek, palmy, oczy, muszle i malowane ranty.",
+        "cta": "Wybierz swój talerz"
+      },
+      "largebowl": {
+        "num": "6 prac · 315 zł za sztukę",
+        "desc": "Pojemne misy do owoców, sałat i rzeczy, które lubią stać na stole. W środku kobaltowe ogrody, palmy i liście.",
+        "cta": "Wybierz misę"
+      },
+      "wavybowl": {
+        "num": "10 prac · 155 zł każda",
+        "desc": "Miski z falowanym brzegiem na śniadanie, przekąski i małe codzienne rytuały. Każda faluje trochę inaczej.",
+        "cta": "Wybierz miskę"
+      }
+    },
+    "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
+    "editorialImageAlt": "Ręcznie malowana ceramika Anny Ciok w świetle słonecznym",
+    "storyEyebrow": "O ceramiczce",
+    "storyTitle": "Najpierw był obraz, <em>dziś jest ceramika.</em>",
+    "storyP1": "Jestem Anna. Maluję obrazy i ceramikę, a oba światy spotykają się w tej samej pracowni. Kubek, talerz czy wazon traktuję jak mały obraz użytkowy: można go wziąć do ręki, postawić na stole i używać bez specjalnej okazji.",
+    "storyP2": "Pracuję sama, powoli, jeden egzemplarz po drugim. Ręka zostawia ślad w linii pędzla, w nierównej palmie i w pasku, który nie udaje idealnego. To właśnie sprawia, że każda praca ma swój charakter.",
+    "storyP3": "Czerwcowy drop powstał tej wiosny i liczy 125 prac. Gdy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "storyCta1": "Wybierz swój",
+    "storyCta2": "Napisz do mnie",
+    "craftEyebrow": "Jak to działa",
+    "craftTitle": "Od miniatury <em>do Twojej półki.</em>",
+    "craft1H": "Zaznaczasz <em>ulubione prace</em>",
+    "craft1P": "W galerii klikasz prace, które Cię przyciągają. Każda zaznaczona miniatura trafia do paska na dole ekranu, więc łatwo wrócić do swojego wyboru.",
+    "craft2H": "Przechodzisz <em>do kasy</em>",
+    "craft2P": "W koszyku sprawdzasz wybrane egzemplarze, wybierasz paczkomat lub kuriera i finalizujesz zamówienie. Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
+    "craft3H": "Pakuję <em>i wysyłam</em>",
+    "craft3P": "Każdą pracę pakuję ręcznie i nadaję w 1–3 dni roboczych. Ponieważ egzemplarz jest tylko jeden, po zakupie znika ze sklepu i nikt nie kupi tej samej sztuki.",
+    "ctEyebrow": "Kontakt",
+    "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
+    "ctP": "Chcesz zobaczyć pracę na żywo albo zapytać o zamówienie specjalne? Napisz. Najszybciej złapiesz mnie mailem albo na Instagramie.",
+    "ctBtn": "Napisz wiadomość",
+    "ctLEmail": "E-mail",
+    "ctLIg": "Instagram",
+    "ctVIg": "@ania.ciok.art",
+    "ctLStudio": "Odbiór",
+    "ctVStudio": "Warszawa · odbiór po umówieniu",
+    "ctLShip": "Wysyłka",
+    "ctVShip": "Polska · nadanie w 1–3 dni roboczych"
+  },
+  "collection": {
+    "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
+    "kubki": {
+      "eyebrow": "Czerwcowy drop — 29 prac",
+      "title": "Kubki <em>Nº 01–29</em>",
+      "lead": "Ręcznie malowane kubki. Każdy jest osobnym egzemplarzem, więc wybierasz dokładnie ten, który ma trafić do Twojej kuchni."
+    },
+    "wazony": {
+      "eyebrow": "Czerwcowy drop — 9 prac",
+      "title": "Małe wazony <em>Nº 01–09</em>",
+      "lead": "Pękate, ręcznie malowane wazony. Na kwiaty, gałązki albo jako mały obraz stojący na półce."
+    },
+    "wazony-srednie": {
+      "eyebrow": "Czerwcowy drop — 5 prac",
+      "title": "Średnie wazony <em>Nº 01–05</em>",
+      "lead": "Średnie wazony ceramiczne, każdy w jednym egzemplarzu. Forma pomiędzy kameralną a dużą — na bukiet i na półkę."
+    },
+    "wazony-duze": {
+      "eyebrow": "Czerwcowy drop — 4 prace",
+      "title": "Wazony duże <em>Nº 01–04</em>",
+      "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
+    },
+    "talerzyki": {
+      "eyebrow": "Czerwcowy drop — 14 prac",
+      "title": "Talerzyki <em>Nº 01–14</em>",
+      "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
+    },
+    "talerze-srednie": {
+      "eyebrow": "Czerwcowy drop — 39 prac",
+      "title": "Talerze średnie <em>Nº 01–39</em>",
+      "lead": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja na półce."
+    },
+    "talerze-duze": {
+      "eyebrow": "Czerwcowy drop — 9 prac",
+      "title": "Talerze duże <em>Nº 01–09</em>",
+      "lead": "Duże talerze. Do podania, do wyeksponowania albo na ścianę, jeśli wolisz ceramikę oglądać jak obraz."
+    },
+    "duze-michy": {
+      "eyebrow": "Czerwcowy drop — 6 prac",
+      "title": "Duże misy <em>Nº 01–06</em>",
+      "lead": "Pojemne, ręcznie malowane misy. Każda jest gotowa na owoce, sałatę albo centralne miejsce na stole."
+    },
+    "miski-falowane": {
+      "eyebrow": "Czerwcowy drop — 10 prac",
+      "title": "Miski z falowanym brzegiem <em>Nº 01–10</em>",
+      "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
+    },
+    "sklep": {
+      "eyebrow": "Czerwcowy drop — 125 prac",
+      "title": "Wszystkie <em>prace</em>",
+      "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
+    }
+  },
+  "studio": {
+    "eyebrow": "O studiu",
+    "h1": "Jedna pracownia, <em>jedna para rąk.</em>",
+    "lead": "Mała pracownia ceramiczna na Teneryfie. Tu maluję, szkliwię i dopracowuję każdą sztukę sama, jedną po drugiej. Ten czerwcowy drop przyjechał ze mną do Polski na wakacje.",
+    "storyImageAlt": "Anna Ciok — malarka i ceramiczka",
+    "workspaceImageAlt": "Pracownia ceramiczna Anny Ciok na Teneryfie",
+    "storyEyebrow": "Obraz i ceramika",
+    "storyH": "Maluję <em>na ceramice.</em>",
+    "storyP1": "Jestem Anna. Jestem malarką i ceramiczką. Choć nadal maluję obrazy, od kilku lat coraz mocniej ciągnie mnie do ceramiki. Lubię to, że obraz może zejść ze ściany, trafić do dłoni i stać się częścią codzienności.",
+    "storyP2": "Do ceramiki dochodziłam powoli: najpierw kurs, potem półka w cudzej pracowni, w końcu własne niewielkie miejsce ze stołem do szkliwienia, pędzlami i piecem. To spokojna, fizyczna praca, w której nie da się wszystkiego przyspieszyć.",
+    "storyP3": "Maluję ręcznie, bez kalki i bez szablonu. Dlatego kreska czasem lekko ucieka, palma wychodzi trochę krzywo, a dwa podobne wzory i tak nie są takie same. Dla mnie właśnie tam zaczyna się życie przedmiotu.",
+    "factsEyebrow": "Detale pracowni",
+    "factsH": "Kilka liczb <em>i faktów.</em>",
+    "fact1K": "Pracownia",
+    "fact1V": "Teneryfa",
+    "fact1D": "Jeden pokój, stół do szkliwienia, pędzle i piec.",
+    "fact2K": "Wypał",
+    "fact2V": "1040 <em>°C</em>",
+    "fact2D": "Po malowaniu i szkliwieniu praca trafia do wypału, który utrwala kolor i zamienia powierzchnię w szklistą, użytkową warstwę.",
+    "fact3K": "Czerwcowy drop",
+    "fact3V": "125 <em>prac</em>",
+    "fact3D": "Kubki, małe, średnie i duże wazony, talerzyki, talerze średnie, duże talerze, duże misy i miski z falowanym brzegiem. Każda sztuka jest tylko jedna.",
+    "fact4K": "Wysyłka",
+    "fact4V": "1–3 <em>dni</em>",
+    "fact4D": "Pakuję ręcznie i nadaję przesyłki na terenie całej Polski.",
+    "procEyebrow": "Jak powstaje praca",
+    "procH": "Od pierwszej warstwy <em>do gotowej sztuki.</em>",
+    "p1H": "Przygotowuję <em>powierzchnię</em>",
+    "p1P": "Zaczynam od obejrzenia każdej sztuki, zaplanowania układu wzoru i dobrania kolorów szkliwa. Potem przychodzi spokojna praca warstwa po warstwie.",
+    "p2H": "Szkliwię <em>i maluję</em>",
+    "p2P": "Na jasną ceramiczną powierzchnię nakładam szkliwo i maluję wzór pędzlem: palmy, cytryny, muszle, kaktusy, paski. W tym momencie każda praca dostaje własny rytm.",
+    "p3H": "Wypalam <em>i podpisuję</em>",
+    "p3P": "Wypał utrwala szkliwo i kolor. Gotową pracę oglądam dokładnie, podpisuję od spodu i odkładam na półkę, gdzie czeka na swój dom.",
+    "ctaH": "Każda znika <em>tylko raz.</em>",
+    "ctaP": "Kiedy wybrany egzemplarz zostanie kupiony, na dobre opuszcza sklep. Zobacz, co jeszcze czeka w czerwcowym dropie.",
+    "ctaB1": "Zobacz kubki",
+    "ctaB2": "Zobacz wazony"
+  },
+  "contact": {
+    "eyebrow": "Kontakt",
+    "h1": "Masz pytanie? <em>Odpisuję sama.</em>",
+    "lead": "Chcesz zobaczyć wybraną pracę na żywo albo zapytać o zamówienie specjalne? Napisz. Czytam każdą wiadomość osobiście i zwykle odpowiadam tego samego dnia.",
+    "fName": "Jak masz na imię",
+    "fNamePh": "Twoje imię",
+    "fEmail": "Adres e-mail",
+    "fEmailPh": "ty@example.com",
+    "fTopic": "W jakiej sprawie",
+    "topic1": "Pytanie o pracę z dropu",
+    "topic2": "Odbiór osobisty w Warszawie",
+    "topic3": "Zamówienie na specjalną okazję",
+    "topic4": "Współpraca / hurt",
+    "topic5": "Coś innego",
+    "fMsg": "Twoja wiadomość",
+    "fMsgPh": "Napisz, w czym mogę pomóc…",
+    "submit": "Wyślij wiadomość",
+    "note": "Najszybciej złapiesz mnie mailowo: <strong>hej@ciok.art</strong>, albo na Instagramie.",
+    "sentH": "Już prawie — <em>sprawdź pocztę.</em>",
+    "sentP": "Powinien otworzyć się Twój program pocztowy z gotową wiadomością. Jeśli nic się nie pojawiło, napisz bezpośrednio na <link>hej@ciok.art</link> albo na Instagramie. Zwykle odpowiadam tego samego dnia.",
+    "mailtoSubject": "[Anna Ciok Ceramics] {topic}",
+    "mailtoTruncated": "Wiadomość została skrócona — wklej resztę przed wysłaniem",
+    "sideH": "Najszybciej złapiesz mnie tu",
+    "lEmail": "E-mail",
+    "lIg": "Instagram",
+    "vIg": "@ania.ciok.art",
+    "lStudio": "Odbiór",
+    "vStudio": "Warszawa · odbiór po umówieniu",
+    "lShip": "Wysyłka",
+    "vShip": "Polska · nadanie w 1–3 dni roboczych",
+    "lReply": "Odpowiadam",
+    "vReply": "Zwykle tego samego dnia"
+  },
+  "shipping": {
+    "eyebrow": "Pomoc",
+    "h1": "Dostawa <em>i zwroty.</em>",
+    "lead": "Jak pakuję ceramikę, ile trwa wysyłka i co zrobić, jeśli coś pójdzie nie po myśli. Wszystko w jednym miejscu, przed zakupem.",
+    "toc": "Na tej stronie",
+    "toc1": "Wysyłka",
+    "toc2": "Czas realizacji",
+    "toc3": "Pakowanie",
+    "toc4": "Odbiór osobisty",
+    "toc5": "Zwroty",
+    "toc6": "Uszkodzenia",
+    "updated": "Aktualizacja: czerwiec 2026",
+    "s1H": "Wysyłka",
+    "s1P": "Prace wysyłam <strong>Paczkomatem InPost (od 20 zł)</strong> albo <strong>kurierem InPost (30 zł)</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
+    "s1Li1": "Paczkomat InPost, cała Polska — od 20 zł",
+    "s1Li1b": "Kurier InPost, cała Polska — 30 zł",
+    "s1Li2": "Odbiór osobisty w Warszawie — gratis",
+    "s1Li3": "Wysyłka zagraniczna — napisz do mnie, wycenię ją indywidualnie",
+    "s2H": "Czas realizacji",
+    "s2P": "Prace z czerwcowego dropu są gotowe i czekają w Polsce, więc nie ma tu czasu produkcji. Paczkę nadaję w ciągu <strong>1–3 dni roboczych</strong> od zaksięgowania płatności, a InPost dostarcza ją zwykle następnego dnia roboczego po nadaniu.",
+    "s2Note": "Pakuję wszystko sama, między pracą w studiu a kolejnymi wypałami. Jeśli zależy Ci na konkretnym terminie, napisz — sprawdzę, co da się zrobić.",
+    "s3H": "Pakowanie",
+    "s3P": "Ceramikę owijam ręcznie: folia, tektura i dużo wypełnienia, żeby nic nie przesuwało się w pudełku. Opakowanie oznaczam jako kruche i ograniczam plastik tam, gdzie mogę to zrobić bez ryzyka dla pracy.",
+    "s4H": "Odbiór osobisty",
+    "s4P": "Jeśli jesteś w Warszawie albo będziesz przejazdem, możesz odebrać zamówienie osobiście. Odbiór jest bezpłatny i umawiamy go mailowo na konkretny dzień oraz godzinę; to nie jest stały punkt z regularnymi godzinami otwarcia.",
+    "s5H": "Zwroty",
+    "s5P": "Kupując jako konsument, możesz odstąpić od umowy w ciągu <strong>14 dni</strong> od otrzymania przesyłki, bez podawania przyczyny. Zwrot rozpoczniesz na <zlink>stronie zwrotów</zlink> — wystarczy numer zamówienia. Możesz też napisać na <link>hej@ciok.art</link>.",
+    "s5Li1": "Praca powinna wrócić nieuszkodzona, najlepiej w oryginalnym opakowaniu",
+    "s5Li2": "Koszt odesłania jest po stronie kupującego",
+    "s5Li3": "Pieniądze zwracam w ciągu 14 dni od otrzymania pracy z powrotem",
+    "s6H": "Gdyby coś dotarło uszkodzone",
+    "s6P": "Ceramika jest krucha, a droga paczki bywa różna. Jeśli przesyłka dotrze uszkodzona, zrób proszę zdjęcia zawartości i opakowania, a potem wyślij je do mnie tego samego dnia. Wymienię pracę na inną z dropu albo zwrócę pełną kwotę wraz z kosztem wysyłki — wybór należy do Ciebie."
+  },
+  "terms": {
+    "eyebrow": "Dokumenty",
+    "h1": "Regulamin <em>sklepu.</em>",
+    "lead": "Zasady zakupów w sklepie Anna Ciok Ceramics. Prosto i po ludzku, żeby dało się je przeczytać przed kliknięciem „kup”.",
+    "toc": "Spis treści",
+    "toc1": "§1 Postanowienia ogólne",
+    "toc2": "§2 Zamówienia",
+    "toc3": "§3 Ceny i płatność",
+    "toc4": "§4 Realizacja i wysyłka",
+    "toc5": "§5 Odstąpienie od umowy",
+    "toc6": "§6 Reklamacje",
+    "toc7": "§7 Postanowienia końcowe",
+    "updated": "Wersja: czerwiec 2026",
+    "s1H": "§1 Postanowienia ogólne",
+    "s1P1": "Sklep internetowy Anna Ciok Ceramics prowadzi pracownia ceramiczna Anny Ciok z siedzibą w Warszawie. Ze sprzedawcą skontaktujesz się pod adresem <link>hej@ciok.art</link>.",
+    "s1P2": "W sklepie sprzedaję ręcznie malowane prace ceramiczne. Każda praca jest jedynym egzemplarzem — po sprzedaży znika z oferty i nie jest odtwarzana jako identyczna sztuka.",
+    "s2H": "§2 Zamówienia",
+    "s2P": "Zamówienie składasz przez dodanie wybranych prac do koszyka i potwierdzenie zakupu. Umowa sprzedaży zostaje zawarta po potwierdzeniu zamówienia i zaksięgowaniu płatności.",
+    "s2Li1": "Ze względu na jednostkowy charakter prac dana sztuka może zostać sprzedana tylko raz",
+    "s2Li2": "Jeśli z przyczyn losowych nie będę mogła zrealizować zamówienia, poinformuję Cię o tym i zwrócę pełną kwotę",
+    "s3H": "§3 Ceny i płatność",
+    "s3P": "Wszystkie ceny są podane w złotych polskich (PLN) i są cenami brutto. Koszt wysyłki zobaczysz w koszyku przed potwierdzeniem zakupu. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
+    "s4H": "§4 Realizacja i wysyłka",
+    "s4P": "Zamówienia nadaję w ciągu 1–3 dni roboczych od zaksięgowania płatności. Szczegóły kosztów, terminów i odbioru osobistego znajdziesz na stronie <link>Dostawa i zwroty</link>.",
+    "s5H": "§5 Odstąpienie od umowy",
+    "s5P": "Konsument ma prawo odstąpić od umowy w ciągu 14 dni od otrzymania pracy, bez podawania przyczyny. Oświadczenie wystarczy przesłać mailem. Zwracana praca powinna być nieuszkodzona; koszt odesłania ponosi kupujący, a zwrot środków następuje w ciągu 14 dni od otrzymania pracy z powrotem.",
+    "s6H": "§6 Reklamacje",
+    "s6P": "Jeśli praca dotrze uszkodzona albo niezgodna z opisem, możesz złożyć reklamację mailowo, dołączając zdjęcia. Rozpatruję ją w ciągu 14 dni i, zależnie od Twojego wyboru, wymieniam pracę albo zwracam pełną kwotę wraz z kosztem wysyłki.",
+    "s7H": "§7 Postanowienia końcowe",
+    "s7P": "W sprawach nieuregulowanych regulaminem stosuje się przepisy prawa polskiego, w tym ustawę o prawach konsumenta i Kodeks cywilny. Ewentualne zmiany regulaminu nie wpływają na zamówienia złożone przed ich wejściem w życie."
+  },
+  "privacy": {
+    "eyebrow": "Dokumenty",
+    "h1": "Polityka <em>prywatności.</em>",
+    "lead": "Jakie dane zbieram, po co i jak długo je przechowuję. Krótko, bo to mała pracownia i zbieram tylko to, co potrzebne.",
+    "toc": "Spis treści",
+    "toc1": "Administrator",
+    "toc2": "Jakie dane",
+    "toc3": "Cel i podstawa",
+    "toc4": "Czas przechowywania",
+    "toc5": "Pliki cookies",
+    "toc6": "Twoje prawa",
+    "updated": "Aktualizacja: czerwiec 2026",
+    "s1H": "Administrator danych",
+    "s1P": "Administratorem Twoich danych jest pracownia ceramiczna Anny Ciok z siedzibą w Warszawie. W sprawach związanych z danymi osobowymi napisz na <link>hej@ciok.art</link>.",
+    "s2H": "Jakie dane zbieram",
+    "s2Li1": "Dane potrzebne do realizacji zamówienia — imię, adres wysyłki, e-mail i telefon",
+    "s2Li2": "Treść wiadomości, którą wysyłasz do mnie mailowo",
+    "s2Li4": "Dane płatności potrzebne do opłacenia zamówienia — przetwarzane bezpośrednio przez <link>Stripe</link>; pełne dane Twojej płatności nie trafiają na moje serwery",
+    "s2Li3": "Podstawowe dane techniczne przeglądarki, potrzebne do działania strony i koszyka",
+    "s2P": "Nie zbieram danych, których nie potrzebuję, i nie sprzedaję ich nikomu.",
+    "s3H": "Cel i podstawa przetwarzania",
+    "s3P": "Dane przetwarzam po to, żeby zrealizować zamówienie, odpowiedzieć na wiadomość, obsłużyć płatność i spełnić obowiązki podatkowe. Płatności obsługuje <link>Stripe</link>, działając jako zewnętrzny operator — nie widzę ani nie przechowuję pełnych danych Twojej karty. Podstawą jest wykonanie umowy oraz, w przypadku rozliczeń, obowiązek prawny.",
+    "s4H": "Czas przechowywania",
+    "s4P": "Dane zamówień przechowuję tak długo, jak wymagają tego przepisy podatkowe. Korespondencję mailową usuwam, gdy sprawa zostaje załatwiona, chyba że dalszy kontakt wymaga jej zachowania.",
+    "s5H": "Pliki cookies",
+    "s5P": "Strona używa niezbędnych plików cookies i pamięci przeglądarki, żeby zapamiętać zawartość koszyka. Jeśli wyrazisz zgodę, mogą działać także narzędzia analityczne i marketingowe. Podczas płatności <link>Stripe</link> zapisuje własne pliki cookies potrzebne do bezpiecznego przetworzenia płatności i zapobiegania nadużyciom.",
+    "s6H": "Twoje prawa",
+    "s6P": "Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia oraz ograniczenia przetwarzania. Wystarczy, że napiszesz — odpowiem najszybciej, jak potrafię."
+  },
+  "notes": {
+    "kubki": [
+      "Błękitny kwiat z okrągłą główką i liśćmi w jodełkę. Prosty motyw prowadzi pionowo przez jasny kubek.",
+      "Błękitna palma z brązowymi owocami i kreskowanymi liśćmi. Motyw rozkłada się szeroko na jasnym kubku, podkreślony drobnymi brązowymi akcentami przy brzegu.",
+      "Błękitny kwiat na brązowej łodydze, z liśćmi w jodełkę i kropkami przy rancie. Motyw rozkłada się symetrycznie na jasnej ścianie kubka.",
+      "Błękitny wachlarz z jasnymi, promienistymi liniami na boku kubka. Motyw opada spod górnej krawędzi szerokim, spokojnym łukiem.",
+      "Błękitna cytryna z białymi nacięciami na jasnym kubku. Czarne kreski przy rancie i u dołu układają się w prosty, graficzny rytm.",
+      "Szerokie brązowe pasy i cienkie błękitne linie na jasnej formie. Pionowy rytm biegnie od dołu ku lekko nierównemu brzegowi.",
+      "Brązowe liście z jasnymi żyłkami i błękitne kreski przy rancie. Motyw biegnie ukośnie po jasnej formie, jak spokojna gałązka.",
+      "Błękitny kaktus opuncji z jasnymi wydrapanymi liniami na kremowym kubku. Motyw biegnie ukośnie po ściance, z drobną terakotową kropką i akcentami przy rancie.",
+      "Błękitne liście z jasnymi żyłkami na kremowym kubku i drobne terakotowe nacięcia przy rancie. Motyw wspina się skośnie po boku, tworząc spokojny, roślinny rytm.",
+      "Błękitna muszla z białymi żłobieniami i terakotowymi akcentami przy rancie. Linie układają się wachlarzowo, jak spokojny morski rytm.",
+      "Błękitna cytryna z białymi kreskami i terakotowe prostokąty przy brzegach kubka. Motyw trzyma środek, a rdzawe znaki układają się w spokojny rytm dookoła.",
+      "Błękitne ryby układają się wokół jasnej rozgwiazdy, z terakotowymi kropkami przy rancie. Motyw płynie po ściance kubka falującym, morskim rytmem.",
+      "Błękitny półokrąg z jasnymi promieniami schodzi spod rantu kubka. Motyw rozkłada się wachlarzem po białej, prostej formie.",
+      "Terakotowa cytryna z jasnymi nacięciami i błękitne prostokąty przy brzegach. Równy rytm niebieskich plam obiega kubek od góry i od dołu.",
+      "Terakotowa palma z białymi liniami i czarnymi owocami pod kropkowanym rantem. Liście rozchodzą się szeroko po boku kubka w spokojnym, wakacyjnym rytmie.",
+      "Terakotowy kwiat na długiej łodydze i liście w jodełkę. Motyw biegnie pionowo przez kubek, przecięty spokojnym poziomym rytmem.",
+      "Terakotowa cytryna z białymi kreskami na jasnym kubku. Czarne prostokąty przy rancie i dole trzymają motyw w spokojnym rytmie.",
+      "Brązowe pętle malowane szerokim, przejrzystym gestem na jasnym kubku. Motyw biegnie poziomymi pasami, jak miękka wstążka oplatająca formę.",
+      "Terakotowe kaktusy z jasnymi, pionowymi żłobieniami na kremowym kubku. Czarne półkola na rancie prowadzą spokojny rytm dookoła formy.",
+      "Terakotowe saguaro z białymi, wydrapanymi liniami na jasnym kubku. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+      "Czarny kwiat z okrągłymi główkami i pasiastymi liśćmi na jasnym kubku. Motyw wyrasta pionowo, a liście rozkładają się szeroko wokół formy.",
+      "Czarny kwiat z jednym szarym płatkiem i kropkami nad koroną. Liście w jodełkę prowadzą motyw pionowo po jasnym kubku.",
+      "Czarny kwiat z okiem i jasną gwiazdą w środku. Płatki rozchodzą się promieniście po zaokrąglonej ścianie kubka.",
+      "Czarny kwiat z okrągłą główką, jasnym punktem i liśćmi w jodełkę. Pionowa łodyga prowadzi motyw spokojnie przez jasny kubek.",
+      "Czarny kwiat z falistym środkiem otoczonym pierścieniem drobnych płatków na jasnym kubku. Pionowa łodyga i dwa liście z jasnym rysunkiem żyłek podkreślają spokojny, graficzny rytm.",
+      "Czarny byk z jasną girlandą na boku i terakotowymi kreskami przy rancie. Motyw stoi spokojnie na jasnej formie, a drobny rytm u góry domyka kubek.",
+      "Czarne oko z jasnym środkiem i czteroramienną gwiazdą na kremowym kubku. Liściasty otok z błękitnymi kropkami prowadzi motyw dookoła formy.",
+      "Czarne kwiaty z jasnymi, promienistymi liniami na kremowym kubku. Motyw rozchodzi się swobodnie po ściankach, miejscami ucięty przy brzegu.",
+      "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie."
+    ],
+    "wazony": [
+      "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła.",
+      "Błękitna palma z terakotowymi owocami i pionowe paski przy brzegu. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+      "Brązowe pasy i cienkie błękitne linie biegną pionowo po jasnym wazonie. Rytm zwęża się przy szyjce i rozchodzi na wypukłych bokach.",
+      "Błękitne płaty opuncji z jasnymi liniami na kremowym wazonie, z terakotowym wnętrzem widocznym przy otworze. Miękki rytm owalnych segmentów wspina się ukośnie po zaokrąglonej formie.",
+      "Błękitna palma z terakotowymi owocami i pasami na rancie. Liście rozchodzą się szeroko po zaokrąglonej formie.",
+      "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw układa się w poziome pasy i biegnie dookoła formy miękkim, falującym rytmem.",
+      "Czarna palma z białym żyłkowaniem i terakotowymi owocami na jasnym, zaokrąglonym wazonie. Liście rozchodzą się szeroko po formie, a przy rancie powtarzają się terakotowe pionowe kreski i drobne kropki.",
+      "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala.",
+      "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie."
+    ],
+    "wazony-srednie": [
+      "Czarne saguaro i terakotowe słońca na jasnym, zaokrąglonym brzuścu. Pustynny rytm wspina się pionowo pod terakotowym rantem z białymi kropkami.",
+      "Czarny kwiat na terakotowej łodydze, z liśćmi w jodełkę i kropkami nad płatkami. Pionowe kreski przy rancie powtarzają rytm żyłek na liściach.",
+      "Czarna muszla z jasnymi, pionowymi liniami i błękitnym rantem. Spiralny motyw wspina się po zaokrąglonym boku w spokojnym rytmie.",
+      "Duże czarne kaktusy z jasnymi nacięciami i terakotowy wzór pod brzegiem. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+      "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala."
+    ],
+    "wazony-duze": [
+      "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
+      "Czarny półksiężyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
+      "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+      "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi."
+    ],
+    "talerzyki": [
+      "Czarna muszla z białymi, pionowymi liniami na jasnym dnie talerzyka. Terakotowe kreski na falowanym brzegu prowadzą rytm dookoła formy.",
+      "Czarne saguaro z białymi nacięciami i terakotowy falowany rant z białymi kropkami. Pustynny motyw znajduje się w środku, a dekoracyjny brzeg prowadzi rytm dookoła.",
+      "Czarny kwiat na terakotowej łodydze i liście w jodełkę. Terakotowe kreski biegną równym rytmem dookoła falowanego rantu.",
+      "Czarna palma z jasnym unerwieniem i terakotowymi owocami. Rdzawe paski na brzegu prowadzą wakacyjny rytm dookoła talerzyka.",
+      "Terakotowa muszla z białymi liniami na środku talerzyka. Czarne prostokąty na falowanym rancie prowadzą spokojny, morski rytm.",
+      "Terakotowy kwiat na czarnej łodydze z liśćmi w jodełkę. Motyw biegnie przez środek talerzyka, a falowany brzeg miękko go domyka.",
+      "Terakotowe saguaro z białymi nacięciami na jasnym dnie i czarnym rantem w białe kropki. Pustynny motyw wyrasta pionowo w środku falowanej formy.",
+      "Terakotowa palma z czarnymi owocami i kreskowanymi liśćmi. Czarne półkola na rancie prowadzą rytm dookoła talerzyka.",
+      "Terakotowa muszla z jasnymi, wydrapanymi liniami na dnie talerzyka. Falowany brzeg powtarza miękki ruch morskiego zawijasa.",
+      "Błękitna cytryna w białe kropki na środku talerzyka i czarne pionowe paski na rancie. Prosty rytm obiega brzeg, zostawiając jasny środek dla owocowego motywu.",
+      "Błękitna cytryna w środku i czarne pasy z jasnymi kreskami na falowanym brzegu. Motyw zbiera się spokojnie w centrum, a rant prowadzi go dookoła rytmicznymi znakami.",
+      "Czarna gałązka z trzema okrągłymi owocami i liśćmi w jodełkę. Motyw wyrasta ze środka i spokojnie rozkłada się po jasnym wnętrzu.",
+      "Błękitny kaktus w środku i terakotowa falbanka z białymi kropkami przy rancie. Pustynny motyw spokojnie rozkłada się na jasnym wnętrzu talerzyka.",
+      "Błękitna palma z terakotowymi owocami i kropkami na rancie. Wakacyjny motyw rozkłada się lekko po jasnym dnie talerzyka."
+    ],
+    "talerze-srednie": [
+      "Terakotowy kaktus z jasnymi liniami i czarnymi prostokątami na rancie. Pustynny motyw stoi mocno pośrodku talerza, a brzeg wybija równy rytm.",
+      "Czarne saguaro z terakotowymi kolcami na jasnym dnie talerza. Terakotowa falbanka z białymi kropkami prowadzi rytm dookoła brzegu.",
+      "Czarna postać w szerokim kapeluszu i pasiasych spodniach na jasnym dnie talerza. Terakotowa falbanka z białymi kropkami prowadzi rytm wokół brzegu.",
+      "Czarny osioł z białą girlandą na boku i terakotowe prostokątne znaki z jasną kropką na rancie. Motyw stoi spokojnie w środku, a brzeg wybija równy rytm dookoła talerza.",
+      "Czarne saguaro z białymi kreskami i terakotowe prostokąty na rancie. Pustynny motyw stoi w centrum, a brzeg wybija równy, ciepły rytm.",
+      "Czarna palma z białym kreskowaniem, terakotowymi owocami i falistą terakotową bordiurą przy brzegu. Liście rozchodzą się wachlarzem, a prążkowany pas prowadzi rytm dookoła talerza.",
+      "Czarna postać w szerokim kapeluszu i pasiastej spódnicy na jasnym tle. Terakotowy falowany rant z białymi kropkami prowadzi rytm dookoła talerza.",
+      "Czarny kwiat z pasiastą tarczą i liśćmi na prostej łodydze. Motyw rośnie pionowo przez jasny talerz, spokojnie i rytmicznie.",
+      "Czarny kwiat z kropkowanym środkiem i dwoma liśćmi w jodełkę. Prosty pion łodygi porządkuje motyw na jasnym talerzu.",
+      "Czarny, pionowy motyw z trzema kółkami i falistymi skrzydłami z białymi kreskami. Rysunek rozkłada się symetrycznie pośrodku jasnego talerza.",
+      "Błękitna palma z brązowymi owocami i promienistym rantem w brązowe kreski z jasnymi kropkami. Liście rozkładają się szeroko, a brzeg wybija równy, słoneczny rytm.",
+      "Brązowa muszla z cienkimi jasnymi liniami i błękitny falowany rant w białe kropki. Zawijasy brzegu powtarzają spiralny ruch muszli.",
+      "Brązowy kaktus z drobnymi błękitnymi pędami i falowaną błękitną ramką. Pustynny motyw rośnie pionowo w środku talerza, a brzeg prowadzi go miękką falą.",
+      "Błękitna cytryna z drobnymi białymi kreskami w środku talerza. Brązowe prostokąty z białą kropką i cienką linią układają się na rancie w równy, promienisty rytm.",
+      "Brązowa palma z jasnymi nacięciami i błękitnymi owocami. Błękitne prostokąty biegną dookoła rantu jak spokojny, wakacyjny rytm.",
+      "Błękitna muszla z cienkimi jasnymi liniami i brązowa falowana obwódka. Motyw rośnie warstwami od dna talerza, a brzeg prowadzi go miękkim rytmem.",
+      "Czarna butelka z białym pasem kresek, kielich i gwiazda na jasnym talerzu. Motywy stoją obok siebie jak spokojna, nocna martwa natura.",
+      "Czarna gałązka z okrągłym owocem i parami liści w drobne, jasne kreski. Pionowy motyw układa się spokojnie przez środek talerza.",
+      "Brązowa gałązka z okrągłym owocem i liśćmi w jodełkę z jasnymi kreskami. Pionowy motyw rozkłada się spokojnie przez środek talerza.",
+      "Czarna gałązka z pięcioma okrągłymi owocami i dwoma liśćmi w faliste białe linie. Motyw rośnie pionowo przez jasne dno talerza.",
+      "Czarna cytryna z białymi kreskami w środku i terakotowe promienie z białą kropką na rancie. Wakacyjny rytm rozchodzi się równo dookoła brzegu.",
+      "Terakotowa muszla z cienkimi jasnymi liniami w środku i czarne promienie z białą kropką na rancie. Motyw spiralnie zawija się w centrum, a brzeg wybija równy rytm.",
+      "Czarna, falująca linia z jasnym kreskowaniem i terakotowa kropka nad nią. Abstrakcyjny motyw swobodnie biegnie po jasnym dnie talerza.",
+      "Terakotowa palma z białym kreskowaniem, czarnymi owocami i czarną falbanką z białymi kropkami na brzegu. Liście rozchodzą się wachlarzem, a rant prowadzi rytm dookoła talerza.",
+      "Czarna muszla spiralna z jasnymi liniami i terakotowa falowana obwódka z białymi paskami. Motyw kręci się od środka, a brzeg prowadzi go miękkim rytmem.",
+      "Terakotowy owoc z drobnymi białymi kreskami w centrum i czarne promienie z białą kropką na rancie. Motyw stoi mocno pośrodku, a brzeg wybija równy, kontrastowy rytm.",
+      "Czarna postać w szerokim kapeluszu i falistym kołnierzu, otoczona terakotowymi kreskami na rancie. Ludowy motyw stoi spokojnie w centrum, a brzeg wybija równy rytm.",
+      "Czarna postać w szerokim kapeluszu i szerokiej spódnicy z jasnym wzorem, otoczona brązowymi prostokątami z białą kropką na rancie. Motyw rysuje się pionowo przez środek talerza.",
+      "Czarny osioł z białym wzorem na boku i terakotowa falbanka z białymi kropkami przy brzegu. Motyw stoi spokojnie w środku, a rant prowadzi rytm dookoła.",
+      "Czarna palma z białym kreskowaniem, terakotowymi owocami i terakotowymi paskami na rancie. Wakacyjny motyw rozchodzi się wachlarzem liści, a brzeg wybija równy rytm.",
+      "Czarny kwiat z pasiastą tarczą, kropkowanym środkiem i dwoma falistymi liśćmi. Pionowa łodyga porządkuje motyw na jasnym talerzu.",
+      "Czarny osioł z białym wzorem uprzęży i terakotowa falowana obwódka z białymi kreskami. Motyw stoi spokojnie w profilu, a brzeg prowadzi rytm dookoła.",
+      "Brązowa palma z jasnym żyłkowaniem, błękitnymi owocami i błękitną falbanką z białymi kropkami. Wakacyjny motyw rozchodzi się szeroko po jasnym dnie talerza.",
+      "Terakotowa palma z białymi liniami, czarnymi owocami i czarną falowaną obwódką z jasnymi kreskami. Pustynny motyw stoi w centrum, a brzeg prowadzi go miękkim rytmem.",
+      "Czarny osioł z białą girlandą na boku i terakotowa falbanka z białymi kropkami na brzegu. Ludowy motyw stoi w centrum talerza, a rant wybija równy rytm.",
+      "Czarny kwiat z kropkowanym środkiem, okrągłymi płatkami i liśćmi w jodełkę. Prosty pion łodygi układa motyw spokojnie na jasnym talerzu.",
+      "Czarna palma z białymi liniami, brązowymi owocami i brązową falbanką z białymi kropkami. Liście rozchodzą się szeroko, a brzeg prowadzi wakacyjny rytm dookoła.",
+      "Czarna postać w szerokim kapeluszu i spódnicy w jasną kratę, otoczona terakotową falbanką z białymi kreskami. Ludowy motyw stoi pionowo w centrum talerza.",
+      "Czarna postać w szerokim kapeluszu i pasiastej kurtce z kratowanymi nogawkami. Terakotowe kreski na rancie wybijają równy rytm dookoła brzegu."
+    ],
+    "talerze-duze": [
+      "Brązowy osioł z białą girlandą na boku i czarną falą przy rancie. Motyw stoi spokojnie w środku, a pasiasty brzeg prowadzi rytm dookoła.",
+      "Terakotowa muszla z białymi liniami na jasnym dnie talerza. Czarna falowana bordiura z jasnym kreskowaniem prowadzi rytm dookoła brzegu.",
+      "Terakotowa muszla w centrum talerza, przecięta jasnymi pionowymi liniami. Czarny falowany rant prowadzi wokół niej rytm krótkich kresek.",
+      "Czarny kaktus z jasnymi rytymi kolcami i terakotową falą przy brzegu. Pustynny motyw stoi pośrodku talerza, a falowana obwódka prowadzi rytm dookoła.",
+      "Błękitne kwiaty z jasnymi środkami i cienkimi liniami płatków. Motyw rozsypuje się po szerokim talerzu spokojnym, miękkim rytmem.",
+      "Błękitna cytryna w centrum i czarne pasy na szerokim rancie. Rytm obwódki prowadzi wzrok do jasnych nacięć rozsypanych na owocu.",
+      "Błękitny liść z jasnymi żyłkami przecina jasne dno talerza. Linie biegną spokojnie wzdłuż formy, od wąskiego ogonka po zaokrąglony brzeg.",
+      "Błękitny wieniec liści z białym kreskowaniem i białą gwiazdą pośrodku. Terakotowe znaki z jasnymi nacięciami na rancie wybijają równy rytm dookoła talerza.",
+      "Terakotowe oko z promienistymi liniami i błękitne prostokąty na rancie. Motyw rozchodzi się od środka, a brzeg wybija równy, jasny rytm."
+    ],
+    "duze-michy": [
+      "Błękitne kwiaty, liście i muszla rozłożone we wnętrzu jasnej misy. Falowany błękitny pas na zewnątrz prowadzi spokojny rytm dookoła formy.",
+      "Czarne kwiaty na cienkich łodygach i terakotowe liście w jodełkę. Motyw biegnie lekko po wnętrzu i falowanym brzegu misy.",
+      "Terakotowe palmy z drobnym kreskowaniem i czarnymi owocami. Motyw układa się dookoła wnętrza, a falowany brzeg dodaje mu ruchu.",
+      "Brązowe kaktusy saguaro i czarne romby z terakotową kropką. Pustynny motyw biegnie dookoła jasnego wnętrza misy.",
+      "Czarny ogród w środku misy: kropkowany kwiat, liście w jodełkę i giętkie łodygi. Motyw swobodnie rozchodzi się po jasnym wnętrzu i podchodzi pod zaokrąglony brzeg.",
+      "Czarne palmy z białym żyłkowaniem i terakotowymi owocami na jasnym wnętrzu misy. Motyw kołysze się po wnętrzu, a terakotowa falowana linia przy zewnętrznym brzegu dopowiada miękki rytm."
+    ],
+    "miski-falowane": [
+      "Czarne saguaro z drobnymi terakotowymi wypustkami i okrągłymi słońcami. Pustynny motyw rozchodzi się po falowanym wnętrzu misy.",
+      "Czarne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Falowany brzeg prowadzi morski motyw miękkim rytmem dookoła.",
+      "Czarne kaktusy z jasnymi nacięciami i terakotowe owale na jasnym tle. Motyw krąży po wnętrzu misy, podążając za falowanym brzegiem.",
+      "Czarne maki z cienkimi żyłkami i terakotowe liście w jodełkę. Motyw krąży po jasnym wnętrzu, podkreślając falowany brzeg misy.",
+      "Błękitne kaktusy z białymi nacięciami i terakotowe kropki na jasnym wnętrzu misy. Pustynny motyw płynie po falowanym brzegu lekkim, nieregularnym rytmem.",
+      "Błękitne palmy z terakotowymi owocami na jasnym wnętrzu misy. Motyw płynie dookoła po falowanym brzegu.",
+      "Terakotowe palmy z jasnym kreskowaniem w jodełkę i czarnymi owocami na jasnym wnętrzu misy. Motyw płynie dookoła falowanej formy, a czarna falowana taśma na zewnątrz dopowiada rytm.",
+      "Błękitne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Terakotowy falowany pas na zewnątrz podkreśla brzeg i prowadzi morski rytm dookoła formy.",
+      "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi.",
+      "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+    ]
+  },
+  "error": {
+    "heading": "Coś się zacięło",
+    "body": "Strona napotkała błąd. Odśwież ją proszę — zwykle to pomaga.",
+    "retry": "Odśwież stronę"
+  },
+  "notFound": {
+    "heading": "Tej strony tu nie ma",
+    "body": "Mogła zostać przeniesiona albo nigdy nie powstać. Wróć do sklepu — tam czekają wszystkie dostępne prace.",
+    "home": "Strona główna",
+    "shop": "Przejdź do sklepu"
+  },
+  "meta": {
+    "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 125 prac, każda tylko jedna.",
+    "gallery": "Nowa seria editorialowych zdjęć Anny Ciok: portrety, taras, pracownia, światło i ręcznie malowana ceramika z czerwcowego dropu 2026.",
+    "ogImageAlt": "Anna Ciok Ceramics — ręcznie malowany ceramiczny kubek",
+    "collections": {
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
+      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
+      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Trzydzieści dziewięć jedynych egzemplarzy w kolekcji Anny Ciok.",
+      "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
+      "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
+    }
+  },
+  "deliveryNotice": {
+    "title": "Informacja o dostawie w lipcu",
+    "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
+    "p2": "Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane od 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.",
+    "p3": "Wysyłki będą realizowane od 10 lipca."
+  },
+  "consent": {
+    "title": "Pliki cookie",
+    "body": "Używam plików cookie do analityki i marketingu. Możesz odmówić — zakupy działają tak samo.",
+    "accept": "Akceptuję",
+    "reject": "Odrzucam",
+    "more": "Polityka prywatności"
+  }
+}

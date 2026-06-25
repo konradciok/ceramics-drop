@@ -1,0 +1,9 @@
+# Append to C:\Windows\System32\drivers\etc\hosts (Notepad as Administrator).
+# Fixes DNS_PROBE_FINISHED_NXDOMAIN for *.local on Windows (no mDNS).
+#
+# Option A — via HA Caddy (HTTPS, same as immich/grafana): point at the Caddy host.
+# 192.168.188.34	studio-admin-konradciok.local studio-admin.local
+#
+# Option B — direct HTTP to this dev PC (nginx on :8090): point at your LAN IP.
+# Replace 192.168.188.110 if your machine uses a different address.
+# 192.168.188.110	studio-admin-konradciok.local studio-admin.local

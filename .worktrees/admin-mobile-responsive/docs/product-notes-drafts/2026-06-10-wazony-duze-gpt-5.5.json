@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "category": "wazony-duze",
+  "generatedAt": "2026-06-10T17:55:54.702Z",
+  "itemCount": 5,
+  "model": "gpt-5.5",
+  "items": [
+    {
+      "category": "wazony-duze",
+      "productId": "d06",
+      "displayNum": "01",
+      "image": "/uploads/waza-duza-7.webp",
+      "currentNote": "Homar kreślony jednym pędzlem, od czułków po ogon. Morski ukłon w stronę dużej formy.",
+      "proposedNote": "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem."
+    },
+    {
+      "category": "wazony-duze",
+      "productId": "d07",
+      "displayNum": "02",
+      "image": "/uploads/waza-duza-8.webp",
+      "currentNote": "Księżyc, gałązka w jodełkę i mężczyzna w kapeluszu. Mała, obrotowa opowieść na brzuścu.",
+      "proposedNote": "Czarny księżyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm."
+    },
+    {
+      "category": "wazony-duze",
+      "productId": "d09",
+      "displayNum": "03",
+      "image": "/uploads/waza-duza-10.webp",
+      "currentNote": "Terakotowa palma w jodełkę z czarnymi owocami. Brzeg w paski wygląda jak markiza w słońcu.",
+      "proposedNote": "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie."
+    },
+    {
+      "category": "wazony-duze",
+      "productId": "g01",
+      "displayNum": "04",
+      "image": "/uploads/duza-waza-122.webp",
+      "currentNote": "Czarna wstęga biegnie dookoła brzuśca i wypełnia się drobnym prążkiem. Jeden ruch, dużo cierpliwości.",
+      "proposedNote": "Czarna palma z terakotowymi owocami i falbankową bordiurą przy krawędziach. Liście rozchodzą się wachlarzem, a rdzawe łuki spinają motyw dookoła formy."
+    },
+    {
+      "category": "wazony-duze",
+      "productId": "v09",
+      "displayNum": "05",
+      "image": "/uploads/waza-mala-9.webp",
+      "currentNote": "Czarne liście ułożone w długich rzędach od podstawy po kołnierz. Spokojny, rytmiczny wspinaczek na dużym wazonie.",
+      "proposedNote": "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala."
+    }
+  ]
+}
