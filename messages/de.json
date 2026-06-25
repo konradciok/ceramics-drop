@@ -1,0 +1,795 @@
+{
+  "returns": {
+    "eyebrow": "Rückgaben",
+    "heading": "Rückgabe einleiten",
+    "intro": "Gib deine Bestellnummer ein (sie ist in deiner Versandbestätigungsmail) und ich stelle dir ein Rückgabeetikett bereit. Du hast 14 Tage ab Lieferung.",
+    "label": "Bestellnummer",
+    "button": "Rückgabe einleiten",
+    "success": "Rückgabeanfrage erhalten. Ich schicke dir das Etikett per Mail, sobald InPost den Versand bestätigt.",
+    "ineligible": "Keine zurückgabefähige Bestellung gefunden. Überprüf die Nummer oder schreib an hej@ciok.art.",
+    "unavailable": "Rückgaben sind momentan nicht verfügbar. Versuche es später oder schreib an hej@ciok.art.",
+    "rateLimited": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
+    "error": "Etwas ist schief gelaufen. Bitte versuche es in Kürze erneut.",
+    "moreInfo": "Mehr über Versand und Rückgaben"
+  },
+  "announce": "Juni-Drop 2026 — 103 Teile, jedes einzeln",
+  "title": {
+    "home": "Anna Ciok Ceramics — Juni-Drop 2026",
+    "kubki": "Tassen",
+    "wazony": "Kleine Vasen",
+    "wazonySrednie": "Mittlere Vasen",
+    "wazonyDuze": "Große Vasen",
+    "talerzyki": "Kleine Teller",
+    "talerzeSrednie": "Mittlere Teller",
+    "talerzeDuze": "Große Teller",
+    "duzeMichy": "Große Schüsseln",
+    "miskiFalowane": "Schüsseln mit Wellenkante",
+    "koszyk": "Warenkorb",
+    "studio": "Atelier",
+    "kontakt": "Kontakt",
+    "dostawa": "Versand & Rückgaben",
+    "regulamin": "Nutzungsbedingungen",
+    "polityka": "Datenschutz",
+    "sklep": "Alle Teile",
+    "gallery": "Galerie",
+    "fineArtPrints": "Kunstdrucke"
+  },
+  "nav": {
+    "sklep": "Shop",
+    "gallery": "Galerie",
+    "kubki": "Tassen",
+    "wazony": "Kleine Vasen",
+    "wazonySrednie": "Mittlere Vasen",
+    "wazonyDuze": "Große Vasen",
+    "talerzyki": "Kleine Teller",
+    "talerzeSrednie": "Mittlere Teller",
+    "talerzeDuze": "Große Teller",
+    "duzeMichy": "Große Schüsseln",
+    "miskiFalowane": "Schüsseln mit Wellenkante",
+    "studio": "Atelier",
+    "kontakt": "Kontakt",
+    "fineArtPrints": "Drucke"
+  },
+  "aria": {
+    "cart": "Warenkorb",
+    "zoom": "Ansehen",
+    "close": "Schließen",
+    "prev": "Vorherig",
+    "next": "Nächstes",
+    "photo": "Foto",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "menuLabel": "Navigationsmenü",
+    "skipToContent": "Zum Hauptinhalt springen"
+  },
+  "footer": {
+    "tagline": "Langsam gemalt, ein Stück nach dem anderen.",
+    "blurb": "Annas kleines Keramik-Atelier. Jedes Motiv wird separat erstellt, von Hand bemalt und glasiert.",
+    "hShop": "Shop",
+    "hStudio": "Atelier",
+    "hInfo": "Information",
+    "hKontakt": "Kontakt",
+    "koszyk": "Warenkorb",
+    "oArtystce": "Über die Künstlerin",
+    "proces": "Wie es gemacht wird",
+    "dostawa": "Versand & Rückgaben",
+    "regulamin": "Nutzungsbedingungen",
+    "polityka": "Datenschutz",
+    "copy": "© 2026 Anna Ciok Ceramics — jedes Stück ist einzeln"
+  },
+  "product": {
+    "mug": "Tasse",
+    "vase": "Kleine Vase",
+    "midvase": "Mittlere Vase",
+    "bigvase": "Große Vase",
+    "dish": "Kleiner Teller",
+    "medplate": "Mittlerer Teller",
+    "plate": "Großer Teller",
+    "largebowl": "Große Schüssel",
+    "wavybowl": "Schüssel mit Wellenkante",
+    "moreFrom": "Mehr aus dieser Kollektion",
+    "seeAll": "Alle anzeigen",
+    "print": "Druck"
+  },
+  "gallery": {
+    "sold": "Hat ein Zuhause gefunden"
+  },
+  "galleryPage": {
+    "eyebrow": "Redaktionelle Galerie",
+    "title": "Neue Rahmen, <em>die gleiche Handschrift.</em>",
+    "lead": "Ein Lookbook aus einer neuen Fotoserie: Porträts, Terrassenlicht, Atelierkanten und Keramikdetails außerhalb des klassischen Produktrahmens.",
+    "ctaShop": "Teile durchsuchen",
+    "ctaStudio": "Über das Atelier",
+    "sequenceLabel": "Redaktionelle Fotografien",
+    "items": {
+      "photo01": {
+        "alt": "Anna-Ciok-Teller auf einem gewebten Teppich",
+        "title": "Vogel auf dem Teller",
+        "caption": "Ein detaillierter Ausschnitt der Zeichnung vor dem Weiß eines Produkthintergrundes."
+      },
+      "photo02": {
+        "alt": "Ein Stapel handbemalter Schüsseln und Tassen von Anna Ciok",
+        "title": "Kollektionsschichten",
+        "caption": "Teile zusammen: Linien, Rhythmen und Brauntöne, die zu einer Geschichte verschmelzen."
+      },
+      "photo03": {
+        "alt": "Anna-Ciok-Keramik arrangiert in der Nähe eines Fensters",
+        "title": "Regal im Licht",
+        "caption": "Ein Atelierrahmen mit fertigen Teilen, einer Lampe und weichem Fensterlicht."
+      },
+      "photo04": {
+        "alt": "Anna Ciok hält eine handbemalte Schüssel vor ihrem Gesicht",
+        "title": "Schüssel als Horizont",
+        "caption": "Ein Porträt, in dem das Gefäß Requisite, Schatten und Landschaftsstück wird."
+      },
+      "photo05": {
+        "alt": "Anna Ciok hält einen Teller über ihrem Kopf auf einer Terrasse",
+        "title": "Über der Terrasse",
+        "caption": "Die Keramik verlässt das Atelier: Wind, Himmel und eine einfache Geste statt Katalogstille."
+      },
+      "photo06": {
+        "alt": "Anna Ciok sitzt im Atelier mit einer handbemalten Vase",
+        "title": "Porträt mit Vase",
+        "caption": "Der Maßstab eines Teils wird in Händen am besten verstanden, nah an Gesicht und Körper."
+      },
+      "photo07": {
+        "alt": "Anna Ciok hält einen Teller mit schwarzem Auge-Motiv",
+        "title": "Auge auf dem Rand",
+        "caption": "Ein kleiner Teller wird zu einem grafischen Zeichen, nicht nur zu einem Tischobjekt."
+      },
+      "photo08": {
+        "alt": "Anna-Ciok-Teller und Tassen von Hand bemalt auf einem Tisch",
+        "title": "Tisch der Marken",
+        "caption": "Eine Nahansicht der Sammlung im natürlichen Licht: Palmen, Vögel, Blätter und Schatten."
+      },
+      "photo09": {
+        "alt": "Anna Ciok sitzt unter handbemalter Keramik",
+        "title": "Innerhalb der Sammlung",
+        "caption": "Ein Künstler, viele Teile und der sichtbare Umfang der Arbeit hinter dem Juni-Drop."
+      },
+      "photo10": {
+        "alt": "Ein Stuhl und Tisch in einem hellen Keramik-Atelier",
+        "title": "Atelierruhe",
+        "caption": "Ein leerer Arbeitsplatz deutet auf den normalen Rhythmus hin, der zwischen Fotositzungen zurückkehrt."
+      },
+      "photo11": {
+        "alt": "Ein Palmenmotiv-Teller im Schatten auf einem gewebten Teppich",
+        "title": "Palmenschatten",
+        "caption": "Ein grafisches Motiv trifft auf einen echten Schatten und befreit den Teller von einer steifen Produktpose."
+      },
+      "photo12": {
+        "alt": "Anna Ciok sitzt auf einer Terrasse mit einer handbemalten Schüssel",
+        "title": "Draußen",
+        "caption": "Die Schüssel wird in Bewegung und Licht gezeigt, näher an täglicher Nutzung als an Ausstattung."
+      },
+      "photo13": {
+        "alt": "Anna Ciok steht in der Nähe eines Fensters mit einer handbemalten Schüssel",
+        "title": "Am Fenster",
+        "caption": "Ein einfaches Porträt und neutrales Licht lassen die Form ohne theatralische Stilisierung sprechen."
+      },
+      "photo14": {
+        "alt": "Anna Ciok steht im Atelier mit einer handbemalten Schüssel",
+        "title": "Ganze Figur",
+        "caption": "Der breitere Rahmen hält Raum, Körper und Gefäß in einer Atelierlinie."
+      },
+      "photo15": {
+        "alt": "Anna Ciok hält eine handbemalte Vase im Wind",
+        "title": "Wind und Vase",
+        "caption": "Der letzte Rahmen lässt das Stück in Bewegung: nah an Händen, Licht und Wetter."
+      }
+    }
+  },
+  "filter": {
+    "label": "Teile filtern",
+    "all": "Alle",
+    "available": "Verfügbar",
+    "sold": "Verkauft",
+    "emptyAvailable": "Jedes Stück hier hat bereits ein Zuhause gefunden.",
+    "emptySold": "Noch nichts verkauft."
+  },
+  "selbar": {
+    "clear": "Löschen",
+    "go": "Zur Kasse",
+    "word": "{count, plural, one {Stück ausgewählt} other {Stücke ausgewählt}}",
+    "total": "· Summe"
+  },
+  "lightbox": {
+    "drop": "Juni-Drop",
+    "add": "In den Warenkorb",
+    "in": "Im Warenkorb",
+    "specDims": "Abmessungen",
+    "specTech": "Technik",
+    "specCopy": "Auflage",
+    "specTechVal": "Von Hand glasiert und bemalt",
+    "specCopyVal": "Nur eines hergestellt",
+    "approx": "ca.",
+    "permalink": "Produktseite ansehen →"
+  },
+  "cart": {
+    "emptyH": "Dein Warenkorb ist <em>leer</em>",
+    "emptyP": "Wähle Teile aus dem Juni-Drop. Klick auf eine Miniatur, um sie zu deiner Auswahl hinzuzufügen.",
+    "seeMugs": "Tassen ansehen",
+    "seeVases": "Kleine Vasen ansehen",
+    "seeMidvases": "Mittlere Vasen ansehen",
+    "seeBigvases": "Große Vasen ansehen",
+    "seeDishes": "Kleine Teller ansehen",
+    "seeMedplates": "Mittlere Teller ansehen",
+    "seePlates": "Große Teller ansehen",
+    "seeLargebowls": "Große Schüsseln ansehen",
+    "seeWavybowls": "Schüsseln mit Wellenkante ansehen",
+    "eyebrow": "Deine Auswahl",
+    "label": "Warenkorb",
+    "word": "{count, plural, one {Stück} other {Stücke}}",
+    "oneoff": "· einzeln",
+    "remove": "Entfernen",
+    "summary": "Zusammenfassung",
+    "pieces": "Teile",
+    "delivery": "Versand",
+    "free": "Kostenlos",
+    "total": "Summe",
+    "deliveryDetails": "Deine Daten",
+    "checkout": "Zur Zahlung",
+    "pay": "Jetzt zahlen",
+    "payProcessing": "Wird bearbeitet…",
+    "soldOut": "Einige Teile wurden gerade verkauft und aus deinem Warenkorb entfernt.",
+    "rateLimited": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
+    "checkoutError": "Zahlung konnte nicht eingeleitet werden. Bitte versuche es in Kürze erneut.",
+    "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
+    "fineprint": "Die Zahlung wird sicher von Stripe abgewickelt — Karte oder lokale Zahlungsmethoden."
+  },
+  "ship": {
+    "paczkomatT": "InPost Paketbox",
+    "paczkomatD": "Abholen von der gewählten Paketbox, normalerweise 1–2 Werktage nach Übergabe des Pakets.",
+    "paczkomatPrice": "ab {price}",
+    "courierT": "InPost Kurier",
+    "courierD": "Lieferung an deine Adresse, normalerweise 1–2 Werktage nach Paketübergabe.",
+    "pickupT": "Persönliche Abholung",
+    "pickupD": "In Warschau, nach Vereinbarung."
+  },
+  "delivery": {
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "street": "Straße",
+    "building": "Nr.",
+    "postCode": "Postleitzahl",
+    "city": "Stadt",
+    "lockerChosen": "Gewählte Box:",
+    "lockerUnavailable": "Paketbox-Auswahlstelle ist momentan nicht verfügbar."
+  },
+  "return": {
+    "okH": "Danke — <em>Bestellung erhalten.</em>",
+    "okP": "Die Zahlung war erfolgreich. Ich schicke dir die Bestätigung und die Rechnung per E-Mail.",
+    "processingH": "Zahlung wird bearbeitet…",
+    "processingP": "Wir warten auf Bestätigung von deiner Bank. Du kannst diese Seite gleich aktualisieren.",
+    "failH": "Zahlung fehlgeschlagen",
+    "failP": "Es wurden keine Gelder eingezogen. Geh zurück zum Warenkorb und versuche es erneut — die gewählten Teile warten noch auf dich.",
+    "back": "Zurück zur Startseite",
+    "cart": "Zurück zum Warenkorb"
+  },
+  "home": {
+    "heroEyebrow": "Juni-Drop 2026 — Nº 01",
+    "heroTitle": "Ein Stück, ein Original, <em>eine Handschrift.</em>",
+    "heroSub": "Hundert Keramikteile aus Annas kleinem Atelier: Tassen, kleine, mittlere und große Vasen, kleine Teller, große Teller, große Schüsseln und Schüsseln mit Wellenkante. Jedes Stück wird von Hand bemalt und einzeln glasiert, sodass du genau das wählst, das auf dem Foto zu sehen ist.",
+    "heroCta1": "Alle Teile durchsuchen",
+    "heroMetaName": "Tasse Nº 02",
+    "heroMetaDesc": "Blaue Palme",
+    "marquee": [
+      "von Hand bemalt",
+      "einzeln",
+      "einzeln glasiert",
+      "direkt aus dem Atelier"
+    ],
+    "colEyebrow": "Juni-Drop",
+    "colTitle": "Neun Kategorien, <em>neunzig-sechs Geschichten.</em>",
+    "colLead": "Durchsuche es wie eine Galerie, markiere deine Lieblingsteile und geh zur Kasse, wenn deine Auswahl fertig ist.",
+    "card": {
+      "mug": {
+        "num": "28 Stücke · 90 PLN je",
+        "desc": "Tassen für deinen täglichen Kaffee und Tee. Palmen, Zitronen, Muscheln und Kakteen mit Glasur auf hellem Ton.",
+        "cta": "Tasse wählen"
+      },
+      "vase": {
+        "num": "9 Stücke · 210 zł je",
+        "desc": "Bauchige Vasen für einen Ast, einige Tulpen oder einen Marktstrauß. Jede hat ihren eigenen Rhythmus aus Streifen und Zeichnungen.",
+        "cta": "Vase wählen"
+      },
+      "midvase": {
+        "num": "5 Stücke · 300 PLN je",
+        "desc": "Mittlere Vasen mit klarem Charakter — etwas zwischen kleinem und großem Format.",
+        "cta": "Vase wählen"
+      },
+      "bigvase": {
+        "num": "4 Stücke · 395 PLN je",
+        "desc": "Große Formen mit starker Präsenz: Palmen, Muscheln, Kakteen, ein Hummer und kleine Volksszenen auf warmem Weiß.",
+        "cta": "Vase wählen"
+      },
+      "dish": {
+        "num": "14 Stücke · 105 zł je",
+        "desc": "Kleine Teller für Schmuck, Olivenöl, Salz oder die kleinen Dinge, die sich am Nachtisch sammeln. Klein, aber voller Charakter.",
+        "cta": "Teller wählen"
+      },
+      "medplate": {
+        "num": "18 Stücke · 120 zł je",
+        "desc": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Knabbern, Servieren oder zur Dekoration — ⌀ 18 cm.",
+        "cta": "Mittleren Teller wählen"
+      },
+      "plate": {
+        "num": "9 Stücke · 270 zł je",
+        "desc": "Große Teller zum Servieren, Sammeln oder an der Wand aufhängen. Ein Esel, Palmen, Augen, Muscheln und bemalte Ränder.",
+        "cta": "Teller wählen"
+      },
+      "largebowl": {
+        "num": "6 Stücke · 315 PLN je",
+        "desc": "Großzügige Schüsseln für Obst, Salate und die Dinge, die auf dem Tisch leben mögen. Innen: Kobaltgärten, Palmen und Blätter.",
+        "cta": "Schüssel wählen"
+      },
+      "wavybowl": {
+        "num": "10 Stücke · 155 zł je",
+        "desc": "Schüsseln mit Wellenkante zum Frühstück, Knabbern und kleinen alltäglichen Ritualen. Jede wellt sich ein bisschen anders.",
+        "cta": "Schüssel wählen"
+      }
+    },
+    "storyImageAlt": "Anna Ciok in ihrem Keramik-Atelier",
+    "editorialImageAlt": "Handbemalte Anna-Ciok-Keramik im Sonnenlicht",
+    "storyEyebrow": "Über die Künstlerin",
+    "storyTitle": "Erst kam Malerei, <em>jetzt Keramik.</em>",
+    "storyP1": "Ich bin Anna. Ich male Leinwände und Keramik, und beide Welten treffen sich im gleichen Atelier. Ich behandle eine Tasse, einen Teller oder eine Vase wie ein kleines funktionales Gemälde: etwas, das du halten, auf den Tisch stellen und verwenden kannst, ohne auf einen besonderen Anlass zu warten.",
+    "storyP2": "Ich arbeite allein und langsam, ein Stück nach dem anderen. Die Hand hinterlässt ihre Spur in der Pinselstrich-Linie, in einer ungleichmäßigen Palme und in einem Strich, der nicht perfekt sein soll. Das ist, wo jedes Stück seinen Charakter bekommt.",
+    "storyP3": "Der Juni-Drop sind einhundertdrei Stücke, die diesen Frühling entstanden. Wenn eins sein Zuhause findet, verlässt es den Shop für immer.",
+    "storyCta1": "Ein Stück wählen",
+    "storyCta2": "Mir schreiben",
+    "craftEyebrow": "Wie es funktioniert",
+    "craftTitle": "Vom Thumbnail <em>zu deinem Regal.</em>",
+    "craft1H": "Du wählst <em>deine Favoriten</em>",
+    "craft1P": "In der Galerie klickst du auf die Stücke, die dich anziehen. Jedes ausgewählte Thumbnail landet in der Leiste am unteren Bildschirmrand, sodass es einfach ist, zu deiner Auswahl zurückzukehren.",
+    "craft2H": "Du gehst <em>zur Kasse</em>",
+    "craft2P": "Im Warenkorb überprüfst du deine Stücke, wählst Paketbox oder Kurierlieferung und beendest die Bestellung. Die Zahlung wird von Stripe abgewickelt: Karte oder Przelewy24.",
+    "craft3H": "Ich packe <em>und versende</em>",
+    "craft3P": "Ich wickle jedes Stück von Hand ein und versende innerhalb von 1–3 Werktagen. Da es von jedem nur ein Stück gibt, entfernt dein Kauf es aus dem Shop — niemand kauft das gleiche.",
+    "ctEyebrow": "Kontakt",
+    "ctH": "Hast du eine Frage? <em>Ich antworte selbst.</em>",
+    "ctP": "Möchtest du ein Stück sehen oder etwas für einen besonderen Anlass bestellen? Schreib mir — der schnellste Weg ist per E-Mail oder Instagram.",
+    "ctBtn": "Nachricht schreiben",
+    "ctLEmail": "E-Mail",
+    "ctLIg": "Instagram",
+    "ctVIg": "@ania.ciok.art",
+    "ctLStudio": "Abholung",
+    "ctVStudio": "Warschau — Abholung nach Vereinbarung",
+    "ctLShip": "Versand",
+    "ctVShip": "Polen · Versand in 1–3 Werktagen"
+  },
+  "collection": {
+    "hint": "Klick auf eine Miniatur oder den Titel, um die <b>Details</b> des Stücks zu sehen. Füge es mit der <b>«In den Warenkorb»</b>-Schaltfläche auf der Karte oder in der Vorschau hinzu. Ausgewählte Stücke sammeln sich in der Leiste am unteren Seitenrand.",
+    "kubki": {
+      "eyebrow": "Juni-Drop — 28 Stücke",
+      "title": "Tassen <em>Nº 01–28</em>",
+      "lead": "Von Hand bemalte Tassen. Jede Tasse ist ein einzelnes Stück, also wählst du genau die eine, die in deiner Küche landet."
+    },
+    "wazony": {
+      "eyebrow": "Juni-Drop — 9 Stücke",
+      "title": "Kleine Vasen <em>Nº 01–09</em>",
+      "lead": "Bauchige, von Hand bemalte Vasen. Für Blumen, Äste oder wie ein kleines Gemälde, das auf einem Regal steht."
+    },
+    "wazony-srednie": {
+      "eyebrow": "Juni-Drop — 5 Stücke",
+      "title": "Mittlere Vasen <em>Nº 01–05</em>",
+      "lead": "Mittlere Keramik-Vasen, jeweils ein Stück. Eine Form zwischen klein und groß — für einen Blumenstrauß oder ein Regal."
+    },
+    "wazony-duze": {
+      "eyebrow": "Juni-Drop — 4 Stücke",
+      "title": "Große Vasen <em>Nº 01–04</em>",
+      "lead": "Große Keramik-Vasen, jeweils ein Stück. Starke Formen für Blumensträuße und Interieurs, die eine sichtbare Pinselspur schätzen."
+    },
+    "talerzyki": {
+      "eyebrow": "Juni-Drop — 14 Stücke",
+      "title": "Kleine Teller <em>Nº 01–14</em>",
+      "lead": "Kleine Teller. Für Schmuck, Olivenöl, Schlüssel und alles, das auf handbemalter Keramik besser aussieht."
+    },
+    "talerze-srednie": {
+      "eyebrow": "Juni-Drop — 18 Stücke",
+      "title": "Mittlere Teller <em>Nº 01–18</em>",
+      "lead": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Knabbern, Servieren oder zur Dekoration im Regal."
+    },
+    "talerze-duze": {
+      "eyebrow": "Juni-Drop — 9 Stücke",
+      "title": "Große Teller <em>Nº 01–09</em>",
+      "lead": "Große Teller. Zum Servieren, Ausstellen oder an der Wand aufhängen, wenn dir Keramik anschauen genauso viel Spaß macht wie deren Nutzung."
+    },
+    "duze-michy": {
+      "eyebrow": "Juni-Drop — 6 Stücke",
+      "title": "Große Schüsseln <em>Nº 01–06</em>",
+      "lead": "Großzügige von Hand bemalte Schüsseln. Jede ist bereit für Obst, Salat oder als Mittelpunkt des Tisches."
+    },
+    "miski-falowane": {
+      "eyebrow": "Juni-Drop — 10 Stücke",
+      "title": "Schüsseln mit Wellenkante <em>Nº 01–10</em>",
+      "lead": "Schüsseln mit Wellenkante. Zum Frühstück, Knabbern und kleinen häuslichen Ritualen, wobei sich jede ein bisschen anders wellet."
+    },
+    "sklep": {
+      "eyebrow": "Juni-Drop — 103 Stücke",
+      "title": "Alle <em>Teile</em>",
+      "lead": "Die ganze Kollektion an einer Stelle — Tassen, Vasen, Teller und Schüsseln. Jedes Teil ist einzeln. Durchsuche nach Kategorie und markiere deine Favoriten."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Kunstdruck-Reproduktionen",
+      "title": "Kunstdrucke <em>Fine Art</em>",
+      "lead": "Giclée-Druck auf Archivpapier. Jedes Design in mehreren Größen, auf dem Papier deiner Wahl, gerahmt oder ungerahmt."
+    }
+  },
+  "studio": {
+    "eyebrow": "Atelier",
+    "h1": "Ein Atelier, <em>ein Paar Hände.</em>",
+    "lead": "Ein kleines Keramik-Atelier auf Teneriffa. Hier male, glasiere und verfeinere ich jedes Stück selbst, ein Stück nach dem anderen. Dieser Juni-Drop reiste mit mir nach Polen für den Sommer.",
+    "storyImageAlt": "Anna Ciok — Malerin und Keramikerin",
+    "workspaceImageAlt": "Annas Keramik-Atelier auf Teneriffa",
+    "storyEyebrow": "Malerei und Keramik",
+    "storyH": "Ich male <em>auf Keramik.</em>",
+    "storyP1": "Ich bin Anna. Ich bin Malerin und Keramikerin. Ich male immer noch Leinwände, aber seit einigen Jahren zieht mich die Keramik immer mehr an. Ich liebe, dass ein Gemälde von der Wand herunterkommt, in deine Hand fällt und Teil deines alltäglichen Lebens wird.",
+    "storyP2": "Ich bin langsam zur Keramik gekommen: erst ein Kurs, dann ein Regal in jemand anderem's Atelier, und schließlich mein eigener kleiner Platz mit Glasurtisch, Pinseln und Brennofen. Es ist ruhige, körperliche Arbeit, die sich nicht beeilen lässt.",
+    "storyP3": "Ich male von Hand, ohne Transfers oder Schablonen. Deshalb wellt sich eine Linie manchmal ein wenig, eine Palme lehnt sich leicht, und zwei ähnliche Motive sind nie wirklich gleich. Für mich ist das dort, wo das Objekt anfängt, lebendig zu werden.",
+    "factsEyebrow": "Atelier-Details",
+    "factsH": "Ein paar Zahlen <em>und Fakten.</em>",
+    "fact1K": "Atelier",
+    "fact1V": "Teneriffa",
+    "fact1D": "Ein Raum, ein Glasurtisch, Pinsel und ein Brennofen.",
+    "fact2K": "Brennen",
+    "fact2V": "1040 <em>°C</em>",
+    "fact2D": "Nach Malerei und Glasur geht jedes Stück in den Brennofen, wo die Hitze die Farbe fixiert und die Oberfläche in eine glatte, funktionale Schicht verwandelt.",
+    "fact3K": "Juni-Drop",
+    "fact3V": "103 <em>Stücke</em>",
+    "fact3D": "Tassen, kleine, mittlere und große Vasen, kleine Teller, mittlere Teller, große Teller, große Schüsseln und Schüsseln mit Wellenkante. Jedes Stück ist einzeln.",
+    "fact4K": "Versand",
+    "fact4V": "1–3 <em>Tage</em>",
+    "fact4D": "Ich packe jeden Karton von Hand ein und versende ihn in ganz Polen.",
+    "procEyebrow": "Wie ein Stück hergestellt wird",
+    "procH": "Von der ersten Schicht <em>zum fertigen Stück.</em>",
+    "p1H": "Ich bereite <em>die Oberfläche</em> vor",
+    "p1P": "Ich schaue mir jedes Stück an, plane das Motiv und wähle die Glasurfarben. Dann kommt ruhige Arbeit, Schicht für Schicht.",
+    "p2H": "Ich glasiere <em>und male</em>",
+    "p2P": "Auf der hellen Keramikoberfläche trage ich Glasur auf und male das Motiv mit dem Pinsel: Palmen, Zitronen, Muscheln, Kakteen, Streifen. Das ist wenn jedes Stück seinen eigenen Rhythmus findet.",
+    "p3H": "Ich brenne <em>und signiere</em>",
+    "p3P": "Das Brennen fixiert die Glasur und Farbe. Ich überprüfe das fertige Stück sorgfältig, signiere die Basis und stelle es ins Regal, wo es auf sein Zuhause wartet.",
+    "ctaH": "Jedes geht <em>nur einmal.</em>",
+    "ctaP": "Wenn ein Stück sein Zuhause findet, verlässt es den Shop für immer. Schau dir an, was im Juni-Drop wartet.",
+    "ctaB1": "Tassen sehen",
+    "ctaB2": "Vasen sehen"
+  },
+  "contact": {
+    "eyebrow": "Kontakt",
+    "h1": "Hast du eine Frage? <em>Ich antworte selbst.</em>",
+    "lead": "Möchtest du ein Stück in person sehen oder etwas für einen besonderen Anlass bestellen? Schreib mir — ich lese jede Nachricht persönlich und antworte normalerweise am selben Tag.",
+    "fName": "Dein Name",
+    "fNamePh": "Dein Vorname",
+    "fEmail": "E-Mail-Adresse",
+    "fEmailPh": "du@example.com",
+    "fTopic": "Worum geht es",
+    "topic1": "Frage zu einem Drop-Stück",
+    "topic2": "Abholung in Warschau",
+    "topic3": "Bestellung für besonderen Anlass",
+    "topic4": "Zusammenarbeit / Großhandel",
+    "topic5": "Etwas anderes",
+    "fMsg": "Deine Nachricht",
+    "fMsgPh": "Sag mir, wie ich dir helfen kann…",
+    "submit": "Nachricht senden",
+    "note": "Der schnellste Weg zu mir ist direkt in meinen Posteingang — <strong>hej@ciok.art</strong> — oder auf Instagram.",
+    "sentH": "Fast da — <em>überprüf deine E-Mail-App.</em>",
+    "sentP": "Deine E-Mail-App sollte sich mit der Nachricht zum Versenden öffnen. Wenn nichts passiert, schreib mir direkt an <link>hej@ciok.art</link> oder auf Instagram — ich antworte normalerweise am selben Tag.",
+    "mailtoSubject": "[Anna Ciok Ceramics] {topic}",
+    "mailtoTruncated": "Nachricht gekürzt — bitte füge den Rest vor dem Versenden ein",
+    "sideH": "Schnellste Wege, mich zu erreichen",
+    "lEmail": "E-Mail",
+    "lIg": "Instagram",
+    "vIg": "@ania.ciok.art",
+    "lStudio": "Abholung",
+    "vStudio": "Warschau — Abholung nach Vereinbarung",
+    "lShip": "Versand",
+    "vShip": "Polen · Versand in 1–3 Werktagen",
+    "lReply": "Ich antworte",
+    "vReply": "Normalerweise am selben Tag"
+  },
+  "shipping": {
+    "eyebrow": "Hilfe",
+    "h1": "Versand <em>& Rückgaben.</em>",
+    "lead": "Wie ich packe, wie lange das Paket unterwegs ist und was zu tun ist, wenn ein Stück beschädigt ankommt. Alles, bevor du auf «Kaufen» klickst.",
+    "toc": "Auf dieser Seite",
+    "toc1": "Versand",
+    "toc2": "Bearbeitungszeit",
+    "toc3": "Verpackung",
+    "toc4": "Abholung in Warschau",
+    "toc5": "Rückgaben",
+    "toc6": "Beschädigungen",
+    "updated": "Aktualisiert: Juni 2026",
+    "s1H": "Versand",
+    "s1P": "Ich versende per <strong>InPost Paketbox (ab 20 zł)</strong> oder <strong>Kurier (30 zł)</strong> in ganz Polen. Der Versand kostet gleich viel, unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
+    "s1Li1": "InPost Paketbox, ganz Polen — ab 20 zł",
+    "s1Li1b": "InPost Kurier, ganz Polen — 30 zł",
+    "s1Li2": "Abholung in Warschau — kostenlos",
+    "s1Li3": "Internationaler Versand — schreib mir und ich arrange es einzeln",
+    "s2H": "Bearbeitungszeit",
+    "s2P": "Die Juni-Drop-Stücke sind fertig und warten bereits in Polen, es gibt also keine Produktionszeit. Ich versende das Paket innerhalb von <strong>1–3 Werktagen</strong> nach Bestätigung der Zahlung, und der Kurier liefert es normalerweise am nächsten Tag.",
+    "s2Note": "Ich packe alles selbst, zwischen Atelierarbeit und den nächsten Brennvorgängen. Wenn du ein bestimmtes Datum brauchst, schreib mir und ich schau, was möglich ist.",
+    "s3H": "Verpackung",
+    "s3P": "Die Keramik reist von Hand verpackt — Film, Pappe und viel Polsterung, damit nichts wackelt. Ich etikettiere den Karton als zerbrechlich. Ich versuche Kunststoff zu minimieren, ohne das Stück zu riskieren.",
+    "s4H": "Abholung in Warschau",
+    "s4P": "Wohnst du in Warschau oder bist du in der Nähe? Du kannst deine Bestellung persönlich abholen — dann ist der Versand kostenlos. Wir vereinbaren die Abholung per E-Mail für einen bestimmten Tag und eine bestimmte Uhrzeit; es ist kein Abholpunkt mit festen Öffnungszeiten.",
+    "s5H": "Rückgaben",
+    "s5P": "Als Verbraucher hast du das Recht, dich von dem Kauf innerhalb von <strong>14 Tagen</strong> ab Erhalt des Pakets ohne Angabe von Gründen zu entfernen. Du kannst deine Rückgabe auf der <zlink>Rückgabenseite</zlink> einleiten — nur mit deiner Bestellnummer. Du kannst auch an <link>hej@ciok.art</link> schreiben.",
+    "s5Li1": "Das Stück sollte unbeschädigt zurückkommen, idealerweise in der Originalverpackung",
+    "s5Li2": "Die Kosten für den Rückversand trägt der Käufer",
+    "s5Li3": "Ich erstattest die Summe innerhalb von 14 Tagen nach Erhalt des Stücks",
+    "s6H": "Wenn etwas beschädigt ankommt",
+    "s6P": "Keramik kann zerbrechlich sein und Kuriere variieren. Wenn ein Paket kaputt ankommt, fotografiere bitte den Inhalt und die Verpackung und schreib mir die Fotos am selben Tag. Ich ersetze das Stück mit einem anderen aus dem Drop oder erstatten den vollen Betrag inklusive Versand — du wählst."
+  },
+  "terms": {
+    "eyebrow": "Dokumente",
+    "h1": "Shop <em>Nutzungsbedingungen.</em>",
+    "lead": "Die Regeln für den Kauf bei Anna Ciok Ceramics. Klar geschrieben, ohne juristisches Nebel — sodass du sie wirklich lesen kannst.",
+    "toc": "Inhalte",
+    "toc1": "§1 Allgemeine Bestimmungen",
+    "toc2": "§2 Bestellungen",
+    "toc3": "§3 Preise & Zahlung",
+    "toc4": "§4 Erfüllung & Versand",
+    "toc5": "§5 Widerrufsrecht",
+    "toc6": "§6 Beschwerden",
+    "toc7": "§7 Schlussbestimmungen",
+    "updated": "Version: Juni 2026",
+    "s1H": "§1 Allgemeine Bestimmungen",
+    "s1P1": "Der Online-Shop Anna Ciok Ceramics wird von dem Keramik-Atelier von Anna Ciok, ansässig in Warschau, betrieben. Du kannst die Verkäuferin unter <link>hej@ciok.art</link> kontaktieren.",
+    "s1P2": "Die zum Verkauf stehenden Artikel sind von Hand bemalte Keramikstücke. Jedes Stück ist ein Unikat — einmal verkauft, verschwindet es aus dem Angebot und wird nicht neu hergestellt.",
+    "s2H": "§2 Bestellungen",
+    "s2P": "Du platzierst eine Bestellung, indem du ausgewählte Stücke in den Warenkorb legst und den Kauf bestätigst. Der Kaufvertrag wird geschlossen, sobald die Bestellung bestätigt und die Zahlung geleistet wird.",
+    "s2Li1": "Da jedes Stück einzigartig ist, kann jedes einzelne Stück nur einmal verkauft werden",
+    "s2Li2": "Falls ich eine Bestellung aus Gründen außerhalb meiner Kontrolle nicht erfüllen kann, benachrichtige ich dich sofort und erstattes den vollen Betrag",
+    "s3H": "§3 Preise & Zahlung",
+    "s3P": "Alle Preise sind in polnischen Zloty (PLN) angegeben und sind Bruttopreise. Die Versandkosten werden im Warenkorb angezeigt, bevor du bestätigst. Die Zahlung wird von einem sicheren externen Anbieter, Stripe, abgewickelt.",
+    "s4H": "§4 Erfüllung & Versand",
+    "s4P": "Ich versende Bestellungen innerhalb von 1–3 Werktagen nach Bestätigung der Zahlung. Details zu Kosten, Zeit und Abholung sind auf der Seite <link>Versand & Rückgaben</link> beschrieben.",
+    "s5H": "§5 Widerrufsrecht",
+    "s5P": "Ein Verbraucher hat das Recht, sich von dem Kauf innerhalb von 14 Tagen ab Erhalt des Stücks ohne Angabe von Gründen zu entfernen. Die Erklärung kann einfach per E-Mail gesendet werden. Das zurückgegebene Stück sollte unbeschädigt sein; der Käufer trägt die Rückversandkosten, und die Rückerstattung erfolgt innerhalb von 14 Tagen.",
+    "s6H": "§6 Beschwerden",
+    "s6P": "Wenn ein Stück beschädigt oder nicht wie beschrieben ankommt, kannst du eine Beschwerde per E-Mail einreichen und Fotos beifügen. Ich prüfe sie innerhalb von 14 Tagen und ersetze das Stück oder erstatten den vollen Betrag inklusive Versand — nach deiner Wahl.",
+    "s7H": "§7 Schlussbestimmungen",
+    "s7P": "Angelegenheiten, die nicht in diesen Bedingungen geregelt sind, unterliegen polnischem Recht, einschließlich des Gesetzes über Verbraucherrechte und des Bürgerlichen Gesetzbuchs. Änderungen der Bedingungen beeinflussen nicht Bestellungen, die vor ihrer Wirksamkeit aufgegeben wurden."
+  },
+  "privacy": {
+    "eyebrow": "Dokumente",
+    "h1": "Datenschutz <em>Policy.</em>",
+    "lead": "Welche Daten ich sammle, wofür und wie lange. Kurz, da es nicht viele Daten gibt — das ist ein kleines Atelier, keine Konzern.",
+    "toc": "Inhalte",
+    "toc1": "Verantwortlicher",
+    "toc2": "Welche Daten",
+    "toc3": "Zweck & Rechtsgrundlage",
+    "toc4": "Aufbewahrung",
+    "toc5": "Cookies",
+    "toc6": "Deine Rechte",
+    "updated": "Aktualisiert: Juni 2026",
+    "s1H": "Verantwortlicher für Daten",
+    "s1P": "Der Verantwortliche für deine Daten ist das Keramik-Atelier von Anna Ciok, ansässig in Warschau. Bei Fragen zu Personendaten schreib an <link>hej@ciok.art</link>.",
+    "s2H": "Welche Daten ich sammle",
+    "s2Li1": "Daten, die für die Erfüllung einer Bestellung erforderlich sind — Name, Lieferadresse, E-Mail und Telefonnummer",
+    "s2Li2": "Der Inhalt jeder Nachricht, die du mir per E-Mail sendest",
+    "s2Li4": "Zahlungsdaten, die zur Durchführung deiner Bestellung erforderlich sind — direkt von <link>Stripe</link> verarbeitet; deine vollständigen Zahlungsdaten erreichen meine Server nie",
+    "s2Li3": "Grundlegende technische Browser-Daten, die notwendig sind, damit die Website und der Warenkorb funktionieren",
+    "s2P": "Ich sammle keine Daten, die ich nicht brauche, und ich verkaufe sie an niemandem.",
+    "s3H": "Zweck & Rechtsgrundlage",
+    "s3P": "Ich verarbeite Daten, um eine Bestellung zu erfüllen, auf eine Nachricht zu antworten, die Zahlung abzuwickeln und steuerliche Verpflichtungen zu erfüllen. Zahlungen werden von <link>Stripe</link> als externer Anbieter abgewickelt — ich sehe oder speichere deine vollständigen Kartendaten nie. Die Rechtsgrundlage ist die Vertragserfüllung und für die Buchhaltung eine gesetzliche Verpflichtung.",
+    "s4H": "Aufbewahrung",
+    "s4P": "Ich speichere Bestellungsdaten so lange, wie die Steuerbestimmungen dies erfordern. Ich lösche E-Mail-Korrespondenz, nachdem die Angelegenheit geklärt ist, es sei denn, ein weiterer Schriftwechsel erfordert die Aufbewahrung.",
+    "s5H": "Cookies",
+    "s5P": "Die Website verwendet notwendige Cookies und Browser-Speicher, um den Inhalt des Warenkorbs zu speichern. Wenn du zustimmst, können auch Analyse- und Marketing-Tools laufen. Während des Checkouts setzt <link>Stripe</link> seine eigenen Cookies, die erforderlich sind, um die Zahlung sicher zu verarbeiten und Betrug zu verhindern.",
+    "s6H": "Deine Rechte",
+    "s6P": "Du hast das Recht, auf deine Daten zuzugreifen, sie zu korrigieren, zu löschen und ihre Verarbeitung einzuschränken. Schreib mir einfach — ich antworte so schnell wie möglich."
+  },
+  "notes": {
+    "kubki": [
+      "Blaue Blume mit rundem Kopf und Fischgrätblättern. Das einfache Motiv verläuft vertikal durch die helle Tasse.",
+      "Blaue Palme mit braunen Früchten und gestreiften Blättern. Das Motiv erstreckt sich weit über die helle Tasse, betont durch kleine braune Details am Rand.",
+      "Blaue Blume auf braunem Stengel, mit Fischgrätblättern und Punkten am Rand. Das Motiv ist symmetrisch auf der hellen Wand der Tasse angeordnet.",
+      "Blauer Fächer mit hellen, vertikalen Linien auf der Seite der Tasse. Das Motiv fächert sich vom oberen Rand wie eine ruhige Welle auf.",
+      "Blaue Zitrone mit weißen Einschnitten auf einer hellen Tasse. Schwarze Linien am Rand und Boden bilden einen einfachen, grafischen Rhythmus.",
+      "Breite braune Streifen und dünne blaue Linien auf einer hellen Form. Der vertikale Rhythmus verläuft von der Basis zum leicht unebenen Rand.",
+      "Braune Blätter mit hellen Adern und blauen Punkten am Rand. Das Motiv bewegt sich diagonal über die helle Form wie ein ruhiger Ast.",
+      "Blauer Saguaro mit hellen, gekratzten Linien auf einer cremefarbenen Tasse. Das Motiv verläuft diagonal auf der Wand, mit einem kleinen Terrakotta-Punkt daneben.",
+      "Blaue Blätter mit hellen Adern auf einer cremefarbenen Tasse und kleinen Terrakotta-Einschnitten am Rand. Das Motiv klettert diagonal die Seite hinauf und schafft einen ruhigen, botanischen Rhythmus.",
+      "Blaue Muschel mit weißen Rillen und Terrakotta-Akzenten in der Nähe des Randes. Linien bilden eine Fächerform wie ein ruhiger Meeresrhythmus.",
+      "Blaue Zitrone mit weißen Linien und Terrakotta-Rechtecken an den Rändern der Tasse. Das Motiv hält die Mitte, während Rostflecken einen ruhigen Rhythmus drumherum bilden.",
+      "Blaue Fische umzingeln einen hellen Seestern, mit Terrakotta-Punkten am Rand. Das Motiv fließt entlang der Tassenwand in einem undulierenden Meeresrhythmus.",
+      "Blauer Halbkreis mit hellen Strahlen sinkt unter dem Tassenrand. Das Motiv verteilt sich wie ein Fächer über die weiße, einfache Form.",
+      "Terrakotta-Zitrone mit hellen Einschnitten und blauen Rechtecken in der Nähe der Ränder. Ein gleichmäßiger Rhythmus blauer Flecken umkreist die Tasse von oben und unten.",
+      "Terrakotta-Palme mit weißen Linien und schwarzen Früchten unter einem gepunkteten Rand. Blätter erstrecken sich weit über die Seite der Tasse in einem ruhigen, fröhlichen Rhythmus.",
+      "Terrakotta-Blume auf langen Stengel und Fischgrätblättern. Das Motiv verläuft vertikal durch die Tasse, gekreuzt von einem ruhigen, horizontalen Rhythmus.",
+      "Terrakotta-Zitrone mit weißen Linien auf einer hellen Tasse. Schwarze Rechtecke am Rand und Boden halten das Motiv in einem ruhigen Rhythmus.",
+      "Braune Schleifen, mit einer breiten, transparenten Geste auf einer hellen Tasse gemalt. Das Motiv verläuft in horizontalen Bändern wie ein weiches Band um die Form.",
+      "Terrakotta-Kakteen mit hellen, vertikalen Rillen auf einer cremefarbenen Tasse. Schwarze Halbkreise auf dem Rand führen einen ruhigen Rhythmus um die Form.",
+      "Terrakotta-Saguaro mit weißen, gekratzten Linien auf einer hellen Tasse. Das Wüstenmotiv klettert vertikal über die abgerundete Form.",
+      "Schwarze Blume mit rundem Kopf und gestreiften Blättern auf einer hellen Tasse. Das Motiv wächst vertikal und die Blätter erstrecken sich weit um die Form.",
+      "Schwarze Blume mit einem grauen Blütenblatt und Punkten über der Krone. Fischgrätblätter führen das Motiv vertikal über die helle Tasse.",
+      "Schwarze Blume mit Auge und helles Stern in der Mitte. Blütenblätter strahlen über die abgerundete Tassenwand.",
+      "Schwarze Blume mit rundem Kopf, hellem Punkt und Fischgrätblättern. Ein vertikaler Stengel führt das Motiv ruhig durch die helle Tasse.",
+      "Schwarzer Stier mit heller Girlande auf der Seite und Terrakotta-Strichen am Rand. Das Motiv steht ruhig auf der hellen Form, und ein kleiner Rhythmus oben schließt die Tasse.",
+      "Schwarzes Auge mit hellem Zentrum und vierspitzigem Stern auf einer cremefarbenen Tasse. Ein Blattrahmen mit blauen Punkten führt das Motiv um die Form.",
+      "Schwarze Blumen mit hellen, ausstrahlenden Linien auf einer cremefarbenen Tasse. Das Motiv verteilt sich frei über die Wände, manchmal vom Rand abgeschnitten.",
+      "Schwarze Palme mit weißen Einschnitten und Terrakotta-Früchten. Blätter fächern sich unter kleinen Linien am Rand aus."
+    ],
+    "wazony": [
+      "Blauer Saguaro und Terrakotta-Sonne auf einer hellen, abgerundeten Vase. Am Rand trägt eine Terrakotta-Welle mit weißen Punkten einen Wüstenrhythmus um die Form.",
+      "Blaue Palme mit Terrakotta-Frucht und vertikalen Streifen am Rand. Das Motiv erstreckt sich weit über die abgerundete Form in einem ruhigen, fröhlichen Rhythmus.",
+      "Braune Bänder und dünne blaue Linien laufen vertikal die helle Vase hinunter. Der Rhythmus verengt sich am Hals und verbreitert sich an den gekrümmten Seiten.",
+      "Blaue Feigenkakteen-Pads mit hellen Linien auf einer cremefarbenen Vase. Ein weicher Rhythmus von ovalen Segmenten klettert die abgerundete Form hinauf.",
+      "Blaue Palme mit Terrakotta-Frucht und Streifen am Rand. Die Blätter erstrecken sich weit über die abgerundete Form.",
+      "Braune Schleifen mit breitem Pinsel auf einer hellen, abgerundeten Vase gemalt. Das Motiv verläuft umher in einem weichen, undulierenden Rhythmus.",
+      "Schwarze Palme mit weißen Linien und Terrakotta-Frucht. Die Blätter erstrecken sich weit über die abgerundete Form, während der Rand einen Terrakotta-Rhythmus erfasst.",
+      "Ein schwarzes gewundenes Band mit dünnen hellen Linien auf einer cremefarbenen Vase. Das Motiv umkreist die bauchige Form wie eine sanfte Welle.",
+      "Schwarze Blumen mit gepunkteten Zentren, runden Beeren und Blättern mit weißen Streifen. Das Motiv klettert vertikal über die helle, abgerundete Form."
+    ],
+    "wazony-srednie": [
+      "Schwarze Saguaros und Terrakotta-Sonnen auf einem hellen, abgerundeten Bauch. Der Wüstenrhythmus klettert vertikal unter einem Terrakotta-Rand mit weißen Punkten.",
+      "Eine schwarze Blume auf einem Terrakotta-Stengel, mit Fischgrätblättern und Punkten über den Blütenblättern. Vertikale Linien am Rand wiederholen den Rhythmus der Adern auf den Blättern.",
+      "Eine schwarze Muschel mit hellen, vertikalen Linien und blauem Rand. Ein spiralförmiges Motiv klettert die abgerundete Seite in einem ruhigen Rhythmus.",
+      "Große schwarze Kakteen mit hellen Kerben und einem Terrakotta-Muster unter dem Rand. Das Wüstenmotiv klettert vertikal über die abgerundete Form.",
+      "Eine schwarze Muschel mit hellen, vertikalen Linien auf einer cremefarbenen Vase und blauem Rand. Der geriffte Rhythmus klettert die abgerundete Form wie eine sanfte Welle."
+    ],
+    "wazony-duze": [
+      "Ein schwarzer Hummer, mit breiter Linie auf einer hellen, bauchigen Vase gezeichnet. Klauen und Panzerungssegmente umschließen die Form in einem starken, marinen Rhythmus.",
+      "Ein schwarzer Mond, ein Ast in Fischgrätmuster und eine Figur in gestreiftem Rock auf einer hellen Form. Vertikal angeordnete Motive schaffen einen ruhigen, grafischen Rhythmus.",
+      "Eine Terrakotta-Palme mit schwarzem Frucht und vertikalen Streifen am Rand. Das Motiv erstreckt sich weit über die abgerundete Form in einem ruhigen, fröhlichen Rhythmus.",
+      "Eine schwarze Palme mit Terrakotta-Frucht und gewelltem Rand an den Rändern. Die Blätter fächern sich auf, während rostige Bögen das Motiv um die Form verbinden."
+    ],
+    "talerzyki": [
+      "Eine schwarze Muschel mit weißen, vertikalen Linien auf dem hellen Hintergrund des Tellers. Terrakotta-Striche auf dem gewellten Rand setzen den Rhythmus um die Form.",
+      "Schwarzer Saguaro mit weißen Einschnitten und Terrakotta-Rand mit Punkten. Das Wüstenmotiv sitzt in der Mitte und der gewellte Rand führt den Rhythmus umher.",
+      "Eine schwarze Blume auf Terrakotta-Stengel und Fischgrätblättern. Terrakotta-Striche verlaufen in gleichmäßigem Rhythmus um den gewellten Rand.",
+      "Eine schwarze Palme mit hellen Adern und Terrakotta-Früchten. Rostfarbene Streifen am Rand setzen einen fröhlichen Rhythmus um den Teller.",
+      "Eine Terrakotta-Muschel mit weißen Linien in der Tellermitte. Schwarze Rechtecke auf dem gewellten Rand setzen einen ruhigen Meeresrhythmus.",
+      "Eine Terrakotta-Blume auf schwarzem Stengel mit Fischgrätblättern. Das Motiv verläuft durch die Tellermitte und der gewellte Rand schließt es sanft.",
+      "Terrakotta-Saguaro mit weißen Einschnitten auf hellem Hintergrund und schwarzem gepunkteten Rand. Das Wüstenmotiv wächst vertikal in der Mitte der gewellten Form.",
+      "Terrakotta-Palme mit schwarzen Früchten und gestreiften Blättern. Schwarze Halbkreise auf dem Rand setzen den Rhythmus um den Teller.",
+      "Terrakotta-Muschel mit hellen, gekratzten Linien auf dem Tellerboden. Der gewellte Rand wiederholt die sanfte Bewegung einer Meeresspirale.",
+      "Eine blaue Zitrone mit weißen Punkten in der Tellermitte und schwarzen vertikalen Streifen auf dem Rand. Ein einfacher Rhythmus verläuft entlang des Randes und lässt die helle Mitte für das Fruchtmotiv frei.",
+      "Eine blaue Zitrone in der Mitte und schwarze Streifen mit hellen Linien auf dem gewellten Rand. Das Motiv sammelt sich ruhig in der Mitte und der Rand führt es mit rhythmischen Marken umher.",
+      "Ein schwarzer Ast mit drei runden Früchten und Fischgrätblättern. Das Motiv wächst aus der Mitte und erstreckt sich ruhig über das helle Innere.",
+      "Ein blauer Kaktus in der Mitte und eine Terrakotta-Rüsche mit weißen Punkten am Rand. Das Wüstenmotiv verteilt sich ruhig über das helle Innere des Tellers.",
+      "Eine blaue Palme mit Terrakotta-Früchten und Punkten am Rand. Das fröhliche Motiv erstreckt sich sanft über den hellen Boden des Tellers."
+    ],
+    "talerze-srednie": [
+      "Terrakotta-Kaktus mit hellen Linien und schwarzen Rechtecken am Rand. Ein Wüstenmotiv steht fest in der Tellermitte und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Schwarzer Saguaro mit Terrakotta-Dornen auf hellem Tellerboden. Eine Terrakotta-Rüsche mit weißen Punkten führt einen Rhythmus um den Rand.",
+      "Eine schwarze Figur in breitem Hut und gestreiftem Hosenanzug auf hellem Tellerboden. Eine Terrakotta-Rüsche mit weißen Punkten führt einen Rhythmus um den Rand.",
+      "Ein schwarzer Esel mit weißer Girlande auf der Seite und Terrakotta-Marken am Rand. Das Motiv steht ruhig in der Mitte und der Rand schlägt einen gleichmäßigen Rhythmus um den Teller.",
+      "Schwarzer Saguaro mit weißen Linien und Terrakotta-Rechtecken am Rand. Das Wüstenmotiv steht in der Mitte und der Rand schlägt einen gleichmäßigen, warmen Rhythmus.",
+      "Eine schwarze Palme mit Terrakotta-Früchten und gewelltem Rand neben dem Rand. Die Blätter fächern sich auf und eine gezackte Linie trägt den Rhythmus um den Teller.",
+      "Eine schwarze Figur in breitem Hut und gestreiftem Rock auf blassem Hintergrund. Der gewellte Terrakotta-Rand mit weißen Punkten führt einen Rhythmus um den Teller.",
+      "Eine schwarze Blume mit gestreiftem Schild und Blättern auf straigem Stengel. Das Motiv wächst vertikal durch den hellen Teller, ruhig und rhythmisch.",
+      "Eine schwarze Blume mit gepunkteter Mitte und zwei Fischgrätblättern. Die gerade Senkrechte des Stengels ordnet das Motiv auf dem hellen Teller.",
+      "Ein schwarzes, vertikales Motiv mit drei Kreisen und gewellten Flügeln mit weißen Linien. Die Zeichnung entfaltet sich symmetrisch in der Tellermitte.",
+      "Eine blaue Palme mit braunen Früchten und strahlendem Rand in dunklen Strichen. Die Blätter erstrecken sich weit und der Rand schlägt einen gleichmäßigen, sonnigen Rhythmus.",
+      "Eine braune Muschel mit dünnen hellen Linien und blauem gewelltem Rand mit weißen Punkten. Die Drehungen des Randes wiederholen die spiralförmige Bewegung der Muschel.",
+      "Ein brauner Kaktus mit kleinen blauen Trieben und gewelltem blauem Rahmen. Das Wüstenmotiv wächst aufrecht in der Tellermitte und der Rand führt es mit einer weichen Welle.",
+      "Eine blaue Zitrone in der Mitte und braune Rechtecke mit weißen Punkten am Rand. Der Rand ordnet sich in einem gleichmäßigen, strahlenden Rhythmus an.",
+      "Eine braune Palme mit hellen Kerben und blauen Früchten. Blaue Rechtecke laufen um den Rand wie ein ruhiger, freier Rhythmus.",
+      "Eine blaue Muschel mit dünnen hellen Linien und braunem gewelltem Rand. Das Motiv wächst in Schichten vom Tellerboden und der Rand führt es mit weichem Rhythmus.",
+      "Eine schwarze Flasche mit weißem Streifenband, einem Kelch und einem Stern auf hellem Teller. Die Motive stehen Seite an Seite wie ein ruhiges, nächtliches Stilleben.",
+      "Ein schwarzer Ast mit runder Frucht und Blattpaaren in feinen hellen Linien. Das vertikale Motiv ordnet sich ruhig durch die Tellermitte an."
+    ],
+    "talerze-duze": [
+      "Brauner Esel mit weißer Girlande auf der Seite und schwarzer Welle neben dem Rand. Das Motiv steht ruhig in der Mitte und der gestreifte Rand trägt den Rhythmus umher.",
+      "Terrakotta-Muschel mit weißen Linien auf dem hellen Tellerboden. Ein schwarzer gewellter Rand trägt den Rhythmus um den Rand.",
+      "Terrakotta-Muschel in der Tellermitte, durchkreuzt von hellen vertikalen Linien. Ein schwarzer gewellter Rand führt einen Rhythmus kurzer Striche um ihn herum.",
+      "Schwarzer Kaktus mit hellen gravierten Dornen und Terrakotta-Welle neben dem Rand. Das Wüstenmotiv steht in der Tellermitte und die gewellte Kontur trägt den Rhythmus umher.",
+      "Blaue Blumen mit hellen Zentren und dünnen Linien auf den Blütenblättern. Das Motiv verteilt sich über den breiten Teller mit einem ruhigen, weichen Rhythmus.",
+      "Blaue Zitrone in der Mitte und schwarze Streifen auf dem breiten Rand. Der Rand-Rhythmus zieht den Blick auf die hellen Kerben, die auf der Frucht verteilt sind.",
+      "Blaues Blatt mit hellen Adern durchkreuzt den hellen Tellerboden. Die Linien verlafen ruhig über die Form, vom schmalen Stengel zum abgerundeten Rand.",
+      "Blauer Blattenkranz mit weißem Stern in der Mitte und Terrakotta-Strichen am Rand. Das Motiv dreht sich weit über den Teller und der Rand schlägt einen gleichmäßigen Rhythmus.",
+      "Terrakotta-Auge mit ausstrahlenden Linien und blauen Rechtecken am Rand. Das Motiv verteilt sich vom Zentrum und der Rand schlägt einen klaren, gleichmäßigen Rhythmus."
+    ],
+    "duze-michy": [
+      "Blaue Blumen, Blätter und eine Muschel verteilt im Inneren einer hellen Schüssel. Ein gewelltes blaues Band außen führt einen ruhigen Rhythmus um die Form.",
+      "Schwarze Blumen auf dünnen Stengeln und Terrakotta-Fischgrätblätter. Das Motiv verläuft leicht entlang des Inneren und des gewellten Randes der Schüssel.",
+      "Terrakotta-Palmen mit feinem Schraffieren und schwarzen Früchten. Das Motiv ordnet sich um das Innere an und der gewellte Rand fügt Bewegung hinzu.",
+      "Braune Saguaro-Kakteen und schwarze Rauten mit Terrakotta-Punkt. Das Wüstenmotiv verläuft um das helle Innere der Schüssel.",
+      "Ein schwarzer Garten in der Schüsselmitte: gepunktete Blume, Fischgrätblätter und flexible Stengel. Das Motiv verteilt sich frei über das helle Innere und erhebt sich zum abgerundeten Rand.",
+      "Schwarze Palmen mit weißer Aderung und Terrakotta-Früchten. Das Motiv wiegt sich über das Schüsselinnere und der gewellte Rand vollendet einen weichen Rhythmus."
+    ],
+    "miski-falowane": [
+      "Schwarzer Saguaro mit kleinen Terrakotta-Vorsprüngen und runden Sonnen. Das Wüstenmotiv verteilt sich über das gewellte Innere der Schüssel.",
+      "Schwarze Muscheln um einen Terrakotta-Seestern auf hellem Schüsselboden. Der gewellte Rand führt das Meerestmotiv in einem weichen Rhythmus umher.",
+      "Schwarze Kakteen mit hellen Einschnitten und Terrakotta-Ovalen auf hellem Hintergrund. Das Motiv umkreist das Schüsselinnere entlang dem gewellten Rand.",
+      "Schwarze Mohnblumen mit feinen Adern und Terrakotta-Fischgrätblättern. Das Motiv zirkuliert im hellen Inneren und unterstreicht den gewellten Rand der Schüssel.",
+      "Blaue Kakteen mit weißen Einschnitten und Terrakotta-Punkten im hellen Schüsselinneren. Das Wüstenmotiv fließt entlang des gewellten Randes in einem leichten, unregelmäßigen Rhythmus.",
+      "Blaue Palmen mit Terrakotta-Früchten im hellen Schüsselinneren. Das Motiv fließt um den gewellten Rand.",
+      "Terrakotta-Fischgrätpalmen mit schwarzen Früchten. Der fröhliche Rhythmus umkreist die gewellte Schüssel.",
+      "Blaue Muscheln um einen Terrakotta-Seestern auf dem Schüsselboden. Der gewellte Rand führt den Meeresrhythmus um die helle Form.",
+      "Blaue Zitronen mit kleinen weißen Strichen im hellen Inneren. Der Fruchtrhythmus umkreist den gewellten Rand und sinkt zum Zentrum.",
+      "Schwarze Äste mit runden Beeren und Fischgrätblättern. Das Motiv verteilt sich über das helle Innere und der gewellte Rand führt es mit weichem Rhythmus."
+    ],
+    "fine-art-prints": [
+      "Das erste Design der Fine-Art-Serie — eine Reproduktion einer ursprünglichen Komposition in einer gedämpften Palette.",
+      "Das zweite Design — eine ausdrucksstarke Form mit handgemaltem Detail, auf Archivpapier gebracht.",
+      "Das dritte Design der Fine-Art-Serie."
+    ]
+  },
+  "error": {
+    "heading": "Etwas ist schief gelaufen",
+    "body": "Die Seite ist auf einen Fehler gestoßen. Bitte aktualisiere sie — das hilft normalerweise.",
+    "retry": "Erneut versuchen"
+  },
+  "notFound": {
+    "heading": "Seite nicht gefunden",
+    "body": "Diese Seite kann verschwunden sein oder existierte vielleicht nie. Geh zurück zum Shop — alle verfügbaren Teile warten dort.",
+    "home": "Startseite",
+    "shop": "Geh zum Shop"
+  },
+  "meta": {
+    "description": "Handbemalte funktionale Keramik von Anna Ciok: Tassen, Vasen, Schüsseln und Teller. Juni-Drop 2026, 103 einzelne Stücke.",
+    "gallery": "Eine neue Fotoserien-Serie von Anna Ciok: Porträts, Terrassenlicht, Atelierkanten und handbemalte Keramik aus dem Juni-Drop 2026.",
+    "ogImageAlt": "Anna Ciok Ceramics — handbemalte Keramiktasse",
+    "collections": {
+      "kubki": "Handbemalte Keramiktassen, 300 ml — jede einzeln. Durchsuche 28 einzigartige Stücke aus Annas Juni-Drop 2026.",
+      "wazony": "Kleine handbemalte Keramikvasen. Neun bauchige, einzelne Stücke aus Annas Juni-Drop 2026.",
+      "wazonySrednie": "Mittlere handbemalte Keramikvasen. Vier einzelne Stücke aus Annas Juni-Drop 2026.",
+      "wazonyDuze": "Große handbemalte Keramikvasen — Statement-Stücke, jedes einzeln. Vier einzigartige Werke aus Annas Juni-Drop 2026.",
+      "talerzyki": "Handbemalte kleine Keramik-Teller, 12 × 12 × 3 cm. Vierzehn einzelne Stücke aus Annas Juni-Drop 2026.",
+      "talerzeSrednie": "Handbemalte mittlere Keramik-Teller, ⌀ 18 cm. Achtzehn einzelne Stücke aus Annas Juni-Drop 2026.",
+      "talerzeDuze": "Große handbemalte Keramik-Teller, ⌀ 24 cm. Neun einzelne Stücke für Tisch, Kollektion oder Wand.",
+      "duzeMichy": "Große handbemalte Keramik-Schüsseln — großzügig und einzeln. Fünf einzigartige Stücke aus Annas Juni-Drop 2026.",
+      "miskiFalowane": "Gewellte handbemalte Keramik-Schüsseln — organische Formen, jede einzeln. Zehn einzigartige Stücke aus Annas Juni-Drop 2026.",
+      "sklep": "Annas vollständige Kollektion: 103 einzelne Keramik-Stücke — Tassen, Vasen, Teller und Schüsseln. Handgemalt, jedes Stück einzeln.",
+      "fineArtPrints": "Fine-Art-Reproduktionen von Annas Werk — Giclée-Druck auf Archivpapier. Wähle Größe, Papier und Rahmen."
+    }
+  },
+  "deliveryNotice": {
+    "title": "Juli-Lieferinformationen",
+    "p1": "Alle Bestellungen in Polen werden per InPost-Kurier oder InPost-Paketboxen versandt.",
+    "p2": "Wir kommen am 5. Juli in Polen an. Alle Bestellungen, die vorher aufgegeben wurden, werden ab dem 10. Juli versandt. Später aufgegebene Bestellungen werden innerhalb von 1–3 Tagen nach Aufgabe versandt.",
+    "p3": "Der Versand findet im Juli ab 10. Juli statt."
+  },
+  "consent": {
+    "title": "Cookies",
+    "body": "Ich nutze Cookies für Analytik und Marketing. Du kannst akzeptieren oder ablehnen — Ablehnung blockiert Käufe nicht.",
+    "accept": "Akzeptieren",
+    "reject": "Ablehnen",
+    "more": "Datenschutzrichtlinie"
+  },
+  "print": {
+    "from": "ab {price}",
+    "axis": {
+      "size": "Größe",
+      "paper": "Papier",
+      "frame": "Rahmung"
+    },
+    "size": {
+      "a4": "A4",
+      "a3": "A3",
+      "a2": "A2"
+    },
+    "sizeHint": {
+      "a4": "21 × 29,7 cm",
+      "a3": "29,7 × 42 cm",
+      "a2": "42 × 59,4 cm"
+    },
+    "paper": {
+      "matte": "Matt",
+      "satin": "Satin"
+    },
+    "frame": {
+      "none": "Ohne Rahmen",
+      "oak": "Eichenrahmen",
+      "black": "Schwarzer Rahmen"
+    },
+    "addToCart": "In den Warenkorb",
+    "inCart": "Im Warenkorb",
+    "unavailable": "In dieser Kombination nicht verfügbar",
+    "priceLabel": "Preis",
+    "sectionDetails": "Details",
+    "sectionEdition": "Auflage",
+    "sectionDelivery": "Lieferung & Produktionszeit",
+    "sectionCare": "Pflege",
+    "editionOpen": "Offene Auflage — auf Bestellung gedruckt.",
+    "technique": "Giclée-Druck, Pigmenttinten, Archivpapier.",
+    "deliveryNote": "Auf Bestellung — Herstellung innerhalb von 7–10 Werktagen. Gerahmte Drucke werden per Kurier versandt.",
+    "careNote": "Vor direktem Sonnenlicht und Feuchtigkeit schützen. Am besten gerahmt unter Glas präsentieren.",
+    "moreFrom": "Mehr aus der Drucksammlung"
+  }
+}

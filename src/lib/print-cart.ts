@@ -68,11 +68,15 @@ const PAPER_LABEL: Record<string, Record<PrintPaper, string>> = {
   pl: { matte: 'mat', satin: 'satyna' },
   en: { matte: 'matte', satin: 'satin' },
   es: { matte: 'mate', satin: 'satinado' },
+  de: { matte: 'matt', satin: 'satin' },
+  gb: { matte: 'matte', satin: 'satin' },
 };
 const FRAME_LABEL: Record<string, Record<PrintFrame, string>> = {
   pl: { none: 'bez ramy', oak: 'rama dębowa', black: 'rama czarna' },
   en: { none: 'no frame', oak: 'oak frame', black: 'black frame' },
   es: { none: 'sin marco', oak: 'marco de roble', black: 'marco negro' },
+  de: { none: 'ohne Rahmen', oak: 'Eichenrahmen', black: 'Schwarzer Rahmen' },
+  gb: { none: 'no frame', oak: 'oak frame', black: 'black frame' },
 };
 
 /** Human-readable one-line variant label, e.g. "A3 · satyna · rama dębowa". */
