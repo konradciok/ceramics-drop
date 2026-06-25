@@ -14,7 +14,7 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   // Prints are variant-priced; this is a display-only "from" figure (cheapest
   // variant). The amount actually charged is computed by priceOfVariant() in
   // print-pricing.ts — never from this map. Placeholder until studio confirms.
-  'fine-art-prints': 120,
+  'fine-art-prints': 105,
 };
 
 /** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
@@ -61,7 +61,7 @@ export const PRICE_EUR: Record<CategorySlug, number> = {
   'duze-michy': 88,
   'miski-falowane': 48,
   // Display-only "from" figure (see PRICE_PLN note). Placeholder.
-  'fine-art-prints': 29,
+  'fine-art-prints': 25,
 };
 
 /* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.

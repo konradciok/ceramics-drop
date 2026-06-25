@@ -25,7 +25,7 @@ const DEFAULT_CATEGORIES: CategorySlug[] = [
 type SnapshotPiece = {
   product_id: string;
   category: CategorySlug;
-  num: number;
+  num: string;
   status: PieceRow['status'];
   reserved_until: string | null;
   order_id: string | null;
@@ -105,6 +105,7 @@ const CATEGORY_PL: Record<CategorySlug, string> = {
   'talerze-duze': 'Duże talerze',
   'duze-michy': 'Duże misy',
   'miski-falowane': 'Miski z falowanym brzegiem',
+  'fine-art-prints': 'Grafiki fine art',
 };
 
 function categoryLabel(slug: CategorySlug): string {

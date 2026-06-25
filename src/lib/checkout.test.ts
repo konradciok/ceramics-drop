@@ -42,6 +42,14 @@ describe('validateCart', () => {
     const result = validateCart(['k01']);
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
   });
+
+  it('ceramic GBP — unit_price in pence', () => {
+    const result = validateCart(['k01'], 'gbp');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // k01 is kubki; PRICE_GBP.kubki === 22; toGBPPence(22) === 2200
+    expect(result.items[0].unit_price).toBe(2200);
+  });
 });
 
 describe('validateCart — fine-art prints', () => {
