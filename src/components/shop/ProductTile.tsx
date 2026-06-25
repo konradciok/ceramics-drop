@@ -108,7 +108,7 @@ export function ProductTile({ product, onOpen }: Props) {
           }
           const isPresent = useCart.getState().ids.includes(product.id);
           if (wasPresent !== isPresent) {
-            const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+            const analyticsOpts = { currency: (locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR') as 'PLN' | 'EUR' | 'GBP', itemPrices: [priceOf(product, locale)] };
             pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
           }
         }}

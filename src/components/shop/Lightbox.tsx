@@ -82,7 +82,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
         index: index ?? undefined,
         itemListId: product.category,
         itemListName: product.category,
-        currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR',
+        currency: (locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR') as 'PLN' | 'EUR' | 'GBP',
         priceOverride: priceOf(product, locale),
       }),
     );
@@ -240,7 +240,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
-                    const analyticsOpts = { currency: (locale !== 'pl' ? 'EUR' : 'PLN') as 'PLN' | 'EUR', itemPrices: [priceOf(product, locale)] };
+                    const analyticsOpts = { currency: (locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR') as 'PLN' | 'EUR' | 'GBP', itemPrices: [priceOf(product, locale)] };
                     pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
                   }
                 }}

@@ -17,7 +17,7 @@ type Props = { product: Product };
 export function AddToCartButton({ product }: Props) {
   const t = useTranslations();
   const locale = useLocale();
-  const analyticsCurrency: 'PLN' | 'EUR' = locale !== 'pl' ? 'EUR' : 'PLN';
+  const analyticsCurrency: 'PLN' | 'EUR' | 'GBP' = locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR';
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);

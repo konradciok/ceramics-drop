@@ -1,4 +1,4 @@
-/* PLN and EUR prices with helpers. PL locale → PLN; en/es locales → EUR. */
+/* PLN, EUR, and GBP prices with helpers. PL locale → PLN; gb locale → GBP; en/es/de → EUR. */
 import type { CategorySlug } from './types';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
@@ -79,7 +79,9 @@ export const SHIPPING_EUR: Record<DeliveryMethod, number> = {
  * map only yields the "from" figure; print surfaces show it as "od X / from Y".
  */
 export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
-  return locale !== 'pl' ? PRICE_EUR[product.category] : product.price;
+  if (locale === 'pl') return product.price;
+  if (locale === 'gb') return PRICE_GBP[product.category];
+  return PRICE_EUR[product.category];
 }
 
 /** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
@@ -95,4 +97,45 @@ export function shippingEuroCents(method: DeliveryMethod): number {
 /** Sum item amounts (euro-cents) + shipping for the chosen method. */
 export function orderAmountEuroCents(itemCents: number[], method: DeliveryMethod): number {
   return itemCents.reduce((s, c) => s + c, 0) + shippingEuroCents(method);
+}
+
+/**
+ * Fixed GBP prices per category (whole pounds). Approximate rate: 1 GBP ≈ 5.0 PLN (June 2026).
+ * Review with the artisan whenever PLN prices change significantly.
+ */
+export const PRICE_GBP: Record<CategorySlug, number> = {
+  kubki: 22,
+  wazony: 55,
+  'wazony-srednie': 65,
+  'wazony-duze': 85,
+  talerzyki: 16,
+  'talerze-srednie': 26,
+  'talerze-duze': 35,
+  'duze-michy': 82,
+  'miski-falowane': 45,
+  // Display-only "from" figure (see PRICE_PLN note). Placeholder.
+  'fine-art-prints': 22,
+};
+
+/* Paczkomat (20 zł ≈ £4) rounds to £5.
+ * Kurier (30 zł ≈ £6) is set to £12 — deliberate round-number buffer. */
+export const SHIPPING_GBP: Record<DeliveryMethod, number> = {
+  paczkomat: 5,
+  kurier: 12,
+  odbior: 0,
+};
+
+/** Pounds (integer) → pence. Same ×100 math as toGrosze. */
+export function toGBPPence(pounds: number): number {
+  return Math.round(pounds * 100);
+}
+
+/** Shipping cost in pence for the chosen delivery method. */
+export function shippingGBPPence(method: DeliveryMethod): number {
+  return toGBPPence(SHIPPING_GBP[method]);
+}
+
+/** Sum item amounts (pence) + shipping for the chosen method. */
+export function orderAmountGBPPence(itemPence: number[], method: DeliveryMethod): number {
+  return itemPence.reduce((s, p) => s + p, 0) + shippingGBPPence(method);
 }
