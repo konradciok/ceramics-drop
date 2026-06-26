@@ -97,6 +97,14 @@ public copy says "fine art paper", and Enhanced Matte may or may not be a valid
 `attributes` block.** Do not assume `enhanced-matte` is valid for these SKUs until
 the API confirms it. (`pod_variants.paper` default left as a placeholder.)
 
+**Schema guidance (P1-1 / P1-3):** to avoid a Prodigi `4xx` at fulfilment time
+from an unverified paper value, seed `pod_variants` rows with **`active = false`**
+(and treat `paper` as not-yet-trusted) until `scripts/sync-prodigi-skus.ts` has
+read the real `attributes.paperType` enum from `GET /products/{sku}` and flipped
+the verified rows to `active = true`. **Phase 3 mapper tests must assert against
+API-verified attribute values, not web-search guesses.** (Reconciled with Cursor
+review on PR #99.)
+
 ### Sizes
 
 Public range: **6×6" up to 40×40"**, inch-based ladder. The masterprompt's
