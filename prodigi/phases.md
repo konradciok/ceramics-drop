@@ -14,6 +14,7 @@ The existing storefront plan (`docs/superpowers/plans/2026-06-13-fine-art-prints
 ### Tasks
 
 **P0-1: Read Prodigi product docs and verify SKUs**
+
 - Fetch `GET /products/{sku}` via Prodigi sandbox for the candidate Classic Frame Print SKUs.
 - Confirm: available sizes (in/cm), frame colour attribute values, printAreaSizes for mounted vs unmounted, shipsTo list includes PL + DE + GB.
 - Document all verified SKUs in `prodigi/sku-catalog.md` (create this file).
@@ -26,10 +27,13 @@ Replace the storefront plan's `frame: 'none' | 'oak' | 'black'` with:
 // src/lib/types.ts additions (update from prints-feature plan)
 export type PrintFrameColour = 'black' | 'white' | 'natural'  // confirm values vs Prodigi attribute
 export type PrintMount = false | true
+// paper is fixed at 'enhanced-matte' for MVP — not a variable axis yet
+// (add as selectable axis in Phase 6 if multi-paper support is needed)
 
 // Cart token format (replaces print:id:size:paper:frame)
 // New: print:{designId}:{size}:{frame_colour}:{mount}
 // Example: print:fap01:30x40cm:black:true
+// paper omitted from token because it is fixed at MVP
 ```
 
 - Update `PrintVariantSelection` in `src/lib/types.ts`.
@@ -41,11 +45,12 @@ export type PrintMount = false | true
 
 **P0-3: Define the 18-variant matrix**
 
-```
+```text
 sizes:         3 (to confirm with Prodigi product page)
 frame_colours: 3 (black / white / natural)
 mount:         false / true
-= 18 variants per artwork
+paper:         fixed: enhanced-matte (not a variable axis at MVP)
+= 18 variants per artwork (3 × 3 × 2)
 
 For each variant: Prodigi SKU + printAreaWidth + printAreaHeight (pixels at 300 DPI)
 ```
@@ -54,9 +59,16 @@ Write this matrix into `prodigi/sku-catalog.md` with real values from Prodigi AP
 
 **P0-4: Answer the 5 open questions in `masterprompt.md`**
 
-Get decisions on: asset hosting, queue vs direct, InPost for framed prints, storefront token format change.
+All 5 require explicit decisions documented in `prodigi/decisions.md`:
+
+1. **Variant axes** — confirm sizes, frame colours, mount colours from Prodigi API (P0-1 resolves this; document confirmed values)
+2. **Asset hosting** — R2 presigned URL vs Worker proxy vs public path
+3. **Queue vs direct** — Cloudflare Queue binding or `ctx.waitUntil` inline fallback
+4. **Shipping for framed prints** — Prodigi ships directly from their labs; decide mixed-order delivery UX and whether to inform customers about two-parcel fulfilment
+5. **Storefront token format** — confirm no other code has consumed the old `print:id:size:paper:frame` token before changing it
 
 **Deliverables:**
+
 - `prodigi/sku-catalog.md` — verified SKU matrix with print areas
 - Updated `src/lib/types.ts` variant types
 - Updated `src/lib/print-cart.ts` token format
@@ -71,6 +83,7 @@ Get decisions on: asset hosting, queue vs direct, InPost for framed prints, stor
 **Depends on:** Phase 0 complete (variant model confirmed, SKUs verified)
 
 ### P1-1: DB migrations
+
 - Apply `20260613120000_order_items_variant.sql` from `claude/prints-feature` branch.
 - Add new migration: `pod_variants` table (seeded with verified SKUs from P0-3).
 - Add new migration: `fulfilment_jobs`, `prodigi_orders`, `webhook_events` tables.
@@ -78,18 +91,21 @@ Get decisions on: asset hosting, queue vs direct, InPost for framed prints, stor
 - Run `supabase db push` against sandbox DB. Verify schema.
 
 ### P1-2: Prodigi client (`src/server/prodigi/client.ts`)
+
 - `fetch` wrapper: sets `X-API-Key`, selects sandbox/live base URL from `PRODIGI_ENV` env var.
 - Typed errors (network, non-2xx, outcome≠Ok, idempotent-duplicate).
 - Retryability classification.
 - Unit tests for error mapping.
 
 ### P1-3: SKU sync script (`scripts/sync-prodigi-skus.ts`)
+
 - Call `GET /products/{sku}` for each SKU in the matrix.
 - Parse `printAreaSizes`, `shipsTo`, `attributes`.
 - Upsert into `pod_variants` table.
 - Run manually; also runnable as `npm run sync-prodigi-skus`.
 
 ### P1-4: Prodigi types (`src/server/prodigi/types.ts`)
+
 - Request/response types for `POST /orders`, `GET /orders/{id}`, `POST /quotes`, `GET /products/{sku}`.
 - `FulfilmentJobMessage` type for queue payload.
 
@@ -105,6 +121,7 @@ Get decisions on: asset hosting, queue vs direct, InPost for framed prints, stor
 This phase implements the storefront side. It runs largely in parallel with Phase 3 (fulfilment), since both depend on Phase 1 but not each other.
 
 ### P2-1: Types + registry + pricing
+
 - `src/lib/types.ts` — `CategorySlug += 'fine-art-prints'`, `PrintFrameColour`, `PrintMount`, `PrintDesign`, `PrintVariantSelection` (updated from storefront plan to use new axes).
 - `src/lib/prints.ts` — `PRINT_DESIGNS` (2–3 sample designs for testing).
 - `src/lib/print-pricing.ts` — `priceOfVariant()` with size/colour/mount axes.
@@ -112,6 +129,7 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - Unit tests: `prints.test.ts`, `print-pricing.test.ts`.
 
 ### P2-2: Cart token + checkout validation
+
 - `src/lib/print-cart.ts` — `isPrintToken`, `encodePrintToken`, `decodePrintToken`, `variantLabel` (updated token format with mount field).
 - `src/lib/checkout.ts` — extend `validateCart` to handle print tokens: decode → validate design + variant available → price → produce `CheckoutItem` with `variant` + `pod_variant_id`.
 - `src/app/api/checkout/route.ts` — split `ceramicIds` from prints; reserve only ceramics; insert `order_items` with `variant` + `pod_variant_id`.
@@ -120,19 +138,23 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 ### P2-3: Webhook fixes (CRITICAL — three blockers)
 
 **P2-3a: `markPaid` count guard (eliminates auto-refund)**
+
 - `src/lib/webhook.ts` / `src/app/api/stripe/webhook/route.ts` — filter `.is('variant', null)` on both `expectedCount` and `fulfilledCount` queries.
 - Integration test: `print-only order` → no auto-refund; mixed order → ceramics counted correctly.
 
 **P2-3b: `createShipment` guard (eliminates InPost call on print orders)**
+
 - `handleStripeEvent` in `src/lib/webhook.ts` — wrap `createShipment` call with a check: only call it when the order contains at least one ceramic item (`order_items` row with `variant IS NULL`).
 - Pattern: load item types before deciding which fulfilment path to take.
 - Integration test: print-only order → `createShipment` not called; mixed order → called once for ceramics.
 
 **P2-3c: `ensureInvoiced` / `invoice.ts` extension (eliminates crash on print tokens)**
+
 - `src/lib/invoice.ts` (or wherever `ensureInvoiced` lives) — `getProductById(it.product_id)` returns `undefined` for print tokens. Extend to decode print token and produce a meaningful invoice line (design name + variant label) instead of crashing or producing a blank line.
 - Integration test: invoice generated for print-only order without error; line items describe the print correctly.
 
 ### P2-4: Frontend — collection + PDP + configurator
+
 - `src/lib/products.ts` — `CATEGORIES['fine-art-prints']`, `CATEGORY_ORDER`.
 - `messages/{pl,en,es,de,gb}.json` — nav, collection, notes, print.size/frame_colour/mount labels.
 - `src/app/[locale]/(collections)/fine-art-prints/page.tsx` — collection listing.
@@ -143,6 +165,7 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - E2E: `print-configurator.spec.ts`.
 
 ### P2-5: Cart view + reconcile
+
 - `src/components/shop/CartView.tsx` — render print token as label (design + size/colour/mount) + price.
 - Reconcile (`/api/inventory`): skip print tokens (open edition always available).
 
@@ -155,6 +178,7 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 **Depends on:** Phase 1 (DB + client) + Phase 2 (checkout creates order_items with pod_variant_id)
 
 ### P3-1: Order mapper (`src/server/prodigi/mapper.ts`)
+
 - `buildProdigiPayload(order, items, podVariants)` → Prodigi order JSON.
 - Maps: `merchantReference`, `shippingMethod`, `recipient` (from order shipping_address), `items` (SKU, sizing, attributes, assets, recipientCost), `metadata`, `idempotencyKey`, `callbackUrl`.
 - `sizing`: use `fillPrintArea` only if aspect ratios match; otherwise require exact pre-sized asset.
@@ -162,12 +186,14 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - Unit tests: mapper.test.ts — payload shape, idempotency key format, recipientCost mapped from `orders.currency` (PLN/EUR/GBP).
 
 ### P3-2: Asset URL generation (`src/server/prodigi/assets.ts`)
+
 - Given `order_id` + `pod_variant_id` → return a URL Prodigi can fetch.
 - MVP option: R2 presigned URL with 30-day expiry (requires R2 bucket + binding).
 - Fallback: publicly accessible URL if master files are in `public/uploads/` (print-ready versions).
 - Log safe fields only; never log full signed URL.
 
 ### P3-3: Fulfilment job processor (`src/server/fulfilment/process-job.ts`)
+
 - Implements the 10-step fulfilment flow from `masterprompt.md`.
 - Idempotency: check `fulfilment_jobs.status` before calling Prodigi.
 - On Prodigi 201 success: insert `prodigi_orders`, update `fulfilment_jobs.status = 'submitted'`.
@@ -177,21 +203,25 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - Unit tests: process-job.test.ts — all branches.
 
 ### P3-4: Enqueue fulfilment (`src/server/fulfilment/enqueue.ts`)
+
 - Called from `handleStripeEvent` after `markPaid` (and after `createShipment` check for ceramics).
 - Creates `fulfilment_jobs` row (idempotent — unique constraint on `order_id`).
 - **Recommended default:** use Cloudflare Queue binding — push `FulfilmentJobMessage` to queue. This gives at-least-once delivery, automatic retries, and does not risk Stripe webhook timeout (25 s limit).
 - **Inline fallback (only if no CF Queue):** call `process-job.ts` inside `ctx.waitUntil(...)` — never inline and never throw from the webhook handler on Prodigi errors, as rethrowing causes Stripe to retry the entire webhook (which would run `markPaid` again and could double-send emails). Pattern:
-  ```typescript
-  ctx.waitUntil(processJob(jobId, env).catch(err => {
-    console.error('Prodigi inline processing failed', err)
-    // DB row already has status/error; do not throw
-  }))
-  ```
+
+```typescript
+ctx.waitUntil(processJob(jobId, env).catch(err => {
+  console.error('Prodigi inline processing failed', err)
+  // DB row already has status/error; do not throw
+}))
+```
+
 - Document the chosen approach in `prodigi/decisions.md`.
 
 ### P3-5: Queue consumer (if using CF Queues)
 
 **Required wrangler.jsonc additions:**
+
 ```jsonc
 "queues": {
   "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
@@ -205,18 +235,22 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 ```
 
 **Required `cloudflare-env.d.ts` addition:**
+
 ```typescript
 FULFILMENT_QUEUE: Queue;
 ```
+
 Run `npm run cf-typegen` after updating the binding.
 
 **Required `worker.ts` addition** (alongside existing `fetch` and `scheduled` exports):
+
 - Export `queue` handler that deserialises `FulfilmentJobMessage` and calls `process-job.ts`.
 - On success: `msg.ack()`.
 - On retryable error: `msg.retry()` — Cloudflare retries at-least-once.
 - On non-retryable: `msg.ack()` + mark DB as `failed_action_required` (do not leave in dead letter without DB update).
 
 ### P3-6: Prodigi callback endpoint (`src/app/api/webhooks/prodigi/route.ts`)
+
 - Validate `PRODIGI_CALLBACK_TOKEN` in URL.
 - Parse payload as CloudEvents format. Extract:
   - `provider_event_id = cloudEvent.id` — unique event identifier for dedup
@@ -239,19 +273,23 @@ Run `npm run cf-typegen` after updating the binding.
 **Depends on:** Phase 3
 
 ### P4-1: Admin order detail — Prodigi fields
+
 - `src/app/admin/orders/[id]/page.tsx` — add section showing: Prodigi order id, stage, last callback timestamp, idempotency key, link to Prodigi sandbox dashboard.
 - Show `fulfilment_jobs.status`, `attempts`, `last_error`.
 
 ### P4-2: Retry fulfilment action
+
 - `src/app/api/admin/retry-fulfilment/route.ts` (POST, Cloudflare Access gated).
 - Resets `fulfilment_jobs.status` to 'queued' and re-enqueues.
 - Only valid for `failed_retryable` or `failed_action_required`.
 
 ### P4-3: Admin callback log
+
 - Show recent `webhook_events` rows for a given order in the admin detail view.
 - Useful for diagnosing missed callbacks.
 
 ### P4-4: Environment variable documentation
+
 - Update `.env.example` with Prodigi placeholders.
 - Update `docs/cloudflare-deployment.md` with new secrets.
 - Create `prodigi/runbook.md` — sandbox test procedure, live cutover steps, cancel/retry procedures.
@@ -265,21 +303,25 @@ Run `npm run cf-typegen` after updating the binding.
 **Depends on:** All prior phases
 
 ### P5-1: Full test suite
+
 - `npm run test` — all Vitest unit + integration tests pass.
 - Specific new suites: mapper, client errors, status-map, process-job, enqueue, dedup (webhook + queue).
 - Specific regression: existing ceramics checkout, webhook mark-paid, email, InPost tests unchanged.
 
 ### P5-2: E2E
+
 - `purchase-print.spec.ts` — full checkout of a print, verify `prodigi_orders` row created (sandbox).
 - `purchase-mixed.spec.ts` — ceramic + print, verify ceramic reserved + print fulfilment enqueued.
 - Existing ceramics E2E passes without modification.
 
 ### P5-3: Build + preview
+
 - `npm run build` (webpack, no Turbopack).
 - `npm run preview:cf` — smoke test on Workers runtime.
 - No ChunkLoadError, no missing bindings.
 
 ### P5-4: Sandbox order smoke test
+
 - Set `PRODIGI_ENV=sandbox`, real Prodigi sandbox API key.
 - Run `npm run sync-prodigi-skus` — all SKUs verify OK.
 - Place a test order for a print → verify Prodigi sandbox order created, callback received, status updated.
@@ -297,12 +339,13 @@ Out of scope for MVP. Depends on Phases 0–5 complete and live.
 - Badge "N of M remaining" in `PrintConfigurator`.
 - Full CRUD admin panel for print designs + variant matrix (behind Cloudflare Access).
 - Automated margin monitoring via `POST /quotes` on a scheduled cron.
+- Multi-paper selector (add `paper` as variable axis if demand exists).
 
 ---
 
 ## Dependency graph
 
-```
+```text
 P0 (variant model) ──┬──► P1 (DB + client) ──┬──► P2 (storefront)
                      │                         │
                      │                         └──► P3 (fulfilment) ──► P4 (admin) ──► P5 (tests)

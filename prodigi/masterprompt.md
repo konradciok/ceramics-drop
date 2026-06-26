@@ -62,7 +62,7 @@ An 18×24 in framed print with mount has a 14×20 in print/window opening. The w
 
 **Reconciled variant model** (replaces the existing storefront plan's `frame` axis):
 
-```
+```text
 size         : (3 values — to be confirmed from GET /products/{sku} responses in Phase 0)
                Prodigi uses inch-based SKU ladders, e.g. GLOBAL-CFP-12X16, GLOBAL-CFP-16X20, GLOBAL-CFP-18X24
                Do NOT assume cm sizes — derive exact displayLabels from verified API responses only
@@ -101,7 +101,7 @@ This changes:
 
 **Runtime secrets** (`wrangler secret put` in prod, `.dev.vars` locally):
 
-```
+```bash
 PRODIGI_API_KEY_SANDBOX=...
 PRODIGI_API_KEY_LIVE=...
 PRODIGI_ENV=sandbox                    # switch to "live" only after full checklist
@@ -204,7 +204,7 @@ alter table order_items add column pod_variant_id uuid references pod_variants(i
 
 ## Module structure (adapt to repo conventions)
 
-```
+```text
 src/server/prodigi/
   client.ts         # fetch wrapper, sandbox/live base URL, X-API-Key header, typed errors
   types.ts          # Prodigi API request/response types (plain TS, no Zod)
@@ -232,6 +232,7 @@ scripts/
 **Adding Cloudflare Queues for fulfilment (if chosen)** requires all of the following:
 
 1. `wrangler.jsonc` — add producer + consumer bindings:
+
 ```jsonc
 "queues": {
   "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
@@ -245,12 +246,15 @@ scripts/
 ```
 
 2. `cloudflare-env.d.ts` — add binding type:
+
 ```typescript
 FULFILMENT_QUEUE: Queue;
 ```
+
 Then run `npm run cf-typegen` to regenerate types.
 
 3. `worker.ts` — add `queue` handler alongside the existing `fetch` and `scheduled` exports:
+
 ```typescript
 export default {
   fetch: handler.fetch,
@@ -285,12 +289,14 @@ Without all three, Cloudflare will not route queue messages to your consumer.
 - `POST /quotes` — price check (optional, for margin validation)
 
 **Idempotency key format:**
-```
+
+```text
 prodigi:{env}:order:{internal_order_id}:v1
 ```
 
 **Callback URL format:**
-```
+
+```text
 https://anna-ciok.studio/api/webhooks/prodigi/{PRODIGI_CALLBACK_TOKEN}
 ```
 
@@ -316,7 +322,7 @@ const prodigiOrderId = cloudEvent.data?.prodigiOrderId  // or from URL/data depe
 
 ## Fulfilment flow (complete)
 
-```
+```text
 payment_intent.succeeded webhook (handleStripeEvent in src/lib/webhook.ts)
   → markPaid (filter variant IS NULL for count guard — ceramics only)
   → trackPurchase (existing — consent-gated Meta CAPI + GA4 MP, unchanged)
@@ -376,7 +382,7 @@ The existing `print-pricing.ts` plan is Strategy A: local price table is source 
 
 Local statuses for Prodigi-fulfilled items:
 
-```
+```text
 pending_payment        → order not yet paid
 paid_pending_fulfilment → paid, job not yet created
 fulfilment_queued      → job in queue
