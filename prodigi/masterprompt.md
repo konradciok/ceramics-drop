@@ -320,7 +320,7 @@ const prodigiOrderId = cloudEvent.data?.prodigiOrderId
 
 **Callback handling:**
 1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL; reject malformed CloudEvents early (check `id`, `type`, `data.prodigiOrderId` exist — return **400** for permanent shape failures, not 200)
-2. Atomically upsert into `webhook_events` on unique `(provider, provider_event_id)` with an initial `status = 'processing'` — this is the concurrency claim/lock. If the upsert conflicts (row already exists), check its `status`: return 200 immediately if `status = 'done'`; return 200 and no-op if `status = 'processing'` (in-flight duplicate)
+2. Atomically upsert into `webhook_events` on unique `(provider, provider_event_id)` with `status = 'processing'` and `processing_started_at = now()` — this is the concurrency claim/lock. If the upsert conflicts (row already exists), check its `status`: return 200 immediately if `status = 'done'`; if `status = 'processing'`, check the lease: no-op and return 200 if `processing_started_at > now() - 5 minutes` (in-flight); reacquire the lock (UPDATE the row) if stale (`processing_started_at <= now() - 5 minutes`) — this handles handler crashes without permanently freezing the event
 3. Fetch Prodigi order via `GET /orders/{id}` (authenticated — never trust callback payload alone)
 4. Update local `prodigi_orders` + `fulfilment_jobs` status
 5. Update `webhook_events` row: set `status = 'done'`, `processed_at = now()` after durable success
