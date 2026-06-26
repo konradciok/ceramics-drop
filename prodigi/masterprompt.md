@@ -211,7 +211,7 @@ src/server/prodigi/
   products.ts       # GET /products/{sku} — sync SKU details + printAreaSizes
   orders.ts         # POST /orders, GET /orders/{id}, cancel/update helpers
   quotes.ts         # POST /quotes
-  callbacks.ts      # callback parse, dedupe, re-fetch order state
+  callbacks.ts      # callback parse (validate CloudEvents shape before reading id/type/data), dedupe, re-fetch order state
   mapper.ts         # local order + items → Prodigi order payload
   errors.ts         # typed errors + retryability classification
 
@@ -263,7 +263,12 @@ export default {
     for (const msg of batch.messages) {
       await processJob(msg.body, env, ctx)
         .then(() => msg.ack())
-        .catch(() => msg.retry())
+        .catch((err) => {
+          // Non-retryable errors (validation failure, unknown SKU, permanent Prodigi 4xx)
+          // must be acked so they don't consume retries and go straight to DLQ.
+          if (err?.retryable === false) msg.ack()
+          else msg.retry()
+        })
     }
   }
 }
@@ -312,12 +317,12 @@ const prodigiOrderId = cloudEvent.data?.prodigiOrderId  // or from URL/data depe
 ```
 
 **Callback handling:**
-1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL
-2. Store raw event in `webhook_events` with `provider_event_id = cloudEvent.id`, `event_type = cloudEvent.type`
-3. Dedupe by `(provider, provider_event_id)` — return 200 immediately if already processed
-4. Fetch Prodigi order via `GET /orders/{id}` (authenticated — never trust callback payload alone)
-5. Update local `prodigi_orders` + `fulfilment_jobs` status
-6. Return 200 always so Prodigi does not retry — log errors internally
+1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL; reject malformed CloudEvents early (check `id`, `type`, `data` fields exist before reading them)
+2. Atomically upsert into `webhook_events` on unique `(provider, provider_event_id)` — return 200 immediately only if a previous attempt already set `processed_at` (i.e. completed successfully)
+3. Fetch Prodigi order via `GET /orders/{id}` (authenticated — never trust callback payload alone)
+4. Update local `prodigi_orders` + `fulfilment_jobs` status
+5. Mark `webhook_events.processed_at = now()` after durable success
+6. Return 200 only after step 5 completes; let transient errors propagate so Prodigi retries — do not swallow all errors with a blanket 200
 
 ---
 
