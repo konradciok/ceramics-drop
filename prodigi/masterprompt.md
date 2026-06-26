@@ -313,16 +313,18 @@ Prodigi callbacks are CloudEvents. Extract fields as follows:
 const cloudEvent = await req.json()
 const providerEventId = cloudEvent.id         // use as webhook_events.provider_event_id
 const eventType = cloudEvent.type              // e.g. "com.prodigi.order#/status/stage/InProduction"
-const prodigiOrderId = cloudEvent.data?.prodigiOrderId  // or from URL/data depending on event
+// prodigiOrderId is always in cloudEvent.data.prodigiOrderId for all Prodigi order events.
+// Do NOT fall back to parsing the URL — if data.prodigiOrderId is missing, reject with 400.
+const prodigiOrderId = cloudEvent.data?.prodigiOrderId
 ```
 
 **Callback handling:**
-1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL; reject malformed CloudEvents early (check `id`, `type`, `data` fields exist before reading them)
-2. Atomically upsert into `webhook_events` on unique `(provider, provider_event_id)` — return 200 immediately only if a previous attempt already set `processed_at` (i.e. completed successfully)
+1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL; reject malformed CloudEvents early (check `id`, `type`, `data.prodigiOrderId` exist — return **400** for permanent shape failures, not 200)
+2. Atomically upsert into `webhook_events` on unique `(provider, provider_event_id)` with an initial `status = 'processing'` — this is the concurrency claim/lock. If the upsert conflicts (row already exists), check its `status`: return 200 immediately if `status = 'done'`; return 200 and no-op if `status = 'processing'` (in-flight duplicate)
 3. Fetch Prodigi order via `GET /orders/{id}` (authenticated — never trust callback payload alone)
 4. Update local `prodigi_orders` + `fulfilment_jobs` status
-5. Mark `webhook_events.processed_at = now()` after durable success
-6. Return 200 only after step 5 completes; let transient errors propagate so Prodigi retries — do not swallow all errors with a blanket 200
+5. Update `webhook_events` row: set `status = 'done'`, `processed_at = now()` after durable success
+6. Return 200 only after step 5 completes; for transient errors (network, DB timeout) return **500** so Prodigi retries; for non-retryable errors (unknown order ID, contract violation) return **400** — do not swallow all errors with a blanket 200
 
 ---
 
