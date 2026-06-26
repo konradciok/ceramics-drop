@@ -20,10 +20,12 @@ read authoritative `printAreaSizes` (pixels @ 300 DPI), `shipsTo`, and the exact
 
 2. **Egress policy denies the host.** Outbound HTTPS to `api.sandbox.prodigi.com`
    is rejected by the organization's egress proxy:
-   ```
+
+   ```text
    connect_rejected — gateway answered 403 to CONNECT (policy denial)
    host: api.sandbox.prodigi.com:443
    ```
+
    The proxy README is explicit: report blocked hosts, do not route around them.
    `www.prodigi.com` and `support.prodigi.com` also return 403 to server-side
    fetch (bot protection), so even the public docs pages can't be scraped directly.
@@ -161,5 +163,3 @@ InPost; mixed orders = two parcels. UX copy decision.)
 > Q2–Q5 will be filled in with recommended decisions in the P0-4 sub-task, which
 > per the execution rules is a STOP-and-report point. Q1's API-verification half
 > is blocked now and is reported above ahead of schedule because it gates P0-1.
-</content>
-</invoke>
