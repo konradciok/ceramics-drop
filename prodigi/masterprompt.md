@@ -245,7 +245,7 @@ scripts/
 }
 ```
 
-2. `cloudflare-env.d.ts` — add binding type:
+1. `cloudflare-env.d.ts` — add binding type:
 
 ```typescript
 FULFILMENT_QUEUE: Queue;
@@ -253,7 +253,7 @@ FULFILMENT_QUEUE: Queue;
 
 Then run `npm run cf-typegen` to regenerate types.
 
-3. `worker.ts` — add `queue` handler alongside the existing `fetch` and `scheduled` exports:
+1. `worker.ts` — add `queue` handler alongside the existing `fetch` and `scheduled` exports:
 
 ```typescript
 export default {
@@ -303,6 +303,7 @@ https://anna-ciok.studio/api/webhooks/prodigi/{PRODIGI_CALLBACK_TOKEN}
 **Callback payload format (Prodigi uses CloudEvents spec):**
 
 Prodigi callbacks are CloudEvents. Extract fields as follows:
+
 ```typescript
 const cloudEvent = await req.json()
 const providerEventId = cloudEvent.id         // use as webhook_events.provider_event_id

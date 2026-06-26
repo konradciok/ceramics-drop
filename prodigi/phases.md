@@ -61,7 +61,7 @@ Write this matrix into `prodigi/sku-catalog.md` with real values from Prodigi AP
 
 All 5 require explicit decisions documented in `prodigi/decisions.md`:
 
-1. **Variant axes** — confirm sizes, frame colours, mount colours from Prodigi API (P0-1 resolves this; document confirmed values)
+1. **Variant axes** — confirm sizes, frame colours, mount options from Prodigi API (P0-1 resolves this; document confirmed values)
 2. **Asset hosting** — R2 presigned URL vs Worker proxy vs public path
 3. **Queue vs direct** — Cloudflare Queue binding or `ctx.waitUntil` inline fallback
 4. **Shipping for framed prints** — Prodigi ships directly from their labs; decide mixed-order delivery UX and whether to inform customers about two-parcel fulfilment
