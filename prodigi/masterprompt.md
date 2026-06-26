@@ -36,7 +36,7 @@ Read `AGENTS.md` and `CLAUDE.md` before touching any file. Build must stay `next
 | Validation | No Zod/Valibot — plain TypeScript + manual checks |
 | Async jobs | Cron via `worker.ts` (every 15 min, order expiry only) — **no Cloudflare Queues** |
 | Storage | Static `public/uploads/` WebP images (display-optimised) — **no R2, no high-res master files** |
-| Admin | Local-only (no public deployment), Cloudflare Access JWT gate |
+| Admin | Deployed on production Workers bundle at `anna-ciok.studio`; gated by Cloudflare Access JWT in `worker.ts`; local bypass via `STUDIO_ADMIN_LOCAL_BYPASS` env var |
 
 ### What exists on `claude/prints-feature` branch (storefront plan, not yet merged)
 
@@ -63,9 +63,11 @@ An 18×24 in framed print with mount has a 14×20 in print/window opening. The w
 **Reconciled variant model** (replaces the existing storefront plan's `frame` axis):
 
 ```
-size         : '30x40cm' | '40x50cm' | '50x60cm'  (to confirm with Prodigi docs)
+size         : (3 values — to be confirmed from GET /products/{sku} responses in Phase 0)
+               Prodigi uses inch-based SKU ladders, e.g. GLOBAL-CFP-12X16, GLOBAL-CFP-16X20, GLOBAL-CFP-18X24
+               Do NOT assume cm sizes — derive exact displayLabels from verified API responses only
 paper        : 'enhanced-matte'                      (fixed default at MVP)
-frame_colour : 'black' | 'white' | 'natural'
+frame_colour : 'black' | 'white' | 'natural'         (confirm attribute values from API)
 mount        : false | true                           (distinct fulfilment axis, not a UI boolean)
 ```
 
@@ -90,6 +92,8 @@ This changes:
 7. Do not break the existing ceramics checkout, webhook, fulfillment, InPost, or email flows.
 8. Build stays `next build --webpack`. No Turbopack.
 9. Match existing conventions: plain TypeScript validation, Supabase service-role, Resend emails, no Zod.
+10. **Guard `createShipment`:** InPost `createShipment` currently runs for every paid order inside `handleStripeEvent`. It must be guarded to run only when the order contains ceramic items (`order_items` rows with `variant is null`). Print-only orders must not hit InPost ShipX.
+11. **Guard `ensureInvoiced` / `invoice.ts`:** The invoice helper calls `getProductById(it.product_id)` which will return `undefined` or produce mislabelled invoices for print tokens. It must be extended to handle print line items before any print orders can be paid.
 
 ---
 
@@ -104,8 +108,9 @@ PRODIGI_ENV=sandbox                    # switch to "live" only after full checkl
 PRODIGI_CALLBACK_TOKEN=...             # unguessable token for callback URL
 PRINT_ASSET_TOKEN_SECRET=...           # signs print-asset access tokens
 PRODIGI_DEFAULT_SHIPPING_METHOD=Budget
-PRODIGI_DEFAULT_CURRENCY=PLN
 ```
+
+> **Note — no `PRODIGI_DEFAULT_CURRENCY`:** The store is tri-currency (PLN/EUR/GBP). `recipientCost` on every Prodigi order item must be derived from `orders.currency` (mapped from the checkout locale: `pl → PLN`, `gb → GBP`, `en/es/de → EUR`). A single default currency would be wrong for non-PLN orders. The mapper must read `order.currency` and format the amount accordingly.
 
 Add placeholders to `.env.example` — no real values.
 
@@ -222,7 +227,45 @@ scripts/
   sync-prodigi-skus.ts    # verify selected SKUs with GET /products/{sku}, store in pod_variants
 ```
 
-No queue bindings exist in `wrangler.jsonc` yet. If adding Cloudflare Queues, add binding there.
+**Important — `DOQueueHandler` is NOT a fulfilment queue.** `worker.ts` re-exports `DOQueueHandler` from OpenNext — this is cache/tag invalidation infrastructure for the Next.js runtime, not a Cloudflare Queue for Prodigi fulfilment. Do not conflate the two.
+
+**Adding Cloudflare Queues for fulfilment (if chosen)** requires all of the following:
+
+1. `wrangler.jsonc` — add producer + consumer bindings:
+```jsonc
+"queues": {
+  "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
+  "consumers": [{
+    "queue": "prodigi-fulfilment",
+    "max_batch_size": 1,
+    "max_retries": 10,
+    "dead_letter_queue": "prodigi-fulfilment-dlq"
+  }]
+}
+```
+
+2. `cloudflare-env.d.ts` — add binding type:
+```typescript
+FULFILMENT_QUEUE: Queue;
+```
+Then run `npm run cf-typegen` to regenerate types.
+
+3. `worker.ts` — add `queue` handler alongside the existing `fetch` and `scheduled` exports:
+```typescript
+export default {
+  fetch: handler.fetch,
+  scheduled: handler.scheduled,
+  async queue(batch: MessageBatch<FulfilmentJobMessage>, env: CloudflareEnv, ctx: ExecutionContext) {
+    for (const msg of batch.messages) {
+      await processJob(msg.body, env, ctx)
+        .then(() => msg.ack())
+        .catch(() => msg.retry())
+    }
+  }
+}
+```
+
+Without all three, Cloudflare will not route queue messages to your consumer.
 
 ---
 
@@ -251,22 +294,38 @@ prodigi:{env}:order:{internal_order_id}:v1
 https://anna-ciok.studio/api/webhooks/prodigi/{PRODIGI_CALLBACK_TOKEN}
 ```
 
+**Callback payload format (Prodigi uses CloudEvents spec):**
+
+Prodigi callbacks are CloudEvents. Extract fields as follows:
+```typescript
+const cloudEvent = await req.json()
+const providerEventId = cloudEvent.id         // use as webhook_events.provider_event_id
+const eventType = cloudEvent.type              // e.g. "com.prodigi.order#/status/stage/InProduction"
+const prodigiOrderId = cloudEvent.data?.prodigiOrderId  // or from URL/data depending on event
+```
+
 **Callback handling:**
-1. Receive callback, store raw event in `webhook_events`
-2. Dedupe by event id
-3. Fetch Prodigi order via `GET /orders/{id}` (authenticated)
-4. Update local `prodigi_orders` + `fulfilment_jobs` status
+1. Receive callback, validate `PRODIGI_CALLBACK_TOKEN` in URL
+2. Store raw event in `webhook_events` with `provider_event_id = cloudEvent.id`, `event_type = cloudEvent.type`
+3. Dedupe by `(provider, provider_event_id)` — return 200 immediately if already processed
+4. Fetch Prodigi order via `GET /orders/{id}` (authenticated — never trust callback payload alone)
+5. Update local `prodigi_orders` + `fulfilment_jobs` status
+6. Return 200 always so Prodigi does not retry — log errors internally
 
 ---
 
 ## Fulfilment flow (complete)
 
 ```
-payment_intent.succeeded webhook
-  → markPaid (existing, unchanged)
-  → enqueue fulfilment job (new)
-    → create fulfilment_jobs row (idempotent)
-    → push to Cloudflare Queue OR process inline
+payment_intent.succeeded webhook (handleStripeEvent in src/lib/webhook.ts)
+  → markPaid (filter variant IS NULL for count guard — ceramics only)
+  → trackPurchase (existing — consent-gated Meta CAPI + GA4 MP, unchanged)
+  → ensureInvoiced (existing — MUST be extended to handle print line items; errors swallowed)
+  → createShipment  IF order has ceramic items (variant IS NULL)
+                    (re-throws retryable errors so Stripe retries; must NOT be called for print-only orders)
+  → enqueueProdigi  IF order has print items (variant IS NOT NULL)
+    → create fulfilment_jobs row (idempotent — unique constraint on order_id)
+    → push to Cloudflare Queue OR process inline (see P3-4 in phases.md)
 
 queue consumer / process-job.ts:
   1. load order from DB

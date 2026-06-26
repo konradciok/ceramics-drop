@@ -117,9 +117,20 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - `src/app/api/checkout/route.ts` — split `ceramicIds` from prints; reserve only ceramics; insert `order_items` with `variant` + `pod_variant_id`.
 - Unit tests: `print-cart.test.ts`, `checkout.test.ts`.
 
-### P2-3: Webhook fix (CRITICAL — eliminates auto-refund)
-- `src/lib/webhook.ts` / `src/app/api/stripe/webhook/route.ts` — `markPaid` count guard: filter `.is('variant', null)` (ceramics only).
+### P2-3: Webhook fixes (CRITICAL — three blockers)
+
+**P2-3a: `markPaid` count guard (eliminates auto-refund)**
+- `src/lib/webhook.ts` / `src/app/api/stripe/webhook/route.ts` — filter `.is('variant', null)` on both `expectedCount` and `fulfilledCount` queries.
 - Integration test: `print-only order` → no auto-refund; mixed order → ceramics counted correctly.
+
+**P2-3b: `createShipment` guard (eliminates InPost call on print orders)**
+- `handleStripeEvent` in `src/lib/webhook.ts` — wrap `createShipment` call with a check: only call it when the order contains at least one ceramic item (`order_items` row with `variant IS NULL`).
+- Pattern: load item types before deciding which fulfilment path to take.
+- Integration test: print-only order → `createShipment` not called; mixed order → called once for ceramics.
+
+**P2-3c: `ensureInvoiced` / `invoice.ts` extension (eliminates crash on print tokens)**
+- `src/lib/invoice.ts` (or wherever `ensureInvoiced` lives) — `getProductById(it.product_id)` returns `undefined` for print tokens. Extend to decode print token and produce a meaningful invoice line (design name + variant label) instead of crashing or producing a blank line.
+- Integration test: invoice generated for print-only order without error; line items describe the print correctly.
 
 ### P2-4: Frontend — collection + PDP + configurator
 - `src/lib/products.ts` — `CATEGORIES['fine-art-prints']`, `CATEGORY_ORDER`.
@@ -147,7 +158,8 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - `buildProdigiPayload(order, items, podVariants)` → Prodigi order JSON.
 - Maps: `merchantReference`, `shippingMethod`, `recipient` (from order shipping_address), `items` (SKU, sizing, attributes, assets, recipientCost), `metadata`, `idempotencyKey`, `callbackUrl`.
 - `sizing`: use `fillPrintArea` only if aspect ratios match; otherwise require exact pre-sized asset.
-- Unit tests: mapper.test.ts — payload shape, idempotency key format, recipientCost in PLN/EUR.
+- **Shipping model note:** Prodigi fulfils and ships prints directly from their labs — not via InPost. The `recipient` is populated from `orders.shipping_address` (the same customer address), but the `shippingMethod` is a Prodigi shipping tier (`Budget`, `Standard`, `Express`), not an InPost method. For mixed orders (ceramics + prints), the ceramics ship via InPost as normal and prints ship separately from Prodigi — the customer may receive two parcels. This must be documented in the checkout UI and confirmed in Phase 0 (open question 4).
+- Unit tests: mapper.test.ts — payload shape, idempotency key format, recipientCost mapped from `orders.currency` (PLN/EUR/GBP).
 
 ### P3-2: Asset URL generation (`src/server/prodigi/assets.ts`)
 - Given `order_id` + `pod_variant_id` → return a URL Prodigi can fetch.
@@ -165,28 +177,58 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - Unit tests: process-job.test.ts — all branches.
 
 ### P3-4: Enqueue fulfilment (`src/server/fulfilment/enqueue.ts`)
-- Called from `handleStripeEvent` after `markPaid`.
+- Called from `handleStripeEvent` after `markPaid` (and after `createShipment` check for ceramics).
 - Creates `fulfilment_jobs` row (idempotent — unique constraint on `order_id`).
-- If Cloudflare Queue binding exists: push `FulfilmentJobMessage` to queue.
-- If no queue: call `process-job.ts` directly (simpler, less resilient).
-- Document the trade-off in `prodigi/decisions.md`.
+- **Recommended default:** use Cloudflare Queue binding — push `FulfilmentJobMessage` to queue. This gives at-least-once delivery, automatic retries, and does not risk Stripe webhook timeout (25 s limit).
+- **Inline fallback (only if no CF Queue):** call `process-job.ts` inside `ctx.waitUntil(...)` — never inline and never throw from the webhook handler on Prodigi errors, as rethrowing causes Stripe to retry the entire webhook (which would run `markPaid` again and could double-send emails). Pattern:
+  ```typescript
+  ctx.waitUntil(processJob(jobId, env).catch(err => {
+    console.error('Prodigi inline processing failed', err)
+    // DB row already has status/error; do not throw
+  }))
+  ```
+- Document the chosen approach in `prodigi/decisions.md`.
 
 ### P3-5: Queue consumer (if using CF Queues)
-- `worker.ts` queue handler export (alongside existing scheduled handler).
-- Deserialise `FulfilmentJobMessage`, call `process-job.ts`.
-- On success: acknowledge.
-- On retryable error: throw (Cloudflare retries at-least-once).
-- On non-retryable: ack + mark DB as failed_action_required.
+
+**Required wrangler.jsonc additions:**
+```jsonc
+"queues": {
+  "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
+  "consumers": [{
+    "queue": "prodigi-fulfilment",
+    "max_batch_size": 1,
+    "max_retries": 10,
+    "dead_letter_queue": "prodigi-fulfilment-dlq"
+  }]
+}
+```
+
+**Required `cloudflare-env.d.ts` addition:**
+```typescript
+FULFILMENT_QUEUE: Queue;
+```
+Run `npm run cf-typegen` after updating the binding.
+
+**Required `worker.ts` addition** (alongside existing `fetch` and `scheduled` exports):
+- Export `queue` handler that deserialises `FulfilmentJobMessage` and calls `process-job.ts`.
+- On success: `msg.ack()`.
+- On retryable error: `msg.retry()` — Cloudflare retries at-least-once.
+- On non-retryable: `msg.ack()` + mark DB as `failed_action_required` (do not leave in dead letter without DB update).
 
 ### P3-6: Prodigi callback endpoint (`src/app/api/webhooks/prodigi/route.ts`)
 - Validate `PRODIGI_CALLBACK_TOKEN` in URL.
-- Store raw event in `webhook_events` (dedupe by `provider_event_id`).
-- Fetch order state from `GET /orders/{prodigi_order_id}` (authenticated).
+- Parse payload as CloudEvents format. Extract:
+  - `provider_event_id = cloudEvent.id` — unique event identifier for dedup
+  - `event_type = cloudEvent.type` — e.g. `com.prodigi.order#/status/stage/InProduction`
+  - `prodigi_order_id` from `cloudEvent.data` (field name TBC from Prodigi docs)
+- Store raw event in `webhook_events` with `(provider='prodigi', provider_event_id)` — dedupe via unique index.
+- Fetch order state from `GET /orders/{prodigi_order_id}` (authenticated — never trust callback payload state alone).
 - Update `prodigi_orders.prodigi_status_stage` + `prodigi_raw_json`.
 - Map stage → local status via `status-map.ts`.
-- Never overwrite terminal status.
+- Never overwrite terminal status (`completed`, `cancelled`, `failed_action_required`).
 - Return 200 always (so Prodigi doesn't retry forever); log errors internally.
-- Integration tests: callback-dedup, state fetch, terminal-status guard.
+- Integration tests: CloudEvents parse, callback-dedup (same `cloudEvent.id` ignored), state fetch, terminal-status guard.
 
 **Deliverables:** End-to-end Prodigi fulfilment. Paid print order → Prodigi order created → status tracked via callbacks.
 
