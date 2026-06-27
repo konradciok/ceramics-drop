@@ -68,6 +68,9 @@ export async function POST(req: Request) {
     currency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
     orderAmountGrosze(unitPrices, method);
   const ids = valid.items.map((i) => i.product_id);
+  // Only ceramics carry a piece_state row to reserve; prints are open-edition.
+  const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
+  const hasPrints = valid.items.some((i) => i.variant);
 
   const supabase = getSupabaseAdmin();
   const orderId = crypto.randomUUID();
@@ -97,9 +100,9 @@ export async function POST(req: Request) {
     if (conflictArr.length > 0) {
       return NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 });
     }
-  } else {
+  } else if (ceramicIds.length > 0) {
     const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
-      p_ids: ids,
+      p_ids: ceramicIds,
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
@@ -124,6 +127,7 @@ export async function POST(req: Request) {
         product_ids: ids.join(','),
         delivery_method: method,
         ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
+        ...(hasPrints ? { has_prints: '1' } : {}),
       },
     });
   } catch {
@@ -183,7 +187,12 @@ export async function POST(req: Request) {
   let itemsErr = null;
   if (!orderErr) {
     const r = await supabase.from('order_items').insert(
-      valid.items.map((i) => ({ order_id: orderId, product_id: i.product_id, unit_price: i.unit_price })),
+      valid.items.map((i) => ({
+        order_id: orderId,
+        product_id: i.product_id,
+        unit_price: i.unit_price,
+        variant: i.variant ? { kind: 'print' as const, ...i.variant } : null,
+      })),
     );
     itemsErr = r.error;
   }
