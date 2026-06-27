@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateCart, MAX_CART } from './checkout';
+import { encodePrintToken } from './print-cart';
 
 describe('validateCart', () => {
   it('maps known ids to products with grosze prices', () => {
@@ -47,5 +48,24 @@ describe('validateCart', () => {
     // k01 is kubki → PRICE_GBP.kubki = 22 → toGBPPence(22) = 2200
     const result = validateCart(['k01'], 'gbp');
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
+  });
+
+  it('accepts a valid print token', () => {
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    const result = validateCart([token], 'pln');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
+    expect(result.items[0].unit_price).toBe(15000); // 150 PLN × 100
+  });
+
+  it('rejects an unknown design id in print token', () => {
+    const token = encodePrintToken('fap99', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
+    expect(validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+  });
+
+  it('rejects an unpublished design', () => {
+    const token = encodePrintToken('fap03', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
+    expect(validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
   });
 });
