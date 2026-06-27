@@ -1,0 +1,71 @@
+import type { PrintDesign, PrintVariantSelection } from './types';
+import { variantKey } from './print-cart';
+
+export const PRINT_DESIGNS: PrintDesign[] = [
+  {
+    id: 'fap01',
+    category: 'fine-art-prints',
+    num: '01',
+    image: '/uploads/fap-01.svg',
+    gallery: ['/uploads/fap-01-room.svg', '/uploads/fap-01-detail.svg'],
+    noteIndex: 0,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'white', 'natural'],
+    mountAvailable: true,
+    published: true,
+    fromPLN: 105,
+  },
+  {
+    id: 'fap02',
+    category: 'fine-art-prints',
+    num: '02',
+    image: '/uploads/fap-02.svg',
+    gallery: ['/uploads/fap-02-room.svg'],
+    noteIndex: 1,
+    sizes: ['30x40', '50x70'],
+    frameColours: ['black', 'white'],
+    mountAvailable: false,
+    published: true,
+    fromPLN: 105,
+  },
+  {
+    id: 'fap03',
+    category: 'fine-art-prints',
+    num: '03',
+    image: '/uploads/fap-03.svg',
+    noteIndex: 2,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'white', 'natural'],
+    mountAvailable: true,
+    published: false,
+    fromPLN: 105,
+  },
+];
+
+const BY_ID = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
+
+/** Published designs in registry order. */
+export function getPrintDesigns(): PrintDesign[] {
+  return PRINT_DESIGNS.filter((d) => d.published);
+}
+
+/** Resolve by id including unpublished — lets checkout reject hidden vs unknown. */
+export function getPrintById(id: string): PrintDesign | undefined {
+  return BY_ID.get(id);
+}
+
+/** Whether a variant is sellable for this design. */
+export function isVariantAvailable(design: PrintDesign, sel: PrintVariantSelection): boolean {
+  if (!design.published) return false;
+  if (!design.sizes.includes(sel.size)) return false;
+  if (sel.framed) {
+    if (design.frameColours.length === 0) return false;
+    if (sel.frameColour === 'none') return false;
+    if (!design.frameColours.includes(sel.frameColour)) return false;
+    if (sel.mount && !design.mountAvailable) return false;
+  } else {
+    if (sel.frameColour !== 'none') return false;
+  }
+  if (design.unavailable?.includes(variantKey(sel))) return false;
+  return true;
+}
