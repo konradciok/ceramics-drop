@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   req: Request,
-  { params }: { params: { token: string } },
+  { params }: { params: Promise<{ token: string }> },
 ) {
   const { env } = getCloudflareContext();
+  const { token } = await params;
 
-  if (params.token !== env.PRODIGI_CALLBACK_TOKEN) {
+  if (token !== env.PRODIGI_CALLBACK_TOKEN) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

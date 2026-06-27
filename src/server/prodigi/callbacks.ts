@@ -25,36 +25,34 @@ export async function handleProdigiCallback(
   const supabase = getSupabaseAdmin();
   const now = new Date().toISOString();
 
-  // 2. Upsert dedup row — claim processing lease.
-  const { data: existing, error: upsertErr } = await supabase
+  // 2. Check for existing event first — never overwrite 'done' status.
+  const { data: existing } = await supabase
     .from('webhook_events')
-    .upsert(
-      {
-        provider: 'prodigi',
-        provider_event_id: event.id,
-        event_type: event.type,
-        raw_json: body,
-        status: 'processing',
-        processing_started_at: now,
-      },
-      { onConflict: 'provider,provider_event_id', ignoreDuplicates: false },
-    )
     .select('id, status, processing_started_at')
-    .single();
+    .eq('provider', 'prodigi')
+    .eq('provider_event_id', event.id)
+    .maybeSingle();
 
-  if (upsertErr) return { status: 500, message: 'DB error on dedup upsert' };
-
-  // Already processed.
   if (existing?.status === 'done') return { status: 200, message: 'Already processed' };
 
-  // In-flight: check lease staleness (> 5 min = reacquire, else skip).
   if (existing?.status === 'processing' && existing.processing_started_at) {
     const age = Date.now() - new Date(existing.processing_started_at).getTime();
     if (age < LEASE_MINUTES * 60 * 1000) return { status: 200, message: 'In flight' };
-    // Reacquire stale lease — fall through.
+    // Reacquire stale lease.
     await supabase.from('webhook_events')
       .update({ processing_started_at: now })
       .eq('id', existing.id);
+  } else {
+    // New event — insert processing row.
+    const { error: insertErr } = await supabase.from('webhook_events').insert({
+      provider: 'prodigi',
+      provider_event_id: event.id,
+      event_type: event.type,
+      raw_json: body,
+      status: 'processing',
+      processing_started_at: now,
+    });
+    if (insertErr) return { status: 500, message: 'DB error on event insert' };
   }
 
   // 3. Re-fetch order state from Prodigi (never trust callback payload alone).
