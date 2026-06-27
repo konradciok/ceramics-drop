@@ -1,4 +1,3 @@
-import type { CloudflareEnv } from '../../../cloudflare-env';
 import type { ProdigiOrderRequest, ProdigiOrderResponse, ProdigiProductResponse } from './types';
 
 export class ProdigiError extends Error {

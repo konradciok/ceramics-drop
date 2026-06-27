@@ -1,6 +1,12 @@
 /* eslint-disable */
 // Workers bindings from wrangler.jsonc + secrets. After changing bindings, run `npm run cf-typegen`.
 
+/** Minimal Workers ExecutionContext — matches the runtime shape, usable in Next.js server code. */
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+  passThroughOnException(): void;
+}
+
 interface CloudflareEnv {
   ASSETS: Fetcher;
   WORKER_SELF_REFERENCE: Service<typeof import('./.open-next/worker').default>;
@@ -40,6 +46,15 @@ interface CloudflareEnv {
   GA4_API_SECRET?: string;
   // Sentry (optional; server runtime falls back to NEXT_PUBLIC_SENTRY_DSN from the build).
   SENTRY_DSN?: string;
+  // Prodigi Print-on-Demand — CF Queue, R2 bucket, and API secrets.
+  FULFILMENT_QUEUE: Queue;
+  PRINT_ASSETS: R2Bucket;
+  PRODIGI_API_KEY_SANDBOX: string;
+  PRODIGI_API_KEY_LIVE: string;
+  PRODIGI_ENV: string;
+  PRODIGI_CALLBACK_TOKEN: string;
+  PRINT_ASSET_TOKEN_SECRET: string;
+  PRODIGI_DEFAULT_SHIPPING_METHOD: string;
   // Cloudflare Access — admin route protection (worker.ts auth guard + src/lib/admin/access.ts).
   // CF_ACCESS_TEAM_DOMAIN: full issuer origin, e.g. https://<team>.cloudflareaccess.com
   // CF_ACCESS_AUD: Application Audience tag from the Access application settings.

@@ -1,7 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
 import { buildProdigiPayload } from '../prodigi/mapper';
-import type { CloudflareEnv } from '../../../cloudflare-env';
 import type { FulfilmentJobMessage } from '../prodigi/types';
 
 async function getAssetUrl(

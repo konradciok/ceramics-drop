@@ -26,6 +26,8 @@ const COVER: Record<CategorySlug, string> = {
   'talerze-duze': '/uploads/talerz-duzy-1.webp',
   'duze-michy': '/uploads/duza-micha-1.webp',
   'miski-falowane': '/uploads/miski-falowane-9.webp',
+  // ponytail: placeholder until Task 16 adds a real prints cover image
+  'fine-art-prints': '/uploads/kubek-12.webp',
 };
 
 

@@ -1,5 +1,4 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
-import type { CloudflareEnv } from '../../../cloudflare-env';
 import type { FulfilmentJobMessage } from '../prodigi/types';
 
 export async function enqueueProdigi(

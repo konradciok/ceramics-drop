@@ -1,7 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { prodigiClient } from './client';
 import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
-import type { CloudflareEnv } from '../../../cloudflare-env';
 
 const LEASE_MINUTES = 5;
 

@@ -50,6 +50,7 @@ const PRICE_TIER: Record<CategorySlug, string> = {
   'wazony-srednie': 'premium',
   'wazony-duze': 'premium',
   'duze-michy': 'premium',
+  'fine-art-prints': 'standard', // ponytail: excluded from feed, but TS needs exhaustive map
 };
 
 const PRODUCT_FAMILY: Record<CategorySlug, string> = {
@@ -62,6 +63,7 @@ const PRODUCT_FAMILY: Record<CategorySlug, string> = {
   'wazony-duze': 'vessels',
   'duze-michy': 'bowls',
   'miski-falowane': 'bowls',
+  'fine-art-prints': 'prints', // ponytail: excluded from feed, but TS needs exhaustive map
 };
 
 const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
@@ -83,6 +85,7 @@ const GOOGLE_CATEGORY: Record<CategorySlug, string> = {
   'talerze-duze': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Plates',
   'duze-michy': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
   'miski-falowane': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
+  'fine-art-prints': 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints', // ponytail: excluded from feed
 };
 
 export type FeedItem = {
