@@ -16,6 +16,7 @@ const SHIPPING_LABELS: Record<string, { paczkomat: string; kurier: string }> = {
   pl: { paczkomat: 'Wysyłka — Paczkomat InPost', kurier: 'Wysyłka — Kurier InPost' },
   en: { paczkomat: 'Shipping — Paczkomat InPost', kurier: 'Shipping — InPost Courier' },
   es: { paczkomat: 'Envío — Paczkomat InPost', kurier: 'Envío — Mensajería InPost' },
+  de: { paczkomat: 'Versand — Paczkomat InPost', kurier: 'Versand — InPost Kurier' },
 };
 
 /**
@@ -75,6 +76,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   const invoiceLocale = (order.locale as string) === 'en' || (order.locale as string) === 'gb' ? 'en'
     : (order.locale as string) === 'es' ? 'es'
+    : (order.locale as string) === 'de' ? 'de'
     : 'pl';
 
   const messages = MESSAGES[invoiceLocale as keyof typeof MESSAGES] ?? plMessages;
@@ -134,7 +136,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${variant?.sku ?? it.product_id}` });
+      }, { idempotencyKey: `ii2_${order.id}_${variant?.prodigiSku ?? it.product_id}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
