@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { resolveKnownProducts } from '../products';
+import { getPrintById } from '../prints';
+import { variantLabel } from '../print-cart';
 import { toAnalyticsItem } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
 import { sendMetaPurchase, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
@@ -20,7 +22,11 @@ export type ConversionOrder = {
   receiver_phone: string | null;
   shipping_address: DeliveryAddress | null;
   marketing: MarketingContext | null;
-  items: Array<{ product_id: string; unit_price: number }>;
+  items: Array<{
+    product_id: string;
+    unit_price: number;
+    variant?: { size: string; framed: boolean; mount: boolean; frameColour: string; prodigiSku?: string } | null;
+  }>;
 };
 
 export type ConversionsDeps = {
@@ -54,6 +60,20 @@ export async function sendPurchaseConversions(
   }));
 
   const ga4Items = order.items.map((item) => {
+    // Print line: ceramic registry can't resolve a design id, so build the item
+    // from the print registry + persisted variant (value/contents already correct).
+    if (item.variant) {
+      const design = getPrintById(item.product_id);
+      return {
+        item_id: item.product_id,
+        item_name: design ? `Print Nº ${design.num}` : item.product_id,
+        price: item.unit_price / 100,
+        quantity: 1 as const,
+        item_category: 'fine-art-prints',
+        item_brand: 'Anna Ciok Ceramics',
+        item_variant: variantLabel(item.variant as Parameters<typeof variantLabel>[0], 'en'),
+      };
+    }
     const p = productById.get(item.product_id);
     const ai = p ? toAnalyticsItem(p) : null;
     return {
