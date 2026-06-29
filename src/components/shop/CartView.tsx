@@ -9,7 +9,7 @@ import { CATEGORIES } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
-import { pln, eur } from '@/lib/format';
+import { pln, eur, gbp } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
@@ -28,7 +28,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, SHIPPING_EUR, PRICE_EUR, type DeliveryMethod } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, PRICE_EUR, PRICE_GBP, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -105,11 +105,22 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function CartView({ privateSaleToken }: { privateSaleToken?: string | null }) {
+export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
+  const replace = useCart((s) => s.replace);
+
+  // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
+  // the server component). The cart is a locked bundle of (already-`sold`) pieces:
+  // seeded from the link, not pruned against inventory, and not editable.
+  const saleToken = propSaleToken ?? null;
+  const privateSale = saleToken !== null;
+  const [privateSaleError, setPrivateSaleError] = useState(false);
+  // True until the bundle fetch settles, so we show a placeholder instead of briefly
+  // flashing the normal empty-cart state while the cart is still empty.
+  const [privateSaleLoading, setPrivateSaleLoading] = useState<boolean>(propSaleToken != null);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
   const [ship, setShip] = useState<ShipId>(() => {
@@ -135,8 +146,17 @@ export function CartView({ privateSaleToken }: { privateSaleToken?: string | nul
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // Prune already-sold items + stale tokens from the cart on mount
+  // On mount: private sale → seed the cart from the link's bundle; normal cart → prune sold items.
   useEffect(() => {
+    if (saleToken !== null) {
+      // privateSaleLoading starts true when entering private mode; flip it off once settled.
+      fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
+        .then(({ product_ids }: { product_ids: string[] }) => { replace(product_ids); })
+        .catch(() => setPrivateSaleError(true))
+        .finally(() => setPrivateSaleLoading(false));
+      return;
+    }
     // Drop any stored id that can never resolve to a buyable line — malformed or
     // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
     // from what's rendered (server validateCart stays the hard gate regardless).
@@ -154,17 +174,19 @@ export function CartView({ privateSaleToken }: { privateSaleToken?: string | nul
 
   const lines = resolveCartLines(ids);
   const n = lines.length;
-  const currency = locale === 'pl' ? 'pln' : 'eur';
-  const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
-  const fmt = currency === 'eur' ? eur : pln;
+  const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
+  const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
+  const fmt = currency === 'eur' ? eur : currency === 'gbp' ? gbp : pln;
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
       ? priceOfVariant(l.sel, currency)
       : currency === 'eur'
         ? PRICE_EUR[l.product.category]
-        : l.product.price;
+        : currency === 'gbp'
+          ? PRICE_GBP[l.product.category]
+          : l.product.price;
   const shippingOf = (method: ShipId) =>
-    currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
+    currency === 'eur' ? SHIPPING_EUR[method] : currency === 'gbp' ? SHIPPING_GBP[method] : SHIPPING_PLN[method];
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   const shipCost = shippingOf(ship);
   const total = subtotal + shipCost;
@@ -251,7 +273,7 @@ export function CartView({ privateSaleToken }: { privateSaleToken?: string | nul
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSaleToken ? { private_sale_token: privateSaleToken } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
@@ -298,6 +320,20 @@ export function CartView({ privateSaleToken }: { privateSaleToken?: string | nul
       ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
       : '/koszyk/return';
 
+  // ── Seeding a private-sale bundle ──────────────────────────────────────────
+  if (privateSale && privateSaleLoading) {
+    return <div className="cart-empty" aria-busy="true" />;
+  }
+
+  // ── Invalid / expired private-sale link ───────────────────────────────────
+  if (privateSale && privateSaleError) {
+    return (
+      <div className="cart-empty">
+        <h2>{t('cart.privateSaleInvalid')}</h2>
+      </div>
+    );
+  }
+
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
     return (
@@ -325,10 +361,11 @@ export function CartView({ privateSaleToken }: { privateSaleToken?: string | nul
     return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
   };
 
-  // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
-  const stripeLocale = (['pl', 'en', 'es'] as string[]).includes(locale)
-    ? (locale as 'pl' | 'en' | 'es')
-    : 'auto';
+  // Stripe Elements UI in the buyer's language. de is a valid Stripe locale; gb maps to en.
+  const stripeLocale = locale === 'gb' ? 'en'
+    : (['pl', 'en', 'es', 'de'] as string[]).includes(locale)
+      ? (locale as 'pl' | 'en' | 'es' | 'de')
+      : 'auto';
 
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (
