@@ -45,6 +45,7 @@
     "talerzeDuze": "Platos grandes",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
+    "fineArtPrints": "Impresiones Fine Art",
     "studio": "Estudio",
     "kontakt": "Contacto"
   },
@@ -85,6 +86,7 @@
     "plate": "Plato grande",
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
+    "print": "Impresión",
     "moreFrom": "Más de esta colección",
     "seeAll": "Ver todo"
   },
@@ -410,6 +412,11 @@
       "eyebrow": "Drop de junio — 125 piezas",
       "title": "Todas las <em>piezas</em>",
       "lead": "Toda la colección en un solo lugar: tazas, jarrones, platos y cuencos. Cada pieza es única. Explora por categoría y marca tus favoritas."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Edición abierta",
+      "title": "Impresiones <em>Fine Art</em>",
+      "lead": "Motivos cerámicos impresos en papel Fine Art 200 g/m². Elige tu tamaño y enmarcado — impreso y enviado por Prodigi."
     }
   },
   "studio": {
@@ -719,6 +726,11 @@
       "Conchas azuladas alrededor de una estrella de mar terracota sobre el fondo claro del cuenco. Una franja ondulada terracota en el exterior resalta el borde y conduce el ritmo marino alrededor de la forma.",
       "Limones azulados con pequeñas líneas blancas sobre el interior claro. El ritmo frutal circula por el borde ondulado y desciende hacia el centro.",
       "Ramas negras con bayas redondas y hojas en espiga. El motivo se extiende por el interior claro, mientras el borde ondulado lo guía con un ritmo suave."
+    ],
+    "fine-art-prints": [
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 01.",
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 02.",
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 03."
     ]
   },
   "error": {
@@ -761,5 +773,42 @@
     "accept": "Acepto",
     "reject": "Rechazo",
     "more": "Política de privacidad"
+  },
+  "print": {
+    "size": {
+      "label": "Tamaño",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Enmarcado",
+    "unframed": "Sin marco",
+    "framed": "Enmarcado",
+    "frameColour": "Color del marco",
+    "colour_black": "Negro",
+    "colour_white": "Blanco",
+    "colour_natural": "Natural",
+    "mount": "Passepartout",
+    "mount_none": "Sin",
+    "mount_yes": "Con passepartout",
+    "addToCart": "Añadir al carrito",
+    "inCart": "En el carrito",
+    "unavailable": "No disponible",
+    "paperNote": "Impreso en papel Fine Art EMA 200 g/m²",
+    "from": "Desde {price}",
+    "sectionDetails": "Detalles",
+    "technique": "Impresión Fine Art, papel EMA 200 g/m²",
+    "sectionEdition": "Edición",
+    "editionOpen": "Edición abierta",
+    "sectionDelivery": "Envío",
+    "deliveryNote": "Producido y enviado por Prodigi, 5–10 días hábiles",
+    "sectionCare": "Cuidado",
+    "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
+    "moreFrom": "Más impresiones"
   }
 }

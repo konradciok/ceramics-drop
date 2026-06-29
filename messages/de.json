@@ -45,6 +45,7 @@
     "talerzeDuze": "Große Teller",
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
+    "fineArtPrints": "Fine Art Drucke",
     "studio": "Studio",
     "kontakt": "Kontakt"
   },
@@ -85,6 +86,7 @@
     "plate": "Großer Teller",
     "largebowl": "Große Schüssel",
     "wavybowl": "Schüssel mit Wellenrand",
+    "print": "Druck",
     "moreFrom": "Mehr aus dieser Kollektion",
     "seeAll": "Alle ansehen"
   },
@@ -410,6 +412,11 @@
       "eyebrow": "Juni-Drop — 125 Stücke",
       "title": "Alle <em>Stücke</em>",
       "lead": "Die gesamte Kollektion an einem Ort — Tassen, Vasen, Teller und Schüsseln. Jedes Stück ist ein Unikat. Nach Kategorie stöbern und Favoriten markieren."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Offene Edition",
+      "title": "Fine Art <em>Drucke</em>",
+      "lead": "Keramikmotive auf 200 g/m² Fine Art Papier. Größe und Rahmung wählen — Druck und Versand über Prodigi."
     }
   },
   "studio": {
@@ -719,6 +726,11 @@
       "Blaue Muscheln um einen Terrakotta-Seestern auf dem Schüsselboden. Der wellige Rand leitet den maritimen Rhythmus um die helle Form.",
       "Blaue Zitronen mit kleinen weißen Strichen auf dem hellen Inneren. Der Fruchtrhythmus umkreist den welligen Rand und steigt zur Mitte hin ab.",
       "Schwarze Zweige mit runden Beeren und Fischgrätblättern. Das Motiv breitet sich über das helle Innere aus, und der wellige Rand führt es mit einem sanften Rhythmus."
+    ],
+    "fine-art-prints": [
+      "Keramikmotive auf Fine Art Papier. Druck Nº 01.",
+      "Keramikmotive auf Fine Art Papier. Druck Nº 02.",
+      "Keramikmotive auf Fine Art Papier. Druck Nº 03."
     ]
   },
   "error": {
@@ -761,5 +773,42 @@
     "accept": "Akzeptieren",
     "reject": "Ablehnen",
     "more": "Datenschutzrichtlinie"
+  },
+  "print": {
+    "size": {
+      "label": "Größe",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Rahmen",
+    "unframed": "Ohne Rahmen",
+    "framed": "Mit Rahmen",
+    "frameColour": "Rahmenfarbe",
+    "colour_black": "Schwarz",
+    "colour_white": "Weiß",
+    "colour_natural": "Natur",
+    "mount": "Passepartout",
+    "mount_none": "Ohne",
+    "mount_yes": "Mit Passepartout",
+    "addToCart": "In den Warenkorb",
+    "inCart": "Im Warenkorb",
+    "unavailable": "Nicht verfügbar",
+    "paperNote": "Druck auf Fine Art EMA 200 g/m² Papier",
+    "from": "Ab {price}",
+    "sectionDetails": "Details",
+    "technique": "Fine Art Druck, EMA 200 g/m² Papier",
+    "sectionEdition": "Edition",
+    "editionOpen": "Offene Edition",
+    "sectionDelivery": "Lieferung",
+    "deliveryNote": "Produktion und Versand über Prodigi, 5–10 Werktage",
+    "sectionCare": "Pflege",
+    "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
+    "moreFrom": "Weitere Drucke"
   }
 }

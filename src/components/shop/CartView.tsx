@@ -5,27 +5,30 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts, resolveKnownProducts, getProductById, isCategoryHidden, CATEGORIES } from '@/lib/products';
-import type { CategorySlug } from '@/lib/types';
-import { pln, eur, gbp } from '@/lib/format';
+import { CATEGORIES } from '@/lib/products';
+import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
+import { priceOfVariant } from '@/lib/print-pricing';
+import { variantLabel } from '@/lib/print-cart';
+import { pln, eur } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
 import {
+  analyticsItemsForIds,
   buildEngagementEvent,
   buildRemoveFromCartEvent,
-  buildViewCartEvent,
+  buildViewCartEventFromItems,
   pushDataLayer,
 } from '@/lib/analytics';
 import {
   forgetRememberedCheckout,
-  pushCheckoutStarted,
+  pushCheckoutStartedItems,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, PRICE_EUR, PRICE_GBP, type DeliveryMethod } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, PRICE_EUR, type DeliveryMethod } from '@/lib/pricing';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -85,45 +88,28 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
   );
 }
 
-/** Empty-state see-* buttons: maps category slugs to i18n keys. Withdrawn
- *  families (hidden categories) are dropped so the empty cart never links to a
- *  page that 404s. */
-const SEE_ENTRIES: { key: string; slug: CategorySlug; primary?: boolean }[] = [
-  { key: 'seeMugs',       slug: 'kubki',           primary: true },
-  { key: 'seeVases',      slug: 'wazony' },
-  { key: 'seeMidvases',   slug: 'wazony-srednie' },
-  { key: 'seeBigvases',   slug: 'wazony-duze' },
-  { key: 'seeDishes',     slug: 'talerzyki' },
-  { key: 'seeMedplates',  slug: 'talerze-srednie' },
-  { key: 'seePlates',     slug: 'talerze-duze' },
-  { key: 'seeLargebowls', slug: 'duze-michy' },
-  { key: 'seeWavybowls',  slug: 'miski-falowane' },
+/** Empty-state see-* buttons: maps CATEGORY_ORDER slugs to i18n keys. */
+const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
+  { key: 'seeMugs',       href: '/kubki',          primary: true },
+  { key: 'seeVases',      href: '/wazony' },
+  { key: 'seeMidvases',   href: '/wazony-srednie' },
+  { key: 'seeBigvases',   href: '/wazony-duze' },
+  { key: 'seeDishes',     href: '/talerzyki' },
+  { key: 'seeMedplates',  href: '/talerze-srednie' },
+  { key: 'seePlates',     href: '/talerze-duze' },
+  { key: 'seeLargebowls', href: '/duze-michy' },
+  { key: 'seeWavybowls',  href: '/miski-falowane' },
 ];
-const SEE_KEYS = SEE_ENTRIES.filter((s) => !isCategoryHidden(s.slug));
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
+export function CartView({ privateSaleToken }: { privateSaleToken?: string | null }) {
   const t = useTranslations();
   const locale = useLocale();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
-  const replace = useCart((s) => s.replace);
-
-  // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
-  // the server component). We deliberately do NOT fall back to sessionStorage — a
-  // leftover token must never turn a plain `/koszyk` visit into a private sale. The
-  // URL carries the token across reloads and through the Stripe step (same route), so
-  // no client persistence is needed. The cart is a locked bundle of (already-`sold`)
-  // pieces: seeded from the link, not pruned against inventory, and not editable.
-  const saleToken = propSaleToken ?? null;
-  const privateSale = saleToken !== null;
-  const [privateSaleError, setPrivateSaleError] = useState(false);
-  // True until the bundle fetch settles, so we show a placeholder instead of briefly
-  // flashing the normal empty-cart state while the cart is still empty.
-  const [privateSaleLoading, setPrivateSaleLoading] = useState<boolean>(propSaleToken != null);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
   const [ship, setShip] = useState<ShipId>(() => {
@@ -149,66 +135,48 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     sessionStorage.setItem('acc_ship', ship);
   }, [ship]);
 
-  // On mount: private sale → seed the cart from the link's bundle (never prune,
-  // these pieces ARE sold); normal cart → prune already-sold items.
+  // Prune already-sold items + stale tokens from the cart on mount
   useEffect(() => {
-    if (saleToken !== null) {
-      // privateSaleLoading starts true (initial state) when entering in private mode,
-      // so no synchronous setState here; we only flip it off once the fetch settles.
-      fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
-        .then(({ product_ids }: { product_ids: string[] }) => {
-          // A link that bundles a withdrawn-family piece can never be paid
-          // (checkout returns not_for_sale), so treat it as invalid up front
-          // instead of rendering a payable cart that fails at the pay step.
-          const hasHidden = product_ids.some((id) => {
-            const p = getProductById(id);
-            return p !== undefined && isCategoryHidden(p.category);
-          });
-          if (hasHidden) {
-            setPrivateSaleError(true);
-            return;
-          }
-          replace(product_ids);
-        })
-        .catch(() => setPrivateSaleError(true))
-        .finally(() => setPrivateSaleLoading(false));
-      return;
-    }
-    // Drop any withdrawn-family pieces a stale cart may still hold (their
-    // collections now 404 and checkout hard-rejects them).
-    resolveKnownProducts(ids).forEach((p) => {
-      if (isCategoryHidden(p.category)) remove(p.id);
-    });
+    // Drop any stored id that can never resolve to a buyable line — malformed or
+    // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
+    // from what's rendered (server validateCart stays the hard gate regardless).
+    const current = useCart.getState().ids;
+    const valid = new Set(resolveCartLines(current).map((l) => l.id));
+    current.forEach((id) => { if (!valid.has(id)) remove(id); });
+
     fetch('/api/inventory')
       .then((r) => r.json())
-      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (ids.includes(id)) remove(id); }))
+      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
       .catch(() => {});
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Private-sale carts keep their (sold) pieces; normal carts drop sold ids.
-  const products = privateSale ? resolveKnownProducts(ids) : resolveCartProducts(ids);
-  const n = products.length;
-  const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
-  const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
-  const fmt = currency === 'eur' ? eur : currency === 'gbp' ? gbp : pln;
-  const priceOf = (p: ReturnType<typeof resolveCartProducts>[number]) =>
-    currency === 'eur' ? PRICE_EUR[p.category] : currency === 'gbp' ? PRICE_GBP[p.category] : p.price;
+  const lines = resolveCartLines(ids);
+  const n = lines.length;
+  const currency = locale === 'pl' ? 'pln' : 'eur';
+  const analyticsCurrency = currency === 'eur' ? 'EUR' as const : 'PLN' as const;
+  const fmt = currency === 'eur' ? eur : pln;
+  const priceOfLine = (l: CartLine) =>
+    l.kind === 'print'
+      ? priceOfVariant(l.sel, currency)
+      : currency === 'eur'
+        ? PRICE_EUR[l.product.category]
+        : l.product.price;
   const shippingOf = (method: ShipId) =>
-    currency === 'eur' ? SHIPPING_EUR[method] : currency === 'gbp' ? SHIPPING_GBP[method] : SHIPPING_PLN[method];
-  const subtotal = products.reduce((s, p) => s + priceOf(p), 0);
+    currency === 'eur' ? SHIPPING_EUR[method] : SHIPPING_PLN[method];
+  const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   const shipCost = shippingOf(ship);
   const total = subtotal + shipCost;
-  const productKey = products.map((p) => p.id).join('|');
+  const cartKey = lines.map((l) => l.id).join('|');
 
   useEffect(() => {
-    if (products.length === 0 || viewedCartKeys.current.has(productKey)) return;
-    viewedCartKeys.current.add(productKey);
-    pushDataLayer(buildViewCartEvent(products, { currency: analyticsCurrency, itemPrices: products.map(priceOf) }));
+    if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
+    viewedCartKeys.current.add(cartKey);
+    const items = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productKey, products]);
+  }, [cartKey, lines]);
 
   function handlePickShip(id: ShipId) {
     // Fire only on an actual change — re-clicking the active option must not
@@ -262,45 +230,31 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (products.length === 0 || submitting || !deliveryReady) return;
+    if (lines.length === 0 || submitting || !deliveryReady) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    pushCheckoutStarted(products, {
+    // begin_checkout itemises the whole cart (ceramics + prints); print items are
+    // resolved from their tokens with server-equal prices.
+    const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    pushCheckoutStartedItems(checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
-      itemPrices: products.map(priceOf),
     });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          ids: products.map((p) => p.id),
-          ...deliveryBody(),
-          ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}),
-          marketing_cookies: collectMarketingCookies(),
-        }),
+        // Send EVERY line id — bare ceramic ids and print tokens alike; the server
+        // (validateCart) resolves and prices both.
+        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSaleToken ? { private_sale_token: privateSaleToken } : {}) }),
       });
-      // Expired/invalid private-sale link — never strip the locked bundle, just explain.
-      if (res.status === 410) {
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'private_sale_invalid', status: 410 }));
-        setCheckoutError(t('cart.privateSaleInvalid'));
-        return;
-      }
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
-        // In private-sale mode a 409 means the bundle no longer matches — don't
-        // remove items (the cart is a fixed package); surface the link error.
-        if (privateSale) {
-          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'private_sale_invalid', status: 409 }));
-          setCheckoutError(t('cart.privateSaleInvalid'));
-          return;
-        }
         sold.forEach((id) => remove(id));
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
@@ -313,33 +267,19 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
-      if (res.status === 400) {
-        // A withdrawn-family piece reached checkout (stale cart / private-sale
-        // link). Self-heal a normal cart by pruning the hidden ids, and show a
-        // specific message instead of the generic "payment failed".
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        if (body.error === 'not_for_sale') {
-          if (!privateSale) {
-            resolveKnownProducts(ids).forEach((p) => {
-              if (isCategoryHidden(p.category)) remove(p.id);
-            });
-          }
-          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'not_for_sale', status: 400 }));
-          setCheckoutError(t('cart.notForSale'));
-          return;
-        }
-      }
       if (!res.ok) {
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
         setCheckoutError(t('cart.checkoutError'));
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
-      rememberCheckoutForReturn(products.map((p) => p.id), {
+      // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
+      // event for print-only and mixed carts (and never false-alarms a "purchase gap").
+      rememberCheckoutForReturn(lines.map((l) => l.id), {
         shippingCost: shipCost,
         shippingMethod: ship,
         currency: analyticsCurrency,
-        itemPrices: products.map(priceOf),
+        itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
       });
       setClientSecret(client_secret);
@@ -358,22 +298,6 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
       : '/koszyk/return';
 
-  // ── Seeding a private-sale bundle ──────────────────────────────────────────
-  // Hold a neutral placeholder until the fetch settles so we never flash the
-  // normal "your cart is empty" state before replace() lands.
-  if (privateSale && privateSaleLoading) {
-    return <div className="cart-empty" aria-busy="true" />;
-  }
-
-  // ── Invalid / expired private-sale link ───────────────────────────────────
-  if (privateSale && privateSaleError) {
-    return (
-      <div className="cart-empty">
-        <h2>{t('cart.privateSaleInvalid')}</h2>
-      </div>
-    );
-  }
-
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
     return (
@@ -381,10 +305,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {SEE_KEYS.map(({ key, slug, primary }) => (
+          {SEE_KEYS.map(({ key, href, primary }) => (
             <Link
               key={key}
-              href={`/${slug}`}
+              href={href}
               className={primary ? 'btn btn-primary' : 'btn btn-ghost'}
             >
               {t(`cart.${key}` as Parameters<typeof t>[0])}
@@ -401,11 +325,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
   };
 
-  // Stripe Elements UI in the buyer's language. de is a valid Stripe locale; gb maps to en.
-  const stripeLocale = locale === 'gb' ? 'en'
-    : (['pl', 'en', 'es', 'de'] as string[]).includes(locale)
-      ? (locale as 'pl' | 'en' | 'es' | 'de')
-      : 'auto';
+  // Stripe Elements UI in the buyer's language (pl/en/es are all Stripe locales).
+  const stripeLocale = (['pl', 'en', 'es'] as string[]).includes(locale)
+    ? (locale as 'pl' | 'en' | 'es')
+    : 'auto';
 
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (
@@ -420,11 +343,34 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           </h1>
         </div>
         <div className="cart-list">
-          {products.map((p) => {
+          {lines.map((l) => {
+            if (l.kind === 'print') {
+              const d = l.design;
+              const name = `${t('product.print')} Nº ${d.num}`;
+              return (
+                <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
+                  <Link href={`/fine-art-prints/${d.id}`} className="thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={d.image} srcSet={srcSet(d.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
+                  </Link>
+                  <div>
+                    <h4>{name}</h4>
+                    <div className="meta">{variantLabel(l.sel, locale)}</div>
+                  </div>
+                  <div className="right">
+                    <span className="price">{fmt(priceOfLine(l))}</span>
+                    <button className="rm" onClick={() => remove(l.id)}>
+                      <Icon name="trash" /> {t('cart.remove')}
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
-              <div key={p.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
+              <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
                 <Link href={`/${p.category}`} className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
@@ -434,19 +380,16 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
-                  <span className="price">{fmt(priceOf(p))}</span>
-                  {/* Private-sale bundles are fixed — no per-item removal. */}
-                  {!privateSale && (
-                    <button
-                      className="rm"
-                      onClick={() => {
-                        remove(p.id);
-                        pushDataLayer(buildRemoveFromCartEvent(p));
-                      }}
-                    >
-                      <Icon name="trash" /> {t('cart.remove')}
-                    </button>
-                  )}
+                  <span className="price">{fmt(priceOfLine(l))}</span>
+                  <button
+                    className="rm"
+                    onClick={() => {
+                      remove(p.id);
+                      pushDataLayer(buildRemoveFromCartEvent(p));
+                    }}
+                  >
+                    <Icon name="trash" /> {t('cart.remove')}
+                  </button>
                 </div>
               </div>
             );
@@ -626,18 +569,34 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       <aside className="summary">
         <h3>{t('cart.summary')}</h3>
         <ul className="sum-items">
-          {products.map((p) => {
+          {lines.map((l) => {
+            if (l.kind === 'print') {
+              const d = l.design;
+              return (
+                <li key={l.id} className="sum-item">
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
+                  </Link>
+                  <div className="sum-item-info">
+                    <span className="sum-item-name">{t('product.print')} Nº {d.num} · {variantLabel(l.sel, locale)}</span>
+                    <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
+                  </div>
+                </li>
+              );
+            }
+            const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
-              <li key={p.id} className="sum-item">
+              <li key={l.id} className="sum-item">
                 <Link href={`/${p.category}`} className="sum-item-thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
                 </Link>
                 <div className="sum-item-info">
                   <span className="sum-item-name">{name} Nº {p.num}</span>
-                  <span className="sum-item-price">{fmt(priceOf(p))}</span>
+                  <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                 </div>
               </li>
             );

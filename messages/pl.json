@@ -45,6 +45,7 @@
     "talerzeDuze": "Duże talerze",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
+    "fineArtPrints": "Odbitki Fine Art",
     "studio": "O studiu",
     "kontakt": "Kontakt"
   },
@@ -85,6 +86,7 @@
     "plate": "Duży talerz",
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
+    "print": "Odbitka",
     "moreFrom": "Więcej z kolekcji",
     "seeAll": "Zobacz wszystkie"
   },
@@ -410,6 +412,11 @@
       "eyebrow": "Czerwcowy drop — 125 prac",
       "title": "Wszystkie <em>prace</em>",
       "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Edycja otwarta",
+      "title": "Odbitki <em>Fine Art</em>",
+      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez Prodigi."
     }
   },
   "studio": {
@@ -719,6 +726,11 @@
       "Błękitne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Terakotowy falowany pas na zewnątrz podkreśla brzeg i prowadzi morski rytm dookoła formy.",
       "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi.",
       "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+    ],
+    "fine-art-prints": [
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 01.",
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 02.",
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 03."
     ]
   },
   "error": {
@@ -761,5 +773,42 @@
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"
+  },
+  "print": {
+    "size": {
+      "label": "Rozmiar",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Oprawa",
+    "unframed": "Bez ramy",
+    "framed": "W ramie",
+    "frameColour": "Kolor ramy",
+    "colour_black": "Czarna",
+    "colour_white": "Biała",
+    "colour_natural": "Naturalna",
+    "mount": "Passe-partout",
+    "mount_none": "Bez",
+    "mount_yes": "Z passe-partout",
+    "addToCart": "Dodaj do koszyka",
+    "inCart": "W koszyku",
+    "unavailable": "Niedostępna",
+    "paperNote": "Druk na papierze Fine Art EMA 200 g/m²",
+    "from": "Od {price}",
+    "sectionDetails": "Detale",
+    "technique": "Druk Fine Art, papier EMA 200 g/m²",
+    "sectionEdition": "Edycja",
+    "editionOpen": "Edycja otwarta",
+    "sectionDelivery": "Dostawa",
+    "deliveryNote": "Produkcja i wysyłka przez Prodigi, 5–10 dni roboczych",
+    "sectionCare": "Przechowywanie",
+    "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
+    "moreFrom": "Więcej odbitek"
   }
 }
