@@ -31,7 +31,8 @@
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
     "sklep": "Alle Stücke",
-    "gallery": "Galerie"
+    "gallery": "Galerie",
+    "fineArtPrints": "Kunstdrucke"
   },
   "nav": {
     "sklep": "Shop",
@@ -758,7 +759,8 @@
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Neun einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig. Sechs einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat. Zehn einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "sklep": "Anna Cioks vollständige Kollektion: 125 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig."
+      "sklep": "Anna Cioks vollständige Kollektion: 125 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig.",
+      "fineArtPrints": "Fine-Art-Drucke auf 200 g/m²-Papier — gerahmt oder ungerahmt."
     }
   },
   "deliveryNotice": {

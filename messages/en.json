@@ -31,7 +31,8 @@
     "regulamin": "Terms",
     "polityka": "Privacy policy",
     "sklep": "All pieces",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "fineArtPrints": "Fine Art Prints"
   },
   "nav": {
     "sklep": "Shop",
@@ -758,7 +759,8 @@
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
-      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
+      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
+      "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
     }
   },
   "deliveryNotice": {

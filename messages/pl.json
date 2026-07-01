@@ -31,7 +31,8 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "sklep": "Wszystkie prace",
-    "gallery": "Galeria"
+    "gallery": "Galeria",
+    "fineArtPrints": "Grafiki artystyczne"
   },
   "nav": {
     "sklep": "Sklep",
@@ -758,7 +759,8 @@
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
+      "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna.",
+      "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
     }
   },
   "deliveryNotice": {

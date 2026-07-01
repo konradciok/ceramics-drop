@@ -31,7 +31,8 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "sklep": "Todas las piezas",
-    "gallery": "Galería"
+    "gallery": "Galería",
+    "fineArtPrints": "Impresiones artísticas"
   },
   "nav": {
     "sklep": "Tienda",
@@ -758,7 +759,8 @@
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
-      "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta."
+      "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta.",
+      "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
     }
   },
   "deliveryNotice": {
