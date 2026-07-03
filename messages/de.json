@@ -237,7 +237,8 @@
     "notForSale": "Dieses Stück wurde aus dem Verkauf genommen und kann nicht mehr gekauft werden.",
     "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "privateSaleInvalid": "Dieser Bestelllink ist abgelaufen oder wurde bereits verwendet. Bitte kontaktiere das Studio.",
-    "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden."
+    "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden.",
+    "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren."
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",
@@ -246,7 +247,9 @@
     "courierT": "InPost Kurier",
     "courierD": "Lieferung an deine Adresse, in der Regel 1–2 Werktage nachdem ich das Paket übergeben habe.",
     "pickupT": "Persönliche Abholung",
-    "pickupD": "In Warschau, nach Vereinbarung."
+    "pickupD": "In Warschau, nach Vereinbarung.",
+    "printT": "Kurierversand",
+    "printD": "Versand durch unseren Fine-Art-Druckpartner an deine Adresse in der EU und im Vereinigten Königreich."
   },
   "delivery": {
     "firstName": "Vorname",
@@ -258,7 +261,8 @@
     "postCode": "Postleitzahl",
     "city": "Stadt",
     "lockerChosen": "Gewähltes Paketfach:",
-    "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar."
+    "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar.",
+    "country": "Land"
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",
@@ -811,6 +815,7 @@
     "deliveryNote": "Produktion und Versand über Prodigi, 5–10 Werktage",
     "sectionCare": "Pflege",
     "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
-    "moreFrom": "Weitere Drucke"
+    "moreFrom": "Weitere Drucke",
+    "mixedCart": "Prints werden getrennt von Keramik bestellt — schließe zuerst deine Keramik-Bestellung ab oder leere den Warenkorb."
   }
 }

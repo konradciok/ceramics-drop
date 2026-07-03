@@ -23,14 +23,14 @@ describe('priceOfVariant', () => {
   it('returns PLN base for unframed 30x40', () => {
     expect(priceOfVariant(design, unframed30, 'pln')).toBe(105);
   });
-  it('returns EUR for framed 50x70', () => {
-    expect(priceOfVariant(design, framed50, 'eur')).toBe(35);
+  it('adds the framed surcharge for 50x70 (base 35 + 72 EUR)', () => {
+    expect(priceOfVariant(design, framed50, 'eur')).toBe(107);
   });
-  it('returns GBP for mounted 70x100', () => {
-    expect(priceOfVariant(design, mounted70, 'gbp')).toBe(38);
+  it('adds frame + mount surcharges for 70x100 (base 38 + 98 + 9 GBP)', () => {
+    expect(priceOfVariant(design, mounted70, 'gbp')).toBe(145);
   });
-  it('applies per-design price overrides', () => {
-    expect(priceOfVariant(premium, framed50, 'eur')).toBe(80);
+  it('applies per-design price overrides (surcharges on top)', () => {
+    expect(priceOfVariant(premium, framed50, 'eur')).toBe(80 + 72);
     // Non-overridden sizes fall back to the shared base.
     expect(priceOfVariant(premium, unframed30, 'eur')).toBe(25);
   });

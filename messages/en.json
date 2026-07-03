@@ -237,7 +237,8 @@
     "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",
     "payError": "Payment failed. Please try again.",
     "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
-    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
+    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods.",
+    "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue."
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
@@ -246,7 +247,9 @@
     "courierT": "InPost Courier",
     "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
     "pickupT": "Personal pickup",
-    "pickupD": "In Warsaw, by appointment."
+    "pickupD": "In Warsaw, by appointment.",
+    "printT": "Courier delivery",
+    "printD": "Shipped by our fine-art print partner to your address in the EU and UK."
   },
   "delivery": {
     "firstName": "First name",
@@ -258,7 +261,8 @@
     "postCode": "Post code",
     "city": "City",
     "lockerChosen": "Chosen locker:",
-    "lockerUnavailable": "Parcel locker picker is temporarily unavailable."
+    "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
+    "country": "Country"
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
@@ -811,6 +815,7 @@
     "deliveryNote": "Produced and shipped via Prodigi, 5–10 working days",
     "sectionCare": "Care",
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
-    "moreFrom": "More prints"
+    "moreFrom": "More prints",
+    "mixedCart": "Prints are ordered separately from ceramics — finish or empty your ceramics cart first."
   }
 }

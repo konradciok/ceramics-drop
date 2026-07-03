@@ -56,7 +56,12 @@ describe('validateCart', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
-    expect(result.items[0].unit_price).toBe(15000); // 150 PLN × 100
+    expect(result.items[0].unit_price).toBe(45500); // (150 base + 305 frame) PLN × 100
+  });
+
+  it('rejects a mixed ceramics + prints cart', () => {
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    expect(validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });
   });
 
   it('rejects an unknown design id in print token', () => {

@@ -18,7 +18,7 @@ export type CheckoutVariant = PrintVariantSelection & {
 export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant };
 export type ValidateResult =
   | { ok: true; items: CheckoutItem[] }
-  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' };
+  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' };
 
 /**
  * Resolve raw cart ids to deduped, catalog-known items.
@@ -66,5 +66,10 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 
     items.push({ product_id: id, unit_price });
   }
   if (items.length === 0) return { ok: false, reason: 'empty' };
+  // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate
+  // orders — a cart can never mix the two.
+  if (items.some((i) => i.variant) && items.some((i) => !i.variant)) {
+    return { ok: false, reason: 'mixed_cart' };
+  }
   return { ok: true, items };
 }

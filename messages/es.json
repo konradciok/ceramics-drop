@@ -237,7 +237,8 @@
     "notForSale": "Esta pieza ha sido retirada de la venta y ya no se puede comprar.",
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
     "privateSaleInvalid": "Este enlace de pedido ha caducado o ya se ha utilizado. Ponte en contacto con el estudio.",
-    "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
+    "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago.",
+    "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -246,7 +247,9 @@
     "courierT": "Mensajería InPost",
     "courierD": "Entrega a domicilio, normalmente 1–2 días laborables después de entregar el paquete.",
     "pickupT": "Recogida personal",
-    "pickupD": "En Varsovia, con cita previa."
+    "pickupD": "En Varsovia, con cita previa.",
+    "printT": "Envío por mensajería",
+    "printD": "Enviado por nuestro socio de impresión fine-art a tu dirección en la UE y Reino Unido."
   },
   "delivery": {
     "firstName": "Nombre",
@@ -258,7 +261,8 @@
     "postCode": "Código postal",
     "city": "Ciudad",
     "lockerChosen": "Paczkomat elegido:",
-    "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente."
+    "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
+    "country": "País"
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",
@@ -811,6 +815,7 @@
     "deliveryNote": "Producido y enviado por Prodigi, 5–10 días hábiles",
     "sectionCare": "Cuidado",
     "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
-    "moreFrom": "Más impresiones"
+    "moreFrom": "Más impresiones",
+    "mixedCart": "Las láminas se piden por separado de la cerámica — primero finaliza o vacía tu carrito de cerámica."
   }
 }

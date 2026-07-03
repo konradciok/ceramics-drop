@@ -12,9 +12,20 @@ const SIZE_BASE: Record<PrintSize, Money> = {
   '70x100': { pln: 190, eur: 45, gbp: 38 },
 };
 
-// ponytail: zero deltas until studio confirms framing margins
-const FRAMED_DELTA: Money = { pln: 0, eur: 0, gbp: 0 };
-const MOUNT_DELTA:  Money = { pln: 0, eur: 0, gbp: 0 };
+// Frame / passe-partout surcharges at 100% margin: 2× Prodigi's cost delta
+// (CFP−FAP for the frame, CFPM−CFP for the mount), quoted 2026-07-03 from the
+// sandbox API. EUR is the quoted figure; PLN/GBP use the same fixed conversion
+// as the base tables (×4.25 / ×0.86), rounded to whole units.
+const FRAMED_DELTA: Record<PrintSize, Money> = {
+  '30x40':  { pln: 230, eur: 54,  gbp: 46 },  // cost delta €27.00
+  '50x70':  { pln: 305, eur: 72,  gbp: 62 },  // cost delta €36.00
+  '70x100': { pln: 485, eur: 114, gbp: 98 },  // cost delta €56.65
+};
+const MOUNT_DELTA: Record<PrintSize, Money> = {
+  '30x40':  { pln: 35,  eur: 8,   gbp: 7 },   // cost delta €4.00
+  '50x70':  { pln: 100, eur: 24,  gbp: 21 },  // cost delta €12.00
+  '70x100': { pln: 45,  eur: 10,  gbp: 9 },   // cost delta €5.00
+};
 
 function sizePrice(design: PrintDesign, size: PrintSize): Money {
   return design.prices?.[size] ?? SIZE_BASE[size];
@@ -27,8 +38,8 @@ export function priceOfVariant(
   currency: Currency,
 ): number {
   const base = sizePrice(design, sel.size);
-  const frame = sel.framed ? FRAMED_DELTA[currency] : 0;
-  const mount = sel.framed && sel.mount ? MOUNT_DELTA[currency] : 0;
+  const frame = sel.framed ? FRAMED_DELTA[sel.size][currency] : 0;
+  const mount = sel.framed && sel.mount ? MOUNT_DELTA[sel.size][currency] : 0;
   return base[currency] + frame + mount;
 }
 

@@ -79,6 +79,12 @@ Print areas are **authoritative from API** (`variants[].printAreaSizes.default` 
 
 Passe-partout window ≈ 20×30 cm (5 cm border per Prodigi FAQ for frames ≥30×40).
 
+> **Re-verified 2026-07-03** against the sandbox API: the per-colour print-area
+> difference on `GLOBAL-CFP-12X16` is **real** — `black`/`white` report
+> 3614×4795 px while `natural` (and all other colours) report 3600×4800 px.
+> All other SKUs share one print area across colours. `PRODIGI_SKU_MAP` in
+> `src/lib/print-cart.ts` matches the API exactly.
+
 ### 50×70 cm (`20X28`)
 
 | framed | mount | frame_colour | Prodigi SKU | Print area (px) | Glaze (cm) |

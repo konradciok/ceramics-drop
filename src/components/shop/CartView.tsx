@@ -29,6 +29,7 @@ import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, PRICE_EUR, PRICE_GBP, type DeliveryMethod } from '@/lib/pricing';
+import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -135,6 +136,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
+  // Destination country — print carts only (Prodigi ships EU + UK); ceramics are PL/InPost.
+  const [country, setCountry] = useState<PrintCountry>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('acc_country');
+      if (saved && (PRINT_COUNTRIES as readonly string[]).includes(saved)) return saved as PrintCountry;
+    }
+    return 'PL';
+  });
+  useEffect(() => {
+    sessionStorage.setItem('acc_country', country);
+  }, [country]);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -178,6 +190,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   // can't carry them, so any cart with a print line is locked to courier delivery
   // (the checkout API enforces the same rule server-side).
   const hasPrints = lines.some((l) => l.kind === 'print');
+  const hasCeramics = lines.some((l) => l.kind === 'ceramic');
+  // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate orders.
+  const mixedCart = hasPrints && hasCeramics;
+  const hasFramed = lines.some((l) => l.kind === 'print' && l.sel.framed);
   const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
   const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
   const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
@@ -193,8 +209,15 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const shippingOf = (method: ShipId) =>
     currency === 'eur' ? SHIPPING_EUR[method] : currency === 'gbp' ? SHIPPING_GBP[method] : SHIPPING_PLN[method];
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
-  const shipCost = shippingOf(ship);
+  // Print carts charge Prodigi's shipping cost by destination country;
+  // ceramic carts keep the InPost price list.
+  const shipCost = hasPrints ? printShippingOf(country, hasFramed, currency) : shippingOf(ship);
   const total = subtotal + shipCost;
+  // Localized country names for the print destination selector, sorted A→Z.
+  const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
+  const countryOptions = PRINT_COUNTRIES
+    .map((code) => ({ code, name: regionNames.of(code) ?? code }))
+    .sort((a, b) => a.name.localeCompare(b.name, locale));
   const cartKey = lines.map((l) => l.id).join('|');
 
   useEffect(() => {
@@ -246,7 +269,8 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
               building_number: address.building.trim(),
               city: address.city.trim(),
               post_code: address.postCode.trim(),
-              country_code: 'PL',
+              // InPost kurier is domestic; Prodigi ships prints EU + UK.
+              country_code: hasPrints ? country : 'PL',
             },
           }
         : {}),
@@ -257,7 +281,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (lines.length === 0 || submitting || !deliveryReady) return;
+    if (lines.length === 0 || submitting || !deliveryReady || mixedCart) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
@@ -456,9 +480,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
                 id="kurier"
                 active={ship === 'kurier'}
                 onPick={handlePickShip}
-                title={t('ship.courierT')}
-                desc={t('ship.courierD')}
-                price={priceLabel('kurier')}
+                title={t(hasPrints ? 'ship.printT' : 'ship.courierT')}
+                desc={t(hasPrints ? 'ship.printD' : 'ship.courierD')}
+                price={hasPrints ? fmt(shipCost) : priceLabel('kurier')}
               />
               {!hasPrints && (
                 <ShipOption
@@ -541,6 +565,20 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
 
               {ship === 'kurier' && (
                 <>
+                  {hasPrints && (
+                    <label className="field">
+                      <span>{t('delivery.country')}</span>
+                      <select
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value as PrintCountry)}
+                        data-testid="country-select"
+                      >
+                        {countryOptions.map(({ code, name }) => (
+                          <option key={code} value={code}>{name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <div className="field-row">
                     <label className="field" style={{ flex: 2 }}>
                       <span>{t('delivery.street')}</span>
@@ -583,6 +621,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         )}
 
         <div className="cart-cta">
+          {mixedCart && (
+            <p className="pay-error" data-testid="mixed-cart-notice">{t('cart.mixedNotice')}</p>
+          )}
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -599,7 +640,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
               id="checkout"
               data-testid="checkout-button"
               onClick={handleCheckout}
-              disabled={submitting || !deliveryReady}
+              disabled={submitting || !deliveryReady || mixedCart}
             >
               {t('cart.checkout')} <Icon name="arrow" />
             </button>

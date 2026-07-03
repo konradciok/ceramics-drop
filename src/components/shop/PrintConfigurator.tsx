@@ -12,7 +12,7 @@ import { Icon } from '@/components/ui/Icon';
 import { eur, gbp, pln } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
-import { encodePrintToken, variantLabel } from '@/lib/print-cart';
+import { encodePrintToken, isPrintToken, variantLabel } from '@/lib/print-cart';
 import { buildPrintAddToCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib/types';
 
@@ -37,6 +37,9 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
   const inCart = ids.includes(token);
+  // Hard rule: ceramics and prints are separate orders — block adding a print
+  // while the cart holds ceramics (checkout rejects mixed carts server-side too).
+  const cartHasCeramics = ids.some((id) => !isPrintToken(id));
 
   const canFrame = design.frameColours.length > 0;
 
@@ -156,7 +159,14 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
         <span className="v">{fmt(price)}</span>
       </div>
 
-      {available ? (
+      {cartHasCeramics && !inCart ? (
+        <>
+          <button type="button" className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="print-add">
+            {t('print.addToCart')}
+          </button>
+          <p className="pay-error" data-testid="print-mixed-note">{t('print.mixedCart')}</p>
+        </>
+      ) : available ? (
         <button
           type="button"
           className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}

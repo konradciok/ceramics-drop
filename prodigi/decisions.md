@@ -137,3 +137,13 @@ Replaces the `claude/prints-feature` plan token `print:id:size:paper:frame`. No 
 | 2026-06-26 | P0-1 complete; sku-catalog.md created |
 | 2026-06-26 | Q1 + Q5 decided (3 sizes, framed/mount/colour model, cart token) |
 | 2026-06-26 | Q2 R2 · Q3 CF Queue · Q4 separate ceramics/prints, no mixed cart |
+
+---
+
+## P1 decisions (2026-07-03)
+
+1. **Shipping destinations** — prints ship to all **EU members + UK** (28 countries, `PRINT_COUNTRIES` in `src/lib/print-shipping.ts`). Ceramics stay PL/InPost.
+2. **Print shipping price** — Prodigi Budget cost passed through at cost (no margin), from a static per-country table quoted 2026-07-03 (framed vs loose tiers, largest size). No InPost fee on print carts. CY/MT framed (~€132) passed through honestly.
+3. **Frame / passe-partout surcharges** — **100% margin**: 2× Prodigi's cost delta per size (`FRAMED_DELTA` / `MOUNT_DELTA` in `src/lib/print-pricing.ts`).
+4. **No mixed cart is a hard rule** — enforced in `validateCart` (`mixed_cart`), the cart UI (banner + disabled checkout), and the print configurator (add blocked while ceramics in cart).
+5. **`GLOBAL-CFP-12X16` print areas** — re-verified via API: black/white 3614×4795 px vs natural 3600×4800 px is real, not a transcription error.
