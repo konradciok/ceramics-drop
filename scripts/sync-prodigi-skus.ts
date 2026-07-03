@@ -12,19 +12,29 @@ function parseEnvFile(filePath: string): Record<string, string> {
   try {
     return Object.fromEntries(
       fs.readFileSync(filePath, 'utf8').split('\n')
-        .map(l => l.trim()).filter(l => l && !l.startsWith('#'))
-        .map(l => l.split('=').map((p, i) => i === 0 ? p.trim() : l.slice(l.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')))
-        .filter(([k]) => k) as [string, string][]
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#'))
+        .flatMap((l): [string, string][] => {
+          const idx = l.indexOf('=');
+          if (idx === -1) return [];
+          const key = l.slice(0, idx).trim();
+          const value = l.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+          return key ? [[key, value]] : [];
+        }),
     );
   } catch { return {}; }
 }
 
 const merged = { ...parseEnvFile('.env.local'), ...parseEnvFile('.dev.vars'), ...process.env };
 
-const supabase = createClient(
-  merged.SUPABASE_URL ?? '',
-  merged.SUPABASE_SERVICE_ROLE_KEY ?? '',
-);
+const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'PRODIGI_API_KEY_SANDBOX'] as const;
+const missing = REQUIRED.filter((k) => !merged[k]);
+if (missing.length) {
+  console.error(`Missing required env vars: ${missing.join(', ')} (set in .dev.vars or .env.local)`);
+  process.exit(1);
+}
+
+const supabase = createClient(merged.SUPABASE_URL!, merged.SUPABASE_SERVICE_ROLE_KEY!);
 
 const env = {
   PRODIGI_ENV: 'sandbox',
@@ -45,6 +55,7 @@ async function main() {
   const uniqueSkus = [...new Set(Object.values(PRODIGI_SKU_MAP).map((v) => v.sku))];
   console.log(`Syncing ${uniqueSkus.length} unique SKUs…`);
 
+  const failed: string[] = [];
   for (const sku of uniqueSkus) {
     process.stdout.write(`  ${sku}… `);
     const data = await fetchProduct(sku);
@@ -61,10 +72,14 @@ async function main() {
       last_synced_at: new Date().toISOString(),
     }, { onConflict: 'prodigi_sku' });
 
-    if (error) { console.log('ERROR', error.message); continue; }
+    if (error) { console.log('ERROR', error.message); failed.push(sku); continue; }
     console.log(`ok (${printArea?.horizontalResolution}×${printArea?.verticalResolution})`);
   }
 
+  if (failed.length) {
+    console.error(`Failed to sync ${failed.length}/${uniqueSkus.length} SKUs: ${failed.join(', ')}`);
+    process.exit(1);
+  }
   console.log('Done.');
 }
 

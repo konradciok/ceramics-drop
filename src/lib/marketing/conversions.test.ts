@@ -78,6 +78,10 @@ describe('sendPurchaseConversions', () => {
     const d = deps({
       loadOrder: vi.fn().mockResolvedValue(
         baseOrder({
+          // Totals consistent with the two items below: 9000 + 35000 + 1800 shipping.
+          subtotal: 44000,
+          shipping: 1800,
+          total: 45800,
           items: [
             { product_id: 'k01', unit_price: 9000 },
             { product_id: 'fap01', unit_price: 35000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-20X28' } },
@@ -93,12 +97,14 @@ describe('sendPurchaseConversions', () => {
       item_id: 'fap01',
       item_name: 'Print Nº 01',
       item_category: 'fine-art-prints',
-      item_variant: '50×70 cm · rama black',
+      item_variant: '50×70 cm · frame black',
       price: 350,
     });
+    expect(ga4Input.value).toBe(440);  // subtotal grosze → PLN
 
     // Meta contents still include the print line (item-level revenue not dropped).
     const metaInput = d.sendMeta.mock.calls[0][1];
+    expect(metaInput.value).toBe(458); // total grosze → PLN
     expect(metaInput.numItems).toBe(2);
     expect(metaInput.contents.map((c: { id: string }) => c.id)).toContain('fap01');
   });

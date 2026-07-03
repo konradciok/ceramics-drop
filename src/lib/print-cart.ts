@@ -44,6 +44,7 @@ export function decodePrintToken(
   if (!validColour) return null;
   if (!framed && frameColour !== 'none') return null;
   if (framed && frameColour === 'none') return null;
+  if (!framed && mount) return null; // passe-partout only exists inside a frame
   return {
     designId,
     sel: {
@@ -80,6 +81,10 @@ const MOUNT_LABEL: Record<string, string> = {
   de: '+ Passepartout', gb: '+ mount',
 };
 
+const FRAME_LABEL: Record<string, string> = {
+  pl: 'rama', en: 'frame', es: 'marco', de: 'Rahmen', gb: 'frame',
+};
+
 /** One-line variant label for cart, emails, invoice. No i18n runtime needed. */
 export function variantLabel(sel: PrintVariantSelection, locale: string): string {
   const loc = locale in COLOUR_LABEL ? locale : 'pl';
@@ -87,7 +92,8 @@ export function variantLabel(sel: PrintVariantSelection, locale: string): string
   if (!sel.framed) {
     parts.push(UNFRAMED_LABEL[loc]);
   } else {
-    parts.push(`rama ${COLOUR_LABEL[loc][sel.frameColour as PrintFrameColour]}`);
+    const colour = sel.frameColour !== 'none' ? COLOUR_LABEL[loc][sel.frameColour] : '';
+    parts.push(`${FRAME_LABEL[loc]}${colour ? ` ${colour}` : ''}`);
     if (sel.mount) parts.push(MOUNT_LABEL[loc]);
   }
   return parts.join(' · ');

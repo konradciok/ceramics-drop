@@ -82,5 +82,7 @@ export interface PrintDesign {
   mountAvailable: boolean;
   unavailable?: string[];            // variantKey strings to exclude
   published: boolean;
-  fromPLN: number;                   // display "from" price in PLN
+  /** Per-size price overrides (major units) for premium designs; sizes not
+      listed fall back to the shared SIZE_BASE in print-pricing.ts. */
+  prices?: Partial<Record<PrintSize, { pln: number; eur: number; gbp: number }>>;
 }

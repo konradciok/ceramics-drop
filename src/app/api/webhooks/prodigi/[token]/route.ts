@@ -23,5 +23,9 @@ export async function POST(
   }
 
   const result = await handleProdigiCallback(body, env);
-  return NextResponse.json({ message: result.message }, { status: result.status });
+  // API error contract: failures respond as { error } (see AGENTS.md).
+  return NextResponse.json(
+    result.status >= 400 ? { error: result.message } : { message: result.message },
+    { status: result.status },
+  );
 }

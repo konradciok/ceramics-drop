@@ -5,7 +5,7 @@ import { getProductById, CATEGORIES, isCategoryHidden } from '@/lib/products';
 import { getPrintById } from '@/lib/prints';
 import { getSoldIds } from '@/lib/inventory';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { productSchema } from '@/lib/seo/structured-data';
+import { printProductSchema, productSchema } from '@/lib/seo/structured-data';
 import { productAlternates } from '@/lib/seo/urls';
 import { SITE_URL } from '@/lib/site';
 import { ProductPageScreen } from '@/components/shop/ProductPageScreen';
@@ -71,8 +71,17 @@ export default async function Page({ params }: Props) {
   if (slug === PRINT_SLUG) {
     const design = getPrintById(id);
     if (!design || !design.published) notFound();
+    const t = await getTranslations({ locale });
     return (
       <main>
+        <JsonLd
+          data={printProductSchema({
+            design,
+            locale: locale as Locale,
+            t: (key: string) => t(key),
+            tRaw: (key: string) => t.raw(key),
+          })}
+        />
         <PrintProductScreen design={design} />
       </main>
     );

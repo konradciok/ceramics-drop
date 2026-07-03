@@ -13,7 +13,6 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'white', 'natural'],
     mountAvailable: true,
     published: true,
-    fromPLN: 105,
   },
   {
     id: 'fap02',
@@ -26,7 +25,6 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'white'],
     mountAvailable: false,
     published: true,
-    fromPLN: 105,
   },
   {
     id: 'fap03',
@@ -38,7 +36,6 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'white', 'natural'],
     mountAvailable: true,
     published: false,
-    fromPLN: 105,
   },
 ];
 
@@ -64,6 +61,7 @@ export function isVariantAvailable(design: PrintDesign, sel: PrintVariantSelecti
     if (!design.frameColours.includes(sel.frameColour)) return false;
     if (sel.mount && !design.mountAvailable) return false;
   } else {
+    if (sel.mount) return false; // passe-partout only exists inside a frame
     if (sel.frameColour !== 'none') return false;
   }
   if (design.unavailable?.includes(variantKey(sel))) return false;

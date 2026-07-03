@@ -13,21 +13,28 @@ import { EMAIL } from '@/lib/email-addresses';
 const PRINTS_SLUG = 'fine-art-prints';
 
 /** Prices (major units, given currency) of every sellable variant of a design. */
-function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur'): number[] {
+function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur' | 'gbp'): number[] {
   const prices: number[] = [];
   for (const size of PRINT_SIZES) {
     // Unframed variant
     const unframed = { size, framed: false, mount: false, frameColour: 'none' as const };
-    if (isVariantAvailable(design, unframed)) prices.push(priceOfVariant(unframed, currency));
+    if (isVariantAvailable(design, unframed)) prices.push(priceOfVariant(design, unframed, currency));
     // Framed variants
     for (const frameColour of PRINT_FRAME_COLOURS) {
       for (const mount of [false, true]) {
         const sel = { size, framed: true, mount, frameColour };
-        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(sel, currency));
+        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(design, sel, currency));
       }
     }
   }
   return prices;
+}
+
+/** Locale → (currency code pair) for print schemas — gb is GBP, not EUR. */
+function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
+  if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
+  if (locale === 'gb') return { currency: 'gbp', priceCurrency: 'GBP' };
+  return { currency: 'eur', priceCurrency: 'EUR' };
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
@@ -127,8 +134,7 @@ type PrintCollectionArgs = {
  */
 export function printCollectionSchema({ locale, t }: PrintCollectionArgs): Graph {
   const designs = getPrintDesigns();
-  const currency = locale !== 'pl' ? 'eur' : 'pln';
-  const priceCurrency = locale !== 'pl' ? 'EUR' : 'PLN';
+  const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const homeUrl = absoluteUrl(locale, '/');
@@ -187,8 +193,7 @@ type PrintProductArgs = {
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
 export function printProductSchema({ design, locale, t, tRaw }: PrintProductArgs): Graph {
-  const currency = locale !== 'pl' ? 'eur' : 'pln';
-  const priceCurrency = locale !== 'pl' ? 'EUR' : 'PLN';
+  const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const name = `${singular} Nº ${design.num}`;

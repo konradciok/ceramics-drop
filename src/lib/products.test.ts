@@ -18,7 +18,7 @@ describe('getProducts', () => {
   });
 
   it('has the right count per category', () => {
-    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10 };
+    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
     for (const slug of CATEGORY_ORDER) {
       expect(getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }

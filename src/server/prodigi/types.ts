@@ -37,6 +37,7 @@ export interface ProdigiOrderResponse {
   outcome: 'Created' | 'AlreadyExists' | string;
   order: {
     id: string;
+    merchantReference?: string;
     status: { stage: string };
     items: Array<{ id: string; sku: string; status: { detail: string } }>;
   };

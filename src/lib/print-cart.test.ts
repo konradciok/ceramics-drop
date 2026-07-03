@@ -39,6 +39,9 @@ describe('decodePrintToken validation', () => {
   it('rejects framed=true with none colour', () => {
     expect(decodePrintToken('print:fap01:50x70:true:false:none')).toBeNull();
   });
+  it('rejects mount=true without a frame', () => {
+    expect(decodePrintToken('print:fap01:50x70:false:true:none')).toBeNull();
+  });
 });
 
 describe('variantLabel', () => {
@@ -48,7 +51,11 @@ describe('variantLabel', () => {
   });
   it('labels a framed+mount print in English', () => {
     const sel = { size: '50x70' as const, framed: true, mount: true, frameColour: 'natural' as const };
-    expect(variantLabel(sel, 'en')).toBe('50×70 cm · rama natural · + mount');
+    expect(variantLabel(sel, 'en')).toBe('50×70 cm · frame natural · + mount');
+  });
+  it('labels a framed print in Polish', () => {
+    const sel = { size: '50x70' as const, framed: true, mount: false, frameColour: 'black' as const };
+    expect(variantLabel(sel, 'pl')).toBe('50×70 cm · rama czarna');
   });
 });
 

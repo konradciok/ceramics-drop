@@ -258,29 +258,35 @@ export async function POST(req: Request) {
       }
     },
     createShipment: async (pi) => {
-      // Determine what line items this order has.
-      const { data: orderIdRow } = await supabase
+      // Determine what line items this order has. Read failures throw so Stripe
+      // retries — a transient DB error must never silently skip fulfilment.
+      const { data: orderIdRow, error: orderErr } = await supabase
         .from('orders')
         .select('id')
         .eq('payment_intent_id', pi)
         .single();
       const orderId = (orderIdRow as { id: string } | null)?.id;
-      if (orderId) {
-        const { data: lineItems } = await supabase
-          .from('order_items')
-          .select('variant')
-          .eq('order_id', orderId);
-        const hasCeramics = lineItems?.some((i) => i.variant === null) ?? false;
-        const hasPrints   = lineItems?.some((i) => i.variant !== null) ?? false;
-
-        // Prodigi fulfilment: prints only (stub — real logic in Task 13).
-        if (hasPrints) {
-          await enqueueProdigi(orderId, env, ctx);
-        }
-
-        // InPost fulfilment: ceramics only — skip for print-only orders.
-        if (!hasCeramics) return;
+      if (orderErr || !orderId) {
+        throw new Error(`createShipment: order lookup failed for ${pi}: ${orderErr?.message ?? 'not found'}`);
       }
+      const { data: lineItems, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('variant')
+        .eq('order_id', orderId);
+      if (itemsErr || !lineItems) {
+        throw new Error(`createShipment: order_items lookup failed for ${orderId}: ${itemsErr?.message ?? 'not found'}`);
+      }
+      const hasCeramics = lineItems.some((i) => i.variant === null);
+      const hasPrints   = lineItems.some((i) => i.variant !== null);
+
+      // Prodigi fulfilment: prints only. enqueueProdigi throws on failure →
+      // Stripe retries (idempotent via the job's idempotency_key).
+      if (hasPrints) {
+        await enqueueProdigi(orderId, env, ctx);
+      }
+
+      // InPost fulfilment: ceramics only — skip for print-only orders.
+      if (!hasCeramics) return;
 
       try {
         await createOrderShipment(pi, {

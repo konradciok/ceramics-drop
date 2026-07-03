@@ -5,6 +5,8 @@ export class ProdigiError extends Error {
     message: string,
     public readonly status: number | null,
     public readonly retryable: boolean,
+    /** Parsed JSON response body when available — 409 duplicates carry the existing order. */
+    public readonly body: unknown = null,
   ) {
     super(message);
     this.name = 'ProdigiError';
@@ -45,10 +47,12 @@ async function request<T>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    // 409 from Prodigi means idempotent duplicate — not retryable, not an error.
-    // Caller must check outcome field.
+    // 409 from Prodigi means idempotencyKey duplicate — processJob recovers the
+    // existing order id from `body` instead of failing the job.
+    let parsed: unknown = null;
+    try { parsed = JSON.parse(text); } catch { /* non-JSON error body */ }
     const retryable = res.status >= 500 || res.status === 429;
-    throw new ProdigiError(`Prodigi ${res.status}: ${text}`, res.status, retryable);
+    throw new ProdigiError(`Prodigi ${res.status}: ${text}`, res.status, retryable, parsed);
   }
 
   return res.json() as Promise<T>;

@@ -10,12 +10,16 @@ const mockEnv = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
+// Order row exactly as /api/checkout persists it (ShipX-shaped address).
 const order = {
   id: 'order-123',
   currency: 'eur' as const,
-  contact: { name: 'Jan Kowalski', email: 'jan@example.com' },
-  shipping_address: { line1: 'ul. Marszałkowska 1', city: 'Warszawa', postal_code: '00-001', country: 'PL' },
-  delivery_method: 'prodigi',
+  email: 'jan@example.com',
+  receiver_first_name: 'Jan',
+  receiver_last_name: 'Kowalski',
+  receiver_phone: null,
+  shipping_address: { street: 'ul. Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
+  delivery_method: 'kurier',
 };
 
 const printItem = {
@@ -55,5 +59,30 @@ describe('buildProdigiPayload', () => {
   it('uses sandbox callback URL', () => {
     const payload = buildProdigiPayload(order, [printItem], { fap01: 'https://example.com/asset.jpg' }, mockEnv);
     expect(payload.callbackUrl).toContain('/api/webhooks/prodigi/test-token');
+  });
+
+  it('maps the ShipX address + receiver columns to the Prodigi recipient', () => {
+    const payload = buildProdigiPayload(order, [printItem], { fap01: 'https://example.com/asset.jpg' }, mockEnv);
+    expect(payload.recipient).toEqual({
+      name: 'Jan Kowalski',
+      email: 'jan@example.com',
+      phoneNumber: undefined,
+      address: {
+        line1: 'ul. Marszałkowska 1',
+        postalOrZipCode: '00-001',
+        countryCode: 'PL',
+        townOrCity: 'Warszawa',
+      },
+    });
+  });
+
+  it('throws when the order has no shipping address', () => {
+    expect(() =>
+      buildProdigiPayload({ ...order, shipping_address: null }, [printItem], { fap01: 'https://x.jpg' }, mockEnv),
+    ).toThrow(/no shipping_address/);
+  });
+
+  it('throws when an asset URL is missing', () => {
+    expect(() => buildProdigiPayload(order, [printItem], {}, mockEnv)).toThrow(/asset URL/);
   });
 });

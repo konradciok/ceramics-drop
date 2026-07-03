@@ -116,13 +116,16 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
     if (!dec) return null;
     const design = getPrintById(dec.designId);
     if (!design) return null;
+    // A print has no single catalogue price — without the caller-supplied price
+    // a 0 would silently understate cart/purchase values, so drop the item.
+    if (priceOverride === undefined) return null;
     return {
       item_id: design.id,
       item_name: `Print Nº ${design.num}`,
       item_brand: BRAND,
       item_category: 'fine-art-prints',
       item_variant: variantLabel(dec.sel, 'en'),
-      price: priceOverride ?? 0,
+      price: priceOverride,
       quantity: 1,
     };
   }

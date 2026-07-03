@@ -1,13 +1,14 @@
 import { getProductById, getProducts, isCategoryHidden } from './products';
 import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
-import { getPrintById, isVariantAvailable } from './prints';
+import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
 import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant } from './print-pricing';
 import type { PrintVariantSelection } from './types';
 
-// Hard sanity bound: a cart can never hold more than the whole (one-of-a-kind)
-// catalogue. Derived so it can't drift when the catalogue changes.
-export const MAX_CART = getProducts().length;
+// Hard sanity bound: every one-of-a-kind ceramic plus every print design in
+// each of its 21 fulfilment variants. Derived so it can't drift when the
+// catalogue changes.
+export const MAX_CART = getProducts().length + getPrintDesigns().length * 21;
 
 export type CheckoutVariant = PrintVariantSelection & {
   prodigiSku: string;
@@ -39,7 +40,7 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 
       const skuInfo = PRODIGI_SKU_MAP[variantKey(dec.sel)];
       if (!skuInfo) return { ok: false, reason: 'unknown' };
       seen.add(raw);
-      const major = priceOfVariant(dec.sel, currency);
+      const major = priceOfVariant(design, dec.sel, currency);
       const unit_price =
         currency === 'eur' ? toEuroCents(major) :
         currency === 'gbp' ? toGBPPence(major) :

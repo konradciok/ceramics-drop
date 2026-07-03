@@ -8,8 +8,8 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getPrintDesigns } from '@/lib/prints';
-import { PRICE_EUR } from '@/lib/pricing';
-import { eur, pln } from '@/lib/format';
+import { fromPriceOf } from '@/lib/print-pricing';
+import { eur, gbp, pln } from '@/lib/format';
 import { srcSet } from '@/lib/images';
 import { richTags } from '@/components/ui/richTags';
 import type { Locale } from '@/i18n/routing';
@@ -19,7 +19,8 @@ const SLUG = 'fine-art-prints';
 export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   const t = await getTranslations();
   const designs = getPrintDesigns();
-  const isPl = locale === 'pl';
+  const currency = locale === 'pl' ? 'pln' as const : locale === 'gb' ? 'gbp' as const : 'eur' as const;
+  const fmt = currency === 'pln' ? pln : currency === 'gbp' ? gbp : eur;
 
   return (
     <>
@@ -35,7 +36,7 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
 
       <div className="gallery" data-count={designs.length}>
         {designs.map((d) => {
-          const from = isPl ? pln(d.fromPLN) : eur(PRICE_EUR[SLUG]);
+          const from = fmt(fromPriceOf(d, currency));
           const name = `${t('product.print')} Nº ${d.num}`;
           return (
             <Link

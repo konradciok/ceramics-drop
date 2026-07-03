@@ -72,6 +72,12 @@ export async function POST(req: Request) {
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
 
+  // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
+  // leaves shipping_address NULL and the Prodigi order could never be built.
+  if (hasPrints && method !== 'kurier') {
+    return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
+  }
+
   const supabase = getSupabaseAdmin();
   const orderId = crypto.randomUUID();
 

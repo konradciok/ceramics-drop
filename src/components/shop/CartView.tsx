@@ -123,7 +123,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [privateSaleLoading, setPrivateSaleLoading] = useState<boolean>(propSaleToken != null);
 
   // Shipping choice — lazy-init from sessionStorage (SSR-safe via typeof window guard)
-  const [ship, setShip] = useState<ShipId>(() => {
+  const [shipChoice, setShipChoice] = useState<ShipId>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('acc_ship');
       if (saved && (SHIP_IDS as string[]).includes(saved)) return saved as ShipId;
@@ -141,10 +141,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Persist ship choice to sessionStorage whenever it changes
+  // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
-    sessionStorage.setItem('acc_ship', ship);
-  }, [ship]);
+    sessionStorage.setItem('acc_ship', shipChoice);
+  }, [shipChoice]);
 
   // On mount: private sale → seed the cart from the link's bundle; normal cart → prune sold items.
   useEffect(() => {
@@ -174,12 +174,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
 
   const lines = resolveCartLines(ids);
   const n = lines.length;
+  // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
+  // can't carry them, so any cart with a print line is locked to courier delivery
+  // (the checkout API enforces the same rule server-side).
+  const hasPrints = lines.some((l) => l.kind === 'print');
+  const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
   const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
   const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
   const fmt = currency === 'eur' ? eur : currency === 'gbp' ? gbp : pln;
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
-      ? priceOfVariant(l.sel, currency)
+      ? priceOfVariant(l.design, l.sel, currency)
       : currency === 'eur'
         ? PRICE_EUR[l.product.category]
         : currency === 'gbp'
@@ -205,7 +210,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     // double-count the selection.
     if (id === ship) return;
     pushDataLayer(buildEngagementEvent(SHIP_EVENT[id], { method: id, page: 'cart' }));
-    setShip(id);
+    setShipChoice(id);
   }
 
   // Client-side gate: the InPost shipment needs the right fields per method.
@@ -437,14 +442,16 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.delivery')}</div>
             <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
-              <ShipOption
-                id="paczkomat"
-                active={ship === 'paczkomat'}
-                onPick={handlePickShip}
-                title={t('ship.paczkomatT')}
-                desc={t('ship.paczkomatD')}
-                price={priceLabel('paczkomat')}
-              />
+              {!hasPrints && (
+                <ShipOption
+                  id="paczkomat"
+                  active={ship === 'paczkomat'}
+                  onPick={handlePickShip}
+                  title={t('ship.paczkomatT')}
+                  desc={t('ship.paczkomatD')}
+                  price={priceLabel('paczkomat')}
+                />
+              )}
               <ShipOption
                 id="kurier"
                 active={ship === 'kurier'}
@@ -453,14 +460,16 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
                 desc={t('ship.courierD')}
                 price={priceLabel('kurier')}
               />
-              <ShipOption
-                id="odbior"
-                active={ship === 'odbior'}
-                onPick={handlePickShip}
-                title={t('ship.pickupT')}
-                desc={t('ship.pickupD')}
-                price={priceLabel('odbior')}
-              />
+              {!hasPrints && (
+                <ShipOption
+                  id="odbior"
+                  active={ship === 'odbior'}
+                  onPick={handlePickShip}
+                  title={t('ship.pickupT')}
+                  desc={t('ship.pickupD')}
+                  price={priceLabel('odbior')}
+                />
+              )}
             </div>
           </div>
         )}

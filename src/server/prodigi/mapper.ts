@@ -1,18 +1,29 @@
 import { SITE_URL } from '@/lib/site';
 import type { ProdigiOrderItem, ProdigiOrderRequest, ProdigiRecipient } from './types';
 
-interface OrderRow {
+/**
+ * Order row exactly as persisted by /api/checkout: contact spread over
+ * email + receiver_* columns, address in ShipX shape (src/lib/shipx.ts
+ * DeliveryAddress) — mapped to Prodigi's recipient shape here.
+ */
+export interface OrderRow {
   id: string;
   currency: 'pln' | 'eur' | 'gbp';
-  contact: { name: string; email: string; phone?: string };
+  email: string;
+  receiver_first_name: string | null;
+  receiver_last_name: string | null;
+  receiver_phone: string | null;
   shipping_address: {
-    line1: string; line2?: string; city: string;
-    postal_code: string; country: string;
-  };
+    street: string;
+    building_number: string;
+    city: string;
+    post_code: string;
+    country_code: string;
+  } | null;
   delivery_method: string;
 }
 
-interface PrintItemRow {
+export interface PrintItemRow {
   product_id: string;
   unit_price: number;
   variant: {
@@ -29,7 +40,7 @@ const CURRENCY_CODE: Record<'pln' | 'eur' | 'gbp', string> = {
 };
 
 /** Amount in major units (Prodigi expects decimal string, e.g. "35.00"). */
-function majorAmount(minorUnits: number, currency: 'pln' | 'eur' | 'gbp'): string {
+function majorAmount(minorUnits: number): string {
   return (minorUnits / 100).toFixed(2);
 }
 
@@ -44,16 +55,21 @@ function buildAttributes(variant: PrintItemRow['variant']): Record<string, strin
 }
 
 function buildRecipient(order: OrderRow): ProdigiRecipient {
+  const a = order.shipping_address;
+  if (!a) {
+    throw new Error(
+      `order ${order.id} has no shipping_address (delivery_method=${order.delivery_method}) — prints require a courier address`,
+    );
+  }
   return {
-    name: order.contact.name,
-    email: order.contact.email,
-    phoneNumber: order.contact.phone,
+    name: [order.receiver_first_name, order.receiver_last_name].filter(Boolean).join(' '),
+    email: order.email,
+    phoneNumber: order.receiver_phone ?? undefined,
     address: {
-      line1:            order.shipping_address.line1,
-      line2:            order.shipping_address.line2,
-      postalOrZipCode:  order.shipping_address.postal_code,
-      countryCode:      order.shipping_address.country,
-      townOrCity:       order.shipping_address.city,
+      line1:            `${a.street} ${a.building_number}`.trim(),
+      postalOrZipCode:  a.post_code,
+      countryCode:      a.country_code,
+      townOrCity:       a.city,
     },
   };
 }
@@ -64,17 +80,23 @@ export function buildProdigiPayload(
   assetUrls: Record<string, string>,  // product_id → presigned URL
   env: CloudflareEnv,
 ): ProdigiOrderRequest {
-  const items: ProdigiOrderItem[] = printItems.map((item) => ({
-    sku:    item.variant.prodigiSku,
-    copies: 1,
-    sizing: 'fillPrintArea',
-    attributes: buildAttributes(item.variant),
-    assets: [{ printArea: 'default', url: assetUrls[item.product_id] }],
-    recipientCost: {
-      amount:   majorAmount(item.unit_price, order.currency),
-      currency: CURRENCY_CODE[order.currency],
-    },
-  }));
+  const items: ProdigiOrderItem[] = printItems.map((item) => {
+    const assetUrl = assetUrls[item.product_id];
+    if (!assetUrl) {
+      throw new Error(`missing Prodigi asset URL for product ${item.product_id}`);
+    }
+    return {
+      sku:    item.variant.prodigiSku,
+      copies: 1,
+      sizing: 'fillPrintArea',
+      attributes: buildAttributes(item.variant),
+      assets: [{ printArea: 'default', url: assetUrl }],
+      recipientCost: {
+        amount:   majorAmount(item.unit_price),
+        currency: CURRENCY_CODE[order.currency],
+      },
+    };
+  });
 
   return {
     shippingMethod:    env.PRODIGI_DEFAULT_SHIPPING_METHOD ?? 'Budget',

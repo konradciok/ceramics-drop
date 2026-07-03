@@ -6,8 +6,8 @@
    ============================================================ */
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { eur, pln } from '@/lib/format';
-import { PRICE_EUR } from '@/lib/pricing';
+import { eur, gbp, pln } from '@/lib/format';
+import { fromPriceOf } from '@/lib/print-pricing';
 import { getPrintDesigns } from '@/lib/prints';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
@@ -19,7 +19,8 @@ const SLUG = 'fine-art-prints';
 
 export async function PrintProductScreen({ design }: { design: PrintDesign }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
-  const isPl = locale === 'pl';
+  const currency = locale === 'pl' ? 'pln' as const : locale === 'gb' ? 'gbp' as const : 'eur' as const;
+  const fmt = currency === 'pln' ? pln : currency === 'gbp' ? gbp : eur;
 
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
@@ -86,7 +87,7 @@ export async function PrintProductScreen({ design }: { design: PrintDesign }) {
             <h2>{t('print.moreFrom')}</h2>
             <div className="gallery" data-count={siblings.length}>
               {siblings.map((d) => {
-                const from = isPl ? pln(d.fromPLN) : eur(PRICE_EUR[SLUG]);
+                const from = fmt(fromPriceOf(d, currency));
                 const name = `${singular} Nº ${d.num}`;
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>
