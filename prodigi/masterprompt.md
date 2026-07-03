@@ -60,18 +60,19 @@ The existing storefront plan has `frame` as a single axis with values `none | oa
 
 An 18×24 in framed print with mount has a 14×20 in print/window opening. The wrong image size → rejected or misaligned fulfilment.
 
-**Reconciled variant model** (replaces the existing storefront plan's `frame` axis):
+**Reconciled variant model** (replaces the existing storefront plan's `frame` axis; verified in `sku-catalog.md`):
 
 ```text
-size         : (3 values — to be confirmed from GET /products/{sku} responses in Phase 0)
-               Prodigi uses inch-based SKU ladders, e.g. GLOBAL-CFP-12X16, GLOBAL-CFP-16X20, GLOBAL-CFP-18X24
-               Do NOT assume cm sizes — derive exact displayLabels from verified API responses only
-paper        : 'enhanced-matte'                      (fixed default at MVP)
-frame_colour : 'black' | 'white' | 'natural'         (confirm attribute values from API)
-mount        : false | true                           (distinct fulfilment axis, not a UI boolean)
+size         : '30x40' | '50x70' | '70x100'          (store labels; Prodigi suffixes 12X16, 20X28, 28X40)
+framed       : false | true                           false → GLOBAL-FAP (loose print); true → CFP/CFPM
+mount        : false | true                           passe-partout; only when framed=true (CFP vs CFPM)
+frame_colour : 'black' | 'white' | 'natural'         only when framed=true; maps to attributes.color
+paper        : 'EMA'                                   fixed at MVP (Prodigi paperType; not a UI axis)
 ```
 
-Combinatorics: 3 sizes × 3 colours × 2 mount states = 18 fulfilment variants per artwork.
+Combinatorics: 3 unframed + 3 sizes × 3 colours × 2 mount states = **21** fulfilment variants per artwork.
+
+Cart token: `print:{designId}:{size}:{framed}:{mount}:{frame_colour}`
 
 This changes:
 - The cart token format (add `mount` field)
@@ -362,7 +363,7 @@ queue consumer / process-job.ts:
 
 Print files must be accessible via a permanent URL. Master artwork files are not yet stored anywhere server-side. Options:
 
-**Option A (recommended for MVP):** R2 presigned URLs or public R2 bucket path
+**Option A (decided — Q2):** R2 presigned URLs generated in the queue consumer when submitting to Prodigi.
 - Upload master artwork to Cloudflare R2 (manual or script)
 - Generate presigned GET URL with long expiry (30 days) per order item
 - Regenerate if expired before Prodigi downloads
@@ -477,18 +478,12 @@ Do not set `PRODIGI_ENV=live` until all items below are verified:
 
 ---
 
-## Remaining open questions (must answer before coding Phase 1)
+## Phase 0 decisions (resolved — see `decisions.md`)
 
-1. **Variant axes — confirm with Prodigi docs:**
-   - Which exact sizes? (Prodigi uses inches: 12×16, 16×20, 18×24?)
-   - Frame colours available for Classic Frame Prints? (black, white, natural/oak?)
-   - Mount colour fixed as snow-white? Any others?
-   - Paper: Enhanced Matte Art confirmed as only option for MVP?
+All five P0-4 questions answered 2026-06-26:
 
-2. **Asset hosting:** Where do high-res master artwork files live? No R2 bucket exists today. Decision required: set up R2 now or defer (presigned URL vs Worker proxy).
-
-3. **Queue:** Add Cloudflare Queue binding or process Prodigi calls directly in the webhook handler with retry logic? (Direct-call is simpler but less resilient; Queue is more robust at-least-once.)
-
-4. **Shipping for framed prints:** Can InPost Paczkomat handle framed prints? Or is only Kurier valid? Does this change the delivery option UI?
-
-5. **Storefront plan variant model merge:** The existing plan uses `frame: 'none' | 'oak' | 'black'`. This must be split into `frame_colour: 'black' | 'white' | 'natural'` + `mount: boolean`. Cart token format changes. Confirm no other code has consumed the old token format before changing it.
+1. **Variant axes** — 3 sizes, framed/mount/colour model, 21 variants (`sku-catalog.md`)
+2. **Asset hosting** — Cloudflare R2, presigned GET at queue consumer time
+3. **Queue** — `FULFILMENT_QUEUE` (Cloudflare Queue), not inline webhook
+4. **Ceramics vs prints** — separate customers/carts; ceramics = drops + InPost; prints = Prodigi ship; no mixed cart
+5. **Token format** — `print:{designId}:{size}:{framed}:{mount}:{frame_colour}`

@@ -25,15 +25,16 @@ Replace the storefront plan's `frame: 'none' | 'oak' | 'black'` with:
 
 ```typescript
 // src/lib/types.ts additions (update from prints-feature plan)
-export type PrintFrameColour = 'black' | 'white' | 'natural'  // confirm values vs Prodigi attribute
-export type PrintMount = false | true
-// paper is fixed at 'enhanced-matte' for MVP — not a variable axis yet
-// (add as selectable axis in Phase 6 if multi-paper support is needed)
+export type PrintSize = '30x40' | '50x70' | '70x100'
+export type PrintFrameColour = 'black' | 'white' | 'natural'
+// framed + mount are booleans; mount only when framed=true
+// paper fixed at Prodigi EMA for MVP — not a UI axis
 
-// Cart token format (replaces print:id:size:paper:frame)
-// New: print:{designId}:{size}:{frame_colour}:{mount}
-// Example: print:fap01:30x40cm:black:true
-// paper omitted from token because it is fixed at MVP
+// Cart token: print:{designId}:{size}:{framed}:{mount}:{frame_colour}
+// Examples:
+//   print:fap01:30x40:false:false:none
+//   print:fap01:50x70:true:false:black
+//   print:fap01:70x100:true:true:natural
 ```
 
 - Update `PrintVariantSelection` in `src/lib/types.ts`.
@@ -43,14 +44,15 @@ export type PrintMount = false | true
 - Update `print-pricing.ts` axes.
 - Update `PrintConfigurator` UI component plan.
 
-**P0-3: Define the 18-variant matrix**
+**P0-3: Define the 21-variant matrix**
 
 ```text
-sizes:         3 (to confirm with Prodigi product page)
-frame_colours: 3 (black / white / natural)
-mount:         false / true
-paper:         fixed: enhanced-matte (not a variable axis at MVP)
-= 18 variants per artwork (3 × 3 × 2)
+sizes:         3 (30x40 / 50x70 / 70x100 — see sku-catalog.md)
+framed:        false / true  (false = GLOBAL-FAP loose print)
+frame_colours: 3 (black / white / natural) — only when framed
+mount:         false / true — only when framed (CFP vs CFPM)
+paper:         fixed: EMA (not a UI axis at MVP)
+= 21 variants per artwork (3 unframed + 3 × 3 × 2 framed)
 
 For each variant: Prodigi SKU + printAreaWidth + printAreaHeight (pixels at 300 DPI)
 ```
@@ -64,7 +66,7 @@ All 5 require explicit decisions documented in `prodigi/decisions.md`:
 1. **Variant axes** — confirm sizes, frame colours, mount options from Prodigi API (P0-1 resolves this; document confirmed values)
 2. **Asset hosting** — R2 presigned URL vs Worker proxy vs public path
 3. **Queue vs direct** — Cloudflare Queue binding or `ctx.waitUntil` inline fallback
-4. **Shipping for framed prints** — Prodigi ships directly from their labs; decide mixed-order delivery UX and whether to inform customers about two-parcel fulfilment
+4. **Ceramics vs prints** — separate customers and carts; ceramics = drop/InPost, prints = Prodigi direct ship (see `decisions.md` Q4)
 5. **Storefront token format** — confirm no other code has consumed the old `print:id:size:paper:frame` token before changing it
 
 **Deliverables:**
@@ -182,13 +184,13 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 - `buildProdigiPayload(order, items, podVariants)` → Prodigi order JSON.
 - Maps: `merchantReference`, `shippingMethod`, `recipient` (from order shipping_address), `items` (SKU, sizing, attributes, assets, recipientCost), `metadata`, `idempotencyKey`, `callbackUrl`.
 - `sizing`: use `fillPrintArea` only if aspect ratios match; otherwise require exact pre-sized asset.
-- **Shipping model note:** Prodigi fulfils and ships prints directly from their labs — not via InPost. The `recipient` is populated from `orders.shipping_address` (the same customer address), but the `shippingMethod` is a Prodigi shipping tier (`Budget`, `Standard`, `Express`), not an InPost method. For mixed orders (ceramics + prints), the ceramics ship via InPost as normal and prints ship separately from Prodigi — the customer may receive two parcels. This must be documented in the checkout UI and confirmed in Phase 0 (open question 4).
+- **Shipping model note:** Prodigi fulfils and ships prints directly from their labs — not via InPost. Print orders are **print-only** (no mixed cart — `decisions.md` Q4). `recipient` from `orders.contact`/shipping JSON; `shippingMethod` = Prodigi tier (`Budget` default). Ceramics keep InPost; `createShipment` guarded to ceramic line items only.
 - Unit tests: mapper.test.ts — payload shape, idempotency key format, recipientCost mapped from `orders.currency` (PLN/EUR/GBP).
 
 ### P3-2: Asset URL generation (`src/server/prodigi/assets.ts`)
 
 - Given `order_id` + `pod_variant_id` → return a URL Prodigi can fetch.
-- MVP option: R2 presigned URL with 30-day expiry (requires R2 bucket + binding).
+- **Decided (Q2):** R2 presigned GET generated in queue consumer (requires R2 bucket + binding).
 - Fallback: publicly accessible URL if master files are in `public/uploads/` (print-ready versions).
 - Log safe fields only; never log full signed URL.
 
@@ -311,7 +313,7 @@ Run `npm run cf-typegen` after updating the binding.
 ### P5-2: E2E
 
 - `purchase-print.spec.ts` — full checkout of a print, verify `prodigi_orders` row created (sandbox).
-- `purchase-mixed.spec.ts` — ceramic + print, verify ceramic reserved + print fulfilment enqueued.
+- ~~`purchase-mixed.spec.ts`~~ — **out of scope** (Q4: no mixed cart).
 - Existing ceramics E2E passes without modification.
 
 ### P5-3: Build + preview
