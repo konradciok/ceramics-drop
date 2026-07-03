@@ -70,7 +70,7 @@ describe('validateCart', () => {
   });
 
   it('rejects an unpublished design', () => {
-    const token = encodePrintToken('fap03', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
+    const token = encodePrintToken('fap04', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
     expect(validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
   });
 });

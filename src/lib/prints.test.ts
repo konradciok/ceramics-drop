@@ -5,13 +5,14 @@ describe('getPrintDesigns', () => {
   it('returns only published designs', () => {
     const designs = getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
-    expect(designs.find(d => d.id === 'fap03')).toBeUndefined();
+    expect(designs.map(d => d.id)).toEqual(['fap01', 'fap02', 'fap03']);
+    expect(designs.find(d => d.id === 'fap04')).toBeUndefined();
   });
 });
 
 describe('getPrintById', () => {
   it('resolves unpublished designs (so checkout can reject them)', () => {
-    expect(getPrintById('fap03')?.published).toBe(false);
+    expect(getPrintById('fap04')?.published).toBe(false);
   });
   it('returns undefined for unknown id', () => {
     expect(getPrintById('unknown')).toBeUndefined();
@@ -28,8 +29,8 @@ describe('isVariantAvailable', () => {
     expect(isVariantAvailable(fap01, { size: '50x70', framed: true, mount: true, frameColour: 'natural' })).toBe(true);
   });
   it('rejects unpublished design', () => {
-    const fap03 = getPrintById('fap03')!;
-    expect(isVariantAvailable(fap03, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
+    const fap04 = getPrintById('fap04')!;
+    expect(isVariantAvailable(fap04, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
   it('rejects mount when design does not offer it', () => {
     const fap02 = getPrintById('fap02')!;

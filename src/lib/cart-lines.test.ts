@@ -28,7 +28,7 @@ describe('resolveCartLines', () => {
     expect(resolveCartLines(['nope'])).toHaveLength(0);
     expect(resolveCartLines(['print:fap01:50x70:false'])).toHaveLength(0); // malformed (too few parts)
     expect(resolveCartLines(['print:nope:50x70:false:false:none'])).toHaveLength(0); // unknown design
-    expect(resolveCartLines(['print:fap03:50x70:false:false:none'])).toHaveLength(0); // unpublished
+    expect(resolveCartLines(['print:fap04:50x70:false:false:none'])).toHaveLength(0); // unpublished
     expect(resolveCartLines(['print:fap02:50x70:true:true:black'])).toHaveLength(0); // mount unavailable for fap02
   });
 });

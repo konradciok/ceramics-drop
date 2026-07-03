@@ -7,7 +7,7 @@ const framed50   = { size: '50x70' as const, framed: true,  mount: false, frameC
 const mounted70  = { size: '70x100' as const, framed: true, mount: true,  frameColour: 'natural' as const };
 
 const design: PrintDesign = {
-  id: 'fap01', category: 'fine-art-prints', num: '01', image: '/uploads/fap-01.svg',
+  id: 'fap01', category: 'fine-art-prints', num: '01', image: '/uploads/fap-01.webp',
   noteIndex: 0, sizes: ['30x40', '50x70', '70x100'],
   frameColours: ['black', 'white', 'natural'], mountAvailable: true, published: true,
 };

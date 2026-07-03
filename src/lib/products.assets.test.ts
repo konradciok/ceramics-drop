@@ -19,6 +19,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getProducts } from './products';
+import { PRINT_DESIGNS } from './prints';
 import { IMG_WIDTHS } from './images';
 import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
 
@@ -44,7 +45,7 @@ function baseStem(file: string): string {
 /** Registry image/gallery paths, as `/uploads/...webp` strings. */
 function registryImagePaths(): string[] {
   const paths: string[] = [];
-  for (const p of getProducts()) {
+  for (const p of [...getProducts(), ...PRINT_DESIGNS]) {
     paths.push(p.image);
     for (const g of p.gallery ?? []) paths.push(g);
   }
