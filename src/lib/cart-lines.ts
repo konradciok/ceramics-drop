@@ -6,7 +6,7 @@
    the cart UI can render, mirroring validateCart's server-side resolution so
    the two never diverge. Unknown / unavailable entries are dropped.
    ============================================================ */
-import { getProductById } from './products';
+import { getProductById, isCategoryHidden } from './products';
 import { getPrintById, isVariantAvailable } from './prints';
 import { decodePrintToken, isPrintToken } from './print-cart';
 import type { PrintDesign, PrintVariantSelection, Product } from './types';
@@ -31,6 +31,7 @@ export function resolveCartLines(ids: string[]): CartLine[] {
     } else {
       const product = getProductById(id);
       if (!product) continue;
+      if (isCategoryHidden(product.category)) continue;
       seen.add(id);
       lines.push({ kind: 'ceramic', id, product });
     }

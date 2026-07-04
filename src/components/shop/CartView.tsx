@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useCart } from '@/store/cart';
-import { CATEGORIES } from '@/lib/products';
+import { CATEGORIES, getProductById, isCategoryHidden } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
@@ -164,7 +164,14 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       // privateSaleLoading starts true when entering private mode; flip it off once settled.
       fetch(`/api/private-sale?token=${encodeURIComponent(saleToken)}`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
-        .then(({ product_ids }: { product_ids: string[] }) => { replace(product_ids); })
+        .then(({ product_ids }: { product_ids: string[] }) => {
+          const hasHidden = product_ids.some((id) => {
+            const p = getProductById(id);
+            return p !== undefined && isCategoryHidden(p.category);
+          });
+          if (hasHidden) { setPrivateSaleError(true); return; }
+          replace(product_ids);
+        })
         .catch(() => setPrivateSaleError(true))
         .finally(() => setPrivateSaleLoading(false));
       return;
