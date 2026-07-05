@@ -4,6 +4,7 @@ import { getOrder } from '@/lib/admin/data';
 import { adminStripe } from '@/lib/admin/clients';
 import { productRef } from '@/lib/admin/products';
 import { formatMoney } from '@/lib/admin/money';
+import { PARCEL_LABEL, recommendPacking } from '@/lib/packing';
 import { formatDateTime, StatusPill, deliveryLabel, shortId, PhoneLink } from '../../ui';
 import { OrderActions } from './OrderActions';
 
@@ -50,6 +51,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const addr = order.shipping_address as
     | { street?: string; building_number?: string; city?: string; post_code?: string; country_code?: string }
     | null;
+
+  const packing = order.delivery_method === 'odbior'
+    ? null
+    : recommendPacking(order.items.map((it) => it.product_id));
+  const confidenceLabel = { high: 'wysoka', medium: 'średnia', low: 'niska' } as const;
+  const kg = (v: number) => `~${v.toFixed(1).replace('.', ',')} kg`;
 
   const timeline: { label: string; at: string | null }[] = [
     { label: 'Utworzone', at: order.created_at },
@@ -130,6 +137,45 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dt>Nr przesyłki</dt><dd className="adm-mono">{order.inpost_shipment_id ?? '—'}</dd>
             <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>
           </dl>
+        </div>
+
+        {/* Packages */}
+        <div className="adm-panel">
+          <h3>Pakowanie</h3>
+          {!packing ? (
+            <p className="adm-muted">Odbiór osobisty — bez paczki.</p>
+          ) : (
+            <>
+              <dl className="adm-dl">
+                <dt>Plan</dt>
+                <dd>
+                  {packing.planLabel}
+                  {packing.manualReview ? <span className="adm-text-danger"> · do weryfikacji</span> : null}
+                </dd>
+                <dt>Waga</dt><dd>{kg(packing.totalWeightKg)}</dd>
+                <dt>Pewność</dt><dd>{confidenceLabel[packing.confidence]}</dd>
+              </dl>
+              {packing.packages.map((parcel, i) => (
+                <div className="adm-item" key={`${parcel.size}-${i}`}>
+                  <div className="adm-item-meta">
+                    <div>Paczka {i + 1} · {PARCEL_LABEL[parcel.size]}</div>
+                    <div className="id">{parcel.itemIds.map((pid) => productRef(pid).label).join(', ')}</div>
+                  </div>
+                  <div className="adm-num">{kg(parcel.weightKg)}</div>
+                </div>
+              ))}
+              {packing.warnings.length + packing.notes.length > 0 ? (
+                <ul className="adm-packing-notes">
+                  {packing.warnings.map((w) => (
+                    <li key={w} className="adm-text-danger">{w}</li>
+                  ))}
+                  {packing.notes.map((note) => (
+                    <li key={note} className="adm-muted">{note}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
         </div>
 
         {/* Timeline */}

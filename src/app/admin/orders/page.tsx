@@ -2,6 +2,14 @@ import Link from 'next/link';
 import { listOrders, ORDER_STATUSES, type OrderStatus } from '@/lib/admin/data';
 import { formatMoney } from '@/lib/admin/money';
 import { formatDateTime, StatusPill, shortId, deliveryLabel, ClientContact } from '../ui';
+import { recommendPacking } from '@/lib/packing';
+
+/** Compact package-plan cell: `B`, `C + A`, `—` for pickup, ⚠ when unsure. */
+function packingCell(deliveryMethod: string | null, productIds: string[]): string {
+  if (deliveryMethod === 'odbior') return '—';
+  const plan = recommendPacking(productIds);
+  return plan.manualReview ? `${plan.planLabel} ⚠` : plan.planLabel;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +69,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
             <thead>
               <tr>
                 <th>Data</th><th>Zamówienie</th><th>Status</th><th>Klient</th>
-                <th>Kwota</th><th>Dostawa</th><th>Wysyłka</th>
+                <th>Kwota</th><th>Dostawa</th><th>Paczka</th><th>Wysyłka</th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +81,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Searc
                   <td data-label="Klient"><ClientContact email={o.email} phone={o.receiver_phone} /></td>
                   <td className="adm-num" data-label="Kwota">{formatMoney(o.total, o.currency)}</td>
                   <td data-label="Dostawa">{deliveryLabel(o.delivery_method)}</td>
+                  <td className="adm-num" data-label="Paczka">{packingCell(o.delivery_method, o.items.map((it) => it.product_id))}</td>
                   <td className="adm-muted" data-label="Wysyłka">{o.delivery_status ?? (o.delivery_method === 'odbior' ? '—' : 'oczekuje')}</td>
                 </tr>
               ))}
