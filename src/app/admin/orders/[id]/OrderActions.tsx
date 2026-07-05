@@ -12,14 +12,18 @@ type Props = {
   amountLabel: string;
 };
 
+type Confirming = 'refund' | 'release' | null;
+
 export function OrderActions(props: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [confirming, setConfirming] = useState<Confirming>(null);
 
   async function post(path: string, label: string) {
     setBusy(label);
     setMsg(null);
+    setConfirming(null);
     try {
       const res = await fetch(path, {
         method: 'POST',
@@ -37,27 +41,39 @@ export function OrderActions(props: Props) {
     }
   }
 
-  const refund = () => {
-    const typed = window.prompt(
-      `Zwrot ${props.amountLabel} dla zamówienia ${props.orderId.slice(0, 8)}.\nWpisz ZWROT aby potwierdzić.`,
-    );
-    if (typed?.trim().toUpperCase() !== 'ZWROT') return;
-    void post('/api/admin/refund', 'refund');
-  };
   const resend = () => void post('/api/admin/resend-confirmation', 'resend');
-  const release = () => {
-    if (!window.confirm('Zwolnić zarezerwowane prace tego zamówienia? Wrócą do sprzedaży.')) return;
-    void post('/api/admin/release-reservation', 'release');
-  };
   const openLabel = () => window.open(`/api/admin/label?orderId=${props.orderId}`, '_blank', 'noopener');
 
+  if (confirming) {
+    const text =
+      confirming === 'refund'
+        ? `Na pewno zwrócić ${props.amountLabel}?`
+        : 'Zwolnić zarezerwowane prace? Wrócą do sprzedaży.';
+    const onConfirm = () =>
+      void post(confirming === 'refund' ? '/api/admin/refund' : '/api/admin/release-reservation', confirming);
+
+    return (
+      <>
+        <div className="adm-actions">
+          <span className="adm-muted">{text}</span>
+          <button className="adm-btn danger" disabled={busy !== null} onClick={onConfirm}>
+            {busy === confirming ? 'Trwa…' : 'Tak'}
+          </button>
+          <button className="adm-btn" disabled={busy !== null} onClick={() => setConfirming(null)}>
+            Anuluj
+          </button>
+        </div>
+        {msg && <p className={`adm-action-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</p>}
+      </>
+    );
+  }
+
   return (
-    <section className="adm-section">
-      <h2 className="adm-section-title">Akcje</h2>
+    <>
       <div className="adm-actions">
         {props.canRefund && (
-          <button className="adm-btn danger" disabled={busy !== null} onClick={refund}>
-            {busy === 'refund' ? 'Zwracam…' : 'Zwrot płatności'}
+          <button className="adm-btn danger" disabled={busy !== null} onClick={() => setConfirming('refund')}>
+            Zwrot płatności
           </button>
         )}
         {props.hasEmail && (
@@ -71,12 +87,12 @@ export function OrderActions(props: Props) {
           </button>
         )}
         {props.status !== 'paid' && (
-          <button className="adm-btn danger" disabled={busy !== null} onClick={release}>
-            {busy === 'release' ? 'Zwalniam…' : 'Zwolnij rezerwację'}
+          <button className="adm-btn danger" disabled={busy !== null} onClick={() => setConfirming('release')}>
+            Zwolnij rezerwację
           </button>
         )}
       </div>
       {msg && <p className={`adm-action-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</p>}
-    </section>
+    </>
   );
 }

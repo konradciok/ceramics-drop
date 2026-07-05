@@ -79,7 +79,7 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
         <span className={`adm-pill ${order.stage}`}>{STAGE_LABEL[order.stage]}</span>
       </div>
 
-      <div className="adm-fulfillment-layout">
+      <div className="adm-detail-layout">
         <section className="adm-fulfillment-pack">
           {order.itemsEnriched.map((item) => (
             <article className="adm-pack-item" key={item.product_id}>
@@ -95,7 +95,7 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
           ))}
         </section>
 
-        <aside className="adm-fulfillment-side">
+        <aside className="adm-detail-side">
           <div className="adm-panel">
             <h3>Dostawa</h3>
             <dl className="adm-dl">

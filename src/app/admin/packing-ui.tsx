@@ -76,10 +76,27 @@ export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: s
               <div className="adm-num">{kg(parcel.weightKg)}</div>
             </div>
           ))}
+          {packing.warnings.length > 0 && (
+            <>
+              <p className="adm-packing-group-label">Plan pakowania</p>
+              <ul className="adm-packing-notes">
+                {packing.warnings.map((w, i) => (
+                  <li key={`plan-warn-${i}`} className="adm-text-danger">{w}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {shipxWarnings.length > 0 && (
+            <>
+              <p className="adm-packing-group-label">Etykieta InPost</p>
+              <ul className="adm-packing-notes">
+                {shipxWarnings.map((w, i) => (
+                  <li key={`label-warn-${i}`} className="adm-text-danger">{w}</li>
+                ))}
+              </ul>
+            </>
+          )}
           <ul className="adm-packing-notes">
-            {[...packing.warnings, ...shipxWarnings].map((w, i) => (
-              <li key={`warn-${i}`} className="adm-text-danger">{w}</li>
-            ))}
             {packing.notes.map((note, i) => (
               <li key={`note-${i}`} className="adm-muted">{note}</li>
             ))}

@@ -55,6 +55,7 @@ npm run preview:cf   # OpenNext build + Wrangler preview (Workers runtime, :8787
 npm run deploy:cf    # OpenNext build + deploy to Cloudflare
 npm run cf-typegen   # Regenerate cloudflare-env.d.ts (uses `.env.cf-typegen`, not `.env.local`)
 npm run cf:dns-cleanup   # Remove stale Namecheap MX/TXT (needs CLOUDFLARE_API_TOKEN)
+npm run cf:com-redirect  # 301 anna-ciok.com → anna-ciok.studio (needs zone + token — see below)
 ```
 
 ### DNS cleanup (optional)
@@ -71,6 +72,51 @@ Requires **Zone.DNS Edit** for `anna-ciok.studio`. Does not add apex/www records
 ### Canonical host (dashboard)
 
 Use **one** public hostname for SEO and analytics. Recommended: redirect `www.anna-ciok.studio` → `anna-ciok.studio` (or the reverse) via a **Redirect rule** in the zone. Ensure the apex has proxied **A and AAAA** records, not IPv6-only.
+
+### Secondary domain redirect (`anna-ciok.com` → `anna-ciok.studio`)
+
+The storefront canonical origin stays **`anna-ciok.studio`** (`src/lib/site.ts`). `anna-ciok.com` is a **301 alias only** — do **not** add it as a Worker custom domain in `wrangler.jsonc` (that would serve duplicate content on two hostnames).
+
+| Item | Value |
+| --- | --- |
+| Registrar | Namecheap |
+| Nameservers | `magnolia.ns.cloudflare.com`, `norman.ns.cloudflare.com` (already set) |
+| Zone | Separate Cloudflare zone for `anna-ciok.com` (not the `.studio` zone) |
+| Mechanism | Proxied placeholder DNS + Single Redirect rules (301, preserve path + query) |
+
+**Prerequisites**
+
+1. **Zone onboarded** — [Domains](https://dash.cloudflare.com/?to=/:account/domains) → Add a domain → `anna-ciok.com` → Free plan. Because nameservers already point to Cloudflare, activation is usually immediate (no registrar NS change).
+2. **API token** with **Zone Edit**, **DNS Edit**, and **Single Redirect Edit** for `anna-ciok.com`. The Workers-scoped token in `.env.local` (`#zone:read` only) is insufficient.
+
+**Automated setup**
+
+```bash
+CLOUDFLARE_API_TOKEN=... npm run cf:com-redirect
+```
+
+Script: [`scripts/cloudflare-com-redirect-setup.mjs`](../scripts/cloudflare-com-redirect-setup.mjs). Idempotent — creates proxied `A` records (`@` and `www` → `192.0.2.0`) and two redirect rules:
+
+| Rule | Match | Target |
+| --- | --- | --- |
+| `com-to-studio-apex` | `http.host eq "anna-ciok.com"` | `https://anna-ciok.studio` + path |
+| `com-to-studio-www` | `http.host eq "www.anna-ciok.com"` | `https://anna-ciok.studio` + path |
+
+**Verify**
+
+```bash
+curl -sI https://anna-ciok.com/kubki/k01 | grep -iE '^(HTTP|location):'
+curl -sI https://www.anna-ciok.com/en | grep -iE '^(HTTP|location):'
+```
+
+Expect `301` and `Location: https://anna-ciok.studio/...`.
+
+**Post-launch (ops)**
+
+- **Google Search Console** — add `anna-ciok.com` as a Domain property; confirm Google sees the 301 to `.studio`. Keep `.studio` as the primary indexed property (`https://anna-ciok.studio/sitemap.xml`).
+- **No app changes** — Stripe webhooks, InPost, Resend, analytics all stay on `.studio`.
+
+**Rollback** — pause/delete the two redirect rules in the `.com` zone; remove placeholder A records. The `.studio` Worker is unaffected.
 
 ### WAF rate limiting (dashboard / API)
 
