@@ -12,9 +12,11 @@
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test --grep @ci",
     "test:e2e:edge": "playwright test --grep @checkout-edge",
-    "gtm:key": "node -e \"require('node:fs').mkdirSync('.secrets',{recursive:true})\" && gcloud iam service-accounts keys create .secrets/gtm-api-deploy.json --iam-account=gtm-api-deploy@bloomy-tale-477216.iam.gserviceaccount.com",
+    "gtm:key": "node -e \"require('node:fs').mkdirSync('.secrets',{recursive:true})\" && gcloud iam service-accounts keys create .secrets/gtm-api-deploy.json --iam-account=gtm-api-deploy@anna-ciok-studio-analytics.iam.gserviceaccount.com --project=anna-ciok-studio-analytics",
     "gtm:list": "node scripts/gtm-api.mjs list",
     "gtm:setup": "node scripts/gtm-api.mjs setup",
+    "ga4:report": "node scripts/ga4-data.mjs",
+    "bq:query": "node scripts/bq-query.mjs",
     "optimize-images": "node scripts/optimize-images.mjs",
     "notes:generate": "node scripts/generate-product-notes.mjs",
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
@@ -35,6 +37,8 @@
     "reconcile:orders": "node scripts/reconcile-orders.mjs"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.1.0",
+    "@google-cloud/bigquery": "^8.3.1",
     "@sentry/nextjs": "^10.56.0",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.7.0",

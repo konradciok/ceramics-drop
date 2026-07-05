@@ -8,10 +8,10 @@ import { google } from 'googleapis';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadEnvFiles();
 const DEFAULT_SERVICE_ACCOUNT_KEY = resolve(repoRoot, '.secrets/gtm-api-deploy.json');
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID ?? 'bloomy-tale-477216';
+const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID ?? 'anna-ciok-studio-analytics';
 const SERVICE_ACCOUNT_EMAIL =
   process.env.GTM_SERVICE_ACCOUNT_EMAIL ??
-  'gtm-api-deploy@bloomy-tale-477216.iam.gserviceaccount.com';
+  'gtm-api-deploy@anna-ciok-studio-analytics.iam.gserviceaccount.com';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/tagmanager.readonly',
@@ -417,7 +417,7 @@ async function createAuthClient() {
         `Expected project: ${GCP_PROJECT_ID}`,
         '',
         'Create the local key once:',
-        '  gcloud config set project bloomy-tale-477216',
+        `  gcloud config set project ${GCP_PROJECT_ID}`,
         '  npm run gtm:key',
         '',
         'Or set GOOGLE_APPLICATION_CREDENTIALS / GTM_SERVICE_ACCOUNT_KEY to a JSON key file.',
