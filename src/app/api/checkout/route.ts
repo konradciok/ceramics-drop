@@ -6,7 +6,8 @@ import { validateCart } from '@/lib/checkout';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseTargetStatus } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toEuroCents, toGBPPence, toGrosze } from '@/lib/pricing';
+import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -62,12 +63,44 @@ export async function POST(req: Request) {
   if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
   const { method, contact, target_point, address } = delivery.delivery;
 
-  const unitPrices = valid.items.map((i) => i.unit_price);
-  const amount =
-    currency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
-    currency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
-    orderAmountGrosze(unitPrices, method);
   const ids = valid.items.map((i) => i.product_id);
+  // Only ceramics carry a piece_state row to reserve; prints are open-edition.
+  // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
+  const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
+  const hasPrints = valid.items.some((i) => i.variant);
+
+  // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
+  // leaves shipping_address NULL and the Prodigi order could never be built.
+  if (hasPrints && (method !== 'kurier' || !address)) {
+    return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
+  }
+  // Prodigi ships prints to the EU + UK; InPost kurier (ceramics) is domestic.
+  if (address) {
+    const countryOk = hasPrints
+      ? isPrintCountry(address.country_code)
+      : address.country_code === 'PL';
+    if (!countryOk) return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
+  }
+
+  const unitPrices = valid.items.map((i) => i.unit_price);
+  const subtotalMinor = unitPrices.reduce((s, v) => s + v, 0);
+  let amount: number;
+  if (hasPrints && address) {
+    // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
+    // the InPost price list.
+    const hasFramed = valid.items.some((i) => i.variant?.framed);
+    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, currency);
+    const shipMinor =
+      currency === 'eur' ? toEuroCents(shipMajor) :
+      currency === 'gbp' ? toGBPPence(shipMajor) :
+      toGrosze(shipMajor);
+    amount = subtotalMinor + shipMinor;
+  } else {
+    amount =
+      currency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
+      currency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
+      orderAmountGrosze(unitPrices, method);
+  }
 
   const supabase = getSupabaseAdmin();
   const orderId = crypto.randomUUID();
@@ -97,9 +130,9 @@ export async function POST(req: Request) {
     if (conflictArr.length > 0) {
       return NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 });
     }
-  } else {
+  } else if (ceramicIds.length > 0) {
     const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
-      p_ids: ids,
+      p_ids: ceramicIds,
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
@@ -124,6 +157,7 @@ export async function POST(req: Request) {
         product_ids: ids.join(','),
         delivery_method: method,
         ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
+        ...(hasPrints ? { has_prints: '1' } : {}),
       },
     });
   } catch {
@@ -159,14 +193,13 @@ export async function POST(req: Request) {
     captured_at: new Date().toISOString(),
   };
 
-  const subtotal = valid.items.reduce((s, i) => s + i.unit_price, 0);
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId,
     payment_intent_id: paymentIntent.id,
     status: 'pending',
     currency,
-    subtotal,
-    shipping: amount - subtotal,
+    subtotal: subtotalMinor,
+    shipping: amount - subtotalMinor,
     total: amount,
     shipping_method: method, // legacy NOT NULL column ÔÇö kept in sync with delivery_method
     delivery_method: method,
@@ -183,7 +216,12 @@ export async function POST(req: Request) {
   let itemsErr = null;
   if (!orderErr) {
     const r = await supabase.from('order_items').insert(
-      valid.items.map((i) => ({ order_id: orderId, product_id: i.product_id, unit_price: i.unit_price })),
+      valid.items.map((i) => ({
+        order_id: orderId,
+        product_id: i.product_id,
+        unit_price: i.unit_price,
+        variant: i.variant ? { kind: 'print' as const, ...i.variant } : null,
+      })),
     );
     itemsErr = r.error;
   }

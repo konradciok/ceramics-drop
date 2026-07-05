@@ -18,6 +18,7 @@
     "optimize-images": "node scripts/optimize-images.mjs",
     "notes:generate": "node scripts/generate-product-notes.mjs",
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
+    "sync-prodigi-skus": "tsx scripts/sync-prodigi-skus.ts",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

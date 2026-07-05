@@ -14,7 +14,8 @@ export type CategorySlug =
   | 'talerze-srednie'
   | 'talerze-duze'
   | 'duze-michy'
-  | 'miski-falowane';
+  | 'miski-falowane'
+  | 'fine-art-prints';
 
 /** A single one-of-a-kind ceramic piece. */
 export interface Product {
@@ -50,4 +51,38 @@ export interface Category {
   measure: string;
   /** Number of pieces in the family. */
   count: number;
+}
+
+// ── Fine-art prints ──────────────────────────────────────────────────────────
+
+/** Display size labels (cm). Maps to Prodigi SKU suffix: 30x40→12X16, 50x70→20X28, 70x100→28X40. */
+export type PrintSize = '30x40' | '50x70' | '70x100';
+
+/** Frame colour offered in the store (3 of 8 Prodigi colours). */
+export type PrintFrameColour = 'black' | 'white' | 'natural';
+
+/** A single resolved variant choice. mount is only meaningful when framed=true. */
+export interface PrintVariantSelection {
+  size: PrintSize;
+  framed: boolean;
+  mount: boolean;
+  frameColour: PrintFrameColour | 'none'; // 'none' when framed=false
+}
+
+/** A fine-art print design (open edition, configurable). */
+export interface PrintDesign {
+  id: string;                        // e.g. 'fap01'
+  category: 'fine-art-prints';
+  num: string;                       // display number, e.g. '01'
+  image: string;
+  gallery?: string[];
+  noteIndex: number;
+  sizes: PrintSize[];
+  frameColours: PrintFrameColour[];  // colours offered; empty means unframed-only
+  mountAvailable: boolean;
+  unavailable?: string[];            // variantKey strings to exclude
+  published: boolean;
+  /** Per-size price overrides (major units) for premium designs; sizes not
+      listed fall back to the shared SIZE_BASE in print-pricing.ts. */
+  prices?: Partial<Record<PrintSize, { pln: number; eur: number; gbp: number }>>;
 }

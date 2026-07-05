@@ -5,6 +5,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
+import { processJob } from './src/server/fulfilment/process-job';
+import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orders';
@@ -28,6 +30,21 @@ export default {
       }
     }
     return handler.fetch(request, env, ctx);
+  },
+
+  async queue(
+    batch: MessageBatch<FulfilmentJobMessage>,
+    env: CloudflareEnv,
+    ctx: ExecutionContext,
+  ) {
+    for (const msg of batch.messages) {
+      await processJob(msg.body, env, ctx)
+        .then(() => msg.ack())
+        .catch((err) => {
+          if ((err as { retryable?: boolean })?.retryable === false) msg.ack();
+          else msg.retry();
+        });
+    }
   },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {

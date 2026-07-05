@@ -31,7 +31,8 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "sklep": "Todas las piezas",
-    "gallery": "Galería"
+    "gallery": "Galería",
+    "fineArtPrints": "Impresiones artísticas"
   },
   "nav": {
     "sklep": "Tienda",
@@ -45,6 +46,7 @@
     "talerzeDuze": "Platos grandes",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
+    "fineArtPrints": "Impresiones Fine Art",
     "studio": "Estudio",
     "kontakt": "Contacto"
   },
@@ -85,6 +87,7 @@
     "plate": "Plato grande",
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
+    "print": "Impresión",
     "moreFrom": "Más de esta colección",
     "seeAll": "Ver todo"
   },
@@ -234,7 +237,8 @@
     "notForSale": "Esta pieza ha sido retirada de la venta y ya no se puede comprar.",
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
     "privateSaleInvalid": "Este enlace de pedido ha caducado o ya se ha utilizado. Ponte en contacto con el estudio.",
-    "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago."
+    "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago.",
+    "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -243,7 +247,9 @@
     "courierT": "Mensajería InPost",
     "courierD": "Entrega a domicilio, normalmente 1–2 días laborables después de entregar el paquete.",
     "pickupT": "Recogida personal",
-    "pickupD": "En Varsovia, con cita previa."
+    "pickupD": "En Varsovia, con cita previa.",
+    "printT": "Envío por mensajería",
+    "printD": "Enviado por nuestro socio de impresión fine-art a tu dirección en la UE y Reino Unido."
   },
   "delivery": {
     "firstName": "Nombre",
@@ -255,7 +261,8 @@
     "postCode": "Código postal",
     "city": "Ciudad",
     "lockerChosen": "Paczkomat elegido:",
-    "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente."
+    "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
+    "country": "País"
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",
@@ -410,6 +417,11 @@
       "eyebrow": "Drop de junio — 125 piezas",
       "title": "Todas las <em>piezas</em>",
       "lead": "Toda la colección en un solo lugar: tazas, jarrones, platos y cuencos. Cada pieza es única. Explora por categoría y marca tus favoritas."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Edición abierta",
+      "title": "Impresiones <em>Fine Art</em>",
+      "lead": "Motivos cerámicos impresos en papel Fine Art 200 g/m². Elige tu tamaño y enmarcado — impreso y enviado por Prodigi."
     }
   },
   "studio": {
@@ -719,6 +731,11 @@
       "Conchas azuladas alrededor de una estrella de mar terracota sobre el fondo claro del cuenco. Una franja ondulada terracota en el exterior resalta el borde y conduce el ritmo marino alrededor de la forma.",
       "Limones azulados con pequeñas líneas blancas sobre el interior claro. El ritmo frutal circula por el borde ondulado y desciende hacia el centro.",
       "Ramas negras con bayas redondas y hojas en espiga. El motivo se extiende por el interior claro, mientras el borde ondulado lo guía con un ritmo suave."
+    ],
+    "fine-art-prints": [
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 01.",
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 02.",
+      "Motivos cerámicos en papel Fine Art. Impresión Nº 03."
     ]
   },
   "error": {
@@ -746,7 +763,8 @@
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
-      "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta."
+      "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta.",
+      "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
     }
   },
   "deliveryNotice": {
@@ -761,5 +779,43 @@
     "accept": "Acepto",
     "reject": "Rechazo",
     "more": "Política de privacidad"
+  },
+  "print": {
+    "size": {
+      "label": "Tamaño",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Enmarcado",
+    "unframed": "Sin marco",
+    "framed": "Enmarcado",
+    "frameColour": "Color del marco",
+    "colour_black": "Negro",
+    "colour_white": "Blanco",
+    "colour_natural": "Natural",
+    "mount": "Passepartout",
+    "mount_none": "Sin",
+    "mount_yes": "Con passepartout",
+    "addToCart": "Añadir al carrito",
+    "inCart": "En el carrito",
+    "unavailable": "No disponible",
+    "paperNote": "Impreso en papel Fine Art EMA 200 g/m²",
+    "from": "Desde {price}",
+    "sectionDetails": "Detalles",
+    "technique": "Impresión Fine Art, papel EMA 200 g/m²",
+    "sectionEdition": "Edición",
+    "editionOpen": "Edición abierta",
+    "sectionDelivery": "Envío",
+    "deliveryNote": "Producido y enviado por Prodigi, 5–10 días hábiles",
+    "sectionCare": "Cuidado",
+    "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
+    "moreFrom": "Más impresiones",
+    "mixedCart": "Las láminas se piden por separado de la cerámica — primero finaliza o vacía tu carrito de cerámica."
   }
 }

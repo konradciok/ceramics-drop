@@ -19,6 +19,7 @@ const CATEGORY_LABEL: Record<CategorySlug, string> = {
   'talerze-duze': 'Talerz duży',
   'duze-michy': 'Micha duża',
   'miski-falowane': 'Miska falowana',
+  'fine-art-prints': 'Druk artystyczny',
 };
 
 export type ProductRef = {

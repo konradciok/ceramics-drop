@@ -74,6 +74,41 @@ describe('sendPurchaseConversions', () => {
     expect(ga4Input.shipping).toBe(18);
   });
 
+  it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(
+        baseOrder({
+          // Totals consistent with the two items below: 9000 + 35000 + 1800 shipping.
+          subtotal: 44000,
+          shipping: 1800,
+          total: 45800,
+          items: [
+            { product_id: 'k01', unit_price: 9000 },
+            { product_id: 'fap01', unit_price: 35000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-20X28' } },
+          ],
+        }),
+      ),
+    });
+    await sendPurchaseConversions('pi_1', d);
+
+    const ga4Input = d.sendGa4.mock.calls[0][1];
+    const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap01');
+    expect(printItem).toMatchObject({
+      item_id: 'fap01',
+      item_name: 'Print Nº 01',
+      item_category: 'fine-art-prints',
+      item_variant: '50×70 cm · frame black',
+      price: 350,
+    });
+    expect(ga4Input.value).toBe(440);  // subtotal grosze → PLN
+
+    // Meta contents still include the print line (item-level revenue not dropped).
+    const metaInput = d.sendMeta.mock.calls[0][1];
+    expect(metaInput.value).toBe(458); // total grosze → PLN
+    expect(metaInput.numItems).toBe(2);
+    expect(metaInput.contents.map((c: { id: string }) => c.id)).toContain('fap01');
+  });
+
   it('uses order_items.unit_price for Meta contents item_price (not catalogue price)', async () => {
     const d = deps();
     await sendPurchaseConversions('pi_1', d);

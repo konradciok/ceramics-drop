@@ -31,7 +31,8 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "sklep": "Wszystkie prace",
-    "gallery": "Galeria"
+    "gallery": "Galeria",
+    "fineArtPrints": "Grafiki artystyczne"
   },
   "nav": {
     "sklep": "Sklep",
@@ -45,6 +46,7 @@
     "talerzeDuze": "Duże talerze",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
+    "fineArtPrints": "Odbitki Fine Art",
     "studio": "O studiu",
     "kontakt": "Kontakt"
   },
@@ -85,6 +87,7 @@
     "plate": "Duży talerz",
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
+    "print": "Odbitka",
     "moreFrom": "Więcej z kolekcji",
     "seeAll": "Zobacz wszystkie"
   },
@@ -234,7 +237,8 @@
     "notForSale": "Ta praca została wycofana ze sprzedaży i nie można jej już kupić.",
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
     "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
-    "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24."
+    "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
+    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -243,7 +247,9 @@
     "courierT": "Kurier InPost",
     "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
     "pickupT": "Odbiór osobisty",
-    "pickupD": "W Warszawie, po wcześniejszym umówieniu terminu."
+    "pickupD": "W Warszawie, po wcześniejszym umówieniu terminu.",
+    "printT": "Dostawa kurierem",
+    "printD": "Druk wysyłany przez naszą drukarnię fine-art, dostawa pod adres w UE i UK."
   },
   "delivery": {
     "firstName": "Imię",
@@ -255,7 +261,8 @@
     "postCode": "Kod pocztowy",
     "city": "Miasto",
     "lockerChosen": "Wybrany paczkomat:",
-    "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny."
+    "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
+    "country": "Kraj"
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
@@ -410,6 +417,11 @@
       "eyebrow": "Czerwcowy drop — 125 prac",
       "title": "Wszystkie <em>prace</em>",
       "lead": "Cała kolekcja w jednym miejscu — kubki, wazony, talerze, misy i miski. Każdy egzemplarz jest jedyny w swoim rodzaju. Przeglądaj według kategorii i zaznacz ulubione."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Edycja otwarta",
+      "title": "Odbitki <em>Fine Art</em>",
+      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez Prodigi."
     }
   },
   "studio": {
@@ -719,6 +731,11 @@
       "Błękitne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Terakotowy falowany pas na zewnątrz podkreśla brzeg i prowadzi morski rytm dookoła formy.",
       "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi.",
       "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+    ],
+    "fine-art-prints": [
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 01.",
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 02.",
+      "Ceramiczne wzory na papierze Fine Art. Reprodukcja Nº 03."
     ]
   },
   "error": {
@@ -746,7 +763,8 @@
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna."
+      "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna.",
+      "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
     }
   },
   "deliveryNotice": {
@@ -761,5 +779,43 @@
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"
+  },
+  "print": {
+    "size": {
+      "label": "Rozmiar",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Oprawa",
+    "unframed": "Bez ramy",
+    "framed": "W ramie",
+    "frameColour": "Kolor ramy",
+    "colour_black": "Czarna",
+    "colour_white": "Biała",
+    "colour_natural": "Naturalna",
+    "mount": "Passe-partout",
+    "mount_none": "Bez",
+    "mount_yes": "Z passe-partout",
+    "addToCart": "Dodaj do koszyka",
+    "inCart": "W koszyku",
+    "unavailable": "Niedostępna",
+    "paperNote": "Druk na papierze Fine Art EMA 200 g/m²",
+    "from": "Od {price}",
+    "sectionDetails": "Detale",
+    "technique": "Druk Fine Art, papier EMA 200 g/m²",
+    "sectionEdition": "Edycja",
+    "editionOpen": "Edycja otwarta",
+    "sectionDelivery": "Dostawa",
+    "deliveryNote": "Produkcja i wysyłka przez Prodigi, 5–10 dni roboczych",
+    "sectionCare": "Przechowywanie",
+    "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
+    "moreFrom": "Więcej odbitek",
+    "mixedCart": "Printy zamawiane są osobno od ceramiki — najpierw dokończ lub opróżnij koszyk z ceramiką."
   }
 }

@@ -31,7 +31,8 @@
     "regulamin": "Terms",
     "polityka": "Privacy policy",
     "sklep": "All pieces",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "fineArtPrints": "Fine Art Prints"
   },
   "nav": {
     "sklep": "Shop",
@@ -45,6 +46,7 @@
     "talerzeDuze": "Large plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
+    "fineArtPrints": "Fine Art Prints",
     "studio": "Studio",
     "kontakt": "Contact"
   },
@@ -85,6 +87,7 @@
     "plate": "Large plate",
     "largebowl": "Large bowl",
     "wavybowl": "Wavy-rim bowl",
+    "print": "Print",
     "moreFrom": "More from this collection",
     "seeAll": "See all"
   },
@@ -234,7 +237,8 @@
     "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",
     "payError": "Payment failed. Please try again.",
     "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
-    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods."
+    "fineprint": "Payment is securely handled by Stripe — card, or local payment methods.",
+    "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue."
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
@@ -243,7 +247,9 @@
     "courierT": "InPost Courier",
     "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
     "pickupT": "Personal pickup",
-    "pickupD": "In Warsaw, by appointment."
+    "pickupD": "In Warsaw, by appointment.",
+    "printT": "Courier delivery",
+    "printD": "Shipped by our fine-art print partner to your address in the UK and EU."
   },
   "delivery": {
     "firstName": "First name",
@@ -255,7 +261,8 @@
     "postCode": "Post code",
     "city": "City",
     "lockerChosen": "Chosen locker:",
-    "lockerUnavailable": "Parcel locker picker is temporarily unavailable."
+    "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
+    "country": "Country"
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
@@ -410,6 +417,11 @@
       "eyebrow": "June drop — 125 pieces",
       "title": "All <em>pieces</em>",
       "lead": "The whole collection in one place — mugs, vases, plates and bowls. Every item is one of a kind. Browse by category and mark your favourites."
+    },
+    "fine-art-prints": {
+      "eyebrow": "Open edition",
+      "title": "Fine Art <em>Prints</em>",
+      "lead": "Ceramic motifs printed on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped via Prodigi."
     }
   },
   "studio": {
@@ -719,6 +731,11 @@
       "Blue shells around a terracotta starfish on the bowl’s base. The wavy rim leads the marine rhythm around the light form.",
       "Blue lemons with small white strokes on the bright interior. The fruit rhythm circles the wavy rim and descends toward the center.",
       "Black twigs with round berries and herringbone leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm."
+    ],
+    "fine-art-prints": [
+      "Ceramic motifs on Fine Art paper. Print Nº 01.",
+      "Ceramic motifs on Fine Art paper. Print Nº 02.",
+      "Ceramic motifs on Fine Art paper. Print Nº 03."
     ]
   },
   "error": {
@@ -746,7 +763,8 @@
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Six unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
-      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique."
+      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
+      "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
     }
   },
   "deliveryNotice": {
@@ -761,5 +779,43 @@
     "accept": "Accept",
     "reject": "Reject",
     "more": "Privacy policy"
+  },
+  "print": {
+    "size": {
+      "label": "Size",
+      "30x40": "30×40 cm",
+      "50x70": "50×70 cm",
+      "70x100": "70×100 cm"
+    },
+    "sizeHint": {
+      "30x40": "A3+",
+      "50x70": "B2",
+      "70x100": "B1"
+    },
+    "framing": "Framing",
+    "unframed": "No frame",
+    "framed": "Framed",
+    "frameColour": "Frame colour",
+    "colour_black": "Black",
+    "colour_white": "White",
+    "colour_natural": "Natural",
+    "mount": "Mount",
+    "mount_none": "No mount",
+    "mount_yes": "With mount",
+    "addToCart": "Add to cart",
+    "inCart": "In cart",
+    "unavailable": "Unavailable",
+    "paperNote": "Printed on Fine Art EMA 200 g/m² paper",
+    "from": "From {price}",
+    "sectionDetails": "Details",
+    "technique": "Fine Art print, EMA 200 g/m² paper",
+    "sectionEdition": "Edition",
+    "editionOpen": "Open edition",
+    "sectionDelivery": "Delivery",
+    "deliveryNote": "Produced and shipped via Prodigi, 5–10 working days",
+    "sectionCare": "Care",
+    "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
+    "moreFrom": "More prints",
+    "mixedCart": "Prints are ordered separately from ceramics — finish or empty your ceramics cart first."
   }
 }

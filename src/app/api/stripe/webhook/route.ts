@@ -13,6 +13,8 @@ import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/ship
 import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
 import { releaseTargetStatus } from '@/lib/piece-release';
+import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
+import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
 
   const body = await req.text();
   const stripe = getStripe();
-  const { env } = getCloudflareContext();
+  const { env, ctx } = getCloudflareContext();
 
   let event;
   try {
@@ -78,15 +80,18 @@ export async function POST(req: Request) {
         .select('*', { count: 'exact', head: true })
         .eq('order_id', orderId)
         .eq('status', 'sold');
-      const { count: expectedCount, error: expectedErr } = await supabase
-        .from('order_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('order_id', orderId);
+      // Count ONLY ceramic line items (variant IS NULL): each maps to a piece_state row.
+      // Prints have no piece_state rows — counting them would make every print order look
+      // under-fulfilled and trigger an auto-refund. Print-only orders: expected = 0 = fulfilled.
+      const { count: expectedCount, error: expectedErr } = await countCeramicOrderItems(
+        supabase as unknown as CeramicCountClient,
+        orderId,
+      );
       if (fulfilledErr || expectedErr || fulfilledCount == null || expectedCount == null) {
         throw new Error(`fulfillment count failed for order ${orderId}`);
       }
 
-      if (fulfilledCount < expectedCount) {
+      if (isUnderfulfilled(fulfilledCount, expectedCount)) {
         try {
           await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
         } catch (err) {
@@ -253,6 +258,36 @@ export async function POST(req: Request) {
       }
     },
     createShipment: async (pi) => {
+      // Determine what line items this order has. Read failures throw so Stripe
+      // retries — a transient DB error must never silently skip fulfilment.
+      const { data: orderIdRow, error: orderErr } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('payment_intent_id', pi)
+        .single();
+      const orderId = (orderIdRow as { id: string } | null)?.id;
+      if (orderErr || !orderId) {
+        throw new Error(`createShipment: order lookup failed for ${pi}: ${orderErr?.message ?? 'not found'}`);
+      }
+      const { data: lineItems, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('variant')
+        .eq('order_id', orderId);
+      if (itemsErr || !lineItems) {
+        throw new Error(`createShipment: order_items lookup failed for ${orderId}: ${itemsErr?.message ?? 'not found'}`);
+      }
+      const hasCeramics = lineItems.some((i) => i.variant === null);
+      const hasPrints   = lineItems.some((i) => i.variant !== null);
+
+      // Prodigi fulfilment: prints only. enqueueProdigi throws on failure →
+      // Stripe retries (idempotent via the job's idempotency_key).
+      if (hasPrints) {
+        await enqueueProdigi(orderId, env, ctx);
+      }
+
+      // InPost fulfilment: ceramics only — skip for print-only orders.
+      if (!hasCeramics) return;
+
       try {
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
