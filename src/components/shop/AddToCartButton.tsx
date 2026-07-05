@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import {
@@ -8,8 +8,9 @@ import {
   buildRemoveFromCartEvent,
   pushDataLayer,
 } from '@/lib/analytics';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
 import type { Product } from '@/lib/types';
 
 type Props = { product: Product };
@@ -17,8 +18,8 @@ type Props = { product: Product };
 /** Add-to-cart CTA for the product detail page. */
 export function AddToCartButton({ product }: Props) {
   const t = useTranslations();
-  const locale = useLocale();
-  const { currency: analyticsCurrency } = localeFormatter(locale);
+  const currency = useCurrency();
+  const { code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -40,7 +41,7 @@ export function AddToCartButton({ product }: Props) {
         if (inCart) { remove(product.id); } else { add(product.id); }
         const isPresent = useCart.getState().ids.includes(product.id);
         if (wasPresent !== isPresent) {
-          const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOf(product, locale)] };
+          const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOfCurrency(product, currency)] };
           pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
         }
       }}

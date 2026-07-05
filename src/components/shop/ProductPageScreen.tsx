@@ -1,7 +1,8 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
+import { getCurrency } from '@/lib/currency.server';
 import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
@@ -16,7 +17,8 @@ type Props = { product: Product; soldIds: readonly string[] };
 /** Full product detail page layout — server component with client islands. */
 export async function ProductPageScreen({ product, soldIds }: Props) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
-  const { fmt } = localeFormatter(locale);
+  const currency = await getCurrency(locale);
+  const { fmt } = currencyFormatter(currency);
 
   const cat = CATEGORIES[product.category];
   const name = t(`product.${cat.singularKey}`);
@@ -58,7 +60,7 @@ export async function ProductPageScreen({ product, soldIds }: Props) {
               <h1>
                 {name} <em>Nº {product.num}</em>
               </h1>
-              <div className="pdp-price">{fmt(priceOf(product, locale))}</div>
+              <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -92,7 +94,7 @@ export async function ProductPageScreen({ product, soldIds }: Props) {
                     product={p}
                     displayName={`${t(`product.${CATEGORIES[p.category].singularKey}`)} Nº ${p.num}`}
                     soldLabel={soldLabel}
-                    priceLabel={fmt(priceOf(p, locale))}
+                    priceLabel={fmt(priceOfCurrency(p, currency))}
                   />
                 ))}
               </div>

@@ -74,6 +74,8 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
+  // `gb` is retired as a locale, but legacy orders persisted before the merge
+  // may still carry `locale = 'gb'` — invoice those in English, not Polish.
   const invoiceLocale = (order.locale as string) === 'en' || (order.locale as string) === 'gb' ? 'en'
     : (order.locale as string) === 'es' ? 'es'
     : (order.locale as string) === 'de' ? 'de'

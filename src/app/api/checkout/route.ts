@@ -3,6 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
+import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseTargetStatus } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
@@ -46,15 +47,19 @@ export async function POST(req: Request) {
   }
 
   // Persist the buyer's locale so the shipping-confirmation email can be localised.
-  const VALID_LOCALES = ['pl', 'en', 'es', 'de', 'gb'] as const;
+  const VALID_LOCALES = ['pl', 'en', 'es', 'de'] as const;
   const locale: string =
     typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
       ? body.locale
       : 'pl';
-  const currency: 'pln' | 'eur' | 'gbp' =
-    locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
+  // Currency is a per-request concern driven by the `currency_pref` cookie, not
+  // the locale. Clamp to the launched, sellable currencies — USD/CAD are wired
+  // through pricing but have no Stripe branch here yet.
+  const chargeCurrency = toChargeableCurrency(
+    currencyFromCookieHeader(locale, req.headers.get('cookie')),
+  );
 
-  const valid = validateCart(body.ids, currency);
+  const valid = validateCart(body.ids, chargeCurrency);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
 
   // Delivery details (method, receiver contact, locker/address) are collected
@@ -89,16 +94,16 @@ export async function POST(req: Request) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
-    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, currency);
+    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
     const shipMinor =
-      currency === 'eur' ? toEuroCents(shipMajor) :
-      currency === 'gbp' ? toGBPPence(shipMajor) :
+      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
+      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
       toGrosze(shipMajor);
     amount = subtotalMinor + shipMinor;
   } else {
     amount =
-      currency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
-      currency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
+      chargeCurrency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
+      chargeCurrency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
       orderAmountGrosze(unitPrices, method);
   }
 
@@ -150,7 +155,7 @@ export async function POST(req: Request) {
     // risk a second, duplicate Stripe receipt.
     paymentIntent = await stripe.paymentIntents.create({
       amount,
-      currency,
+      currency: chargeCurrency,
       payment_method_configuration: STRIPE_PMC_ID,
       metadata: {
         order_id: orderId,
@@ -197,7 +202,7 @@ export async function POST(req: Request) {
     id: orderId,
     payment_intent_id: paymentIntent.id,
     status: 'pending',
-    currency,
+    currency: chargeCurrency,
     subtotal: subtotalMinor,
     shipping: amount - subtotalMinor,
     total: amount,
@@ -246,7 +251,7 @@ export async function POST(req: Request) {
         orderId,
         email: contact.email,
         locale,
-        currency,
+        currency: chargeCurrency,
         totalMinor: amount,
         firstName: contact.first_name,
         origin,

@@ -106,7 +106,7 @@ describe('processJob', () => {
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV, CTX);
     // Expect a second fulfilment_jobs call (the failJob update)
-    const tables = mockFrom.mock.calls.map(([t]: [string]) => t);
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
     expect(tables).toContain('orders');
     expect(tables.filter((t: string) => t === 'fulfilment_jobs').length).toBe(2);
     // The second fulfilment_jobs call's update arg should be failed_action_required
@@ -118,7 +118,7 @@ describe('processJob', () => {
     setupMocks({ orderData: { id: 'ord-1', status: 'paid', shipping_address: null } });
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV, CTX);
-    const tables = mockFrom.mock.calls.map(([t]: [string]) => t);
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
     expect(tables.filter((t: string) => t === 'fulfilment_jobs').length).toBe(2);
     const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({

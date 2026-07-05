@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { LangSwitch } from './LangSwitch';
+import { CurrencySwitcher } from './CurrencySwitcher';
 
 type NavLink = { href: string; label: string };
 
@@ -114,6 +115,7 @@ export function MobileMenu({ links, aria }: Props) {
 
         <div className="mob-lang">
           <LangSwitch />
+          <CurrencySwitcher />
         </div>
       </div>
     </>

@@ -9,7 +9,9 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getPrintDesigns } from '@/lib/prints';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { eur, gbp, pln } from '@/lib/format';
+import { currencyFormatter } from '@/lib/format';
+import { getCurrency } from '@/lib/currency.server';
+import { toChargeableCurrency } from '@/lib/currency';
 import { srcSet } from '@/lib/images';
 import { richTags } from '@/components/ui/richTags';
 import type { Locale } from '@/i18n/routing';
@@ -19,8 +21,9 @@ const SLUG = 'fine-art-prints';
 export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   const t = await getTranslations();
   const designs = getPrintDesigns();
-  const currency = locale === 'pl' ? 'pln' as const : locale === 'gb' ? 'gbp' as const : 'eur' as const;
-  const fmt = currency === 'pln' ? pln : currency === 'gbp' ? gbp : eur;
+  const currency = await getCurrency(locale);
+  const printCurrency = toChargeableCurrency(currency);
+  const { fmt } = currencyFormatter(printCurrency);
 
   return (
     <>
@@ -36,7 +39,7 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
 
       <div className="gallery" data-count={designs.length}>
         {designs.map((d) => {
-          const from = fmt(fromPriceOf(d, currency));
+          const from = fmt(fromPriceOf(d, printCurrency));
           const name = `${t('product.print')} Nº ${d.num}`;
           return (
             <Link

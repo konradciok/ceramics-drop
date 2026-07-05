@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
-import { PRICE_GBP } from './pricing';
 
 describe('buildFeedItems', () => {
   it('marks sold products as out of stock and others as in stock', () => {
@@ -15,12 +14,6 @@ describe('buildFeedItems', () => {
     const items = buildFeedItems('pl', new Set());
     const kubek = items.find((i) => i.category === 'kubki');
     expect(kubek?.price).toMatch(/^\d+\.00 PLN$/);
-  });
-
-  it('formats GBP prices with GBP currency', () => {
-    const items = buildFeedItems('gb', new Set());
-    const kubek = items.find((i) => i.category === 'kubki');
-    expect(kubek?.price).toBe(`${PRICE_GBP.kubki}.00 GBP`);
   });
 
   it('formats EUR prices with EUR currency for en locale', () => {

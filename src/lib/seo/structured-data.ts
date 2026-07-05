@@ -3,7 +3,7 @@ import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
 import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
-import { PRICE_EUR, PRICE_GBP } from '@/lib/pricing';
+import { PRICE_EUR } from '@/lib/pricing';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
@@ -30,10 +30,9 @@ function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur' | 'g
   return prices;
 }
 
-/** Locale → (currency code pair) for print schemas — gb is GBP, not EUR. */
-function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
+/** Locale → (currency code pair) for print schemas — locale default (pl→PLN, else EUR). */
+function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur'; priceCurrency: 'PLN' | 'EUR' } {
   if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
-  if (locale === 'gb') return { currency: 'gbp', priceCurrency: 'GBP' };
   return { currency: 'eur', priceCurrency: 'EUR' };
 }
 
@@ -109,8 +108,8 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
             category: categoryName,
             offers: {
               '@type': 'Offer',
-              price: locale === 'pl' ? category.price : locale === 'gb' ? PRICE_GBP[slug] : PRICE_EUR[slug],
-              priceCurrency: locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR',
+              price: locale === 'pl' ? category.price : PRICE_EUR[slug],
+              priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
               availability: availabilityFor(p.sold || sold.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
             },
@@ -282,8 +281,8 @@ export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph 
         category: categoryName,
         offers: {
           '@type': 'Offer',
-          price: locale === 'pl' ? product.price : locale === 'gb' ? PRICE_GBP[product.category] : PRICE_EUR[product.category],
-          priceCurrency: locale === 'pl' ? 'PLN' : locale === 'gb' ? 'GBP' : 'EUR',
+          price: locale === 'pl' ? product.price : PRICE_EUR[product.category],
+          priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
           availability: availabilityFor(product.sold),
           url: productUrl,
         },

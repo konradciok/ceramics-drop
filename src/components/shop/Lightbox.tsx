@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -31,8 +32,8 @@ type Props = {
 /** Product detail popup with keyboard, swipe, and focus-trap support. */
 export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props) {
   const t = useTranslations();
-  const locale = useLocale();
-  const { fmt, currency: analyticsCurrency } = localeFormatter(locale);
+  const currency = useCurrency();
+  const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
@@ -83,7 +84,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
         itemListId: product.category,
         itemListName: product.category,
         currency: analyticsCurrency,
-        priceOverride: priceOf(product, locale),
+        priceOverride: priceOfCurrency(product, currency),
       }),
     );
   }, [index, product]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -217,7 +218,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 {cat ? `${t(cat.nameKey)} — ${t('lightbox.drop')}` : ''}
               </div>
               <h3>{name} <em>Nº {product.num}</em></h3>
-              <div className="lb-price">{fmt(priceOf(product, locale))}</div>
+              <div className="lb-price">{fmt(priceOfCurrency(product, currency))}</div>
               <p className="lb-note">{note}</p>
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -240,7 +241,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   if (inCart) { remove(product.id); } else { add(product.id); }
                   const isPresent = useCart.getState().ids.includes(product.id);
                   if (wasPresent !== isPresent) {
-                    const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOf(product, locale)] };
+                    const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOfCurrency(product, currency)] };
                     pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
                   }
                 }}
