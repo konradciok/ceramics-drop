@@ -10,6 +10,7 @@ import {
 import { formatDateTime, PhoneLink, shortId, deliveryLabel } from '../../ui';
 import { FulfillmentActions } from '../FulfillmentActions';
 import { FulfillmentNavKeys } from './FulfillmentNavKeys';
+import { PackingPanel } from '../../packing-ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,6 +106,8 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
               <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>
             </dl>
           </div>
+
+          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
 
           <div className="adm-panel">
             <h3>Klient</h3>

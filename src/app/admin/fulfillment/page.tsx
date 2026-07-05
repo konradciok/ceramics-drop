@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listFulfillmentQueue, type FulfillmentOrder } from '@/lib/admin/fulfillment';
 import { formatDateTime, PhoneLink, shortId } from '../ui';
 import { FulfillmentActions } from './FulfillmentActions';
+import { packingCell } from '../packing-ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,7 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
                     <th>Prace</th>
                     <th>Klient</th>
                     <th>Dostawa</th>
+                    <th>Paczka</th>
                     <th>Status</th>
                     <th>Akcja</th>
                   </tr>
@@ -110,6 +112,7 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
                         <PhoneLink phone={order.receiver_phone} />
                       </td>
                       <td data-label="Dostawa">{deliveryLine(order)}</td>
+                      <td data-label="Paczka">{packingCell(order.delivery_method, order.items.map((it) => it.product_id))}</td>
                       <td data-label="Status"><span className={`adm-pill ${order.stage}`}>{STAGE_LABEL[order.stage]}</span></td>
                       <td data-label="Akcja"><FulfillmentActions orderId={order.id} stage={order.stage} compact /></td>
                     </tr>

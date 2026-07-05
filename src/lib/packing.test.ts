@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
-import { getProductById } from './products';
+import { PACK_SPECS, PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
+import { CATEGORIES, CATEGORY_ORDER, getProductById } from './products';
+import { encodePrintToken } from './print-cart';
 
 /** Every input id lands in exactly one parcel (unknown/print ids excluded). */
 function packedIds(plan: PackingPlan): string[] {
@@ -16,6 +17,27 @@ function assertInvariants(plan: PackingPlan) {
   const all = packedIds(plan);
   expect(new Set(all).size).toBe(all.length);
 }
+
+describe('PACK_SPECS', () => {
+  it('stays in sync with the category measures in the product registry', () => {
+    for (const slug of CATEGORY_ORDER) {
+      if (slug === 'fine-art-prints') continue; // prints ship via Prodigi, no pack spec
+      const spec = PACK_SPECS[slug];
+      expect(spec, `missing pack spec for ${slug}`).toBeDefined();
+      const numbers = (CATEGORIES[slug].measure.match(/\d+(?:,\d+)?/g) ?? []).map((n) => Number(n.replace(',', '.')));
+      if (CATEGORIES[slug].measure.includes('⌀')) {
+        // Plates give only a diameter — the footprint must match it (height stays an estimate).
+        expect(numbers).toHaveLength(1);
+        expect(spec.base).toEqual([numbers[0], numbers[0]]);
+      } else {
+        // Full W × D × H measures: the spec's three dims must be the same multiset
+        // (vases list height first, everything else lists it last).
+        expect(numbers).toHaveLength(3);
+        expect([...numbers].sort((a, b) => a - b)).toEqual([spec.base[0], spec.base[1], spec.h].sort((a, b) => a - b));
+      }
+    }
+  });
+});
 
 describe('recommendPacking', () => {
   it('returns an empty plan for an empty order', () => {
@@ -105,12 +127,28 @@ describe('recommendPacking', () => {
     assertInvariants(plan);
   });
 
-  it('excludes print tokens with a Prodigi note, without manual review', () => {
-    const plan = recommendPacking(['print:fap01:a3:satin:oak', 'k01']);
+  it('excludes print cart tokens with a Prodigi note, without manual review', () => {
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'natural' });
+    const plan = recommendPacking([token, 'k01']);
     expect(plan.planLabel).toBe('B');
     expect(packedIds(plan)).toEqual(['k01']);
     expect(plan.manualReview).toBe(false);
     expect(plan.notes.some((n) => n.includes('Prodigi'))).toBe(true);
+  });
+
+  it('excludes persisted print design ids (order_items store fap01, not the token)', () => {
+    const plan = recommendPacking(['fap01', 'k01']);
+    expect(plan.planLabel).toBe('B');
+    expect(packedIds(plan)).toEqual(['k01']);
+    expect(plan.manualReview).toBe(false);
+    expect(plan.notes.some((n) => n.includes('fap01') && n.includes('Prodigi'))).toBe(true);
+  });
+
+  it('emits a single Prodigi note for multiple print lines', () => {
+    const plan = recommendPacking(['fap01', 'fap02', 'fap03']);
+    expect(plan.packages).toEqual([]);
+    expect(plan.manualReview).toBe(false);
+    expect(plan.notes.filter((n) => n.includes('Prodigi'))).toHaveLength(1);
   });
 
   it('stacks plates at most four high', () => {

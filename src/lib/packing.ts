@@ -28,6 +28,7 @@
    Fine-art prints ship via the Prodigi flow and are excluded here.
    ============================================================ */
 import { getProductById } from './products';
+import { getPrintById } from './prints';
 import { isPrintToken } from './print-cart';
 import type { CategorySlug } from './types';
 
@@ -65,10 +66,14 @@ const MAX_PLATES_PER_STACK = 4;
 /** Footprint (base) + standing height of the raw piece, cm, and estimated weight. */
 type PackSpec = { base: [number, number]; h: number; weightKg: number; stackable?: boolean };
 
+/** Every family except prints ships in a box — a new ceramic category must add its spec here. */
+type ShippableCategorySlug = Exclude<CategorySlug, 'fine-art-prints'>;
+
 /* Raw dims come from the category `measure` strings in products.ts
    (vases list height first, everything else lists it last). Weights are
-   stoneware estimates — nothing in the codebase or DB stores real ones. */
-const PACK_SPECS: Partial<Record<CategorySlug, PackSpec>> = {
+   stoneware estimates — nothing in the codebase or DB stores real ones.
+   Exported so tests can assert the dims stay in sync with the registry. */
+export const PACK_SPECS = {
   kubki: { base: [8, 8], h: 10, weightKg: 0.35 },
   wazony: { base: [15, 15], h: 19.5, weightKg: 0.9 },
   'wazony-srednie': { base: [16, 16], h: 25, weightKg: 1.3 },
@@ -78,7 +83,7 @@ const PACK_SPECS: Partial<Record<CategorySlug, PackSpec>> = {
   'talerze-duze': { base: [24, 24], h: 3, weightKg: 0.7, stackable: true },
   'duze-michy': { base: [24, 24], h: 11, weightKg: 1.2 },
   'miski-falowane': { base: [18, 18], h: 9, weightKg: 0.6 },
-};
+} satisfies Record<ShippableCategorySlug, PackSpec>;
 
 export type PackedParcel = {
   size: ParcelSize;
@@ -198,22 +203,33 @@ function smallestSize(units: Unit[]): ParcelSize | null {
 function buildUnits(ids: string[], notes: string[], warnings: string[]): Unit[] {
   const units: Unit[] = [];
   const plates = new Map<CategorySlug, { ids: string[]; spec: PackSpec }>();
+  const printDesigns: string[] = [];
 
   for (const id of ids) {
+    // Prints appear as cart tokens (`print:fap01:…`) on cart surfaces and as
+    // bare design ids (`fap01`) in persisted order_items — exclude both.
     if (isPrintToken(id)) {
-      notes.push(`Druk (${id.split(':')[1] ?? id}) — realizacja Prodigi, poza wysyłką InPost.`);
+      printDesigns.push(id.split(':')[1] ?? id);
+      continue;
+    }
+    if (getPrintById(id)) {
+      printDesigns.push(id);
       continue;
     }
     const product = getProductById(id);
-    const spec = product && PACK_SPECS[product.category];
+    const spec: PackSpec | undefined =
+      product && product.category !== 'fine-art-prints' ? PACK_SPECS[product.category] : undefined;
     if (!product || !spec) {
       warnings.push(`Nieznany produkt ${id} — pominięty w planie, sprawdź ręcznie.`);
       continue;
     }
     if (spec.stackable) {
-      const group = plates.get(product.category) ?? { ids: [], spec };
+      let group = plates.get(product.category);
+      if (!group) {
+        group = { ids: [], spec };
+        plates.set(product.category, group);
+      }
       group.ids.push(id);
-      plates.set(product.category, group);
     } else {
       units.push({
         ids: [id],
@@ -234,6 +250,11 @@ function buildUnits(ids: string[], notes: string[], warnings: string[]): Unit[] 
         weightKg: stack.length * spec.weightKg,
       });
     }
+  }
+
+  if (printDesigns.length > 0) {
+    const suffix = printDesigns.length === 1 ? 'druk' : 'druki';
+    notes.push(`${printDesigns.length} ${suffix} (${[...new Set(printDesigns)].join(', ')}) — realizacja Prodigi, poza wysyłką InPost.`);
   }
 
   return units;
@@ -284,17 +305,24 @@ export function recommendPacking(productIds: string[]): PackingPlan {
   const groups = packable.length === 0 ? [] : fitsSize(packable, 'C') ? [packable] : splitParcels(packable);
 
   let tightParcel = false;
-  const packages: PackedParcel[] = groups.map((group) => {
-    const size = smallestSize(group)!; // every group was assembled under the C fit test
+  const packages: PackedParcel[] = [];
+  for (const group of groups) {
+    // Every group was assembled under the C fit test, so this only trips if
+    // the split/fit contract is broken by a future change.
+    const size = smallestSize(group);
+    if (!size) {
+      warnings.push(`${group.flatMap((u) => u.ids).join(', ')} — nie udało się dopasować gabarytu, sprawdź ręcznie.`);
+      continue;
+    }
     const slot = PARCEL_DIMS[size];
     const fill = group.reduce((s, u) => s + unitVolume(u), 0) / (slot.h * slot.w * slot.l);
     if (fill > TIGHT_FILL) tightParcel = true;
-    return {
+    packages.push({
       size,
       itemIds: group.flatMap((u) => u.ids).sort(),
       weightKg: Math.round((sumWeight(group) + BOX_TARE_KG[size]) * 100) / 100,
-    };
-  });
+    });
+  }
   // Deterministic order: biggest parcel first.
   packages.sort((a, b) => SIZE_ORDER.indexOf(b.size) - SIZE_ORDER.indexOf(a.size));
 
