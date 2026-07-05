@@ -424,7 +424,11 @@ export function recommendPacking(productIds: string[]): PackingPlan {
     productIds.map((id) => getProductById(id)?.category).filter((c): c is CategorySlug => !!c),
   );
   let vasesLaid = false;
-  if (categories.has('wazony')) {
+  // A single gabaryt-A parcel is already the cheapest possible planCost ([1, 0] —
+  // fewest parcels, smallest size) so no vase rearrangement could ever beat it;
+  // skip the redundant second assemblePlan for the common already-optimal order.
+  const uprightIsOptimal = packages.length === 1 && packages[0].size === 'A';
+  if (categories.has('wazony') && !uprightIsOptimal) {
     const lying = assemblePlan(buildUnits(productIds, [], [], true), []);
     const packedCount = (ps: PackedParcel[]) => ps.reduce((s, p) => s + p.itemIds.length, 0);
     const [aN, aS] = planCost(packages);
