@@ -253,8 +253,10 @@ function buildUnits(ids: string[], notes: string[], warnings: string[]): Unit[] 
   }
 
   if (printDesigns.length > 0) {
-    const suffix = printDesigns.length === 1 ? 'druk' : 'druki';
-    notes.push(`${printDesigns.length} ${suffix} (${[...new Set(printDesigns)].join(', ')}) — realizacja Prodigi, poza wysyłką InPost.`);
+    const n = printDesigns.length;
+    const suffix =
+      n === 1 ? 'druk' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'druki' : 'druków';
+    notes.push(`${n} ${suffix} (${[...new Set(printDesigns)].join(', ')}) — realizacja Prodigi, poza wysyłką InPost.`);
   }
 
   return units;

@@ -37,6 +37,11 @@ export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: s
       'Kurier: domyślna etykieta deklaruje karton 38 × 64 × 19 cm — paczka gabarytu C wymaga ręcznej korekty wymiarów przesyłki.',
     );
   }
+  if (packing && deliveryMethod === 'paczkomat' && packing.packages.some((p) => p.size === 'C')) {
+    shipxWarnings.push(
+      'Paczkomat: domyślna etykieta rezerwuje skrytkę gabarytu B — paczka gabarytu C się w niej nie zmieści, zmień rozmiar przesyłki przy nadaniu.',
+    );
+  }
 
   return (
     <div className="adm-panel">
@@ -64,11 +69,11 @@ export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: s
             </div>
           ))}
           <ul className="adm-packing-notes">
-            {[...packing.warnings, ...shipxWarnings].map((w) => (
-              <li key={w} className="adm-text-danger">{w}</li>
+            {[...packing.warnings, ...shipxWarnings].map((w, i) => (
+              <li key={`warn-${i}`} className="adm-text-danger">{w}</li>
             ))}
-            {packing.notes.map((note) => (
-              <li key={note} className="adm-muted">{note}</li>
+            {packing.notes.map((note, i) => (
+              <li key={`note-${i}`} className="adm-muted">{note}</li>
             ))}
             <li className="adm-muted">
               Etykieta InPost powstaje dziś z domyślnym rozmiarem (gabaryt B) — plan powyżej to wskazówka pakowania.
