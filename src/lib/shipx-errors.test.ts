@@ -72,6 +72,23 @@ describe('isNonRetryableShipxError', () => {
       isNonRetryableShipxError(new Error('ShipX POST /v1/shipments/123/buy → 422: offer_expired')),
     ).toBe(true);
   });
+
+  it('falls back to message matching for a ShipxApiError with an unparsed (non-JSON) body', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/organizations/195780/shipments',
+      400,
+      'missing_trucker_id: trucker_ID_is_not_set_for_organization',
+    );
+    expect(err.code).toBeNull();
+    expect(isNonRetryableShipxError(err)).toBe(true);
+  });
+
+  it('treats a ShipxApiError with an unparsed body and no matching text as retryable', () => {
+    const err = new ShipxApiError('POST', '/v1/shipments', 500, 'internal server error');
+    expect(err.code).toBeNull();
+    expect(isNonRetryableShipxError(err)).toBe(false);
+  });
 });
 
 describe('shouldRethrowShipmentError', () => {

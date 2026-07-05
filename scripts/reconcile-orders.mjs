@@ -427,14 +427,22 @@ function dryLog(msg) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function resendPost(body, apiKey) {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  let res;
+  try {
+    res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
@@ -856,7 +864,6 @@ async function discoverStudio(supabase) {
       'id, email, receiver_first_name, receiver_last_name, total, currency, delivery_method, inpost_target_point, locale',
     )
     .eq('status', 'paid')
-    .neq('delivery_method', 'odbior')
     .gte('paid_at', STUDIO_EMAIL_SINCE);
   if (error) throw new Error(`discover --studio: ${error.message}`);
   return data ?? [];
@@ -978,10 +985,12 @@ async function main() {
 
   // ── Determine which env keys are needed ───────────────────────────────────
   const needsResend = args.emails || args.studio || args.labels;
+  const needsStudioEmail = args.studio || args.labels;
   const needsInpost = args.buy || args.labels;
 
   const requiredKeys = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-  if (needsResend) requiredKeys.push('RESEND_API_KEY', 'STUDIO_NOTIFY_EMAIL');
+  if (needsResend) requiredKeys.push('RESEND_API_KEY');
+  if (needsStudioEmail) requiredKeys.push('STUDIO_NOTIFY_EMAIL');
   if (needsInpost) requiredKeys.push('INPOST_API_URL', 'INPOST_API_TOKEN');
 
   requireEnvKeys(env, requiredKeys);
@@ -1052,10 +1061,13 @@ async function main() {
     if (allOrders.length === 0) {
       warn('No orders found for the given IDs');
     }
-    emailOrders = args.emails ? allOrders : [];
-    studioOrders = args.studio ? allOrders : [];
-    buyOrders = args.buy ? allOrders : [];
-    labelOrders = args.labels ? allOrders : [];
+    // Same paid-only rule as auto-discovery — an explicit order id must not
+    // bypass it and trigger emails/buys/labels for failed/expired/refunded orders.
+    const paidOrders = allOrders.filter((order) => order.status === 'paid');
+    emailOrders = args.emails ? paidOrders : [];
+    studioOrders = args.studio ? paidOrders : [];
+    buyOrders = args.buy ? paidOrders : [];
+    labelOrders = args.labels ? paidOrders : [];
   } else {
     emailOrders = args.emails ? await discoverEmails(supabase) : [];
     studioOrders = args.studio ? await discoverStudio(supabase) : [];

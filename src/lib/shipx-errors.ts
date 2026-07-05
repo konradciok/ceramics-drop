@@ -49,10 +49,17 @@ const NON_RETRYABLE_CODES = new Set([
 ]);
 
 export function isNonRetryableShipxError(err: unknown): boolean {
-  if (err instanceof ShipxApiError) {
-    return err.code !== null && NON_RETRYABLE_CODES.has(err.code);
+  if (err instanceof ShipxApiError && err.code !== null) {
+    return NON_RETRYABLE_CODES.has(err.code);
   }
-  const msg = err instanceof Error ? err.message : String(err);
+  // Also reached for a ShipxApiError with an unparsed code (non-JSON body) —
+  // match on message text so a malformed body doesn't default to retryable.
+  const msg =
+    err instanceof ShipxApiError
+      ? `${err.message} ${err.shipxMessage ?? ''}`
+      : err instanceof Error
+        ? err.message
+        : String(err);
   return (
     msg.includes('missing_trucker_id') ||
     msg.includes('trucker_ID_is_not_set_for_organization') ||
