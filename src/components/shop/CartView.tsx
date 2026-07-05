@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, getProductById, isCategoryHidden } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
@@ -104,7 +104,7 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
   { key: 'seeWavybowls',  href: '/miski-falowane' },
 ];
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripe();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
