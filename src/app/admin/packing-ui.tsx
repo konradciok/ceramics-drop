@@ -5,7 +5,15 @@
  * so the panel spells out where the recommendation and the label diverge.
  */
 import { productRef } from '@/lib/admin/products';
-import { PARCEL_LABEL, recommendPacking, type PackingConfidence } from '@/lib/packing';
+import { CUSTOM_CARTONS, PARCEL_LABEL, recommendPacking, type PackedParcel, type PackingConfidence } from '@/lib/packing';
+
+/** e.g. "Karton K2 (44 × 32 × 18 cm)" or an explicit stock-box fallback. */
+function cartonLabel(parcel: PackedParcel): string {
+  const carton = CUSTOM_CARTONS.find((c) => c.code === parcel.carton);
+  if (carton) return carton.label;
+  // On A/B plans the packer might assume K1/K2 by habit — say why it's not one.
+  return parcel.size === 'C' ? 'karton stock / na wymiar' : 'K1/K2 za małe — karton stock / na wymiar';
+}
 
 const CONFIDENCE_LABEL: Record<PackingConfidence, string> = {
   high: 'wysoka',
@@ -62,7 +70,7 @@ export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: s
           {packing.packages.map((parcel, i) => (
             <div className="adm-item" key={`${parcel.size}-${i}`}>
               <div className="adm-item-meta">
-                <div>Paczka {i + 1} · {PARCEL_LABEL[parcel.size]}</div>
+                <div>Paczka {i + 1} · {PARCEL_LABEL[parcel.size]} · {cartonLabel(parcel)}</div>
                 <div className="id">{parcel.itemIds.map((pid) => productRef(pid).label).join(', ')}</div>
               </div>
               <div className="adm-num">{kg(parcel.weightKg)}</div>

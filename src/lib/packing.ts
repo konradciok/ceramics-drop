@@ -12,9 +12,12 @@
      +2 cm of wrap per dimension; flat plates are stacked (max 4 per
      stack, cardboard divider between plates) and the stack is
      treated as one packing unit.
-   - Ceramics are never laid on their side: units only rotate around
-     the vertical axis, so a vase taller than a gabaryt's slot height
-     bumps the whole parcel up a size.
+   - Units only rotate around the vertical axis, with one studio-approved
+     exception: small vases (`wazony`) may ship on their side when snugly
+     immobilized, and only when that strictly lowers the plan's cost
+     (fewer parcels or smaller gabaryty). Medium/large vases and all
+     other pieces stay upright, so a piece taller than a gabaryt's slot
+     height bumps the whole parcel up a size.
    - A parcel "fits" a gabaryt when every unit stands within the slot
      height, the units arrange onto the 38 × 64 cm base via a greedy
      shelf layout (taller layers first, layer heights sum within the
@@ -91,6 +94,8 @@ export type PackedParcel = {
   itemIds: string[];
   /** Contents + box tare, kg. */
   weightKg: number;
+  /** Stocked custom carton code (see CUSTOM_CARTONS), or null → stock/full-slot box. */
+  carton: CartonCode | null;
 };
 
 export type PackingConfidence = 'high' | 'medium' | 'low';
@@ -115,11 +120,11 @@ const unitVolume = (u: Unit) => u.fp[0] * u.fp[1] * u.h;
 const sumWeight = (units: Unit[]) => units.reduce((s, u) => s + u.weightKg, 0);
 
 /**
- * Greedy shelf layout on the 38 × 64 base: units sorted by footprint area,
- * placed left-to-right into rows along the 64 cm side (rotation in the
- * horizontal plane allowed), rows stacked along the 38 cm side.
+ * Greedy shelf layout on an L × W base: units sorted by footprint area,
+ * placed left-to-right into rows along the L side (rotation in the
+ * horizontal plane allowed), rows stacked along the W side.
  */
-function shelfFits(units: Unit[]): boolean {
+function shelfFits(units: Unit[], baseL: number, baseW: number): boolean {
   const sorted = [...units].sort((a, b) => b.fp[0] * b.fp[1] - a.fp[0] * a.fp[1]);
   let usedDepth = 0;
   let rowDepth = 0;
@@ -131,7 +136,7 @@ function shelfFits(units: Unit[]): boolean {
     orientations.sort((a, b) => a[1] - b[1]);
     let placed = false;
     for (const [x, y] of orientations) {
-      if (rowX + x <= 64 && usedDepth + Math.max(rowDepth, y) <= 38) {
+      if (rowX + x <= baseL && usedDepth + Math.max(rowDepth, y) <= baseW) {
         rowX += x;
         rowDepth = Math.max(rowDepth, y);
         placed = true;
@@ -144,7 +149,7 @@ function shelfFits(units: Unit[]): boolean {
       rowX = 0;
       rowDepth = 0;
       for (const [x, y] of orientations) {
-        if (x <= 64 && usedDepth + y <= 38) {
+        if (x <= baseL && usedDepth + y <= baseW) {
           rowX = x;
           rowDepth = y;
           placed = true;
@@ -157,28 +162,33 @@ function shelfFits(units: Unit[]): boolean {
   return true;
 }
 
+/** Shelf check in either orientation of a (possibly non-square) base. */
+function baseFits(units: Unit[], box: { w: number; l: number }): boolean {
+  return shelfFits(units, box.l, box.w) || (box.l !== box.w && shelfFits(units, box.w, box.l));
+}
+
 /**
- * Whether the units fit a slot of height `h` when arranged in horizontal
+ * Whether the units fit a box of the given dims when arranged in horizontal
  * layers (tallest units first; each layer must pass the shelf check; layer
- * heights sum within the slot).
+ * heights sum within the box height).
  */
-function layeredFits(units: Unit[], slotH: number): boolean {
-  if (units.some((u) => u.h > slotH)) return false;
+function layeredFits(units: Unit[], box: { h: number; w: number; l: number }): boolean {
+  if (units.some((u) => u.h > box.h)) return false;
   const sorted = [...units].sort((a, b) => b.h - a.h);
   const layers: Unit[][] = [];
   let current: Unit[] = [];
   for (const u of sorted) {
-    if (shelfFits([...current, u])) {
+    if (baseFits([...current, u], box)) {
       current.push(u);
     } else {
       if (current.length) layers.push(current);
       current = [u];
-      if (!shelfFits(current)) return false; // single unit exceeds the base
+      if (!baseFits(current, box)) return false; // single unit exceeds the base
     }
   }
   if (current.length) layers.push(current);
   const totalH = layers.reduce((s, layer) => s + Math.max(...layer.map((u) => u.h)), 0);
-  return totalH <= slotH;
+  return totalH <= box.h;
 }
 
 /** Full fit test for one parcel candidate at a given gabaryt. */
@@ -187,7 +197,7 @@ function fitsSize(units: Unit[], size: ParcelSize): boolean {
   const volume = units.reduce((s, u) => s + unitVolume(u), 0);
   if (volume > MAX_FILL * slot.h * slot.w * slot.l) return false;
   if (sumWeight(units) + BOX_TARE_KG[size] > MAX_PARCEL_WEIGHT_KG) return false;
-  return layeredFits(units, slot.h);
+  return layeredFits(units, slot);
 }
 
 const SIZE_ORDER: ParcelSize[] = ['A', 'B', 'C'];
@@ -199,8 +209,68 @@ function smallestSize(units: Unit[]): ParcelSize | null {
   return null;
 }
 
-/** Build packing units: wrap singles, stack flat plates per category. */
-function buildUnits(ids: string[], notes: string[], warnings: string[]): Unit[] {
+/* ------------------------------------------------------------------
+   Custom stock cartons — derived from the 2026-06/07 order history.
+   Gabaryt-sized boxes run at 3–24% fill for real orders, so the studio
+   stocks two snug reusable sizes instead; anything they can't hold
+   ships in a made-to-measure / full-slot box.
+   ------------------------------------------------------------------ */
+export type CustomCarton = {
+  code: string;
+  /** External dims, cm (what the supplier quotes and the locker slot sees). */
+  l: number;
+  w: number;
+  h: number;
+  /** Smallest gabaryt slot the empty carton itself fits into. */
+  slot: ParcelSize;
+  /** Empty carton + fill weight, kg (lighter than a full-slot box). */
+  tareKg: number;
+  label: string;
+};
+
+/** Wall/fold allowance per dimension: internal space = external − 1 cm. */
+const CARTON_WALL_CM = 1;
+
+export const CUSTOM_CARTONS = [
+  // Flatware laid side by side: single plates and mixed-size pairs. (A stacked
+  // same-size pair is ~8.7 cm tall — over the 8 cm A slot itself, so those
+  // orders are gabaryt B and belong to K2, never K1.)
+  { code: 'K1', l: 36, w: 26, h: 7, slot: 'A', tareKg: 0.15, label: 'Karton K1 (36 × 26 × 7 cm)' },
+  // Universal mix: mugs/plates/bowls and a lying small vase (1 cm clearance in slot B).
+  { code: 'K2', l: 44, w: 32, h: 18, slot: 'B', tareKg: 0.3, label: 'Karton K2 (44 × 32 × 18 cm)' },
+] as const satisfies readonly CustomCarton[];
+
+export type CartonCode = (typeof CUSTOM_CARTONS)[number]['code'];
+
+/**
+ * The stocked carton this parcel's contents fit into, if any. The fit runs
+ * against the carton's INTERNAL dims (external − wall allowance). Only
+ * cartons that themselves fit the parcel's assigned gabaryt slot are
+ * considered, so the carton never silently bumps the label up a size.
+ */
+function assignCarton(units: Unit[], parcelSize: ParcelSize): (typeof CUSTOM_CARTONS)[number] | null {
+  for (const c of CUSTOM_CARTONS) {
+    if (SIZE_ORDER.indexOf(c.slot) > SIZE_ORDER.indexOf(parcelSize)) continue;
+    const inner = { l: c.l - CARTON_WALL_CM, w: c.w - CARTON_WALL_CM, h: c.h - CARTON_WALL_CM };
+    const volume = units.reduce((s, u) => s + unitVolume(u), 0);
+    if (volume > MAX_FILL * inner.l * inner.w * inner.h) continue;
+    if (layeredFits(units, inner)) return c;
+  }
+  return null;
+}
+
+/**
+ * Build packing units: wrap singles, stack flat plates per category.
+ * With `laySmallVases`, small vases (`wazony`) are modelled on their side
+ * (21.5 × 17 footprint, 17 cm tall) instead of upright — the studio-approved
+ * policy for snugly immobilized small vases; bigger vases stay upright.
+ */
+function buildUnits(
+  ids: string[],
+  notes: string[],
+  warnings: string[],
+  laySmallVases = false,
+): Unit[] {
   const units: Unit[] = [];
   const plates = new Map<CategorySlug, { ids: string[]; spec: PackSpec }>();
   const printDesigns: string[] = [];
@@ -230,6 +300,14 @@ function buildUnits(ids: string[], notes: string[], warnings: string[]): Unit[] 
         plates.set(product.category, group);
       }
       group.ids.push(id);
+    } else if (laySmallVases && product.category === 'wazony') {
+      // On its side: raw height becomes the length, the base becomes the height.
+      units.push({
+        ids: [id],
+        fp: [spec.h + WRAP_CM, spec.base[1] + WRAP_CM],
+        h: spec.base[0] + WRAP_CM,
+        weightKg: spec.weightKg,
+      });
     } else {
       units.push({
         ids: [id],
@@ -285,15 +363,8 @@ function buildPlanLabel(sizes: ParcelSize[]): string {
     .join(' + ');
 }
 
-/**
- * Recommend an InPost package plan for a set of order line product ids.
- * Deterministic; safe against unknown/retired ids and print tokens.
- */
-export function recommendPacking(productIds: string[]): PackingPlan {
-  const notes: string[] = [];
-  const warnings: string[] = [];
-  const units = buildUnits(productIds, notes, warnings);
-
+/** Units → sized parcels (with carton assignment). Shared by both vase passes. */
+function assemblePlan(units: Unit[], warnings: string[]): { packages: PackedParcel[]; tightParcel: boolean } {
   // Units no single parcel can ever hold (nothing in the catalogue today).
   const packable: Unit[] = [];
   for (const u of units) {
@@ -319,17 +390,64 @@ export function recommendPacking(productIds: string[]): PackingPlan {
     const slot = PARCEL_DIMS[size];
     const fill = group.reduce((s, u) => s + unitVolume(u), 0) / (slot.h * slot.w * slot.l);
     if (fill > TIGHT_FILL) tightParcel = true;
+    const carton = assignCarton(group, size);
     packages.push({
       size,
       itemIds: group.flatMap((u) => u.ids).sort(),
-      weightKg: Math.round((sumWeight(group) + BOX_TARE_KG[size]) * 100) / 100,
+      weightKg: Math.round((sumWeight(group) + (carton?.tareKg ?? BOX_TARE_KG[size])) * 100) / 100,
+      carton: carton?.code ?? null,
     });
   }
   // Deterministic order: biggest parcel first.
   packages.sort((a, b) => SIZE_ORDER.indexOf(b.size) - SIZE_ORDER.indexOf(a.size));
+  return { packages, tightParcel };
+}
 
-  if (packable.some((u) => u.ids.some((id) => getProductById(id)?.category.startsWith('wazony')))) {
-    notes.push('Wazony pakować pionowo — nie kłaść na boku.');
+/** Lower is better: fewer parcels first, then smaller (cheaper) gabaryty. */
+function planCost(packages: PackedParcel[]): [number, number] {
+  return [packages.length, packages.reduce((s, p) => s + SIZE_ORDER.indexOf(p.size), 0)];
+}
+
+/**
+ * Recommend an InPost package plan for a set of order line product ids.
+ * Deterministic; safe against unknown/retired ids and print tokens.
+ */
+export function recommendPacking(productIds: string[]): PackingPlan {
+  const notes: string[] = [];
+  const warnings: string[] = [];
+  const upright = buildUnits(productIds, notes, warnings);
+  let { packages, tightParcel } = assemblePlan(upright, warnings);
+
+  // Small vases may ship on their side (studio policy) — take the lying plan
+  // only when it is strictly cheaper (fewer parcels or smaller gabaryty).
+  const categories = new Set(
+    productIds.map((id) => getProductById(id)?.category).filter((c): c is CategorySlug => !!c),
+  );
+  let vasesLaid = false;
+  // A single gabaryt-A parcel is already the cheapest possible planCost ([1, 0] —
+  // fewest parcels, smallest size) so no vase rearrangement could ever beat it;
+  // skip the redundant second assemblePlan for the common already-optimal order.
+  const uprightIsOptimal = packages.length === 1 && packages[0].size === 'A';
+  if (categories.has('wazony') && !uprightIsOptimal) {
+    const lying = assemblePlan(buildUnits(productIds, [], [], true), []);
+    const packedCount = (ps: PackedParcel[]) => ps.reduce((s, p) => s + p.itemIds.length, 0);
+    const [aN, aS] = planCost(packages);
+    const [bN, bS] = planCost(lying.packages);
+    // Same items packed, strictly cheaper → the lying plan wins.
+    if (packedCount(lying.packages) === packedCount(packages) && (bN < aN || (bN === aN && bS < aS))) {
+      ({ packages, tightParcel } = lying);
+      vasesLaid = true;
+    }
+  }
+
+  if (vasesLaid) {
+    notes.push('Wazon kłaść poziomo, ciasno unieruchomiony — nie może się toczyć.');
+  }
+  const uprightVases = vasesLaid
+    ? categories.has('wazony-srednie') || categories.has('wazony-duze')
+    : [...categories].some((c) => c.startsWith('wazony'));
+  if (uprightVases) {
+    notes.push(`Wazony${vasesLaid ? ' (średnie/duże)' : ''} pakować pionowo — nie kłaść na boku.`);
   }
 
   const manualReview = warnings.length > 0;

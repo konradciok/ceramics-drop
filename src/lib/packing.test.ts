@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PACK_SPECS, PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
+import { CUSTOM_CARTONS, PACK_SPECS, PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
 import { CATEGORIES, CATEGORY_ORDER, getProductById } from './products';
 import { encodePrintToken } from './print-cart';
 
@@ -17,6 +17,19 @@ function assertInvariants(plan: PackingPlan) {
   const all = packedIds(plan);
   expect(new Set(all).size).toBe(all.length);
 }
+
+describe('CUSTOM_CARTONS', () => {
+  it('every carton fits its gabaryt slot with at least 0.5 cm clearance per dimension', () => {
+    for (const c of CUSTOM_CARTONS) {
+      const slot = PARCEL_DIMS[c.slot];
+      const box = [c.l, c.w, c.h].sort((a, b) => b - a);
+      const slotDims = [slot.l, slot.w, slot.h].sort((a, b) => b - a);
+      for (let i = 0; i < 3; i++) {
+        expect(box[i], `${c.code} dim ${i} vs slot ${c.slot}`).toBeLessThanOrEqual(slotDims[i] - 0.5);
+      }
+    }
+  });
+});
 
 describe('PACK_SPECS', () => {
   it('stays in sync with the category measures in the product registry', () => {
@@ -48,11 +61,12 @@ describe('recommendPacking', () => {
     expect(plan.totalWeightKg).toBe(0);
   });
 
-  it('fits a single small plate in gabaryt A', () => {
+  it('fits a single small plate in gabaryt A, in the K1 flat carton', () => {
     const plan = recommendPacking(['t14']);
     expect(plan.planLabel).toBe('A');
     expect(plan.packages).toHaveLength(1);
     expect(plan.packages[0].itemIds).toEqual(['t14']);
+    expect(plan.packages[0].carton).toBe('K1');
     expect(plan.confidence).toBe('high');
     assertInvariants(plan);
   });
@@ -69,25 +83,60 @@ describe('recommendPacking', () => {
     assertInvariants(plan);
   });
 
-  it('recommends B for a real mixed mug + plates order', () => {
+  it('recommends B with the K2 carton for a real mixed mug + plates order', () => {
     // Order 7313df3f: kubek + talerzyk + talerz średni.
     const plan = recommendPacking(['k22', 't05', 't20']);
     expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBe('K2');
     expect(packedIds(plan)).toEqual(['k22', 't05', 't20']);
     assertInvariants(plan);
   });
 
-  it('keeps a small vase upright → gabaryt C', () => {
-    // v07 (19.5 cm tall + wrap) exceeds the 19 cm B slot standing up.
+  it('lays a single small vase down → gabaryt B in the K2 carton', () => {
+    // v07 upright (19.5 cm + wrap) exceeds the 19 cm B slot; on its side it fits.
     const plan = recommendPacking(['v07']);
+    expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBe('K2');
+    expect(plan.notes.some((n) => n.includes('poziomo'))).toBe(true);
+    expect(plan.notes.some((n) => n.includes('pionowo'))).toBe(false);
+    assertInvariants(plan);
+  });
+
+  it('lays the vase down in a mixed vase + plates order (C → B), outside K2', () => {
+    // Real order d37991ea: d10 (wazon) + talerz duży + talerzyk. The lying vase
+    // saves a gabaryt, but the 26 × 26 talerz duży next to it exceeds the K2
+    // base — the packer reaches for a stock/na-wymiar box despite the B label.
+    const plan = recommendPacking(['d10', 'p01', 't15']);
+    expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBeNull();
+    expect(plan.notes.some((n) => n.includes('poziomo'))).toBe(true);
+    assertInvariants(plan);
+  });
+
+  it('fits a stacked-plate + lying-vase + mugs order in K2 (internal-dims boundary)', () => {
+    // Real order 22feef10 minus nothing: 4-plate stack (16.1 cm) + lying vase
+    // (17 cm) + mugs must fit K2's INTERNAL dims (43 × 31 × 17), not external.
+    const plan = recommendPacking(['k06', 'k11', 's04', 's11', 's22', 't25', 'v06']);
+    expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBe('K2');
+    assertInvariants(plan);
+  });
+
+  it('keeps a small vase upright when lying down wins nothing', () => {
+    // A large vase forces gabaryt C anyway, so the small vase stays standing.
+    const plan = recommendPacking(['v01', 'd06']);
     expect(plan.planLabel).toBe('C');
+    expect(plan.notes.some((n) => n.includes('poziomo'))).toBe(false);
     expect(plan.notes.some((n) => n.includes('pionowo'))).toBe(true);
     assertInvariants(plan);
   });
 
-  it('puts a large vase in gabaryt C', () => {
+  it('puts a large vase in gabaryt C, upright, no stocked carton', () => {
     const plan = recommendPacking(['d06']);
     expect(plan.planLabel).toBe('C');
+    expect(plan.packages[0].carton).toBeNull();
+    expect(plan.notes.some((n) => n.includes('pionowo'))).toBe(true);
+    expect(plan.notes.some((n) => n.includes('poziomo'))).toBe(false);
     assertInvariants(plan);
   });
 
