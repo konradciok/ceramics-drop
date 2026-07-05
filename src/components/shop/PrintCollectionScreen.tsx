@@ -11,6 +11,7 @@ import { getPrintDesigns } from '@/lib/prints';
 import { fromPriceOf } from '@/lib/print-pricing';
 import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
+import { toChargeableCurrency } from '@/lib/currency';
 import { srcSet } from '@/lib/images';
 import { richTags } from '@/components/ui/richTags';
 import type { Locale } from '@/i18n/routing';
@@ -21,8 +22,8 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   const t = await getTranslations();
   const designs = getPrintDesigns();
   const currency = await getCurrency(locale);
-  const { fmt } = currencyFormatter(currency);
-  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const printCurrency = toChargeableCurrency(currency);
+  const { fmt } = currencyFormatter(printCurrency);
 
   return (
     <>

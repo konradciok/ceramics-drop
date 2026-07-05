@@ -36,23 +36,48 @@ const SECURITY_HEADERS: Record<string, string> = {
   ].join('; '),
 };
 
+// `Secure` only over HTTPS — omitting it on http://localhost lets the currency
+// switcher work in local dev (a Secure cookie is dropped on plain http).
+const COOKIE_SECURE = process.env.NODE_ENV === 'production';
+
+function applySecurityHeaders(response: ReturnType<typeof handleI18n>): void {
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+}
+
+function setCurrencyCookie(response: ReturnType<typeof handleI18n>, currency: string): void {
+  response.cookies.set(CURRENCY_COOKIE, currency, {
+    path: '/',
+    maxAge: CURRENCY_COOKIE_MAX_AGE,
+    sameSite: 'lax',
+    secure: COOKIE_SECURE,
+  });
+}
+
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hasCurrencyCookie = request.cookies.has(CURRENCY_COOKIE);
 
   // The `gb` locale was collapsed into `en` (currency is now a cookie, see
   // currency.ts). Permanently redirect any legacy `/gb` or `/gb/*` URL to its
-  // `/en` equivalent, preserving the rest of the path and the query string.
+  // `/en` equivalent, preserving the rest of the path and the query string. A
+  // bookmarked `/gb` URL used to guarantee GBP pricing, so seed GBP for these
+  // visitors (unless they already chose a currency), and carry the security
+  // headers the normal response path sets.
   if (/^\/gb(?=\/|$)/.test(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/en' + pathname.slice('/gb'.length);
-    return NextResponse.redirect(url, 301);
+    const redirect = NextResponse.redirect(url, 301);
+    if (!hasCurrencyCookie) setCurrencyCookie(redirect, 'gbp');
+    applySecurityHeaders(redirect);
+    return redirect;
   }
 
   // First-time visitors have no currency preference yet: derive it from
   // Cloudflare's edge geolocation (GB → GBP, everyone else → EUR). Setting it on
   // the *request* too makes the current render's `getCurrency()` see it (correct
   // first paint), and on the *response* persists it for subsequent navigations.
-  const hasCurrencyCookie = request.cookies.has(CURRENCY_COOKIE);
   const currency = currencyForCountry(request.headers.get('CF-IPCountry'));
   if (!hasCurrencyCookie) {
     request.cookies.set(CURRENCY_COOKIE, currency);
@@ -61,20 +86,14 @@ export default function middleware(request: NextRequest) {
   const response = handleI18n(request);
 
   if (!hasCurrencyCookie) {
-    response.cookies.set(CURRENCY_COOKIE, currency, {
-      path: '/',
-      maxAge: CURRENCY_COOKIE_MAX_AGE,
-      sameSite: 'lax',
-    });
+    setCurrencyCookie(response, currency);
   }
 
   // Rendered prices depend on the currency cookie, so a shared cache must key on
   // it — otherwise one visitor's currency could be served to another.
   response.headers.append('Vary', 'Cookie');
 
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(key, value);
-  }
+  applySecurityHeaders(response);
   return response;
 }
 

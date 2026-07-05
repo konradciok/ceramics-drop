@@ -10,6 +10,7 @@ import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
@@ -206,7 +207,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const currency = useCurrency();
   // priceOfVariant / printShippingOf only price pln/eur/gbp; usd/cad prints aren't
   // offered yet, so fall back to EUR pricing for those until the tables are filled.
-  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const printCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'

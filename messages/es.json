@@ -52,6 +52,7 @@
   },
   "aria": {
     "cart": "Carrito",
+    "currency": "Moneda",
     "zoom": "Ver",
     "close": "Cerrar",
     "prev": "Anterior",

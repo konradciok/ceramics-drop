@@ -35,7 +35,7 @@ export function CurrencyProvider({
   const setCurrency = useCallback(
     (next: Currency) => {
       if (next === currency) return;
-      document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=${CURRENCY_COOKIE_MAX_AGE}; SameSite=Lax`;
+      document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=${CURRENCY_COOKIE_MAX_AGE}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
       setCurrencyState(next);
       // Re-render server components (structured data, any server-side prices)
       // now that the cookie changed; the client tree already re-rendered above.

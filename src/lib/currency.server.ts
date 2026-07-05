@@ -1,10 +1,5 @@
 import { cookies } from 'next/headers';
-import {
-  CURRENCY_COOKIE,
-  DEFAULT_CURRENCY,
-  parseCurrency,
-  type Currency,
-} from './currency';
+import { CURRENCY_COOKIE, displayCurrencyFor, type Currency } from './currency';
 
 /**
  * Server-side display currency for the current request. `pl` forces PLN; any
@@ -18,5 +13,7 @@ import {
 export async function getCurrency(locale: string): Promise<Currency> {
   if (locale === 'pl') return 'pln';
   const store = await cookies();
-  return parseCurrency(store.get(CURRENCY_COOKIE)?.value) ?? DEFAULT_CURRENCY;
+  // Clamp to a switchable currency (EUR/GBP) so a tampered `usd`/`cad` cookie
+  // can't reach `priceOfCurrency` and crash server-rendered price surfaces.
+  return displayCurrencyFor(locale, store.get(CURRENCY_COOKIE)?.value);
 }

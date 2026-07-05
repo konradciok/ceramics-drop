@@ -52,6 +52,7 @@
   },
   "aria": {
     "cart": "Cart",
+    "currency": "Currency",
     "zoom": "View",
     "close": "Close",
     "prev": "Previous",

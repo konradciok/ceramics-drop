@@ -49,6 +49,53 @@ export function parseCurrency(value: string | null | undefined): Currency | null
 }
 
 /**
+ * Currencies the storefront can actually price and charge today. USD/CAD are
+ * valid `Currency` values (type/DB scaffolding) but have no price tables yet, so
+ * they must never reach `priceOfCurrency`/checkout.
+ */
+export const SELLABLE_CURRENCIES: readonly Currency[] = ['pln', 'eur', 'gbp'];
+
+/**
+ * Clamp any currency to one we can charge in Stripe today (`pln`/`eur`/`gbp`),
+ * mapping anything else (usd/cad) to EUR. Shared by checkout and the cart/print
+ * price paths so the mapping lives in exactly one place.
+ */
+export function toChargeableCurrency(currency: Currency): 'pln' | 'eur' | 'gbp' {
+  return currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+}
+
+/**
+ * Resolve a non-PL display currency from a raw cookie value, clamped to the
+ * currencies the UI can actually switch to (EUR/GBP). A tampered or stale cookie
+ * (`usd`, `cad`, `pln`, garbage) falls back to EUR so `priceOfCurrency` is never
+ * handed a currency it can't price.
+ */
+function displayCurrencyFromCookieValue(value: string | null | undefined): Currency {
+  const parsed = parseCurrency(value);
+  return parsed && SWITCHABLE_CURRENCIES.includes(parsed) ? parsed : DEFAULT_CURRENCY;
+}
+
+/** Read the `currency_pref` value out of a raw `Cookie` header string. */
+export function readCurrencyCookie(cookieHeader: string | null | undefined): string | undefined {
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === CURRENCY_COOKIE) return part.slice(eq + 1).trim();
+  }
+  return undefined;
+}
+
+/**
+ * Server-side clamp of a parsed cookie value to a switchable display currency.
+ * Shared by `getCurrency` (currency.server.ts) and `currencyFromCookieHeader`.
+ */
+export function displayCurrencyFor(locale: string, cookieValue: string | null | undefined): Currency {
+  if (locale === 'pl') return 'pln';
+  return displayCurrencyFromCookieValue(cookieValue);
+}
+
+/**
  * Map a `CF-IPCountry` header value to a display currency. Anything we don't
  * explicitly sell in another currency (including the sentinel `XX`/`T1`) → EUR.
  */
@@ -68,17 +115,13 @@ export function defaultCurrencyForLocale(locale: string): Currency {
 
 /**
  * Resolve the display currency from a raw `Cookie` header string. `pl` → PLN,
- * else the `currency_pref` cookie value → EUR default. Used both by the
- * server-only `getCurrency` (via `next/headers`) and by API route handlers that
- * already hold the `Request` and don't want the async request scope.
+ * else the `currency_pref` cookie value clamped to a switchable currency
+ * (EUR/GBP), defaulting to EUR. Used both by the server-only `getCurrency` (via
+ * `next/headers`) and by API route handlers that already hold the `Request`.
  */
 export function currencyFromCookieHeader(
   locale: string,
   cookieHeader: string | null | undefined,
 ): Currency {
-  if (locale === 'pl') return 'pln';
-  const match = (cookieHeader ?? '').match(
-    new RegExp(`(?:^|;\\s*)${CURRENCY_COOKIE}=([^;]+)`),
-  );
-  return parseCurrency(match?.[1]) ?? DEFAULT_CURRENCY;
+  return displayCurrencyFor(locale, readCurrencyCookie(cookieHeader));
 }

@@ -4,7 +4,7 @@ Guidance for AI coding agents (Claude Code, Codex, Cursor, Copilot, …) working
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~104 live pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). **Five locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de` `/gb`) and **tri-currency** (PLN for `pl`, GBP for `gb`, EUR for `en`/`es`/`de`). Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. All products are unique (no quantities) — once sold, they're gone. The catalogue is **~104 live pieces across 9 categories** (the June inventory review cut it to 78, then subsequent drops added talerzyki, a new `talerze-srednie` family, and a few extra pieces). **Four locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de`) and **multi-currency driven by a `currency_pref` cookie** (not the locale): `pl` always prices in PLN; every other locale defaults to EUR and can switch to GBP (auto-seeded from the visitor's `CF-IPCountry`, overridable in the header switcher). USD/CAD are scaffolded in the type/DB layer but hidden until their price tables land. Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -57,7 +57,7 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 
 1. **Client:** User fills delivery details, clicks pay → POST `/api/checkout`
 2. **Server (`src/app/api/checkout/route.ts`):**
-   - Derives **currency from locale**: `pl → PLN`, `gb → GBP`, `en`/`es`/`de → EUR`
+   - Derives **currency from the `currency_pref` cookie** (via `getCurrency` in `src/lib/currency.server.ts`): `pl → PLN`; other locales use the cookie clamped to a switchable currency (EUR default, GBP), falling back to EUR
    - Validates cart items (`validateCart` in `src/lib/checkout.ts`, currency-aware) and delivery details (`validateDelivery` in `src/lib/shipx.ts`)
    - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict. An optional **private-sale token** (`src/lib/private-sale.ts`) instead reserves already-sold pieces via `reserve_private_sale_pieces()`
    - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration: STRIPE_PMC_ID` (`pmc_…`, hardcoded constant) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
@@ -92,7 +92,7 @@ Beyond `checkout` and `stripe/webhook`, `src/app/api/` exposes:
 
 ### Internationalization
 
-Five locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), German (`/de`), British English (`/gb`). Configured in `src/i18n/routing.ts` (`localePrefix: 'as-needed'`). All UI strings — including per-product `notes` — live in `messages/{pl,en,es,de,gb}.json`. Server components use `getTranslations()`, client components use `useTranslations()`. Always import `Link` and `useRouter` from `src/i18n/navigation.ts` (not Next.js directly) to preserve locale.
+Four locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), German (`/de`). Configured in `src/i18n/routing.ts` (`localePrefix: 'as-needed'`). Display currency is decoupled from locale — it comes from the `currency_pref` cookie (see Pricing & Shipping), not the locale. All UI strings — including per-product `notes` — live in `messages/{pl,en,es,de}.json`. Server components use `getTranslations()`, client components use `useTranslations()`. Always import `Link` and `useRouter` from `src/i18n/navigation.ts` (not Next.js directly) to preserve locale.
 
 ### Database Schema (Supabase)
 
@@ -106,7 +106,7 @@ RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmi
 
 ### Pricing & Shipping
 
-Tri-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `PRICE_GBP` give per-category prices (whole units); `priceOf(product, locale)` returns the display price in the right currency (`pl → PLN`, `gb → GBP`, otherwise EUR). Conversion to minor units happens at checkout via `toGrosze()` (PLN×100) / `toEuroCents()` (EUR×100) / `toGBPPence()` (GBP×100). Shipping: Paczkomat **20 zł / 5 € / 5 £**, Kurier **30 zł / 10 € / 12 £**, Odbiór osobisty (Warsaw) **0** (`SHIPPING_PLN` / `SHIPPING_EUR` / `SHIPPING_GBP`). Delivery details are validated in `src/lib/shipx.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `src/components/shop/GeowidgetPicker.tsx` for locker selection.
+Multi-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `PRICE_GBP` give per-category prices (whole units); `priceOfCurrency(product, currency)` returns the display price in a given currency. The display currency comes from the `currency_pref` cookie (`src/lib/currency.ts` / server reader `getCurrency` in `currency.server.ts`), not the locale: `pl → PLN`; other locales default to EUR and can switch to GBP, seeded from `CF-IPCountry` and clamped to a switchable currency. Conversion to minor units happens at checkout via `toGrosze()` (PLN×100) / `toEuroCents()` (EUR×100) / `toGBPPence()` (GBP×100). Shipping: Paczkomat **20 zł / 5 € / 5 £**, Kurier **30 zł / 10 € / 12 £**, Odbiór osobisty (Warsaw) **0** (`SHIPPING_PLN` / `SHIPPING_EUR` / `SHIPPING_GBP`). Delivery details are validated in `src/lib/shipx.ts` (`validateDelivery()`). InPost Geowidget (v5 custom element) is rendered in `src/components/shop/GeowidgetPicker.tsx` for locker selection.
 
 ### Analytics & Conversions
 

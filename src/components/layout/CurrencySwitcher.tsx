@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCurrencyControls } from '@/components/currency/CurrencyProvider';
 import { SWITCHABLE_CURRENCIES, type Currency } from '@/lib/currency';
 
@@ -21,13 +21,14 @@ const CURRENCY_LABELS: Record<Currency, string> = {
  */
 export function CurrencySwitcher() {
   const locale = useLocale();
+  const t = useTranslations();
   const { currency, setCurrency } = useCurrencyControls();
 
   // Polish is PLN-only — no currency choice to offer.
   if (locale === 'pl') return null;
 
   return (
-    <div className="lang-switch currency-switch" role="group" aria-label="Currency">
+    <div className="lang-switch currency-switch" role="group" aria-label={t('aria.currency')}>
       {SWITCHABLE_CURRENCIES.map((c) => (
         <button
           key={c}

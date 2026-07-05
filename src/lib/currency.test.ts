@@ -3,6 +3,7 @@ import {
   currencyForCountry,
   parseCurrency,
   defaultCurrencyForLocale,
+  currencyFromCookieHeader,
 } from './currency';
 
 describe('currencyForCountry', () => {
@@ -49,5 +50,36 @@ describe('defaultCurrencyForLocale', () => {
     expect(defaultCurrencyForLocale('en')).toBe('eur');
     expect(defaultCurrencyForLocale('es')).toBe('eur');
     expect(defaultCurrencyForLocale('de')).toBe('eur');
+  });
+});
+
+describe('currencyFromCookieHeader', () => {
+  it('reads a switchable gbp cookie', () => {
+    expect(currencyFromCookieHeader('en', 'currency_pref=gbp')).toBe('gbp');
+  });
+
+  it('reads a switchable eur cookie', () => {
+    expect(currencyFromCookieHeader('en', 'currency_pref=eur')).toBe('eur');
+  });
+
+  it('falls back to eur for a non-switchable usd cookie', () => {
+    expect(currencyFromCookieHeader('en', 'currency_pref=usd')).toBe('eur');
+  });
+
+  it('falls back to eur for a pln cookie on a non-pl locale', () => {
+    expect(currencyFromCookieHeader('en', 'currency_pref=pln')).toBe('eur');
+  });
+
+  it('parses the cookie among other cookies', () => {
+    expect(currencyFromCookieHeader('en', 'x=1; currency_pref=gbp; y=2')).toBe('gbp');
+  });
+
+  it('defaults to eur when the cookie header is missing or empty', () => {
+    expect(currencyFromCookieHeader('en', null)).toBe('eur');
+    expect(currencyFromCookieHeader('en', '')).toBe('eur');
+  });
+
+  it('forces pln for the pl locale regardless of cookie', () => {
+    expect(currencyFromCookieHeader('pl', 'currency_pref=gbp')).toBe('pln');
   });
 });

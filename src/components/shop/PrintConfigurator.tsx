@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
@@ -23,8 +24,8 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const currency = useCurrency();
   // priceOfVariant only prices pln/eur/gbp; usd/cad prints aren't offered yet, so
   // fall back to EUR pricing for those until the tables are filled.
-  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
-  const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
+  const printCurrency = toChargeableCurrency(currency);
+  const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
 
   const [sel, setSel] = useState<PrintVariantSelection>({
     size: design.sizes[0],

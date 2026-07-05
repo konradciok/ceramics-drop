@@ -8,6 +8,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
+import { toChargeableCurrency } from '@/lib/currency';
 import { fromPriceOf } from '@/lib/print-pricing';
 import { getPrintDesigns } from '@/lib/prints';
 import { SITE_NAME } from '@/lib/site';
@@ -21,8 +22,8 @@ const SLUG = 'fine-art-prints';
 export async function PrintProductScreen({ design }: { design: PrintDesign }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
-  const { fmt } = currencyFormatter(currency);
-  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const printCurrency = toChargeableCurrency(currency);
+  const { fmt } = currencyFormatter(printCurrency);
 
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');

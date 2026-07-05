@@ -36,16 +36,21 @@ Remove `gb` from the `locales` array. New list: `['pl', 'en', 'es', 'de']`.
 - Add `toUSDCents(n)` and `toCADCents(n)` minor-unit converters (same as `toEuroCents` — both are ×100).
 
 ### 4. `src/lib/currency.ts` (new, small)
+The client-safe types/helpers live in `currency.ts`; the server-only cookie
+reader `getCurrency` lives in `currency.server.ts` (it imports `next/headers`).
+`cookies()` is async in Next 16, so `getCurrency` is async:
 ```ts
-// Server-side helper — reads currency_pref cookie from Next.js cookies()
+// currency.server.ts — reads the currency_pref cookie via Next.js cookies()
 export type Currency = 'pln' | 'eur' | 'gbp' | 'usd' | 'cad'
-export function getCurrency(locale: string): Currency {
+export async function getCurrency(locale: string): Promise<Currency> {
   if (locale === 'pl') return 'pln'
-  const cookie = cookies().get('currency_pref')?.value
-  return (cookie as Currency) ?? 'eur'
+  const store = await cookies()
+  const cookie = store.get('currency_pref')?.value
+  // clamped to a switchable currency (EUR/GBP), defaulting to EUR
+  return currencyFromCookieValue(cookie)
 }
 ```
-Reuse `cookies()` from `next/headers` — already available in server components. `pl` locale always forces PLN; other locales use the cookie.
+Reuse `cookies()` from `next/headers` — already available in server components. `pl` locale always forces PLN; other locales use the cookie, clamped to a switchable display currency (EUR/GBP).
 
 ### 5. `src/app/api/checkout/route.ts`
 - Replace `locale → currency` derivation with `getCurrency(locale)`.

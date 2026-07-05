@@ -3,7 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
-import { currencyFromCookieHeader } from '@/lib/currency';
+import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseTargetStatus } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
@@ -55,9 +55,9 @@ export async function POST(req: Request) {
   // Currency is a per-request concern driven by the `currency_pref` cookie, not
   // the locale. Clamp to the launched, sellable currencies — USD/CAD are wired
   // through pricing but have no Stripe branch here yet.
-  const currency = currencyFromCookieHeader(locale, req.headers.get('cookie'));
-  const chargeCurrency: 'pln' | 'eur' | 'gbp' =
-    currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const chargeCurrency = toChargeableCurrency(
+    currencyFromCookieHeader(locale, req.headers.get('cookie')),
+  );
 
   const valid = validateCart(body.ids, chargeCurrency);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
