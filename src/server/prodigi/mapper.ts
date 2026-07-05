@@ -101,6 +101,8 @@ export function buildProdigiPayload(
   return {
     shippingMethod:    env.PRODIGI_DEFAULT_SHIPPING_METHOD ?? 'Budget',
     idempotencyKey:    `prodigi:${env.PRODIGI_ENV}:order:${order.id}:v1`,
+    // ponytail: Prodigi's API only accepts a plain callbackUrl string — no custom request headers.
+    // URL token is the only available auth mechanism; Prodigi does not sign outgoing callbacks.
     callbackUrl:       `${SITE_URL}/api/webhooks/prodigi/${env.PRODIGI_CALLBACK_TOKEN}`,
     merchantReference: order.id,
     recipient:         buildRecipient(order),
