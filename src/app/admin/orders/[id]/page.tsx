@@ -4,6 +4,7 @@ import { getOrder } from '@/lib/admin/data';
 import { adminStripe } from '@/lib/admin/clients';
 import { productRef } from '@/lib/admin/products';
 import { formatMoney } from '@/lib/admin/money';
+import { PackingPanel } from '../../packing-ui';
 import { formatDateTime, StatusPill, deliveryLabel, shortId, PhoneLink } from '../../ui';
 import { OrderActions } from './OrderActions';
 
@@ -131,6 +132,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>
           </dl>
         </div>
+
+        {/* Packages */}
+        <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
 
         {/* Timeline */}
         <div className="adm-panel">
