@@ -27,8 +27,19 @@ const SA_EMAIL = process.env.GTM_SERVICE_ACCOUNT_EMAIL
   ?? 'gtm-api-deploy@anna-ciok-studio-analytics.iam.gserviceaccount.com';
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 const args = process.argv.slice(2);
-const DAYS = parseInt(args.find(a => a.startsWith('--days='))?.split('=')[1] ?? '30', 10);
-const REPORT = args.find(a => !a.startsWith('-')) ?? 'all';
+const daysIdx = args.findIndex(a => a === '--days' || a.startsWith('--days='));
+const daysValueIdx = daysIdx !== -1 && args[daysIdx] === '--days' ? daysIdx + 1 : -1;
+const rawDays = daysIdx === -1
+  ? '30'
+  : (daysValueIdx !== -1 ? args[daysValueIdx] : args[daysIdx].split('=')[1]);
+const DAYS = Number.parseInt(rawDays ?? '', 10);
+if (!Number.isInteger(DAYS) || DAYS <= 0) {
+  console.error('Invalid --days value. Use a positive integer, e.g. --days=7 or --days 7');
+  process.exit(1);
+}
+// Excludes daysValueIdx so `--days 7` (space form) doesn't leave the bare "7"
+// to be mistaken for the report-name positional argument.
+const REPORT = args.find((a, i) => !a.startsWith('-') && i !== daysValueIdx) ?? 'all';
 const GA4_BASE = 'https://analyticsdata.googleapis.com/v1beta';
 
 if (!PROPERTY_ID) {
@@ -198,7 +209,15 @@ function loadEnvFiles() {
       const sep = trimmed.indexOf('=');
       if (sep === -1) continue;
       const key = trimmed.slice(0, sep).trim();
-      const value = trimmed.slice(sep + 1).trim();
+      // Comment-strip runs on the untrimmed slice — trimming first would eat the
+      // whitespace before `#`, so a comment with no real value (e.g. `KEY=   # x`)
+      // would fail to match and leave the comment text as the "value".
+      const rawSlice = trimmed.slice(sep + 1);
+      const trimmedValue = rawSlice.trim();
+      const quoted =
+        (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+        (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"));
+      const value = quoted ? trimmedValue.slice(1, -1) : rawSlice.replace(/\s+#.*$/, '').trim();
       if (process.env[key] === undefined || process.env[key] === '') process.env[key] = value;
     }
   }

@@ -34,8 +34,19 @@ const DATASET = process.env.BIGQUERY_DATASET_ID ?? 'analytics_raw';
 const BQ_LOCATION = process.env.BIGQUERY_LOCATION ?? 'europe-west1';
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 const args = process.argv.slice(2);
-const DAYS = parseInt(args.find(a => a.startsWith('--days='))?.split('=')[1] ?? '7', 10);
-const REPORT = args.find(a => !a.startsWith('-')) ?? 'all';
+const daysIdx = args.findIndex(a => a === '--days' || a.startsWith('--days='));
+const daysValueIdx = daysIdx !== -1 && args[daysIdx] === '--days' ? daysIdx + 1 : -1;
+const rawDays = daysIdx === -1
+  ? '7'
+  : (daysValueIdx !== -1 ? args[daysValueIdx] : args[daysIdx].split('=')[1]);
+const DAYS = Number.parseInt(rawDays ?? '', 10);
+if (!Number.isInteger(DAYS) || DAYS <= 0) {
+  console.error('Invalid --days value. Use a positive integer, e.g. --days=7 or --days 7');
+  process.exit(1);
+}
+// Excludes daysValueIdx so `--days 7` (space form) doesn't leave the bare "7"
+// to be mistaken for the report-name positional argument.
+const REPORT = args.find((a, i) => !a.startsWith('-') && i !== daysValueIdx) ?? 'all';
 
 if (!PROPERTY_ID) {
   console.error('Missing GA4_PROPERTY_ID in .env.local');
@@ -90,7 +101,15 @@ async function reportPurchases() {
       FORMAT_TIMESTAMP('%Y-%m-%d', TIMESTAMP_MICROS(event_timestamp)) AS date,
       (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'transaction_id') AS transaction_id,
       (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'currency') AS currency,
-      (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'value') AS revenue_pln,
+      (
+        SELECT COALESCE(
+          value.double_value,
+          CAST(value.int_value AS FLOAT64),
+          SAFE_CAST(value.string_value AS FLOAT64)
+        )
+        FROM UNNEST(event_params)
+        WHERE key = 'value'
+      ) AS revenue_pln,
       ARRAY_LENGTH(items) AS item_count
     FROM ${TABLE}
     WHERE ${DATE_FILTER}
@@ -193,7 +212,15 @@ function loadEnvFiles() {
       const sep = trimmed.indexOf('=');
       if (sep === -1) continue;
       const key = trimmed.slice(0, sep).trim();
-      const value = trimmed.slice(sep + 1).trim();
+      // Comment-strip runs on the untrimmed slice — trimming first would eat the
+      // whitespace before `#`, so a comment with no real value (e.g. `KEY=   # x`)
+      // would fail to match and leave the comment text as the "value".
+      const rawSlice = trimmed.slice(sep + 1);
+      const trimmedValue = rawSlice.trim();
+      const quoted =
+        (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+        (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"));
+      const value = quoted ? trimmedValue.slice(1, -1) : rawSlice.replace(/\s+#.*$/, '').trim();
       if (process.env[key] === undefined || process.env[key] === '') process.env[key] = value;
     }
   }

@@ -417,7 +417,7 @@ async function createAuthClient() {
         `Expected project: ${GCP_PROJECT_ID}`,
         '',
         'Create the local key once:',
-        '  gcloud config set project bloomy-tale-477216',
+        `  gcloud config set project ${GCP_PROJECT_ID}`,
         '  npm run gtm:key',
         '',
         'Or set GOOGLE_APPLICATION_CREDENTIALS / GTM_SERVICE_ACCOUNT_KEY to a JSON key file.',
