@@ -102,11 +102,23 @@ describe('recommendPacking', () => {
     assertInvariants(plan);
   });
 
-  it('lays the vase down in a mixed vase + plates order (C → B)', () => {
-    // Real order d37991ea: d10 (wazon) + talerz duży + talerzyk.
+  it('lays the vase down in a mixed vase + plates order (C → B), outside K2', () => {
+    // Real order d37991ea: d10 (wazon) + talerz duży + talerzyk. The lying vase
+    // saves a gabaryt, but the 26 × 26 talerz duży next to it exceeds the K2
+    // base — the packer reaches for a stock/na-wymiar box despite the B label.
     const plan = recommendPacking(['d10', 'p01', 't15']);
     expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBeNull();
     expect(plan.notes.some((n) => n.includes('poziomo'))).toBe(true);
+    assertInvariants(plan);
+  });
+
+  it('fits a stacked-plate + lying-vase + mugs order in K2 (internal-dims boundary)', () => {
+    // Real order 22feef10 minus nothing: 4-plate stack (16.1 cm) + lying vase
+    // (17 cm) + mugs must fit K2's INTERNAL dims (43 × 31 × 17), not external.
+    const plan = recommendPacking(['k06', 'k11', 's04', 's11', 's22', 't25', 'v06']);
+    expect(plan.planLabel).toBe('B');
+    expect(plan.packages[0].carton).toBe('K2');
     assertInvariants(plan);
   });
 

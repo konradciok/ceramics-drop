@@ -12,9 +12,12 @@
      +2 cm of wrap per dimension; flat plates are stacked (max 4 per
      stack, cardboard divider between plates) and the stack is
      treated as one packing unit.
-   - Ceramics are never laid on their side: units only rotate around
-     the vertical axis, so a vase taller than a gabaryt's slot height
-     bumps the whole parcel up a size.
+   - Units only rotate around the vertical axis, with one studio-approved
+     exception: small vases (`wazony`) may ship on their side when snugly
+     immobilized, and only when that strictly lowers the plan's cost
+     (fewer parcels or smaller gabaryty). Medium/large vases and all
+     other pieces stay upright, so a piece taller than a gabaryt's slot
+     height bumps the whole parcel up a size.
    - A parcel "fits" a gabaryt when every unit stands within the slot
      height, the units arrange onto the 38 × 64 cm base via a greedy
      shelf layout (taller layers first, layer heights sum within the
@@ -92,7 +95,7 @@ export type PackedParcel = {
   /** Contents + box tare, kg. */
   weightKg: number;
   /** Stocked custom carton code (see CUSTOM_CARTONS), or null → stock/full-slot box. */
-  carton: string | null;
+  carton: CartonCode | null;
 };
 
 export type PackingConfidence = 'high' | 'medium' | 'low';
@@ -159,6 +162,11 @@ function shelfFits(units: Unit[], baseL: number, baseW: number): boolean {
   return true;
 }
 
+/** Shelf check in either orientation of a (possibly non-square) base. */
+function baseFits(units: Unit[], box: { w: number; l: number }): boolean {
+  return shelfFits(units, box.l, box.w) || (box.l !== box.w && shelfFits(units, box.w, box.l));
+}
+
 /**
  * Whether the units fit a box of the given dims when arranged in horizontal
  * layers (tallest units first; each layer must pass the shelf check; layer
@@ -170,12 +178,12 @@ function layeredFits(units: Unit[], box: { h: number; w: number; l: number }): b
   const layers: Unit[][] = [];
   let current: Unit[] = [];
   for (const u of sorted) {
-    if (shelfFits([...current, u], box.l, box.w)) {
+    if (baseFits([...current, u], box)) {
       current.push(u);
     } else {
       if (current.length) layers.push(current);
       current = [u];
-      if (!shelfFits(current, box.l, box.w)) return false; // single unit exceeds the base
+      if (!baseFits(current, box)) return false; // single unit exceeds the base
     }
   }
   if (current.length) layers.push(current);
@@ -209,33 +217,44 @@ function smallestSize(units: Unit[]): ParcelSize | null {
    ------------------------------------------------------------------ */
 export type CustomCarton = {
   code: string;
-  /** External dims, cm. */
+  /** External dims, cm (what the supplier quotes and the locker slot sees). */
   l: number;
   w: number;
   h: number;
   /** Smallest gabaryt slot the empty carton itself fits into. */
   slot: ParcelSize;
+  /** Empty carton + fill weight, kg (lighter than a full-slot box). */
+  tareKg: number;
   label: string;
 };
 
-export const CUSTOM_CARTONS: CustomCarton[] = [
-  // Flatware: single plates and plate pairs (1 cm height clearance in slot A).
-  { code: 'K1', l: 35, w: 25, h: 7, slot: 'A', label: 'Karton K1 (35 × 25 × 7 cm)' },
-  // Universal mix: mugs/plates/bowls and a lying small vase (2 cm clearance in slot B).
-  { code: 'K2', l: 42, w: 30, h: 17, slot: 'B', label: 'Karton K2 (42 × 30 × 17 cm)' },
-];
+/** Wall/fold allowance per dimension: internal space = external − 1 cm. */
+const CARTON_WALL_CM = 1;
+
+export const CUSTOM_CARTONS = [
+  // Flatware laid side by side: single plates and mixed-size pairs. (A stacked
+  // same-size pair is ~8.7 cm tall — over the 8 cm A slot itself, so those
+  // orders are gabaryt B and belong to K2, never K1.)
+  { code: 'K1', l: 36, w: 26, h: 7, slot: 'A', tareKg: 0.15, label: 'Karton K1 (36 × 26 × 7 cm)' },
+  // Universal mix: mugs/plates/bowls and a lying small vase (1 cm clearance in slot B).
+  { code: 'K2', l: 44, w: 32, h: 18, slot: 'B', tareKg: 0.3, label: 'Karton K2 (44 × 32 × 18 cm)' },
+] as const satisfies readonly CustomCarton[];
+
+export type CartonCode = (typeof CUSTOM_CARTONS)[number]['code'];
 
 /**
- * The stocked carton this parcel's contents fit into, if any. Only cartons
- * that themselves fit the parcel's assigned gabaryt slot are considered, so
- * the carton never silently bumps the label up a size.
+ * The stocked carton this parcel's contents fit into, if any. The fit runs
+ * against the carton's INTERNAL dims (external − wall allowance). Only
+ * cartons that themselves fit the parcel's assigned gabaryt slot are
+ * considered, so the carton never silently bumps the label up a size.
  */
-function assignCarton(units: Unit[], parcelSize: ParcelSize): string | null {
+function assignCarton(units: Unit[], parcelSize: ParcelSize): (typeof CUSTOM_CARTONS)[number] | null {
   for (const c of CUSTOM_CARTONS) {
     if (SIZE_ORDER.indexOf(c.slot) > SIZE_ORDER.indexOf(parcelSize)) continue;
+    const inner = { l: c.l - CARTON_WALL_CM, w: c.w - CARTON_WALL_CM, h: c.h - CARTON_WALL_CM };
     const volume = units.reduce((s, u) => s + unitVolume(u), 0);
-    if (volume > MAX_FILL * c.l * c.w * c.h) continue;
-    if (layeredFits(units, c)) return c.code;
+    if (volume > MAX_FILL * inner.l * inner.w * inner.h) continue;
+    if (layeredFits(units, inner)) return c;
   }
   return null;
 }
@@ -371,11 +390,12 @@ function assemblePlan(units: Unit[], warnings: string[]): { packages: PackedParc
     const slot = PARCEL_DIMS[size];
     const fill = group.reduce((s, u) => s + unitVolume(u), 0) / (slot.h * slot.w * slot.l);
     if (fill > TIGHT_FILL) tightParcel = true;
+    const carton = assignCarton(group, size);
     packages.push({
       size,
       itemIds: group.flatMap((u) => u.ids).sort(),
-      weightKg: Math.round((sumWeight(group) + BOX_TARE_KG[size]) * 100) / 100,
-      carton: assignCarton(group, size),
+      weightKg: Math.round((sumWeight(group) + (carton?.tareKg ?? BOX_TARE_KG[size])) * 100) / 100,
+      carton: carton?.code ?? null,
     });
   }
   // Deterministic order: biggest parcel first.
