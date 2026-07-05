@@ -27,7 +27,7 @@ Remove `gb` from the `locales` array. New list: `['pl', 'en', 'es', 'de']`.
 
 ### 2. `src/middleware.ts`
 - On first `/en/` request with no `currency_pref` cookie: read `CF-IPCountry`, map `GB → gbp`, default everything else to `eur`. Set `currency_pref` cookie (max-age: 1 year, SameSite=Lax).
-- Add 301 redirect rule: any path starting with `/gb` → same path with `/gb` replaced by `/en` (preserve query params and hash).
+- Add 301 redirect rule: any path starting with `/gb` → same path with `/gb` replaced by `/en` (preserve query params; the URL fragment/`#hash` never reaches the server so it can't be rewritten server-side — the browser carries it across the redirect on its own).
 - Country→currency map: `{ GB: 'gbp' }` (extend later with `US: 'usd', CA: 'cad'`).
 
 ### 3. `src/lib/pricing.ts`
@@ -88,7 +88,7 @@ Reuse `cookies()` from `next/headers` — already available in server components
 ## USD/CAD Future-Proofing
 
 - Define `PRICE_USD` and `PRICE_CAD` tables in `pricing.ts` now (even as `null` per category), so the type is correct.
-- `getCurrency()` already returns `'usd' | 'cad'` as valid values — the only remaining work to launch a new market is: fill in price tables, add country→currency mapping in middleware, and unhide USD/CAD buttons in `CurrencySwitcher`.
+- `'usd' | 'cad'` are already part of the `Currency` type and the DB constraint, but they are **future placeholders, not part of the live runtime contract**: cookie resolution (`getCurrency` / `currencyFromCookieHeader`) clamps to the switchable set (`eur`/`gbp`; `pl`→`pln`), so those helpers never actually return `usd`/`cad` today (this keeps `priceOfCurrency`, which throws on the null tables, unreachable with those values). The only remaining work to launch a new market is: fill in the price tables, add the country→currency mapping in `currency.ts`, add the code to `SWITCHABLE_CURRENCIES`, and unhide the USD/CAD buttons in `CurrencySwitcher`.
 
 ## Verification
 

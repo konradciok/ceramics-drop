@@ -70,6 +70,10 @@ export default function middleware(request: NextRequest) {
     url.pathname = '/en' + pathname.slice('/gb'.length);
     const redirect = NextResponse.redirect(url, 301);
     if (!hasCurrencyCookie) setCurrencyCookie(redirect, 'gbp');
+    // This 301 carries a per-visitor `Set-Cookie: currency_pref`; mark it
+    // uncacheable so a shared/CDN cache can't replay one visitor's currency
+    // seed onto another. The redirect itself is cheap to recompute.
+    redirect.headers.set('Cache-Control', 'private, no-store');
     applySecurityHeaders(redirect);
     return redirect;
   }
