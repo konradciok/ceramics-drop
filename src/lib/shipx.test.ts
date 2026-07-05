@@ -6,6 +6,7 @@ import {
   buildReturnShipmentPayload,
   needsShipment,
   parseShipxWebhook,
+  pickBuyableOffer,
   SHIPX_SERVICE,
   type OrderForShipment,
   type StudioReturnConfig,
@@ -227,5 +228,61 @@ describe('parseShipxWebhook', () => {
     expect(parseShipxWebhook({ status: 'confirmed' })).toBeNull();
     expect(parseShipxWebhook({ shipment_id: 1 })).toBeNull();
     expect(parseShipxWebhook(null)).toBeNull();
+  });
+
+  it('parses shipment_confirmed event (no status field) as confirmed', () => {
+    expect(
+      parseShipxWebhook({
+        event: 'shipment_confirmed',
+        payload: { shipment_id: 42, tracking_number: '620' },
+      }),
+    ).toEqual({ shipmentId: '42', status: 'confirmed', trackingNumber: '620' });
+  });
+
+  it('parses a flat shipment_confirmed shape with no nested payload', () => {
+    expect(
+      parseShipxWebhook({ event: 'shipment_confirmed', shipment_id: 42, tracking_number: '620' }),
+    ).toEqual({ shipmentId: '42', status: 'confirmed', trackingNumber: '620' });
+  });
+});
+
+describe('pickBuyableOffer', () => {
+  it('returns selected_offer.id as a string when present', () => {
+    expect(pickBuyableOffer({ selected_offer: { id: 99 } })).toBe('99');
+  });
+
+  it('returns first available offer id when no selected_offer', () => {
+    expect(
+      pickBuyableOffer({
+        offers: [
+          { id: 1, status: 'expired' },
+          { id: 2, status: 'available' },
+          { id: 3, status: 'available' },
+        ],
+      }),
+    ).toBe('2');
+  });
+
+  it('returns first selected-status offer id', () => {
+    expect(
+      pickBuyableOffer({
+        offers: [
+          { id: 10, status: 'expired' },
+          { id: 11, status: 'selected' },
+        ],
+      }),
+    ).toBe('11');
+  });
+
+  it('returns null for an empty offers array', () => {
+    expect(pickBuyableOffer({ offers: [] })).toBeNull();
+  });
+
+  it('returns null for an empty object', () => {
+    expect(pickBuyableOffer({})).toBeNull();
+  });
+
+  it('returns "0" for a numeric id of 0 (falsy but valid)', () => {
+    expect(pickBuyableOffer({ selected_offer: { id: 0 } })).toBe('0');
   });
 });

@@ -30,6 +30,7 @@ function deps(overrides: Partial<CreateReturnDeps> = {}): CreateReturnDeps {
     getShipment: vi.fn(),
     getLabelPdf: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
     createDispatchOrder: vi.fn(),
+    buyShipment: vi.fn(),
   };
   return {
     loadOrder: vi.fn().mockResolvedValue(paidOrder),

@@ -17,6 +17,8 @@ export type ShipxShipment = {
   status: string;
   tracking_number: string | null;
   service?: string;
+  offers?: Array<{ id: number | string; status?: string; service?: { id?: string } }>;
+  selected_offer?: { id: number | string } | null;
   [key: string]: unknown;
 };
 
@@ -35,6 +37,8 @@ export interface InPostClient {
   getLabelPdf(id: string): Promise<ArrayBuffer>;
   /** Schedule a courier pickup for one or more shipments. */
   createDispatchOrder(payload: DispatchOrderPayload): Promise<ShipxDispatchOrder>;
+  /** Buy a prepared offer for a shipment, committing it for label generation. */
+  buyShipment(id: string, offerId: number | string): Promise<ShipxShipment>;
 }
 
 export function getInPost(): InPostClient {
@@ -100,6 +104,15 @@ export function getInPost(): InPostClient {
         body: JSON.stringify(payload),
       });
       return (await res.json()) as ShipxDispatchOrder;
+    },
+    async buyShipment(id, offerId) {
+      const offer_id =
+        typeof offerId === 'string' && /^\d+$/.test(offerId) ? Number(offerId) : offerId;
+      const res = await request(`/v1/shipments/${id}/buy`, {
+        method: 'POST',
+        body: JSON.stringify({ offer_id }),
+      });
+      return (await res.json()) as ShipxShipment;
     },
   };
 }

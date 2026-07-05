@@ -36,6 +36,59 @@ describe('isNonRetryableShipxError', () => {
   it('does not treat generic 500 as non-retryable', () => {
     expect(isNonRetryableShipxError(new Error('ShipX POST /shipments → 500: upstream'))).toBe(false);
   });
+
+  it('treats offer_expired ShipxApiError as non-retryable', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      422,
+      JSON.stringify({ error: 'offer_expired', message: 'The offer has expired' }),
+    );
+    expect(isNonRetryableShipxError(err)).toBe(true);
+  });
+
+  it('treats offer_unavailable ShipxApiError as non-retryable', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      422,
+      JSON.stringify({ error: 'offer_unavailable', message: 'Offer unavailable' }),
+    );
+    expect(isNonRetryableShipxError(err)).toBe(true);
+  });
+
+  it('treats offer_not_found ShipxApiError as non-retryable', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      404,
+      JSON.stringify({ error: 'offer_not_found', message: 'Offer not found' }),
+    );
+    expect(isNonRetryableShipxError(err)).toBe(true);
+  });
+
+  it('treats Error message containing offer_expired as non-retryable', () => {
+    expect(
+      isNonRetryableShipxError(new Error('ShipX POST /v1/shipments/123/buy → 422: offer_expired')),
+    ).toBe(true);
+  });
+
+  it('falls back to message matching for a ShipxApiError with an unparsed (non-JSON) body', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/organizations/195780/shipments',
+      400,
+      'missing_trucker_id: trucker_ID_is_not_set_for_organization',
+    );
+    expect(err.code).toBeNull();
+    expect(isNonRetryableShipxError(err)).toBe(true);
+  });
+
+  it('treats a ShipxApiError with an unparsed body and no matching text as retryable', () => {
+    const err = new ShipxApiError('POST', '/v1/shipments', 500, 'internal server error');
+    expect(err.code).toBeNull();
+    expect(isNonRetryableShipxError(err)).toBe(false);
+  });
 });
 
 describe('shouldRethrowShipmentError', () => {
@@ -51,5 +104,35 @@ describe('shouldRethrowShipmentError', () => {
 
   it('rethrows transient ShipX failures so Stripe can retry', () => {
     expect(shouldRethrowShipmentError(new Error('ShipX POST /shipments → 503: upstream'))).toBe(true);
+  });
+
+  it('does not rethrow offer_expired (reconcile script handles it)', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      422,
+      JSON.stringify({ error: 'offer_expired' }),
+    );
+    expect(shouldRethrowShipmentError(err)).toBe(false);
+  });
+
+  it('does not rethrow offer_unavailable', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      422,
+      JSON.stringify({ error: 'offer_unavailable' }),
+    );
+    expect(shouldRethrowShipmentError(err)).toBe(false);
+  });
+
+  it('does not rethrow offer_not_found', () => {
+    const err = new ShipxApiError(
+      'POST',
+      '/v1/shipments/123/buy',
+      404,
+      JSON.stringify({ error: 'offer_not_found' }),
+    );
+    expect(shouldRethrowShipmentError(err)).toBe(false);
   });
 });

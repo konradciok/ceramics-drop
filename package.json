@@ -31,7 +31,8 @@
     "i18n:pull": "node scripts/notion-i18n/pull.mjs",
     "admin:dev:lan": "next dev --port 3010 --hostname 0.0.0.0",
     "admin:proxy": "docker compose -f local-admin/compose.yaml up -d",
-    "admin:proxy:down": "docker compose -f local-admin/compose.yaml down"
+    "admin:proxy:down": "docker compose -f local-admin/compose.yaml down",
+    "reconcile:orders": "node scripts/reconcile-orders.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.56.0",
