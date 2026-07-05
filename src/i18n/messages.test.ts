@@ -3,8 +3,7 @@ import pl from '../../messages/pl.json';
 import en from '../../messages/en.json';
 import es from '../../messages/es.json';
 import de from '../../messages/de.json';
-import gb from '../../messages/gb.json';
-import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
 import { pln } from '@/lib/format';
 
 type MessageTree = Record<string, unknown>;
@@ -26,7 +25,6 @@ describe('locale message files', () => {
     expect(shape(en)).toEqual(referenceShape);
     expect(shape(es)).toEqual(referenceShape);
     expect(shape(de)).toEqual(referenceShape);
-    expect(shape(gb)).toEqual(referenceShape);
   });
 
   it('keep current shipping timing and courier pricing in public copy', () => {
@@ -47,12 +45,5 @@ describe('locale message files', () => {
     expect(serialized).toContain('1–3');
     expect(serialized).toContain(`${SHIPPING_EUR.kurier} €`);
     expect(serialized).toContain(`${SHIPPING_EUR.paczkomat} €`);
-  });
-
-  it('gb locale references GBP shipping prices', () => {
-    const serialized = JSON.stringify(gb);
-    expect(serialized).toContain('1–3');
-    expect(serialized).toContain(`£${SHIPPING_GBP.kurier}`);
-    expect(serialized).toContain(`£${SHIPPING_GBP.paczkomat}`);
   });
 });

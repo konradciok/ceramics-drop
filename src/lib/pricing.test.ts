@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf } from './pricing';
+import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf, priceOfCurrency } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import { PRICE_GBP, SHIPPING_GBP, toGBPPence, shippingGBPPence, orderAmountGBPPence } from './pricing';
 import type { CategorySlug } from './types';
@@ -73,10 +73,6 @@ describe('priceOf', () => {
     expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'de')).toBe(PRICE_EUR.kubki);
   });
 
-  it('returns GBP price for gb locale', () => {
-    expect(priceOf({ category: 'kubki', price: PRICE_PLN.kubki }, 'gb')).toBe(PRICE_GBP.kubki);
-  });
-
   it('resolves all nine categories correctly for pl and en', () => {
     for (const cat of ALL_CATEGORIES) {
       expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'pl')).toBe(PRICE_PLN[cat]);
@@ -86,11 +82,6 @@ describe('priceOf', () => {
 });
 
 describe('GBP pricing helpers', () => {
-  const ALL_CATEGORIES: CategorySlug[] = [
-    'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
-    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
-  ];
-
   it('PRICE_GBP covers every category with the expected values', () => {
     expect(PRICE_GBP).toEqual({
       kubki: 22,
@@ -104,12 +95,6 @@ describe('GBP pricing helpers', () => {
       'miski-falowane': 42,
       'fine-art-prints': 0,
     });
-  });
-
-  it('priceOf resolves all nine categories for gb', () => {
-    for (const cat of ALL_CATEGORIES) {
-      expect(priceOf({ category: cat, price: PRICE_PLN[cat] }, 'gb')).toBe(PRICE_GBP[cat]);
-    }
   });
 
   it('toGBPPence multiplies by 100', () => {
@@ -186,5 +171,29 @@ describe('EUR pricing helpers', () => {
 
   it('orderAmountEuroCents handles odbior (free)', () => {
     expect(orderAmountEuroCents([5000], 'odbior')).toBe(5000); // 5000 + 0
+  });
+});
+
+describe('priceOfCurrency', () => {
+  const product = { category: 'kubki' as CategorySlug, price: PRICE_PLN.kubki };
+
+  it('returns the product PLN price for pln', () => {
+    expect(priceOfCurrency(product, 'pln')).toBe(PRICE_PLN.kubki);
+  });
+
+  it('returns the GBP table price for gbp', () => {
+    expect(priceOfCurrency(product, 'gbp')).toBe(PRICE_GBP.kubki);
+  });
+
+  it('returns the EUR table price for eur', () => {
+    expect(priceOfCurrency(product, 'eur')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('throws for usd because the USD table is still null', () => {
+    expect(() => priceOfCurrency(product, 'usd')).toThrow();
+  });
+
+  it('throws for cad because the CAD table is still null', () => {
+    expect(() => priceOfCurrency(product, 'cad')).toThrow();
   });
 });

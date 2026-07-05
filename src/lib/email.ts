@@ -293,7 +293,6 @@ type SupportedLocale = 'pl' | 'en' | 'es' | 'de';
 
 function resolveLocale(locale: string): SupportedLocale {
   if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
-  if (locale === 'gb') return 'en'; // gb → English emails
   return 'pl';
 }
 

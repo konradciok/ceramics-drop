@@ -2,8 +2,9 @@ import { CATEGORIES, getProductById } from './products';
 import { getPrintById } from './prints';
 import { decodePrintToken, isPrintToken, variantLabel } from './print-cart';
 import type { Product } from './types';
+import type { CurrencyCode } from './format';
 
-export const ANALYTICS_CURRENCY = 'PLN';
+export const ANALYTICS_CURRENCY: CurrencyCode = 'PLN';
 const BRAND = 'Anna Ciok Ceramics';
 
 export type MetaStandardEvent =
@@ -26,7 +27,7 @@ export type AnalyticsItem = {
 };
 
 export type EcommercePayload = {
-  currency: 'PLN' | 'EUR' | 'GBP';
+  currency: CurrencyCode;
   value: number;
   items: AnalyticsItem[];
   transaction_id?: string;
@@ -40,7 +41,7 @@ export type MetaPayload = {
   content_ids: string[];
   content_type: 'product';
   contents: MetaContent[];
-  currency: 'PLN' | 'EUR' | 'GBP';
+  currency: CurrencyCode;
   value: number;
   num_items: number;
   event_id: string;
@@ -62,7 +63,7 @@ export type DataLayerEntry = DataLayerEvent | DataLayerEcommerceClear;
 
 type EventOptions = {
   eventId?: string;
-  currency?: 'PLN' | 'EUR' | 'GBP';
+  currency?: CurrencyCode;
   itemPrices?: number[];
 };
 
@@ -206,7 +207,7 @@ export function buildRemoveFromCartEvent(
 
 export function buildViewItemEvent(
   product: Product,
-  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: 'PLN' | 'EUR' | 'GBP'; priceOverride?: number } = {},
+  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: CurrencyCode; priceOverride?: number } = {},
 ): DataLayerEvent {
   const eventId = details.eventId ?? createEventId('view_item', product.id);
   const item = toAnalyticsItem(product, details);
@@ -223,7 +224,7 @@ export function buildViewItemEvent(
 
 export function buildViewItemListEvent(
   products: Product[],
-  details: { itemListId: string; itemListName: string; eventId?: string; currency?: 'PLN' | 'EUR' | 'GBP'; itemPrices?: number[] },
+  details: { itemListId: string; itemListName: string; eventId?: string; currency?: CurrencyCode; itemPrices?: number[] },
 ): DataLayerEvent {
   const items = products.map((product, index) =>
     toAnalyticsItem(product, {
@@ -242,7 +243,7 @@ export function buildViewItemListEvent(
 
 export function buildSelectItemEvent(
   product: Product,
-  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: 'PLN' | 'EUR' | 'GBP'; priceOverride?: number } = {},
+  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: CurrencyCode; priceOverride?: number } = {},
 ): DataLayerEvent {
   return {
     event: 'select_item',
@@ -254,7 +255,7 @@ export function buildSelectItemEvent(
 /** view_cart from pre-resolved AnalyticsItems (ceramics + prints). */
 export function buildViewCartEventFromItems(
   items: AnalyticsItem[],
-  options: { currency?: 'PLN' | 'EUR' | 'GBP'; eventId?: string } = {},
+  options: { currency?: CurrencyCode; eventId?: string } = {},
 ): DataLayerEvent {
   const currency = options.currency ?? ANALYTICS_CURRENCY;
   return {
@@ -457,7 +458,7 @@ function isDebugHost(): boolean {
   );
 }
 
-function ecommerce(items: AnalyticsItem[], currency: 'PLN' | 'EUR' | 'GBP' = ANALYTICS_CURRENCY): EcommercePayload {
+function ecommerce(items: AnalyticsItem[], currency: CurrencyCode = ANALYTICS_CURRENCY): EcommercePayload {
   return {
     currency,
     value: sumItems(items),

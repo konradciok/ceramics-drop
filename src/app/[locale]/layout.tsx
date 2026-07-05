@@ -17,6 +17,8 @@ import { defaultConsentSnippet } from '@/components/consent/consent-mode';
 import { ConsentBanner } from '@/components/consent/ConsentBanner';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { organizationSchema } from '@/lib/seo/structured-data';
+import { CurrencyProvider } from '@/components/currency/CurrencyProvider';
+import { getCurrency } from '@/lib/currency.server';
 import { SITE_URL } from '@/lib/site';
 
 export const viewport: Viewport = {
@@ -63,6 +65,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   }
   setRequestLocale(locale);
   const t = await getTranslations();
+  // Display currency comes from the `currency_pref` cookie (pl → PLN always);
+  // seed the client provider so tiles/cart/PDP render the right currency and the
+  // header switcher can change it. `Vary: Cookie` (middleware) keeps caches split.
+  const currency = await getCurrency(locale);
 
   return (
     <html lang={locale}>
@@ -81,14 +87,16 @@ export default async function LocaleLayout({ children, params }: Props) {
         <Script id="consent-default" strategy="beforeInteractive">{defaultConsentSnippet()}</Script>
         <GoogleTagManager containerId={process.env.NEXT_PUBLIC_GTM_ID} />
         <NextIntlClientProvider>
-          <AnalyticsEvents />
-          <HeaderHeightProbe />
-          <Header />
-          <div id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
-            {children}
-          </div>
-          <Footer />
-          <ConsentBanner />
+          <CurrencyProvider initial={currency}>
+            <AnalyticsEvents />
+            <HeaderHeightProbe />
+            <Header />
+            <div id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
+              {children}
+            </div>
+            <Footer />
+            <ConsentBanner />
+          </CurrencyProvider>
         </NextIntlClientProvider>
       </body>
     </html>

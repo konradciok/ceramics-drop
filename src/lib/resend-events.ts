@@ -28,7 +28,6 @@ type SupportedLocale = 'pl' | 'en' | 'es' | 'de';
 
 function resolveLocale(locale: string): SupportedLocale {
   if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
-  if (locale === 'gb') return 'en'; // gb → English abandoned-cart emails
   return 'pl';
 }
 
@@ -87,7 +86,7 @@ const I18N_ABANDONED: Record<SupportedLocale, {
   },
 };
 
-const KNOWN_LOCALES = new Set(['pl', 'en', 'es', 'de', 'gb']);
+const KNOWN_LOCALES = new Set(['pl', 'en', 'es', 'de']);
 
 /**
  * Build an absolute, locale-aware cart URL. Polish (default) is unprefixed;

@@ -9,7 +9,8 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
-import { eur, gbp, pln } from '@/lib/format';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
 import { encodePrintToken, isPrintToken, variantLabel } from '@/lib/print-cart';
@@ -19,8 +20,11 @@ import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib
 export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const t = useTranslations();
   const locale = useLocale();
-  const currency: 'pln' | 'eur' | 'gbp' = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
-  const fmt = locale === 'pl' ? pln : locale === 'gb' ? gbp : eur;
+  const currency = useCurrency();
+  // priceOfVariant only prices pln/eur/gbp; usd/cad prints aren't offered yet, so
+  // fall back to EUR pricing for those until the tables are filled.
+  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
 
   const [sel, setSel] = useState<PrintVariantSelection>({
     size: design.sizes[0],
@@ -30,7 +34,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
   });
 
   const available = isVariantAvailable(design, sel);
-  const price = priceOfVariant(design, sel, currency);
+  const price = priceOfVariant(design, sel, printCurrency);
   const token = encodePrintToken(design.id, sel);
 
   const ids = useCart((s) => s.ids);
@@ -182,7 +186,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
                 pushDataLayer(
                   buildPrintAddToCartEvent(
                     { id: design.id, num: design.num, variantLabel: variantLabel(sel, locale), price },
-                    { currency: currency === 'eur' ? 'EUR' : currency === 'gbp' ? 'GBP' : 'PLN' },
+                    { currency: analyticsCurrency },
                   ),
                 );
               }

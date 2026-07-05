@@ -1,10 +1,11 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { resolveCartProducts } from '@/lib/products';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
@@ -12,14 +13,14 @@ import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 /** Sticky bottom bar summarising the current selection. */
 export function SelectionBar() {
   const t = useTranslations();
-  const locale = useLocale();
-  const { fmt } = localeFormatter(locale);
+  const currency = useCurrency();
+  const { fmt } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
   const products = resolveCartProducts(ids);
   const n = products.length;
-  const total = products.reduce((sum, p) => sum + priceOf(p, locale), 0);
+  const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 
   return (
     <div className={`selbar${n > 0 ? ' show' : ''}`}>

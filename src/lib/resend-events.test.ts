@@ -27,9 +27,8 @@ describe('cartUrlForLocale', () => {
     expect(cartUrlForLocale('es')).toBe(`${SITE_URL}/es/koszyk`);
   });
 
-  it('prefixes the locale for de/gb', () => {
+  it('prefixes the locale for de', () => {
     expect(cartUrlForLocale('de')).toBe(`${SITE_URL}/de/koszyk`);
-    expect(cartUrlForLocale('gb')).toBe(`${SITE_URL}/gb/koszyk`);
   });
 
   it('falls back to Polish (unprefixed) for a truly unknown locale', () => {
@@ -63,11 +62,6 @@ describe('buildAbandonedCartEmail — subject localisation', () => {
   it('returns the German subject for de', () => {
     const { subject } = buildAbandonedCartEmail({ locale: 'de', firstName: 'Anna', cartUrl: 'x' });
     expect(subject).toBe('Dein Warenkorb wartet');
-  });
-
-  it('falls back to English for gb locale', () => {
-    const { subject } = buildAbandonedCartEmail({ locale: 'gb', firstName: 'Anna', cartUrl: 'x' });
-    expect(subject).toBe('Your cart is waiting');
   });
 
   it('falls back to Polish for a truly unknown locale', () => {

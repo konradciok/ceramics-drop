@@ -1,6 +1,11 @@
 import createMiddleware from 'next-intl/middleware';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
+import {
+  CURRENCY_COOKIE,
+  CURRENCY_COOKIE_MAX_AGE,
+  currencyForCountry,
+} from './lib/currency';
 
 // NOTE: This stays `middleware.ts` (not the Next 16 `proxy.ts`) on purpose.
 // `@opennextjs/cloudflare` only bundles edge-runtime middleware; renaming to
@@ -32,7 +37,41 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 export default function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // The `gb` locale was collapsed into `en` (currency is now a cookie, see
+  // currency.ts). Permanently redirect any legacy `/gb` or `/gb/*` URL to its
+  // `/en` equivalent, preserving the rest of the path and the query string.
+  if (/^\/gb(?=\/|$)/.test(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/en' + pathname.slice('/gb'.length);
+    return NextResponse.redirect(url, 301);
+  }
+
+  // First-time visitors have no currency preference yet: derive it from
+  // Cloudflare's edge geolocation (GB → GBP, everyone else → EUR). Setting it on
+  // the *request* too makes the current render's `getCurrency()` see it (correct
+  // first paint), and on the *response* persists it for subsequent navigations.
+  const hasCurrencyCookie = request.cookies.has(CURRENCY_COOKIE);
+  const currency = currencyForCountry(request.headers.get('CF-IPCountry'));
+  if (!hasCurrencyCookie) {
+    request.cookies.set(CURRENCY_COOKIE, currency);
+  }
+
   const response = handleI18n(request);
+
+  if (!hasCurrencyCookie) {
+    response.cookies.set(CURRENCY_COOKIE, currency, {
+      path: '/',
+      maxAge: CURRENCY_COOKIE_MAX_AGE,
+      sameSite: 'lax',
+    });
+  }
+
+  // Rendered prices depend on the currency cookie, so a shared cache must key on
+  // it — otherwise one visitor's currency could be served to another.
+  response.headers.append('Vary', 'Cookie');
+
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);
   }

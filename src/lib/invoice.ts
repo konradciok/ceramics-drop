@@ -74,7 +74,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         }
       : undefined;
 
-  const invoiceLocale = (order.locale as string) === 'en' || (order.locale as string) === 'gb' ? 'en'
+  const invoiceLocale = (order.locale as string) === 'en' ? 'en'
     : (order.locale as string) === 'es' ? 'es'
     : (order.locale as string) === 'de' ? 'de'
     : 'pl';

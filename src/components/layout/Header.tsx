@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { LangSwitch } from './LangSwitch';
+import { CurrencySwitcher } from './CurrencySwitcher';
 import { CartCount } from './CartCount';
 import { MobileMenu } from './MobileMenu';
 
@@ -48,6 +49,7 @@ export async function Header() {
           <div className="nav-right">
             <Link className="nav-link" href="/kontakt">{t('nav.kontakt')}</Link>
             <LangSwitch />
+            <CurrencySwitcher />
             <Link className="icon-btn" href="/koszyk" aria-label={t('aria.cart')}>
               <Icon name="cart" />
               <CartCount />

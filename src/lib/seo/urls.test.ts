@@ -28,9 +28,10 @@ describe('alternatesFor', () => {
     expect(languages['x-default']).toBe(languages.pl);
   });
 
-  it('maps the gb locale slug to en-GB hreflang tag (valid BCP47)', () => {
+  it('no longer emits gb / en-GB hreflang after the locale merge', () => {
     const languages = alternatesFor('en', '/kubki')?.languages as Record<string, string>;
-    expect(languages['en-GB']).toBe(`${SITE_URL}/gb/kubki`);
     expect(languages['gb']).toBeUndefined();
+    expect(languages['en-GB']).toBeUndefined();
+    expect(languages['en']).toBe(`${SITE_URL}/en/kubki`);
   });
 });

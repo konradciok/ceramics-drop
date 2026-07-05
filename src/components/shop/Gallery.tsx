@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useFilter } from '@/store/filter';
 import { filterByStatus } from '@/lib/status-filter';
 import { useMounted } from '@/lib/use-mounted';
 import type { Product } from '@/lib/types';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
@@ -19,8 +20,8 @@ type Props = {
 
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
 export function Gallery({ products }: Props) {
-  const locale = useLocale();
-  const { currency: analyticsCurrency } = localeFormatter(locale);
+  const currency = useCurrency();
+  const { code: analyticsCurrency } = currencyFormatter(currency);
   // Memoised so the array reference is stable across renders (only changes when
   // the `products` prop changes), which lets us use `available` directly in
   // useEffect deps without triggering the effect on every render.
@@ -51,9 +52,12 @@ export function Gallery({ products }: Props) {
         itemListId: listId,
         itemListName: listName,
         currency: analyticsCurrency,
-        itemPrices: available.map((p) => priceOf(p, locale)),
+        itemPrices: available.map((p) => priceOfCurrency(p, currency)),
       }),
     );
+    // Fire once per list; currency is captured at first paint (a currency switch
+    // shouldn't re-emit view_item_list).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId, listName, available]);
 
   const step = (delta: number) =>
@@ -83,7 +87,7 @@ export function Gallery({ products }: Props) {
                     itemListId: listId,
                     itemListName: listName,
                     currency: analyticsCurrency,
-                    priceOverride: priceOf(prod, locale),
+                    priceOverride: priceOfCurrency(prod, currency),
                   }),
                 );
                 setOpenIndex(index);

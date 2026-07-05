@@ -13,20 +13,16 @@ export function absoluteUrl(locale: Locale, path: string): string {
   return pathname === '/' ? SITE_URL : `${SITE_URL}${pathname}`;
 }
 
-/** BCP47 hreflang tag overrides for locale slugs that aren't valid language tags. */
-const HREFLANG_TAG: Record<string, string> = {
-  gb: 'en-GB',
-};
-
 /**
  * hreflang map for a route: one absolute URL per locale plus `x-default`
  * (the default locale). Shared by page `<head>` alternates and the sitemap so
- * the two never drift apart.
+ * the two never drift apart. Every locale slug is a valid BCP47 language tag,
+ * so it doubles as its own hreflang.
  */
 export function languageAlternates(path: string): Record<string, string> {
   const languages: Record<string, string> = {};
   for (const l of routing.locales) {
-    languages[HREFLANG_TAG[l] ?? l] = absoluteUrl(l, path);
+    languages[l] = absoluteUrl(l, path);
   }
   languages['x-default'] = absoluteUrl(routing.defaultLocale, path);
   return languages;

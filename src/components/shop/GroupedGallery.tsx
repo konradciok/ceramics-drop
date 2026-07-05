@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { Product, CategorySlug } from '@/lib/types';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
-import { localeFormatter } from '@/lib/format';
-import { priceOf } from '@/lib/pricing';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
 import { useFilter } from '@/store/filter';
 import { filterByStatus } from '@/lib/status-filter';
 import { useMounted } from '@/lib/use-mounted';
@@ -27,8 +28,8 @@ type Props = {
  */
 export function GroupedGallery({ products }: Props) {
   const t = useTranslations();
-  const locale = useLocale();
-  const { currency: analyticsCurrency } = localeFormatter(locale);
+  const currency = useCurrency();
+  const { code: analyticsCurrency } = currencyFormatter(currency);
 
   // Flat list of purchasable pieces — index space shared by the lightbox and
   // the select_item analytics event (matches the per-category Gallery).
@@ -81,9 +82,12 @@ export function GroupedGallery({ products }: Props) {
         itemListId: 'sklep',
         itemListName: 'sklep',
         currency: analyticsCurrency,
-        itemPrices: available.map((p) => priceOf(p, locale)),
+        itemPrices: available.map((p) => priceOfCurrency(p, currency)),
       }),
     );
+    // Fire once per list; currency is captured at first paint (a currency switch
+    // shouldn't re-emit view_item_list).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [available]);
 
   // Scroll-spy: mark the category whose section is nearest the top as current.
@@ -151,7 +155,7 @@ export function GroupedGallery({ products }: Props) {
         itemListId: 'sklep',
         itemListName: 'sklep',
         currency: analyticsCurrency,
-        priceOverride: priceOf(prod, locale),
+        priceOverride: priceOfCurrency(prod, currency),
       }),
     );
     setOpenIndex(index);

@@ -1,5 +1,8 @@
-/* PLN, EUR, and GBP prices with helpers. PL locale → PLN; gb locale → GBP; en/es/de locales → EUR. */
+/* PLN, EUR, GBP (and future USD/CAD) prices with helpers. Currency is chosen per
+ * request from the `currency_pref` cookie (see currency.ts), not from the locale:
+ * `pl` → PLN, everyone else defaults to EUR and can switch to GBP. */
 import type { CategorySlug } from './types';
+import type { Currency } from './currency';
 
 export const PRICE_PLN: Record<CategorySlug, number> = {
   kubki: 95,
@@ -96,6 +99,47 @@ export function toGBPPence(pounds: number): number {
   return Math.round(pounds * 100);
 }
 
+/**
+ * USD/CAD price tables — architected for future markets but not yet launched.
+ * Every category is `null`; `priceOfCurrency` throws if one is read before a
+ * real table is filled in, so an accidental USD/CAD sale can never mispriced.
+ */
+export const PRICE_USD: Record<CategorySlug, number | null> = {
+  kubki: null,
+  wazony: null,
+  'wazony-srednie': null,
+  'wazony-duze': null,
+  talerzyki: null,
+  'talerze-srednie': null,
+  'talerze-duze': null,
+  'duze-michy': null,
+  'miski-falowane': null,
+  'fine-art-prints': null,
+};
+
+export const PRICE_CAD: Record<CategorySlug, number | null> = {
+  kubki: null,
+  wazony: null,
+  'wazony-srednie': null,
+  'wazony-duze': null,
+  talerzyki: null,
+  'talerze-srednie': null,
+  'talerze-duze': null,
+  'duze-michy': null,
+  'miski-falowane': null,
+  'fine-art-prints': null,
+};
+
+/** US dollars (integer) → cents. Same ×100 math as toGrosze. */
+export function toUSDCents(dollars: number): number {
+  return Math.round(dollars * 100);
+}
+
+/** Canadian dollars (integer) → cents. */
+export function toCADCents(dollars: number): number {
+  return Math.round(dollars * 100);
+}
+
 /** Shipping cost in pence for the chosen delivery method. */
 export function shippingGBPPence(method: DeliveryMethod): number {
   return toGBPPence(SHIPPING_GBP[method]);
@@ -106,11 +150,41 @@ export function orderAmountGBPPence(itemPence: number[], method: DeliveryMethod)
   return itemPence.reduce((s, p) => s + p, 0) + shippingGBPPence(method);
 }
 
-/** Returns the display price for a product in the correct currency for the given locale. */
+/**
+ * Display price in a locale's *default* currency (no cookie): `pl` → PLN,
+ * everyone else → EUR. Use this for cookie-independent surfaces (SEO structured
+ * data, product feeds). For cookie-aware on-page/checkout prices use
+ * `priceOfCurrency` with the currency resolved from `getCurrency`.
+ */
 export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
   if (locale === 'pl') return product.price;
-  if (locale === 'gb') return PRICE_GBP[product.category];
   return PRICE_EUR[product.category];
+}
+
+/** Display price for a product in an explicit currency. */
+export function priceOfCurrency(
+  product: { category: CategorySlug; price: number },
+  currency: Currency,
+): number {
+  switch (currency) {
+    case 'pln':
+      return product.price;
+    case 'gbp':
+      return PRICE_GBP[product.category];
+    case 'usd': {
+      const p = PRICE_USD[product.category];
+      if (p == null) throw new Error(`No USD price for category "${product.category}"`);
+      return p;
+    }
+    case 'cad': {
+      const p = PRICE_CAD[product.category];
+      if (p == null) throw new Error(`No CAD price for category "${product.category}"`);
+      return p;
+    }
+    case 'eur':
+    default:
+      return PRICE_EUR[product.category];
+  }
 }
 
 /** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */

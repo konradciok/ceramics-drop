@@ -1,5 +1,5 @@
 import { getPublicProducts, CATEGORIES } from './products';
-import { priceOf, SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP } from './pricing';
+import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME } from './site';
 import type { CategorySlug } from './types';
@@ -9,11 +9,10 @@ import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
 import esMessages from '../../messages/es.json';
 import deMessages from '../../messages/de.json';
-import gbMessages from '../../messages/gb.json';
 
 export type FeedLocale = Locale;
 
-export const FEED_LOCALES: FeedLocale[] = ['pl', 'en', 'es', 'de', 'gb'];
+export const FEED_LOCALES: FeedLocale[] = ['pl', 'en', 'es', 'de'];
 
 type Messages = typeof enMessages;
 
@@ -22,12 +21,10 @@ const LOCALE_MESSAGES: Record<FeedLocale, Messages> = {
   en: enMessages,
   es: esMessages as unknown as Messages,
   de: deMessages as unknown as Messages,
-  gb: gbMessages as unknown as Messages,
 };
 
 function currency(locale: FeedLocale): string {
   if (locale === 'pl') return 'PLN';
-  if (locale === 'gb') return 'GBP';
   return 'EUR';
 }
 
@@ -71,7 +68,6 @@ const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
   en: 'IE',
   es: 'ES',
   de: 'DE',
-  gb: 'GB',
 };
 
 // Values are already-escaped XML entities (& → &amp;, > → &gt;) — insert directly without re-escaping.
@@ -128,8 +124,7 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
     const price = priceOf(product, locale);
     const priceStr = `${price}.00 ${cur}`;
 
-    const shippingRates =
-      locale === 'pl' ? SHIPPING_PLN : locale === 'gb' ? SHIPPING_GBP : SHIPPING_EUR;
+    const shippingRates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
     const shippingCountry = SHIPPING_COUNTRY[locale];
     const shipping = [
       { country: shippingCountry, service: 'InPost Paczkomat', price: `${shippingRates.paczkomat}.00 ${cur}` },

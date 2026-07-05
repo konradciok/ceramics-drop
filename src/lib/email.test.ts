@@ -90,8 +90,8 @@ describe('buildShippingConfirmation — subject localisation', () => {
     expect(subject).toBe('Deine Bestellung wurde versandt');
   });
 
-  it('returns English subject for gb', () => {
-    const { subject } = buildShippingConfirmation({ order: baseOrder, locale: 'gb' });
+  it('returns English subject for en', () => {
+    const { subject } = buildShippingConfirmation({ order: baseOrder, locale: 'en' });
     expect(subject).toBe('Your order has been shipped');
   });
 
@@ -189,8 +189,8 @@ describe('buildReturnLabelEmail — subject localisation', () => {
     expect(subject).toBe('Rücksendeetikett — Bestellung ord-ret-1');
   });
 
-  it('returns English subject for gb', () => {
-    const { subject } = buildReturnLabelEmail({ order: returnOrder, locale: 'gb' });
+  it('returns English subject for en', () => {
+    const { subject } = buildReturnLabelEmail({ order: returnOrder, locale: 'en' });
     expect(subject).toBe('Return label — order ord-ret-1');
   });
 
@@ -238,8 +238,8 @@ describe('buildOrderConfirmationEmail — subject localisation', () => {
     expect(subject).toBe('Bestellung bestätigt — Anna Ciok Ceramics');
   });
 
-  it('returns English subject for gb', () => {
-    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'gb' });
+  it('returns English subject for en', () => {
+    const { subject } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'en' });
     expect(subject).toBe('Order confirmed — Anna Ciok Ceramics');
   });
 

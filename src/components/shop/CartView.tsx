@@ -9,7 +9,8 @@ import { CATEGORIES, getProductById, isCategoryHidden } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
-import { pln, eur, gbp } from '@/lib/format';
+import { useCurrency } from '@/components/currency/CurrencyProvider';
+import { currencyFormatter } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
@@ -28,7 +29,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, PRICE_EUR, PRICE_GBP, type DeliveryMethod } from '@/lib/pricing';
+import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, priceOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -202,23 +203,21 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const mixedCart = hasPrints && hasCeramics;
   const hasFramed = lines.some((l) => l.kind === 'print' && l.sel.framed);
   const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
-  const currency = locale === 'pl' ? 'pln' : locale === 'gb' ? 'gbp' : 'eur';
-  const analyticsCurrency = currency === 'pln' ? 'PLN' as const : currency === 'gbp' ? 'GBP' as const : 'EUR' as const;
-  const fmt = currency === 'eur' ? eur : currency === 'gbp' ? gbp : pln;
+  const currency = useCurrency();
+  // priceOfVariant / printShippingOf only price pln/eur/gbp; usd/cad prints aren't
+  // offered yet, so fall back to EUR pricing for those until the tables are filled.
+  const printCurrency = currency === 'gbp' ? 'gbp' : currency === 'pln' ? 'pln' : 'eur';
+  const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
-      ? priceOfVariant(l.design, l.sel, currency)
-      : currency === 'eur'
-        ? PRICE_EUR[l.product.category]
-        : currency === 'gbp'
-          ? PRICE_GBP[l.product.category]
-          : l.product.price;
+      ? priceOfVariant(l.design, l.sel, printCurrency)
+      : priceOfCurrency(l.product, currency);
   const shippingOf = (method: ShipId) =>
-    currency === 'eur' ? SHIPPING_EUR[method] : currency === 'gbp' ? SHIPPING_GBP[method] : SHIPPING_PLN[method];
+    currency === 'gbp' ? SHIPPING_GBP[method] : currency === 'pln' ? SHIPPING_PLN[method] : SHIPPING_EUR[method];
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
   // ceramic carts keep the InPost price list.
-  const shipCost = hasPrints ? printShippingOf(country, hasFramed, currency) : shippingOf(ship);
+  const shipCost = hasPrints ? printShippingOf(country, hasFramed, printCurrency) : shippingOf(ship);
   const total = subtotal + shipCost;
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
@@ -397,11 +396,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
   };
 
-  // Stripe Elements UI in the buyer's language. de is a valid Stripe locale; gb maps to en.
-  const stripeLocale = locale === 'gb' ? 'en'
-    : (['pl', 'en', 'es', 'de'] as string[]).includes(locale)
-      ? (locale as 'pl' | 'en' | 'es' | 'de')
-      : 'auto';
+  // Stripe Elements UI in the buyer's language. de is a valid Stripe locale.
+  const stripeLocale = (['pl', 'en', 'es', 'de'] as string[]).includes(locale)
+    ? (locale as 'pl' | 'en' | 'es' | 'de')
+    : 'auto';
 
   // ── Filled cart ──────────────────────────────────────────────────────────
   return (

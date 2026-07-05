@@ -10,13 +10,14 @@ import {
   type DataLayerEvent,
 } from './analytics';
 import type { Product } from './types';
+import type { CurrencyCode } from './format';
 
 type CheckoutStartOptions = {
   shippingCost: number;
   shippingMethod: string;
   userData?: { em?: string };
   push?: (event: DataLayerEvent) => void;
-  currency?: 'PLN' | 'EUR' | 'GBP';
+  currency?: CurrencyCode;
   itemPrices?: number[];
 };
 
@@ -37,7 +38,7 @@ type CheckoutSnapshot = {
   ids: string[];
   shippingCost: number;
   shippingMethod: string;
-  currency?: 'PLN' | 'EUR' | 'GBP';
+  currency?: CurrencyCode;
   itemPrices?: number[];
   userData?: { em?: string };
 };
