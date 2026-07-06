@@ -274,6 +274,13 @@ export async function POST(req: Request) {
       // canceled manually instead of silently expiring.
       console.error('checkout: failed to cancel orphaned PaymentIntent', paymentIntent.id, cancelErr);
     }
+    if (itemsErr) {
+      // The orders row was inserted but its items weren't. Left as 'pending'
+      // it would poison a retry of the same attemptId: the replay branch above
+      // would read it as a live checkout and hand back this now-canceled PI's
+      // client_secret. Mark it failed so a retry lands in order_conflict.
+      await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+    }
     // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
     await supabase.from('piece_state')
       .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })

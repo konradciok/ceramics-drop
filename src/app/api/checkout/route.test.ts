@@ -8,6 +8,9 @@ const reserveRpc = vi.fn<
 const releaseHold = vi.fn(async () => ({ error: null as PgError }));
 const insertOrders = vi.fn(async () => ({ error: null as PgError }));
 const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
+const updateOrderStatus = vi.fn<
+  (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
+>(async () => ({ error: null }));
 const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
   id: 'pi_test',
@@ -52,6 +55,9 @@ vi.mock('@/lib/supabase', () => ({
       if (table === 'orders') {
         return {
           insert: insertOrders,
+          update: (patch: Record<string, unknown>) => ({
+            eq: (col: string, val: unknown) => updateOrderStatus(patch, col, val),
+          }),
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
         };
       }
@@ -335,6 +341,39 @@ describe('POST /api/checkout', () => {
     expect(await res.json()).toEqual({ error: 'order_persist_failed' });
     expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
     expect(releaseHold).toHaveBeenCalled();
+    // The orders insert itself failed — there is no row to mark failed.
+    expect(updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it('marks the order failed after an order_items rollback so a retry cannot replay the canceled PI', async () => {
+    const makeReq = () =>
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+    const { POST } = await import('./route');
+
+    // First POST: orders row inserted, but the items insert fails → rollback.
+    insertOrderItems.mockResolvedValueOnce({ error: { code: '23000', message: 'boom' } });
+    const res1 = await POST(makeReq());
+    expect(res1.status).toBe(500);
+    expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+    // The zombie 'pending' row must be neutralized, or a retry would replay
+    // the now-canceled PI's client_secret as a valid checkout.
+    expect(updateOrderStatus).toHaveBeenCalledWith(
+      { status: 'failed' },
+      'id',
+      VALID_ATTEMPT_ID,
+    );
+
+    // Retry with the same attemptId: PK conflict, and the row now reads
+    // 'failed' (exactly what the rollback above wrote) → order_conflict,
+    // never a 200 carrying the dead PI's client_secret.
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'failed' }, error: null });
+    const res2 = await POST(makeReq());
+    expect(res2.status).toBe(409);
+    expect(await res2.json()).toEqual({ error: 'order_conflict' });
   });
 
   it('logs (does not throw) when the rollback PI cancel itself fails', async () => {

@@ -172,6 +172,12 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
+  function resetAttemptId() {
+    const id = crypto.randomUUID();
+    localStorage.setItem(ATTEMPT_ID_KEY, id);
+    setAttemptId(id);
+  }
+
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
     sessionStorage.setItem('acc_ship', shipChoice);
@@ -341,7 +347,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
       if (res.status === 409) {
-        const { sold } = (await res.json()) as { sold: string[] };
+        const conflict = (await res.json()) as { error?: string; sold?: string[] };
+        if (conflict.error === 'order_conflict') {
+          // The attemptId was already consumed by a non-pending order (paid,
+          // expired, ...). Start a fresh attempt for the next click and keep
+          // the cart intact — nothing here is sold out.
+          resetAttemptId();
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'order_conflict', status: 409 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
+        const sold = conflict.sold ?? [];
         sold.forEach((id) => remove(id));
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
@@ -370,9 +386,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         userData: em ? { em } : undefined,
       });
       // A later, separate purchase must never reuse this attemptId.
-      const nextAttemptId = crypto.randomUUID();
-      localStorage.setItem(ATTEMPT_ID_KEY, nextAttemptId);
-      setAttemptId(nextAttemptId);
+      resetAttemptId();
       setClientSecret(client_secret);
     } catch {
       pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
