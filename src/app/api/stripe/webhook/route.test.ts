@@ -30,6 +30,8 @@ vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn()
 
 import { POST } from './route';
 import { createOrderInvoice } from '@/lib/invoice';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
+import { sendPurchasedEvent } from '@/lib/resend-events';
 
 type Result = { data: unknown; error: unknown };
 
@@ -226,6 +228,12 @@ function makeSucceededSupabase(opts: {
   soldCount?: QueryResult;
   ceramicCount?: QueryResult;
   variantRows?: QueryResult;
+  /** The `id, email, ... , confirmation_email_sent_at, studio_email_sent_at` load. */
+  emailOrderSelect?: QueryResult;
+  /** Result of the atomic `studio_email_sent_at IS NULL` claim UPDATE. */
+  studioClaim?: QueryResult;
+  /** Result of the atomic `confirmation_email_sent_at IS NULL` claim UPDATE. */
+  confirmClaim?: QueryResult;
 }) {
   const failedUpdateEqArgs: unknown[][] = [];
   const supabase = {
@@ -239,11 +247,18 @@ function makeSucceededSupabase(opts: {
                 if (method === 'eq') failedUpdateEqArgs.push(args);
               });
             }
+            if ('studio_email_sent_at' in payload) {
+              return proxyChain(opts.studioClaim ?? { data: [], error: null });
+            }
+            if ('confirmation_email_sent_at' in payload) {
+              return proxyChain(opts.confirmClaim ?? { data: [], error: null });
+            }
             throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
           },
           select: (columns: string) => {
             if (columns.startsWith('id, status')) return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
             if (columns === 'id') return proxyChain(opts.shipmentLookup);
+            if (columns.startsWith('id, email')) return proxyChain(opts.emailOrderSelect ?? { data: null, error: null });
             throw new Error(`unexpected orders.select columns: ${columns}`);
           },
         };
@@ -346,7 +361,8 @@ describe('webhook ensureInvoiced failure (F5)', () => {
     vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     // "Already processed" retry path: CAS matches nothing, fallback finds the paid
-    // order — keeps this test isolated to ensureInvoiced (skips the newSale email block).
+    // order. emailOrderSelect is left unset (defaults to a null row) so the email
+    // block no-ops, keeping this test isolated to ensureInvoiced.
     const { supabase } = makeSucceededSupabase({
       casUpdate: { data: [], error: null },
       fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
@@ -363,5 +379,116 @@ describe('webhook ensureInvoiced failure (F5)', () => {
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook email idempotency on retry (F1)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(emailNewOrderToStudio).mockClear();
+    vi.mocked(emailOrderConfirmationToCustomer).mockClear();
+    vi.mocked(sendPurchasedEvent).mockClear();
+  });
+
+  const unclaimedOrderRow = {
+    id: 'o1',
+    email: 'buyer@example.com',
+    total: 10000,
+    currency: 'pln',
+    delivery_method: 'paczkomat',
+    receiver_first_name: 'Ann',
+    receiver_last_name: 'K',
+    inpost_target_point: 'WAW01',
+    locale: 'pl',
+    confirmation_email_sent_at: null,
+    studio_email_sent_at: null,
+  };
+
+  it('retry on an already-paid order (CAS misses, fallback finds paid) with both guards unclaimed: sends BOTH emails and claims both columns', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
+    // Retry path (newSale=false): abandoned-checkout cancellation must not re-fire.
+    expect(sendPurchasedEvent).not.toHaveBeenCalled();
+  });
+
+  it('already-sent: order paid with both columns already claimed sends nothing', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: {
+        data: {
+          ...unclaimedOrderRow,
+          confirmation_email_sent_at: '2026-07-01T00:00:00.000Z',
+          studio_email_sent_at: '2026-07-01T00:00:00.000Z',
+        },
+        error: null,
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(emailOrderConfirmationToCustomer).not.toHaveBeenCalled();
+  });
+
+  it('fresh sale (normal path): sends both emails exactly once and fires the abandoned-checkout cancellation', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
+    expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('under-fulfillment/failed path sends nothing', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null }, // expected 1, fulfilled 0 → under-fulfilled
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(emailOrderConfirmationToCustomer).not.toHaveBeenCalled();
+    expect(sendPurchasedEvent).not.toHaveBeenCalled();
   });
 });

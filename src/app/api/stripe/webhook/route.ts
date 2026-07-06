@@ -134,55 +134,87 @@ export async function POST(req: Request) {
         return false;
       }
 
-      if (newSale) {
-        try {
-          const { data: orderRow, error: orderErr } = await supabase
-            .from('orders')
-            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at')
-            .eq('id', orderId)
-            .single();
-          if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
-          const { data: itemRows, error: itemsErr } = await supabase
-            .from('order_items')
-            .select('product_id, unit_price')
-            .eq('order_id', orderId);
-          if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
-          if (orderRow) {
-            const orderRowTyped = orderRow as {
-              id: string; email: string | null; total: number; currency: string;
-              delivery_method: string; receiver_first_name: string | null;
-              receiver_last_name: string | null; inpost_target_point: string | null;
-              locale: string | null; confirmation_email_sent_at: string | null;
-            };
+      // Runs on EVERY delivery where the order ends up here (fresh CAS or the
+      // fallback already-paid retry) — not just `newSale`. Stripe can redeliver
+      // payment_intent.succeeded after the pending→paid CAS commits but before
+      // this code ran (isolate death); on that redelivery `newSale` is false but
+      // confirmation_email_sent_at is still NULL, so the customer must still get
+      // their email. Each email's own *_sent_at column is now the only guard.
+      try {
+        const { data: orderRow, error: loadErr } = await supabase
+          .from('orders')
+          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at, studio_email_sent_at')
+          .eq('id', orderId)
+          .single();
+        if (loadErr) throw new Error(`load order failed for ${orderId}: ${loadErr.message}`);
+        const { data: itemRows, error: itemsErr } = await supabase
+          .from('order_items')
+          .select('product_id, unit_price')
+          .eq('order_id', orderId);
+        if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
+        if (orderRow) {
+          const orderRowTyped = orderRow as {
+            id: string; email: string | null; total: number; currency: string;
+            delivery_method: string; receiver_first_name: string | null;
+            receiver_last_name: string | null; inpost_target_point: string | null;
+            locale: string | null; confirmation_email_sent_at: string | null;
+            studio_email_sent_at: string | null;
+          };
 
-            const notifyOrder = {
-              order: {
-                ...orderRowTyped,
-                items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
-              },
-            };
-            // Best-effort with bounded retries: fires once (gated on newSale, so
-            // retried/duplicate webhook deliveries won't re-notify). A few quick
-            // retries survive transient Resend blips; the operational label email
-            // (InPost webhook) remains the backstop. Log on final failure — do NOT
-            // throw (would skip the customer confirmation below).
-            let studioSent = false;
-            for (let attempt = 0; attempt < 3 && !studioSent; attempt++) {
-              try {
-                await emailNewOrderToStudio(notifyOrder);
-                studioSent = true;
-              } catch (err) {
-                if (attempt === 2) {
-                  console.error('emailNewOrderToStudio failed for', orderId, err);
-                } else {
-                  await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+          const notifyOrder = {
+            order: {
+              ...orderRowTyped,
+              items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
+            },
+          };
+
+          // studio_email_sent_at: claim atomically (UPDATE ... WHERE IS NULL)
+          // BEFORE sending, so two overlapping redeliveries can't both pass a
+          // stale null-check and both notify the studio. ponytail: a claim
+          // sticks even if all 3 send attempts fail — a manual Stripe event
+          // replay covers that rare case; add a release-on-failure UPDATE if
+          // that turns out not to be good enough.
+          if (!orderRowTyped.studio_email_sent_at) {
+            const { data: claimedStudio, error: studioClaimErr } = await supabase
+              .from('orders')
+              .update({ studio_email_sent_at: new Date().toISOString() })
+              .eq('id', orderId)
+              .is('studio_email_sent_at', null)
+              .select('id');
+            if (studioClaimErr) {
+              console.error('studio_email_sent_at claim failed for', orderId, studioClaimErr);
+            } else if (claimedStudio && claimedStudio.length > 0) {
+              // Best-effort with bounded retries: a few quick retries survive
+              // transient Resend blips; the operational label email (InPost
+              // webhook) remains the backstop. Log on final failure — do NOT
+              // throw (would skip the customer confirmation below).
+              let studioSent = false;
+              for (let attempt = 0; attempt < 3 && !studioSent; attempt++) {
+                try {
+                  await emailNewOrderToStudio(notifyOrder);
+                  studioSent = true;
+                } catch (err) {
+                  if (attempt === 2) {
+                    console.error('emailNewOrderToStudio failed for', orderId, err);
+                  } else {
+                    await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+                  }
                 }
               }
             }
+          }
 
-            // confirmation_email_sent_at guards against duplicate sends on Stripe
-            // webhook retries — only send if we haven't successfully sent before.
-            if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
+          // confirmation_email_sent_at: same atomic claim-before-send pattern.
+          if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
+            const { data: claimedConfirm, error: confirmClaimErr } = await supabase
+              .from('orders')
+              .update({ confirmation_email_sent_at: new Date().toISOString() })
+              .eq('id', orderId)
+              .is('confirmation_email_sent_at', null)
+              .select('id');
+            if (confirmClaimErr) {
+              console.error('confirmation_email_sent_at claim failed for', orderId, confirmClaimErr);
+            } else if (claimedConfirm && claimedConfirm.length > 0) {
               let confirmSent = false;
               for (let attempt = 0; attempt < 3 && !confirmSent; attempt++) {
                 try {
@@ -199,27 +231,24 @@ export async function POST(req: Request) {
                   }
                 }
               }
-              if (confirmSent) {
-                await supabase
-                  .from('orders')
-                  .update({ confirmation_email_sent_at: new Date().toISOString() })
-                  .eq('id', orderId);
-              }
             }
+          }
 
-            // Cancel any pending abandoned-checkout recovery for this buyer
-            // (cart.purchased → the automation's wait_for_event). Best-effort:
-            // awaited like the emails above, but never throws so fulfillment and
-            // inventory updates are unaffected.
+          // Cancel any pending abandoned-checkout recovery for this buyer
+          // (cart.purchased → the automation's wait_for_event). Unchanged:
+          // fresh sales only — a retry redelivery must not re-fire it.
+          // Best-effort: awaited like the emails above, but never throws so
+          // fulfillment and inventory updates are unaffected.
+          if (newSale) {
             try {
               await sendPurchasedEvent({ orderId, email: orderRowTyped.email });
             } catch (err) {
               console.error('sendPurchasedEvent failed for', orderId, err);
             }
           }
-        } catch (err) {
-          console.error('newSale order processing failed for', orderId, err);
         }
+      } catch (err) {
+        console.error('order paid post-processing failed for', orderId, err);
       }
 
       // Burn the single-use private-sale link now that the order is `paid`. Runs for
