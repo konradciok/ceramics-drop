@@ -45,7 +45,7 @@ export async function sendGa4Purchase(
   config: Ga4Config,
   input: Ga4PurchaseInput,
   fetchImpl: typeof fetch = fetch,
-): Promise<{ ok: boolean; status?: number; skipped?: boolean }> {
+): Promise<{ ok: boolean; status?: number; skipped?: boolean; errorBody?: string }> {
   // No GA client id (cookie missing or cleared) — the MP purchase cannot be attributed.
   // Reported as `skipped` so the only caller (conversions.ts) can escalate it to a
   // console.warn + Sentry warning once it knows consent was granted; logging here too
@@ -60,5 +60,9 @@ export async function sendGa4Purchase(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(buildGa4PurchasePayload(input)),
   });
-  return { ok: res.ok, status: res.status };
+  if (res.ok) return { ok: true, status: res.status };
+  // Unlike Meta's Graph API, GA4 MP validation errors don't embed a per-request trace
+  // id, so (unlike meta-capi.ts) the raw body is safe to use directly in a fingerprint.
+  const errorBody = await res.text().catch(() => undefined);
+  return { ok: false, status: res.status, errorBody: errorBody?.slice(0, 2000) };
 }

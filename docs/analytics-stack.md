@@ -164,6 +164,29 @@ New runtime secrets required:
 | `GA4_API_SECRET` | `wrangler secret put GA4_API_SECRET` | GA4 Admin → Data Streams → Measurement Protocol API secrets |
 | `META_TEST_EVENT_CODE` | `wrangler secret put META_TEST_EVENT_CODE` | Optional; set during validation only, remove before going live |
 
+### Diagnosing Meta CAPI failures
+
+`meta capi purchase http error <status>` in Sentry means the webhook's server-side Purchase call to
+Meta's Graph API failed — `extra.response_body` on that Sentry event has Meta's exact error message.
+To check *why* directly against the Graph API (credentials mismatch vs. a bad payload vs. a transient
+Meta-side error), use `scripts/debug-meta-capi.mjs`:
+
+```bash
+# Check the values currently in .dev.vars / .env.local:
+npm run debug:meta-capi
+
+# Check the values actually deployed on the Worker (wrangler secret values can't be
+# read back — you need the token from wherever you generated/stored it):
+META_CAPI_ACCESS_TOKEN=<prod token> npm run debug:meta-capi -- --pixel-id <prod NEXT_PUBLIC_META_PIXEL_ID>
+
+# Also fire one real diagnostic event (requires a Test Events code — never sends live):
+npm run debug:meta-capi -- --send --test-event-code <code from Events Manager>
+```
+
+Prefer the `META_CAPI_ACCESS_TOKEN` env var over `--token` — CLI arguments land in shell history and are
+visible to `ps` while the process runs. The script prints an explicit verdict (invalid token / credentials
+mismatch / payload rejected / inconclusive) rather than treating every failure as a credentials problem.
+
 ## Microsoft Clarity (heatmaps / session recordings)
 
 Clarity is added **through GTM**, not in app code, so it stays consent-gated alongside GA4/Meta.

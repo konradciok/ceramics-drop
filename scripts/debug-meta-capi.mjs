@@ -11,16 +11,22 @@
  *
  * Usage:
  *   node scripts/debug-meta-capi.mjs
- *   node scripts/debug-meta-capi.mjs --pixel-id 535651705450454 --token EAAB...
+ *   META_CAPI_ACCESS_TOKEN=<prod token> node scripts/debug-meta-capi.mjs --pixel-id 535651705450454
  *   node scripts/debug-meta-capi.mjs --send --test-event-code TEST12345
  *
- * By default, pixel id + token are read from (in order) CLI flags, then
- * process.env, then .dev.vars / .env.local in the repo root. To check the
- * values actually live on the Worker, run this with the *production*
- * META_CAPI_ACCESS_TOKEN pasted in via --token (get it from Meta Events
- * Manager → Settings → Conversions API, or your password manager if you
- * generated it there) — `wrangler secret put` values cannot be read back,
- * only replaced, so a mismatch can only be confirmed against the real value.
+ * Prefer the env var over --token: shell history and `ps` both expose CLI
+ * arguments to anyone else on the machine, so `export META_CAPI_ACCESS_TOKEN=...`
+ * (or `.dev.vars`/`.env.local` for a local-only value) is safer than passing the
+ * token as an argument. --token is still supported for one-off copy/paste checks,
+ * but prints a warning when used.
+ *
+ * Precedence for pixel id / token (highest wins): 1. --pixel-id / --token CLI
+ * flags, 2. process.env, 3. .dev.vars, 4. .env.local. To check the values
+ * actually live on the Worker, run this with the *production*
+ * META_CAPI_ACCESS_TOKEN (get it from Meta Events Manager → Settings →
+ * Conversions API, or your password manager if you generated it there) —
+ * `wrangler secret put` values cannot be read back, only replaced, so a
+ * mismatch can only be confirmed against the real deployed value.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -48,6 +54,8 @@ function parseEnvFile(filePath) {
   return parsed;
 }
 
+// Precedence low -> high: .env.local, then .dev.vars, then process.env (each
+// spread overrides the previous). getArg() in main() then outranks all three.
 function loadLocalEnv() {
   return {
     ...parseEnvFile(resolve(repoRoot, '.env.local')),
@@ -84,12 +92,42 @@ async function graphGet(path, params) {
   return { status: res.status, ok: res.ok, body };
 }
 
+/**
+ * Classifies a failed Graph API call so the final verdict doesn't lump
+ * transient errors (rate limits, Meta-side 5xx) or plain payload mistakes in
+ * with an actual credentials/permission mismatch.
+ *
+ * - "mismatch"      — OAuthException, or a permission/object-visibility error
+ *                      (codes 10/100/200) — the classic "token can't see this
+ *                      pixel" shape.
+ * - "indeterminate" — 429 (rate limited) or 5xx (Meta-side issue) — re-run
+ *                      later, this run proves nothing either way.
+ * - "unknown"       — anything else (e.g. a malformed request) — don't claim
+ *                      it's a credentials problem.
+ */
+function classifyGraphFailure(status, errorObj) {
+  const code = errorObj?.code;
+  const type = errorObj?.type;
+  if (type === 'OAuthException' || [10, 100, 200].includes(code)) return 'mismatch';
+  if (status === 429 || status >= 500) return 'indeterminate';
+  return 'unknown';
+}
+
 async function main() {
   const env = loadLocalEnv();
   const pixelId = getArg('pixel-id') ?? env.NEXT_PUBLIC_META_PIXEL_ID;
-  const token = getArg('token') ?? env.META_CAPI_ACCESS_TOKEN;
+  const tokenFromArg = getArg('token');
+  const token = tokenFromArg ?? env.META_CAPI_ACCESS_TOKEN;
   const testEventCode = getArg('test-event-code') ?? env.META_TEST_EVENT_CODE;
   const send = hasFlag('send');
+
+  if (tokenFromArg) {
+    console.log(
+      'WARNING: --token was passed on the command line. That value is visible in shell history and to ' +
+        'anyone who can run `ps` on this machine while the script runs. Prefer `export META_CAPI_ACCESS_TOKEN=...` ' +
+        '(or .dev.vars for a local-only value) instead.\n',
+    );
+  }
 
   console.log('Meta CAPI credentials check');
   console.log('============================');
@@ -100,21 +138,30 @@ async function main() {
   if (!pixelId) throw new Error('No pixel id. Pass --pixel-id or set NEXT_PUBLIC_META_PIXEL_ID.');
   if (!token) {
     throw new Error(
-      'No access token. Pass --token <value> with the token you set via `wrangler secret put META_CAPI_ACCESS_TOKEN` ' +
-        '(that command cannot read the value back, so it must come from wherever you generated/stored it — ' +
-        'Meta Events Manager → Settings → Conversions API → generate access token, or your password manager).',
+      'No access token. Set the META_CAPI_ACCESS_TOKEN env var (preferred) or pass --token <value>, using the ' +
+        'token you set via `wrangler secret put META_CAPI_ACCESS_TOKEN` (that command cannot read the value back, ' +
+        'so it must come from wherever you generated/stored it — Meta Events Manager → Settings → Conversions API ' +
+        '→ generate access token, or your password manager).',
     );
   }
 
-  let verdictMismatch = false;
   let verdictInvalidToken = false;
+  let verdictMismatch = false;
+  let verdictIndeterminate = false;
+  let verdictPayloadError = false;
 
   // Step 1: what is this token, and what can it see?
   console.log('1. debug_token — what app/pixel(s) is this token actually scoped to?');
   const debug = await graphGet('debug_token', { input_token: token, access_token: token });
   if (!debug.ok) {
-    verdictInvalidToken = true;
-    console.log(`   HTTP ${debug.status} — token itself is rejected:`);
+    const kind = classifyGraphFailure(debug.status, debug.body.error);
+    if (kind === 'indeterminate') {
+      verdictIndeterminate = true;
+      console.log(`   HTTP ${debug.status} — Meta-side/rate-limit issue, not conclusive:`);
+    } else {
+      verdictInvalidToken = true;
+      console.log(`   HTTP ${debug.status} — token itself is rejected:`);
+    }
     console.log('  ', JSON.stringify(debug.body.error ?? debug.body, null, 2).split('\n').join('\n   '));
   } else {
     const data = debug.body.data ?? {};
@@ -145,8 +192,16 @@ async function main() {
   if (pixelInfo.ok) {
     console.log(`   OK — token can read pixel: ${JSON.stringify(pixelInfo.body)}`);
   } else {
-    verdictMismatch = true;
-    console.log(`   HTTP ${pixelInfo.status} — token cannot read this pixel:`);
+    const kind = classifyGraphFailure(pixelInfo.status, pixelInfo.body.error);
+    if (kind === 'mismatch') {
+      verdictMismatch = true;
+      console.log(`   HTTP ${pixelInfo.status} — token cannot read this pixel (looks like a credentials/permission mismatch):`);
+    } else if (kind === 'indeterminate') {
+      verdictIndeterminate = true;
+      console.log(`   HTTP ${pixelInfo.status} — Meta-side/rate-limit issue, not conclusive:`);
+    } else {
+      console.log(`   HTTP ${pixelInfo.status} — failed, but not clearly a credentials issue:`);
+    }
     console.log('  ', JSON.stringify(pixelInfo.body.error ?? pixelInfo.body, null, 2).split('\n').join('\n   '));
   }
   console.log('');
@@ -179,7 +234,12 @@ async function main() {
       const body = await res.json().catch(() => ({}));
       console.log(`   HTTP ${res.status}`);
       console.log('  ', JSON.stringify(body, null, 2).split('\n').join('\n   '));
-      if (!res.ok) verdictMismatch = verdictMismatch || res.status === 400;
+      if (!res.ok) {
+        const kind = classifyGraphFailure(res.status, body.error);
+        if (kind === 'mismatch') verdictMismatch = true;
+        else if (kind === 'indeterminate') verdictIndeterminate = true;
+        else verdictPayloadError = true;
+      }
     }
     console.log('');
   }
@@ -196,6 +256,14 @@ async function main() {
     console.log(`id ${pixelId}, go to Settings -> Conversions API -> generate a token scoped to THIS pixel,`);
     console.log('then `npx wrangler secret put META_CAPI_ACCESS_TOKEN` with the new value.');
     console.log('Also double-check NEXT_PUBLIC_META_PIXEL_ID in the Workers Build config matches this pixel id.');
+  } else if (verdictPayloadError) {
+    console.log('The token/pixel pair looks fine (steps 1-2 passed) — the failure in step 3 was Meta rejecting');
+    console.log('the *event payload* itself, not the credentials. Check the error message/code printed above');
+    console.log('against the fields sent by src/lib/marketing/conversions.ts (currency, value, contents, etc.),');
+    console.log('not the token or pixel id.');
+  } else if (verdictIndeterminate) {
+    console.log('Meta returned a rate-limit or server-side error during this check — inconclusive either way.');
+    console.log('Wait a bit and re-run before concluding there is (or isn\u2019t) a credentials mismatch.');
   } else {
     console.log('No mismatch detected between this token and this pixel id.');
     console.log('If production is still failing, re-run this script with the exact token/pixel-id');

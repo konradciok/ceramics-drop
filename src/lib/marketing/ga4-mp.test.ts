@@ -43,4 +43,10 @@ describe('sendGa4Purchase', () => {
     expect(url).toContain('api_secret=S');
     expect(init.method).toBe('POST');
   });
+
+  it('captures the response body on a non-ok response', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => '{"error":"forbidden"}' });
+    const res = await sendGa4Purchase({ measurementId: 'G-X', apiSecret: 'S' }, input(), fetchImpl);
+    expect(res).toEqual({ ok: false, status: 403, errorBody: '{"error":"forbidden"}' });
+  });
 });

@@ -134,35 +134,78 @@ describe('sendPurchaseConversions', () => {
   it('logs and captures to Sentry when Meta returns a non-ok HTTP response, still calls GA4', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(Sentry.captureMessage).mockClear();
+    const errorBody = '{"error":{"message":"Invalid OAuth access token","type":"OAuthException","code":190,"error_subcode":460,"fbtrace_id":"AbCdEf111"}}';
     const d = deps({
-      sendMeta: vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        errorBody: '{"error":{"message":"Invalid OAuth access token","code":190}}',
-      }),
+      sendMeta: vi.fn().mockResolvedValue({ ok: false, status: 400, errorBody }),
     });
     await sendPurchaseConversions('pi_1', d);
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('meta capi purchase http error'),
       'pi_1',
       400,
-      '{"error":{"message":"Invalid OAuth access token","code":190}}',
+      errorBody,
     );
-    // Fingerprinted on status + response body (not the payment_intent_id) so every
-    // failing order groups into one Sentry issue instead of one per order.
+    // Fingerprinted on the *parsed*, stable error fields (type/code/subcode) — not the
+    // raw body (which carries a unique-per-request fbtrace_id) and not payment_intent_id
+    // — so every failing order groups into one Sentry issue instead of one per order.
+    // response_body is still kept in `extra` (full context) for manual debugging.
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      expect.stringContaining('meta capi purchase http error 400'),
+      expect.stringContaining('meta capi purchase http error 400 (OAuthException)'),
       expect.objectContaining({
         level: 'error',
-        fingerprint: [
-          'meta-capi-purchase-http-error',
-          '400',
-          '{"error":{"message":"Invalid OAuth access token","code":190}}',
-        ],
-        extra: expect.objectContaining({ payment_intent_id: 'pi_1', status: 400 }),
+        fingerprint: ['meta-capi-purchase-http-error', '400', 'OAuthException', '190', '460'],
+        extra: expect.objectContaining({
+          payment_intent_id: 'pi_1',
+          status: 400,
+          response_body: errorBody,
+          meta_error_type: 'OAuthException',
+          meta_error_code: 190,
+          meta_error_subcode: 460,
+        }),
       }),
     );
     expect(d.sendGa4).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it('groups two Meta failures with different fbtrace_id into the same Sentry fingerprint', async () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const bodyFor = (fbtraceId: string) =>
+      `{"error":{"message":"Invalid OAuth access token","type":"OAuthException","code":190,"error_subcode":460,"fbtrace_id":"${fbtraceId}"}}`;
+
+    const d1 = deps({ sendMeta: vi.fn().mockResolvedValue({ ok: false, status: 400, errorBody: bodyFor('trace-one') }) });
+    await sendPurchaseConversions('pi_1', d1);
+    const d2 = deps({ sendMeta: vi.fn().mockResolvedValue({ ok: false, status: 400, errorBody: bodyFor('trace-two') }) });
+    await sendPurchaseConversions('pi_2', d2);
+
+    const [, firstOptions] = vi.mocked(Sentry.captureMessage).mock.calls[0];
+    const [, secondOptions] = vi.mocked(Sentry.captureMessage).mock.calls[1];
+    expect((firstOptions as { fingerprint: string[] }).fingerprint).toEqual(
+      (secondOptions as { fingerprint: string[] }).fingerprint,
+    );
+  });
+
+  it('logs and captures to Sentry when GA4 MP returns a non-ok HTTP response (not a skip)', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const d = deps({
+      sendGa4: vi.fn().mockResolvedValue({ ok: false, status: 403, errorBody: '{"error":"forbidden"}' }),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ga4 mp purchase http error'),
+      'pi_1',
+      403,
+      '{"error":"forbidden"}',
+    );
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('ga4 mp purchase http error 403'),
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: ['ga4-mp-purchase-http-error', '403', '{"error":"forbidden"}'],
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1', status: 403, response_body: '{"error":"forbidden"}' }),
+      }),
+    );
     consoleSpy.mockRestore();
   });
 
