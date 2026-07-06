@@ -4,7 +4,7 @@ import { getPrintById } from '../prints';
 import { variantLabel } from '../print-cart';
 import { toAnalyticsItem } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
-import { sendMetaPurchase, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
+import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, type Ga4Config, type Ga4PurchaseInput } from './ga4-mp';
 import type { MarketingContext } from './context';
 import type { DeliveryAddress } from '../shipx';
@@ -131,8 +131,30 @@ export async function sendPurchaseConversions(
     try {
       const result = await sendMeta(deps.metaConfig, metaInput);
       if (!result.ok) {
-        console.error('meta capi purchase http error for', paymentIntentId, result.status);
-        Sentry.captureMessage(`meta capi purchase http error ${result.status} for ${paymentIntentId}`);
+        console.error('meta capi purchase http error for', paymentIntentId, result.status, result.errorBody);
+        // Fingerprint on the *parsed*, stable error fields (type/code/subcode) — not the
+        // raw errorBody or payment_intent_id. Meta's error body always includes a
+        // per-request `fbtrace_id`, so fingerprinting on the raw string would still split
+        // every failing order into its own issue, defeating the point of this fingerprint.
+        const metaError = parseMetaCapiErrorBody(result.errorBody);
+        Sentry.captureMessage(`meta capi purchase http error ${result.status}${metaError.type ? ` (${metaError.type})` : ''}`, {
+          level: 'error',
+          fingerprint: [
+            'meta-capi-purchase-http-error',
+            String(result.status),
+            metaError.type ?? '',
+            String(metaError.code ?? ''),
+            String(metaError.errorSubcode ?? ''),
+          ],
+          extra: {
+            payment_intent_id: paymentIntentId,
+            status: result.status,
+            response_body: result.errorBody,
+            meta_error_type: metaError.type,
+            meta_error_code: metaError.code,
+            meta_error_subcode: metaError.errorSubcode,
+          },
+        });
       }
     } catch (err) {
       console.error('meta capi purchase failed for', paymentIntentId, err);
@@ -159,8 +181,15 @@ export async function sendPurchaseConversions(
           },
         });
       } else if (!result.ok) {
-        console.error('ga4 mp purchase http error for', paymentIntentId, result.status);
-        Sentry.captureMessage(`ga4 mp purchase http error ${result.status} for ${paymentIntentId}`);
+        console.error('ga4 mp purchase http error for', paymentIntentId, result.status, result.errorBody);
+        // Same grouping fix as the Meta branch above: fingerprint on status + body
+        // (stable across orders — GA4 MP errors don't embed a per-request trace id)
+        // instead of interpolating payment_intent_id into the message.
+        Sentry.captureMessage(`ga4 mp purchase http error ${result.status}`, {
+          level: 'error',
+          fingerprint: ['ga4-mp-purchase-http-error', String(result.status), result.errorBody ?? ''],
+          extra: { payment_intent_id: paymentIntentId, status: result.status, response_body: result.errorBody },
+        });
       }
     } catch (err) {
       console.error('ga4 mp purchase failed for', paymentIntentId, err);
