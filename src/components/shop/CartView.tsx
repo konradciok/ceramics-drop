@@ -108,6 +108,22 @@ const stripePromise = getStripe();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Stable id for one checkout attempt, sent to /api/checkout so a retried POST
+// (network retry, second tab sharing the same localStorage cart) re-enters
+// its own reservation/PaymentIntent instead of 409-ing itself. Persisted
+// alongside the cart (acc_cart_v1) so it survives a page reload of the same
+// attempt; reset whenever the cart contents change or a checkout succeeds.
+const ATTEMPT_ID_KEY = 'acc_checkout_attempt_v1';
+
+function readOrCreateAttemptId(): string {
+  if (typeof window === 'undefined') return '';
+  const saved = localStorage.getItem(ATTEMPT_ID_KEY);
+  if (saved) return saved;
+  const id = crypto.randomUUID();
+  localStorage.setItem(ATTEMPT_ID_KEY, id);
+  return id;
+}
+
 export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
   const t = useTranslations();
   const locale = useLocale();
@@ -154,6 +170,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
@@ -226,6 +243,18 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     .map((code) => ({ code, name: regionNames.of(code) ?? code }))
     .sort((a, b) => a.name.localeCompare(b.name, locale));
   const cartKey = lines.map((l) => l.id).join('|');
+
+  // The cart changing (add/remove) means this is a different purchase intent
+  // than whatever was persisted — regenerate so a stale attemptId is never
+  // reused across unrelated carts. Skips the initial mount (same attempt).
+  const attemptCartKey = useRef(cartKey);
+  useEffect(() => {
+    if (attemptCartKey.current === cartKey) return;
+    attemptCartKey.current = cartKey;
+    const id = crypto.randomUUID();
+    localStorage.setItem(ATTEMPT_ID_KEY, id);
+    setAttemptId(id);
+  }, [cartKey]);
 
   useEffect(() => {
     if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
@@ -309,7 +338,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
       if (res.status === 409) {
         const { sold } = (await res.json()) as { sold: string[] };
@@ -340,6 +369,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
       });
+      // A later, separate purchase must never reuse this attemptId.
+      const nextAttemptId = crypto.randomUUID();
+      localStorage.setItem(ATTEMPT_ID_KEY, nextAttemptId);
+      setAttemptId(nextAttemptId);
       setClientSecret(client_secret);
     } catch {
       pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));

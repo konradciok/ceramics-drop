@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const reserveRpc = vi.fn(async () => ({ data: [], error: null }));
-const releaseHold = vi.fn(async () => ({ error: null }));
-const insertOrders = vi.fn(async () => ({ error: null }));
-const insertOrderItems = vi.fn(async () => ({ error: null }));
+type PgError = { code: string; message: string } | null;
+
+const reserveRpc = vi.fn<
+  (fn: string, params: Record<string, unknown>) => Promise<{ data: string[]; error: PgError }>
+>(async () => ({ data: [], error: null }));
+const releaseHold = vi.fn(async () => ({ error: null as PgError }));
+const insertOrders = vi.fn(async () => ({ error: null as PgError }));
+const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
+const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
   id: 'pi_test',
   client_secret: 'cs_test',
 }));
+const cancelPaymentIntent = vi.fn(async () => ({}));
 const validateCart = vi.fn(() => ({
   ok: true as const,
   items: [{ product_id: 'k01', unit_price: 9_000 }],
@@ -34,7 +40,7 @@ vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
     paymentIntents: {
       create: createPaymentIntent,
-      cancel: vi.fn(),
+      cancel: cancelPaymentIntent,
     },
   }),
 }));
@@ -43,9 +49,14 @@ vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: () => ({
     rpc: reserveRpc,
     from: (table: string) => {
-      if (table === 'orders') return { insert: insertOrders };
+      if (table === 'orders') {
+        return {
+          insert: insertOrders,
+          select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
+        };
+      }
       if (table === 'order_items') return { insert: insertOrderItems };
-      if (table === 'piece_state') return { update: releaseHold };
+      if (table === 'piece_state') return { update: () => ({ eq: releaseHold }) };
       throw new Error(`Unexpected table: ${table}`);
     },
   }),
@@ -173,6 +184,7 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(200);
     expect(createPaymentIntent).toHaveBeenCalledWith(
       expect.objectContaining({ currency: 'eur' }),
+      expect.anything(),
     );
   });
 
@@ -192,6 +204,7 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(200);
     expect(createPaymentIntent).toHaveBeenCalledWith(
       expect.objectContaining({ currency: 'pln' }),
+      expect.anything(),
     );
   });
 
@@ -213,6 +226,137 @@ describe('POST /api/checkout', () => {
       expect.objectContaining({
         payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
       }),
+      expect.anything(),
     );
+  });
+
+  const VALID_ATTEMPT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+  const makeCheckoutBody = (overrides: Record<string, unknown> = {}) => ({
+    ids: ['k01'],
+    locale: 'pl',
+    delivery_method: 'odbior',
+    contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+    ...overrides,
+  });
+
+  it('passes a Stripe idempotency key derived from the supplied attemptId', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.anything(),
+      { idempotencyKey: `pi_create_${VALID_ATTEMPT_ID}` },
+    );
+  });
+
+  it('uses a valid supplied attemptId as the order id (reserve RPC + orders insert)', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(reserveRpc).toHaveBeenCalledWith(
+      'reserve_pieces',
+      expect.objectContaining({ p_order_id: VALID_ATTEMPT_ID }),
+    );
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({ id: VALID_ATTEMPT_ID }),
+    );
+  });
+
+  it('falls back to a server-generated order id when attemptId is absent or malformed (no 400)', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: 'not-a-uuid' })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const [, rpcArgs] = reserveRpc.mock.calls[0];
+    expect(rpcArgs.p_order_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    expect(rpcArgs.p_order_id).not.toBe('not-a-uuid');
+  });
+
+  it('replays a duplicate-key orders insert (23505) as a success: same client_secret, no cancel, no release', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+    expect(insertOrderItems).not.toHaveBeenCalled();
+  });
+
+  it('rejects a replay whose existing order is no longer pending (already paid/expired)', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'paid' }, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'order_conflict' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('rolls back (cancels PI + releases pieces) on a genuine, non-23505 orders-insert failure', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23000', message: 'other failure' } });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'order_persist_failed' });
+    expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+    expect(releaseHold).toHaveBeenCalled();
+  });
+
+  it('logs (does not throw) when the rollback PI cancel itself fails', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23000', message: 'other failure' } });
+    cancelPaymentIntent.mockRejectedValueOnce(new Error('stripe down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { POST } = await import('./route');
+      const req = new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(500);
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        'pi_test',
+        expect.any(Error),
+      );
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });
