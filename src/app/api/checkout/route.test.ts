@@ -5,7 +5,11 @@ type PgError = { code: string; message: string } | null;
 const reserveRpc = vi.fn<
   (fn: string, params: Record<string, unknown>) => Promise<{ data: string[]; error: PgError }>
 >(async () => ({ data: [], error: null }));
-const releaseHold = vi.fn(async () => ({ error: null as PgError }));
+// Terminal call of the status-scoped release chain:
+// .update(...).eq('order_id', id).eq('status', 'reserved').select('product_id')
+const releaseHold = vi.fn<
+  (col1: string, val1: unknown, col2: string, val2: unknown) => Promise<{ data: unknown[]; error: PgError }>
+>(async () => ({ data: [], error: null }));
 const insertOrders = vi.fn(async () => ({ error: null as PgError }));
 const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
 const updateOrderStatus = vi.fn<
@@ -62,7 +66,17 @@ vi.mock('@/lib/supabase', () => ({
         };
       }
       if (table === 'order_items') return { insert: insertOrderItems };
-      if (table === 'piece_state') return { update: () => ({ eq: releaseHold }) };
+      if (table === 'piece_state') {
+        return {
+          update: () => ({
+            eq: (col1: string, val1: unknown) => ({
+              eq: (col2: string, val2: unknown) => ({
+                select: () => releaseHold(col1, val1, col2, val2),
+              }),
+            }),
+          }),
+        };
+      }
       throw new Error(`Unexpected table: ${table}`);
     },
   }),
@@ -312,9 +326,9 @@ describe('POST /api/checkout', () => {
     expect(insertOrderItems).not.toHaveBeenCalled();
   });
 
-  it('rejects a replay whose existing order is no longer pending (already paid/expired)', async () => {
+  it('rejects a replay of a non-pending order with 409 AND frees the hold its own reserve call took', async () => {
     insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
-    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'paid' }, error: null });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'expired' }, error: null });
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {
       method: 'POST',
@@ -325,6 +339,42 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: 'order_conflict' });
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    // This request re-reserved the pieces before hitting the conflict; leaving
+    // that 15-min hold live would make the buyer's next (fresh-attemptId) click
+    // collide with it — 409 unavailable, cart wiped. Release it, status-scoped
+    // so rows a paid order already flipped to 'sold' are never touched.
+    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+  });
+
+  it('releases the hold and responds 502 when Stripe PI creation fails', async () => {
+    createPaymentIntent.mockRejectedValueOnce(new Error('stripe down'));
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'stripe_failed' });
+    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+  });
+
+  it('does NOT release the hold when Stripe rejects with idempotency_key_in_use (a concurrent same-attempt POST owns it)', async () => {
+    createPaymentIntent.mockRejectedValueOnce(
+      Object.assign(new Error('idempotency key in use'), { code: 'idempotency_key_in_use' }),
+    );
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'stripe_failed' });
+    // The winning tab's checkout is mid-flight on this same hold — releasing it
+    // here would relist pieces its buyer is about to pay for (double-sell).
     expect(releaseHold).not.toHaveBeenCalled();
   });
 

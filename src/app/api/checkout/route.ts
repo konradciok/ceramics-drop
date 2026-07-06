@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
-import { releaseTargetStatus } from '@/lib/piece-release';
+import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toEuroCents, toGBPPence, toGrosze } from '@/lib/pricing';
 import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
@@ -126,6 +126,15 @@ export async function POST(req: Request) {
   const privateSaleToken = normalizeToken(body.private_sale_token);
   let privateSaleId: string | null = null;
 
+  // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
+  // is status-scoped (only rows still `reserved` for this order id), so rows a
+  // paid order already flipped to `sold` are never touched; private-sale holds
+  // return to `sold`, normal holds to `available`. Release failures are logged,
+  // not thrown — the response the caller is about to send must still go out.
+  const releaseOwnHold = () =>
+    releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId })
+      .catch((err) => console.error('checkout: failed to release hold for order', orderId, err));
+
   // Reserve atomically BEFORE creating the PaymentIntent.
   if (privateSaleToken) {
     const sale = await loadActivePrivateSale(supabase, privateSaleToken);
@@ -180,12 +189,19 @@ export async function POST(req: Request) {
       // of creating a new one, so a retried POST replays onto the original PI.
       { idempotencyKey: `pi_create_${orderId}` },
     );
-  } catch {
+  } catch (err) {
+    const stripeCode =
+      (err as { code?: string } | null)?.code ??
+      (err as { raw?: { code?: string } } | null)?.raw?.code;
+    if (stripeCode === 'idempotency_key_in_use') {
+      // A concurrent POST with this same attemptId is mid-flight: it owns the
+      // shared hold and is about to hand its buyer a payable client_secret.
+      // Releasing here would relist those pieces under a live payment — a
+      // double-sell window. Fail this duplicate quietly and leave the hold.
+      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    }
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
-    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
-    await supabase.from('piece_state')
-      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
-      .eq('order_id', orderId);
+    await releaseOwnHold();
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
 
@@ -249,7 +265,12 @@ export async function POST(req: Request) {
       replay = true;
     } else {
       // The attemptId was already consumed by a different outcome (paid,
-      // expired, ...) — not a valid replay of a live checkout.
+      // expired, ...) — not a valid replay of a live checkout. But THIS
+      // request's reserve call above re-took a 15-min hold under that stale
+      // order id; left in place it would 409 the buyer's next (fresh-attemptId)
+      // click against their own orphaned hold. Free it — status-scoped, so a
+      // paid order's `sold` pieces are untouched.
+      await releaseOwnHold();
       return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
     }
   }
@@ -281,10 +302,7 @@ export async function POST(req: Request) {
       // client_secret. Mark it failed so a retry lands in order_conflict.
       await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
     }
-    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
-    await supabase.from('piece_state')
-      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
-      .eq('order_id', orderId);
+    await releaseOwnHold();
     return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
   }
 
