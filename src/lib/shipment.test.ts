@@ -309,6 +309,7 @@ describe('createOrderShipment', () => {
       expect(warning).toContain('88'); // orphan
       // Orphans need a manual ShipX cancel — the warning must also reach Sentry.
       expect(Sentry.captureMessage).toHaveBeenCalledWith('shipx_orphaned_shipments', {
+        level: 'warning',
         extra: { orderId: 'ord-1', adopted: '55', orphaned: ['88', '77'] }, // created_at order
       });
 

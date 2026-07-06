@@ -47,7 +47,7 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 | `parcel_locker_point_selected` | buyer completes InPost locker selection in the Geowidget | `locker_name` |
 | `sold_item_view` | buyer clicks an already-sold tile (demand signal for drops) | `item_id`, `item_name`, `item_category`, `price` |
 | `shop_filter` | buyer narrows the shop view via the status filter (sold/available) | `filter_status` (`all` \| `available` \| `sold`) |
-| `checkout_error` | pre-payment `/api/checkout` failure | `reason` (`sold_out` \| `rate_limited` \| `checkout_failed` \| `network_error` \| `order_conflict` \| `checkout_in_progress`), `status`, `sold_count` |
+| `checkout_error` | pre-payment `/api/checkout` failure | `reason` (`sold_out` \| `rate_limited` \| `checkout_failed` \| `network_error` \| `response_parse_error` \| `order_conflict` \| `checkout_in_progress`), `status`, `sold_count` |
 | `payment_failed` | Stripe PaymentIntent failed/canceled on `/koszyk/return` | `status` (PaymentIntent status; the PI id is never sent). Deduped once per PaymentIntent via `pushPaymentFailedOnce` so refresh / Strict-Mode double-mount doesn't inflate counts. The `status` param preserves granularity (e.g. `canceled` vs. `requires_payment_method`). |
 
 GA4 ecommerce payloads use:

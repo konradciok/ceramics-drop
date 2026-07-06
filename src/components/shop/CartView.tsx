@@ -425,7 +425,14 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       // converges on retry while a wrong reset wipes the cart against the
       // buyer's own live hold. A pure network error also keeps it — see above.
       if (gotResponse && !resOk && resStatus !== 409) resetAttemptId();
-      pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
+      // Received-but-unprocessable responses are not network errors — report
+      // the real status so analytics can tell a parse failure from an outage.
+      pushDataLayer(buildEngagementEvent(
+        'checkout_error',
+        gotResponse
+          ? { reason: 'response_parse_error', status: resStatus }
+          : { reason: 'network_error', status: 0 },
+      ));
       setCheckoutError(t('cart.checkoutError'));
     } finally {
       setSubmitting(false);

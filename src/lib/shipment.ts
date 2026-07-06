@@ -106,6 +106,7 @@ function pickOldestShipment(shipments: ShipxShipment[], orderId: string): ShipxS
     // The orphans need a manual ShipX cancel — a console.warn alone is invisible
     // operationally, so surface it (constant message → one grouped Sentry issue).
     Sentry.captureMessage('shipx_orphaned_shipments', {
+      level: 'warning',
       extra: { orderId, adopted: String(sorted[0].id), orphaned: orphanIds.map(String) },
     });
   }
