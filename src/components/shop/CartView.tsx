@@ -338,6 +338,13 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
     });
+    // Tracks whether the server actually answered. On any received failure the
+    // attemptId must be abandoned (Stripe caches the FIRST response — even an
+    // error — per idempotency key for ~24h, so retrying the same key would just
+    // replay the failure). But when NO response arrived, the POST may have gone
+    // through server-side, and keeping the attemptId is what lets the next
+    // click replay onto its own reservation instead of 409-ing it.
+    let gotResponse = false;
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -346,6 +353,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         // (validateCart) resolves and prices both.
         body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
+      gotResponse = true;
       if (res.status === 409) {
         const conflict = (await res.json()) as { error?: string; sold?: string[] };
         if (conflict.error === 'order_conflict') {
@@ -366,11 +374,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       if (res.status === 429) {
         // Too many checkout attempts — show a wait-and-retry message rather than
         // the generic "payment failed", which would invite rapid retries.
+        // Keep the attemptId: the limiter rejects before any reserve/Stripe
+        // work, so the idempotency key is untouched and still good.
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited', status: 429 }));
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
       if (!res.ok) {
+        // Abandon the attemptId: Stripe may have cached this failure under its
+        // idempotency key, and the server already released any hold it took —
+        // a fresh attempt is the only path that can succeed.
+        resetAttemptId();
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
         setCheckoutError(t('cart.checkoutError'));
         return;
@@ -389,6 +403,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       resetAttemptId();
       setClientSecret(client_secret);
     } catch {
+      // A response we failed to process is a received failure → fresh attempt.
+      // A pure network error (nothing received) keeps the attemptId — see above.
+      if (gotResponse) resetAttemptId();
       pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
       setCheckoutError(t('cart.checkoutError'));
     } finally {
