@@ -97,9 +97,14 @@ async function graphGet(path, params) {
  * transient errors (rate limits, Meta-side 5xx) or plain payload mistakes in
  * with an actual credentials/permission mismatch.
  *
- * - "mismatch"      — OAuthException, or a permission/object-visibility error
- *                      (codes 10/100/200) — the classic "token can't see this
- *                      pixel" shape.
+ * - "mismatch"      — OAuthException (codes 10/190/200/...), or the classic
+ *                      GraphMethodException/code 100 "object does not exist /
+ *                      missing permission" shape — the "token can't see this
+ *                      pixel" case. Code 100 is Meta's generic invalid-parameter
+ *                      error and is *also* used for unrelated malformed
+ *                      requests, so it's only treated as a mismatch when the
+ *                      message matches that specific shape (see below) — a
+ *                      bare `code === 100` is NOT sufficient on its own.
  * - "indeterminate" — 429 (rate limited) or 5xx (Meta-side issue) — re-run
  *                      later, this run proves nothing either way.
  * - "unknown"       — anything else (e.g. a malformed request) — don't claim
@@ -108,7 +113,11 @@ async function graphGet(path, params) {
 function classifyGraphFailure(status, errorObj) {
   const code = errorObj?.code;
   const type = errorObj?.type;
-  if (type === 'OAuthException' || [10, 100, 200].includes(code)) return 'mismatch';
+  const message = String(errorObj?.message ?? '');
+  if (type === 'OAuthException') return 'mismatch';
+  if (type === 'GraphMethodException' && code === 100 && /does not exist|missing permission/i.test(message)) {
+    return 'mismatch';
+  }
   if (status === 429 || status >= 500) return 'indeterminate';
   return 'unknown';
 }
