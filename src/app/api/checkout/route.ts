@@ -135,6 +135,23 @@ export async function POST(req: Request) {
     releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId })
       .catch((err) => console.error('checkout: failed to release hold for order', orderId, err));
 
+  // Reads this attempt's order status. `lookupFailed` means the state is
+  // UNKNOWN — a live checkout may own this attempt's hold, so the caller must
+  // answer 409 checkout_in_progress (client keeps the attemptId and retries)
+  // and must NOT release the hold or cancel any PaymentIntent on a guess.
+  const readAttemptStatus = async (context: string) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (error) console.error(`checkout: order status lookup failed ${context}`, orderId, error);
+    return {
+      status: (data as { status: string } | null)?.status ?? null,
+      lookupFailed: Boolean(error),
+    };
+  };
+
   // Reserve atomically BEFORE creating the PaymentIntent.
   if (privateSaleToken) {
     const sale = await loadActivePrivateSale(supabase, privateSaleToken);
@@ -197,8 +214,10 @@ export async function POST(req: Request) {
       // A concurrent POST with this same attemptId is mid-flight: it owns the
       // shared hold and is about to hand its buyer a payable client_secret.
       // Releasing here would relist those pieces under a live payment — a
-      // double-sell window. Fail this duplicate quietly and leave the hold.
-      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+      // double-sell window. Report in-progress (409) so the client KEEPS its
+      // attemptId; a retry click then replays onto the winner's order/PI
+      // instead of starting a fresh attempt that 409s against its own hold.
+      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
     }
     const stripeErrType =
       (err as { type?: string } | null)?.type ??
@@ -209,12 +228,11 @@ export async function POST(req: Request) {
       // case above. Whether releasing is safe depends on whether THIS attempt
       // still owns a live checkout: check for a pending orders row before
       // deciding.
-      const { data: existingOrder } = await supabase
-        .from('orders')
-        .select('status')
-        .eq('id', orderId)
-        .maybeSingle();
-      if (existingOrder?.status === 'pending') {
+      const { status, lookupFailed } = await readAttemptStatus('after idempotency_error');
+      if (lookupFailed) {
+        return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+      }
+      if (status === 'pending') {
         // A live checkout for this attemptId already owns the hold (and
         // possibly a client_secret in flight) — releasing would double-sell.
         // Ask the client to reset its attemptId instead.
@@ -281,12 +299,14 @@ export async function POST(req: Request) {
   // pieces the buyer is mid-payment on).
   let replay = false;
   if (orderErr?.code === PG_UNIQUE_VIOLATION) {
-    const { data: existingOrder } = await supabase
-      .from('orders')
-      .select('status')
-      .eq('id', orderId)
-      .maybeSingle();
-    if (existingOrder?.status === 'pending') {
+    // Can't tell a live replay from a stale attemptId without the status. The
+    // PI above is the SAME live PI if this is a replay (idempotent create), so
+    // on a failed lookup canceling or releasing could kill a payment mid-flight.
+    const { status, lookupFailed } = await readAttemptStatus('on duplicate insert');
+    if (lookupFailed) {
+      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+    }
+    if (status === 'pending') {
       replay = true;
     } else {
       // The attemptId was already consumed by a different outcome (paid,
@@ -349,22 +369,25 @@ export async function POST(req: Request) {
   // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
   // cart.checkout_started). Best-effort and non-blocking: waitUntil lets it finish
   // after the response so it adds no latency to the pay request, and any Resend
-  // failure is logged — never fails checkout.
-  try {
-    const { ctx } = getCloudflareContext();
-    ctx.waitUntil(
-      sendCheckoutStartedEvent({
-        orderId,
-        email: contact.email,
-        locale,
-        currency: chargeCurrency,
-        totalMinor: amount,
-        firstName: contact.first_name,
-        origin,
-      }).catch((err) => console.error('sendCheckoutStartedEvent failed for', orderId, err)),
-    );
-  } catch (err) {
-    console.error('sendCheckoutStartedEvent dispatch failed for', orderId, err);
+  // failure is logged — never fails checkout. Skipped on a replayed POST — the
+  // original POST already fired it for this order.
+  if (!replay) {
+    try {
+      const { ctx } = getCloudflareContext();
+      ctx.waitUntil(
+        sendCheckoutStartedEvent({
+          orderId,
+          email: contact.email,
+          locale,
+          currency: chargeCurrency,
+          totalMinor: amount,
+          firstName: contact.first_name,
+          origin,
+        }).catch((err) => console.error('sendCheckoutStartedEvent failed for', orderId, err)),
+      );
+    } catch (err) {
+      console.error('sendCheckoutStartedEvent dispatch failed for', orderId, err);
+    }
   }
 
   return NextResponse.json({ client_secret: paymentIntent.client_secret });

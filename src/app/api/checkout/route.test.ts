@@ -99,6 +99,13 @@ vi.mock('@/lib/pricing', () => ({
   orderAmountEuroCents,
 }));
 
+const sendCheckoutStartedEvent = vi.fn(async () => {});
+vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
+
+vi.mock('@opennextjs/cloudflare', () => ({
+  getCloudflareContext: () => ({ ctx: { waitUntil: (p: Promise<unknown>) => void p } }),
+}));
+
 describe('POST /api/checkout', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -388,7 +395,7 @@ describe('POST /api/checkout', () => {
     expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
   });
 
-  it('does NOT release the hold when Stripe rejects with idempotency_key_in_use (a concurrent same-attempt POST owns it)', async () => {
+  it('idempotency_key_in_use → 409 checkout_in_progress, hold NOT released (a concurrent same-attempt POST owns it)', async () => {
     createPaymentIntent.mockRejectedValueOnce(
       Object.assign(new Error('idempotency key in use'), { code: 'idempotency_key_in_use' }),
     );
@@ -399,8 +406,11 @@ describe('POST /api/checkout', () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: 'stripe_failed' });
+    // 409 checkout_in_progress (not 502 stripe_failed): the client keeps the
+    // attemptId, so a retry replays onto the winner's checkout instead of a
+    // fresh attempt that would 409-unavailable against its own live hold.
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
     // The winning tab's checkout is mid-flight on this same hold — releasing it
     // here would relist pieces its buyer is about to pay for (double-sell).
     expect(releaseHold).not.toHaveBeenCalled();
@@ -448,6 +458,81 @@ describe('POST /api/checkout', () => {
     // No live order for this attemptId — a prior attempt died before the
     // orders insert. Safe to release, same as the generic Stripe-failure path.
     expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+  });
+
+  it('idempotency_error + order status lookup FAILS → 409 checkout_in_progress, no release, no cancel', async () => {
+    createPaymentIntent.mockRejectedValueOnce(
+      Object.assign(new Error('Keys for idempotent requests can only be used with the same parameters'), {
+        type: 'idempotency_error',
+      }),
+    );
+    selectOrderStatus.mockResolvedValueOnce({ data: null, error: { code: 'XX000', message: 'db down' } });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { POST } = await import('./route');
+      const req = new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+
+      const res = await POST(req);
+      // A failed lookup must NOT be read as "no pending order": a live
+      // checkout may own this hold, so releasing (or canceling anything)
+      // on unknown state risks a double-sell. In-progress lets the client
+      // keep the attemptId and re-run the check on retry.
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(releaseHold).not.toHaveBeenCalled();
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it('duplicate-key insert (23505) + order status lookup FAILS → 409 checkout_in_progress, no release, no cancel', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: null, error: { code: 'XX000', message: 'db down' } });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { POST } = await import('./route');
+      const req = new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+
+      const res = await POST(req);
+      // If this is really a replay, the PI just created is the SAME live PI
+      // (idempotent create) — canceling it on a guessed state would kill a
+      // payment mid-flight, and releasing would relist held pieces.
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(releaseHold).not.toHaveBeenCalled();
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it('fires checkout_started exactly once for a fresh order, and NOT on a replayed POST', async () => {
+    const makeReq = () =>
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+    const { POST } = await import('./route');
+
+    // Fresh checkout → the abandoned-cart automation event fires.
+    const res1 = await POST(makeReq());
+    expect(res1.status).toBe(200);
+    expect(sendCheckoutStartedEvent).toHaveBeenCalledTimes(1);
+
+    // Replay of the same live attemptId (PK conflict, order still pending):
+    // same client_secret back, but the automation must NOT re-trigger.
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    const res2 = await POST(makeReq());
+    expect(res2.status).toBe(200);
+    expect(sendCheckoutStartedEvent).toHaveBeenCalledTimes(1);
   });
 
   it('rolls back (cancels PI + releases pieces) on a genuine, non-23505 orders-insert failure', async () => {

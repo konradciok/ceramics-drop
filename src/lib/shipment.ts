@@ -5,6 +5,7 @@
  * orchestration is unit-testable without the Workers env. The Stripe webhook
  * route wires the real Supabase + InPost implementations.
  */
+import * as Sentry from '@sentry/nextjs';
 import {
   buildShipmentPayload,
   buildDispatchOrderPayload,
@@ -102,6 +103,11 @@ function pickOldestShipment(shipments: ShipxShipment[], orderId: string): ShipxS
       `createOrderShipment: multiple ShipX shipments found for order ${orderId} reference — ` +
         `adopting oldest ${sorted[0].id}, leaving orphaned in ShipX: ${orphanIds.join(', ')}`,
     );
+    // The orphans need a manual ShipX cancel — a console.warn alone is invisible
+    // operationally, so surface it (constant message → one grouped Sentry issue).
+    Sentry.captureMessage('shipx_orphaned_shipments', {
+      extra: { orderId, adopted: String(sorted[0].id), orphaned: orphanIds.map(String) },
+    });
   }
   return sorted[0];
 }

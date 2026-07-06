@@ -345,6 +345,8 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     // through server-side, and keeping the attemptId is what lets the next
     // click replay onto its own reservation instead of 409-ing it.
     let gotResponse = false;
+    let resOk = false;
+    let resStatus = 0;
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -354,6 +356,8 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
       gotResponse = true;
+      resOk = res.ok;
+      resStatus = res.status;
       if (res.status === 409) {
         const conflict = (await res.json()) as { error?: string; sold?: string[] };
         if (conflict.error === 'order_conflict') {
@@ -362,6 +366,15 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           // the cart intact — nothing here is sold out.
           resetAttemptId();
           pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'order_conflict', status: 409 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
+        if (conflict.error === 'checkout_in_progress') {
+          // Another POST with this same attemptId is mid-flight (double-click,
+          // second tab) or its outcome couldn't be read. KEEP the attemptId —
+          // a retry click replays onto the winning checkout instead of starting
+          // a fresh attempt that would 409 against its own live hold.
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_in_progress', status: 409 }));
           setCheckoutError(t('cart.checkoutError'));
           return;
         }
@@ -403,9 +416,15 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       resetAttemptId();
       setClientSecret(client_secret);
     } catch {
-      // A response we failed to process is a received failure → fresh attempt.
-      // A pure network error (nothing received) keeps the attemptId — see above.
-      if (gotResponse) resetAttemptId();
+      // An ERROR response we failed to process is a received failure → fresh
+      // attempt (Stripe may have cached that failure under the key). But a 200
+      // whose body failed to process means the checkout SUCCEEDED server-side:
+      // keep the attemptId so the next click replays the same client_secret.
+      // A 409 whose body we couldn't read is also kept: it may have been
+      // checkout_in_progress/unavailable (keep-required), and a kept id
+      // converges on retry while a wrong reset wipes the cart against the
+      // buyer's own live hold. A pure network error also keeps it — see above.
+      if (gotResponse && !resOk && resStatus !== 409) resetAttemptId();
       pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
       setCheckoutError(t('cart.checkoutError'));
     } finally {

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
 import { createOrderShipment, buyShipmentWhenReady, type CreateShipmentDeps } from './shipment';
+
+vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn() }));
 import { ShipxApiError } from './shipx-errors';
 import type { OrderForShipment } from './shipx';
 import type { InPostClient } from './inpost';
@@ -304,6 +307,10 @@ describe('createOrderShipment', () => {
       expect(warning).toContain('55'); // adopted
       expect(warning).toContain('77'); // orphan
       expect(warning).toContain('88'); // orphan
+      // Orphans need a manual ShipX cancel — the warning must also reach Sentry.
+      expect(Sentry.captureMessage).toHaveBeenCalledWith('shipx_orphaned_shipments', {
+        extra: { orderId: 'ord-1', adopted: '55', orphaned: ['88', '77'] }, // created_at order
+      });
 
       warnSpy.mockRestore();
     });
