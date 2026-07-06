@@ -9,11 +9,11 @@
  *
  * `releaseTargetStatus` is the pure decision and is used at every release
  * call-site (webhook releaseHold / releaseSale / markPaid, worker cron
- * expireOrder, checkout rollback). `releaseReservedPieces` wraps the
- * reserved-hold *write*: today only the Stripe webhook `releaseHold` uses it,
- * and the local admin manual-release route will adopt it when that panel lands.
- * The other reserved-release call-sites (worker expireOrder, checkout rollback)
- * still inline the write for now.
+ * expireOrder, checkout error paths). `releaseReservedPieces` wraps the
+ * reserved-hold *write*: the Stripe webhook `releaseHold` and the checkout
+ * route's error paths (Stripe failure, order_conflict replay, order-persist
+ * rollback) use it; the local admin manual-release route will adopt it when
+ * that panel lands. The worker cron `expireOrder` still inlines the write.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,11 +29,13 @@ export function releaseTargetStatus(order: { private_sale_id?: string | null }):
  * Only rows still `status = 'reserved'` for this order are touched, so it is
  * idempotent — a second call after the hold is already gone returns `[]`.
  *
- * Used by the Stripe webhook `releaseHold` (failed / canceled); the local admin
- * manual-release route will adopt it when that panel lands, so the rule and the
- * query live in one tested place. Throws on a piece_state failure so callers can
- * surface it: `releaseHold` is retry-safe (re-fetches the already-`failed` order
- * on a Stripe re-delivery), so the resulting webhook 5xx makes Stripe retry the
+ * Used by the Stripe webhook `releaseHold` (failed / canceled) and the checkout
+ * route's error paths (which wrap it in a logging `.catch` — a failed release
+ * must not eat the checkout response); the local admin manual-release route
+ * will adopt it when that panel lands, so the rule and the query live in one
+ * tested place. Throws on a piece_state failure so callers can surface it:
+ * `releaseHold` is retry-safe (re-fetches the already-`failed` order on a
+ * Stripe re-delivery), so the resulting webhook 5xx makes Stripe retry the
  * release until it sticks instead of leaving pieces stuck as `reserved`.
  *
  * @returns the freed `product_id`s.

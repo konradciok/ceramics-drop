@@ -108,6 +108,22 @@ const stripePromise = getStripe();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Stable id for one checkout attempt, sent to /api/checkout so a retried POST
+// (network retry, second tab sharing the same localStorage cart) re-enters
+// its own reservation/PaymentIntent instead of 409-ing itself. Persisted
+// alongside the cart (acc_cart_v1) so it survives a page reload of the same
+// attempt; reset whenever the cart contents change or a checkout succeeds.
+const ATTEMPT_ID_KEY = 'acc_checkout_attempt_v1';
+
+function readOrCreateAttemptId(): string {
+  if (typeof window === 'undefined') return '';
+  const saved = localStorage.getItem(ATTEMPT_ID_KEY);
+  if (saved) return saved;
+  const id = crypto.randomUUID();
+  localStorage.setItem(ATTEMPT_ID_KEY, id);
+  return id;
+}
+
 export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
   const t = useTranslations();
   const locale = useLocale();
@@ -154,6 +170,13 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
+
+  function resetAttemptId() {
+    const id = crypto.randomUUID();
+    localStorage.setItem(ATTEMPT_ID_KEY, id);
+    setAttemptId(id);
+  }
 
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
@@ -226,6 +249,18 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     .map((code) => ({ code, name: regionNames.of(code) ?? code }))
     .sort((a, b) => a.name.localeCompare(b.name, locale));
   const cartKey = lines.map((l) => l.id).join('|');
+
+  // The cart changing (add/remove) means this is a different purchase intent
+  // than whatever was persisted — regenerate so a stale attemptId is never
+  // reused across unrelated carts. Skips the initial mount (same attempt).
+  const attemptCartKey = useRef(cartKey);
+  useEffect(() => {
+    if (attemptCartKey.current === cartKey) return;
+    attemptCartKey.current = cartKey;
+    const id = crypto.randomUUID();
+    localStorage.setItem(ATTEMPT_ID_KEY, id);
+    setAttemptId(id);
+  }, [cartKey]);
 
   useEffect(() => {
     if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
@@ -303,16 +338,47 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
     });
+    // Tracks whether the server actually answered. On any received failure the
+    // attemptId must be abandoned (Stripe caches the FIRST response — even an
+    // error — per idempotency key for ~24h, so retrying the same key would just
+    // replay the failure). But when NO response arrived, the POST may have gone
+    // through server-side, and keeping the attemptId is what lets the next
+    // click replay onto its own reservation instead of 409-ing it.
+    let gotResponse = false;
+    let resOk = false;
+    let resStatus = 0;
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
+      gotResponse = true;
+      resOk = res.ok;
+      resStatus = res.status;
       if (res.status === 409) {
-        const { sold } = (await res.json()) as { sold: string[] };
+        const conflict = (await res.json()) as { error?: string; sold?: string[] };
+        if (conflict.error === 'order_conflict') {
+          // The attemptId was already consumed by a non-pending order (paid,
+          // expired, ...). Start a fresh attempt for the next click and keep
+          // the cart intact — nothing here is sold out.
+          resetAttemptId();
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'order_conflict', status: 409 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
+        if (conflict.error === 'checkout_in_progress') {
+          // Another POST with this same attemptId is mid-flight (double-click,
+          // second tab) or its outcome couldn't be read. KEEP the attemptId —
+          // a retry click replays onto the winning checkout instead of starting
+          // a fresh attempt that would 409 against its own live hold.
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_in_progress', status: 409 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
+        const sold = conflict.sold ?? [];
         sold.forEach((id) => remove(id));
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));
         setCheckoutError(t('cart.soldOut'));
@@ -321,11 +387,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       if (res.status === 429) {
         // Too many checkout attempts — show a wait-and-retry message rather than
         // the generic "payment failed", which would invite rapid retries.
+        // Keep the attemptId: the limiter rejects before any reserve/Stripe
+        // work, so the idempotency key is untouched and still good.
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited', status: 429 }));
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
       if (!res.ok) {
+        // Abandon the attemptId: Stripe may have cached this failure under its
+        // idempotency key, and the server already released any hold it took —
+        // a fresh attempt is the only path that can succeed.
+        resetAttemptId();
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
         setCheckoutError(t('cart.checkoutError'));
         return;
@@ -340,9 +412,27 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
       });
+      // A later, separate purchase must never reuse this attemptId.
+      resetAttemptId();
       setClientSecret(client_secret);
     } catch {
-      pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'network_error', status: 0 }));
+      // An ERROR response we failed to process is a received failure → fresh
+      // attempt (Stripe may have cached that failure under the key). But a 200
+      // whose body failed to process means the checkout SUCCEEDED server-side:
+      // keep the attemptId so the next click replays the same client_secret.
+      // A 409 whose body we couldn't read is also kept: it may have been
+      // checkout_in_progress/unavailable (keep-required), and a kept id
+      // converges on retry while a wrong reset wipes the cart against the
+      // buyer's own live hold. A pure network error also keeps it — see above.
+      if (gotResponse && !resOk && resStatus !== 409) resetAttemptId();
+      // Received-but-unprocessable responses are not network errors — report
+      // the real status so analytics can tell a parse failure from an outage.
+      pushDataLayer(buildEngagementEvent(
+        'checkout_error',
+        gotResponse
+          ? { reason: 'response_parse_error', status: resStatus }
+          : { reason: 'network_error', status: 0 },
+      ));
       setCheckoutError(t('cart.checkoutError'));
     } finally {
       setSubmitting(false);

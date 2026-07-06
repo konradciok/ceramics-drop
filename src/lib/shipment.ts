@@ -5,6 +5,7 @@
  * orchestration is unit-testable without the Workers env. The Stripe webhook
  * route wires the real Supabase + InPost implementations.
  */
+import * as Sentry from '@sentry/nextjs';
 import {
   buildShipmentPayload,
   buildDispatchOrderPayload,
@@ -13,7 +14,7 @@ import {
   LABEL_READY_STATUS,
   type OrderForShipment,
 } from './shipx';
-import type { InPostClient } from './inpost';
+import type { InPostClient, ShipxShipment } from './inpost';
 
 export type CreateShipmentDeps = {
   loadOrder: (paymentIntentId: string) => Promise<OrderForShipment | null>;
@@ -82,6 +83,37 @@ export async function buyShipmentWhenReady(
 }
 
 /**
+ * Pick the oldest (first-created) shipment among multiple reference matches.
+ * Multiple matches mean a prior create-then-save-failed cycle repeated more
+ * than once; adopting anything but the earliest would orphan it instead.
+ * Extras are logged as a warning — cancelling them is out of scope here.
+ */
+function pickOldestShipment(shipments: ShipxShipment[], orderId: string): ShipxShipment {
+  const sorted = [...shipments].sort((a, b) => {
+    const at = typeof a.created_at === 'string' ? Date.parse(a.created_at) : NaN;
+    const bt = typeof b.created_at === 'string' ? Date.parse(b.created_at) : NaN;
+    if (!Number.isNaN(at) && !Number.isNaN(bt)) return at - bt;
+    // Fallback when created_at is missing/unparseable: ShipX ids are assigned
+    // sequentially, so the lower id was created first.
+    return Number(a.id) - Number(b.id);
+  });
+  if (sorted.length > 1) {
+    const orphanIds = sorted.slice(1).map((s) => s.id);
+    console.warn(
+      `createOrderShipment: multiple ShipX shipments found for order ${orderId} reference — ` +
+        `adopting oldest ${sorted[0].id}, leaving orphaned in ShipX: ${orphanIds.join(', ')}`,
+    );
+    // The orphans need a manual ShipX cancel — a console.warn alone is invisible
+    // operationally, so surface it (constant message → one grouped Sentry issue).
+    Sentry.captureMessage('shipx_orphaned_shipments', {
+      level: 'warning',
+      extra: { orderId, adopted: String(sorted[0].id), orphaned: orphanIds.map(String) },
+    });
+  }
+  return sorted[0];
+}
+
+/**
  * Create the shipment and persist its id/tracking/status. Idempotent and a
  * no-op for studio pickup. Never assume it can throw out of the payment
  * webhook — callers wrap it (the sale is already committed).
@@ -121,7 +153,18 @@ export async function createOrderShipment(
   }
 
   const payload = buildShipmentPayload(order);
-  const shipment = await deps.inpost.createShipment(payload);
+
+  // Look up ShipX for a shipment already created under this order's reference
+  // before creating a new one. Protects the API-success-then-DB-save-fails
+  // window: a webhook retry after that failure must adopt the shipment it
+  // already created in ShipX, not mint a second one that orphans the first.
+  // A lookup failure is NOT swallowed — creating despite an unknown lookup
+  // result could itself produce the duplicate this guards against.
+  const existing = await deps.inpost.findShipmentsByReference(order.id);
+  const shipment =
+    existing.length > 0
+      ? pickOldestShipment(existing, order.id)
+      : await deps.inpost.createShipment(payload);
   const shipmentId = String(shipment.id);
 
   await deps.saveShipment(order.id, {

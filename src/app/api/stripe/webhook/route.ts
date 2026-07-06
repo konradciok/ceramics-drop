@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
@@ -18,9 +19,77 @@ import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 
 export const dynamic = 'force-dynamic';
 
+// PostgREST's zero-rows-from-.single() code — "no such row", not a DB failure.
+const PGRST_NO_ROWS = 'PGRST116';
+
+/**
+ * Claim-then-send-once for an order email guarded by a `*_sent_at` column.
+ *
+ * Claims atomically (UPDATE … WHERE IS NULL) BEFORE sending, so two
+ * overlapping redeliveries can't both pass a stale null-check and both send.
+ * The send gets 3 bounded attempts (quick retries survive transient Resend
+ * blips); on final failure the claim is released — CAS'd on the exact
+ * timestamp we wrote, so only OUR claim is cleared — letting a later
+ * redelivery or manual Stripe event replay retry the send. Best-effort:
+ * never throws (a lost email must not block fulfillment).
+ */
+async function sendEmailOnceWithClaim(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  orderId: string,
+  column: 'studio_email_sent_at' | 'confirmation_email_sent_at',
+  send: () => Promise<unknown>,
+): Promise<void> {
+  const claimAt = new Date().toISOString();
+  const { data: claimed, error: claimErr } = await supabase
+    .from('orders')
+    .update({ [column]: claimAt })
+    .eq('id', orderId)
+    .is(column, null)
+    .select('id');
+  if (claimErr) {
+    console.error(`${column} claim failed for`, orderId, claimErr);
+    return;
+  }
+  if (!claimed || claimed.length === 0) return;
+
+  let sent = false;
+  for (let attempt = 0; attempt < 3 && !sent; attempt++) {
+    try {
+      await send();
+      sent = true;
+    } catch (err) {
+      if (attempt === 2) {
+        console.error(`${column} email send failed for`, orderId, err);
+        // The route still 200s (Stripe won't redeliver a delivered event), so
+        // without an alert the released claim waits for a replay nobody knows
+        // to perform.
+        Sentry.captureException(err);
+      } else {
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+      }
+    }
+  }
+  if (!sent) {
+    // If this release itself fails, the claim sticks — logged, and then only
+    // a manual column reset re-enables the send.
+    const { error: releaseErr } = await supabase
+      .from('orders')
+      .update({ [column]: null })
+      .eq('id', orderId)
+      .eq(column, claimAt);
+    if (releaseErr) {
+      console.error(`${column} claim release failed for`, orderId, releaseErr);
+    }
+  }
+}
+
 export async function POST(req: Request) {
   const sig = req.headers.get('stripe-signature');
-  if (!sig) return NextResponse.json({ error: 'no_signature' }, { status: 400 });
+  if (!sig) {
+    console.error('stripe webhook: missing stripe-signature header');
+    Sentry.captureMessage('stripe_webhook_bad_signature');
+    return NextResponse.json({ error: 'no_signature' }, { status: 400 });
+  }
 
   const body = await req.text();
   const stripe = getStripe();
@@ -30,6 +99,8 @@ export async function POST(req: Request) {
   try {
     event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
   } catch {
+    console.error('stripe webhook: signature verification failed');
+    Sentry.captureMessage('stripe_webhook_bad_signature');
     return NextResponse.json({ error: 'bad_signature' }, { status: 400 });
   }
 
@@ -59,12 +130,33 @@ export async function POST(req: Request) {
         privateSaleId = orderData[0].private_sale_id;
         newSale = true;
       } else {
-        const { data: existing } = await supabase
+        const { data: existing, error: existingErr } = await supabase
           .from('orders')
           .select('id, status, private_sale_id')
           .eq('payment_intent_id', pi)
-          .single() as { data: { id: string; status: string; private_sale_id: string | null } | null };
-        if (!existing || existing.status !== 'paid') return false;
+          .single() as {
+            data: { id: string; status: string; private_sale_id: string | null } | null;
+            error: { code: string; message: string } | null;
+          };
+        // PGRST116 is PostgREST's zero-rows-from-.single() code — that's the genuine
+        // "unknown payment_intent" case below. Any other error is a lookup failure
+        // (DB hiccup): throw so the route 5xxes and Stripe retries — returning
+        // false would let the later steps (createShipment etc.) run against a
+        // payment whose order state is unknown.
+        if (existingErr && existingErr.code !== PGRST_NO_ROWS) {
+          console.error('markPaid: order lookup failed for payment_intent', pi, existingErr);
+          Sentry.captureMessage('stripe_webhook_order_lookup_failed');
+          throw new Error(`markPaid: order lookup failed for ${pi}: ${existingErr.message}`);
+        }
+        if (!existing) {
+          // No order at all for this payment_intent — an orphaned PI or an event
+          // from another environment pointed at this endpoint. Nothing to retry,
+          // but silently dropping it hides a real misconfiguration.
+          console.error('markPaid: no order found for payment_intent', pi);
+          Sentry.captureMessage('stripe_webhook_unknown_payment_intent');
+          return false;
+        }
+        if (existing.status !== 'paid') return false;
         orderId = existing.id;
         privateSaleId = existing.private_sale_id;
       }
@@ -92,106 +184,97 @@ export async function POST(req: Request) {
       }
 
       if (isUnderfulfilled(fulfilledCount, expectedCount)) {
+        // The refund MUST exist before pieces are relisted and the order marked
+        // failed — swallowing a create failure here would leave a paid customer
+        // unrefunded while their pieces go back on sale. Throw → 5xx → Stripe
+        // redelivers; everything below is idempotent (refund_ key, status-scoped
+        // updates), so the retry resumes exactly here.
         try {
           await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
         } catch (err) {
           console.error('refund failed for', pi, err);
+          Sentry.captureException(err);
+          throw err;
         }
         await supabase
           .from('piece_state')
           .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
           .eq('order_id', orderId)
           .eq('status', 'sold');
-        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+        // CAS-guarded: if a fast `charge.refunded` already ran releaseSale
+        // (paid→refunded) first, this must not overwrite `refunded` with `failed`.
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId).eq('status', 'paid');
         return false;
       }
 
-      if (newSale) {
-        try {
-          const { data: orderRow, error: orderErr } = await supabase
-            .from('orders')
-            .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at')
-            .eq('id', orderId)
-            .single();
-          if (orderErr) throw new Error(`load order failed for ${orderId}: ${orderErr.message}`);
-          const { data: itemRows, error: itemsErr } = await supabase
-            .from('order_items')
-            .select('product_id, unit_price')
-            .eq('order_id', orderId);
-          if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
-          if (orderRow) {
-            const orderRowTyped = orderRow as {
-              id: string; email: string | null; total: number; currency: string;
-              delivery_method: string; receiver_first_name: string | null;
-              receiver_last_name: string | null; inpost_target_point: string | null;
-              locale: string | null; confirmation_email_sent_at: string | null;
-            };
+      // Runs on EVERY delivery where the order ends up here (fresh CAS or the
+      // fallback already-paid retry) — not just `newSale`. Stripe can redeliver
+      // payment_intent.succeeded after the pending→paid CAS commits but before
+      // this code ran (isolate death); on that redelivery `newSale` is false but
+      // confirmation_email_sent_at is still NULL, so the customer must still get
+      // their email. Each email's own *_sent_at column is now the only guard.
+      try {
+        const { data: orderRow, error: loadErr } = await supabase
+          .from('orders')
+          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at, studio_email_sent_at')
+          .eq('id', orderId)
+          .single();
+        if (loadErr) throw new Error(`load order failed for ${orderId}: ${loadErr.message}`);
+        const { data: itemRows, error: itemsErr } = await supabase
+          .from('order_items')
+          .select('product_id, unit_price')
+          .eq('order_id', orderId);
+        if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
+        if (orderRow) {
+          const orderRowTyped = orderRow as {
+            id: string; email: string | null; total: number; currency: string;
+            delivery_method: string; receiver_first_name: string | null;
+            receiver_last_name: string | null; inpost_target_point: string | null;
+            locale: string | null; confirmation_email_sent_at: string | null;
+            studio_email_sent_at: string | null;
+          };
 
-            const notifyOrder = {
-              order: {
-                ...orderRowTyped,
-                items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
-              },
-            };
-            // Best-effort with bounded retries: fires once (gated on newSale, so
-            // retried/duplicate webhook deliveries won't re-notify). A few quick
-            // retries survive transient Resend blips; the operational label email
-            // (InPost webhook) remains the backstop. Log on final failure — do NOT
-            // throw (would skip the customer confirmation below).
-            let studioSent = false;
-            for (let attempt = 0; attempt < 3 && !studioSent; attempt++) {
-              try {
-                await emailNewOrderToStudio(notifyOrder);
-                studioSent = true;
-              } catch (err) {
-                if (attempt === 2) {
-                  console.error('emailNewOrderToStudio failed for', orderId, err);
-                } else {
-                  await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
-                }
-              }
-            }
+          const notifyOrder = {
+            order: {
+              ...orderRowTyped,
+              items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
+            },
+          };
 
-            // confirmation_email_sent_at guards against duplicate sends on Stripe
-            // webhook retries — only send if we haven't successfully sent before.
-            if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
-              let confirmSent = false;
-              for (let attempt = 0; attempt < 3 && !confirmSent; attempt++) {
-                try {
-                  await emailOrderConfirmationToCustomer({
-                    order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
-                    locale: orderRowTyped.locale ?? 'pl',
-                  });
-                  confirmSent = true;
-                } catch (err) {
-                  if (attempt === 2) {
-                    console.error('emailOrderConfirmationToCustomer failed for', orderId, err);
-                  } else {
-                    await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
-                  }
-                }
-              }
-              if (confirmSent) {
-                await supabase
-                  .from('orders')
-                  .update({ confirmation_email_sent_at: new Date().toISOString() })
-                  .eq('id', orderId);
-              }
-            }
+          // Studio notification. Never throws — a lost studio email must not
+          // skip the customer confirmation below; the operational label email
+          // (InPost webhook) remains the backstop.
+          if (!orderRowTyped.studio_email_sent_at) {
+            await sendEmailOnceWithClaim(supabase, orderId, 'studio_email_sent_at', () =>
+              emailNewOrderToStudio(notifyOrder),
+            );
+          }
 
-            // Cancel any pending abandoned-checkout recovery for this buyer
-            // (cart.purchased → the automation's wait_for_event). Best-effort:
-            // awaited like the emails above, but never throws so fulfillment and
-            // inventory updates are unaffected.
+          // Customer order confirmation — same claim-once semantics.
+          if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
+            await sendEmailOnceWithClaim(supabase, orderId, 'confirmation_email_sent_at', () =>
+              emailOrderConfirmationToCustomer({
+                order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
+                locale: orderRowTyped.locale ?? 'pl',
+              }),
+            );
+          }
+
+          // Cancel any pending abandoned-checkout recovery for this buyer
+          // (cart.purchased → the automation's wait_for_event). Unchanged:
+          // fresh sales only — a retry redelivery must not re-fire it.
+          // Best-effort: awaited like the emails above, but never throws so
+          // fulfillment and inventory updates are unaffected.
+          if (newSale) {
             try {
               await sendPurchasedEvent({ orderId, email: orderRowTyped.email });
             } catch (err) {
               console.error('sendPurchasedEvent failed for', orderId, err);
             }
           }
-        } catch (err) {
-          console.error('newSale order processing failed for', orderId, err);
         }
+      } catch (err) {
+        console.error('order paid post-processing failed for', orderId, err);
       }
 
       // Burn the single-use private-sale link now that the order is `paid`. Runs for
@@ -238,12 +321,13 @@ export async function POST(req: Request) {
       }
     },
     releaseSale: async (pi) => {
-      const { data } = await supabase
+      const { data, error: ordersErr } = await supabase
         .from('orders')
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
         .select('id, private_sale_id');
+      if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (!rows || rows.length === 0) return false;
       // Private-sale pieces were sold privately (already hidden from the shop) and must
@@ -265,6 +349,7 @@ export async function POST(req: Request) {
         await createOrderInvoice(pi);
       } catch (err) {
         console.error('createOrderInvoice failed for', pi, err);
+        Sentry.captureException(err);
       }
     },
     createShipment: async (pi) => {
@@ -272,13 +357,31 @@ export async function POST(req: Request) {
       // retries — a transient DB error must never silently skip fulfilment.
       const { data: orderIdRow, error: orderErr } = await supabase
         .from('orders')
-        .select('id')
+        .select('id, status')
         .eq('payment_intent_id', pi)
         .single();
-      const orderId = (orderIdRow as { id: string } | null)?.id;
-      if (orderErr || !orderId) {
+      const orderRow = orderIdRow as { id: string; status: string } | null;
+      // Zero rows: no order exists for this payment_intent — the unknown-PI
+      // case markPaid already alerted on. Retrying can never make the order
+      // appear, so return (→ 200) instead of throwing, or Stripe would
+      // redeliver this dead event for 3 days.
+      if (orderErr?.code === PGRST_NO_ROWS) {
+        console.error('createShipment: no order for payment_intent', pi);
+        return;
+      }
+      if (orderErr || !orderRow) {
         throw new Error(`createShipment: order lookup failed for ${pi}: ${orderErr?.message ?? 'not found'}`);
       }
+      // Fulfil PAID orders only. markPaid's under-fulfillment path refunds the
+      // buyer, relists the pieces, and sets the order `failed` before this
+      // runs — buying an InPost label (or enqueueing a Prodigi print) for that
+      // order would ship pieces the buyer was just refunded for. Same for a
+      // late succeeded-redelivery on an already-refunded order.
+      if (orderRow.status !== 'paid') {
+        console.error('createShipment: skipping fulfilment for non-paid order', orderRow.id, orderRow.status);
+        return;
+      }
+      const orderId = orderRow.id;
       const { data: lineItems, error: itemsErr } = await supabase
         .from('order_items')
         .select('variant')
@@ -301,7 +404,7 @@ export async function POST(req: Request) {
       try {
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
-            const { data } = await supabase
+            const { data, error } = await supabase
               .from('orders')
               .select(
                 'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
@@ -310,6 +413,11 @@ export async function POST(req: Request) {
               )
               .eq('payment_intent_id', paymentIntentId)
               .single();
+            // A DB failure must throw (→ retry), not read as "no order": a
+            // silent null here would skip fulfilment forever with a 200.
+            if (error && error.code !== PGRST_NO_ROWS) {
+              throw new Error(`createShipment: order load failed for ${paymentIntentId}: ${error.message}`);
+            }
             return (data as OrderForShipment | null) ?? null;
           },
           saveShipment: async (orderId, d) => {

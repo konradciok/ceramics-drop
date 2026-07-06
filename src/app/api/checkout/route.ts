@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
-import { releaseTargetStatus } from '@/lib/piece-release';
+import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toEuroCents, toGBPPence, toGrosze } from '@/lib/pricing';
 import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
@@ -20,6 +20,10 @@ export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 const STRIPE_PMC_ID = 'pmc_1QiwdYJ0KFK9lrjHUV93dONs';
+// Canonical 8-4-4-4-12 hex UUID shape (any version). A client-supplied id only
+// becomes the order id once it passes this trust-boundary check — see below.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PG_UNIQUE_VIOLATION = '23505';
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
 const TRUST_FORWARDED_IP = process.env.NODE_ENV !== 'production';
@@ -108,13 +112,45 @@ export async function POST(req: Request) {
   }
 
   const supabase = getSupabaseAdmin();
-  const orderId = crypto.randomUUID();
+  // A stable client-supplied attemptId lets a retried/duplicated POST (network
+  // retry, second tab) re-enter its own reservation and PaymentIntent instead
+  // of 409-ing itself (F4). It's unguessable (122 random bits from
+  // crypto.randomUUID()), so the format check below is the only validation
+  // needed before trusting it as the order id.
+  const rawAttemptId = typeof body.attemptId === 'string' ? body.attemptId : null;
+  const orderId = rawAttemptId && UUID_RE.test(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
 
   // A private-sale token unlocks buying specific already-`sold` pieces via a secret
   // link, without relisting them in the shop. It uses a dedicated atomic RPC that
   // requires the cart to exactly match the link's bundle; normal carts reserve as usual.
   const privateSaleToken = normalizeToken(body.private_sale_token);
   let privateSaleId: string | null = null;
+
+  // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
+  // is status-scoped (only rows still `reserved` for this order id), so rows a
+  // paid order already flipped to `sold` are never touched; private-sale holds
+  // return to `sold`, normal holds to `available`. Release failures are logged,
+  // not thrown — the response the caller is about to send must still go out.
+  const releaseOwnHold = () =>
+    releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId })
+      .catch((err) => console.error('checkout: failed to release hold for order', orderId, err));
+
+  // Reads this attempt's order status. `lookupFailed` means the state is
+  // UNKNOWN — a live checkout may own this attempt's hold, so the caller must
+  // answer 409 checkout_in_progress (client keeps the attemptId and retries)
+  // and must NOT release the hold or cancel any PaymentIntent on a guess.
+  const readAttemptStatus = async (context: string) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (error) console.error(`checkout: order status lookup failed ${context}`, orderId, error);
+    return {
+      status: (data as { status: string } | null)?.status ?? null,
+      lookupFailed: Boolean(error),
+    };
+  };
 
   // Reserve atomically BEFORE creating the PaymentIntent.
   if (privateSaleToken) {
@@ -153,24 +189,62 @@ export async function POST(req: Request) {
     // No receipt_email here: the paid order is emailed a faktura via
     // createOrderInvoice (Stripe sendInvoice), so setting receipt_email would
     // risk a second, duplicate Stripe receipt.
-    paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: chargeCurrency,
-      payment_method_configuration: STRIPE_PMC_ID,
-      metadata: {
-        order_id: orderId,
-        product_ids: ids.join(','),
-        delivery_method: method,
-        ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
-        ...(hasPrints ? { has_prints: '1' } : {}),
+    paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency: chargeCurrency,
+        payment_method_configuration: STRIPE_PMC_ID,
+        metadata: {
+          order_id: orderId,
+          product_ids: ids.join(','),
+          delivery_method: method,
+          ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
+          ...(hasPrints ? { has_prints: '1' } : {}),
+        },
       },
-    });
-  } catch {
+      // Same key + same params → Stripe returns the SAME PaymentIntent instead
+      // of creating a new one, so a retried POST replays onto the original PI.
+      { idempotencyKey: `pi_create_${orderId}` },
+    );
+  } catch (err) {
+    const stripeCode =
+      (err as { code?: string } | null)?.code ??
+      (err as { raw?: { code?: string } } | null)?.raw?.code;
+    if (stripeCode === 'idempotency_key_in_use') {
+      // A concurrent POST with this same attemptId is mid-flight: it owns the
+      // shared hold and is about to hand its buyer a payable client_secret.
+      // Releasing here would relist those pieces under a live payment — a
+      // double-sell window. Report in-progress (409) so the client KEEPS its
+      // attemptId; a retry click then replays onto the winner's order/PI
+      // instead of starting a fresh attempt that 409s against its own hold.
+      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+    }
+    const stripeErrType =
+      (err as { type?: string } | null)?.type ??
+      (err as { raw?: { type?: string } } | null)?.raw?.type;
+    if (stripeErrType === 'idempotency_error') {
+      // Stripe's idempotency keys expire after ~24h, so a retried attemptId can
+      // collide as "same key, different params" instead of the in-progress
+      // case above. Whether releasing is safe depends on whether THIS attempt
+      // still owns a live checkout: check for a pending orders row before
+      // deciding.
+      const { status, lookupFailed } = await readAttemptStatus('after idempotency_error');
+      if (lookupFailed) {
+        return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+      }
+      if (status === 'pending') {
+        // A live checkout for this attemptId already owns the hold (and
+        // possibly a client_secret in flight) — releasing would double-sell.
+        // Ask the client to reset its attemptId instead.
+        return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+      }
+      // No live order for this attemptId — a prior attempt died before the
+      // orders insert. Safe to release exactly like the generic case below.
+      await releaseOwnHold();
+      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    }
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
-    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
-    await supabase.from('piece_state')
-      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
-      .eq('order_id', orderId);
+    await releaseOwnHold();
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
 
@@ -218,6 +292,48 @@ export async function POST(req: Request) {
     marketing,
     private_sale_id: privateSaleId,
   });
+  // A retried POST with the same attemptId hits this insert a second time and
+  // gets a primary-key conflict on the row the first POST already created.
+  // That's a replay, not a genuine failure — it must not fall into the
+  // rollback below (which would cancel the still-live PI and release the
+  // pieces the buyer is mid-payment on).
+  let replay = false;
+  if (orderErr?.code === PG_UNIQUE_VIOLATION) {
+    // Can't tell a live replay from a stale attemptId without the status. The
+    // PI above is the SAME live PI if this is a replay (idempotent create), so
+    // on a failed lookup canceling or releasing could kill a payment mid-flight.
+    const { status, lookupFailed } = await readAttemptStatus('on duplicate insert');
+    if (lookupFailed) {
+      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+    }
+    if (status === 'pending') {
+      replay = true;
+    } else {
+      // The attemptId was already consumed by a different outcome (paid,
+      // expired, ...) — not a valid replay of a live checkout. But THIS
+      // request's reserve call above re-took a 15-min hold under that stale
+      // order id; left in place it would 409 the buyer's next (fresh-attemptId)
+      // click against their own orphaned hold. Free it — status-scoped, so a
+      // paid order's `sold` pieces are untouched.
+      await releaseOwnHold();
+      // The PI create above (same idempotency key, expired after ~24h) minted
+      // a FRESH PaymentIntent that has no orders row and never will — the
+      // abandoned-checkout cron only reaps rows it can find. Best-effort
+      // cancel it here so it doesn't strand an unreaped PI. Canceling an
+      // already-succeeded PI (replayed after real payment) fails harmlessly
+      // into the log below.
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error(
+          'checkout: failed to cancel orphaned PaymentIntent (order_conflict)',
+          paymentIntent.id,
+          cancelErr,
+        );
+      }
+      return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+    }
+  }
   let itemsErr = null;
   if (!orderErr) {
     const r = await supabase.from('order_items').insert(
@@ -230,35 +346,48 @@ export async function POST(req: Request) {
     );
     itemsErr = r.error;
   }
-  if (orderErr || itemsErr) {
-    // Persisting the order failed ÔÇö undo so we never collect money without a record.
-    try { await stripe.paymentIntents.cancel(paymentIntent.id); } catch {}
-    // Private-sale holds return to `sold` (never relisted publicly); normal holds free up.
-    await supabase.from('piece_state')
-      .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
-      .eq('order_id', orderId);
+  if ((orderErr && !replay) || itemsErr) {
+    // Persisting the order failed — undo so we never collect money without a record.
+    try {
+      await stripe.paymentIntents.cancel(paymentIntent.id);
+    } catch (cancelErr) {
+      // The PI is now orphaned (live, uncanceled) — surface it so it can be
+      // canceled manually instead of silently expiring.
+      console.error('checkout: failed to cancel orphaned PaymentIntent', paymentIntent.id, cancelErr);
+    }
+    if (itemsErr) {
+      // The orders row was inserted but its items weren't. Left as 'pending'
+      // it would poison a retry of the same attemptId: the replay branch above
+      // would read it as a live checkout and hand back this now-canceled PI's
+      // client_secret. Mark it failed so a retry lands in order_conflict.
+      await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+    }
+    await releaseOwnHold();
     return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
   }
 
   // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
   // cart.checkout_started). Best-effort and non-blocking: waitUntil lets it finish
   // after the response so it adds no latency to the pay request, and any Resend
-  // failure is logged — never fails checkout.
-  try {
-    const { ctx } = getCloudflareContext();
-    ctx.waitUntil(
-      sendCheckoutStartedEvent({
-        orderId,
-        email: contact.email,
-        locale,
-        currency: chargeCurrency,
-        totalMinor: amount,
-        firstName: contact.first_name,
-        origin,
-      }).catch((err) => console.error('sendCheckoutStartedEvent failed for', orderId, err)),
-    );
-  } catch (err) {
-    console.error('sendCheckoutStartedEvent dispatch failed for', orderId, err);
+  // failure is logged — never fails checkout. Skipped on a replayed POST — the
+  // original POST already fired it for this order.
+  if (!replay) {
+    try {
+      const { ctx } = getCloudflareContext();
+      ctx.waitUntil(
+        sendCheckoutStartedEvent({
+          orderId,
+          email: contact.email,
+          locale,
+          currency: chargeCurrency,
+          totalMinor: amount,
+          firstName: contact.first_name,
+          origin,
+        }).catch((err) => console.error('sendCheckoutStartedEvent failed for', orderId, err)),
+      );
+    } catch (err) {
+      console.error('sendCheckoutStartedEvent dispatch failed for', orderId, err);
+    }
   }
 
   return NextResponse.json({ client_secret: paymentIntent.client_secret });

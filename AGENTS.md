@@ -144,7 +144,7 @@ See `.env.example` for the full list and setup notes. See `docs/cloudflare-deplo
 
 **Responsive images:** Use `srcSet()` from `src/lib/images.ts` for product images (native `<img>`, not `next/image` — see SEO note). All product images are WebP in `public/uploads/`, generated from gitignored `design/uploads/` via `npm run optimize-images`.
 
-**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), 409 with `{ error: 'unavailable', sold: string[] }` (pieces unavailable), 502 with `{ error: 'stripe_failed' }` (Stripe PI creation failure), 500 (other server faults).
+**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), 409 with `{ error: 'unavailable', sold: string[] }` (pieces unavailable), 409 `{ error: 'order_conflict' }` (stale attemptId — client must reset it), 409 `{ error: 'checkout_in_progress' }` (a concurrent or unresolvable POST for the same attemptId — client must KEEP the attemptId and retry), 502 with `{ error: 'stripe_failed' }` (Stripe PI creation failure), 500 (other server faults).
 
 **Analytics:** Fire `begin_checkout` when the user clicks pay in `CartView` (before POST `/api/checkout`). Fire deduplicated `purchase` and `payment_failed` events on the return page (keyed by `payment_intent` ID via sessionStorage to prevent double-counting on refresh).
 

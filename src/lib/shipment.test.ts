@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
 import { createOrderShipment, buyShipmentWhenReady, type CreateShipmentDeps } from './shipment';
+
+vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn() }));
 import { ShipxApiError } from './shipx-errors';
 import type { OrderForShipment } from './shipx';
 import type { InPostClient } from './inpost';
@@ -29,6 +32,8 @@ function deps(overrides: Partial<CreateShipmentDeps> = {}): CreateShipmentDeps {
     buyShipment: vi.fn().mockResolvedValue({ id: 42, status: 'confirmed', tracking_number: '6200001' }),
     getLabelPdf: vi.fn(),
     createDispatchOrder: vi.fn().mockResolvedValue({ id: 99, status: 'created', deadline_time: '2026-06-05 18:00' }),
+    // Default: no prior ShipX shipment under this order's reference — create as today.
+    findShipmentsByReference: vi.fn().mockResolvedValue([]),
   };
   return {
     loadOrder: vi.fn().mockResolvedValue(order),
@@ -42,6 +47,7 @@ describe('createOrderShipment', () => {
   it('creates a shipment and persists id/tracking/status', async () => {
     const d = deps();
     await createOrderShipment('pi_1', d);
+    expect(d.inpost.findShipmentsByReference).toHaveBeenCalledWith('ord-1');
     expect(d.inpost.createShipment).toHaveBeenCalledOnce();
     expect(d.saveShipment).toHaveBeenCalledWith('ord-1', {
       shipmentId: '42',
@@ -223,6 +229,92 @@ describe('createOrderShipment', () => {
     expect(d.inpost.createDispatchOrder).toHaveBeenCalledOnce();      // dispatch retried
     expect(saveDispatchOrderId).toHaveBeenCalledWith('ord-1', '99'); // dispatch id persisted
     expect(d.inpost.buyShipment).toHaveBeenCalledOnce();              // buy executed
+  });
+
+  // ── New: adopt an existing ShipX shipment instead of duplicating it (F3) ──
+
+  describe('adoption by reference (F3)', () => {
+    it('adopts an existing shipment found by reference — does not call createShipment', async () => {
+      const d = deps({
+        loadOrder: vi.fn().mockResolvedValue(order),
+      });
+      (d.inpost.findShipmentsByReference as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { id: 55, status: 'created', tracking_number: '6200099', created_at: '2026-06-01T10:00:00Z' },
+      ]);
+
+      await createOrderShipment('pi_1', d);
+
+      expect(d.inpost.findShipmentsByReference).toHaveBeenCalledWith('ord-1');
+      expect(d.inpost.createShipment).not.toHaveBeenCalled();
+      expect(d.saveShipment).toHaveBeenCalledWith('ord-1', {
+        shipmentId: '55',
+        trackingNumber: '6200099',
+        status: 'created',
+      });
+      // Adoption must feed the same buy-when-ready path as a fresh create.
+      expect(d.inpost.getShipment).toHaveBeenCalledWith('55');
+    });
+
+    it('creates a new shipment when the lookup returns no matches (existing behavior)', async () => {
+      const d = deps();
+      (d.inpost.findShipmentsByReference as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+      await createOrderShipment('pi_1', d);
+
+      expect(d.inpost.findShipmentsByReference).toHaveBeenCalledWith('ord-1');
+      expect(d.inpost.createShipment).toHaveBeenCalledOnce();
+      expect(d.saveShipment).toHaveBeenCalledWith('ord-1', {
+        shipmentId: '42',
+        trackingNumber: '6200001',
+        status: 'created',
+      });
+    });
+
+    it('propagates a lookup failure (retryable) and creates nothing', async () => {
+      const d = deps({
+        loadOrder: vi.fn().mockResolvedValue(order),
+      });
+      const lookupError = new Error('ShipX GET /shipments → 503: upstream unavailable');
+      (d.inpost.findShipmentsByReference as ReturnType<typeof vi.fn>).mockRejectedValue(lookupError);
+
+      await expect(createOrderShipment('pi_1', d)).rejects.toThrow(lookupError);
+
+      expect(d.inpost.createShipment).not.toHaveBeenCalled();
+      expect(d.saveShipment).not.toHaveBeenCalled();
+    });
+
+    it('adopts the oldest of multiple matches and logs a warning naming the orphans', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const d = deps({
+        loadOrder: vi.fn().mockResolvedValue(order),
+      });
+      (d.inpost.findShipmentsByReference as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { id: 77, status: 'created', tracking_number: '6200077', created_at: '2026-06-03T10:00:00Z' },
+        { id: 55, status: 'created', tracking_number: '6200055', created_at: '2026-06-01T10:00:00Z' }, // oldest
+        { id: 88, status: 'created', tracking_number: '6200088', created_at: '2026-06-02T10:00:00Z' },
+      ]);
+
+      await createOrderShipment('pi_1', d);
+
+      expect(d.saveShipment).toHaveBeenCalledWith('ord-1', {
+        shipmentId: '55',
+        trackingNumber: '6200055',
+        status: 'created',
+      });
+      expect(warnSpy).toHaveBeenCalledOnce();
+      const warning = warnSpy.mock.calls[0].join(' ');
+      expect(warning).toContain('ord-1');
+      expect(warning).toContain('55'); // adopted
+      expect(warning).toContain('77'); // orphan
+      expect(warning).toContain('88'); // orphan
+      // Orphans need a manual ShipX cancel — the warning must also reach Sentry.
+      expect(Sentry.captureMessage).toHaveBeenCalledWith('shipx_orphaned_shipments', {
+        level: 'warning',
+        extra: { orderId: 'ord-1', adopted: '55', orphaned: ['88', '77'] }, // created_at order
+      });
+
+      warnSpy.mockRestore();
+    });
   });
 });
 

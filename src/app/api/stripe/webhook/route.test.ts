@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
 
-// --- Stripe: only constructEventAsync matters for the payment_failed path ---
+// --- Stripe: constructEventAsync (all paths) + refunds.create (under-fulfillment) ---
 const constructEventAsync = vi.fn();
+const refundsCreate = vi.fn(async () => ({}));
 vi.mock('@/lib/stripe', () => ({
-  getStripe: () => ({ webhooks: { constructEventAsync }, refunds: { create: vi.fn() } }),
+  getStripe: () => ({ webhooks: { constructEventAsync }, refunds: { create: refundsCreate } }),
 }));
 
 // --- Cloudflare env (webhook secret + no conversion creds so trackPurchase no-ops) ---
@@ -17,6 +19,8 @@ vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
 let supabaseImpl: unknown;
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => supabaseImpl }));
 
+vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
+
 // --- Heavy collaborators unused on the failed path: neutralise to keep imports clean ---
 vi.mock('@/lib/inpost', () => ({ getInPost: () => ({}) }));
 vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
@@ -26,6 +30,10 @@ vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn() }));
 
 import { POST } from './route';
+import { createOrderInvoice } from '@/lib/invoice';
+import { createOrderShipment } from '@/lib/shipment';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
+import { sendPurchasedEvent } from '@/lib/resend-events';
 
 type Result = { data: unknown; error: unknown };
 
@@ -114,5 +122,507 @@ describe('webhook releaseHold', () => {
     expect(res.status).toBe(200);
     // Without the retry-safe fallback the release would be skipped and pieces stay reserved.
     expect(calls.pieceUpdated).toBe(true);
+  });
+});
+
+function refundedEventRequest(over: Partial<{ amount: number; amount_refunded: number; payment_intent: string }> = {}) {
+  constructEventAsync.mockResolvedValue({
+    type: 'charge.refunded',
+    data: { object: { amount: 100, amount_refunded: 100, payment_intent: 'pi_1', ...over } },
+  });
+  return new Request('http://localhost/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': 'sig_test' },
+    body: '{}',
+  });
+}
+
+describe('webhook releaseSale (F2)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+  });
+
+  it('throws (so the route responds 5xx) when the refunded-CAS orders UPDATE errors, instead of silently returning false', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: null, error: { message: 'db down' } },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: null, error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(refundedEventRequest())).rejects.toThrow(/db down/);
+  });
+});
+
+describe('webhook signature verification (F6)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  it('missing stripe-signature header → 400 + console.error + Sentry message', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const req = new Request('http://localhost/api/stripe/webhook', {
+      method: 'POST',
+      body: '{}',
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(400);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_bad_signature');
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('signature verification failure (constructEventAsync throws) → 400 + console.error + Sentry message', async () => {
+    constructEventAsync.mockRejectedValue(new Error('bad sig'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const req = new Request('http://localhost/api/stripe/webhook', {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig_bad' },
+      body: '{}',
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(400);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_bad_signature');
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+// --- payment_intent.succeeded fakes: markPaid + (always-run) createShipment need
+// coordinated `orders`/`piece_state`/`order_items` responses. A single chainable
+// proxy resolves any `.eq()/.is()` chain to a scripted result, and records calls
+// when asked (used by F10 to assert the failed-status UPDATE's CAS filter).
+type QueryResult = { data?: unknown; error?: unknown; count?: number | null };
+
+function proxyChain(result: QueryResult, onCall?: (method: string, args: unknown[]) => void): unknown {
+  return new Proxy(() => {}, {
+    get(_t, prop: string) {
+      if (prop === 'then') return (resolve: (v: unknown) => void) => resolve(result);
+      return (...args: unknown[]) => {
+        onCall?.(prop, args);
+        return proxyChain(result, onCall);
+      };
+    },
+  });
+}
+
+function succeededEventRequest() {
+  constructEventAsync.mockResolvedValue({
+    type: 'payment_intent.succeeded',
+    data: { object: { id: 'pi_1' } },
+  });
+  return new Request('http://localhost/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': 'sig_test' },
+    body: '{}',
+  });
+}
+
+function makeSucceededSupabase(opts: {
+  casUpdate: QueryResult;
+  fallbackSelect?: QueryResult;
+  shipmentLookup: QueryResult;
+  soldCount?: QueryResult;
+  ceramicCount?: QueryResult;
+  variantRows?: QueryResult;
+  /** The `id, email, ... , confirmation_email_sent_at, studio_email_sent_at` load. */
+  emailOrderSelect?: QueryResult;
+  /** Result of the atomic `studio_email_sent_at IS NULL` claim UPDATE. */
+  studioClaim?: QueryResult;
+  /** Result of the atomic `confirmation_email_sent_at IS NULL` claim UPDATE. */
+  confirmClaim?: QueryResult;
+}) {
+  const failedUpdateEqArgs: unknown[][] = [];
+  // Claim UPDATEs recorded for assertion: the payload value written to the
+  // *_sent_at column (a timestamp = claim, null = release) plus every chained
+  // filter call, so tests can prove the atomic `.is(col, null)` guard is used.
+  const studioClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
+  const confirmClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
+  const supabase = {
+    from(table: string) {
+      if (table === 'orders') {
+        return {
+          update: (payload: Record<string, unknown>) => {
+            if (payload.status === 'paid') return proxyChain(opts.casUpdate);
+            if (payload.status === 'failed') {
+              return proxyChain({ data: null, error: null }, (method, args) => {
+                if (method === 'eq') failedUpdateEqArgs.push(args);
+              });
+            }
+            if ('studio_email_sent_at' in payload) {
+              const write = { value: payload.studio_email_sent_at, filters: [] as Array<[string, unknown[]]> };
+              studioClaimWrites.push(write);
+              return proxyChain(
+                payload.studio_email_sent_at === null ? { data: [], error: null } : opts.studioClaim ?? { data: [], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
+            }
+            if ('confirmation_email_sent_at' in payload) {
+              const write = { value: payload.confirmation_email_sent_at, filters: [] as Array<[string, unknown[]]> };
+              confirmClaimWrites.push(write);
+              return proxyChain(
+                payload.confirmation_email_sent_at === null ? { data: [], error: null } : opts.confirmClaim ?? { data: [], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
+            }
+            throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
+          },
+          select: (columns: string) => {
+            if (columns === 'id, status, private_sale_id') return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
+            if (columns === 'id, status') return proxyChain(opts.shipmentLookup);
+            if (columns.startsWith('id, email')) return proxyChain(opts.emailOrderSelect ?? { data: null, error: null });
+            throw new Error(`unexpected orders.select columns: ${columns}`);
+          },
+        };
+      }
+      if (table === 'piece_state') {
+        return {
+          update: () => proxyChain({ data: null, error: null }),
+          select: () => proxyChain(opts.soldCount ?? { count: 0, error: null }),
+        };
+      }
+      if (table === 'order_items') {
+        return {
+          select: (columns: string, countOpts?: unknown) => {
+            if (countOpts) return proxyChain(opts.ceramicCount ?? { count: 0, error: null });
+            return proxyChain(opts.variantRows ?? { data: [], error: null });
+          },
+        };
+      }
+      throw new Error(`unexpected table: ${table}`);
+    },
+  };
+  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites };
+}
+
+describe('webhook markPaid unknown payment_intent (F9b)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(createOrderShipment).mockClear();
+  });
+
+  it('unknown payment_intent (no orders row anywhere): logs + Sentry, createShipment lookup no-ops → 200, no shipment, no retry loop', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const zeroRows = { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' };
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      // .single() finding no row surfaces as PostgREST's zero-rows error, not a bare null
+      fallbackSelect: { data: null, error: zeroRows },
+      shipmentLookup: { data: null, error: zeroRows },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    // 200, NOT a throw: an unknown payment_intent can never be fixed by a
+    // Stripe redelivery, so the route must stop the retry loop (Sentry has
+    // the alert). createShipment's own zero-rows lookup returns instead of
+    // throwing, and no shipment is ever attempted.
+    expect(res.status).toBe(200);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: no order found for payment_intent', 'pi_1');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('a transient DB error on the fallback fetch throws from markPaid itself (5xx → Stripe retry), never reaching createShipment', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const dbError = { code: 'XX000', message: 'db hiccup' };
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: null, error: dbError },
+      shipmentLookup: { data: null, error: dbError },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    // Unlike the unknown-PI case, a lookup failure IS retryable — the order's
+    // real state is unknown, so nothing downstream may run against it.
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/markPaid: order lookup failed/);
+
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: order lookup failed for payment_intent', 'pi_1', dbError);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_order_lookup_failed');
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+  });
+
+  it('issues the failed-status UPDATE with an `.eq(\'status\', \'paid\')` filter', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, failedUpdateEqArgs } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      // By the time createShipment looks the order up, this path has set it 'failed'.
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null }, // expected 1, fulfilled 0 → under-fulfilled
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(failedUpdateEqArgs).toContainEqual(['status', 'paid']);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('skips fulfilment entirely for a non-paid order: no shipment, no Prodigi, still 200', async () => {
+    vi.mocked(createOrderShipment).mockClear();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      // Under-fulfillment refunded the buyer and set the order 'failed' —
+      // buying an InPost label for it would ship pieces the buyer was just
+      // refunded for.
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null },
+      // A ceramic line item — WOULD ship if the status guard were missing.
+      variantRows: { data: [{ variant: null }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'createShipment: skipping fulfilment for non-paid order', 'o1', 'failed',
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('throws (5xx → Stripe retry) when the refund create fails, WITHOUT relisting pieces or marking the order failed', async () => {
+    refundsCreate.mockRejectedValueOnce(new Error('stripe refunds down'));
+    vi.mocked(Sentry.captureException).mockClear();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, failedUpdateEqArgs } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null }, // under-fulfilled → refund path
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    // A paid customer must never lose their refund while pieces go back on
+    // sale: the failed-status write (and the piece release before it) may only
+    // run once the refund exists. Everything in the path is idempotent, so the
+    // Stripe redelivery resumes at the refund.
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/stripe refunds down/);
+    expect(failedUpdateEqArgs).toEqual([]);
+    expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook ensureInvoiced failure (F5)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+  });
+
+  it('captures the exception in Sentry when invoicing throws, and the route still responds 200', async () => {
+    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // "Already processed" retry path: CAS matches nothing, fallback finds the paid
+    // order. emailOrderSelect is left unset (defaults to a null row) so the email
+    // block no-ops, keeping this test isolated to ensureInvoiced.
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook email idempotency on retry (F1)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    // Reset (not just clear): the claim-release test installs a rejecting impl.
+    vi.mocked(emailNewOrderToStudio).mockReset();
+    vi.mocked(emailOrderConfirmationToCustomer).mockReset();
+    vi.mocked(sendPurchasedEvent).mockClear();
+  });
+
+  const unclaimedOrderRow = {
+    id: 'o1',
+    email: 'buyer@example.com',
+    total: 10000,
+    currency: 'pln',
+    delivery_method: 'paczkomat',
+    receiver_first_name: 'Ann',
+    receiver_last_name: 'K',
+    inpost_target_point: 'WAW01',
+    locale: 'pl',
+    confirmation_email_sent_at: null,
+    studio_email_sent_at: null,
+  };
+
+  it('retry on an already-paid order (CAS misses, fallback finds paid) with both guards unclaimed: sends BOTH emails and claims both columns', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
+    // Retry path (newSale=false): abandoned-checkout cancellation must not re-fire.
+    expect(sendPurchasedEvent).not.toHaveBeenCalled();
+  });
+
+  it('already-sent: order paid with both columns already claimed sends nothing', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: {
+        data: {
+          ...unclaimedOrderRow,
+          confirmation_email_sent_at: '2026-07-01T00:00:00.000Z',
+          studio_email_sent_at: '2026-07-01T00:00:00.000Z',
+        },
+        error: null,
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(emailOrderConfirmationToCustomer).not.toHaveBeenCalled();
+  });
+
+  it('fresh sale (normal path): sends both emails exactly once and fires the abandoned-checkout cancellation', async () => {
+    const { supabase, studioClaimWrites, confirmClaimWrites } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
+    expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+    // The claim must be ATOMIC: a plain update without the `.is(col, null)`
+    // filter would let two overlapping redeliveries both claim and both send.
+    expect(studioClaimWrites).toHaveLength(1);
+    expect(studioClaimWrites[0].filters).toContainEqual(['is', ['studio_email_sent_at', null]]);
+    expect(confirmClaimWrites).toHaveLength(1);
+    expect(confirmClaimWrites[0].filters).toContainEqual(['is', ['confirmation_email_sent_at', null]]);
+  });
+
+  it('releases the *_sent_at claim (CAS back to null on our own timestamp) when all 3 send attempts fail, so a replay can retry', async () => {
+    vi.mocked(emailNewOrderToStudio).mockRejectedValue(new Error('resend down'));
+    vi.mocked(emailOrderConfirmationToCustomer).mockRejectedValue(new Error('resend down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, studioClaimWrites, confirmClaimWrites } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    // Fake timers: the route's retry backoff sleeps 200+400ms per email —
+    // don't pay ~1.2s of real wall-clock in a unit test.
+    vi.useFakeTimers();
+    let res!: Response;
+    try {
+      const resPromise = POST(succeededEventRequest());
+      await vi.runAllTimersAsync();
+      res = await resPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    // Still 200 (the email is best-effort), but the claim is handed back:
+    // write #1 claims with a timestamp, write #2 resets to null CAS'd on that
+    // exact timestamp — so a later redelivery/manual replay retries the send
+    // instead of finding a permanently-claimed column for a never-sent email.
+    expect(res.status).toBe(200);
+    for (const [writes, col] of [
+      [studioClaimWrites, 'studio_email_sent_at'],
+      [confirmClaimWrites, 'confirmation_email_sent_at'],
+    ] as const) {
+      expect(writes).toHaveLength(2);
+      expect(typeof writes[0].value).toBe('string');
+      expect(writes[1].value).toBeNull();
+      expect(writes[1].filters).toContainEqual(['eq', [col, writes[0].value]]);
+    }
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(3);
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(3);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('under-fulfillment/failed path sends nothing', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null }, // expected 1, fulfilled 0 → under-fulfilled
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    consoleErrorSpy.mockRestore();
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(emailOrderConfirmationToCustomer).not.toHaveBeenCalled();
+    expect(sendPurchasedEvent).not.toHaveBeenCalled();
   });
 });
