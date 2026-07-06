@@ -278,7 +278,8 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { supabase } = makeSucceededSupabase({
       casUpdate: { data: [], error: null },
-      fallbackSelect: { data: null, error: null }, // .single() finds nothing at all
+      // .single() finding no row surfaces as PostgREST's zero-rows error, not a bare null
+      fallbackSelect: { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } },
       shipmentLookup: { data: { id: 'o_other' }, error: null },
       variantRows: { data: [], error: null },
     });
@@ -289,6 +290,26 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
     expect(res.status).toBe(200);
     expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: no order found for payment_intent', 'pi_1');
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('a transient DB error on the fallback fetch reports a lookup failure, NOT an unknown payment_intent', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const dbError = { code: 'XX000', message: 'db hiccup' };
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: null, error: dbError },
+      shipmentLookup: { data: { id: 'o_other' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: order lookup failed for payment_intent', 'pi_1', dbError);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_order_lookup_failed');
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
     consoleErrorSpy.mockRestore();
   });
 });

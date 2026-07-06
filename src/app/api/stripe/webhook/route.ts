@@ -66,11 +66,22 @@ export async function POST(req: Request) {
         privateSaleId = orderData[0].private_sale_id;
         newSale = true;
       } else {
-        const { data: existing } = await supabase
+        const { data: existing, error: existingErr } = await supabase
           .from('orders')
           .select('id, status, private_sale_id')
           .eq('payment_intent_id', pi)
-          .single() as { data: { id: string; status: string; private_sale_id: string | null } | null };
+          .single() as {
+            data: { id: string; status: string; private_sale_id: string | null } | null;
+            error: { code: string; message: string } | null;
+          };
+        // PGRST116 is PostgREST's zero-rows-from-.single() code — that's the genuine
+        // "unknown payment_intent" case below. Any other error is a lookup failure
+        // (DB hiccup) and must not masquerade as an unknown PI in Sentry.
+        if (existingErr && existingErr.code !== 'PGRST116') {
+          console.error('markPaid: order lookup failed for payment_intent', pi, existingErr);
+          Sentry.captureMessage('stripe_webhook_order_lookup_failed');
+          return false;
+        }
         if (!existing) {
           // No order at all for this payment_intent — an orphaned PI or an event
           // from another environment pointed at this endpoint. Nothing to retry,
