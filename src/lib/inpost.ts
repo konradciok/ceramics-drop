@@ -19,6 +19,8 @@ export type ShipxShipment = {
   service?: string;
   offers?: Array<{ id: number | string; status?: string; service?: { id?: string } }>;
   selected_offer?: { id: number | string } | null;
+  /** ISO timestamp — used to pick the oldest match when adopting by reference. */
+  created_at?: string;
   [key: string]: unknown;
 };
 
@@ -33,6 +35,9 @@ export type ShipxDispatchOrder = {
 export interface InPostClient {
   createShipment(payload: ShipmentPayload): Promise<ShipxShipment>;
   getShipment(id: string): Promise<ShipxShipment>;
+  /** Look up existing shipments by `reference` (page 1 only) — used to adopt a
+   *  shipment from a prior create call whose DB save failed, instead of duplicating it. */
+  findShipmentsByReference(reference: string): Promise<ShipxShipment[]>;
   /** A6 PDF label bytes for a confirmed shipment. */
   getLabelPdf(id: string): Promise<ArrayBuffer>;
   /** Schedule a courier pickup for one or more shipments. */
@@ -91,6 +96,13 @@ export function getInPost(): InPostClient {
     async getShipment(id) {
       const res = await request(`/v1/shipments/${id}`);
       return (await res.json()) as ShipxShipment;
+    },
+    async findShipmentsByReference(reference) {
+      const res = await request(
+        `/v1/organizations/${orgId}/shipments?reference=${encodeURIComponent(reference)}`,
+      );
+      const body = (await res.json()) as { items?: ShipxShipment[] };
+      return body.items ?? [];
     },
     async getLabelPdf(id) {
       const res = await request(`/v1/shipments/${id}/label?type=A6&format=pdf`, {
