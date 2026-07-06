@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
@@ -20,7 +21,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   const sig = req.headers.get('stripe-signature');
-  if (!sig) return NextResponse.json({ error: 'no_signature' }, { status: 400 });
+  if (!sig) {
+    console.error('stripe webhook: missing stripe-signature header');
+    Sentry.captureMessage('stripe_webhook_bad_signature');
+    return NextResponse.json({ error: 'no_signature' }, { status: 400 });
+  }
 
   const body = await req.text();
   const stripe = getStripe();
@@ -30,6 +35,8 @@ export async function POST(req: Request) {
   try {
     event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
   } catch {
+    console.error('stripe webhook: signature verification failed');
+    Sentry.captureMessage('stripe_webhook_bad_signature');
     return NextResponse.json({ error: 'bad_signature' }, { status: 400 });
   }
 
@@ -64,7 +71,15 @@ export async function POST(req: Request) {
           .select('id, status, private_sale_id')
           .eq('payment_intent_id', pi)
           .single() as { data: { id: string; status: string; private_sale_id: string | null } | null };
-        if (!existing || existing.status !== 'paid') return false;
+        if (!existing) {
+          // No order at all for this payment_intent — an orphaned PI or an event
+          // from another environment pointed at this endpoint. Nothing to retry,
+          // but silently dropping it hides a real misconfiguration.
+          console.error('markPaid: no order found for payment_intent', pi);
+          Sentry.captureMessage('stripe_webhook_unknown_payment_intent');
+          return false;
+        }
+        if (existing.status !== 'paid') return false;
         orderId = existing.id;
         privateSaleId = existing.private_sale_id;
       }
@@ -102,7 +117,9 @@ export async function POST(req: Request) {
           .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
           .eq('order_id', orderId)
           .eq('status', 'sold');
-        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+        // CAS-guarded: if a fast `charge.refunded` already ran releaseSale
+        // (paid→refunded) first, this must not overwrite `refunded` with `failed`.
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId).eq('status', 'paid');
         return false;
       }
 
@@ -238,12 +255,13 @@ export async function POST(req: Request) {
       }
     },
     releaseSale: async (pi) => {
-      const { data } = await supabase
+      const { data, error: ordersErr } = await supabase
         .from('orders')
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
         .select('id, private_sale_id');
+      if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (!rows || rows.length === 0) return false;
       // Private-sale pieces were sold privately (already hidden from the shop) and must
@@ -265,6 +283,7 @@ export async function POST(req: Request) {
         await createOrderInvoice(pi);
       } catch (err) {
         console.error('createOrderInvoice failed for', pi, err);
+        Sentry.captureException(err);
       }
     },
     createShipment: async (pi) => {
