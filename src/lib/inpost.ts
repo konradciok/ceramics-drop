@@ -21,6 +21,9 @@ export type ShipxShipment = {
   selected_offer?: { id: number | string } | null;
   /** ISO timestamp — used to pick the oldest match when adopting by reference. */
   created_at?: string;
+  /** Echoed back by ShipX — verified client-side against the requested filter
+   *  before adoption (see `findShipmentsByReference`); never trusted blindly. */
+  reference?: string;
   [key: string]: unknown;
 };
 
@@ -36,7 +39,11 @@ export interface InPostClient {
   createShipment(payload: ShipmentPayload): Promise<ShipxShipment>;
   getShipment(id: string): Promise<ShipxShipment>;
   /** Look up existing shipments by `reference` (page 1 only) — used to adopt a
-   *  shipment from a prior create call whose DB save failed, instead of duplicating it. */
+   *  shipment from a prior create call whose DB save failed, instead of duplicating it.
+   *  Results are filtered client-side to an exact `reference` match: the upstream
+   *  `?reference=` query param is never trusted blindly (an ignored/fuzzy filter
+   *  could otherwise return the org's unrelated page-1 shipments, or the returns
+   *  flow's `return:<id>` reference, causing the wrong shipment to be adopted). */
   findShipmentsByReference(reference: string): Promise<ShipxShipment[]>;
   /** A6 PDF label bytes for a confirmed shipment. */
   getLabelPdf(id: string): Promise<ArrayBuffer>;
@@ -102,7 +109,9 @@ export function getInPost(): InPostClient {
         `/v1/organizations/${orgId}/shipments?reference=${encodeURIComponent(reference)}`,
       );
       const body = (await res.json()) as { items?: ShipxShipment[] };
-      return body.items ?? [];
+      // Filter client-side on exact match — do not trust ShipX's list filter
+      // blindly (see the interface doc comment above for the failure modes).
+      return (body.items ?? []).filter((s) => s.reference === reference);
     },
     async getLabelPdf(id) {
       const res = await request(`/v1/shipments/${id}/label?type=A6&format=pdf`, {

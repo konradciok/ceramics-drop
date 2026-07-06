@@ -326,7 +326,7 @@ describe('POST /api/checkout', () => {
     expect(insertOrderItems).not.toHaveBeenCalled();
   });
 
-  it('rejects a replay of a non-pending order with 409 AND frees the hold its own reserve call took', async () => {
+  it('rejects a replay of a non-pending order with 409, frees the hold its own reserve call took, AND cancels the orphaned fresh PI', async () => {
     insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
     selectOrderStatus.mockResolvedValueOnce({ data: { status: 'expired' }, error: null });
     const { POST } = await import('./route');
@@ -338,12 +338,40 @@ describe('POST /api/checkout', () => {
     const res = await POST(req);
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: 'order_conflict' });
-    expect(cancelPaymentIntent).not.toHaveBeenCalled();
     // This request re-reserved the pieces before hitting the conflict; leaving
     // that 15-min hold live would make the buyer's next (fresh-attemptId) click
     // collide with it — 409 unavailable, cart wiped. Release it, status-scoped
     // so rows a paid order already flipped to 'sold' are never touched.
     expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    // The PI create above minted a FRESH PaymentIntent (same idempotency key,
+    // expired after ~24h) with no orders row and no cron path to reap it —
+    // best-effort cancel it so it isn't stranded (F3 of the final review).
+    expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+  });
+
+  it('order_conflict replay: cancel rejection does not change the 409 response', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'expired' }, error: null });
+    cancelPaymentIntent.mockRejectedValueOnce(new Error('stripe down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { POST } = await import('./route');
+      const req = new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'order_conflict' });
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining('order_conflict'),
+        'pi_test',
+        expect.any(Error),
+      );
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 
   it('releases the hold and responds 502 when Stripe PI creation fails', async () => {
@@ -376,6 +404,50 @@ describe('POST /api/checkout', () => {
     // The winning tab's checkout is mid-flight on this same hold — releasing it
     // here would relist pieces its buyer is about to pay for (double-sell).
     expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('idempotency_error + a pending order already owns this attemptId → 409 order_conflict, hold NOT released', async () => {
+    createPaymentIntent.mockRejectedValueOnce(
+      Object.assign(new Error('Keys for idempotent requests can only be used with the same parameters'), {
+        type: 'idempotency_error',
+      }),
+    );
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'order_conflict' });
+    // A live checkout (this same attemptId) owns the hold and possibly a
+    // client_secret already in flight — releasing here would double-sell.
+    expect(releaseHold).not.toHaveBeenCalled();
+    // No PI was created (the create call itself threw) — nothing to cancel.
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it('idempotency_error + no order row for this attemptId → release called, 502 stripe_failed', async () => {
+    createPaymentIntent.mockRejectedValueOnce(
+      Object.assign(new Error('Keys for idempotent requests can only be used with the same parameters'), {
+        raw: { type: 'idempotency_error' },
+      }),
+    );
+    selectOrderStatus.mockResolvedValueOnce({ data: null, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'stripe_failed' });
+    // No live order for this attemptId — a prior attempt died before the
+    // orders insert. Safe to release, same as the generic Stripe-failure path.
+    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
   });
 
   it('rolls back (cancels PI + releases pieces) on a genuine, non-23505 orders-insert failure', async () => {

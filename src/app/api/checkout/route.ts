@@ -200,6 +200,31 @@ export async function POST(req: Request) {
       // double-sell window. Fail this duplicate quietly and leave the hold.
       return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
     }
+    const stripeErrType =
+      (err as { type?: string } | null)?.type ??
+      (err as { raw?: { type?: string } } | null)?.raw?.type;
+    if (stripeErrType === 'idempotency_error') {
+      // Stripe's idempotency keys expire after ~24h, so a retried attemptId can
+      // collide as "same key, different params" instead of the in-progress
+      // case above. Whether releasing is safe depends on whether THIS attempt
+      // still owns a live checkout: check for a pending orders row before
+      // deciding.
+      const { data: existingOrder } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .maybeSingle();
+      if (existingOrder?.status === 'pending') {
+        // A live checkout for this attemptId already owns the hold (and
+        // possibly a client_secret in flight) — releasing would double-sell.
+        // Ask the client to reset its attemptId instead.
+        return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+      }
+      // No live order for this attemptId — a prior attempt died before the
+      // orders insert. Safe to release exactly like the generic case below.
+      await releaseOwnHold();
+      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    }
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
     await releaseOwnHold();
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
@@ -271,6 +296,21 @@ export async function POST(req: Request) {
       // click against their own orphaned hold. Free it — status-scoped, so a
       // paid order's `sold` pieces are untouched.
       await releaseOwnHold();
+      // The PI create above (same idempotency key, expired after ~24h) minted
+      // a FRESH PaymentIntent that has no orders row and never will — the
+      // abandoned-checkout cron only reaps rows it can find. Best-effort
+      // cancel it here so it doesn't strand an unreaped PI. Canceling an
+      // already-succeeded PI (replayed after real payment) fails harmlessly
+      // into the log below.
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error(
+          'checkout: failed to cancel orphaned PaymentIntent (order_conflict)',
+          paymentIntent.id,
+          cancelErr,
+        );
+      }
       return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
     }
   }

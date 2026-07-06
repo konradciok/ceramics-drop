@@ -289,39 +289,50 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
     vi.mocked(Sentry.captureMessage).mockClear();
   });
 
-  it('logs and captures Sentry when no order exists at all for the payment_intent, and still responds 200', async () => {
+  // NOTE: both tests below feed a not-found `shipmentLookup` (mirroring the
+  // real `orders.select('id').eq('payment_intent_id', pi).single()` call in
+  // createShipment). An unknown/un-lookupable payment_intent has no orders row
+  // for ANY query, so createShipment's own lookup throws "order lookup failed"
+  // and — since createShipment runs unconditionally after markPaid and nothing
+  // in this route catches that throw — the route itself throws. In production
+  // that surfaces as a 5xx, and Stripe retries the delivery (redelivering this
+  // same event, so the Sentry message below fires again on every retry until
+  // fixed). A prior version of these tests faked `shipmentLookup` as a found
+  // order (`{ id: 'o_other' }`), which let createShipment succeed and asserted
+  // a 200 the real system never produces for an unknown payment_intent.
+  it('logs and captures Sentry when no order exists at all for the payment_intent, then throws via createShipment\'s own lookup (real 5xx/retry path)', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { supabase } = makeSucceededSupabase({
       casUpdate: { data: [], error: null },
       // .single() finding no row surfaces as PostgREST's zero-rows error, not a bare null
       fallbackSelect: { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } },
-      shipmentLookup: { data: { id: 'o_other' }, error: null },
+      shipmentLookup: { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } },
       variantRows: { data: [], error: null },
     });
     supabaseImpl = supabase;
 
-    const res = await POST(succeededEventRequest());
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/createShipment: order lookup failed/);
 
-    expect(res.status).toBe(200);
     expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: no order found for payment_intent', 'pi_1');
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
     consoleErrorSpy.mockRestore();
   });
 
-  it('a transient DB error on the fallback fetch reports a lookup failure, NOT an unknown payment_intent', async () => {
+  it('a transient DB error on the fallback fetch reports a lookup failure, NOT an unknown payment_intent, then throws via createShipment\'s own lookup (real 5xx/retry path)', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const dbError = { code: 'XX000', message: 'db hiccup' };
     const { supabase } = makeSucceededSupabase({
       casUpdate: { data: [], error: null },
       fallbackSelect: { data: null, error: dbError },
-      shipmentLookup: { data: { id: 'o_other' }, error: null },
+      // Same underlying DB hiccup — createShipment's independent lookup query
+      // fails the same way.
+      shipmentLookup: { data: null, error: dbError },
       variantRows: { data: [], error: null },
     });
     supabaseImpl = supabase;
 
-    const res = await POST(succeededEventRequest());
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/createShipment: order lookup failed/);
 
-    expect(res.status).toBe(200);
     expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: order lookup failed for payment_intent', 'pi_1', dbError);
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_order_lookup_failed');
     expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
