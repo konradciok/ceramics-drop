@@ -71,7 +71,7 @@ export async function sendMetaPurchase(
   config: MetaCapiConfig,
   input: MetaPurchaseInput,
   fetchImpl: typeof fetch = fetch,
-): Promise<{ ok: boolean; status: number }> {
+): Promise<{ ok: boolean; status: number; errorBody?: string }> {
   const url =
     `https://graph.facebook.com/${GRAPH_API_VERSION}/${config.pixelId}/events` +
     `?access_token=${encodeURIComponent(config.accessToken)}`;
@@ -84,5 +84,11 @@ export async function sendMetaPurchase(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return { ok: res.ok, status: res.status };
+  if (res.ok) return { ok: true, status: res.status };
+  // Meta returns a structured { error: { message, type, code, error_subcode, fbtrace_id } }
+  // body on 4xx — that detail (e.g. "Invalid OAuth access token" vs. a payload validation
+  // error) is exactly what's needed to tell a credentials problem from a bad request, so
+  // capture it instead of just the status code.
+  const errorBody = await res.text().catch(() => undefined);
+  return { ok: false, status: res.status, errorBody: errorBody?.slice(0, 2000) };
 }

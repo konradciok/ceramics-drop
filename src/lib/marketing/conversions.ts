@@ -131,8 +131,15 @@ export async function sendPurchaseConversions(
     try {
       const result = await sendMeta(deps.metaConfig, metaInput);
       if (!result.ok) {
-        console.error('meta capi purchase http error for', paymentIntentId, result.status);
-        Sentry.captureMessage(`meta capi purchase http error ${result.status} for ${paymentIntentId}`);
+        console.error('meta capi purchase http error for', paymentIntentId, result.status, result.errorBody);
+        // Fingerprint on status + errorBody (not the interpolated message) so every failing
+        // order groups into one issue instead of one per payment_intent_id — the errorBody
+        // is what actually tells a bad/mismatched token apart from a payload validation error.
+        Sentry.captureMessage(`meta capi purchase http error ${result.status}`, {
+          level: 'error',
+          fingerprint: ['meta-capi-purchase-http-error', String(result.status), result.errorBody ?? ''],
+          extra: { payment_intent_id: paymentIntentId, status: result.status, response_body: result.errorBody },
+        });
       }
     } catch (err) {
       console.error('meta capi purchase failed for', paymentIntentId, err);

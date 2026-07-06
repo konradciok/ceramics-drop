@@ -62,4 +62,23 @@ describe('sendMetaPurchase', () => {
     await sendMetaPurchase({ pixelId: 'PIX', accessToken: 'TOK', testEventCode: 'TEST123' }, input(), fetchImpl);
     expect(JSON.parse(fetchImpl.mock.calls[0][1].body).test_event_code).toBe('TEST123');
   });
+
+  it('captures the response body on a non-ok response, so the real Meta error is diagnosable', async () => {
+    const errorJson = '{"error":{"message":"Invalid OAuth access token","type":"OAuthException","code":190}}';
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 400, text: async () => errorJson });
+    const res = await sendMetaPurchase({ pixelId: 'PIX', accessToken: 'TOK' }, input(), fetchImpl);
+    expect(res).toEqual({ ok: false, status: 400, errorBody: errorJson });
+  });
+
+  it('does not blow up when the response body cannot be read', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => {
+        throw new Error('stream already consumed');
+      },
+    });
+    const res = await sendMetaPurchase({ pixelId: 'PIX', accessToken: 'TOK' }, input(), fetchImpl);
+    expect(res).toEqual({ ok: false, status: 500, errorBody: undefined });
+  });
 });

@@ -133,12 +133,34 @@ describe('sendPurchaseConversions', () => {
 
   it('logs and captures to Sentry when Meta returns a non-ok HTTP response, still calls GA4', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const d = deps({ sendMeta: vi.fn().mockResolvedValue({ ok: false, status: 400 }) });
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const d = deps({
+      sendMeta: vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        errorBody: '{"error":{"message":"Invalid OAuth access token","code":190}}',
+      }),
+    });
     await sendPurchaseConversions('pi_1', d);
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('meta capi purchase http error'),
       'pi_1',
       400,
+      '{"error":{"message":"Invalid OAuth access token","code":190}}',
+    );
+    // Fingerprinted on status + response body (not the payment_intent_id) so every
+    // failing order groups into one Sentry issue instead of one per order.
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining('meta capi purchase http error 400'),
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: [
+          'meta-capi-purchase-http-error',
+          '400',
+          '{"error":{"message":"Invalid OAuth access token","code":190}}',
+        ],
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1', status: 400 }),
+      }),
     );
     expect(d.sendGa4).toHaveBeenCalled();
     consoleSpy.mockRestore();
