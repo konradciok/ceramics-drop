@@ -192,15 +192,49 @@ const I18N_ORDER_CONFIRMATION = {
   },
 };
 
+// I18N_ORDER_CONFIRMATION_PRINT — mirrors src/lib/email.ts (pl/en/es; de falls back via resolveLocale)
+const I18N_ORDER_CONFIRMATION_PRINT = {
+  pl: {
+    subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
+    thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
+    deliveryTitle: 'Informacja o realizacji',
+    deliveryP1: 'Druki fine-art powstają na zamówienie u naszego partnera drukarskiego Prodigi.',
+    deliveryP2: 'Produkcja trwa zwykle 2–5 dni roboczych. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
+    deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
+    signOff: 'Do zobaczenia! Anna Ciok Studio',
+  },
+  en: {
+    subject: 'Order confirmed — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
+    thankYou: "Thank you for your order! It's confirmed — your print is on its way to production.",
+    deliveryTitle: 'Fulfilment information',
+    deliveryP1: 'Fine-art prints are produced on demand by our print partner Prodigi.',
+    deliveryP2: "Production usually takes 2–5 business days. Once your order ships, you'll receive an email with a tracking number.",
+    deliveryP3: 'Courier delivery across the EU and the UK.',
+    signOff: 'Talk soon! Anna Ciok Studio',
+  },
+  es: {
+    subject: 'Pedido confirmado — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
+    thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
+    deliveryTitle: 'Información sobre la producción',
+    deliveryP1: 'Las láminas fine-art se producen bajo demanda con nuestro socio de impresión Prodigi.',
+    deliveryP2: 'La producción suele tardar de 2 a 5 días laborables. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
+    deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
+    signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+};
+
 function resolveLocale(locale) {
   if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
   return 'pl';
 }
 
 /** Mirrors buildOrderConfirmationEmail — builds MAIN_CONTENT for the customer confirmation email. */
-function buildOrderConfirmationMainContent(order, locale) {
+function buildOrderConfirmationMainContent(order, locale, kind = 'ceramic') {
   const loc = resolveLocale(locale);
-  const t = I18N_ORDER_CONFIRMATION[loc];
+  const t = (kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[loc];
   const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
   const greeting = t.greeting(firstName);
 
@@ -213,6 +247,11 @@ function buildOrderConfirmationMainContent(order, locale) {
     emailMutedParagraph(t.deliveryP3),
     emailMutedParagraph(t.signOff),
   ].join('');
+}
+
+/** Print-only when every line item carries a print variant (mirrors webhook kind detection). */
+function isPrintOnlyOrder(items) {
+  return items.length > 0 && items.every((it) => it.variant != null);
 }
 
 /** Mirrors buildNewOrderToStudioEmail — builds MAIN_CONTENT for the studio new-order email. */
@@ -591,13 +630,23 @@ async function runEmails(orders, { dryRun, verbose, env, supabase }) {
       continue;
     }
 
+    const { data: itemRows, error: itemErr } = await supabase
+      .from('order_items')
+      .select('variant')
+      .eq('order_id', order.id);
+    if (itemErr) {
+      err(`${tag} could not fetch order items: ${itemErr.message}`);
+      continue;
+    }
+    const kind = isPrintOnlyOrder(itemRows ?? []) ? 'print' : 'ceramic';
+
     const locale = resolveLocale(order.locale ?? 'pl');
-    const t = I18N_ORDER_CONFIRMATION[locale];
-    const mainContent = buildOrderConfirmationMainContent(order, locale);
+    const t = (kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[locale];
+    const mainContent = buildOrderConfirmationMainContent(order, locale, kind);
 
     if (dryRun) {
       dryLog(
-        `${tag} WOULD send order-confirmation to ${redactEmail(order.email, verbose)} (locale=${locale}, subject="${t.subject}")`,
+        `${tag} WOULD send order-confirmation (${kind}) to ${redactEmail(order.email, verbose)} (locale=${locale}, subject="${t.subject}")`,
       );
       continue;
     }
@@ -634,7 +683,7 @@ async function runEmails(orders, { dryRun, verbose, env, supabase }) {
         continue;
       }
 
-      ok(`${tag} sent order-confirmation to ${redactEmail(order.email, verbose)}`);
+      ok(`${tag} sent order-confirmation (${kind}) to ${redactEmail(order.email, verbose)}`);
     } catch (e) {
       err(`${tag} FAILED: ${e.message}`);
     }

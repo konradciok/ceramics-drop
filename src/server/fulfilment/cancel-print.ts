@@ -10,9 +10,10 @@ import { prodigiClient } from '../prodigi/client';
  * - Job queued but never submitted (no prodigi_orders row) → mark the job
  *   'cancelled' so processJob can't claim it. (processJob's own "order not
  *   paid" guard is the backstop once the webhook flips the status; this closes
- *   the admin-refund window where the order is still 'paid'.) A job already
- *   claimed ('fulfilment_submitting') or submitted without a recorded Prodigi
- *   id is also cancelled, but alerts too — the order may exist at Prodigi.
+ *   the admin-refund window where the order is still 'paid'.)
+ * - Job mid/failed submission without a prodigi_orders row ('fulfilment_submitting',
+ *   'fulfilment_submitted', 'failed_retryable') → cancel the job and alert: POST
+ *   may have reached Prodigi even though we never persisted the id.
  * - Prodigi order cancellable → cancel it, record stage 'Cancelled'.
  * - Already in production/shipped (cancel unavailable or failed) → Sentry
  *   alert + studio email, claim-once via prodigi_orders.cancel_alerted_at.
@@ -42,24 +43,25 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
     if (poErr) throw new Error(`cancelPrintFulfilment: prodigi_orders lookup failed for ${orderId}: ${poErr.message}`);
 
     if (!po) {
-      // Jobs processJob hasn't claimed yet: kill silently — Prodigi never saw them.
+      // Only 'queued' is safe to kill silently — Prodigi never saw the order.
       const { error: jobErr } = await supabase
         .from('fulfilment_jobs')
         .update({ status: 'cancelled', last_error: 'order refunded before submission', updated_at: now })
         .eq('order_id', orderId)
-        .in('status', ['queued', 'failed_retryable']);
+        .in('status', ['queued']);
       if (jobErr) throw new Error(`cancelPrintFulfilment: job cancel failed for ${orderId}: ${jobErr.message}`);
 
       // A missing prodigi_orders row does NOT prove Prodigi never got the order:
       // processJob may be mid-POST ('fulfilment_submitting'), crashed between POST
-      // and persist, or hit a 409 whose body carried no id ('fulfilment_submitted').
-      // Kill the job and alert — the status CAS is the claim, so the admin refund
-      // and the charge.refunded webhook can't double-alert.
+      // and persist, hit a retryable POST failure ('failed_retryable'), or hit a 409
+      // whose body carried no id ('fulfilment_submitted'). Kill the job and alert —
+      // the status CAS is the claim, so the admin refund and the charge.refunded
+      // webhook can't double-alert.
       const { data: inflight, error: inflightErr } = await supabase
         .from('fulfilment_jobs')
         .update({ status: 'cancelled', last_error: 'order refunded mid-submission — check Prodigi manually', updated_at: now })
         .eq('order_id', orderId)
-        .in('status', ['fulfilment_submitting', 'fulfilment_submitted'])
+        .in('status', ['fulfilment_submitting', 'fulfilment_submitted', 'failed_retryable'])
         .select('id');
       if (inflightErr) throw new Error(`cancelPrintFulfilment: in-flight job cancel failed for ${orderId}: ${inflightErr.message}`);
       if (inflight && inflight.length > 0) {
@@ -86,19 +88,29 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
     const client = prodigiClient(env);
     let cancelled = false;
     let cancelOutcome: string | null = null;
-    const actions = await client.getOrderActions(po.prodigi_order_id);
-    // A non-Ok outcome on a 200 is a transient/unknown response — bail to the
-    // outer catch (Sentry) instead of mis-reading it as "cancel unavailable"
-    // and false-alerting the studio about a still-cancellable order.
-    if (String(actions.outcome).toLowerCase() !== 'ok') {
-      throw new Error(`cancelPrintFulfilment: getOrderActions outcome '${actions.outcome}' for ${orderId} (${po.prodigi_order_id})`);
-    }
-    // Prodigi docs mix 'Cancelled'/'cancelled' and 'Yes'/'yes' casing between
-    // examples and outcome tables — compare case-insensitively.
-    if (String(actions.cancel?.isAvailable).toLowerCase() === 'yes') {
-      const res = await client.cancelOrder(po.prodigi_order_id);
-      cancelOutcome = res.outcome;
-      cancelled = String(res.outcome).toLowerCase() === 'cancelled';
+    try {
+      const actions = await client.getOrderActions(po.prodigi_order_id);
+      // A non-Ok outcome on a 200 is a transient/unknown response — bail to the
+      // outer catch (Sentry) instead of mis-reading it as "cancel unavailable"
+      // and false-alerting the studio about a still-cancellable order.
+      if (String(actions.outcome).toLowerCase() !== 'ok') {
+        throw new Error(`cancelPrintFulfilment: getOrderActions outcome '${actions.outcome}' for ${orderId} (${po.prodigi_order_id})`);
+      }
+      // Prodigi docs mix 'Cancelled'/'cancelled' and 'Yes'/'yes' casing between
+      // examples and outcome tables — compare case-insensitively.
+      if (String(actions.cancel?.isAvailable).toLowerCase() === 'yes') {
+        const res = await client.cancelOrder(po.prodigi_order_id);
+        cancelOutcome = res.outcome;
+        cancelled = String(res.outcome).toLowerCase() === 'cancelled';
+      }
+    } catch (prodigiErr) {
+      const badOutcome =
+        prodigiErr instanceof Error &&
+        prodigiErr.message.startsWith('cancelPrintFulfilment: getOrderActions outcome');
+      if (badOutcome) throw prodigiErr;
+      // Network/API failure — we can't tell if cancel succeeded; alert the studio.
+      console.error('cancelPrintFulfilment: Prodigi call failed for', orderId, prodigiErr);
+      Sentry.captureException(prodigiErr);
     }
 
     if (cancelled) {

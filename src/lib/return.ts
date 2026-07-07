@@ -35,7 +35,7 @@ export type CreateReturnDeps = {
 
 export type CreateReturnResult =
   | { ok: true; returnShipmentId: string; trackingNumber: string | null }
-  | { ok: false; reason: 'order_not_found' | 'not_eligible' | 'already_returned' };
+  | { ok: false; reason: 'order_not_found' | 'not_eligible' | 'no_ceramic_items' | 'already_returned' };
 
 /**
  * Create the return shipment and persist its ID. Idempotent: returns
@@ -55,7 +55,7 @@ export async function createOrderReturn(
   // Print-only orders are fulfilled by Prodigi (EU/UK courier) — the InPost
   // locker return path makes no sense for them. POD defect handling stays a
   // manual/support path.
-  if (!(await deps.hasCeramicItems(orderId))) return { ok: false, reason: 'not_eligible' };
+  if (!(await deps.hasCeramicItems(orderId))) return { ok: false, reason: 'no_ceramic_items' };
 
   let payload;
   try {
