@@ -56,7 +56,7 @@ export default {
       ),
     );
   },
-} satisfies ExportedHandler<CloudflareEnv>;
+} satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
 
 async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
   const stripe = stripeFromEnv(env);

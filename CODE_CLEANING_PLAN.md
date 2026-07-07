@@ -124,7 +124,7 @@ Do **not** bulk-remove. Each needs a human/owner decision or a follow-up refacto
 ### Dependencies
 | Item | Evidence | Recommended action |
 |---|---|---|
-| `prettier` (devDep) | `depcheck` unused; `npm ls` top-level only; **no** prettier config file; no `format` script | Either add `format` + `format:check` scripts + a `.prettierrc`, **or** remove. Likely used ad-hoc via editor/`npx` — confirm with team before removing. |
+| ~~`prettier` (devDep)~~ | Removed — unused zombie dep (no config, no scripts, no CI). | **Done.** |
 
 **Reclassified from tool "unused" → keep (see §5):** `@swc/helpers`, `@types/react-dom`.
 
@@ -204,7 +204,7 @@ The follow-up agent **must not** remove, rename, or "simplify" any of these.
 3. **Remove `@eslint/eslintrc` + `@google-analytics/data`** (§3.3, §3.4). `npm install`. Re-run lint + test + build.
 4. **Delete/archive `scripts/import-new-plates.mjs`** (§3.5) after a quick owner nod.
 5. **Stop.** Everything below is a separate, owner-gated pass:
-   - Resolve the NEEDS-VERIFICATION scripts + `prettier` with the team.
+   - Resolve the NEEDS-VERIFICATION scripts with the team.
    - Refactor the rate-limiter duplication (with its tests).
    - Fix the `worker.ts` typecheck/build config in a focused session (add Cloudflare Worker types to
      the typecheck scope or split the worker typecheck) — **without changing Worker behavior**.
