@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { resetCart, addFirstUnsoldFromCategory, goToCart, fillContact, sel } from './helpers/checkout';
+import { resetCart, appendToCart, goToCart, fillContact, sel } from './helpers/checkout';
 
 /**
  * Mixed-cart rejection (Findings 10 + 11) — ceramics and prints are separate
  * orders on every layer:
  *  1. the ceramic PDP blocks add-to-cart while a print is in the cart,
- *  2. a mixed cart (built via the tile shortcut) shows the notice and disables
- *     checkout,
+ *  2. a mixed cart (seeded directly — tiles now block add while a print is
+ *     present) shows the notice and disables checkout,
  *  3. removing the print restores the ceramic path.
  * @ci-safe — cart state only; /api/checkout is never called.
  */
@@ -30,8 +30,8 @@ test.describe('mixed cart @ci', () => {
     await expect(page.getByTestId('ceramic-add')).toBeDisabled();
     await expect(page.getByTestId('ceramic-mixed-note')).toBeVisible();
 
-    // 3. The tile shortcut can still mix — the cart view must then refuse.
-    const ceramic = await addFirstUnsoldFromCategory(page, 'kubki');
+    // 3. Seed a mixed cart (stale localStorage / pre-guard session) — cart must refuse.
+    await appendToCart(page, ceramicId!);
     await goToCart(page);
     await expect(page.getByTestId('mixed-cart-notice')).toBeVisible();
     await expect(page.locator(sel.checkoutButton)).toBeDisabled();
@@ -40,7 +40,7 @@ test.describe('mixed cart @ci', () => {
     const printLine = page.locator(`${sel.cartLine}[data-product-id^="print:"]`);
     await printLine.locator('button.rm').click();
     await expect(page.getByTestId('mixed-cart-notice')).toHaveCount(0);
-    await expect(page.locator(`${sel.cartLine}[data-product-id="${ceramic.id}"]`)).toHaveCount(1);
+    await expect(page.locator(`${sel.cartLine}[data-product-id="${ceramicId}"]`)).toHaveCount(1);
     // Ceramic delivery options are back (prints would have hidden them)…
     await expect(page.locator('[data-testid="shipping-odbior"]')).toBeVisible();
     // …and with pickup + contact the checkout button actually arms.

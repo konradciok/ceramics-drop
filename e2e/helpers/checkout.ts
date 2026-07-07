@@ -50,6 +50,19 @@ export async function goToCart(page: Page): Promise<void> {
   await page.goto('/koszyk');
 }
 
+/** Append a product id to the persisted cart (Zustand persist blob). */
+export async function appendToCart(page: Page, productId: string): Promise<void> {
+  await page.evaluate(({ key, productId }) => {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : { state: { ids: [] as string[] }, version: 0 };
+    const ids: string[] = parsed.state?.ids ?? [];
+    if (!ids.includes(productId)) {
+      parsed.state = { ids: [...ids, productId] };
+      localStorage.setItem(key, JSON.stringify(parsed));
+    }
+  }, { key: CART_KEY, productId });
+}
+
 export async function selectPaczkomat(page: Page): Promise<void> {
   await page.locator(sel.shippingPaczkomat).click();
 }
