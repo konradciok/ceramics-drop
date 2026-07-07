@@ -9,8 +9,10 @@ const { mockFrom, mockGetOrder, mockShipEmail } = vi.hoisted(() => ({
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
 vi.mock('./client', () => ({ prodigiClient: vi.fn(() => ({ getOrder: mockGetOrder })) }));
 vi.mock('@/lib/email', () => ({ emailPrintShippingConfirmationToCustomer: mockShipEmail }));
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
 import { handleProdigiCallback } from './callbacks';
+import * as Sentry from '@sentry/nextjs';
 
 const ENV = {} as CloudflareEnv;
 
@@ -156,7 +158,7 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     expect(mockShipEmail).not.toHaveBeenCalled();
   });
 
-  it('send failure: releases OUR claim (CAS on the claimed timestamp) and still completes', async () => {
+  it('send failure: retries 3×, alerts Sentry, releases OUR claim, and still completes', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockShipEmail.mockRejectedValue(new Error('resend down'));
     const calls = setup();
@@ -164,9 +166,21 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     const res = await handleProdigiCallback(callbackBody(), ENV);
 
     expect(res.status).toBe(200);
+    expect(mockShipEmail).toHaveBeenCalledTimes(3);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     expect(calls.shippingClaims).toHaveLength(2);
     expect(typeof calls.shippingClaims[0].shipping_email_sent_at).toBe('string');
     expect(calls.shippingClaims[1].shipping_email_sent_at).toBeNull();
     consoleErrorSpy.mockRestore();
+  });
+
+  it('missing customer email: no claim written, no send', async () => {
+    const calls = setup({ orderRow: { id: 'o1', email: null, receiver_first_name: 'Anna', locale: 'en' } });
+
+    const res = await handleProdigiCallback(callbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.shippingClaims).toHaveLength(0);
+    expect(mockShipEmail).not.toHaveBeenCalled();
   });
 });

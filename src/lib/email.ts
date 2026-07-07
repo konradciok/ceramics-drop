@@ -528,14 +528,21 @@ export async function emailPrintShippingConfirmationToCustomer(params: {
 
   const { subject, mainContent } = buildPrintShippingConfirmation(params);
 
-  await sendResendTemplate({
-    apiKey: env.RESEND_API_KEY,
-    from: EMAIL_FROM,
-    to: [order.email],
-    subject,
-    templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
-    variables: { MAIN_CONTENT: mainContent },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    await sendResendTemplate({
+      apiKey: env.RESEND_API_KEY,
+      from: EMAIL_FROM,
+      to: [order.email],
+      subject,
+      templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
+      variables: { MAIN_CONTENT: mainContent },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ── Return label email ───────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { emailPrintShippingConfirmationToCustomer } from '@/lib/email';
 import { prodigiClient } from './client';
@@ -188,6 +189,16 @@ async function sendPrintShippingEmailOnce(
   orderId: string,
   prodigiOrder: ProdigiOrderResponse['order'],
 ): Promise<void> {
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id, email, receiver_first_name, locale')
+    .eq('id', orderId)
+    .single();
+  const orderRow = order as {
+    id: string; email: string | null; receiver_first_name: string | null; locale: string | null;
+  } | null;
+  if (!orderRow?.email) return; // nothing to send — never claim
+
   const claimAt = new Date().toISOString();
   const { data: claimed, error: claimErr } = await supabase
     .from('prodigi_orders')
@@ -201,35 +212,42 @@ async function sendPrintShippingEmailOnce(
   }
   if (!claimed || claimed.length === 0) return; // already sent (or in flight)
 
-  try {
-    const { data: order } = await supabase
-      .from('orders')
-      .select('id, email, receiver_first_name, locale')
-      .eq('id', orderId)
-      .single();
-    const orderRow = order as {
-      id: string; email: string | null; receiver_first_name: string | null; locale: string | null;
-    } | null;
-    if (!orderRow?.email) return; // nothing to send — keep the claim
+  const shipments = prodigiOrder.shipments ?? [];
+  const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
+  const sendParams = {
+    order: orderRow,
+    tracking: {
+      number: shipment?.tracking?.number ?? null,
+      url: shipment?.tracking?.url ?? null,
+      carrier: shipment?.carrier?.name ?? null,
+    },
+    locale: orderRow.locale ?? 'pl',
+  };
 
-    const shipments = prodigiOrder.shipments ?? [];
-    const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
-    await emailPrintShippingConfirmationToCustomer({
-      order: orderRow,
-      tracking: {
-        number: shipment?.tracking?.number ?? null,
-        url: shipment?.tracking?.url ?? null,
-        carrier: shipment?.carrier?.name ?? null,
-      },
-      locale: orderRow.locale ?? 'pl',
-    });
-  } catch (err) {
-    console.error('print shipping email send failed for', orderId, err);
-    // Release OUR claim so a replayed callback can retry the send.
-    await supabase
+  let sent = false;
+  for (let attempt = 0; attempt < 3 && !sent; attempt++) {
+    try {
+      await emailPrintShippingConfirmationToCustomer(sendParams);
+      sent = true;
+    } catch (err) {
+      if (attempt === 2) {
+        console.error('print shipping email send failed for', orderId, err);
+        // Callback still 200s and Prodigi won't redeliver the same event id —
+        // alert so someone can reconcile or replay manually.
+        Sentry.captureException(err);
+      } else {
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+      }
+    }
+  }
+  if (!sent) {
+    const { error: releaseErr } = await supabase
       .from('prodigi_orders')
       .update({ shipping_email_sent_at: null })
       .eq('prodigi_order_id', prodigiOrderId)
       .eq('shipping_email_sent_at', claimAt);
+    if (releaseErr) {
+      console.error('print shipping email claim release failed for', orderId, releaseErr);
+    }
   }
 }
