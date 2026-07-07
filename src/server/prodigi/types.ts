@@ -50,7 +50,11 @@ export interface ProdigiOrderActionsResponse {
   cancel?: { isAvailable: 'Yes' | 'No' | string };
 }
 
-/** POST /orders/{id}/actions/cancel — outcome is 'Cancelled' on success. */
+/**
+ * POST /orders/{id}/actions/cancel — outcome is 'Cancelled' on success.
+ * Prodigi docs disagree with themselves on casing ('Cancelled' in examples,
+ * 'cancelled' in the outcomes table) — consumers must compare case-insensitively.
+ */
 export interface ProdigiCancelResponse {
   outcome: 'Cancelled' | 'FailedToCancel' | 'ActionNotAvailable' | string;
   order?: ProdigiOrderResponse['order'];

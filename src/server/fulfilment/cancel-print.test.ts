@@ -39,6 +39,10 @@ function setup(opts: {
   po?: PoRow | null;
   /** Rows returned by the cancel_alerted_at claim UPDATE (empty = claim lost). */
   claimRows?: unknown[];
+  /** Rows returned by the in-flight job cancel UPDATE (non-empty = job was submitting/submitted). */
+  inflightRows?: unknown[];
+  /** Override the order_items count query result (e.g. a DB error). */
+  itemsResult?: unknown;
 }) {
   const calls = {
     tables: [] as string[],
@@ -48,11 +52,15 @@ function setup(opts: {
   };
   mockFrom.mockImplementation((table: string) => {
     calls.tables.push(table);
-    if (table === 'order_items') return makeChain({ count: opts.printCount ?? 0, error: null });
+    if (table === 'order_items') return makeChain(opts.itemsResult ?? { count: opts.printCount ?? 0, error: null });
     if (table === 'fulfilment_jobs') {
       const chain = makeChain({ error: null });
       chain.update = vi.fn((p: Record<string, unknown>) => {
         calls.jobUpdates.push(p);
+        // The in-flight cancel is the one that `.select()`s its rows back.
+        if (String(p.last_error).includes('mid-submission')) {
+          return makeChain({ data: opts.inflightRows ?? [], error: null });
+        }
         return chain;
       });
       return chain;
@@ -130,11 +138,30 @@ describe('cancelPrintFulfilment', () => {
   it('refund before submission (no prodigi_orders row): kills the queued job, never calls Prodigi', async () => {
     const calls = setup({ printCount: 1, po: null });
     await cancelPrintFulfilment('o1', ENV);
-    expect(calls.jobUpdates).toHaveLength(1);
+    // Two CAS updates: queued/failed_retryable (silent) + submitting/submitted (alerting).
+    expect(calls.jobUpdates).toHaveLength(2);
     expect(calls.jobUpdates[0]).toMatchObject({ status: 'cancelled' });
+    expect(calls.jobUpdates[1]).toMatchObject({ status: 'cancelled' });
     expect(mockGetOrderActions).not.toHaveBeenCalled();
     expect(mockCancelOrder).not.toHaveBeenCalled();
     expect(mockAlertEmail).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('refund mid-submission (job claimed, no prodigi_orders row): kills the job AND alerts', async () => {
+    const calls = setup({ printCount: 1, po: null, inflightRows: [{ id: 'j1' }] });
+    await cancelPrintFulfilment('o1', ENV);
+    expect(calls.jobUpdates).toHaveLength(2);
+    expect(mockGetOrderActions).not.toHaveBeenCalled();
+    expect(mockCancelOrder).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'print_refund_manual_cancel_required',
+      expect.objectContaining({ extra: expect.objectContaining({ orderId: 'o1', prodigiOrderId: 'unknown' }) }),
+    );
+    expect(mockAlertEmail).toHaveBeenCalledTimes(1);
+    expect(mockAlertEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: 'o1', prodigiOrderId: expect.stringContaining('o1') }),
+    );
   });
 
   it('already cancelled: no Prodigi calls, no alert (idempotent)', async () => {
@@ -165,6 +192,44 @@ describe('cancelPrintFulfilment', () => {
     await cancelPrintFulfilment('o1', ENV);
     expect(mockAlertEmail).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('accepts a lowercase cancel outcome (Prodigi docs mix casings)', async () => {
+    const calls = setup({ printCount: 1, po: CANCELLABLE_PO });
+    mockCancelOrder.mockResolvedValue({ outcome: 'cancelled' });
+    await cancelPrintFulfilment('o1', ENV);
+    expect(calls.stageUpdates).toHaveLength(1);
+    expect(calls.stageUpdates[0]).toMatchObject({ prodigi_status_stage: 'Cancelled' });
+    expect(mockAlertEmail).not.toHaveBeenCalled();
+  });
+
+  it('accepts a lowercase isAvailable and still cancels', async () => {
+    mockGetOrderActions.mockResolvedValue({ outcome: 'Ok', cancel: { isAvailable: 'yes' } });
+    setup({ printCount: 1, po: CANCELLABLE_PO });
+    await cancelPrintFulfilment('o1', ENV);
+    expect(mockCancelOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('non-Ok getOrderActions outcome: no cancel attempt, no false alert, Sentry exception', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetOrderActions.mockResolvedValue({ outcome: 'Error', cancel: { isAvailable: 'Yes' } });
+    setup({ printCount: 1, po: CANCELLABLE_PO });
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    expect(mockCancelOrder).not.toHaveBeenCalled();
+    expect(mockAlertEmail).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('never throws: a DB error on the order_items count is swallowed and captured in Sentry', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup({ itemsResult: { count: null, error: { message: 'db down' } } });
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    expect(Sentry.captureException).toHaveBeenCalled();
+    expect(mockGetOrderActions).not.toHaveBeenCalled();
+    expect(mockAlertEmail).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('never throws: a Prodigi network failure is swallowed and captured in Sentry', async () => {
