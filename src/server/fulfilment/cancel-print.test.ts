@@ -138,7 +138,7 @@ describe('cancelPrintFulfilment', () => {
   it('refund before submission (no prodigi_orders row): kills the queued job, never calls Prodigi', async () => {
     const calls = setup({ printCount: 1, po: null });
     await cancelPrintFulfilment('o1', ENV);
-    // Two CAS updates: queued/failed_retryable (silent) + submitting/submitted (alerting).
+    // Two CAS updates: queued (silent) + post-POST states (alerting).
     expect(calls.jobUpdates).toHaveLength(2);
     expect(calls.jobUpdates[0]).toMatchObject({ status: 'cancelled' });
     expect(calls.jobUpdates[1]).toMatchObject({ status: 'cancelled' });
@@ -146,6 +146,19 @@ describe('cancelPrintFulfilment', () => {
     expect(mockCancelOrder).not.toHaveBeenCalled();
     expect(mockAlertEmail).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('refund after retryable POST failure (failed_retryable, no prodigi_orders row): kills the job AND alerts', async () => {
+    const calls = setup({ printCount: 1, po: null, inflightRows: [{ id: 'j1' }] });
+    await cancelPrintFulfilment('o1', ENV);
+    expect(calls.jobUpdates).toHaveLength(2);
+    expect(mockGetOrderActions).not.toHaveBeenCalled();
+    expect(mockCancelOrder).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'print_refund_manual_cancel_required',
+      expect.objectContaining({ extra: expect.objectContaining({ orderId: 'o1', prodigiOrderId: 'unknown' }) }),
+    );
+    expect(mockAlertEmail).toHaveBeenCalledTimes(1);
   });
 
   it('refund mid-submission (job claimed, no prodigi_orders row): kills the job AND alerts', async () => {
@@ -232,12 +245,17 @@ describe('cancelPrintFulfilment', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('never throws: a Prodigi network failure is swallowed and captured in Sentry', async () => {
+  it('Prodigi network failure on a known order: alerts studio instead of Sentry-only', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockGetOrderActions.mockRejectedValue(new Error('prodigi down'));
     setup({ printCount: 1, po: CANCELLABLE_PO });
     await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
     expect(Sentry.captureException).toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'print_refund_manual_cancel_required',
+      expect.objectContaining({ extra: expect.objectContaining({ orderId: 'o1', prodigiOrderId: 'pr_1' }) }),
+    );
+    expect(mockAlertEmail).toHaveBeenCalledTimes(1);
     consoleErrorSpy.mockRestore();
   });
 

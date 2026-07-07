@@ -36,7 +36,7 @@ function enrich(order: AdminOrder): FulfillmentOrder {
   return {
     ...order,
     stage: computeFulfillmentStage(order),
-    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id) })),
+    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id, it.variant) })),
   };
 }
 

@@ -225,6 +225,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const hasCeramics = lines.some((l) => l.kind === 'ceramic');
   // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate orders.
   const mixedCart = hasPrints && hasCeramics;
+  // Private-sale links re-offer sold ceramics only; a print-only cart on that URL
+  // (e.g. buyer removed seeded pieces and added prints) cannot checkout.
+  const privateSalePrints = privateSale && hasPrints;
   const hasFramed = lines.some((l) => l.kind === 'print' && l.sel.framed);
   const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
   const currency = useCurrency();
@@ -323,7 +326,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (lines.length === 0 || submitting || !deliveryReady || mixedCart) return;
+    if (lines.length === 0 || submitting || !deliveryReady || mixedCart || privateSalePrints) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
@@ -398,8 +401,21 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         // idempotency key, and the server already released any hold it took —
         // a fresh attempt is the only path that can succeed.
         resetAttemptId();
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed', status: res.status }));
-        setCheckoutError(t('cart.checkoutError'));
+        let reason = 'checkout_failed';
+        let errorMessage = t('cart.checkoutError');
+        if (res.status === 400) {
+          try {
+            const body = (await res.json()) as { error?: string };
+            if (body.error === 'private_sale_prints_unsupported') {
+              reason = 'private_sale_prints_unsupported';
+              errorMessage = t('cart.privateSalePrintsNotice');
+            }
+          } catch {
+            // Unparseable body — keep generic copy.
+          }
+        }
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason, status: res.status }));
+        setCheckoutError(errorMessage);
         return;
       }
       const { client_secret } = (await res.json()) as { client_secret: string };
@@ -724,6 +740,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           {mixedCart && (
             <p className="pay-error" data-testid="mixed-cart-notice">{t('cart.mixedNotice')}</p>
           )}
+          {privateSalePrints && (
+            <p className="pay-error" data-testid="private-sale-prints-notice">{t('cart.privateSalePrintsNotice')}</p>
+          )}
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -740,7 +759,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
               id="checkout"
               data-testid="checkout-button"
               onClick={handleCheckout}
-              disabled={submitting || !deliveryReady || mixedCart}
+              disabled={submitting || !deliveryReady || mixedCart || privateSalePrints}
             >
               {t('cart.checkout')} <Icon name="arrow" />
             </button>

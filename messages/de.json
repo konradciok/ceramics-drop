@@ -242,7 +242,8 @@
     "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "privateSaleInvalid": "Dieser Bestelllink ist abgelaufen oder wurde bereits verwendet. Bitte kontaktiere das Studio.",
     "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden.",
-    "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren."
+    "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren.",
+    "privateSalePrintsNotice": "Private Bestelllinks gelten nur für Keramik — entferne Prints aus dem Warenkorb, um fortzufahren."
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",

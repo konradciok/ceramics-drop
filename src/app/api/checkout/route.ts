@@ -77,6 +77,7 @@ export async function POST(req: Request) {
   // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
+  const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
 
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // leaves shipping_address NULL and the Prodigi order could never be built.
@@ -221,6 +222,7 @@ export async function POST(req: Request) {
           order_id: orderId,
           product_ids: ids.join(','),
           delivery_method: method,
+          fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
         },
@@ -307,7 +309,7 @@ export async function POST(req: Request) {
     delivery_method: method,
     // Explicit fulfilment discriminator (Finding 8): which pipeline owns this
     // order. Per-item truth stays order_items.variant.
-    fulfilment_type: method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost',
+    fulfilment_type: fulfilmentType,
     email: contact.email,
     receiver_first_name: contact.first_name,
     receiver_last_name: contact.last_name,
