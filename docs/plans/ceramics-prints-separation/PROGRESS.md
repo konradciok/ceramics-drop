@@ -22,3 +22,11 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 **Tests:** `src/server/fulfilment/cancel-print.test.ts` (10 new), webhook `route.test.ts` (+5: full refund / replay / partial / dispute lost / dispute won), `process-job.test.ts` (+1 assertion). Full suite 637 green, lint clean, build green.
 
 **Note:** a stale `.next` dir in the worktree made `next build` fail with a workStore invariant — `rm -rf .next` fixed it; not related to any code change.
+
+## 03 — Returns guard (DONE)
+
+**Decision:** kept the DI style — new `CreateReturnDeps.hasCeramicItems(orderId)` dep, checked after the `already_returned` rung of the eligibility ladder. Route wires it via the existing `countCeramicOrderItems` (`variant IS NULL`); a count error **throws** (→ 500) rather than reading as "no ceramics", so a DB hiccup can't 404 a legitimately returnable order.
+
+**Files:** `src/lib/return.ts`, `src/app/api/returns/route.ts`, `src/lib/return.test.ts` (+2: print-only → `not_eligible`, mixed-with-ceramic stays eligible; the 7 existing ceramic tests pass unchanged with the dep defaulting to `true`).
+
+**Verified:** return tests 9/9, full suite 639, lint clean, build green. No surprises.
