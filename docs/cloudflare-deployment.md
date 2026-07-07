@@ -27,6 +27,8 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 >
 > Before merging PR #51, apply `supabase/migrations/20260609130000_orders_marketing.sql` to Supabase prod. The checkout route now inserts `orders.marketing`; without this column the insert fails at runtime.
 >
+> Before promoting a Workers build that includes `orders.fulfilment_type` checkout writes (PR #112 / stack 5), apply `supabase/migrations/20260707140000_orders_fulfilment_type.sql` and `supabase/migrations/20260707150000_drop_pod_variant_id.sql` to Supabase prod **first**. If code ships before the column exists, `orders.insert` fails after the PaymentIntent is created → rolled back → buyers see a generic checkout failure. The migration's `DEFAULT 'inpost'` only covers the reverse window (migration applied, old code still inserting without the column); pickup/print orders placed in that gap may be mislabelled until you re-run the backfill `UPDATE` without the `where fulfilment_type is null` guard.
+>
 > Audit for gaps — paste the catalogue ids (`getProducts().map(p => p.id)` from `src/lib/products.ts`) into the array literal; any rows returned are ids missing a `piece_state` row:
 >
 > ```sql

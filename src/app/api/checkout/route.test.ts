@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { printShippingOf } from '@/lib/print-shipping';
 
 type PgError = { code: string; message: string } | null;
 
@@ -564,6 +565,24 @@ describe('POST /api/checkout', () => {
       address,
     },
   });
+  const paczkomatDelivery = {
+    ok: true as const,
+    delivery: {
+      method: 'paczkomat',
+      contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+      target_point: 'WAW01A',
+      address: null,
+    },
+  };
+  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi') => {
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({ fulfilment_type: type }),
+    );
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ fulfilment_type: type }) }),
+      expect.anything(),
+    );
+  };
 
   describe('fulfilment_type on insert (Finding 8)', () => {
     it("writes 'pickup' for an odbior ceramic order", async () => {
@@ -575,9 +594,7 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'pickup' }),
-      );
+      expectFulfilment('pickup');
     });
 
     it("writes 'inpost' for a ceramic kurier order", async () => {
@@ -592,9 +609,28 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'inpost' }),
+      expectFulfilment('inpost');
+    });
+
+    it("writes 'inpost' for a ceramic paczkomat order", async () => {
+      validateDelivery.mockReturnValueOnce(
+        paczkomatDelivery as unknown as ReturnType<typeof validateDelivery>,
       );
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(
+            makeCheckoutBody({
+              delivery_method: 'paczkomat',
+              target_point: 'WAW01A',
+              contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+            }),
+          ),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('inpost');
     });
 
     it("writes 'prodigi' for a print order (kurier to an EU address)", async () => {
@@ -613,9 +649,7 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'prodigi' }),
-      );
+      expectFulfilment('prodigi');
       // Print carts never touch piece_state.
       expect(reserveRpc).not.toHaveBeenCalled();
     });
@@ -632,12 +666,13 @@ describe('POST /api/checkout', () => {
         ok: true,
         items: [{ ...PRINT_ITEM, variant: { size: '50x70', framed: false, mount: false, frameColour: 'none' } }],
       } as unknown as ReturnType<typeof validateCart>);
-    const post = async (body: Record<string, unknown> = {}) => {
+    const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
       const { POST } = await import('./route');
       return POST(
         new Request('http://localhost/api/checkout', {
           method: 'POST',
           body: JSON.stringify(makeCheckoutBody(body)),
+          ...init,
         }),
       );
     };
@@ -695,8 +730,9 @@ describe('POST /api/checkout', () => {
       );
       const res = await post();
       expect(res.status).toBe(200);
-      // printShippingOf('DE', framed, 'pln') = ceil(12.95 × 4.25) = 56 → 5600 gr
-      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 5600 }));
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', true, 'pln')) }),
+      );
       // The InPost ceramic price list must not be consulted for prints.
       expect(orderAmountGrosze).not.toHaveBeenCalled();
     });
@@ -708,8 +744,47 @@ describe('POST /api/checkout', () => {
       );
       const res = await post();
       expect(res.status).toBe(200);
-      // printShippingOf('DE', loose, 'pln') = ceil(7.30 × 4.25) = 32 → 3200 gr
-      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 3200 }));
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', false, 'pln')) }),
+      );
+    });
+
+    it('framed print + kurier DE charges EUR shipping when currency_pref=eur', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post(
+        { locale: 'en', delivery_method: 'kurier' },
+        { headers: { Cookie: 'currency_pref=eur' } },
+      );
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toEuroCents(printShippingOf('DE', true, 'eur')) }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'eur' }),
+        expect.anything(),
+      );
+    });
+
+    it('framed print + kurier DE charges GBP shipping when currency_pref=gbp', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post(
+        { locale: 'en', delivery_method: 'kurier' },
+        { headers: { Cookie: 'currency_pref=gbp' } },
+      );
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGBPPence(printShippingOf('DE', true, 'gbp')) }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'gbp' }),
+        expect.anything(),
+      );
     });
 
     it('print + kurier PL → 200 (PL is a print country)', async () => {

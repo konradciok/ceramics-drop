@@ -21,12 +21,18 @@ function req(orderId = ORDER_ID) {
   }) as Parameters<typeof POST>[0];
 }
 
-function supabaseForOrder(order: Record<string, unknown> | null, ceramicCount = 1) {
+function supabaseForOrder(
+  order: Record<string, unknown> | null,
+  ceramicCount: number | { count: null; error: { message: string } } = 1,
+) {
   const maybeSingle = vi.fn().mockResolvedValue({ data: order, error: null });
   const eqOrders = vi.fn(() => ({ maybeSingle }));
   const selectOrders = vi.fn(() => ({ eq: eqOrders }));
-  // countCeramicOrderItems chain: order_items → select(count) → eq → is
-  const isNull = vi.fn().mockResolvedValue({ count: ceramicCount, error: null });
+  const countResult =
+    typeof ceramicCount === 'number'
+      ? { count: ceramicCount, error: null }
+      : ceramicCount;
+  const isNull = vi.fn().mockResolvedValue(countResult);
   const eqItems = vi.fn(() => ({ is: isNull }));
   const selectItems = vi.fn(() => ({ eq: eqItems }));
   const from = vi.fn((table: string) =>
@@ -113,6 +119,19 @@ describe('POST /api/admin/create-shipment', () => {
 
     expect(res.status).toBe(409);
     expect(body.error).toContain('Prodigi');
+    expect(mocks.createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 when the ceramic count query fails', async () => {
+    mocks.adminSupabase.mockReturnValue(
+      supabaseForOrder(adminOrder(), { count: null, error: { message: 'db down' } }),
+    );
+
+    const res = await POST(req());
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body).toEqual({ error: 'db down' });
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
 

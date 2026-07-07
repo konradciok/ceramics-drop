@@ -32,7 +32,7 @@ export function AddToCartButton({ product }: Props) {
 
   if (product.sold) {
     return (
-      <button className="btn btn-primary lb-add" disabled aria-disabled="true">
+      <button className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
         {t('gallery.sold')}
       </button>
     );
@@ -44,7 +44,7 @@ export function AddToCartButton({ product }: Props) {
         <button className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
           {t('lightbox.add')}
         </button>
-        <p className="pay-error" data-testid="ceramic-mixed-note">{t('cart.mixedNotice')}</p>
+        <p className="pay-error" data-testid="ceramic-mixed-note">{t('ceramic.mixedCart')}</p>
       </>
     );
   }

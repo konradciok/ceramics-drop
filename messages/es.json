@@ -206,6 +206,9 @@
     "approx": "aprox.",
     "permalink": "Ver esta pieza →"
   },
+  "ceramic": {
+    "mixedCart": "La cerámica se pide por separado de las láminas — primero finaliza o vacía tu carrito de láminas."
+  },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",
     "emptyP": "Elige piezas del drop de junio. Haz clic en una miniatura para añadirla a tu selección.",
@@ -239,7 +242,8 @@
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
     "privateSaleInvalid": "Este enlace de pedido ha caducado o ya se ha utilizado. Ponte en contacto con el estudio.",
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago.",
-    "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar."
+    "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar.",
+    "privateSalePrintsNotice": "Los enlaces de pedido privado son solo para cerámica — elimina las láminas del carrito para continuar."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",

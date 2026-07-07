@@ -411,6 +411,16 @@ export async function POST(req: Request) {
       const hasCeramics = lineItems.some((i) => i.variant === null);
       const hasPrints   = lineItems.some((i) => i.variant !== null);
 
+      // Mixed ceramic+print orders are rejected at checkout (validateCart →
+      // mixed_cart) before reservation; this branch is a defensive safety net only.
+      if (hasCeramics && hasPrints) {
+        console.warn('fulfilment: mixed order — both pipelines will run', { orderId });
+        Sentry.captureMessage('fulfilment_mixed_order', {
+          level: 'warning',
+          extra: { orderId },
+        });
+      }
+
       // Prodigi fulfilment: prints only. enqueueProdigi throws on failure →
       // Stripe retries (idempotent via the job's idempotency_key).
       if (hasPrints) {

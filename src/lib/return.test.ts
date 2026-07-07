@@ -87,7 +87,7 @@ describe('createOrderReturn', () => {
   it('rejects print-only orders (no ceramic line items) — Prodigi ships those, not InPost', async () => {
     const d = deps({ hasCeramicItems: vi.fn().mockResolvedValue(false) });
     const result = await createOrderReturn('ord-1', d);
-    expect(result).toEqual({ ok: false, reason: 'not_eligible' });
+    expect(result).toEqual({ ok: false, reason: 'no_ceramic_items' });
     expect(d.inpost.createShipment).not.toHaveBeenCalled();
   });
 

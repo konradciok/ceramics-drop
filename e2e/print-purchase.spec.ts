@@ -2,23 +2,23 @@ import { test, expect } from '@playwright/test';
 import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers/checkout';
 
 /**
- * Print purchase happy path (Finding 11) — configurator → kurier-only cart →
- * EU country → real Stripe test payment → return-page success.
+ * Print purchase (Finding 11).
  *
- * DESTRUCTIVE: completes a real Stripe payment; the webhook then enqueues a
- * REAL Prodigi order for fulfilment (sandbox or LIVE depending on the target
- * host's PRODIGI_ENV — live means real production costs). Run only against a
- * preview wired to PRODIGI_ENV=sandbox, with E2E_DESTRUCTIVE=1:
+ * `@ci` block — courier-only cart UI; no Stripe, no Prodigi.
  *
- *   PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 npx playwright test e2e/print-purchase.spec.ts
+ * `@destructive` block — configurator → kurier-only cart → EU country → real
+ * Stripe test payment → return-page success. The webhook then enqueues a REAL
+ * Prodigi order (sandbox or LIVE depending on the target host's PRODIGI_ENV).
+ * Run only against a preview wired to PRODIGI_ENV=sandbox:
+ *
+ *   PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
+ *     npx playwright test e2e/print-purchase.spec.ts --grep @destructive
  */
 
 const SUCCESS_CARD = '4242424242424242';
 const BUYER_EMAIL = 'e2e+playwright-print@example.com';
 
-test.describe('print purchase @checkout-edge @destructive', () => {
-  test.describe.configure({ mode: 'serial' });
-
+test.describe('print cart UI @ci', () => {
   test('cart is courier-only for prints: no paczkomat, no odbiór, no Geowidget, country selectable', async ({ page }) => {
     await resetCart(page);
     await page.goto('/fine-art-prints/fap01');
@@ -43,8 +43,23 @@ test.describe('print purchase @checkout-edge @destructive', () => {
     await expect(page.getByTestId('country-select')).toBeVisible();
     await expect(page.getByTestId('pl-only-note')).toHaveCount(0);
   });
+});
 
-  test('pays for a print to a German address and lands on the success page', async ({ page }) => {
+test.describe('print purchase @checkout-edge @destructive', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test('pays for a print to a German address and lands on the success page', async ({ page, baseURL }) => {
+    if (/localhost|127\.0\.0\.1/.test(baseURL ?? '') && process.env.E2E_ALLOW_LOCALHOST !== '1') {
+      throw new Error(
+        `ENVIRONMENT BLOCKER: baseURL is ${baseURL}; set E2E_ALLOW_LOCALHOST=1 to run @destructive locally.`,
+      );
+    }
+    if (process.env.E2E_PRODIGI_SANDBOX !== '1') {
+      throw new Error(
+        'ENVIRONMENT BLOCKER: set E2E_PRODIGI_SANDBOX=1 only when the target preview has PRODIGI_ENV=sandbox (live Prodigi costs real money).',
+      );
+    }
+
     await resetCart(page);
     await page.goto('/fine-art-prints/fap01');
     await page.getByTestId('opt-size-50x70').click();

@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
+import { isPrintToken } from '@/lib/print-cart';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -29,7 +30,10 @@ export function ProductTile({ product, onOpen }: Props) {
   const t = useTranslations();
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
-  const selected = useCart((s) => s.ids.includes(product.id));
+  const ids = useCart((s) => s.ids);
+  const selected = ids.includes(product.id);
+  const cartHasPrints = ids.some(isPrintToken);
+  const addBlocked = cartHasPrints && !selected;
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
 
@@ -92,11 +96,11 @@ export function ProductTile({ product, onOpen }: Props) {
       <button
         className={`tile-add${selected ? ' in' : ''}`}
         data-testid="add-to-cart"
-        disabled={product.sold}
-        aria-disabled={product.sold}
+        disabled={product.sold || addBlocked}
+        aria-disabled={product.sold || addBlocked}
         onClick={(e) => {
           e.stopPropagation();
-          if (product.sold) return;
+          if (product.sold || addBlocked) return;
           // Gate the analytics event on the real store transition, not the `selected`
           // render snapshot (which can be stale) — add() is idempotent, so a no-op add
           // must not fire a duplicate add_to_cart. set() is synchronous, so getState()

@@ -206,6 +206,9 @@
     "approx": "approx.",
     "permalink": "View product page →"
   },
+  "ceramic": {
+    "mixedCart": "Ceramics are ordered separately from prints — finish or empty your prints cart first."
+  },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
     "emptyP": "Choose pieces from the June drop. Click a thumbnail to add it to your selection.",
@@ -239,7 +242,8 @@
     "payError": "Payment failed. Please try again.",
     "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods.",
-    "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue."
+    "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue.",
+    "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue."
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",

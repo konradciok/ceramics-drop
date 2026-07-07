@@ -77,6 +77,7 @@ export async function POST(req: Request) {
   // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
+  const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
 
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // leaves shipping_address NULL and the Prodigi order could never be built.
@@ -99,6 +100,11 @@ export async function POST(req: Request) {
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
+    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
+    const shipMinor =
+      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
+      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
+      toGrosze(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
       // log is the observability signal only; revisit with Prodigi POST /quotes
@@ -106,14 +112,13 @@ export async function POST(req: Request) {
       console.warn(JSON.stringify({
         event: 'print_multi_frame_flat_shipping',
         framed_count: framedCount,
+        item_count: valid.items.length,
+        charge_currency: chargeCurrency,
+        shipping_minor: shipMinor,
+        has_framed: hasFramed,
         country: address.country_code,
       }));
     }
-    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
-    const shipMinor =
-      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
-      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
-      toGrosze(shipMajor);
     amount = subtotalMinor + shipMinor;
   } else {
     amount =
@@ -217,6 +222,7 @@ export async function POST(req: Request) {
           order_id: orderId,
           product_ids: ids.join(','),
           delivery_method: method,
+          fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
         },
@@ -303,7 +309,7 @@ export async function POST(req: Request) {
     delivery_method: method,
     // Explicit fulfilment discriminator (Finding 8): which pipeline owns this
     // order. Per-item truth stays order_items.variant.
-    fulfilment_type: method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost',
+    fulfilment_type: fulfilmentType,
     email: contact.email,
     receiver_first_name: contact.first_name,
     receiver_last_name: contact.last_name,
