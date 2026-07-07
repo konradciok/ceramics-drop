@@ -59,6 +59,24 @@ describe('computeFulfillmentStage', () => {
   it('returns pickup for studio pickup orders', () => {
     expect(computeFulfillmentStage(order({ delivery_method: 'odbior' }))).toBe('pickup');
   });
+
+  it('returns prodigi for a print-only order (never blocked InPost work)', () => {
+    const printOnly = order({
+      delivery_method: 'kurier',
+      items: [{ product_id: 'fap01', unit_price: 30000, variant: { size: 'A3', framed: false } }],
+    });
+    expect(computeFulfillmentStage(printOnly)).toBe('prodigi');
+  });
+
+  it('a defensive mixed order (ceramic + print) stays on the InPost pipeline', () => {
+    const mixed = order({
+      items: [
+        { product_id: 'k01', unit_price: 10000, variant: null },
+        { product_id: 'fap01', unit_price: 30000, variant: { size: 'A3', framed: false } },
+      ],
+    });
+    expect(computeFulfillmentStage(mixed)).toBe('blocked');
+  });
 });
 
 describe('orderFulfillmentQueue', () => {
@@ -70,6 +88,11 @@ describe('orderFulfillmentQueue', () => {
       order({ id: '00000000-0000-0000-0000-000000000004', inpost_shipment_id: '43', delivery_status: 'delivered' }),
       order({ id: '00000000-0000-0000-0000-000000000005', status: 'pending' }),
       order({ id: '00000000-0000-0000-0000-000000000006', delivery_method: 'unknown' }),
+      order({
+        id: '00000000-0000-0000-0000-000000000007',
+        delivery_method: 'kurier',
+        items: [{ product_id: 'fap01', unit_price: 30000, variant: { size: 'A3' } }],
+      }),
     ];
 
     expect(orderFulfillmentQueue(rows).map((o) => o.id.slice(-1))).toEqual(['1', '2', '3']);

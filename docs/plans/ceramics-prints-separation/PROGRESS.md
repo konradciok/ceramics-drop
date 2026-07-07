@@ -30,3 +30,14 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 **Files:** `src/lib/return.ts`, `src/app/api/returns/route.ts`, `src/lib/return.test.ts` (+2: print-only → `not_eligible`, mixed-with-ceramic stays eligible; the 7 existing ceramic tests pass unchanged with the dep defaulting to `true`).
 
 **Verified:** return tests 9/9, full suite 639, lint clean, build green. No surprises.
+
+## 02 — Admin (DONE)
+
+**Decisions:**
+- Guard (F2): 409 with a Polish human message in `error` (`…wysyłkę realizuje Prodigi, nie InPost.`) — matches the route's existing convention; the admin UI (`FulfillmentActions`) renders `data.error` directly, so a machine code would surface raw to the user. Count failure → 500, never "reads as print-only".
+- Dashboard (F3): added `variant` to both `order_items` joins in `data.ts`; new `isPrintOnly()` (items non-empty && every variant non-null). New `FulfillmentStage` value `'prodigi'` returned first from `computeFulfillmentStage`; queue filter unchanged so prints drop out of the InPost queue automatically. Stage label "Prodigi (druk)" added to both STAGE_LABEL maps (Record type forces exhaustiveness); `FulfillmentActions` shows muted "Wysyłka: Prodigi" (no buttons). Skipped the nice-to-have Prodigi stage readout from `prodigi_orders` — plan's minimum bar is exclusion; revisit only if the studio asks.
+- `getKpis` now joins items (was `withItems: false`) because the KPI exclusion needs the discriminator; dataset tiny, join cheap. `awaitingFulfillment` excludes print-only; print orders still count in `ordersByStatus`/revenue.
+
+**Files:** `src/lib/admin/data.ts`, `src/lib/admin/fulfillment.ts`, `src/app/api/admin/create-shipment/route.ts`, `src/app/admin/fulfillment/page.tsx`, `src/app/admin/fulfillment/[id]/page.tsx`, `src/app/admin/fulfillment/FulfillmentActions.tsx`.
+
+**Tests:** create-shipment route (+1 print-only 409, helper mock extended with the order_items count chain), fulfillment (+2 stage tests, +1 queue-exclusion row), new `data.test.ts` (isPrintOnly + KPI exclusion). Full suite 645, lint clean, build green.

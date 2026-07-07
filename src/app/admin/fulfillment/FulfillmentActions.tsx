@@ -40,6 +40,9 @@ export function FulfillmentActions({ orderId, stage, compact = false }: Props) {
   if (stage === 'pickup') {
     return <span className="adm-muted">Do kontaktu</span>;
   }
+  if (stage === 'prodigi') {
+    return <span className="adm-muted">Wysyłka: Prodigi</span>;
+  }
 
   return (
     <div className={compact ? 'adm-fulfillment-actions compact' : 'adm-fulfillment-actions'}>

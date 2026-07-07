@@ -19,6 +19,7 @@ const STAGE_LABEL: Record<FulfillmentStage, string> = {
   ready: 'Do zapakowania',
   in_transit: 'W drodze',
   pickup: 'Odbiór osobisty',
+  prodigi: 'Prodigi (druk)',
 };
 
 const PIPELINE: Array<{ stage: FulfillmentStage; label: string }> = [
@@ -47,7 +48,7 @@ function stageState(orderStage: FulfillmentStage, step: FulfillmentStage): 'done
   const order = ['blocked', 'ready', 'in_transit'];
   const current = order.indexOf(orderStage);
   const target = order.indexOf(step);
-  if (orderStage === 'pickup') return 'pending-step';
+  if (orderStage === 'pickup' || orderStage === 'prodigi') return 'pending-step';
   if (target < current) return 'done';
   if (target === current) return 'current';
   return 'pending-step';
@@ -101,13 +102,21 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
             <dl className="adm-dl">
               <dt>Metoda</dt><dd>{deliveryLabel(order.delivery_method)}</dd>
               <dt>Adres / punkt</dt><dd>{deliveryLine(order)}</dd>
-              <dt>Status InPost</dt><dd>{order.delivery_status ?? '—'}</dd>
-              <dt>Przesyłka</dt><dd className="adm-mono">{order.inpost_shipment_id ?? '—'}</dd>
-              <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>
+              {order.stage === 'prodigi' ? (
+                <><dt>Realizacja</dt><dd>Prodigi (druk na zamówienie)</dd></>
+              ) : (
+                <>
+                  <dt>Status InPost</dt><dd>{order.delivery_status ?? '—'}</dd>
+                  <dt>Przesyłka</dt><dd className="adm-mono">{order.inpost_shipment_id ?? '—'}</dd>
+                  <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>
+                </>
+              )}
             </dl>
           </div>
 
-          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
+          {order.stage !== 'prodigi' ? (
+            <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
+          ) : null}
 
           <div className="adm-panel">
             <h3>Klient</h3>
@@ -123,6 +132,10 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
             {order.stage === 'pickup' ? (
               <ul className="adm-timeline">
                 <li className="current"><span>Odbiór osobisty</span><span className="adm-num">{formatDateTime(order.paid_at)}</span></li>
+              </ul>
+            ) : order.stage === 'prodigi' ? (
+              <ul className="adm-timeline">
+                <li className="current"><span>Wysyłka: Prodigi</span><span className="adm-num">{formatDateTime(order.paid_at)}</span></li>
               </ul>
             ) : (
               <ul className="adm-timeline">

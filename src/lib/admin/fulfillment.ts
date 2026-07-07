@@ -1,9 +1,9 @@
 import { needsShipment } from '@/lib/shipx';
 import type { ProductRef } from './products';
 import { productRef } from './products';
-import { listOrders, getOrder, type AdminOrder, type OrderItem } from './data';
+import { listOrders, getOrder, isPrintOnly, type AdminOrder, type OrderItem } from './data';
 
-export type FulfillmentStage = 'blocked' | 'ready' | 'in_transit' | 'pickup';
+export type FulfillmentStage = 'blocked' | 'ready' | 'in_transit' | 'pickup' | 'prodigi';
 
 export type FulfillmentOrder = AdminOrder & {
   stage: FulfillmentStage;
@@ -22,6 +22,9 @@ function meaningfulTransitStatus(status: string | null | undefined): boolean {
 }
 
 export function computeFulfillmentStage(order: AdminOrder): FulfillmentStage {
+  // Print-only orders are Prodigi's work — never `blocked` InPost work. The
+  // queue below excludes them; their real state lives in prodigi_orders.
+  if (isPrintOnly(order)) return 'prodigi';
   if (order.delivery_method === 'odbior') return 'pickup';
   if (!isShipmentMethod(order.delivery_method)) return 'in_transit';
   if (!needsShipment(order.delivery_method)) return 'pickup';
@@ -33,7 +36,7 @@ function enrich(order: AdminOrder): FulfillmentOrder {
   return {
     ...order,
     stage: computeFulfillmentStage(order),
-    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id) })),
+    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id, it.variant) })),
   };
 }
 

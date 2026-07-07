@@ -216,6 +216,7 @@
 .adm-pill.ready { color: #2f6b3f; background: rgba(47, 107, 63, .1); }
 .adm-pill.in_transit { color: var(--c-periwinkle-deep); background: rgba(111, 138, 196, .14); }
 .adm-pill.pickup { color: var(--c-terracotta-deep); background: rgba(156, 90, 44, .12); }
+.adm-pill.prodigi { color: var(--c-periwinkle-deep); background: rgba(111, 138, 196, .14); }
 
 /* ---- Filters / toolbar ------------------------------------------------ */
 .adm-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
