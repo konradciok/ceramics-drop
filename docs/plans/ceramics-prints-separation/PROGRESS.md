@@ -75,12 +75,12 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 ## 06 — PDP/UX (DONE)
 
 **Decisions:**
-- F10: `AddToCartButton` mirrors `PrintConfigurator`'s guard — `cartHasPrints = ids.some(isPrintToken)`; when true (and the ceramic isn't already in the cart) it renders a disabled add button + the existing `cart.mixedNotice` copy (reused — no new key; it's phrased symmetrically) with `data-testid="ceramic-mixed-note"`.
-- Q7: ceramic kurier section in `CartView` shows `delivery.plOnly` (new key, **all four locales**) where the country selector would be — copy only, PL enforcement stays server-side. New `.cart-pl-only` style (muted 13px, matches notice typography).
-- F13: no price change. Added a `print_multi_frame_flat_shipping` `console.warn` (framed_count + country) in the checkout print-shipping block, marked `ponytail:`. **Revisit trigger:** implement Prodigi `POST /quotes` only when prod logs/margins show multi-frame orders materially under-charged.
+- F10: `AddToCartButton`, `Lightbox`, and `ProductTile` mirror `PrintConfigurator`'s guard — `cartHasPrints = ids.some(isPrintToken)`; when true (and the ceramic isn't already in the cart) they block add. PDP/lightbox show disabled button + `ceramic.mixedCart` (symmetric to `print.mixedCart`; `cart.mixedNotice` stays on the cart page only). `data-testid="ceramic-add"` on every AddToCartButton/Lightbox variant for E2E.
+- Q7: ceramic delivery section in `CartView` shows `delivery.plOnly` once at the top of delivery fields when `!hasPrints` — visible for all ceramic methods (paczkomat/kurier/odbior), not kurier-only. Copy only, PL enforcement stays server-side. New `.cart-pl-only` style (muted 13px, matches notice typography).
+- F13: no price change. `print_multi_frame_flat_shipping` `console.warn` fires after `shipMinor` is computed, with `framed_count`, `item_count`, `charge_currency`, `shipping_minor`, `has_framed`, and `country`. Marked `ponytail:`. **Revisit trigger:** implement Prodigi `POST /quotes` only when prod logs/margins show multi-frame orders materially under-charged.
 
 **No component test harness exists in this repo** (no *.test.tsx, no testing-library) — as the plan anticipated; the F10 guard is proven by `e2e/mixed-cart.spec.ts` in domain 07.
 
-**Files:** `src/components/shop/AddToCartButton.tsx`, `src/components/shop/CartView.tsx`, `src/styles/site.css`, `messages/{pl,en,es,de}.json`, `src/app/api/checkout/route.ts` (log only).
+**Files:** `src/components/shop/AddToCartButton.tsx`, `src/components/shop/Lightbox.tsx`, `src/components/shop/ProductTile.tsx`, `src/components/shop/CartView.tsx`, `src/styles/site.css`, `messages/{pl,en,es,de}.json`, `src/app/api/checkout/route.ts` (log only).
 
 **Verified:** full suite 665, lint clean, build green; locale JSON validated via node require.

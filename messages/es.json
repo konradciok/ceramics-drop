@@ -206,6 +206,9 @@
     "approx": "aprox.",
     "permalink": "Ver esta pieza →"
   },
+  "ceramic": {
+    "mixedCart": "La cerámica se pide por separado de las láminas — primero finaliza o vacía tu carrito de láminas."
+  },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",
     "emptyP": "Elige piezas del drop de junio. Haz clic en una miniatura para añadirla a tu selección.",

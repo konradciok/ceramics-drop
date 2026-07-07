@@ -206,6 +206,9 @@
     "approx": "ok.",
     "permalink": "Strona tej pracy →"
   },
+  "ceramic": {
+    "mixedCart": "Ceramika zamawiana jest osobno od printów — najpierw dokończ lub opróżnij koszyk z printami."
+  },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
     "emptyP": "Wybierz prace z czerwcowego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",

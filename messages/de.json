@@ -206,6 +206,9 @@
     "approx": "ca.",
     "permalink": "Produktseite ansehen →"
   },
+  "ceramic": {
+    "mixedCart": "Keramik wird getrennt von Prints bestellt — schließe zuerst deine Print-Bestellung ab oder leere den Warenkorb."
+  },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",
     "emptyP": "Wähle Stücke aus dem Juni-Drop. Klicke auf ein Vorschaubild, um es deiner Auswahl hinzuzufügen.",

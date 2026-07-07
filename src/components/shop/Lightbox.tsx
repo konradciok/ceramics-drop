@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
+import { isPrintToken } from '@/lib/print-cart';
 import { CATEGORIES } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -41,6 +42,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
   const open = index !== null;
   const product = open ? products[index] : undefined;
   const inCart = product ? ids.includes(product.id) : false;
+  const cartHasPrints = ids.some(isPrintToken);
 
   const cat = product ? CATEGORIES[product.category] : undefined;
   const name = cat ? t(`product.${cat.singularKey}`) : '';
@@ -234,21 +236,31 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              <button
-                className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
-                onClick={() => {
-                  const wasPresent = useCart.getState().ids.includes(product.id);
-                  if (inCart) { remove(product.id); } else { add(product.id); }
-                  const isPresent = useCart.getState().ids.includes(product.id);
-                  if (wasPresent !== isPresent) {
-                    const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOfCurrency(product, currency)] };
-                    pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
-                  }
-                }}
-              >
-                {inCart ? t('lightbox.in') : t('lightbox.add')}
-                <Icon name={inCart ? 'check' : 'arrow'} className="btn-arrow" />
-              </button>
+              {cartHasPrints && !inCart ? (
+                <>
+                  <button className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
+                    {t('lightbox.add')}
+                  </button>
+                  <p className="pay-error" data-testid="ceramic-mixed-note">{t('ceramic.mixedCart')}</p>
+                </>
+              ) : (
+                <button
+                  className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
+                  data-testid="ceramic-add"
+                  onClick={() => {
+                    const wasPresent = useCart.getState().ids.includes(product.id);
+                    if (inCart) { remove(product.id); } else { add(product.id); }
+                    const isPresent = useCart.getState().ids.includes(product.id);
+                    if (wasPresent !== isPresent) {
+                      const analyticsOpts = { currency: analyticsCurrency, itemPrices: [priceOfCurrency(product, currency)] };
+                      pushDataLayer(isPresent ? buildAddToCartEvent(product, analyticsOpts) : buildRemoveFromCartEvent(product, analyticsOpts));
+                    }
+                  }}
+                >
+                  {inCart ? t('lightbox.in') : t('lightbox.add')}
+                  <Icon name={inCart ? 'check' : 'arrow'} className="btn-arrow" />
+                </button>
+              )}
               <Link
                 href={`/${product.category}/${product.id}`}
                 className="lb-permalink"

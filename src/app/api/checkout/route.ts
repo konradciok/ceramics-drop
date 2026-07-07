@@ -99,6 +99,11 @@ export async function POST(req: Request) {
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
+    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
+    const shipMinor =
+      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
+      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
+      toGrosze(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
       // log is the observability signal only; revisit with Prodigi POST /quotes
@@ -106,14 +111,13 @@ export async function POST(req: Request) {
       console.warn(JSON.stringify({
         event: 'print_multi_frame_flat_shipping',
         framed_count: framedCount,
+        item_count: valid.items.length,
+        charge_currency: chargeCurrency,
+        shipping_minor: shipMinor,
+        has_framed: hasFramed,
         country: address.country_code,
       }));
     }
-    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
-    const shipMinor =
-      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
-      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
-      toGrosze(shipMajor);
     amount = subtotalMinor + shipMinor;
   } else {
     amount =

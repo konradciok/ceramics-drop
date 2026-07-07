@@ -206,6 +206,9 @@
     "approx": "approx.",
     "permalink": "View product page →"
   },
+  "ceramic": {
+    "mixedCart": "Ceramics are ordered separately from prints — finish or empty your prints cart first."
+  },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
     "emptyP": "Choose pieces from the June drop. Click a thumbnail to add it to your selection.",

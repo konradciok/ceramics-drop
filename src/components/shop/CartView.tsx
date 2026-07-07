@@ -598,6 +598,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
             <div className="delivery-fields">
+              {!hasPrints && (
+                // All ceramic delivery methods are Poland-only (InPost / Warsaw pickup).
+                <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
+              )}
               <div className="field-row">
                 <label className="field">
                   <span>{t('delivery.firstName')}</span>
@@ -661,12 +665,6 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
 
               {ship === 'kurier' && (
                 <>
-                  {!hasPrints && (
-                    // Ceramic courier is InPost — domestic only. Said here so
-                    // foreign buyers aren't left guessing why there's no
-                    // country selector (the PL rule is enforced server-side).
-                    <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
-                  )}
                   {hasPrints && (
                     <label className="field">
                       <span>{t('delivery.country')}</span>
