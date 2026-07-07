@@ -105,3 +105,13 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 - Full local @ci run: **8/8 pass** (needed `npx playwright install chromium` + a rebuild with `.env.local` present so `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` is baked in — without it the Geowidget helper hits its documented environment blocker).
 
 **Remaining for the release gate (not doable from this session):** apply the four migrations across domains to prod Supabase (`20260707120000`, `20260707130000`, `20260707140000`, `20260707150000`), deploy, then run `npm run test:e2e` (@ci) and the destructive print-purchase spec against the preview.
+
+## All domains on main (2026-07-07)
+
+**Landings:** PR [#117](https://github.com/konradciok/ceramics-drop/pull/117) (domains 05–07 → `main`), PR [#118](https://github.com/konradciok/ceramics-drop/pull/118) (domain 01 follow-ups → `main`), commit `cd72237` (mixed-cart E2E fix — tile guard from 06 blocks tile add, spec seeds cart via localStorage).
+
+**Prod Supabase:** all four Jul-7 migrations verified applied (`prodigi_orders_cancel_alert`, `prodigi_orders_shipping_email`, `orders_fulfilment_type`, `drop_pod_variant_id`).
+
+**Deploy:** Cloudflare Workers Builds succeeded for `main` @ `d5a1c9a` (2026-07-07).
+
+**E2E:** `npm run test:e2e` (@ci) — **9/9 pass** against `https://anna-ciok.studio`. Destructive print-purchase spec still manual: `PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 npx playwright test e2e/print-purchase.spec.ts --grep @destructive`.
