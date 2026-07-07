@@ -33,6 +33,14 @@ export interface ProdigiOrderRequest {
   metadata?: Record<string, string>;
 }
 
+export interface ProdigiShipment {
+  id?: string;
+  status?: string;
+  carrier?: { name?: string; service?: string };
+  tracking?: { number?: string; url?: string };
+  dispatchDate?: string;
+}
+
 export interface ProdigiOrderResponse {
   outcome: 'Created' | 'AlreadyExists' | string;
   order: {
@@ -40,6 +48,7 @@ export interface ProdigiOrderResponse {
     merchantReference?: string;
     status: { stage: string };
     items: Array<{ id: string; sku: string; status: { detail: string } }>;
+    shipments?: ProdigiShipment[];
   };
   traceParent?: string;
 }

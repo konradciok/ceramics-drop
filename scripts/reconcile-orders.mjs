@@ -216,6 +216,27 @@ function buildOrderConfirmationMainContent(order, locale) {
 }
 
 /** Mirrors buildNewOrderToStudioEmail — builds MAIN_CONTENT for the studio new-order email. */
+// ponytail: mirrors variantLabel('pl') + PRODIGI_SKU_MAP from src/lib/print-cart.ts
+// (this .mjs script can't import TS). The SKU is derived from the map's actual
+// structure: GLOBAL-{FAP|CFP|CFPM}-{size-in-inches}. Keep in sync if the map changes.
+const PRINT_SIZE_LABEL = { '30x40': '30×40 cm', '50x70': '50×70 cm', '70x100': '70×100 cm' };
+const PRINT_SIZE_INCH = { '30x40': '12X16', '50x70': '20X28', '70x100': '28X40' };
+const PRINT_COLOUR_PL = { black: 'czarna', white: 'biała', natural: 'naturalna' };
+
+function printVariantLine(variant) {
+  const parts = [PRINT_SIZE_LABEL[variant.size] ?? variant.size];
+  if (!variant.framed) {
+    parts.push('bez ramy');
+  } else {
+    const colour = PRINT_COLOUR_PL[variant.frameColour] ?? '';
+    parts.push(`rama${colour ? ` ${colour}` : ''}`);
+    if (variant.mount) parts.push('+ passe-partout');
+  }
+  const family = variant.framed ? (variant.mount ? 'CFPM' : 'CFP') : 'FAP';
+  const sku = `GLOBAL-${family}-${PRINT_SIZE_INCH[variant.size] ?? '?'}`;
+  return `${parts.join(' · ')} (${sku})`;
+}
+
 function buildNewOrderToStudioMainContent(order) {
   const receiver = [order.receiver_first_name, order.receiver_last_name]
     .filter(Boolean)
@@ -241,7 +262,12 @@ function buildNewOrderToStudioMainContent(order) {
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
 
   const itemLines = order.items
-    .map((it) => `${escapeHtml(it.product_id)} — ${formatGrosze(it.unit_price, order.currency)}`)
+    .map((it) => {
+      const label = it.variant
+        ? `${escapeHtml(it.product_id)} · ${escapeHtml(printVariantLine(it.variant))}`
+        : escapeHtml(it.product_id);
+      return `${label} — ${formatGrosze(it.unit_price, order.currency)}`;
+    })
     .join('<br />');
 
   return [
@@ -637,7 +663,7 @@ async function runStudio(orders, { dryRun, forceStudio, explicitIds, env, supaba
     let items = [];
     const { data: itemRows, error: itemErr } = await supabase
       .from('order_items')
-      .select('product_id, unit_price')
+      .select('product_id, unit_price, variant')
       .eq('order_id', order.id);
     if (itemErr) {
       err(`${tag} could not fetch order items: ${itemErr.message}`);

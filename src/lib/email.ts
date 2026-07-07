@@ -456,6 +456,88 @@ export function buildShippingConfirmation(params: {
   };
 }
 
+// ── Print shipping-confirmation (Prodigi) ────────────────────────────────────
+
+export type PrintShippingOrder = {
+  id: string;
+  email: string | null;
+  receiver_first_name: string | null;
+};
+
+export type PrintTracking = {
+  number: string | null;
+  url: string | null;
+  carrier?: string | null;
+};
+
+/**
+ * Pure function — localised "your print has shipped" email. Prints go by
+ * courier (Prodigi) to EU/UK addresses: carrier tracking instead of the InPost
+ * link, no locker language, and no returns block (prints are not returnable —
+ * see createOrderReturn).
+ */
+export function buildPrintShippingConfirmation(params: {
+  order: PrintShippingOrder;
+  tracking: PrintTracking;
+  locale: string;
+}): { subject: string; html: string; mainContent: string } {
+  const { order, tracking } = params;
+  const loc = resolveLocale(params.locale);
+  const t = I18N[loc];
+
+  const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
+
+  const parts: string[] = [
+    emailParagraph(`${t.greeting(firstName)},`),
+    emailParagraph(t.body1),
+  ];
+
+  if (tracking.number) {
+    const carrier = tracking.carrier ? ` (${escapeHtml(tracking.carrier)})` : '';
+    parts.push(
+      emailParagraph(`${t.trackingLabel}: <strong>${escapeHtml(tracking.number)}</strong>${carrier}`),
+    );
+    if (tracking.url) parts.push(emailButton(tracking.url, t.trackLink));
+  }
+
+  parts.push(emailMutedParagraph(t.signOff));
+
+  const mainContent = parts.join('');
+  return { subject: t.subject, html: mainContent, mainContent };
+}
+
+/**
+ * Send the print shipping-confirmation via Resend. Throws when config or the
+ * recipient email is missing (the Prodigi callback treats the send as
+ * best-effort and releases its claim on failure).
+ */
+export async function emailPrintShippingConfirmationToCustomer(params: {
+  order: PrintShippingOrder;
+  tracking: PrintTracking;
+  locale: string;
+}): Promise<void> {
+  const { env } = getCloudflareContext();
+  const { order } = params;
+
+  if (!env.RESEND_API_KEY) {
+    throw new Error('Resend not configured: RESEND_API_KEY missing');
+  }
+  if (!order.email) {
+    throw new Error(`Cannot send print shipping confirmation: order ${order.id} has no email`);
+  }
+
+  const { subject, mainContent } = buildPrintShippingConfirmation(params);
+
+  await sendResendTemplate({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [order.email],
+    subject,
+    templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
+    variables: { MAIN_CONTENT: mainContent },
+  });
+}
+
 // ── Return label email ───────────────────────────────────────────────────────
 
 export type ReturnLabelOrder = {
@@ -632,14 +714,64 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
   },
 };
 
+// Print orders: Prodigi produces on demand and couriers across EU/UK — no
+// InPost / Poland / locker language. Same manual-sync rule as the map above.
+const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
+  pl: {
+    subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
+    thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
+    deliveryTitle: 'Informacja o realizacji',
+    deliveryP1: 'Druki fine-art powstają na zamówienie u naszego partnera drukarskiego Prodigi.',
+    deliveryP2: 'Produkcja trwa zwykle 2–5 dni roboczych. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
+    deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
+    signOff: 'Do zobaczenia! Anna Ciok Studio',
+  },
+  en: {
+    subject: 'Order confirmed — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
+    thankYou: 'Thank you for your order! It\'s confirmed — your print is on its way to production.',
+    deliveryTitle: 'Fulfilment information',
+    deliveryP1: 'Fine-art prints are produced on demand by our print partner Prodigi.',
+    deliveryP2: 'Production usually takes 2–5 business days. Once your order ships, you\'ll receive an email with a tracking number.',
+    deliveryP3: 'Courier delivery across the EU and the UK.',
+    signOff: 'Talk soon! Anna Ciok Studio',
+  },
+  es: {
+    subject: 'Pedido confirmado — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
+    thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
+    deliveryTitle: 'Información sobre la producción',
+    deliveryP1: 'Las láminas fine-art se producen bajo demanda con nuestro socio de impresión Prodigi.',
+    deliveryP2: 'La producción suele tardar de 2 a 5 días laborables. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
+    deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
+    signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+  de: {
+    subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    thankYou: 'Danke für deine Bestellung! Sie ist bestätigt — dein Druck geht jetzt in die Produktion.',
+    deliveryTitle: 'Informationen zur Herstellung',
+    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung bei unserem Druckpartner Prodigi gefertigt.',
+    deliveryP2: 'Die Produktion dauert in der Regel 2–5 Werktage. Sobald deine Bestellung versandt wurde, erhältst du eine E-Mail mit der Sendungsnummer.',
+    deliveryP3: 'Kurierlieferung innerhalb der EU und nach Großbritannien.',
+    signOff: 'Bis bald! Anna Ciok Studio',
+  },
+};
+
+/** Which fulfilment path the order follows — selects the confirmation copy. */
+export type OrderEmailKind = 'ceramic' | 'print';
+
 /** Pure function — builds localised subject + HTML for the customer order-confirmation email. */
 export function buildOrderConfirmationEmail(params: {
   order: OrderConfirmationOrder;
   locale: string;
+  /** Defaults to ceramic — existing callers keep their copy. */
+  kind?: OrderEmailKind;
 }): { subject: string; html: string; mainContent: string } {
   const { order } = params;
   const loc = resolveLocale(params.locale);
-  const t = I18N_ORDER_CONFIRMATION[loc];
+  const t = (params.kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[loc];
 
   const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
   const greeting = t.greeting(firstName);
@@ -661,6 +793,7 @@ export function buildOrderConfirmationEmail(params: {
 export async function emailOrderConfirmationToCustomer(params: {
   order: OrderConfirmationOrder;
   locale: string;
+  kind?: OrderEmailKind;
 }): Promise<void> {
   const { env } = getCloudflareContext();
   const { order } = params;

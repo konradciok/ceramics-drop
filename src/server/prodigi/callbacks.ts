@@ -1,6 +1,8 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { emailPrintShippingConfirmationToCustomer } from '@/lib/email';
 import { prodigiClient } from './client';
 import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
+import type { ProdigiOrderResponse } from './types';
 
 const LEASE_MINUTES = 5;
 const PG_UNIQUE_VIOLATION = '23505';
@@ -159,6 +161,11 @@ export async function handleProdigiCallback(
     }
   }
 
+  // 5b. Shipped → email the customer their tracking, exactly once.
+  if (localStatus === 'shipped') {
+    await sendPrintShippingEmailOnce(supabase, prodigiOrderId, orderId, prodigiOrder);
+  }
+
   // 6. Mark event done.
   await supabase.from('webhook_events')
     .update({ status: 'done', processed_at: now })
@@ -166,4 +173,63 @@ export async function handleProdigiCallback(
     .eq('provider_event_id', event.id);
 
   return { status: 200, message: 'OK' };
+}
+
+/**
+ * Claim-then-send-once for the print shipping-confirmation email, guarded by
+ * `prodigi_orders.shipping_email_sent_at` (same pattern as the order-email
+ * claims in the Stripe webhook). Best-effort: never throws — on a send failure
+ * the claim is released (CAS on our own timestamp) so a replayed callback can
+ * retry; the callback itself still completes.
+ */
+async function sendPrintShippingEmailOnce(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  prodigiOrderId: string,
+  orderId: string,
+  prodigiOrder: ProdigiOrderResponse['order'],
+): Promise<void> {
+  const claimAt = new Date().toISOString();
+  const { data: claimed, error: claimErr } = await supabase
+    .from('prodigi_orders')
+    .update({ shipping_email_sent_at: claimAt })
+    .eq('prodigi_order_id', prodigiOrderId)
+    .is('shipping_email_sent_at', null)
+    .select('order_id');
+  if (claimErr) {
+    console.error('print shipping email claim failed for', orderId, claimErr);
+    return;
+  }
+  if (!claimed || claimed.length === 0) return; // already sent (or in flight)
+
+  try {
+    const { data: order } = await supabase
+      .from('orders')
+      .select('id, email, receiver_first_name, locale')
+      .eq('id', orderId)
+      .single();
+    const orderRow = order as {
+      id: string; email: string | null; receiver_first_name: string | null; locale: string | null;
+    } | null;
+    if (!orderRow?.email) return; // nothing to send — keep the claim
+
+    const shipments = prodigiOrder.shipments ?? [];
+    const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
+    await emailPrintShippingConfirmationToCustomer({
+      order: orderRow,
+      tracking: {
+        number: shipment?.tracking?.number ?? null,
+        url: shipment?.tracking?.url ?? null,
+        carrier: shipment?.carrier?.name ?? null,
+      },
+      locale: orderRow.locale ?? 'pl',
+    });
+  } catch (err) {
+    console.error('print shipping email send failed for', orderId, err);
+    // Release OUR claim so a replayed callback can retry the send.
+    await supabase
+      .from('prodigi_orders')
+      .update({ shipping_email_sent_at: null })
+      .eq('prodigi_order_id', prodigiOrderId)
+      .eq('shipping_email_sent_at', claimAt);
+  }
 }

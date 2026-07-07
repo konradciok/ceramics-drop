@@ -4,6 +4,7 @@ import {
   buildLabelToStudioEmail,
   buildNewOrderToStudioEmail,
   buildOrderConfirmationEmail,
+  buildPrintShippingConfirmation,
   buildReturnLabelEmail,
   buildShippingConfirmation,
   type CustomerShippingOrder,
@@ -57,6 +58,32 @@ describe('buildNewOrderToStudioEmail', () => {
     expect(html).toContain('kubek-1');
     expect(html).toContain('Paczkomat');
     expect(html).toContain('105.00');
+  });
+
+  it('renders the variant label and Prodigi SKU for print items', () => {
+    const printOrder = {
+      ...newOrder,
+      delivery_method: 'kurier',
+      inpost_target_point: null,
+      items: [
+        {
+          product_id: 'fap01',
+          unit_price: 42000,
+          variant: {
+            size: '50x70' as const,
+            framed: true,
+            mount: false,
+            frameColour: 'black' as const,
+            prodigiSku: 'GLOBAL-CFP-20X28',
+          },
+        },
+      ],
+    };
+    const { html } = buildNewOrderToStudioEmail({ order: printOrder });
+    expect(html).toContain('fap01');
+    expect(html).toContain('50×70 cm');
+    expect(html).toContain('czarna'); // frame colour, PL studio copy
+    expect(html).toContain('GLOBAL-CFP-20X28');
   });
 });
 
@@ -265,6 +292,54 @@ describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'es' });
     expect(html).toContain('a partir del 10 de julio');
     expect(html).not.toContain('antes del 10 de julio');
+  });
+});
+
+describe('buildOrderConfirmationEmail — print copy (kind: print)', () => {
+  const locales = ['pl', 'en', 'es', 'de'] as const;
+
+  it.each(locales)('uses Prodigi/courier copy with no InPost/locker/Poland text (%s)', (locale) => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale, kind: 'print' });
+    expect(html).toContain('Prodigi');
+    expect(html).not.toContain('InPost');
+    expect(html).not.toContain('Paczkomat');
+    expect(html).not.toContain('paczkomat');
+  });
+
+  it('keeps the ceramic copy when kind is omitted', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
+    expect(html).toContain('InPost');
+    expect(html).not.toContain('Prodigi');
+  });
+});
+
+describe('buildPrintShippingConfirmation', () => {
+  const printOrder = { id: 'ord-p1', email: 'buyer@example.com', receiver_first_name: 'Anna' };
+  const tracking = { number: '1Z999AA1', url: 'https://track.example.com/1Z999AA1', carrier: 'dpd' };
+
+  it('includes carrier tracking number and link, localised', () => {
+    const { subject, html } = buildPrintShippingConfirmation({ order: printOrder, tracking, locale: 'en' });
+    expect(subject).toBe('Your order has been shipped');
+    expect(html).toContain('1Z999AA1');
+    expect(html).toContain('https://track.example.com/1Z999AA1');
+    expect(html).toContain('dpd');
+  });
+
+  it('has no returns block and no InPost/locker language', () => {
+    const { html } = buildPrintShippingConfirmation({ order: printOrder, tracking, locale: 'pl' });
+    expect(html).not.toContain('zwrot');
+    expect(html).not.toContain('inpost.pl');
+    expect(html).not.toContain('Paczkomat');
+  });
+
+  it('omits the tracking block when no number is available yet', () => {
+    const { html } = buildPrintShippingConfirmation({
+      order: printOrder,
+      tracking: { number: null, url: null },
+      locale: 'de',
+    });
+    expect(html).toContain('Hallo Anna');
+    expect(html).not.toContain('Sendungsnummer:');
   });
 });
 
