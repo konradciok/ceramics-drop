@@ -621,6 +621,127 @@ describe('POST /api/checkout', () => {
     });
   });
 
+  describe('print delivery branch (Finding 11 regression matrix)', () => {
+    const printCart = () =>
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+    const loosePrintCart = () =>
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [{ ...PRINT_ITEM, variant: { size: '50x70', framed: false, mount: false, frameColour: 'none' } }],
+      } as unknown as ReturnType<typeof validateCart>);
+    const post = async (body: Record<string, unknown> = {}) => {
+      const { POST } = await import('./route');
+      return POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody(body)),
+        }),
+      );
+    };
+
+    it('print + paczkomat → 400 invalid_delivery (no PI, no insert)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce({
+        ok: true,
+        delivery: {
+          method: 'paczkomat',
+          contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '600100200' },
+          target_point: 'WAW01A',
+          address: null,
+        },
+      } as unknown as ReturnType<typeof validateDelivery>);
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
+    });
+
+    it('print + odbior → 400 invalid_delivery', async () => {
+      printCart();
+      const res = await post(); // default delivery mock = odbior
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it('print + kurier without an address → 400 invalid_delivery', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it.each(['US', 'CH'])('print + kurier to %s (outside EU+UK) → 400', async (cc) => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery({ ...DE_ADDRESS, country_code: cc }) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('framed print + kurier DE → 200 with printShippingOf-based shipping (never the InPost rate)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+      // printShippingOf('DE', framed, 'pln') = ceil(12.95 × 4.25) = 56 → 5600 gr
+      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 5600 }));
+      // The InPost ceramic price list must not be consulted for prints.
+      expect(orderAmountGrosze).not.toHaveBeenCalled();
+    });
+
+    it('loose print ships cheaper than framed (framed/loose rates differ)', async () => {
+      loosePrintCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+      // printShippingOf('DE', loose, 'pln') = ceil(7.30 × 4.25) = 32 → 3200 gr
+      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 3200 }));
+    });
+
+    it('print + kurier PL → 200 (PL is a print country)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery({ ...DE_ADDRESS, country_code: 'PL' }) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+    });
+
+    it('ceramic + kurier to DE → 400 (ceramics are PL-only)', async () => {
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it('mixed cart → 400 mixed_cart from validateCart, before any reservation', async () => {
+      validateCart.mockReturnValueOnce(
+        { ok: false, reason: 'mixed_cart' } as unknown as ReturnType<typeof validateCart>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'mixed_cart' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+  });
+
   it('rejects a private-sale token combined with prints: 400, no reservation, no PaymentIntent (Finding 12)', async () => {
     validateCart.mockReturnValueOnce({
       ok: true,

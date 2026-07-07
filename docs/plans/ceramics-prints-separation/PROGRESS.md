@@ -84,3 +84,22 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 **Files:** `src/components/shop/AddToCartButton.tsx`, `src/components/shop/CartView.tsx`, `src/styles/site.css`, `messages/{pl,en,es,de}.json`, `src/app/api/checkout/route.ts` (log only).
 
 **Verified:** full suite 665, lint clean, build green; locale JSON validated via node require.
+
+## 07 — Regression & E2E (DONE — one E2E test deferred to the deploy gate)
+
+**Unit/integration added (all green, suite 637 → 702):**
+- Checkout print matrix (`checkout/route.test.ts` +10): paczkomat/odbior/no-address/US/CH → 400; framed DE → 200 with `printShippingOf` shipping (5600 gr) and the InPost price list never consulted; loose DE differs (3200 gr); print PL → 200; ceramic DE → 400; mixed_cart → 400 pre-reservation.
+- Webhook routing (`stripe/webhook/route.test.ts` +3): ceramic → InPost only; print → `enqueueProdigi` only; defensive mixed → both.
+- New `server/fulfilment/enqueue.test.ts` (5): stable idempotency key, conflict re-select + resend, missing-row throw, upsert-failure throw, queue-send throw.
+- `server/prodigi/callbacks.test.ts` +7: 400 shapes, in-flight lease short-circuit, InProduction → `in_production` job mapping, terminal status never downgraded, unknown-order → 500 + claim released, re-fetch failure → 500 + claim released.
+- New `api/webhooks/prodigi/[token]/route.test.ts` (4): 401 bad token (handler untouched), 400 bad JSON, delegation, `{ error }` mapping.
+- `process-job.test.ts` +2: happy path (claim → postOrder → prodigi_orders upsert `InProgress` → `fulfilment_submitted`, attempts+1); 409 duplicate recovery via `e.body.order.id`.
+- New `api/inpost/webhook/route.test.ts` (6): 401/400, ceramic confirmed → status mirror + label + tracking emails once, non-confirmed → no emails, replay → no duplicates, unknown shipment (the print case — prints never carry `inpost_shipment_id`) → 200 + zero emails.
+
+**E2E:**
+- New `e2e/mixed-cart.spec.ts` (@ci) — print blocks ceramic PDP add (F10 guard), tile-built mixed cart shows notice + disabled checkout, removing the print re-arms ceramic checkout. **Passes** against the hermetic local build (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, env from the repo-root `.dev.vars`/`.env.local` — copied into the worktree, gitignored).
+- New `e2e/print-purchase.spec.ts` (@checkout-edge @destructive, serial pair): test 1 (courier-only cart: no paczkomat/odbiór/Geowidget, country select present, PL-only note absent) **passes locally**; test 2 (real DE payment → return success) **deferred** — needs a deployed preview with Stripe webhooks reachable and `PRODIGI_ENV=sandbox`; running it against the local server would strand pending orders in the prod DB. Run at the release gate: `PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 npx playwright test e2e/print-purchase.spec.ts`.
+- Extended `e2e/checkout-409.spec.ts`: asserts the country selector is **absent** on the ceramic path. Also fixed a pre-existing break: the spec hardcoded `talerzyki`, which is now fully sold out in prod (verified: 14/14 `data-sold="true"`) — picks are now stock-aware over six families.
+- Full local @ci run: **8/8 pass** (needed `npx playwright install chromium` + a rebuild with `.env.local` present so `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` is baked in — without it the Geowidget helper hits its documented environment blocker).
+
+**Remaining for the release gate (not doable from this session):** apply the two new migrations to prod Supabase (`20260707120000`, `20260707130000`, `20260707140000`, `20260707150000` — four total across domains), deploy, then run `npm run test:e2e` (@ci) and the destructive print-purchase spec against the preview.

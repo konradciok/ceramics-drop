@@ -20,13 +20,26 @@ test.describe('@checkout-edge @ci checkout 409', () => {
   test('handles 409 by showing sold-out and pruning the cart', async ({ page, context }) => {
     await resetCart(page);
     await mockGeowidget(page, context);
-    // Categories verified against src/lib/products.ts CATEGORIES; the helper
-    // picks the first unsold tile, so the test is data-driven within each.
-    const a = await addFirstUnsoldFromCategory(page, 'kubki');
-    const b = await addFirstUnsoldFromCategory(page, 'talerzyki');
+    // One-of-a-kind inventory: any hardcoded category can sell out and break
+    // the spec (talerzyki did). Probe the families in order and take the first
+    // two that still have unsold stock.
+    const candidates = ['kubki', 'talerzyki', 'talerze-srednie', 'miski-falowane', 'wazony', 'duze-michy'];
+    const picks = [];
+    for (const category of candidates) {
+      if (picks.length === 2) break;
+      await page.goto(`/${category}`);
+      const tile = page.locator('[data-testid="product-tile"]:not([data-sold="true"])').first();
+      if (!(await tile.isVisible().catch(() => false))) continue;
+      picks.push(await addFirstUnsoldFromCategory(page, category));
+    }
+    expect(picks.length, 'need two categories with unsold stock').toBe(2);
+    const [a, b] = picks;
     expect(a.category).not.toBe(b.category);
 
     await goToCart(page);
+    // Ceramic checkout never offers a country choice — InPost is PL-only; the
+    // selector exists solely on the print path (Finding 11 regression guard).
+    await expect(page.getByTestId('country-select')).toHaveCount(0);
     await selectPaczkomat(page);
     await fillContact(page);
     await mockLockerSelection(page);

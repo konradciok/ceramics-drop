@@ -33,6 +33,7 @@ vi.mock('@/server/fulfilment/enqueue', () => ({ enqueueProdigi: vi.fn() }));
 
 import { POST } from './route';
 import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
+import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
@@ -538,6 +539,59 @@ describe('webhook ensureInvoiced failure (F5)', () => {
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook createShipment fulfilment routing (Finding 11)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(createOrderShipment).mockClear();
+    vi.mocked(enqueueProdigi).mockClear();
+  });
+
+  const paidOrder = (variantRows: unknown[]) =>
+    makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 0, error: null },
+      variantRows: { data: variantRows, error: null },
+    });
+
+  it('ceramic line items → InPost shipment, no Prodigi enqueue', async () => {
+    supabaseImpl = paidOrder([{ variant: null }]).supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(createOrderShipment).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(createOrderShipment).mock.calls[0][0]).toBe('pi_1');
+    expect(enqueueProdigi).not.toHaveBeenCalled();
+  });
+
+  it('print line items → Prodigi enqueue, no InPost shipment', async () => {
+    supabaseImpl = paidOrder([{ variant: { size: '50x70', framed: true } }]).supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(enqueueProdigi).mock.calls[0][0]).toBe('o1');
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('defensive mixed order → BOTH pipelines fire (Prodigi pulls only print items itself)', async () => {
+    supabaseImpl = paidOrder([
+      { variant: null },
+      { variant: { size: '50x70', framed: true } },
+    ]).supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
+    expect(createOrderShipment).toHaveBeenCalledTimes(1);
   });
 });
 

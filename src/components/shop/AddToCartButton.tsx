@@ -52,6 +52,7 @@ export function AddToCartButton({ product }: Props) {
   return (
     <button
       className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
+      data-testid="ceramic-add"
       onClick={() => {
         const wasPresent = useCart.getState().ids.includes(product.id);
         if (inCart) { remove(product.id); } else { add(product.id); }
