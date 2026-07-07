@@ -1,7 +1,7 @@
 # Spec C — PDP: pricing transparency + view-transition morph
 
 **Status:** validated design (brainstormed 2026-07-07), not yet implemented.
-**Part of:** 2026 Storefront Upgrade (see `docs/plans/2026-storefront-upgrade.md` index). Build order **A → C → B → D**; C consumes Spec A primitives where useful and owns the View Transitions integration.
+**Part of:** the **2026 Storefront Upgrade** — a four-spec set in this directory (A/B/C/D). No separate index doc is tracked on this branch yet. Build order **A → C → B → D**; C consumes Spec A primitives where useful and owns the View Transitions integration.
 **Primary success criterion:** conversion — specifically **add-to-cart rate** and **PDP→checkout completion**.
 
 C ships as **two independently-PR-able tiers**:
@@ -39,13 +39,15 @@ A new **server** sub-block in `.pdp-body`, placed between `.pdp-price` and `<Add
    - Courier — `{SHIPPING[kurier]}`
 3. **Trust line** — "the price you see is the price you pay — no hidden fees." New i18n keys in `messages/{pl,en,es,de}.json`; exact copy at implementation.
 
-### Cart mirror
+### Cart mirror — already satisfied
 
-`CartView` gains a compact "shipping from `{locker}` · estimated total `{items + locker}`" summary above the checkout button, using the same constants. Ceramics-only carts (a mixed cart already can't check out); prints are out of scope for this spec.
+`CartView` **already** shows a full cost breakdown — pieces subtotal, delivery, and total — in its sticky summary (`CartView.tsx` pieces/delivery/total rows). So there is **no new cart UI** in C-core; the only action is to verify parity (same currency, same shipping constants) once the PDP block ships. C-core is scoped to `PdpDelivery` only.
 
 ### Copy dependency (must resolve before ship, not invented here)
 
 For **UK / GBP** buyers, a parcel from Poland may attract import charges on the recipient's end. The "no hidden fees" claim must be accurate per destination. The spec **requires** the studio to confirm who bears any cross-border charges (DDP vs DDU); the implementation copy encodes whatever they confirm. Do not assert "no customs" for GBP without that confirmation.
+
+At implementation, verify the PDP estimate matches what the buyer actually pays: use the Stripe MCP to confirm the created PaymentIntent's amount + currency (minor units) equal `item + shipping` for the chosen method, and that the trust-line copy doesn't contradict Stripe's receipt line items.
 
 ### Success metric (lightweight)
 
@@ -68,13 +70,15 @@ For **UK / GBP** buyers, a parcel from Poland may attract import charges on the 
 
 ### What it does
 
-When navigating from a collection/"more from" tile to the PDP, the tile image morphs into the PDP hero image, for a premium, continuous feel. Pure enhancement.
+When the user **navigates** to a PDP by clicking a linked tile, that tile's image morphs into the PDP hero image, for a premium, continuous feel. Pure enhancement.
+
+**Which surfaces actually navigate (important):** the collection grid's `ProductTile` (in `Gallery`) opens a **lightbox** for unsold pieces — it does *not* navigate — so the primary browse flow is out of the morph's reach. The real PDP-navigation surfaces are: `ProductTileLink` (the PDP "more from" strip → next PDP), sold-tile `.tile-link`, and the Lightbox permalink. **This spec scopes the morph to `ProductTileLink` → PDP hero (PDP → PDP)**, the cleanest unambiguous navigation with no modal/duplicate-name issues. The lightbox-permalink morph (collection → PDP through the modal) is a documented spike finding, deferred.
 
 ### Technique (decided)
 
 Use **Next.js's experimental `viewTransition`** (`experimental: { viewTransition: true }` in `next.config`, webpack-compatible) rather than a hand-rolled `document.startViewTransition` wrapper — because with the App Router `router.push` resolves before the new RSC route paints, so a manual wrapper can capture the wrong "after" state. Next's integration hooks the transition into the router lifecycle and avoids that.
 
-- **Shared name:** assign `view-transition-name: product-<id>` to the collection tile `<img>` (`ProductTileLink`/`ProductTile`) and to the PDP hero `<img>` (`ProductPageGallery`). Names are unique among simultaneously-rendered elements (one per product), so no collisions on grids or the PDP "more from" strip.
+- **Shared name:** assign `view-transition-name: product-<id>` to the `ProductTileLink` `<img>` (the navigating source) and to the PDP hero `<img>` (`ProductPageGallery`). Names are unique among simultaneously-rendered elements (one per product): on any PDP the hero is `product-<current>` and each "more from" tile is `product-<sibling>` — all distinct. **Do not** also name the `Gallery` `ProductTile` image, or an open lightbox would create a duplicate `product-<id>` at transition time.
 - **Gate:** wrap in `@supports` for the CSS side; the API no-ops where unsupported → normal navigation. Under `@media (prefers-reduced-motion: reduce)`, disable the transition (`::view-transition-group/-old/-new { animation: none }` and/or skip the transition) so it collapses to an instant swap.
 - **Text-stretch fix:** apply `view-transition-name` to morphing **images only**, never text; set `width: fit-content` on any text element that would otherwise distort.
 

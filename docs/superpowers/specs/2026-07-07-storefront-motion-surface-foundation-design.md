@@ -1,7 +1,7 @@
 # Spec A — Motion & Surface Foundation
 
 **Status:** validated design (brainstormed 2026-07-07), not yet implemented.
-**Part of:** 2026 Storefront Upgrade (see `docs/plans/2026-storefront-upgrade.md` index). Build order: **A → C → B → D**. This is the enabling layer; B/C/D consume its primitives.
+**Part of:** the **2026 Storefront Upgrade** — a four-spec set in this directory (A motion foundation · C PDP transparency + morph · B collection bento · D hero + header). No separate index doc is tracked on this branch yet. Build order: **A → C → B → D**. This is the enabling layer; B/C/D consume its primitives.
 **Success criterion for the whole upgrade:** conversion (add-to-cart rate, PDP→checkout completion, collection-page bounce). Visual polish is in service of that, not the point of it.
 
 ## Purpose

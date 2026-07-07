@@ -23,7 +23,7 @@
 
 **PR 1 — C-core:**
 - **Modify** `src/lib/pricing.ts` — add `shippingOfCurrency(currency, method)` (mirrors `priceOfCurrency`; de-dupes the inline selector in `CartView.tsx:242`).
-- **Create** `src/lib/pricing.test.ts` — unit test for the helper.
+- **Modify** `src/lib/pricing.test.ts` — **extend** the existing test file (it already has extensive coverage) with a `shippingOfCurrency` describe block. Do NOT recreate it.
 - **Modify** `src/components/shop/CartView.tsx:242` — use the shared helper (no behavior change).
 - **Create** `src/components/shop/PdpDelivery.tsx` — server component: estimated total + options + trust line.
 - **Modify** `src/components/shop/ProductPageScreen.tsx` — render `<PdpDelivery>` above `<AddToCartButton>`.
@@ -48,7 +48,7 @@
 
 **Files:**
 - Modify: `src/lib/pricing.ts`
-- Test: `src/lib/pricing.test.ts` (create)
+- Modify (extend): `src/lib/pricing.test.ts` (already exists — add a describe block, do not recreate)
 - Modify: `src/components/shop/CartView.tsx:242`
 
 **Interfaces:**
@@ -56,12 +56,9 @@
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/lib/pricing.test.ts`:
+`src/lib/pricing.test.ts` **already exists**. Add `shippingOfCurrency` to its existing `./pricing` import, and append this describe block (do not recreate the file):
 
 ```ts
-import { describe, it, expect } from 'vitest';
-import { shippingOfCurrency } from './pricing';
-
 describe('shippingOfCurrency', () => {
   it('returns the per-currency flat shipping in major units', () => {
     expect(shippingOfCurrency('pln', 'paczkomat')).toBe(20);
@@ -69,7 +66,12 @@ describe('shippingOfCurrency', () => {
     expect(shippingOfCurrency('gbp', 'kurier')).toBe(12);
     expect(shippingOfCurrency('pln', 'odbior')).toBe(0);
   });
-  it('falls back to EUR for currencies without a shipping table', () => {
+  // Intentional asymmetry: priceOfCurrency THROWS for usd/cad (no price table),
+  // so the item price is computed before shipping is ever read — usd/cad never
+  // reach shippingOfCurrency in a real flow. Its EUR default is only exercised
+  // for the real switchable currencies. This test documents that, it isn't a
+  // claim that usd/cad shipping is "supported".
+  it('routes non-switchable currencies through the EUR default (unreachable in practice)', () => {
     expect(shippingOfCurrency('usd', 'paczkomat')).toBe(shippingOfCurrency('eur', 'paczkomat'));
   });
 });
@@ -87,8 +89,10 @@ Add after `priceOfCurrency` (near line 188):
 ```ts
 /**
  * Display shipping price (major units) for a delivery method in a display
- * currency. Mirrors priceOfCurrency; usd/cad fall back to EUR until their
- * shipping tables land.
+ * currency. usd/cad hit the EUR default, but — unlike priceOfCurrency, which
+ * THROWS for usd/cad — that path is never reached in practice: the item price
+ * (priceOfCurrency) is computed first and throws, so no usd/cad order gets as
+ * far as reading shipping. The asymmetry is deliberate and safe.
  */
 export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): number {
   switch (currency) {
@@ -148,13 +152,29 @@ Create `e2e/pdp-transparency.spec.ts`:
 ```ts
 import { test, expect } from '@playwright/test';
 
-// @ci
-// C-core: the PDP shows an all-in estimated total = item + locker shipping.
-test('PDP shows estimated total including locker shipping (PLN)', async ({ page }) => {
-  // Default (pl) currency is PLN. kubki price 95 + paczkomat 20 = 115.
+// C-core: the PDP shows an all-in estimated total = item + locker shipping, per
+// display currency. `@ci` lives in each title so `--grep @ci` selects them.
+// Amounts mirror src/lib/pricing.test.ts: kubki = PLN 95 / EUR 25 / GBP 22;
+// paczkomat = PLN 20 / EUR 5 / GBP 5.
+test('@ci PDP estimated total includes locker shipping — PLN', async ({ page }) => {
+  // pl → PLN. 95 + 20 = 115.
   await page.goto('/kubki/k01');
   await expect(page.getByTestId('pdp-est-total')).toHaveText(/115\s*zł/);
   await expect(page.getByTestId('pdp-delivery')).toContainText(/20\s*zł/); // locker option
+});
+
+test('@ci PDP estimated total includes locker shipping — EUR', async ({ page }) => {
+  // /en defaults to EUR (no CF-IPCountry in test). 25 + 5 = 30.
+  await page.goto('/en/kubki/k01');
+  await expect(page.getByTestId('pdp-est-total')).toHaveText(/30\s*€/);
+});
+
+test('@ci PDP estimated total includes locker shipping — GBP', async ({ page }) => {
+  // /en + currency_pref=gbp → GBP. 22 + 5 = 27. gbp() formats as "£27".
+  await page.goto('/en/kubki/k01');
+  await page.context().addCookies([{ name: 'currency_pref', value: 'gbp', url: page.url() }]);
+  await page.reload();
+  await expect(page.getByTestId('pdp-est-total')).toHaveText(/£\s*27/);
 });
 ```
 
@@ -297,7 +317,7 @@ Verify `import { ViewTransition } from 'react'` resolves in a throwaway componen
 
 - [ ] **Step 3: Verify no unintended global transitions**
 
-Run `npm run build` and `npm run preview:cf`; click through home → collection → PDP → back. Expected: navigation behaves as before (no unexpected crossfades), pages render, and a bad URL (`/kubki/zzz`) still returns a real 404.
+Run `npm run build` and `npm run preview:cf`; click through home → collection → PDP → back. Expected: navigation behaves as before (no unexpected crossfades), pages render, and a bad URL (`/kubki/zzz`) still returns a real 404. (If the Cloudflare Workers/Builds MCP is available, use it to confirm the deployed preview's runtime logs are clean.)
 
 - [ ] **Step 4: Commit (flag only)**
 
@@ -311,14 +331,16 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Shared-element names + reduced-motion gate + focus routing
 
 **Files:**
-- Modify: `src/components/shop/ProductTile.tsx`, `src/components/shop/ProductPageGallery.tsx`
+- Modify: `src/components/shop/ProductTileLink.tsx` (navigating source — **not** `ProductTile`, which opens the lightbox), `src/components/shop/ProductPageGallery.tsx`
 - Create: `src/components/shop/FocusHeadingOnMorph.tsx`
-- Modify: `src/components/shop/ProductPageScreen.tsx` (heading id + island), `src/styles/motion.css`
+- Modify: `src/components/shop/ProductPageScreen.tsx` (heading id + island + pass `heroName`), `src/styles/motion.css`
 - Test: `e2e/pdp-morph.spec.ts` (create)
 
 **Interfaces:**
 - Consumes: `ViewTransition` from `react`; the spike (Task 3) confirmed availability.
-- Produces: matched `name={\`product-${id}\`}` on the tile image and the PDP hero image; `<FocusHeadingOnMorph headingId="pdp-heading" />`.
+- Produces: matched `name={\`product-${id}\`}` on the `ProductTileLink` image and the PDP hero image; `<FocusHeadingOnMorph headingId="pdp-heading" />`.
+
+> **Why not the collection grid?** `Gallery`'s `ProductTile` opens the **lightbox** for unsold pieces (`onOpen`; the crawlable `.tile-link` is `preventDefault`ed), so it does not navigate — a morph there never fires. Scope is `ProductTileLink` (PDP "more from" → next PDP), a real `<Link>`. Also, naming the `ProductTile` image would risk a duplicate `product-<id>` whenever a lightbox is open. The lightbox-permalink morph is deferred (spike finding).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -327,15 +349,17 @@ Create `e2e/pdp-morph.spec.ts`:
 ```ts
 import { test, expect } from '@playwright/test';
 
-// @ci
-test('missing product still returns a real 404 (no loading shell)', async ({ page }) => {
+// `@ci` in each title for `--grep @ci` selection.
+test('@ci missing product still returns a real 404 (no loading shell)', async ({ page }) => {
   const res = await page.goto('/kubki/zzz');
   expect(res?.status()).toBe(404);
 });
 
-test('after navigating a tile to the PDP, focus lands on the heading', async ({ page }) => {
-  await page.goto('/kubki');
-  await page.locator('[data-testid="product-tile"] .tile-link').first().click({ force: true });
+test('@ci navigating a "more from" tile routes focus to the PDP heading', async ({ page }) => {
+  // Start on a PDP so the "more from" strip (ProductTileLink) is present, then
+  // navigate PDP → PDP via a real link (not the lightbox-opening grid tile).
+  await page.goto('/kubki/k01');
+  await page.locator('.pdp-more .tile-static').first().click();
   await page.waitForURL(/\/kubki\/k\d+/);
   await expect(page.locator('#pdp-heading')).toBeFocused();
 });
@@ -346,20 +370,32 @@ test('after navigating a tile to the PDP, focus lands on the heading', async ({ 
 Run: `npx playwright test e2e/pdp-morph.spec.ts`
 Expected: the focus test FAILS (heading not focused yet); the 404 test should already pass (guard against regression).
 
-- [ ] **Step 3: Name the shared elements**
+- [ ] **Step 3: Name the source — `ProductTileLink` + set the morph flag**
 
-In `src/components/shop/ProductTile.tsx`, import `{ ViewTransition } from 'react'` and wrap the primary tile `<img>` (line 83):
+`ProductTileLink` is currently a server component. Add `'use client'` at the top, import `{ ViewTransition } from 'react'`, wrap its `<img>` in a named `ViewTransition`, and set the focus-routing flag when the link is clicked:
 
 ```tsx
-<ViewTransition name={`product-${product.id}`} share="auto">
-  {/* eslint-disable-next-line @next/next/no-img-element */}
-  <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
-</ViewTransition>
+'use client';
+import { ViewTransition } from 'react';
+// …existing imports (Link, srcSet, types)…
+
+    <Link
+      href={`/${product.category}/${product.id}`}
+      className="tile-static"
+      aria-label={displayName}
+      onClick={() => sessionStorage.setItem('acc_morph', '1')}
+    >
+      <ViewTransition name={`product-${product.id}`} share="auto">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
+      </ViewTransition>
+      {/* …existing .tile-static-meta + sold-tag… */}
+    </Link>
 ```
 
-In `src/components/shop/ProductPageGallery.tsx`, wrap the hero (first) image in the same `ViewTransition name={\`product-${product.id}\`} share="auto"`. (Pass `product.id` into the gallery as a `heroName` prop from `ProductPageScreen`; the hero is `images[0]`.)
+(Converting this tiny tile to a client component is the cost of the morph; it's small and self-contained.)
 
-- [ ] **Step 4: Add the focus-routing island**
+- [ ] **Step 4: Name the target (hero) + focus-routing island**
 
 Create `src/components/shop/FocusHeadingOnMorph.tsx`:
 
@@ -368,10 +404,10 @@ Create `src/components/shop/FocusHeadingOnMorph.tsx`:
 import { useEffect } from 'react';
 
 /**
- * View transitions abandon focus when the old page is removed. When the PDP is
- * reached via a tile click (flagged in sessionStorage by the tile), move focus
- * to the heading so screen-reader users land on the new page title. Direct
- * loads are untouched (no flag), so focus isn't stolen on normal navigation.
+ * View transitions abandon focus when the old page is removed. When a PDP is
+ * reached via a morph link (flagged in sessionStorage by ProductTileLink), move
+ * focus to the heading so screen-reader users land on the new page title.
+ * Direct loads/refreshes have no flag, so focus is never stolen on normal loads.
  */
 export function FocusHeadingOnMorph({ headingId }: { headingId: string }) {
   useEffect(() => {
@@ -383,7 +419,7 @@ export function FocusHeadingOnMorph({ headingId }: { headingId: string }) {
 }
 ```
 
-In `ProductTile.tsx`, set the flag in the tile's existing click handler (only for unsold pieces, which navigate): add `sessionStorage.setItem('acc_morph', '1');` inside the `onOpen`/navigation path. In `ProductPageScreen.tsx`, give the heading `id="pdp-heading" tabIndex={-1}` (line 60) and render `<FocusHeadingOnMorph headingId="pdp-heading" />`.
+In `src/components/shop/ProductPageGallery.tsx`, import `{ ViewTransition } from 'react'` and wrap the hero (first) image in `<ViewTransition name={heroName} share="auto">`, where `heroName` is a new prop. In `src/components/shop/ProductPageScreen.tsx`: pass `heroName={\`product-${product.id}\`}` to `ProductPageGallery`, give the `<h1>` `id="pdp-heading" tabIndex={-1}` (line 60), and render `<FocusHeadingOnMorph headingId="pdp-heading" />` inside the `<article>`.
 
 - [ ] **Step 5: Reduced-motion gate in `motion.css`**
 

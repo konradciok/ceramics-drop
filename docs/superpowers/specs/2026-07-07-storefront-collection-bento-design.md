@@ -1,7 +1,7 @@
 # Spec B — Collection: controlled-feature-rhythm grid + reveals
 
 **Status:** validated design (brainstormed 2026-07-07), not yet implemented.
-**Part of:** 2026 Storefront Upgrade (see `docs/plans/2026-storefront-upgrade.md` index). Build order **A → C → B → D**; B consumes Spec A's `.reveal` + `.edge-fade-x` and preserves the `view-transition-name`s Spec C adds to tiles.
+**Part of:** the **2026 Storefront Upgrade** — a four-spec set in this directory (A/B/C/D). No separate index doc is tracked on this branch yet. Build order **A → C → B → D**; B consumes Spec A's `.reveal` + `.edge-fade-x` and preserves the `view-transition-name`s Spec C adds to tiles.
 **Primary success criterion:** conversion — specifically **collection-page bounce** and **browse→PDP** (view_item_list → select_item).
 
 ## The decision that governs this spec
@@ -23,7 +23,7 @@ A full irregular "bento" grid is a **conversion risk**: it lowers product densit
 
 ## Deliverable
 
-1. A `feature` prop on `ProductTile` that applies a `.tile--feature` class and a larger `sizes` hint.
+1. A `feature` prop on `ProductTile` (`'lead' | 'wide'`) that applies a `.tile--lead` / `.tile--wide` class and a larger `sizes` hint.
 2. A bento variant of `.gallery` (CSS Grid `dense` packing) where feature tiles span 2×.
 3. Spec A `.reveal` (staggered) on tiles; Spec A `.edge-fade-x` on the family switcher.
 4. A `bento` boolean prop on `Gallery`/`CollectionScreen` for staged rollout.
@@ -40,7 +40,7 @@ The cadence number is tunable; the rule is pure `index`-based so server and clie
 
 ## §2 · Grid CSS
 
-`.gallery--bento` uses the existing column counts with `grid-auto-flow: dense` so spanned tiles leave no holes. Feature tiles get `grid-column: span 2` (and `grid-row: span 2` for the 2×2 lead) via `.tile--feature`.
+`.gallery--bento` uses the existing column counts with `grid-auto-flow: dense` so spanned tiles leave no holes. The lead tile (`.tile--lead`) gets `grid-column: span 2` + `grid-row: span 2` (2×2); cadence tiles (`.tile--wide`) get `grid-column: span 2` (2×1).
 
 **Responsive rule (mobile-first):**
 - Mobile (2-col): the **lead** tile spans full width (both columns) as a deliberate accent; **cadence** feature tiles stay 1× to preserve two-up density.
@@ -84,4 +84,5 @@ Playwright/unit assertions:
 
 - Editorial/artist-spotlight cells inside the grid (excluded by the chosen level).
 - The prints collection page (`/fine-art-prints`) — evaluate separately after the pilot.
+- **The `/sklep` hub** — it renders through `AllPiecesScreen` → `GroupedGallery`, a *separate* surface from `CollectionScreen` → `Gallery`. This pilot touches only the per-category collection pages; `/sklep` keeps its uniform grid. Phase 2 (after the pilot's metrics clear) can extend the same `featureKind` + `bento` prop to `GroupedGallery`. Called out explicitly because "collection bounce" may read differently on `/sklep` than on category pages.
 - Any change to `ProductTile`'s cart/lightbox/analytics behavior.

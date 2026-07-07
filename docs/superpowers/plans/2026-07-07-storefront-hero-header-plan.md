@@ -49,8 +49,8 @@ Create `e2e/hero-header.spec.ts`:
 ```ts
 import { test, expect } from '@playwright/test';
 
-// @ci
-test('header shrinks on scroll', async ({ page }) => {
+// `@ci` in each title so `playwright test --grep @ci` selects these.
+test('@ci header shrinks on scroll', async ({ page }) => {
   await page.goto('/');
   const header = page.locator('#site-header');
   const tall = (await header.boundingBox())!.height;
@@ -60,7 +60,7 @@ test('header shrinks on scroll', async ({ page }) => {
   expect(short).toBeLessThan(tall);
 });
 
-test('header does not shrink under reduced motion', async ({ page }) => {
+test('@ci header does not shrink under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const header = page.locator('#site-header');
@@ -136,7 +136,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Append to `e2e/hero-header.spec.ts`:
 
 ```ts
-test('hero CTA is in the first viewport before scroll (mobile + desktop)', async ({ page }) => {
+test('@ci hero CTA is in the first viewport before scroll (mobile + desktop)', async ({ page }) => {
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
     await page.setViewportSize(vp);
     await page.goto('/');
@@ -144,7 +144,7 @@ test('hero CTA is in the first viewport before scroll (mobile + desktop)', async
   }
 });
 
-test('hero beat caption renders and is visible under reduced motion', async ({ page }) => {
+test('@ci hero beat caption renders and is visible under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.locator('.hero-beat-cap')).toBeVisible();

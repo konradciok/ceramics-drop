@@ -196,8 +196,9 @@ Create `e2e/collection-bento.spec.ts`:
 ```ts
 import { test, expect } from '@playwright/test';
 
-// @ci — bento is piloted on /kubki only.
-test('bento pilot heroes a lead tile and keeps every tile shoppable', async ({ page }) => {
+// bento is piloted on /kubki only. `@ci` lives in the titles so
+// `playwright test --grep @ci` selects these.
+test('@ci bento pilot heroes a lead tile and keeps every tile shoppable', async ({ page }) => {
   await page.goto('/kubki');
   await expect(page.locator('.gallery--bento .tile--lead').first()).toBeVisible();
   const firstTile = page.locator('[data-testid="product-tile"]').first();
@@ -205,12 +206,12 @@ test('bento pilot heroes a lead tile and keeps every tile shoppable', async ({ p
   await expect(firstTile.locator('.tile-meta .pr')).toBeVisible(); // price
 });
 
-test('non-pilot category stays a uniform grid', async ({ page }) => {
+test('@ci non-pilot category stays a uniform grid', async ({ page }) => {
   await page.goto('/wazony');
   await expect(page.locator('.gallery--bento')).toHaveCount(0);
 });
 
-test('tiles are visible under reduced motion', async ({ page }) => {
+test('@ci tiles are visible under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/kubki');
   await expect(page.locator('[data-testid="product-tile"]').first()).toBeVisible();
@@ -289,6 +290,8 @@ Change the gate in `CollectionScreen.tsx` to enable bento for every category:
 ```
 
 Re-run `e2e/collection-bento.spec.ts` (update the non-pilot assertion, which no longer holds), lint, build, commit as a separate rollout change.
+
+> **Scope note — `/sklep` hub is untouched.** This gate lives in `CollectionScreen` → `Gallery` (per-category pages only). The `/sklep` hub renders through `AllPiecesScreen` → `GroupedGallery`, a separate surface, and keeps its uniform grid throughout this pilot and rollout. Extending bento to `/sklep` is an explicit Phase 2 (reuse `featureKind` + add a `bento` prop to `GroupedGallery`) — deferred so "collection bounce" is measured on category pages first.
 
 ---
 

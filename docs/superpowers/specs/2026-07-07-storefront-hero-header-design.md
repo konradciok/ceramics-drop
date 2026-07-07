@@ -1,7 +1,7 @@
 # Spec D — Homepage hero (modest scroll narrative) + shrinking header
 
 **Status:** validated design (brainstormed 2026-07-07), not yet implemented.
-**Part of:** 2026 Storefront Upgrade (see `docs/plans/2026-storefront-upgrade.md` index). Build order **A → C → B → D** (last); D consumes Spec A's `.reveal` + scroll-timeline patterns.
+**Part of:** the **2026 Storefront Upgrade** — a four-spec set in this directory (A/B/C/D). No separate index doc is tracked on this branch yet. Build order **A → C → B → D** (last); D consumes Spec A's `.reveal` + scroll-timeline patterns.
 **Primary success criterion:** conversion — the homepage's job is to route visitors to `/sklep`; premium feel must not cost CTA reach. Lowest direct-conversion-leverage surface in the upgrade, so it ships last.
 
 ## Hard constraints (inherited)
@@ -29,7 +29,7 @@ The hero grows to **~1.3–1.5 viewports** and reveals in beats as the user scro
 
 **Content dependency (flagged, not invented):** Beat 2 needs a macro/brushstroke shot. Default to **reusing an existing asset** (`HOME_EDITORIAL_IMAGE`/`HOME_STORY_IMAGE` or a gallery macro) unless the studio supplies a dedicated one. The spec names the need; it does not require a new asset to ship.
 
-**Markup:** restructure the `.hero` section in `page.tsx` to a taller narrative container with scroll-driven child elements; CSS in `site.css`/`motion.css`. Copy stays in i18n (new keys for the caption if added).
+**Markup:** leave the existing `.hero` section intact (this is what keeps the CTA above the fold) and **append** a sibling `.hero-beat` band immediately after it, holding the macro image (`.reveal--scale`) + caption (`.reveal`). The ~1.3–1.5 viewport total is hero + beat band, not a restructured hero. CSS in `site.css` (layout) / `motion.css` (parallax). Copy adds two i18n keys.
 
 ## §2 · Shrinking header
 

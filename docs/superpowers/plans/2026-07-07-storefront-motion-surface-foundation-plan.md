@@ -54,11 +54,12 @@ Create `e2e/motion-foundation.spec.ts`:
 ```ts
 import { test, expect } from '@playwright/test';
 
-// @ci
 // Spec A guard: the reveal primitive must (1) stay visible under reduced motion,
 // and (2) start hidden ONLY where animation-timeline is supported — the rule
 // that prevents FOUC/CLS in non-supporting engines.
-test.describe('Spec A — motion foundation', () => {
+// NOTE: `@ci` MUST be in the describe/test TITLE — `npm run test:e2e` runs
+// `playwright test --grep @ci`, which matches titles, not comments.
+test.describe('@ci Spec A — motion foundation', () => {
   test('reveal degrades to visible under reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
