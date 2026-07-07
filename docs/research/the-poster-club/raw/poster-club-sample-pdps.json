@@ -1,0 +1,263 @@
+{
+  "print": {
+    "handle": "suzanne-lustig-perfect-together",
+    "title": "Perfect Together",
+    "vendor": "The Poster Club",
+    "type": "Print",
+    "tags": [],
+    "priceMin": 43,
+    "priceMax": 269,
+    "variantCount": 5,
+    "variants": [
+      {
+        "id": 57592627200332,
+        "title": "A4 (21x29,7 cm)",
+        "available": true,
+        "price": 43,
+        "sku": "17593-02",
+        "option1": "A4 (21x29,7 cm)",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57596656779596,
+        "title": "30x40 cm",
+        "available": true,
+        "price": 49,
+        "sku": "17593-03",
+        "option1": "30x40 cm",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57596656746828,
+        "title": "50x70 cm",
+        "available": true,
+        "price": 89,
+        "sku": "17593-07",
+        "option1": "50x70 cm",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57596656714060,
+        "title": "70x100 cm",
+        "available": true,
+        "price": 139,
+        "sku": "17593-09",
+        "option1": "70x100 cm",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57596656681292,
+        "title": "100x140 cm",
+        "available": true,
+        "price": 269,
+        "sku": "17593-00",
+        "option1": "100x140 cm",
+        "option2": null,
+        "option3": null
+      }
+    ],
+    "optionNames": [],
+    "imageCount": 4,
+    "images": [
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Frame_Oak_Low_Res.jpg?v=1779316879",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Lifestyle_Low_Res.jpg?v=1779316879",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_closeup_Low_Res.jpg?v=1779316879",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Product_Low_Res.jpg?v=1779316879"
+    ],
+    "descriptionText": "Premium-quality botanic art print by Suzanne Lustig created exclusively for The Poster Club, printed on 245g FSC™-certified archival-quality art paper.\n>\n>The motif captures an organic, fluid interplay of form and space, evoking quiet moments found in nature’s gentle patterns. Effortlessly suited to serene bedrooms or living rooms, this refined piece brings depth when paired with soft textiles and muted palettes, creating a harmonious mood. Pairs perfectly with green, orange, rose, or yellow accents.\n>\n>Produced with attention to craftsmanship and the originality of the artwork, using museum-grade giclée printing techniques and sustainable materials and production processes.\n>\n>\n Fade-resistant with exceptional colour depth and detail\n Matte finish with a natural paper texture\n FSC™-certified paper from responsible sources\n Curated in Copenhagen by art professionals\n>Part of the Main Collection\n>\n>",
+    "seo": {
+      "title": "Perfect Together by Suzanne Lustig | The Poster Club",
+      "metaDescription": "Buy Perfect Together by Suzanne Lustig at The Poster Club — a print printed on premium paper and sustainably produced. Fast worldwide shipping.",
+      "canonical": "https://theposterclub.com/products/suzanne-lustig-perfect-together"
+    },
+    "jsonLd": {
+      "category": "Print",
+      "variesBy": [
+        "https://schema.org/size"
+      ],
+      "hasVariantCount": 5,
+      "breadcrumbs": [
+        {
+          "position": 1,
+          "name": "Home",
+          "item": "https://theposterclub.com"
+        },
+        {
+          "position": 2,
+          "name": "Art Print",
+          "item": "https://theposterclub.com/collections/art-prints"
+        },
+        {
+          "position": 3,
+          "name": "Suzanne Lustig",
+          "item": "https://theposterclub.com/pages/artists/suzanne-lustig"
+        },
+        {
+          "position": 4,
+          "name": "Perfect Together",
+          "item": "https://theposterclub.com/products/suzanne-lustig-perfect-together"
+        }
+      ]
+    }
+  },
+  "canvas": {
+    "handle": "canvas-rebecca-hein-the-line-red",
+    "title": "The Line - Red",
+    "vendor": "theposterclub.shop",
+    "type": "Canvas",
+    "tags": [],
+    "priceMin": 129,
+    "priceMax": 349,
+    "variantCount": 3,
+    "variants": [
+      {
+        "id": 57588855439692,
+        "title": "30x40 cm",
+        "available": true,
+        "price": 129,
+        "sku": "CA-CPR-16938-3",
+        "option1": "30x40 cm",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57588855406924,
+        "title": "50x70 cm",
+        "available": true,
+        "price": 219,
+        "sku": "CA-CPR-16938-7",
+        "option1": "50x70 cm",
+        "option2": null,
+        "option3": null
+      },
+      {
+        "id": 57588855374156,
+        "title": "70x100 cm",
+        "available": true,
+        "price": 349,
+        "sku": "CA-CPR-16938-9",
+        "option1": "70x100 cm",
+        "option2": null,
+        "option3": null
+      }
+    ],
+    "optionNames": [],
+    "imageCount": 5,
+    "images": [
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/CA-CPR-16938-7_Rebecca_Hein_The_Line_Red_Oak_Frame-scaled.jpg?v=1779284283",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Rebecca_Hein_The_Line_Red_Canvas_Lifestyle_Low_Res.jpg?v=1779284286",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/TPC_Canvas_03.jpg?v=1779284595",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/TPC_Canvas_05.jpg?v=1779284579",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/CA-CPR-16938-7_Rebecca_Hein_The_Line_Red_Product_Low_Res.jpg?v=1779908414"
+    ],
+    "descriptionText": "Premium canvas art by Rebecca Hein high-quality 320 g cotton canvas with a textured matte finish. Mounted in a 3.5 cm deep frame made from FSC™-certified oak veneer or coloured wood veneer.\n \"The Line - Red\" art print distills Scandinavian minimalism into a sophisticated visual statement. Gestural red lines dance across a gentle beige canvas, evoking calm and clarity—an ideal focal point for the home office or living room, and harmonious with warm woods and muted interiors. The material details and subtle dimensionality invite close contemplation, enhancing curated contemporary spaces.\n Drawing inspiration from contemporary Scandinavian interiors, our framed canvas art prints combine tactile materials with a refined and timeless expression. The textured surface and floating frame design create depth, bringing selected artworks clearly into focus.\n Each canvas comes fully framed and ready to hang, with a discreet bracket on the back for easy wall mounting. Available only for selected artworks from our collection.\n Fade-resistant archival ink on matte cotton canvas\n Vibrant, true-to-life color reproduction\n Sustainably sourced materials and production\n Exclusively for The Poster Club",
+    "seo": {
+      "title": "The Line - Red by Rebecca Hein | The Poster Club",
+      "metaDescription": "Buy The Line - Red by Rebecca Hein at The Poster Club — a canvas premium quality, sustainably made and ready to frame. Shipped worldwide.",
+      "canonical": "https://theposterclub.com/products/canvas-rebecca-hein-the-line-red"
+    },
+    "jsonLd": {
+      "category": "Canvas",
+      "variesBy": [
+        "https://schema.org/size"
+      ],
+      "hasVariantCount": 3,
+      "breadcrumbs": [
+        {
+          "position": 1,
+          "name": "Home",
+          "item": "https://theposterclub.com"
+        },
+        {
+          "position": 2,
+          "name": "Canvas",
+          "item": "https://theposterclub.com/collections/canvas"
+        },
+        {
+          "position": 3,
+          "name": "Rebecca Hein",
+          "item": "https://theposterclub.com/pages/artists/rebecca-hein"
+        },
+        {
+          "position": 4,
+          "name": "The Line - Red",
+          "item": "https://theposterclub.com/products/canvas-rebecca-hein-the-line-red"
+        }
+      ]
+    }
+  },
+  "wall_object": {
+    "handle": "thalia-vase",
+    "title": "Thalia Vase",
+    "vendor": "The Poster Club",
+    "type": "Wall Object",
+    "tags": [
+      "collection-laoru-laoru-collection"
+    ],
+    "priceMin": 159,
+    "priceMax": 159,
+    "variantCount": 1,
+    "variants": [
+      {
+        "id": 57837032800588,
+        "title": "28x20x1,5 cm",
+        "available": true,
+        "price": 159,
+        "sku": "WO-LAO-THA-99",
+        "option1": "28x20x1,5 cm",
+        "option2": null,
+        "option3": null
+      }
+    ],
+    "optionNames": [],
+    "imageCount": 7,
+    "images": [
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Product_Low_Res.jpg?v=1779277330",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Lifestyle_Low_Res.jpg?v=1779277331",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_01_Low_Res.jpg?v=1779277330",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_02_Low_Res.jpg?v=1779277330",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_03_Low_Res.jpg?v=1779277330",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Group_Low_Res.jpg?v=1779277331",
+      "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase.png?v=1781785187"
+    ],
+    "descriptionText": "Handcrafted in Aarhus, Denmark, by Katrine and Jacob Laoru, the Thalia Vase Relief draws inspiration from the Nine Greek Muses. In ancient Greece, both the vessel and the Muse were seen as bearers of life, inspiration and creative force. The vase has long been a symbol of womanhood, while the Muses, in Greek mythology, are divine daughters who embody inspiration and serve as the source of art, knowledge and creative expression.\n>\n> Thalia – Muse of Comedy\n>\n> Thalia is the Muse of comedy, traditionally associated with joy, lightness and vitality. In this ceramic relief, she represents playfulness and the uplifting spirit of humour. The idea of the Muse and the form of the vase come together – one giving shape to artistic thought, the other to its physical expression. Each piece is crafted by hand in glazed stoneware in nuanced tones of antique white and designed to be wall-mounted.\n>\n> Materials\n> Glazed stoneware ceramic.\n>\n>\n Specifications\n> Colour: Antique White\n>Dimensions: Approx. H 28 × W 20 × D 1,5 cm.\n>\n> Mounting:\n> The relief has a built-in hanging slot on the back that allows for wall mounting.\n>\n> Care & Maintenance\n> Wipe with a dry or damp cloth to remove dust or dirt. The glazed surface is resistant to both frost and everyday smudges – no additional treatment needed.\n>\n>\n>",
+    "seo": {
+      "title": "Thalia Vase by Laoru Laoru | The Poster Club",
+      "metaDescription": "Buy Thalia Vase by Laoru Laoru at The Poster Club — a wall object printed on premium paper and sustainably produced. Fast worldwide shipping.",
+      "canonical": "https://theposterclub.com/products/thalia-vase"
+    },
+    "jsonLd": {
+      "category": "Wall Object",
+      "variesBy": [
+        "https://schema.org/size"
+      ],
+      "hasVariantCount": 1,
+      "breadcrumbs": [
+        {
+          "position": 1,
+          "name": "Home",
+          "item": "https://theposterclub.com"
+        },
+        {
+          "position": 2,
+          "name": "Wall Object",
+          "item": "https://theposterclub.com"
+        },
+        {
+          "position": 3,
+          "name": "Laoru Laoru",
+          "item": "https://theposterclub.com/pages/artists/laoru-laoru"
+        },
+        {
+          "position": 4,
+          "name": "Thalia Vase",
+          "item": "https://theposterclub.com/products/thalia-vase"
+        }
+      ]
+    }
+  }
+}

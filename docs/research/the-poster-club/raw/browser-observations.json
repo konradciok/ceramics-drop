@@ -1,0 +1,112 @@
+{
+  "source": "manual browser inspection via Hermes browser tools",
+  "inspectedUrls": [
+    "https://theposterclub.com/collections/all-art",
+    "https://theposterclub.com/products/suzanne-lustig-perfect-together",
+    "https://theposterclub.com/products/thalia-vase"
+  ],
+  "collectionsPage": {
+    "headline": "All Artworks",
+    "countBadge": 1621,
+    "description": "A curated collection of artworks including Art Prints, Canvas pieces, and Wall Objects.",
+    "subcollections": [
+      "Art Prints",
+      "Wall Objects",
+      "Canvas Art",
+      "New Arrivals",
+      "Bestsellers",
+      "XL Art Prints"
+    ],
+    "controls": {
+      "galleryColumns": [3, 4, 6],
+      "viewModes": ["Product", "Lifestyle"],
+      "filtersButton": true,
+      "wishlist": true,
+      "search": true,
+      "bagDrawer": true
+    },
+    "observedFilterGroups": [
+      "Sort by",
+      "Size",
+      "Orientation",
+      "Artist",
+      "Price Range",
+      "Color",
+      "Category",
+      "By Room",
+      "Artwork Type"
+    ],
+    "observedFilterOptionsExamples": {
+      "By Room": ["Bathroom", "Bedroom", "Living room"],
+      "Artwork Type": ["Art Prints", "Wall Objects", "Canvas Art"]
+    },
+    "productCardFields": [
+      "primary image",
+      "wishlist trigger",
+      "title",
+      "from or fixed price",
+      "artist name",
+      "available in X sizes"
+    ],
+    "premiumMerchandisingCues": [
+      "editorial collection copy above grid",
+      "subcollection shortcuts above controls",
+      "column density switcher",
+      "lifestyle/product view toggle",
+      "premium whitespace and minimal chrome"
+    ]
+  },
+  "printPdp": {
+    "url": "https://theposterclub.com/products/suzanne-lustig-perfect-together",
+    "layout": "left large gallery + vertical thumbnails, right sticky purchase panel",
+    "galleryAssets": [
+      "framed hero",
+      "lifestyle shot",
+      "close-up",
+      "product-only shot"
+    ],
+    "purchasePanel": [
+      "breadcrumbs: Home > Art Print > Artist > Product",
+      "title + artist link",
+      "starting price",
+      "short premium description",
+      "read more expansion",
+      "size selector",
+      "size guide",
+      "add-on upsells for passepartout and frame",
+      "running total",
+      "add to bag CTA"
+    ],
+    "trustSignals": [
+      "30-Day Returns",
+      "Trusted by +100.000 Customers",
+      "Worldwide Shipping"
+    ],
+    "accordions": [
+      "View in your room",
+      "Frame & passepartout details",
+      "Shipping information",
+      "Product details"
+    ],
+    "belowTheFold": [
+      "Discover More From this Artist carousel",
+      "About the artist editorial block",
+      "artist imagery",
+      "Explore other categories links"
+    ]
+  },
+  "wallObjectPdp": {
+    "url": "https://theposterclub.com/products/thalia-vase",
+    "differencesVsPrint": [
+      "single size only",
+      "no frame/passepartout upsells",
+      "more material and mounting detail in description",
+      "artist section still present below the fold"
+    ],
+    "trustSignals": [
+      "Free Framing Service",
+      "Trusted by +100.000 customers",
+      "Worldwide shipping"
+    ]
+  }
+}

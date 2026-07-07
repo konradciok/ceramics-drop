@@ -1,0 +1,2244 @@
+{
+  "generatedAt": "2026-07-07T14:26:33.150Z",
+  "source": "https://theposterclub.com",
+  "sitemap": {
+    "index": [
+      "https://theposterclub.com/sitemap_agentic_discovery.xml",
+      "https://theposterclub.com/sitemap_products_1.xml?from=15767654728012&to=15861114208588",
+      "https://theposterclub.com/sitemap_pages_1.xml?from=703314395468&to=731400470860",
+      "https://theposterclub.com/sitemap_collections_1.xml?from=679157498188&to=685737115980",
+      "https://theposterclub.com/sitemap_blogs_1.xml",
+      "https://theposterclub.com/sitemap_metaobject_pages_1.xml"
+    ],
+    "collectionsSitemapUrl": "https://theposterclub.com/sitemap_collections_1.xml?from=679157498188&to=685737115980",
+    "collectionUrls": [
+      "https://theposterclub.com/collections/feature-collection-the-paris-metro-collection",
+      "https://theposterclub.com/collections/abstract-art-prints-old",
+      "https://theposterclub.com/collections/collection",
+      "https://theposterclub.com/collections/design-posters-and-art-prints",
+      "https://theposterclub.com/collections/line-art-prints-old",
+      "https://theposterclub.com/collections/alium-archive-collection",
+      "https://theposterclub.com/collections/atelier-collection",
+      "https://theposterclub.com/collections/daydreamer-collection",
+      "https://theposterclub.com/collections/main-collection",
+      "https://theposterclub.com/collections/medley-collection",
+      "https://theposterclub.com/collections/sous-la-mer-collection",
+      "https://theposterclub.com/collections/summer-memories",
+      "https://theposterclub.com/collections/the-colour-play-collection",
+      "https://theposterclub.com/collections/the-dazed-collection",
+      "https://theposterclub.com/collections/the-drawings-collection",
+      "https://theposterclub.com/collections/the-garden-collection",
+      "https://theposterclub.com/collections/the-herbaria-collection",
+      "https://theposterclub.com/collections/the-interstellar-collection",
+      "https://theposterclub.com/collections/the-kinfolk-print-collection",
+      "https://theposterclub.com/collections/the-line-of-power-collection",
+      "https://theposterclub.com/collections/the-magical-mundane-collection",
+      "https://theposterclub.com/collections/the-moments-collection",
+      "https://theposterclub.com/collections/the-paris-metro-collection",
+      "https://theposterclub.com/collections/the-peripheral-collection",
+      "https://theposterclub.com/collections/the-placements-and-forms-collection",
+      "https://theposterclub.com/collections/the-portrait-collection",
+      "https://theposterclub.com/collections/the-soft-wilderness-collection",
+      "https://theposterclub.com/collections/the-symbiont-collection",
+      "https://theposterclub.com/collections/the-zodiac-collection",
+      "https://theposterclub.com/collections/art-prints",
+      "https://theposterclub.com/collections/limited-editions",
+      "https://theposterclub.com/collections/frames",
+      "https://theposterclub.com/collections/aluminium-frames",
+      "https://theposterclub.com/collections/moebe-frames",
+      "https://theposterclub.com/collections/tpc-frames",
+      "https://theposterclub.com/collections/transparent-frames",
+      "https://theposterclub.com/collections/other-frames",
+      "https://theposterclub.com/collections/canvas",
+      "https://theposterclub.com/collections/wall-objects",
+      "https://theposterclub.com/collections/original-art",
+      "https://theposterclub.com/collections/outlet",
+      "https://theposterclub.com/collections/new-arrivals",
+      "https://theposterclub.com/collections/posters",
+      "https://theposterclub.com/collections/transparent-prints",
+      "https://theposterclub.com/collections/tpc-collection",
+      "https://theposterclub.com/collections/tpc-print-on-demand",
+      "https://theposterclub.com/collections/framepaint",
+      "https://theposterclub.com/collections/perfect-match",
+      "https://theposterclub.com/collections/art-walls",
+      "https://theposterclub.com/collections/test-collection",
+      "https://theposterclub.com/collections/botanical-art-prints",
+      "https://theposterclub.com/collections/figurative-art-prints",
+      "https://theposterclub.com/collections/nature-art-prints",
+      "https://theposterclub.com/collections/abstract-art-prints",
+      "https://theposterclub.com/collections/landscape-art-prints",
+      "https://theposterclub.com/collections/architecture-art-prints",
+      "https://theposterclub.com/collections/photo-art-prints",
+      "https://theposterclub.com/collections/minimalistic-art-prints",
+      "https://theposterclub.com/collections/scandinavian-art-prints",
+      "https://theposterclub.com/collections/modern-art-prints",
+      "https://theposterclub.com/collections/colourful-art-prints",
+      "https://theposterclub.com/collections/black-and-white-art-prints",
+      "https://theposterclub.com/collections/kids-art-prints",
+      "https://theposterclub.com/collections/typography-and-quotes-art-prints",
+      "https://theposterclub.com/collections/illustrations-art-prints",
+      "https://theposterclub.com/collections/line-art-prints",
+      "https://theposterclub.com/collections/animals-art-prints",
+      "https://theposterclub.com/collections/graphic-design-art-prints",
+      "https://theposterclub.com/collections/human-figurative-art-prints",
+      "https://theposterclub.com/collections/kitchen-art",
+      "https://theposterclub.com/collections/bathroom-art",
+      "https://theposterclub.com/collections/living-room-art",
+      "https://theposterclub.com/collections/bedroom-art",
+      "https://theposterclub.com/collections/home-office-art",
+      "https://theposterclub.com/collections/passepartout",
+      "https://theposterclub.com/collections/bestsellers",
+      "https://theposterclub.com/collections/how-to-frame-your-art",
+      "https://theposterclub.com/collections/curators-pick",
+      "https://theposterclub.com/collections/all-art",
+      "https://theposterclub.com/collections/the-art-of-summer",
+      "https://theposterclub.com/collections/the-art-of-process-collection",
+      "https://theposterclub.com/collections/most-popular-canvas",
+      "https://theposterclub.com/collections/most-popular-wall-objects",
+      "https://theposterclub.com/collections/xl-art-prints-1",
+      "https://theposterclub.com/collections/91-92-collection",
+      "https://theposterclub.com/collections/anne-nowak-collection",
+      "https://theposterclub.com/collections/another-art-project-x-tpc",
+      "https://theposterclub.com/collections/atelier-ars-ana-collection",
+      "https://theposterclub.com/collections/boiler-room-collection",
+      "https://theposterclub.com/collections/emellie-josefin-collection",
+      "https://theposterclub.com/collections/emilie-holm-atelier-collection",
+      "https://theposterclub.com/collections/laoru-laoru-collection",
+      "https://theposterclub.com/collections/lucrecia-rey-caro-x-tpc",
+      "https://theposterclub.com/collections/nord-projects-collection",
+      "https://theposterclub.com/collections/park-pardon-collection",
+      "https://theposterclub.com/collections/dominika-kamanova-collection",
+      "https://theposterclub.com/collections/feature-collection",
+      "https://theposterclub.com/collections/the-placements-and-forms-collection-1",
+      "https://theposterclub.com/collections/coloured-frames-1",
+      "https://theposterclub.com/collections/oak-frames-1",
+      "https://theposterclub.com/collections/influencer-selection"
+    ]
+  },
+  "collections": [
+    {
+      "label": "All Artworks",
+      "handle": "all-art",
+      "url": "https://theposterclub.com/collections/all-art",
+      "pageSizes": [
+        250,
+        250,
+        250,
+        250,
+        250,
+        250,
+        121
+      ],
+      "meta": {
+        "title": "All Artworks | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/all-art",
+        "metaDescription": "A curated collection of artworks including Art Prints, Canvas pieces, and Wall Objects. Each piece is carefully selected for its visual expression, high…",
+        "collectionDescription": "A curated collection of artworks including Art Prints, Canvas pieces, and Wall Objects. Each piece is carefully selected for its visual expression, high quality, and timeless aesthetic, designed to bring atmosphere and character into your home.Discover exclusive works from artists, photographers, and designers, thoughtfully curated to suit modern interiors and elevate any space with a refined, artistic touch.",
+        "jsonLdItemCount": 1621,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "The Line - Red",
+            "url": "https://theposterclub.com/products/canvas-rebecca-hein-the-line-red",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Thalia Vase",
+            "url": "https://theposterclub.com/products/thalia-vase",
+            "offerCount": 1,
+            "lowPrice": 159,
+            "highPrice": 159,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Sam Peach",
+            "url": "https://theposterclub.com/products/lucia-tuffley-sam-peach",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Earthly Delights 02",
+            "url": "https://theposterclub.com/products/another-art-project-earthly-delights-02",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Blue Moon",
+            "url": "https://theposterclub.com/products/blue-moon",
+            "offerCount": 1,
+            "lowPrice": 219,
+            "highPrice": 219,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Cover",
+            "url": "https://theposterclub.com/products/atelier-cph-cover",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Planterne",
+            "url": "https://theposterclub.com/products/mette-nisgaard-planterne",
+            "offerCount": 1,
+            "lowPrice": 250,
+            "highPrice": 250,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Multiple Sunset",
+            "url": "https://theposterclub.com/products/multiple-sunset",
+            "offerCount": 1,
+            "lowPrice": 299,
+            "highPrice": 299,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 1621,
+        "productTypes": [
+          {
+            "key": "Print",
+            "count": 1425
+          },
+          {
+            "key": "Canvas",
+            "count": 126
+          },
+          {
+            "key": "Wall Object",
+            "count": 42
+          },
+          {
+            "key": "Limited Edition",
+            "count": 28
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 1350
+          },
+          {
+            "key": "The Poster Club",
+            "count": 271
+          }
+        ],
+        "topTags": [
+          {
+            "key": "collection-another-art-project-x-tpc",
+            "count": 5
+          },
+          {
+            "key": "collection-lucrecia-rey-caro-x-tpc",
+            "count": 4
+          },
+          {
+            "key": "collection-anne-nowak-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-atelier-ars-ana-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-emellie-josefin-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-laoru-laoru-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-91-92-collection",
+            "count": 2
+          },
+          {
+            "key": "collection-boiler-room-collection",
+            "count": 2
+          },
+          {
+            "key": "collection-nord-projects-collection",
+            "count": 2
+          },
+          {
+            "key": "bis-disabled",
+            "count": 1
+          },
+          {
+            "key": "collection-dominika-kamanova-collection",
+            "count": 1
+          },
+          {
+            "key": "collection-emilie-holm-atelier-collection",
+            "count": 1
+          }
+        ],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 1620
+          },
+          {
+            "key": "Title",
+            "count": 1
+          }
+        ],
+        "priceRange": {
+          "min": 43,
+          "max": 425
+        },
+        "variantCountHistogram": [
+          {
+            "key": "3",
+            "count": 520
+          },
+          {
+            "key": "4",
+            "count": 428
+          },
+          {
+            "key": "5",
+            "count": 277
+          },
+          {
+            "key": "2",
+            "count": 205
+          },
+          {
+            "key": "1",
+            "count": 177
+          },
+          {
+            "key": "6",
+            "count": 14
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "canvas-rebecca-hein-the-line-red",
+          "title": "The Line - Red",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "thalia-vase",
+          "title": "Thalia Vase",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 159,
+          "variantCount": 1,
+          "tags": [
+            "collection-laoru-laoru-collection"
+          ]
+        },
+        {
+          "handle": "lucia-tuffley-sam-peach",
+          "title": "Sam Peach",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "another-art-project-earthly-delights-02",
+          "title": "Earthly Delights 02",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "blue-moon",
+          "title": "Blue Moon",
+          "vendor": "theposterclub.shop",
+          "type": "Wall Object",
+          "priceMin": 219,
+          "variantCount": 1,
+          "tags": [
+            "collection-anne-nowak-collection"
+          ]
+        },
+        {
+          "handle": "atelier-cph-cover",
+          "title": "Cover",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "mette-nisgaard-planterne",
+          "title": "Planterne",
+          "vendor": "theposterclub.shop",
+          "type": "Limited Edition",
+          "priceMin": 250,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "multiple-sunset",
+          "title": "Multiple Sunset",
+          "vendor": "theposterclub.shop",
+          "type": "Limited Edition",
+          "priceMin": 299,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "suzanne-lustig-perfect-together",
+          "title": "Perfect Together",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "wave",
+          "title": "Wave",
+          "vendor": "theposterclub.shop",
+          "type": "Wall Object",
+          "priceMin": 179,
+          "variantCount": 1,
+          "tags": [
+            "collection-anne-nowak-collection"
+          ]
+        },
+        {
+          "handle": "josefin-norlin-dancing-around-the-star",
+          "title": "Dancing Around the Star",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "ojuna-njama-petersen-three-flowers",
+          "title": "Three Flowers",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "Art Prints",
+      "handle": "art-prints",
+      "url": "https://theposterclub.com/collections/art-prints",
+      "pageSizes": [
+        250,
+        250,
+        250,
+        250,
+        250,
+        175
+      ],
+      "meta": {
+        "title": "Art Prints | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/art-prints",
+        "metaDescription": "A carefully curated selection of high-quality art prints from established and emerging artists around the world, brought together for those who collect with…",
+        "collectionDescription": "Art prints, considered and made to lastA print is a small commitment with a long life. It can mark a doorway, soften a wall, ground a sofa or sit quietly above a desk for years on end. The pieces we work with are chosen for that kind of staying power — work made by artists we admire, printed on paper that does justice to the original.Our art prints sit across a wide range of moods. There is the calm of minimalistic art prints and the restraint of line art, the warmth of botanical art, the open horizons of landscapes, and the energy of colourful work. Each category is its own world; together they form the library we curate from.",
+        "jsonLdItemCount": 1425,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "The Eye",
+            "url": "https://theposterclub.com/products/suzanne-lustig-the-eye",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Sam Shopping",
+            "url": "https://theposterclub.com/products/lucia-tuffley-sam-shopping",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Cover",
+            "url": "https://theposterclub.com/products/atelier-cph-cover",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Pink Interstellar",
+            "url": "https://theposterclub.com/products/anne-nowak-pink-interstellar",
+            "offerCount": 3,
+            "lowPrice": 79,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Little Green",
+            "url": "https://theposterclub.com/products/sofie-rebecca-iversen-little-green",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "A Collection of Kitchen Objects",
+            "url": "https://theposterclub.com/products/isabelle-vandeplassche-a-collection-of-kitchen-objects",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Green Lady",
+            "url": "https://theposterclub.com/products/stine-belden-roed-green-lady",
+            "offerCount": 3,
+            "lowPrice": 79,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Playground in Osaka 01",
+            "url": "https://theposterclub.com/products/jennilee-marigomen-playground-in-osaka-01",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 1425,
+        "productTypes": [
+          {
+            "key": "Print",
+            "count": 1425
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 1186
+          },
+          {
+            "key": "The Poster Club",
+            "count": 239
+          }
+        ],
+        "topTags": [],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 1425
+          }
+        ],
+        "priceRange": {
+          "min": 43,
+          "max": 269
+        },
+        "variantCountHistogram": [
+          {
+            "key": "4",
+            "count": 419
+          },
+          {
+            "key": "3",
+            "count": 412
+          },
+          {
+            "key": "5",
+            "count": 277
+          },
+          {
+            "key": "2",
+            "count": 196
+          },
+          {
+            "key": "1",
+            "count": 107
+          },
+          {
+            "key": "6",
+            "count": 14
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "suzanne-lustig-the-eye",
+          "title": "The Eye",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "lucia-tuffley-sam-shopping",
+          "title": "Sam Shopping",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "atelier-cph-cover",
+          "title": "Cover",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "anne-nowak-pink-interstellar",
+          "title": "Pink Interstellar",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 79,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "sofie-rebecca-iversen-little-green",
+          "title": "Little Green",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "isabelle-vandeplassche-a-collection-of-kitchen-objects",
+          "title": "A Collection of Kitchen Objects",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "stine-belden-roed-green-lady",
+          "title": "Green Lady",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 79,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "jennilee-marigomen-playground-in-osaka-01",
+          "title": "Playground in Osaka 01",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "robin-skjoldborg-solitude",
+          "title": "Solitude",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "katie-leimbach-ephemeral",
+          "title": "Ephemeral",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "ellie-evelyn-orrell-untitled-composition",
+          "title": "Untitled Composition",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "oamul-parrot-in-hand",
+          "title": "Parrot in Hand",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 3,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "Wall Objects",
+      "handle": "wall-objects",
+      "url": "https://theposterclub.com/collections/wall-objects",
+      "pageSizes": [
+        42
+      ],
+      "meta": {
+        "title": "Wall Objects | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/wall-objects",
+        "metaDescription": "A selection of sculptural objects made to live on the wall, beyond the printed page. Each piece is chosen for its form, material and quiet artistic voice.",
+        "collectionDescription": "Wall objects — for when a print isn't quite the answerSometimes the wall asks for something with a bit more body. Wall objects are the pieces that don't fit neatly into \"art print\" or \"frame\" — sculptural mirrors, ceramic wall pieces, textile works, small objects that hold the wall the way a print does, but with more depth and shadow.They work as standalone moments in a hallway or above a console, and they're a useful counterweight in an Art Wall dominated by paper. Pair them with quieter minimalistic prints to let the object do the talking.",
+        "jsonLdItemCount": 42,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "Seaweed No. 01",
+            "url": "https://theposterclub.com/products/seaweed-no-01",
+            "offerCount": 1,
+            "lowPrice": 219,
+            "highPrice": 219,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Happy Chalk",
+            "url": "https://theposterclub.com/products/happy-chalk",
+            "offerCount": 1,
+            "lowPrice": 159,
+            "highPrice": 159,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Seaweed No. 02",
+            "url": "https://theposterclub.com/products/seaweed-no-02",
+            "offerCount": 1,
+            "lowPrice": 199,
+            "highPrice": 199,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Happy Sky Blue",
+            "url": "https://theposterclub.com/products/happy-sky-blue",
+            "offerCount": 1,
+            "lowPrice": 159,
+            "highPrice": 159,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Seaweed No. 03",
+            "url": "https://theposterclub.com/products/seaweed-no-03",
+            "offerCount": 1,
+            "lowPrice": 179,
+            "highPrice": 179,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Happy Orchid",
+            "url": "https://theposterclub.com/products/happy-orchid",
+            "offerCount": 1,
+            "lowPrice": 159,
+            "highPrice": 159,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Mask No. 236",
+            "url": "https://theposterclub.com/products/mask-no-236",
+            "offerCount": 1,
+            "lowPrice": 199,
+            "highPrice": 199,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Mask No. 237",
+            "url": "https://theposterclub.com/products/mask-no-237",
+            "offerCount": 1,
+            "lowPrice": 199,
+            "highPrice": 199,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 42,
+        "productTypes": [
+          {
+            "key": "Wall Object",
+            "count": 42
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "The Poster Club",
+            "count": 30
+          },
+          {
+            "key": "theposterclub.shop",
+            "count": 12
+          }
+        ],
+        "topTags": [
+          {
+            "key": "collection-another-art-project-x-tpc",
+            "count": 5
+          },
+          {
+            "key": "collection-lucrecia-rey-caro-x-tpc",
+            "count": 4
+          },
+          {
+            "key": "collection-anne-nowak-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-atelier-ars-ana-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-emellie-josefin-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-laoru-laoru-collection",
+            "count": 3
+          },
+          {
+            "key": "collection-91-92-collection",
+            "count": 2
+          },
+          {
+            "key": "collection-boiler-room-collection",
+            "count": 2
+          },
+          {
+            "key": "collection-nord-projects-collection",
+            "count": 2
+          },
+          {
+            "key": "collection-dominika-kamanova-collection",
+            "count": 1
+          },
+          {
+            "key": "collection-emilie-holm-atelier-collection",
+            "count": 1
+          }
+        ],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 41
+          },
+          {
+            "key": "Title",
+            "count": 1
+          }
+        ],
+        "priceRange": {
+          "min": 129,
+          "max": 389
+        },
+        "variantCountHistogram": [
+          {
+            "key": "1",
+            "count": 42
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "seaweed-no-01",
+          "title": "Seaweed No. 01",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 219,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "happy-chalk",
+          "title": "Happy Chalk",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 159,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "seaweed-no-02",
+          "title": "Seaweed No. 02",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "happy-sky-blue",
+          "title": "Happy Sky Blue",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 159,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "seaweed-no-03",
+          "title": "Seaweed No. 03",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 179,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "happy-orchid",
+          "title": "Happy Orchid",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 159,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-236",
+          "title": "Mask No. 236",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-237",
+          "title": "Mask No. 237",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-242",
+          "title": "Mask No. 242",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-243",
+          "title": "Mask No. 243",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-250",
+          "title": "Mask No. 250",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        },
+        {
+          "handle": "mask-no-252",
+          "title": "Mask No. 252",
+          "vendor": "The Poster Club",
+          "type": "Wall Object",
+          "priceMin": 199,
+          "variantCount": 1,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "Canvas Art",
+      "handle": "canvas",
+      "url": "https://theposterclub.com/collections/canvas",
+      "pageSizes": [
+        126
+      ],
+      "meta": {
+        "title": "Canvas Art | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/canvas",
+        "metaDescription": "A collection of art prints presented on premium canvas. Each piece is selected for its depth, texture and lasting quality on the wall.",
+        "collectionDescription": "Canvas art — texture, depth, presenceCanvas has a different kind of weight to it. Where paper is precise and quiet, canvas brings a tactile surface and a slight softness in the light. It is the format closest to an original painting, and it tends to anchor a room in a way print on paper rarely does.Our canvases are stretched on solid wooden frames and finished by hand, ready to hang straight from the box. They sit well on their own as a single statement piece, or alongside more delicate work — try a canvas as the visual anchor of an Art Wall, balanced by smaller art prints around it.",
+        "jsonLdItemCount": 126,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "Dancing Cowgirls",
+            "url": "https://theposterclub.com/products/canvas-lise-uhrskov-dancing-cowgirls",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Sam at Sea",
+            "url": "https://theposterclub.com/products/canvas-lucia-tuffley-sam-at-sea",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Little Green",
+            "url": "https://theposterclub.com/products/canvas-sofie-rebecca-iversen-little-green",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "9PM",
+            "url": "https://theposterclub.com/products/canvas-nord-projects-9pm",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Yellow Interstellar",
+            "url": "https://theposterclub.com/products/canvas-anne-nowak-yellow-interstellar",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Three Sisters",
+            "url": "https://theposterclub.com/products/canvas-ibi-meier-oruitemeka-three-sisters",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Chair with Fruit",
+            "url": "https://theposterclub.com/products/canvas-isabelle-vandeplassche-chair-with-fruit",
+            "offerCount": 4,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "In My Head",
+            "url": "https://theposterclub.com/products/canvas-ibi-meier-oruitemeka-in-my-head",
+            "offerCount": 3,
+            "lowPrice": 129,
+            "highPrice": 349,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 126,
+        "productTypes": [
+          {
+            "key": "Canvas",
+            "count": 126
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 124
+          },
+          {
+            "key": "The Poster Club",
+            "count": 2
+          }
+        ],
+        "topTags": [],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 126
+          }
+        ],
+        "priceRange": {
+          "min": 129,
+          "max": 349
+        },
+        "variantCountHistogram": [
+          {
+            "key": "3",
+            "count": 108
+          },
+          {
+            "key": "2",
+            "count": 9
+          },
+          {
+            "key": "4",
+            "count": 9
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "canvas-lise-uhrskov-dancing-cowgirls",
+          "title": "Dancing Cowgirls",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-lucia-tuffley-sam-at-sea",
+          "title": "Sam at Sea",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-sofie-rebecca-iversen-little-green",
+          "title": "Little Green",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-nord-projects-9pm",
+          "title": "9PM",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-anne-nowak-yellow-interstellar",
+          "title": "Yellow Interstellar",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-ibi-meier-oruitemeka-three-sisters",
+          "title": "Three Sisters",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-isabelle-vandeplassche-chair-with-fruit",
+          "title": "Chair with Fruit",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "canvas-ibi-meier-oruitemeka-in-my-head",
+          "title": "In My Head",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-lucia-tuffley-sam-peach",
+          "title": "Sam Peach",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "canvas-sofia-lind-meet-me-at-jaures",
+          "title": "Meet Me At Jaurés",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 189,
+          "variantCount": 2,
+          "tags": []
+        },
+        {
+          "handle": "canvas-frankie-penwill-white-flowers-in-striped-vase",
+          "title": "White Flowers in Striped Vase",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "canvas-toetiee-sun-stump",
+          "title": "Sun Stump",
+          "vendor": "theposterclub.shop",
+          "type": "Canvas",
+          "priceMin": 129,
+          "variantCount": 3,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "New Arrivals",
+      "handle": "new-arrivals",
+      "url": "https://theposterclub.com/collections/new-arrivals",
+      "pageSizes": [
+        37
+      ],
+      "meta": {
+        "title": "New Arrivals | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/new-arrivals",
+        "metaDescription": "The latest additions to our collection — newly released art prints, frames and editions from established and emerging artists. For those who like to discover…",
+        "collectionDescription": "New arrivals — what we've just brought inThis collection is the front door of the shop. Every new artist, new collaboration, new edition and new frame finish lands here first. If you check in often, this is the page that will show you what's changed since your last visit.From here you can move into the wider art prints catalogue, the curated limited editions, or the considered bestsellers page.",
+        "jsonLdItemCount": 37,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "Rhythm of Flowers",
+            "url": "https://theposterclub.com/products/rhythm-of-flowers",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Sculpture Street",
+            "url": "https://theposterclub.com/products/sculpture-street",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Circling Pieces",
+            "url": "https://theposterclub.com/products/circling-pieces",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Reflections of the Soul",
+            "url": "https://theposterclub.com/products/reflections-of-the-soul",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Sam and Charlotte",
+            "url": "https://theposterclub.com/products/sam-and-charlotte",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Moka 01",
+            "url": "https://theposterclub.com/products/marina-esmeraldo-moka-01",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Quiet Landscape",
+            "url": "https://theposterclub.com/products/lisa-lindh-quiet-landscape",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Still Air",
+            "url": "https://theposterclub.com/products/lisa-lindh-still-air",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 37,
+        "productTypes": [
+          {
+            "key": "Print",
+            "count": 37
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 36
+          },
+          {
+            "key": "The Poster Club",
+            "count": 1
+          }
+        ],
+        "topTags": [],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 37
+          }
+        ],
+        "priceRange": {
+          "min": 43,
+          "max": 269
+        },
+        "variantCountHistogram": [
+          {
+            "key": "5",
+            "count": 19
+          },
+          {
+            "key": "4",
+            "count": 17
+          },
+          {
+            "key": "3",
+            "count": 1
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "rhythm-of-flowers",
+          "title": "Rhythm of Flowers",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "sculpture-street",
+          "title": "Sculpture Street",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "circling-pieces",
+          "title": "Circling Pieces",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "reflections-of-the-soul",
+          "title": "Reflections of the Soul",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "sam-and-charlotte",
+          "title": "Sam and Charlotte",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "marina-esmeraldo-moka-01",
+          "title": "Moka 01",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "lisa-lindh-quiet-landscape",
+          "title": "Quiet Landscape",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "lisa-lindh-still-air",
+          "title": "Still Air",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "josefin-norlin-jazzy-flower",
+          "title": "Jazzy Flower",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "lisa-lindh-natural-form",
+          "title": "Natural Form",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "anna-hvid-did-you-get-it",
+          "title": "Did You Get It",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "nina-izycka-characters-02",
+          "title": "Characters 02",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "Bestsellers",
+      "handle": "bestsellers",
+      "url": "https://theposterclub.com/collections/bestsellers",
+      "pageSizes": [
+        69
+      ],
+      "meta": {
+        "title": "Bestsellers | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/bestsellers",
+        "metaDescription": "A collection of our most loved art prints — the pieces our community returns to again and again. Handpicked from across our wider selection.",
+        "collectionDescription": "The bestsellers — what the rooms have decidedThis is the shorthand version of our catalogue: the prints, frames and pieces that customers return to the most. There is no editorial filter at work here — only the slow, honest signal of what has been chosen, framed, sent and hung.If you're new to the shop, this is a useful place to start. From here you can branch into the categories that interest you most — our art prints, the new arrivals, or our limited editions.",
+        "jsonLdItemCount": 69,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "Flowers on Blue Table",
+            "url": "https://theposterclub.com/products/carla-llanos-flowers-on-blue-table",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Meet Me at Jaurès",
+            "url": "https://theposterclub.com/products/sofia-lind-meet-me-at-jaures",
+            "offerCount": 3,
+            "lowPrice": 79,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "Little Green",
+            "url": "https://theposterclub.com/products/sofie-rebecca-iversen-little-green",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Velvet Peak III",
+            "url": "https://theposterclub.com/products/mandy-maria-velvet-peak-iii",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "The Eye",
+            "url": "https://theposterclub.com/products/suzanne-lustig-the-eye",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Sam on the Hill",
+            "url": "https://theposterclub.com/products/lucia-tuffley-sam-on-the-hill",
+            "offerCount": 3,
+            "lowPrice": 43,
+            "highPrice": 89,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "The Line no. 09",
+            "url": "https://theposterclub.com/products/rebecca-hein-the-line-no-09",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Lemon Squeezer",
+            "url": "https://theposterclub.com/products/isabelle-vandeplassche-lemon-squeezer",
+            "offerCount": 4,
+            "lowPrice": 43,
+            "highPrice": 139,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 69,
+        "productTypes": [
+          {
+            "key": "Print",
+            "count": 69
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 54
+          },
+          {
+            "key": "The Poster Club",
+            "count": 15
+          }
+        ],
+        "topTags": [],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 69
+          }
+        ],
+        "priceRange": {
+          "min": 43,
+          "max": 269
+        },
+        "variantCountHistogram": [
+          {
+            "key": "5",
+            "count": 32
+          },
+          {
+            "key": "4",
+            "count": 19
+          },
+          {
+            "key": "3",
+            "count": 9
+          },
+          {
+            "key": "2",
+            "count": 6
+          },
+          {
+            "key": "6",
+            "count": 3
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "carla-llanos-flowers-on-blue-table",
+          "title": "Flowers on Blue Table",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "sofia-lind-meet-me-at-jaures",
+          "title": "Meet Me at Jaurès",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 79,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "sofie-rebecca-iversen-little-green",
+          "title": "Little Green",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "mandy-maria-velvet-peak-iii",
+          "title": "Velvet Peak III",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "suzanne-lustig-the-eye",
+          "title": "The Eye",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "lucia-tuffley-sam-on-the-hill",
+          "title": "Sam on the Hill",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "rebecca-hein-the-line-no-09",
+          "title": "The Line no. 09",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "isabelle-vandeplassche-lemon-squeezer",
+          "title": "Lemon Squeezer",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "atelier-cph-cover",
+          "title": "Cover",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "ibi-meier-oruitemeka-in-my-head",
+          "title": "In My Head",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "lucrecia-rey-caro-horse-bordo",
+          "title": "Horse Bordo",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "frankie-penwill-white-flowers-in-striped-vase",
+          "title": "White Flowers in Striped Vase",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "label": "XL Art Prints",
+      "handle": "xl-art-prints-1",
+      "url": "https://theposterclub.com/collections/xl-art-prints-1",
+      "pageSizes": [
+        250,
+        17
+      ],
+      "meta": {
+        "title": "XL Art Prints | The Poster Club",
+        "canonical": "https://theposterclub.com/collections/xl-art-prints-1",
+        "metaDescription": "Discover a curated selection of our art prints available in XL formats, featuring selected motifs from our collection in the generous sizes 100 × 140 cm…",
+        "collectionDescription": "Discover a curated selection of our art prints available in XL formats, featuring selected motifs from our collection in the generous sizes 100 × 140 cm and 100 × 100 cm. Designed to create a striking focal point, these museum-sized prints bring depth, character, and a sense of grandeur to any interior.",
+        "jsonLdItemCount": 267,
+        "jsonLdPreview": [
+          {
+            "position": 1,
+            "name": "The Eye",
+            "url": "https://theposterclub.com/products/suzanne-lustig-the-eye",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 2,
+            "name": "Pink Interstellar",
+            "url": "https://theposterclub.com/products/anne-nowak-pink-interstellar",
+            "offerCount": 3,
+            "lowPrice": 79,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 3,
+            "name": "9PM",
+            "url": "https://theposterclub.com/products/nord-projects-9pm",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 4,
+            "name": "Hanging Out",
+            "url": "https://theposterclub.com/products/ibi-meier-oruitemeka-hanging-out",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 5,
+            "name": "Blue Interstellar",
+            "url": "https://theposterclub.com/products/anne-nowak-blue-interstellar",
+            "offerCount": 4,
+            "lowPrice": 49,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 6,
+            "name": "Little Green",
+            "url": "https://theposterclub.com/products/sofie-rebecca-iversen-little-green",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 7,
+            "name": "Meet Me at Jaurès",
+            "url": "https://theposterclub.com/products/sofia-lind-meet-me-at-jaures",
+            "offerCount": 3,
+            "lowPrice": 79,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "position": 8,
+            "name": "Horse Bordo",
+            "url": "https://theposterclub.com/products/lucrecia-rey-caro-horse-bordo",
+            "offerCount": 5,
+            "lowPrice": 43,
+            "highPrice": 269,
+            "availability": "https://schema.org/InStock"
+          }
+        ]
+      },
+      "summary": {
+        "totalProducts": 267,
+        "productTypes": [
+          {
+            "key": "Print",
+            "count": 267
+          }
+        ],
+        "topVendors": [
+          {
+            "key": "theposterclub.shop",
+            "count": 220
+          },
+          {
+            "key": "The Poster Club",
+            "count": 47
+          }
+        ],
+        "topTags": [],
+        "optionNameFrequency": [
+          {
+            "key": "Product Size",
+            "count": 267
+          }
+        ],
+        "priceRange": {
+          "min": 43,
+          "max": 269
+        },
+        "variantCountHistogram": [
+          {
+            "key": "5",
+            "count": 198
+          },
+          {
+            "key": "3",
+            "count": 36
+          },
+          {
+            "key": "4",
+            "count": 23
+          },
+          {
+            "key": "6",
+            "count": 10
+          }
+        ]
+      },
+      "productPreview": [
+        {
+          "handle": "suzanne-lustig-the-eye",
+          "title": "The Eye",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "anne-nowak-pink-interstellar",
+          "title": "Pink Interstellar",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 79,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "nord-projects-9pm",
+          "title": "9PM",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "ibi-meier-oruitemeka-hanging-out",
+          "title": "Hanging Out",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "anne-nowak-blue-interstellar",
+          "title": "Blue Interstellar",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 49,
+          "variantCount": 4,
+          "tags": []
+        },
+        {
+          "handle": "sofie-rebecca-iversen-little-green",
+          "title": "Little Green",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "sofia-lind-meet-me-at-jaures",
+          "title": "Meet Me at Jaurès",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 79,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "lucrecia-rey-caro-horse-bordo",
+          "title": "Horse Bordo",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "robin-skjoldborg-island",
+          "title": "Island",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        },
+        {
+          "handle": "sofia-lind-waiting",
+          "title": "Waiting",
+          "vendor": "theposterclub.shop",
+          "type": "Print",
+          "priceMin": 89,
+          "variantCount": 3,
+          "tags": []
+        },
+        {
+          "handle": "hanna-peterson-the-togo",
+          "title": "The Togo",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 6,
+          "tags": []
+        },
+        {
+          "handle": "sofia-lind-hold-you-blue",
+          "title": "Hold You - Blue",
+          "vendor": "The Poster Club",
+          "type": "Print",
+          "priceMin": 43,
+          "variantCount": 5,
+          "tags": []
+        }
+      ]
+    }
+  ],
+  "samplePdps": {
+    "print": {
+      "handle": "suzanne-lustig-perfect-together",
+      "title": "Perfect Together",
+      "vendor": "The Poster Club",
+      "type": "Print",
+      "tags": [],
+      "priceMin": 43,
+      "priceMax": 269,
+      "variantCount": 5,
+      "variants": [
+        {
+          "id": 57592627200332,
+          "title": "A4 (21x29,7 cm)",
+          "available": true,
+          "price": 43,
+          "sku": "17593-02",
+          "option1": "A4 (21x29,7 cm)",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57596656779596,
+          "title": "30x40 cm",
+          "available": true,
+          "price": 49,
+          "sku": "17593-03",
+          "option1": "30x40 cm",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57596656746828,
+          "title": "50x70 cm",
+          "available": true,
+          "price": 89,
+          "sku": "17593-07",
+          "option1": "50x70 cm",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57596656714060,
+          "title": "70x100 cm",
+          "available": true,
+          "price": 139,
+          "sku": "17593-09",
+          "option1": "70x100 cm",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57596656681292,
+          "title": "100x140 cm",
+          "available": true,
+          "price": 269,
+          "sku": "17593-00",
+          "option1": "100x140 cm",
+          "option2": null,
+          "option3": null
+        }
+      ],
+      "optionNames": [],
+      "imageCount": 4,
+      "images": [
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Frame_Oak_Low_Res.jpg?v=1779316879",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Lifestyle_Low_Res.jpg?v=1779316879",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_closeup_Low_Res.jpg?v=1779316879",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Suzanne_Lustig_Perfect_Together_Product_Low_Res.jpg?v=1779316879"
+      ],
+      "descriptionText": "Premium-quality botanic art print by Suzanne Lustig created exclusively for The Poster Club, printed on 245g FSC™-certified archival-quality art paper.\n>\n>The motif captures an organic, fluid interplay of form and space, evoking quiet moments found in nature’s gentle patterns. Effortlessly suited to serene bedrooms or living rooms, this refined piece brings depth when paired with soft textiles and muted palettes, creating a harmonious mood. Pairs perfectly with green, orange, rose, or yellow accents.\n>\n>Produced with attention to craftsmanship and the originality of the artwork, using museum-grade giclée printing techniques and sustainable materials and production processes.\n>\n>\n Fade-resistant with exceptional colour depth and detail\n Matte finish with a natural paper texture\n FSC™-certified paper from responsible sources\n Curated in Copenhagen by art professionals\n>Part of the Main Collection\n>\n>",
+      "seo": {
+        "title": "Perfect Together by Suzanne Lustig | The Poster Club",
+        "metaDescription": "Buy Perfect Together by Suzanne Lustig at The Poster Club — a print printed on premium paper and sustainably produced. Fast worldwide shipping.",
+        "canonical": "https://theposterclub.com/products/suzanne-lustig-perfect-together"
+      },
+      "jsonLd": {
+        "category": "Print",
+        "variesBy": [
+          "https://schema.org/size"
+        ],
+        "hasVariantCount": 5,
+        "breadcrumbs": [
+          {
+            "position": 1,
+            "name": "Home",
+            "item": "https://theposterclub.com"
+          },
+          {
+            "position": 2,
+            "name": "Art Print",
+            "item": "https://theposterclub.com/collections/art-prints"
+          },
+          {
+            "position": 3,
+            "name": "Suzanne Lustig",
+            "item": "https://theposterclub.com/pages/artists/suzanne-lustig"
+          },
+          {
+            "position": 4,
+            "name": "Perfect Together",
+            "item": "https://theposterclub.com/products/suzanne-lustig-perfect-together"
+          }
+        ]
+      }
+    },
+    "canvas": {
+      "handle": "canvas-rebecca-hein-the-line-red",
+      "title": "The Line - Red",
+      "vendor": "theposterclub.shop",
+      "type": "Canvas",
+      "tags": [],
+      "priceMin": 129,
+      "priceMax": 349,
+      "variantCount": 3,
+      "variants": [
+        {
+          "id": 57588855439692,
+          "title": "30x40 cm",
+          "available": true,
+          "price": 129,
+          "sku": "CA-CPR-16938-3",
+          "option1": "30x40 cm",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57588855406924,
+          "title": "50x70 cm",
+          "available": true,
+          "price": 219,
+          "sku": "CA-CPR-16938-7",
+          "option1": "50x70 cm",
+          "option2": null,
+          "option3": null
+        },
+        {
+          "id": 57588855374156,
+          "title": "70x100 cm",
+          "available": true,
+          "price": 349,
+          "sku": "CA-CPR-16938-9",
+          "option1": "70x100 cm",
+          "option2": null,
+          "option3": null
+        }
+      ],
+      "optionNames": [],
+      "imageCount": 5,
+      "images": [
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/CA-CPR-16938-7_Rebecca_Hein_The_Line_Red_Oak_Frame-scaled.jpg?v=1779284283",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Rebecca_Hein_The_Line_Red_Canvas_Lifestyle_Low_Res.jpg?v=1779284286",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/TPC_Canvas_03.jpg?v=1779284595",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/TPC_Canvas_05.jpg?v=1779284579",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/CA-CPR-16938-7_Rebecca_Hein_The_Line_Red_Product_Low_Res.jpg?v=1779908414"
+      ],
+      "descriptionText": "Premium canvas art by Rebecca Hein high-quality 320 g cotton canvas with a textured matte finish. Mounted in a 3.5 cm deep frame made from FSC™-certified oak veneer or coloured wood veneer.\n \"The Line - Red\" art print distills Scandinavian minimalism into a sophisticated visual statement. Gestural red lines dance across a gentle beige canvas, evoking calm and clarity—an ideal focal point for the home office or living room, and harmonious with warm woods and muted interiors. The material details and subtle dimensionality invite close contemplation, enhancing curated contemporary spaces.\n Drawing inspiration from contemporary Scandinavian interiors, our framed canvas art prints combine tactile materials with a refined and timeless expression. The textured surface and floating frame design create depth, bringing selected artworks clearly into focus.\n Each canvas comes fully framed and ready to hang, with a discreet bracket on the back for easy wall mounting. Available only for selected artworks from our collection.\n Fade-resistant archival ink on matte cotton canvas\n Vibrant, true-to-life color reproduction\n Sustainably sourced materials and production\n Exclusively for The Poster Club",
+      "seo": {
+        "title": "The Line - Red by Rebecca Hein | The Poster Club",
+        "metaDescription": "Buy The Line - Red by Rebecca Hein at The Poster Club — a canvas premium quality, sustainably made and ready to frame. Shipped worldwide.",
+        "canonical": "https://theposterclub.com/products/canvas-rebecca-hein-the-line-red"
+      },
+      "jsonLd": {
+        "category": "Canvas",
+        "variesBy": [
+          "https://schema.org/size"
+        ],
+        "hasVariantCount": 3,
+        "breadcrumbs": [
+          {
+            "position": 1,
+            "name": "Home",
+            "item": "https://theposterclub.com"
+          },
+          {
+            "position": 2,
+            "name": "Canvas",
+            "item": "https://theposterclub.com/collections/canvas"
+          },
+          {
+            "position": 3,
+            "name": "Rebecca Hein",
+            "item": "https://theposterclub.com/pages/artists/rebecca-hein"
+          },
+          {
+            "position": 4,
+            "name": "The Line - Red",
+            "item": "https://theposterclub.com/products/canvas-rebecca-hein-the-line-red"
+          }
+        ]
+      }
+    },
+    "wall_object": {
+      "handle": "thalia-vase",
+      "title": "Thalia Vase",
+      "vendor": "The Poster Club",
+      "type": "Wall Object",
+      "tags": [
+        "collection-laoru-laoru-collection"
+      ],
+      "priceMin": 159,
+      "priceMax": 159,
+      "variantCount": 1,
+      "variants": [
+        {
+          "id": 57837032800588,
+          "title": "28x20x1,5 cm",
+          "available": true,
+          "price": 159,
+          "sku": "WO-LAO-THA-99",
+          "option1": "28x20x1,5 cm",
+          "option2": null,
+          "option3": null
+        }
+      ],
+      "optionNames": [],
+      "imageCount": 7,
+      "images": [
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Product_Low_Res.jpg?v=1779277330",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Lifestyle_Low_Res.jpg?v=1779277331",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_01_Low_Res.jpg?v=1779277330",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_02_Low_Res.jpg?v=1779277330",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase_Close_Up_03_Low_Res.jpg?v=1779277330",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Group_Low_Res.jpg?v=1779277331",
+        "//cdn.shopify.com/s/files/1/1009/3975/9948/files/Laoru_Laoru_Thalia_Vase.png?v=1781785187"
+      ],
+      "descriptionText": "Handcrafted in Aarhus, Denmark, by Katrine and Jacob Laoru, the Thalia Vase Relief draws inspiration from the Nine Greek Muses. In ancient Greece, both the vessel and the Muse were seen as bearers of life, inspiration and creative force. The vase has long been a symbol of womanhood, while the Muses, in Greek mythology, are divine daughters who embody inspiration and serve as the source of art, knowledge and creative expression.\n>\n> Thalia – Muse of Comedy\n>\n> Thalia is the Muse of comedy, traditionally associated with joy, lightness and vitality. In this ceramic relief, she represents playfulness and the uplifting spirit of humour. The idea of the Muse and the form of the vase come together – one giving shape to artistic thought, the other to its physical expression. Each piece is crafted by hand in glazed stoneware in nuanced tones of antique white and designed to be wall-mounted.\n>\n> Materials\n> Glazed stoneware ceramic.\n>\n>\n Specifications\n> Colour: Antique White\n>Dimensions: Approx. H 28 × W 20 × D 1,5 cm.\n>\n> Mounting:\n> The relief has a built-in hanging slot on the back that allows for wall mounting.\n>\n> Care & Maintenance\n> Wipe with a dry or damp cloth to remove dust or dirt. The glazed surface is resistant to both frost and everyday smudges – no additional treatment needed.\n>\n>\n>",
+      "seo": {
+        "title": "Thalia Vase by Laoru Laoru | The Poster Club",
+        "metaDescription": "Buy Thalia Vase by Laoru Laoru at The Poster Club — a wall object printed on premium paper and sustainably produced. Fast worldwide shipping.",
+        "canonical": "https://theposterclub.com/products/thalia-vase"
+      },
+      "jsonLd": {
+        "category": "Wall Object",
+        "variesBy": [
+          "https://schema.org/size"
+        ],
+        "hasVariantCount": 1,
+        "breadcrumbs": [
+          {
+            "position": 1,
+            "name": "Home",
+            "item": "https://theposterclub.com"
+          },
+          {
+            "position": 2,
+            "name": "Wall Object",
+            "item": "https://theposterclub.com"
+          },
+          {
+            "position": 3,
+            "name": "Laoru Laoru",
+            "item": "https://theposterclub.com/pages/artists/laoru-laoru"
+          },
+          {
+            "position": 4,
+            "name": "Thalia Vase",
+            "item": "https://theposterclub.com/products/thalia-vase"
+          }
+        ]
+      }
+    }
+  }
+}
