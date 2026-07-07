@@ -58,20 +58,20 @@ downgraded to NEEDS-VERIFICATION unless import-search-confirmed.
 |---|---|
 | **Lint** (`npm run lint`) | ✅ Pass — zero warnings/errors |
 | **Unit tests** (`npm run test`) | ✅ Pass — **71 files, 723 tests** |
-| **Build** (`npm run build`) | ❌ **FAILS** — compiles OK (29s), then fails at TS check on `worker.ts` |
-| **Typecheck** (`npx tsc --noEmit`) | ❌ Same 3 errors in `worker.ts` |
+| **Build** (`npm run build`) | ✅ Pass (fixed in PR #120 — was failing on `worker.ts` handler types) |
+| **Typecheck** (`npm run typecheck`) | ✅ Pass — root `tsc` + `tsc -p tsconfig.worker.json` |
 | **i18n** | ✅ `pl/en/es/de` key-sets identical (0 divergence) — no orphan/missing keys |
 | **Prod `console.log`** | 1 (in `src/app/api/resend/webhook/route.ts`) — negligible |
 | **Prod `eslint-disable`** | 19, all `@next/next/no-img-element` — intentional (raw `<img>` for uncropped photos) |
 
-**The build failure is a PRE-EXISTING baseline condition, not caused by cleanup.**
-`worker.ts` uses Cloudflare Worker globals (`MessageBatch`, `ScheduledController`,
-`ExportedHandler`) that aren't resolved in the plain `tsc`/`next build` typecheck context.
-`worker.ts` is `tsconfig`-`exclude`d yet still enters the program because `include: ["**/*.ts"]`
-matches it (confirmed via `tsc --listFilesOnly` → returns `worker.ts`). **The follow-up agent
-must record this baseline and must NOT "fix" it by editing `worker.ts` logic or hiding the error.**
+**Historical note (pre-PR #120):** `worker.ts` failed typecheck because Cloudflare Worker handler globals
+(`MessageBatch`, `ScheduledController`, `ExportedHandler`) were missing when local `worker-configuration.d.ts`
+ pulled it into the program. **Fixed** by scoping `@cloudflare/workers-types` to `tsconfig.worker.json`,
+ excluding `worker.ts` / `worker-configuration.d.ts` from the root program, and adding `cloudflare-bindings.d.ts`
+ for env binding shapes under `cf-typegen --include-runtime=false`.
 
 ```
+# Before fix (for audit trail only):
 worker.ts(36,12): error TS2304: Cannot find name 'MessageBatch'.
 worker.ts(50,27): error TS2304: Cannot find name 'ScheduledController'.
 worker.ts(59,13): error TS2304: Cannot find name 'ExportedHandler'.
@@ -124,7 +124,7 @@ Do **not** bulk-remove. Each needs a human/owner decision or a follow-up refacto
 ### Dependencies
 | Item | Evidence | Recommended action |
 |---|---|---|
-| `prettier` (devDep) | `depcheck` unused; `npm ls` top-level only; **no** prettier config file; no `format` script | Either add `format` + `format:check` scripts + a `.prettierrc`, **or** remove. Likely used ad-hoc via editor/`npx` — confirm with team before removing. |
+| ~~`prettier` (devDep)~~ | Removed — unused zombie dep (no config, no scripts, no CI). | **Done.** |
 
 **Reclassified from tool "unused" → keep (see §5):** `@swc/helpers`, `@types/react-dom`.
 
@@ -204,10 +204,9 @@ The follow-up agent **must not** remove, rename, or "simplify" any of these.
 3. **Remove `@eslint/eslintrc` + `@google-analytics/data`** (§3.3, §3.4). `npm install`. Re-run lint + test + build.
 4. **Delete/archive `scripts/import-new-plates.mjs`** (§3.5) after a quick owner nod.
 5. **Stop.** Everything below is a separate, owner-gated pass:
-   - Resolve the NEEDS-VERIFICATION scripts + `prettier` with the team.
+   - Resolve the NEEDS-VERIFICATION scripts with the team.
    - Refactor the rate-limiter duplication (with its tests).
-   - Fix the `worker.ts` typecheck/build config in a focused session (add Cloudflare Worker types to
-     the typecheck scope or split the worker typecheck) — **without changing Worker behavior**.
+   - ~~Fix the `worker.ts` typecheck/build config~~ **Done (PR #120)** — `tsconfig.worker.json` + `@cloudflare/workers-types` + `cloudflare-bindings.d.ts`.
    - Review the individual unused-export signals one symbol at a time.
 
 Each numbered step is independently revertible. Do not batch a dependency removal with a component
@@ -222,8 +221,8 @@ deletion — keep commits small so a failed validation isolates the cause.
 git status --short
 npm run lint          # expect: clean
 npm run test          # expect: 71 files, 723 tests pass
-npm run build         # expect: FAILS on worker.ts typecheck (pre-existing — document it)
-npx tsc --noEmit      # expect: same 3 worker.ts errors
+npm run typecheck     # expect: pass (root + worker)
+npm run build         # expect: pass
 npx knip --no-progress
 npx depcheck --json
 ```
@@ -233,16 +232,16 @@ npx depcheck --json
 git status --short
 npm run lint
 npm run test
+npm run typecheck     # root tsc + tsconfig.worker.json
 npx knip --no-progress      # confirm the removed items disappear from the report
 npx depcheck --json         # confirm removed deps disappear
-npm run build               # MUST still fail ONLY on worker.ts — no NEW errors introduced
+npm run build
 ```
 
 **If package files changed:** run `npm install` before validation so the lockfile is consistent.
 
-**Success criterion for the cleanup pass:** lint clean, 723 tests still pass, and `npm run build`
-fails *only* on the pre-existing `worker.ts` typecheck errors — **no new failures**. If any new
-error appears, revert the last change and isolate.
+**Success criterion for the cleanup pass:** lint clean, 723 tests still pass, `npm run typecheck` and
+`npm run build` both pass. If any new error appears, revert the last change and isolate.
 
 ---
 
@@ -252,5 +251,5 @@ error appears, revert the last change and isolate.
   flag framework-convention exports, build-injected deps, and dynamically-loaded modules. Never remove
   on a tool report alone; `git grep` the symbol first and check §5.
 - Public contracts (export names, API route paths, DB columns, config keys) are not renamed here.
-- The pre-existing `worker.ts` build failure must be **documented, not hidden** by cleanup.
+- `worker.ts` handler types are checked via `tsconfig.worker.json` (`npm run typecheck`); root `tsconfig.json` excludes `worker.ts` and gitignored `worker-configuration.d.ts` so Workers globals do not leak into `src/**`.
 - Nothing in this session modified code. Deletions proposed above are all recoverable from git history.

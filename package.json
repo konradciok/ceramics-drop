@@ -9,6 +9,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test --grep @ci",
     "test:e2e:edge": "playwright test --grep @checkout-edge",
@@ -39,7 +40,6 @@
     "reconcile:orders": "node scripts/reconcile-orders.mjs"
   },
   "dependencies": {
-    "@google-analytics/data": "^6.1.0",
     "@google-cloud/bigquery": "^8.3.1",
     "@sentry/nextjs": "^10.56.0",
     "@stripe/react-stripe-js": "^6.6.0",
@@ -55,7 +55,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.5",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@opennextjs/cloudflare": "^1.19.11",
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.1",
@@ -64,7 +64,6 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.7",
     "googleapis": "^173.0.0",
-    "prettier": "^3.8.3",
     "schema-dts": "^2.0.0",
     "sharp": "^0.34.5",
     "tsx": "^4.20.6",

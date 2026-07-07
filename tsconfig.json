@@ -30,6 +30,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "cloudflare-bindings.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
@@ -38,6 +39,7 @@
   "exclude": [
     "node_modules",
     "design",
-    "worker.ts"
+    "worker.ts",
+    "worker-configuration.d.ts"
   ]
 }

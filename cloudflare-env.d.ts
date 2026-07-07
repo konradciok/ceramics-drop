@@ -1,5 +1,7 @@
 /* eslint-disable */
 // Workers bindings from wrangler.jsonc + secrets. After changing bindings, run `npm run cf-typegen`.
+// Binding shapes (Queue, R2Bucket, Fetcher, Service) resolve via cloudflare-bindings.d.ts;
+// handler/runtime types for worker.ts use @cloudflare/workers-types via tsconfig.worker.json.
 
 /** Minimal Workers ExecutionContext — matches the runtime shape, usable in Next.js server code. */
 interface ExecutionContext {
