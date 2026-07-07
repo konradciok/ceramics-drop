@@ -21,11 +21,17 @@ function req(orderId = ORDER_ID) {
   }) as Parameters<typeof POST>[0];
 }
 
-function supabaseForOrder(order: Record<string, unknown> | null) {
+function supabaseForOrder(order: Record<string, unknown> | null, ceramicCount = 1) {
   const maybeSingle = vi.fn().mockResolvedValue({ data: order, error: null });
-  const eq = vi.fn(() => ({ maybeSingle }));
-  const select = vi.fn(() => ({ eq }));
-  const from = vi.fn(() => ({ select }));
+  const eqOrders = vi.fn(() => ({ maybeSingle }));
+  const selectOrders = vi.fn(() => ({ eq: eqOrders }));
+  // countCeramicOrderItems chain: order_items → select(count) → eq → is
+  const isNull = vi.fn().mockResolvedValue({ count: ceramicCount, error: null });
+  const eqItems = vi.fn(() => ({ is: isNull }));
+  const selectItems = vi.fn(() => ({ eq: eqItems }));
+  const from = vi.fn((table: string) =>
+    table === 'order_items' ? { select: selectItems } : { select: selectOrders },
+  );
   return { from };
 }
 
@@ -96,6 +102,17 @@ describe('POST /api/admin/create-shipment', () => {
 
     expect(res.status).toBe(409);
     expect(body).toEqual({ error: 'Odbiór osobisty nie wymaga przesyłki.' });
+    expect(mocks.createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 for a print-only order and never calls InPost', async () => {
+    mocks.adminSupabase.mockReturnValue(supabaseForOrder(adminOrder({ delivery_method: 'kurier' }), 0));
+
+    const res = await POST(req());
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toContain('Prodigi');
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
 

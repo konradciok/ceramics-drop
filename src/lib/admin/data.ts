@@ -15,7 +15,13 @@ export function isUuid(s: string | null | undefined): s is string {
   return !!s && UUID_RE.test(s);
 }
 
-export type OrderItem = { product_id: string; unit_price: number };
+/** `variant` is the ceramics⇄prints discriminator: NULL = ceramic, jsonb = print. */
+export type OrderItem = { product_id: string; unit_price: number; variant?: unknown };
+
+/** True when every line item is a print (Prodigi fulfils it — never InPost work). */
+export function isPrintOnly(order: Pick<AdminOrder, 'items'>): boolean {
+  return order.items.length > 0 && order.items.every((it) => it.variant != null);
+}
 
 /** An order row with its line items. Columns mirror the `orders` table. */
 export type AdminOrder = {
@@ -64,7 +70,7 @@ export async function listOrders(
   // Line items are only needed by the order-detail page; callers that just
   // count/sum (KPIs) skip the join. The select string is dynamic, so supabase's
   // literal-type query parser can't infer the row shape — cast through unknown.
-  const columns = opts?.withItems === false ? ORDER_COLUMNS : `${ORDER_COLUMNS}, order_items(product_id, unit_price)`;
+  const columns = opts?.withItems === false ? ORDER_COLUMNS : `${ORDER_COLUMNS}, order_items(product_id, unit_price, variant)`;
   let query = supabase.from('orders').select(columns).order('created_at', { ascending: false });
   if (filter?.status) query = query.eq('status', filter.status);
   if (filter?.email) query = query.eq('email', filter.email);
@@ -78,7 +84,7 @@ export async function getOrder(id: string): Promise<AdminOrder | null> {
   const supabase = adminSupabase();
   const { data, error } = await supabase
     .from('orders')
-    .select(`${ORDER_COLUMNS}, order_items(product_id, unit_price)`)
+    .select(`${ORDER_COLUMNS}, order_items(product_id, unit_price, variant)`)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -169,7 +175,10 @@ export type Kpis = {
 };
 
 export async function getKpis(): Promise<Kpis> {
-  const [orders, pieces] = await Promise.all([listOrders(undefined, { withItems: false }), listInventory()]);
+  // Items are joined here (despite KPIs being count/sum) because
+  // awaitingFulfillment must exclude print-only orders — the discriminator
+  // lives on order_items.variant. Dataset is tiny; the join is cheap.
+  const [orders, pieces] = await Promise.all([listOrders(), listInventory()]);
 
   const ordersByStatus: Record<OrderStatus, number> = {
     pending: 0, paid: 0, failed: 0, expired: 0, refunded: 0,
@@ -180,7 +189,9 @@ export async function getKpis(): Promise<Kpis> {
     ordersByStatus[o.status] = (ordersByStatus[o.status] ?? 0) + 1;
     if (o.status === 'paid') {
       paidRevenue[o.currency] = (paidRevenue[o.currency] ?? 0) + o.total;
-      if (!o.inpost_shipment_id && o.delivery_method !== 'odbior') awaitingFulfillment += 1;
+      // awaitingFulfillment is the InPost queue depth — print-only orders are
+      // Prodigi's work and never get an inpost_shipment_id.
+      if (!o.inpost_shipment_id && o.delivery_method !== 'odbior' && !isPrintOnly(o)) awaitingFulfillment += 1;
     }
   }
 
