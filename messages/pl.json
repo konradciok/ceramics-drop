@@ -239,7 +239,8 @@
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
     "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
-    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować."
+    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować.",
+    "privateSalePrintsNotice": "Linki do prywatnych zamówień dotyczą tylko ceramiki — usuń printy z koszyka, aby kontynuować."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",

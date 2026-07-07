@@ -564,6 +564,24 @@ describe('POST /api/checkout', () => {
       address,
     },
   });
+  const paczkomatDelivery = {
+    ok: true as const,
+    delivery: {
+      method: 'paczkomat',
+      contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+      target_point: 'WAW01A',
+      address: null,
+    },
+  };
+  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi') => {
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({ fulfilment_type: type }),
+    );
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ fulfilment_type: type }) }),
+      expect.anything(),
+    );
+  };
 
   describe('fulfilment_type on insert (Finding 8)', () => {
     it("writes 'pickup' for an odbior ceramic order", async () => {
@@ -575,9 +593,7 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'pickup' }),
-      );
+      expectFulfilment('pickup');
     });
 
     it("writes 'inpost' for a ceramic kurier order", async () => {
@@ -592,9 +608,28 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'inpost' }),
+      expectFulfilment('inpost');
+    });
+
+    it("writes 'inpost' for a ceramic paczkomat order", async () => {
+      validateDelivery.mockReturnValueOnce(
+        paczkomatDelivery as unknown as ReturnType<typeof validateDelivery>,
       );
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(
+            makeCheckoutBody({
+              delivery_method: 'paczkomat',
+              target_point: 'WAW01A',
+              contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+            }),
+          ),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('inpost');
     });
 
     it("writes 'prodigi' for a print order (kurier to an EU address)", async () => {
@@ -613,9 +648,7 @@ describe('POST /api/checkout', () => {
         }),
       );
       expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ fulfilment_type: 'prodigi' }),
-      );
+      expectFulfilment('prodigi');
       // Print carts never touch piece_state.
       expect(reserveRpc).not.toHaveBeenCalled();
     });
