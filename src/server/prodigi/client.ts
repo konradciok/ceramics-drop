@@ -1,4 +1,10 @@
-import type { ProdigiOrderRequest, ProdigiOrderResponse, ProdigiProductResponse } from './types';
+import type {
+  ProdigiCancelResponse,
+  ProdigiOrderActionsResponse,
+  ProdigiOrderRequest,
+  ProdigiOrderResponse,
+  ProdigiProductResponse,
+} from './types';
 
 export class ProdigiError extends Error {
   constructor(
@@ -65,6 +71,12 @@ export function prodigiClient(env: CloudflareEnv) {
 
     getOrder: (prodigiOrderId: string) =>
       request<{ order: ProdigiOrderResponse['order'] }>(env, 'GET', `/orders/${prodigiOrderId}`),
+
+    getOrderActions: (prodigiOrderId: string) =>
+      request<ProdigiOrderActionsResponse>(env, 'GET', `/orders/${prodigiOrderId}/actions`),
+
+    cancelOrder: (prodigiOrderId: string) =>
+      request<ProdigiCancelResponse>(env, 'POST', `/orders/${prodigiOrderId}/actions/cancel`),
 
     getProduct: (sku: string) =>
       request<ProdigiProductResponse>(env, 'GET', `/products/${sku}`),

@@ -278,6 +278,53 @@ export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder 
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio print-refund alert ────────────────────────────────────────────────
+
+export type PrintRefundAlert = {
+  orderId: string;
+  prodigiOrderId: string;
+  stage: string;
+};
+
+/** Pure function — subject + inner HTML for the "print refunded, cancel manually" studio alert. */
+export function buildPrintRefundAlertEmail(params: PrintRefundAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId) },
+    { label: 'Zamówienie Prodigi', value: escapeHtml(params.prodigiOrderId) },
+    { label: 'Status Prodigi', value: escapeHtml(params.stage) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Zwrot za druk — zamówienia Prodigi nie udało się anulować automatycznie.</strong>'),
+    emailParagraph(
+      'Klient otrzymał zwrot pieniędzy, ale zamówienie w Prodigi jest już w produkcji lub wysłane. ' +
+        'Anuluj je ręcznie w panelu Prodigi albo zaakceptuj koszt.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Zwrot] Druk zwrócony — anuluj w Prodigi — zamówienie ${params.orderId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that a refunded print order needs manual handling in Prodigi. Throws if Resend isn't configured (caller must catch). */
+export async function emailPrintRefundAlertToStudio(params: PrintRefundAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildPrintRefundAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Customer shipping-confirmation email ─────────────────────────────────────
 
 export type CustomerShippingOrder = {

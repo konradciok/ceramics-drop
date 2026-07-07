@@ -28,8 +28,10 @@ vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
 vi.mock('@/lib/email', () => ({ emailNewOrderToStudio: vi.fn(), emailOrderConfirmationToCustomer: vi.fn() }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn() }));
+vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: vi.fn() }));
 
 import { POST } from './route';
+import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
@@ -151,6 +153,84 @@ describe('webhook releaseSale (F2)', () => {
     supabaseImpl = supabase;
 
     await expect(POST(refundedEventRequest())).rejects.toThrow(/db down/);
+  });
+});
+
+function disputeClosedEventRequest(status: string) {
+  constructEventAsync.mockResolvedValue({
+    type: 'charge.dispute.closed',
+    data: { object: { status, payment_intent: 'pi_1' } },
+  });
+  return new Request('http://localhost/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': 'sig_test' },
+    body: '{}',
+  });
+}
+
+describe('webhook releaseSale → cancelPrintFulfilment (Finding 1)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(cancelPrintFulfilment).mockClear();
+  });
+
+  const casFlipped = () =>
+    makeSupabase({
+      ordersUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+
+  it('full refund: paid→refunded CAS flips and Prodigi cancel-or-alert runs for the order', async () => {
+    supabaseImpl = casFlipped().supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(cancelPrintFulfilment).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(cancelPrintFulfilment).mock.calls[0][0]).toBe('o1');
+  });
+
+  it('replayed charge.refunded (already refunded, CAS misses): does NOT re-run the Prodigi handling', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+
+  it('partial refund: releaseSale never runs, no Prodigi handling', async () => {
+    supabaseImpl = casFlipped().supabase;
+
+    const res = await POST(refundedEventRequest({ amount_refunded: 50 }));
+
+    expect(res.status).toBe(200);
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+
+  it('lost dispute: same handling as a full refund', async () => {
+    supabaseImpl = casFlipped().supabase;
+
+    const res = await POST(disputeClosedEventRequest('lost'));
+
+    expect(res.status).toBe(200);
+    expect(cancelPrintFulfilment).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(cancelPrintFulfilment).mock.calls[0][0]).toBe('o1');
+  });
+
+  it('won dispute: no release, no Prodigi handling', async () => {
+    supabaseImpl = casFlipped().supabase;
+
+    const res = await POST(disputeClosedEventRequest('won'));
+
+    expect(res.status).toBe(200);
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 });
 
