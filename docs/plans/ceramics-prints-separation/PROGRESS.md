@@ -11,7 +11,7 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 
 **Decisions:**
 - `prodigi_status_stage` keeps **raw Prodigi casing** (`'Cancelled'`, not `'cancelled'`) — matches processJob (`'InProgress'`) and the callback upsert convention.
-- Alert idempotency across the two call sites (admin refund + webhook releaseSale) needed a claim column → migration `20260707120000_prodigi_orders_cancel_alert.sql` adds `prodigi_orders.cancel_alerted_at`; CAS-claimed before alerting (same pattern as `*_email_sent_at`).
+- Alert idempotency across the two call sites (admin refund + webhook releaseSale) needed a claim column → migration `20260707120000_prodigi_orders_cancel_alert.sql` adds `prodigi_orders.cancel_alerted_at`; CAS-claimed before alerting (same pattern as `*_email_sent_at`). **Applied to production** (`20260707102056` via Supabase MCP, 2026-07-07).
 - Studio alert email is Polish-only, matching the existing studio email convention (label/new-order emails).
 - Helper never throws (Sentry captures every failure path) so a Prodigi hiccup can't 5xx the refund webhook into a retry loop.
 
