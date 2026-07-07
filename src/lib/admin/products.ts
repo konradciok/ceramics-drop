@@ -5,8 +5,10 @@
  * referenced by old orders) degrade to showing the raw id.
  */
 import { getProductById } from '@/lib/products';
+import { variantLabel } from '@/lib/print-cart';
+import { getPrintById } from '@/lib/prints';
 import { smallest } from '@/lib/images';
-import type { CategorySlug } from '@/lib/types';
+import type { CategorySlug, PrintVariantSelection } from '@/lib/types';
 
 /** Internal PL singular labels per family (admin is Polish-only, no i18n machinery). */
 const CATEGORY_LABEL: Record<CategorySlug, string> = {
@@ -30,16 +32,28 @@ export type ProductRef = {
   known: boolean;
 };
 
-export function productRef(productId: string): ProductRef {
+export function productRef(productId: string, variant?: unknown): ProductRef {
   const p = getProductById(productId);
-  if (!p) {
-    return { id: productId, label: productId, category: '—', image: null, known: false };
+  if (p) {
+    return {
+      id: p.id,
+      label: `${CATEGORY_LABEL[p.category]} Nº${p.num}`,
+      category: p.category,
+      image: smallest(p.image),
+      known: true,
+    };
   }
-  return {
-    id: p.id,
-    label: `${CATEGORY_LABEL[p.category]} Nº${p.num}`,
-    category: p.category,
-    image: smallest(p.image),
-    known: true,
-  };
+  const print = getPrintById(productId);
+  if (print) {
+    const sel = variant as PrintVariantSelection | undefined;
+    const suffix = sel ? ` · ${variantLabel(sel, 'pl')}` : '';
+    return {
+      id: print.id,
+      label: `${CATEGORY_LABEL['fine-art-prints']} Nº${print.num}${suffix}`,
+      category: print.category,
+      image: smallest(print.image),
+      known: true,
+    };
+  }
+  return { id: productId, label: productId, category: '—', image: null, known: false };
 }
