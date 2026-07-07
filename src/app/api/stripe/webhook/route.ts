@@ -15,6 +15,8 @@ import type { OrderForShipment } from '@/lib/shipx';
 import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
+import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
+import type { PrintVariantSelection } from '@/lib/types';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 
@@ -223,7 +225,7 @@ export async function POST(req: Request) {
         if (loadErr) throw new Error(`load order failed for ${orderId}: ${loadErr.message}`);
         const { data: itemRows, error: itemsErr } = await supabase
           .from('order_items')
-          .select('product_id, unit_price')
+          .select('product_id, unit_price, variant')
           .eq('order_id', orderId);
         if (itemsErr) throw new Error(`load order_items failed for ${orderId}: ${itemsErr.message}`);
         if (orderRow) {
@@ -235,12 +237,23 @@ export async function POST(req: Request) {
             studio_email_sent_at: string | null;
           };
 
+          const items =
+            (itemRows as Array<{ product_id: string; unit_price: number; variant: PrintVariantSelection | null }> | null) ?? [];
           const notifyOrder = {
             order: {
               ...orderRowTyped,
-              items: (itemRows as Array<{ product_id: string; unit_price: number }> | null) ?? [],
+              // Print items carry variant + Prodigi SKU so the studio email
+              // shows exactly what will be produced; ceramics pass null.
+              items: items.map((it) => ({
+                product_id: it.product_id,
+                unit_price: it.unit_price,
+                variant: it.variant
+                  ? { ...it.variant, prodigiSku: PRODIGI_SKU_MAP[variantKey(it.variant)]?.sku ?? '—' }
+                  : null,
+              })),
             },
           };
+          const isPrintOnlyOrder = items.length > 0 && items.every((it) => it.variant !== null);
 
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
@@ -257,6 +270,7 @@ export async function POST(req: Request) {
               emailOrderConfirmationToCustomer({
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
                 locale: orderRowTyped.locale ?? 'pl',
+                kind: isPrintOnlyOrder ? 'print' : 'ceramic',
               }),
             );
           }
