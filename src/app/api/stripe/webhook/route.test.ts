@@ -29,6 +29,7 @@ vi.mock('@/lib/email', () => ({ emailNewOrderToStudio: vi.fn(), emailOrderConfir
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn() }));
 vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: vi.fn() }));
+vi.mock('@/server/fulfilment/enqueue', () => ({ enqueueProdigi: vi.fn() }));
 
 import { POST } from './route';
 import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
@@ -684,6 +685,58 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(emailNewOrderToStudio).toHaveBeenCalledTimes(3);
     expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(3);
     consoleErrorSpy.mockRestore();
+  });
+
+  it('print order: studio email carries variant + Prodigi SKU, confirmation uses print copy', async () => {
+    const printVariant = { size: '50x70', framed: true, mount: false, frameColour: 'black' };
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 0, error: null }, // print-only: 0 expected ceramics = fulfilled
+      variantRows: { data: [{ product_id: 'fap01', unit_price: 42000, variant: printVariant }], error: null },
+      emailOrderSelect: { data: { ...unclaimedOrderRow, delivery_method: 'kurier', inpost_target_point: null }, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
+    const studioPayload = vi.mocked(emailNewOrderToStudio).mock.calls[0][0] as {
+      order: { items: Array<{ variant: { prodigiSku: string } | null }> };
+    };
+    expect(studioPayload.order.items[0].variant).toMatchObject({
+      ...printVariant,
+      prodigiSku: 'GLOBAL-CFP-20X28',
+    });
+    expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ kind: 'print' });
+  });
+
+  it('ceramic order: confirmation stays on ceramic copy, studio items carry variant null', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [{ product_id: 'k01', unit_price: 10000, variant: null }], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    const studioPayload = vi.mocked(emailNewOrderToStudio).mock.calls[0][0] as {
+      order: { items: Array<{ variant: unknown }> };
+    };
+    expect(studioPayload.order.items[0].variant).toBeNull();
+    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ kind: 'ceramic' });
   });
 
   it('under-fulfillment/failed path sends nothing', async () => {

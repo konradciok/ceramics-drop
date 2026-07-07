@@ -41,3 +41,21 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 **Files:** `src/lib/admin/data.ts`, `src/lib/admin/fulfillment.ts`, `src/app/api/admin/create-shipment/route.ts`, `src/app/admin/fulfillment/page.tsx`, `src/app/admin/fulfillment/[id]/page.tsx`, `src/app/admin/fulfillment/FulfillmentActions.tsx`.
 
 **Tests:** create-shipment route (+1 print-only 409, helper mock extended with the order_items count chain), fulfillment (+2 stage tests, +1 queue-exclusion row), new `data.test.ts` (isPrintOnly + KPI exclusion). Full suite 645, lint clean, build green.
+
+## 04 — Emails (DONE)
+
+**Decisions:**
+- F7: webhook studio caller selects `variant` and maps print items to `{ ...variant, prodigiSku }` via `PRODIGI_SKU_MAP[variantKey(...)]` (fallback `'—'` for an unknown key — can't happen for a validated order). The `.mjs` reconcile script can't import TS, so it derives the SKU from the map's structure (`GLOBAL-{FAP|CFP|CFPM}-{inches}`) with a `ponytail:` sync note, and renders a PL-only variant line.
+- F5: `buildOrderConfirmationEmail`/`emailOrderConfirmationToCustomer` take `kind?: 'ceramic' | 'print'` (default ceramic → all existing callers unchanged). New `I18N_ORDER_CONFIRMATION_PRINT` map (pl/en/es/de): Prodigi on-demand production, 2–5 business days, EU/UK courier, tracking email promised — no InPost/Poland/locker text. Webhook derives kind from the (now variant-aware) item rows: print copy only when ALL items are prints.
+- F6: new `buildPrintShippingConfirmation` + `emailPrintShippingConfirmationToCustomer` — reuses the existing 4-locale `I18N` shipping strings; carrier tracking number + URL button; **no returns block** (prints not returnable per 03) and no locker language. Sent from `handleProdigiCallback` when `localStatus === 'shipped'`, claim-once via new `prodigi_orders.shipping_email_sent_at` (migration `20260707130000`), order email loaded **before** claim (no leak on missing email), 3× bounded retry + Sentry on final failure (Stripe webhook parity — Prodigi won't redeliver the same event id after HTTP 200), claim released (CAS on own timestamp) only after retries exhausted. Best-effort — callback still completes.
+- Prodigi `shipments[]` shape verified against the docs: `{ carrier: { name, service }, tracking: { number, url }, dispatchDate, status }`; added `ProdigiShipment` to types.
+- Route test needed `@/server/fulfilment/enqueue` mocked once print items started flowing through the succeeded path.
+- **Deploy ordering:** apply migration `20260707130000_prodigi_orders_shipping_email.sql` to prod Supabase **before** the Workers deploy that ships this branch — the callback UPDATEs `shipping_email_sent_at` on first Complete event; a missing column fails the claim silently (best-effort) and customers never get tracking emails.
+- `reconcile-orders.mjs --emails` now mirrors webhook kind detection (print copy when all items have `variant`).
+
+**Known gap (follow-up):** no `--print-shipping` reconcile path yet for missed Prodigi tracking emails (`prodigi_status_stage = Complete` AND `shipping_email_sent_at IS NULL`). Sentry alert + manual replay is the backstop until then.
+
+**Files:** `src/lib/email.ts`, `src/app/api/stripe/webhook/route.ts`, `src/server/prodigi/callbacks.ts`, `src/server/prodigi/types.ts`, `scripts/reconcile-orders.mjs`, migration `20260707130000_prodigi_orders_shipping_email.sql`.
+
+**Tests:** email.test.ts (+7: studio SKU render, print copy ×4 locales, ceramic default, print shipping builder ×3), webhook route.test.ts (+2: print studio payload + print kind; ceramic kind), new `callbacks.test.ts` (6: send-once, claim-taken replay, done-event replay, non-shipped stage, 3× retry + claim release on failure, no claim when email missing). Full suite 661, lint clean, script `node --check` OK, build green.
+

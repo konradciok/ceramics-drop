@@ -91,6 +91,14 @@ describe('createOrderReturn', () => {
     expect(d.inpost.createShipment).not.toHaveBeenCalled();
   });
 
+  it('a mixed order with at least one ceramic item stays eligible', async () => {
+    // hasCeramicItems is defined as "any variant IS NULL row exists" — a
+    // defensive mixed order therefore reads true and stays returnable.
+    const d = deps({ hasCeramicItems: vi.fn().mockResolvedValue(true) });
+    const result = await createOrderReturn('ord-1', d);
+    expect(result).toEqual({ ok: true, returnShipmentId: '77', trackingNumber: 'RET001' });
+  });
+
   it('returns order_not_found for unknown order', async () => {
     const d = deps({ loadOrder: vi.fn().mockResolvedValue(null) });
     const result = await createOrderReturn('unknown', d);
