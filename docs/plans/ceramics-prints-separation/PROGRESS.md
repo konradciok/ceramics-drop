@@ -56,3 +56,18 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 **Files:** `src/lib/email.ts`, `src/app/api/stripe/webhook/route.ts`, `src/server/prodigi/callbacks.ts`, `src/server/prodigi/types.ts`, `scripts/reconcile-orders.mjs`, migration `20260707130000_prodigi_orders_shipping_email.sql`.
 
 **Tests:** email.test.ts (+7: studio SKU render, print copy ×4 locales, ceramic default, print shipping builder ×3), webhook route.test.ts (+2: print studio payload + print kind; ceramic kind), new `callbacks.test.ts` (5: send-once, claim-taken replay, done-event replay, non-shipped stage, claim release on failure). Full suite 661, lint clean, script `node --check` OK, build green.
+
+## 05 — Architecture (DONE)
+
+**Decisions:**
+- Migration `20260707140000_orders_fulfilment_type.sql`: add column → backfill (`odbior→pickup`, any `variant IS NOT NULL` item → `prodigi`, else `inpost`) → `DEFAULT 'inpost'` → `NOT NULL` → CHECK. The DEFAULT exists only to survive the migrate-before-deploy window (old code inserting without the column); it slightly mislabels pickup/print orders placed in that window — fix by re-running the backfill UPDATE without the null guard. At this store's volume the window is minutes and near-zero rows.
+- Checkout writes `fulfilment_type` on insert (`pickup`/`prodigi`/`inpost` from `method` + `hasPrints`). Skipped the `delivery_method` CHECK (plan marked optional; legacy rows unaudited — not worth the risk).
+- **Consumer switch: none.** 02/03/04 shipped first on `order_items.variant`, tested and correct; the plan explicitly allows either discriminator and says don't chase migration. Rewriting tested consumers for cosmetic parity fails the ponytail test. `fulfilment_type` is now available for future consumers.
+- Migration `20260707150000_drop_pod_variant_id.sql`: re-grep confirmed zero references outside the creating migration.
+- F12 guard: `privateSaleToken && hasPrints → 400 private_sale_prints_unsupported`, placed before any reservation. Declared in AGENTS.md (private-sale bullet).
+
+**Migration verified against a real Postgres** (throwaway `supabase/postgres:17.6` docker container, minimal schema slice): backfill produced inpost/prodigi/pickup/inpost for the four seed orders; CHECK rejected `'fedex'`; column-omitted insert got the `'inpost'` default; `pod_variant_id` dropped. No local Supabase stack was running — the prod DB still needs `supabase db push` (or dashboard SQL) at deploy time.
+
+**Files:** two migrations, `src/app/api/checkout/route.ts`, `AGENTS.md`, `src/app/api/checkout/route.test.ts`.
+
+**Tests:** checkout route +4 (fulfilment_type pickup/inpost/prodigi; private-sale×prints 400 with no reserve/PI/insert; pricing mock extended with toGrosze/toEuroCents/toGBPPence/orderAmountGBPPence). Full suite 665, lint clean, build green.

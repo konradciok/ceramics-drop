@@ -108,7 +108,7 @@ In production every `/admin` and `/api/admin` request is gated by a **Cloudflare
 Beyond `checkout` and `stripe/webhook`, `src/app/api/` exposes:
 - **`/api/inventory`** — live sold/reserved IDs for client-side cart reconciliation.
 - **`/api/feed/google`** + **`/api/feed/meta`** — Google Shopping & Meta Catalog product feeds, one variant per locale/currency (`FEED_LOCALES` in `src/lib/feed.ts` covers all 4 locales).
-- **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Spec: `docs/plans/private-sale-cart-link.md`.
+- **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Private-sale links are **ceramics-only** — checkout rejects a token combined with prints (`400 private_sale_prints_unsupported`). Spec: `docs/plans/private-sale-cart-link.md`.
 - **`/api/returns`** — creates a return shipment (requires `STUDIO_RETURN_*`).
 - **`/api/print-assets/[id]`** — signed high-res print files for Prodigi (see above).
 - **`/api/webhooks/prodigi/[token]`** — Prodigi status callbacks (see above).

@@ -126,6 +126,14 @@ export async function POST(req: Request) {
   const privateSaleToken = normalizeToken(body.private_sale_token);
   let privateSaleId: string | null = null;
 
+  // Private-sale links re-offer already-sold ceramic pieces; prints are
+  // open-edition and never part of one (settled decision — see
+  // docs/plans/ceramics-prints-separation/00-master.md #4). Reject before any
+  // reservation is attempted.
+  if (privateSaleToken && hasPrints) {
+    return NextResponse.json({ error: 'private_sale_prints_unsupported' }, { status: 400 });
+  }
+
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
   // is status-scoped (only rows still `reserved` for this order id), so rows a
   // paid order already flipped to `sold` are never touched; private-sale holds
@@ -282,6 +290,9 @@ export async function POST(req: Request) {
     total: amount,
     shipping_method: method, // legacy NOT NULL column ÔÇö kept in sync with delivery_method
     delivery_method: method,
+    // Explicit fulfilment discriminator (Finding 8): which pipeline owns this
+    // order. Per-item truth stays order_items.variant.
+    fulfilment_type: method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost',
     email: contact.email,
     receiver_first_name: contact.first_name,
     receiver_last_name: contact.last_name,
