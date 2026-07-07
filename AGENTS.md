@@ -108,7 +108,7 @@ In production every `/admin` and `/api/admin` request is gated by a **Cloudflare
 Beyond `checkout` and `stripe/webhook`, `src/app/api/` exposes:
 - **`/api/inventory`** — live sold/reserved IDs for client-side cart reconciliation.
 - **`/api/feed/google`** + **`/api/feed/meta`** — Google Shopping & Meta Catalog product feeds, one variant per locale/currency (`FEED_LOCALES` in `src/lib/feed.ts` covers all 4 locales).
-- **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Spec: `docs/plans/private-sale-cart-link.md`.
+- **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Private-sale links are **ceramics-only** — checkout rejects a token combined with prints (`400 private_sale_prints_unsupported`). Spec: `docs/plans/private-sale-cart-link.md`.
 - **`/api/returns`** — creates a return shipment (requires `STUDIO_RETURN_*`).
 - **`/api/print-assets/[id]`** — signed high-res print files for Prodigi (see above).
 - **`/api/webhooks/prodigi/[token]`** — Prodigi status callbacks (see above).
@@ -175,7 +175,7 @@ See `.env.example` for the full list and setup notes. See `docs/cloudflare-deplo
 
 **Responsive images:** Use `srcSet()` from `src/lib/images.ts` for product images (native `<img>`, not `next/image` — see SEO note). All product images are WebP in `public/uploads/`, generated from gitignored `design/uploads/` via `npm run optimize-images`.
 
-**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), 409 with `{ error: 'unavailable', sold: string[] }` (pieces unavailable), 409 `{ error: 'order_conflict' }` (stale attemptId — client must reset it), 409 `{ error: 'checkout_in_progress' }` (a concurrent or unresolvable POST for the same attemptId — client must KEEP the attemptId and retry), 502 with `{ error: 'stripe_failed' }` (Stripe PI creation failure), 500 (other server faults).
+**API error responses:** `NextResponse.json({ error: reason }, { status: code })`. Checkout returns 400 (validation), including `{ error: 'private_sale_prints_unsupported' }` when a private-sale token is sent with a print cart, 409 with `{ error: 'unavailable', sold: string[] }` (pieces unavailable), 409 `{ error: 'order_conflict' }` (stale attemptId — client must reset it), 409 `{ error: 'checkout_in_progress' }` (a concurrent or unresolvable POST for the same attemptId — client must KEEP the attemptId and retry), 502 with `{ error: 'stripe_failed' }` (Stripe PI creation failure), 500 (other server faults).
 
 **Analytics:** Fire `begin_checkout` when the user clicks pay in `CartView` (before POST `/api/checkout`). Fire deduplicated `purchase` and `payment_failed` events on the return page (keyed by `payment_intent` ID via sessionStorage to prevent double-counting on refresh).
 

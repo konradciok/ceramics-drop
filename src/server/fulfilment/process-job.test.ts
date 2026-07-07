@@ -117,6 +117,59 @@ describe('processJob', () => {
     expect(mockPostOrder).not.toHaveBeenCalled();
   });
 
+  const PAID_ORDER = {
+    id: 'ord-1',
+    status: 'paid',
+    currency: 'pln',
+    email: 'buyer@example.com',
+    receiver_first_name: 'Anna',
+    receiver_last_name: 'Ciok',
+    receiver_phone: null,
+    shipping_address: { street: 'Hauptstr.', building_number: '1', city: 'Berlin', post_code: '10115', country_code: 'DE' },
+    delivery_method: 'kurier',
+  };
+  const PRINT_ITEMS = [
+    { product_id: 'fap01', unit_price: 42000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' } },
+  ];
+
+  it('happy path: claims, POSTs to Prodigi, persists prodigi_orders, marks fulfilment_submitted', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV, CTX);
+
+    expect(mockPostOrder).toHaveBeenCalledTimes(1);
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    // prodigi_orders upsert carries the returned Prodigi order id.
+    const poChain = mockFrom.mock.results[tables.lastIndexOf('prodigi_orders')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect(poChain['upsert'].mock.calls[0][0]).toMatchObject({
+      order_id: 'ord-1',
+      prodigi_order_id: 'pr_order_1',
+      prodigi_status_stage: 'InProgress',
+    });
+    // Final job update marks submission (attempts incremented).
+    const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect(lastJobChain['update'].mock.calls[0][0]).toMatchObject({ status: 'fulfilment_submitted', attempts: 1 });
+  });
+
+  it('409 duplicate at Prodigi: recovers the existing order id instead of failing the job', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { ProdigiError } = await import('../prodigi/client');
+    // Mocked ProdigiError signature: (message, status, body, retryable).
+    mockPostOrder.mockRejectedValueOnce(
+      new (ProdigiError as unknown as new (m: string, s: number, b: unknown, r: boolean) => Error)(
+        'Prodigi 409: duplicate', 409, { order: { id: 'pr_existing' } }, false,
+      ),
+    );
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV, CTX);
+
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const poChain = mockFrom.mock.results[tables.lastIndexOf('prodigi_orders')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect(poChain['upsert'].mock.calls[0][0]).toMatchObject({ prodigi_order_id: 'pr_existing' });
+    const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect(lastJobChain['update'].mock.calls[0][0]).toMatchObject({ status: 'fulfilment_submitted' });
+  });
+
   it('marks job failed_action_required when shipping address is missing', async () => {
     setupMocks({ orderData: { id: 'ord-1', status: 'paid', shipping_address: null } });
     const { processJob } = await import('./process-job');

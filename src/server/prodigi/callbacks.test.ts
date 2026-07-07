@@ -62,19 +62,30 @@ function setup(opts: {
   /** Rows returned by the shipping_email_sent_at claim UPDATE (empty = already claimed). */
   claimRows?: unknown[];
   orderRow?: Record<string, unknown> | null;
+  /** prodigi_orders lookup row; explicit null = unknown Prodigi order. */
+  poRow?: { order_id: string } | null;
+  jobRow?: { id: string; status: string } | null;
 } = {}) {
-  const calls = { shippingClaims: [] as Record<string, unknown>[] };
+  const calls = {
+    shippingClaims: [] as Record<string, unknown>[],
+    jobUpdates: [] as Record<string, unknown>[],
+    eventUpdates: [] as Record<string, unknown>[],
+  };
   mockFrom.mockImplementation((table: string) => {
     if (table === 'webhook_events') {
       return {
         select: () => makeChain({ data: opts.existingEvent ?? null, error: null }),
         insert: () => makeChain({ error: null }),
-        update: () => makeChain({ data: [{ id: 'we-1' }], error: null }),
+        update: (p: Record<string, unknown>) => {
+          calls.eventUpdates.push(p);
+          return makeChain({ data: [{ id: 'we-1' }], error: null });
+        },
       };
     }
     if (table === 'prodigi_orders') {
       return {
-        select: () => makeChain({ data: { order_id: 'o1' }, error: null }),
+        select: () =>
+          makeChain({ data: opts.poRow !== undefined ? opts.poRow : { order_id: 'o1' }, error: null }),
         upsert: () => makeChain({ error: null }),
         update: (p: Record<string, unknown>) => {
           calls.shippingClaims.push(p);
@@ -85,8 +96,15 @@ function setup(opts: {
     }
     if (table === 'fulfilment_jobs') {
       return {
-        select: () => makeChain({ data: { id: 'j1', status: 'in_production' }, error: null }),
-        update: () => makeChain({ error: null }),
+        select: () =>
+          makeChain({
+            data: opts.jobRow !== undefined ? opts.jobRow : { id: 'j1', status: 'in_production' },
+            error: null,
+          }),
+        update: (p: Record<string, unknown>) => {
+          calls.jobUpdates.push(p);
+          return makeChain({ error: null });
+        },
       };
     }
     if (table === 'orders') {
@@ -182,5 +200,73 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     expect(res.status).toBe(200);
     expect(calls.shippingClaims).toHaveLength(0);
     expect(mockShipEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetOrder.mockResolvedValue(prodigiOrder('InProduction'));
+    mockShipEmail.mockResolvedValue(undefined);
+  });
+
+  it('rejects a non-CloudEvents body with 400', async () => {
+    setup();
+    const res = await handleProdigiCallback({ hello: 'world' }, ENV);
+    expect(res.status).toBe(400);
+    expect(mockGetOrder).not.toHaveBeenCalled();
+  });
+
+  it('rejects a callback without data.prodigiOrderId with 400', async () => {
+    setup();
+    const res = await handleProdigiCallback({ id: 'evt-x', type: 't', data: {} }, ENV);
+    expect(res.status).toBe(400);
+  });
+
+  it('an in-flight lease (fresh processing claim) short-circuits with 200 and no reprocessing', async () => {
+    setup({
+      existingEvent: { id: 'we-1', status: 'processing', processing_started_at: new Date().toISOString() },
+    });
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    expect(res.status).toBe(200);
+    expect(res.message).toBe('In flight');
+    expect(mockGetOrder).not.toHaveBeenCalled();
+  });
+
+  it('maps the Prodigi stage onto the latest fulfilment job (InProduction → in_production)', async () => {
+    const calls = setup({ jobRow: { id: 'j1', status: 'fulfilment_submitted' } });
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    expect(res.status).toBe(200);
+    expect(calls.jobUpdates).toHaveLength(1);
+    expect(calls.jobUpdates[0]).toMatchObject({ status: 'in_production' });
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
+  it('never downgrades a terminal job status', async () => {
+    const calls = setup({ jobRow: { id: 'j1', status: 'shipped' } });
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    expect(res.status).toBe(200);
+    expect(calls.jobUpdates).toHaveLength(0);
+  });
+
+  it('unknown local order (no mapping, no merchantReference match) → 500 and the claim is released for retry', async () => {
+    mockGetOrder.mockResolvedValue({
+      order: { ...prodigiOrder('InProduction').order, merchantReference: 'missing' },
+    });
+    const calls = setup({ poRow: null, orderRow: null });
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    expect(res.status).toBe(500);
+    // releaseClaim marks the event 'failed' so Prodigi's retry can re-claim it.
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
+  });
+
+  it('Prodigi re-fetch failure → 500 with the claim released', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetOrder.mockRejectedValue(new Error('prodigi down'));
+    const calls = setup();
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    expect(res.status).toBe(500);
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
+    consoleErrorSpy.mockRestore();
   });
 });

@@ -776,6 +776,7 @@ ul { list-style:none; padding:0; margin:0; }
 .ship-opt.sel .ship-radio::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--c-terracotta); }
 .ship-opt .so-t { font-family:var(--f-cond); font-size:13px; letter-spacing:.04em; text-transform:uppercase; display:flex; justify-content:space-between; }
 .ship-opt .so-d { font-size:13px; opacity:.65; margin-top:3px; line-height:1.4; }
+.cart-pl-only { font-size:13px; line-height:1.55; margin:0 0 4px; opacity:.7; }
 .cart-delivery-notice { background:var(--c-bone); border-radius:var(--r-sharp); padding:16px; margin-top:16px; }
 .cart-delivery-notice strong { display:block; font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-espresso); margin-bottom:6px; }
 .cart-delivery-notice p { font-size:13px; line-height:1.55; margin:6px 0 0; opacity:.85; }

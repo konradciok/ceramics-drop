@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { printShippingOf } from '@/lib/print-shipping';
 
 type PgError = { code: string; message: string } | null;
 
@@ -42,6 +43,10 @@ const validateDelivery = vi.fn(() => ({
 const getClientIp = vi.fn(() => '203.0.113.50');
 const orderAmountGrosze = vi.fn(() => 9_000);
 const orderAmountEuroCents = vi.fn(() => 2_200);
+const orderAmountGBPPence = vi.fn(() => 1_900);
+const toGrosze = vi.fn((v: number) => Math.round(v * 100));
+const toEuroCents = vi.fn((v: number) => Math.round(v * 100));
+const toGBPPence = vi.fn((v: number) => Math.round(v * 100));
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -97,6 +102,10 @@ vi.mock('@/lib/client-ip', () => ({
 vi.mock('@/lib/pricing', () => ({
   orderAmountGrosze,
   orderAmountEuroCents,
+  orderAmountGBPPence,
+  toGrosze,
+  toEuroCents,
+  toGBPPence,
 }));
 
 const sendCheckoutStartedEvent = vi.fn(async () => {});
@@ -533,6 +542,307 @@ describe('POST /api/checkout', () => {
     const res2 = await POST(makeReq());
     expect(res2.status).toBe(200);
     expect(sendCheckoutStartedEvent).toHaveBeenCalledTimes(1);
+  });
+
+  const PRINT_ITEM = {
+    product_id: 'print:fap01:50x70:true:false:black',
+    unit_price: 42_000,
+    variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' },
+  };
+  const DE_ADDRESS = {
+    street: 'Hauptstr.',
+    building_number: '1',
+    city: 'Berlin',
+    post_code: '10115',
+    country_code: 'DE',
+  };
+  const kurierDelivery = (address: Record<string, unknown> | null) => ({
+    ok: true as const,
+    delivery: {
+      method: 'kurier',
+      contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: null },
+      target_point: null,
+      address,
+    },
+  });
+  const paczkomatDelivery = {
+    ok: true as const,
+    delivery: {
+      method: 'paczkomat',
+      contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+      target_point: 'WAW01A',
+      address: null,
+    },
+  };
+  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi') => {
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({ fulfilment_type: type }),
+    );
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ fulfilment_type: type }) }),
+      expect.anything(),
+    );
+  };
+
+  describe('fulfilment_type on insert (Finding 8)', () => {
+    it("writes 'pickup' for an odbior ceramic order", async () => {
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody()),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('pickup');
+    });
+
+    it("writes 'inpost' for a ceramic kurier order", async () => {
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery({ ...DE_ADDRESS, country_code: 'PL' }) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ delivery_method: 'kurier' })),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('inpost');
+    });
+
+    it("writes 'inpost' for a ceramic paczkomat order", async () => {
+      validateDelivery.mockReturnValueOnce(
+        paczkomatDelivery as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(
+            makeCheckoutBody({
+              delivery_method: 'paczkomat',
+              target_point: 'WAW01A',
+              contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+            }),
+          ),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('inpost');
+    });
+
+    it("writes 'prodigi' for a print order (kurier to an EU address)", async () => {
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ ids: [PRINT_ITEM.product_id], delivery_method: 'kurier' })),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('prodigi');
+      // Print carts never touch piece_state.
+      expect(reserveRpc).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('print delivery branch (Finding 11 regression matrix)', () => {
+    const printCart = () =>
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+    const loosePrintCart = () =>
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [{ ...PRINT_ITEM, variant: { size: '50x70', framed: false, mount: false, frameColour: 'none' } }],
+      } as unknown as ReturnType<typeof validateCart>);
+    const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
+      const { POST } = await import('./route');
+      return POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody(body)),
+          ...init,
+        }),
+      );
+    };
+
+    it('print + paczkomat → 400 invalid_delivery (no PI, no insert)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce({
+        ok: true,
+        delivery: {
+          method: 'paczkomat',
+          contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '600100200' },
+          target_point: 'WAW01A',
+          address: null,
+        },
+      } as unknown as ReturnType<typeof validateDelivery>);
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
+    });
+
+    it('print + odbior → 400 invalid_delivery', async () => {
+      printCart();
+      const res = await post(); // default delivery mock = odbior
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it('print + kurier without an address → 400 invalid_delivery', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it.each(['US', 'CH'])('print + kurier to %s (outside EU+UK) → 400', async (cc) => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery({ ...DE_ADDRESS, country_code: cc }) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('framed print + kurier DE → 200 with printShippingOf-based shipping (never the InPost rate)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', true, 'pln')) }),
+      );
+      // The InPost ceramic price list must not be consulted for prints.
+      expect(orderAmountGrosze).not.toHaveBeenCalled();
+    });
+
+    it('loose print ships cheaper than framed (framed/loose rates differ)', async () => {
+      loosePrintCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', false, 'pln')) }),
+      );
+    });
+
+    it('framed print + kurier DE charges EUR shipping when currency_pref=eur', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post(
+        { locale: 'en', delivery_method: 'kurier' },
+        { headers: { Cookie: 'currency_pref=eur' } },
+      );
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toEuroCents(printShippingOf('DE', true, 'eur')) }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'eur' }),
+        expect.anything(),
+      );
+    });
+
+    it('framed print + kurier DE charges GBP shipping when currency_pref=gbp', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post(
+        { locale: 'en', delivery_method: 'kurier' },
+        { headers: { Cookie: 'currency_pref=gbp' } },
+      );
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: toGBPPence(printShippingOf('DE', true, 'gbp')) }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'gbp' }),
+        expect.anything(),
+      );
+    });
+
+    it('print + kurier PL → 200 (PL is a print country)', async () => {
+      printCart();
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery({ ...DE_ADDRESS, country_code: 'PL' }) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(200);
+    });
+
+    it('ceramic + kurier to DE → 400 (ceramics are PL-only)', async () => {
+      validateDelivery.mockReturnValueOnce(
+        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+    });
+
+    it('mixed cart → 400 mixed_cart from validateCart, before any reservation', async () => {
+      validateCart.mockReturnValueOnce(
+        { ok: false, reason: 'mixed_cart' } as unknown as ReturnType<typeof validateCart>,
+      );
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'mixed_cart' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects a private-sale token combined with prints: 400, no reservation, no PaymentIntent (Finding 12)', async () => {
+    validateCart.mockReturnValueOnce({
+      ok: true,
+      items: [PRINT_ITEM],
+    } as unknown as ReturnType<typeof validateCart>);
+    validateDelivery.mockReturnValueOnce(
+      kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
+    );
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(
+          makeCheckoutBody({
+            ids: [PRINT_ITEM.product_id],
+            delivery_method: 'kurier',
+            private_sale_token: 'tok_secret_123',
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'private_sale_prints_unsupported' });
+    expect(reserveRpc).not.toHaveBeenCalled();
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+    expect(insertOrders).not.toHaveBeenCalled();
   });
 
   it('rolls back (cancels PI + releases pieces) on a genuine, non-23505 orders-insert failure', async () => {

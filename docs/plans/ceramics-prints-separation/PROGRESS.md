@@ -59,3 +59,49 @@ One entry per domain: decisions, files touched, tests, surprises. Consult before
 
 **Tests:** email.test.ts (+7: studio SKU render, print copy ×4 locales, ceramic default, print shipping builder ×3), webhook route.test.ts (+2: print studio payload + print kind; ceramic kind), new `callbacks.test.ts` (6: send-once, claim-taken replay, done-event replay, non-shipped stage, 3× retry + claim release on failure, no claim when email missing). Full suite 661, lint clean, script `node --check` OK, build green.
 
+## 05 — Architecture (DONE)
+
+**Decisions:**
+- Migration `20260707140000_orders_fulfilment_type.sql`: add column → backfill (`odbior→pickup`, any `variant IS NOT NULL` item → `prodigi`, else `inpost`) → `DEFAULT 'inpost'` → `NOT NULL` → CHECK. The DEFAULT exists only to survive the migrate-before-deploy window (old code inserting without the column); it slightly mislabels pickup/print orders placed in that window — fix by re-running the backfill UPDATE without the null guard. At this store's volume the window is minutes and near-zero rows.
+- Checkout writes `fulfilment_type` on insert (`pickup`/`prodigi`/`inpost` from `method` + `hasPrints`) and on Stripe PI metadata. Skipped the `delivery_method` CHECK (plan marked optional; legacy rows unaudited — not worth the risk).
+- **Consumer switch: none.** 02/03/04 shipped first on `order_items.variant`, tested and correct; the plan explicitly allows either discriminator and says don't chase migration. Rewriting tested consumers for cosmetic parity fails the ponytail test. `fulfilment_type` is now available for future consumers.
+- Migration `20260707150000_drop_pod_variant_id.sql`: re-grep confirmed zero references outside the creating migration.
+- F12 guard: `privateSaleToken && hasPrints → 400 private_sale_prints_unsupported`, placed before any reservation. CartView blocks pay client-side too. Declared in AGENTS.md (private-sale bullet + API error contract).
+
+**Migration verified against a real Postgres** (throwaway `supabase/postgres:17.6` docker container, minimal schema slice): backfill produced inpost/prodigi/pickup/inpost for the four seed orders; CHECK rejected `'fedex'`; column-omitted insert got the `'inpost'` default; `pod_variant_id` dropped. No local Supabase stack was running — the prod DB still needs `supabase db push` (or dashboard SQL) at deploy time. Deploy gate documented in `docs/cloudflare-deployment.md`.
+
+**Files:** two migrations, `src/app/api/checkout/route.ts`, `src/components/shop/CartView.tsx`, `AGENTS.md`, `docs/cloudflare-deployment.md`, `messages/{pl,en,es,de}.json`, `src/app/api/checkout/route.test.ts`.
+
+**Tests:** checkout route +5 (fulfilment_type pickup/inpost/paczkomat/prodigi + PI metadata; private-sale×prints 400 with no reserve/PI/insert). Full suite 674, lint clean, build green.
+
+## 06 — PDP/UX (DONE)
+
+**Decisions:**
+- F10: `AddToCartButton`, `Lightbox`, and `ProductTile` mirror `PrintConfigurator`'s guard — `cartHasPrints = ids.some(isPrintToken)`; when true (and the ceramic isn't already in the cart) they block add. PDP/lightbox show disabled button + `ceramic.mixedCart` (symmetric to `print.mixedCart`; `cart.mixedNotice` stays on the cart page only). `data-testid="ceramic-add"` on every AddToCartButton/Lightbox variant for E2E.
+- Q7: ceramic delivery section in `CartView` shows `delivery.plOnly` once at the top of delivery fields when `!hasPrints` — visible for all ceramic methods (paczkomat/kurier/odbior), not kurier-only. Copy only, PL enforcement stays server-side. New `.cart-pl-only` style (muted 13px, matches notice typography).
+- F13: no price change. `print_multi_frame_flat_shipping` `console.warn` fires after `shipMinor` is computed, with `framed_count`, `item_count`, `charge_currency`, `shipping_minor`, `has_framed`, and `country`. Marked `ponytail:`. **Revisit trigger:** implement Prodigi `POST /quotes` only when prod logs/margins show multi-frame orders materially under-charged.
+
+**No component test harness exists in this repo** (no *.test.tsx, no testing-library) — as the plan anticipated; the F10 guard is proven by `e2e/mixed-cart.spec.ts` in domain 07.
+
+**Files:** `src/components/shop/AddToCartButton.tsx`, `src/components/shop/Lightbox.tsx`, `src/components/shop/ProductTile.tsx`, `src/components/shop/CartView.tsx`, `src/styles/site.css`, `messages/{pl,en,es,de}.json`, `src/app/api/checkout/route.ts` (log only).
+
+**Verified:** full suite 673, lint clean, build green; locale JSON validated via node require.
+
+## 07 — Regression & E2E (DONE — one E2E test deferred to the deploy gate)
+
+**Unit/integration added (all green, suite 665 → 702):**
+- Checkout print matrix (`checkout/route.test.ts` +12): paczkomat/odbior/no-address/US/CH → 400; framed DE → 200 with `printShippingOf` shipping and the InPost price list never consulted; loose DE differs; print PL → 200; ceramic DE → 400; mixed_cart → 400 pre-reservation; EUR + GBP shipping minor units via `currency_pref` cookie.
+- Webhook routing (`stripe/webhook/route.test.ts` +3): ceramic → InPost only; print → `enqueueProdigi` only; defensive mixed → both.
+- New `server/fulfilment/enqueue.test.ts` (6): stable idempotency key, conflict re-select + resend, missing-row throw, upsert-failure throw, queue-send throw, inline `processJob` fallback when `FULFILMENT_QUEUE` is absent.
+- `server/prodigi/callbacks.test.ts` +7: 400 shapes, in-flight lease short-circuit, InProduction → `in_production` job mapping, terminal status never downgraded, unknown-order → 500 + claim released, re-fetch failure → 500 + claim released.
+- New `api/webhooks/prodigi/[token]/route.test.ts` (4): 401 bad token (handler untouched), 400 bad JSON, delegation, `{ error }` mapping.
+- `process-job.test.ts` +2: happy path (claim → postOrder → prodigi_orders upsert `InProgress` → `fulfilment_submitted`, attempts+1); 409 duplicate recovery via `e.body.order.id`.
+- New `api/inpost/webhook/route.test.ts` (6): 401/400, ceramic confirmed → status mirror + label + tracking emails once, non-confirmed → no emails, replay → no duplicates, unknown shipment (the print case — prints never carry `inpost_shipment_id`) → 200 + zero emails.
+
+**E2E:**
+- New `e2e/mixed-cart.spec.ts` (@ci) — print blocks ceramic PDP add (F10 guard), tile-built mixed cart shows notice + disabled checkout, removing the print re-arms ceramic checkout. **Passes** against the hermetic local build (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, env from the repo-root `.dev.vars`/`.env.local` — copied into the worktree, gitignored).
+- New `e2e/print-purchase.spec.ts`: `@ci` courier-only cart UI (no paczkomat/odbiór/Geowidget, country select present, PL-only note absent); `@checkout-edge @destructive` payment test deferred — needs a deployed preview with Stripe webhooks reachable and `PRODIGI_ENV=sandbox`. Run at the release gate: `PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 npx playwright test e2e/print-purchase.spec.ts --grep @destructive`.
+- Extended `e2e/checkout-409.spec.ts`: asserts the country selector is **absent** on the ceramic path. Also fixed a pre-existing break: the spec hardcoded `talerzyki`, which is now fully sold out in prod (verified: 14/14 `data-sold="true"`) — picks are now stock-aware over six families.
+- Full local @ci run: **8/8 pass** (needed `npx playwright install chromium` + a rebuild with `.env.local` present so `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` is baked in — without it the Geowidget helper hits its documented environment blocker).
+
+**Remaining for the release gate (not doable from this session):** apply the four migrations across domains to prod Supabase (`20260707120000`, `20260707130000`, `20260707140000`, `20260707150000`), deploy, then run `npm run test:e2e` (@ci) and the destructive print-purchase spec against the preview.

@@ -206,6 +206,9 @@
     "approx": "ok.",
     "permalink": "Strona tej pracy →"
   },
+  "ceramic": {
+    "mixedCart": "Ceramika zamawiana jest osobno od printów — najpierw dokończ lub opróżnij koszyk z printami."
+  },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
     "emptyP": "Wybierz prace z czerwcowego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",
@@ -239,7 +242,8 @@
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
     "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
-    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować."
+    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować.",
+    "privateSalePrintsNotice": "Linki do prywatnych zamówień dotyczą tylko ceramiki — usuń printy z koszyka, aby kontynuować."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -263,7 +267,8 @@
     "city": "Miasto",
     "lockerChosen": "Wybrany paczkomat:",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
-    "country": "Kraj"
+    "country": "Kraj",
+    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce."
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

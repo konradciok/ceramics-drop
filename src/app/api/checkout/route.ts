@@ -77,6 +77,7 @@ export async function POST(req: Request) {
   // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
+  const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
 
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // leaves shipping_address NULL and the Prodigi order could never be built.
@@ -98,11 +99,26 @@ export async function POST(req: Request) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
+    const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
     const shipMinor =
       chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
       chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
       toGrosze(shipMajor);
+    if (framedCount > 1) {
+      // ponytail: flat print shipping under-charges multi-frame orders — this
+      // log is the observability signal only; revisit with Prodigi POST /quotes
+      // when margin data shows the gap hurts (settled decision #5).
+      console.warn(JSON.stringify({
+        event: 'print_multi_frame_flat_shipping',
+        framed_count: framedCount,
+        item_count: valid.items.length,
+        charge_currency: chargeCurrency,
+        shipping_minor: shipMinor,
+        has_framed: hasFramed,
+        country: address.country_code,
+      }));
+    }
     amount = subtotalMinor + shipMinor;
   } else {
     amount =
@@ -125,6 +141,14 @@ export async function POST(req: Request) {
   // requires the cart to exactly match the link's bundle; normal carts reserve as usual.
   const privateSaleToken = normalizeToken(body.private_sale_token);
   let privateSaleId: string | null = null;
+
+  // Private-sale links re-offer already-sold ceramic pieces; prints are
+  // open-edition and never part of one (settled decision — see
+  // docs/plans/ceramics-prints-separation/00-master.md #4). Reject before any
+  // reservation is attempted.
+  if (privateSaleToken && hasPrints) {
+    return NextResponse.json({ error: 'private_sale_prints_unsupported' }, { status: 400 });
+  }
 
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
   // is status-scoped (only rows still `reserved` for this order id), so rows a
@@ -198,6 +222,7 @@ export async function POST(req: Request) {
           order_id: orderId,
           product_ids: ids.join(','),
           delivery_method: method,
+          fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
         },
@@ -282,6 +307,9 @@ export async function POST(req: Request) {
     total: amount,
     shipping_method: method, // legacy NOT NULL column ÔÇö kept in sync with delivery_method
     delivery_method: method,
+    // Explicit fulfilment discriminator (Finding 8): which pipeline owns this
+    // order. Per-item truth stays order_items.variant.
+    fulfilment_type: fulfilmentType,
     email: contact.email,
     receiver_first_name: contact.first_name,
     receiver_last_name: contact.last_name,
