@@ -35,6 +35,7 @@ function deps(overrides: Partial<CreateReturnDeps> = {}): CreateReturnDeps {
   };
   return {
     loadOrder: vi.fn().mockResolvedValue(paidOrder),
+    hasCeramicItems: vi.fn().mockResolvedValue(true),
     saveReturn: vi.fn().mockResolvedValue(undefined),
     inpost,
     studioConfig,
@@ -81,6 +82,13 @@ describe('createOrderReturn', () => {
     const d = deps({ loadOrder: vi.fn().mockResolvedValue({ ...paidOrder, delivery_method: 'odbior' }) });
     const result = await createOrderReturn('ord-1', d);
     expect(result).toEqual({ ok: false, reason: 'not_eligible' });
+  });
+
+  it('rejects print-only orders (no ceramic line items) — Prodigi ships those, not InPost', async () => {
+    const d = deps({ hasCeramicItems: vi.fn().mockResolvedValue(false) });
+    const result = await createOrderReturn('ord-1', d);
+    expect(result).toEqual({ ok: false, reason: 'no_ceramic_items' });
+    expect(d.inpost.createShipment).not.toHaveBeenCalled();
   });
 
   it('returns order_not_found for unknown order', async () => {
