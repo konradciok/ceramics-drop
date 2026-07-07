@@ -112,6 +112,9 @@ describe('processJob', () => {
     // The second fulfilment_jobs call's update arg should be failed_action_required
     const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ status: 'failed_action_required' });
+    // The refund-before-submission race: a refunded/failed/expired order must
+    // never reach Prodigi.
+    expect(mockPostOrder).not.toHaveBeenCalled();
   });
 
   it('marks job failed_action_required when shipping address is missing', async () => {

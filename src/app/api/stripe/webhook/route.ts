@@ -16,6 +16,7 @@ import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/c
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
+import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 
 export const dynamic = 'force-dynamic';
 
@@ -330,6 +331,10 @@ export async function POST(req: Request) {
       if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
       if (!rows || rows.length === 0) return false;
+      // Print orders: stop the Prodigi side (cancel or alert). Runs only when
+      // the paid→refunded CAS actually flipped, so a replayed event can't
+      // re-enter. Best-effort — never throws.
+      await cancelPrintFulfilment(rows[0].id, env);
       // Private-sale pieces were sold privately (already hidden from the shop) and must
       // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
       if (releaseTargetStatus(rows[0]) === 'sold') return true;
