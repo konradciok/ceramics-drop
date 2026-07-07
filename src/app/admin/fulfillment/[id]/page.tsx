@@ -19,6 +19,7 @@ const STAGE_LABEL: Record<FulfillmentStage, string> = {
   ready: 'Do zapakowania',
   in_transit: 'W drodze',
   pickup: 'Odbiór osobisty',
+  prodigi: 'Prodigi (druk)',
 };
 
 const PIPELINE: Array<{ stage: FulfillmentStage; label: string }> = [

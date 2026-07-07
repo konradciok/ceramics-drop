@@ -20,6 +20,7 @@ const STAGE_LABEL: Record<FulfillmentOrder['stage'], string> = {
   ready: 'Do zapakowania',
   in_transit: 'W drodze',
   pickup: 'Odbiór osobisty',
+  prodigi: 'Prodigi (druk)',
 };
 
 function isMethod(method: string | undefined): method is Method {

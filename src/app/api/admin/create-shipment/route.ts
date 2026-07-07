@@ -7,6 +7,7 @@ import { parseOrderIdBody } from '@/lib/admin/route-helpers';
 import { getInPost } from '@/lib/inpost';
 import { createOrderShipment } from '@/lib/shipment';
 import { needsShipment, type OrderForShipment } from '@/lib/shipx';
+import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import type { DeliveryMethod } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,20 @@ export async function POST(req: NextRequest) {
   }
   if (!needsShipment(order.delivery_method)) {
     return NextResponse.json({ error: 'Odbiór osobisty nie wymaga przesyłki.' }, { status: 409 });
+  }
+
+  // Print-only orders (no ceramic line items) are shipped by Prodigi — an
+  // InPost shipment for one would be paid for and never used.
+  const { count: ceramicCount, error: countErr } = await countCeramicOrderItems(
+    supabase as unknown as CeramicCountClient,
+    orderId,
+  );
+  if (countErr) return NextResponse.json({ error: countErr.message }, { status: 500 });
+  if ((ceramicCount ?? 0) === 0) {
+    return NextResponse.json(
+      { error: 'Zamówienie zawiera tylko druki — wysyłkę realizuje Prodigi, nie InPost.' },
+      { status: 409 },
+    );
   }
 
   const hadShipment = !!order.inpost_shipment_id;
