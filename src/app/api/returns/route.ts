@@ -3,6 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
 import { createOrderReturn } from '@/lib/return';
+import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import { createReturnRateLimiter } from '@/lib/return-rate-limit';
 import { getClientIp } from '@/lib/client-ip';
 import type { StudioReturnConfig, OrderForReturn } from '@/lib/shipx';
@@ -70,6 +71,16 @@ export async function POST(req: Request) {
         delivery_method: string;
         inpost_return_shipment_id: string | null;
       }) | null;
+    },
+    hasCeramicItems: async (id) => {
+      const { count, error } = await countCeramicOrderItems(
+        supabase as unknown as CeramicCountClient,
+        id,
+      );
+      // A DB failure must throw (→ 500), not read as "no ceramics": a silent
+      // false would 404 a legitimately returnable order.
+      if (error) throw new Error(`returns: ceramic count failed for ${id}: ${error.message}`);
+      return (count ?? 0) > 0;
     },
     saveReturn: async (id, d) => {
       // Guard with IS NULL so concurrent requests don't create duplicate ShipX shipments.
