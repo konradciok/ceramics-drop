@@ -98,6 +98,17 @@ export async function POST(req: Request) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
+    const framedCount = valid.items.filter((i) => i.variant?.framed).length;
+    if (framedCount > 1) {
+      // ponytail: flat print shipping under-charges multi-frame orders — this
+      // log is the observability signal only; revisit with Prodigi POST /quotes
+      // when margin data shows the gap hurts (settled decision #5).
+      console.warn(JSON.stringify({
+        event: 'print_multi_frame_flat_shipping',
+        framed_count: framedCount,
+        country: address.country_code,
+      }));
+    }
     const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
     const shipMinor =
       chargeCurrency === 'eur' ? toEuroCents(shipMajor) :

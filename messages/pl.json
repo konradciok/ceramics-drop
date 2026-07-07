@@ -263,7 +263,8 @@
     "city": "Miasto",
     "lockerChosen": "Wybrany paczkomat:",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
-    "country": "Kraj"
+    "country": "Kraj",
+    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce."
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

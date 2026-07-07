@@ -263,7 +263,8 @@
     "city": "City",
     "lockerChosen": "Chosen locker:",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
-    "country": "Country"
+    "country": "Country",
+    "plOnly": "Ceramics ship to addresses in Poland only."
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",

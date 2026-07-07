@@ -263,7 +263,8 @@
     "city": "Ciudad",
     "lockerChosen": "Paczkomat elegido:",
     "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
-    "country": "País"
+    "country": "País",
+    "plOnly": "La cerámica se envía únicamente a direcciones en Polonia."
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",

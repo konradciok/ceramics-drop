@@ -11,6 +11,7 @@ import {
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
+import { isPrintToken } from '@/lib/print-cart';
 import type { Product } from '@/lib/types';
 
 type Props = { product: Product };
@@ -24,12 +25,27 @@ export function AddToCartButton({ product }: Props) {
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
   const inCart = ids.includes(product.id);
+  // Mirror of PrintConfigurator's guard: ceramics and prints are separate
+  // orders — block adding a ceramic while the cart holds prints (the cart view
+  // and server validateCart enforce it too; this just surfaces it earlier).
+  const cartHasPrints = ids.some(isPrintToken);
 
   if (product.sold) {
     return (
       <button className="btn btn-primary lb-add" disabled aria-disabled="true">
         {t('gallery.sold')}
       </button>
+    );
+  }
+
+  if (cartHasPrints && !inCart) {
+    return (
+      <>
+        <button className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
+          {t('lightbox.add')}
+        </button>
+        <p className="pay-error" data-testid="ceramic-mixed-note">{t('cart.mixedNotice')}</p>
+      </>
     );
   }
 
