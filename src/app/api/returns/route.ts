@@ -57,50 +57,60 @@ export async function POST(req: Request) {
 
   const supabase = getSupabaseAdmin();
 
-  const result = await createOrderReturn(orderId, {
-    loadOrder: async (id) => {
-      const { data } = await supabase
-        .from('orders')
-        .select(
-          'id, status, delivery_method, email, receiver_first_name, receiver_last_name, receiver_phone, locale, inpost_return_shipment_id',
-        )
-        .eq('id', id)
-        .maybeSingle();
-      return data as (OrderForReturn & {
-        status: string;
-        delivery_method: string;
-        inpost_return_shipment_id: string | null;
-      }) | null;
-    },
-    hasCeramicItems: async (id) => {
-      const { count, error } = await countCeramicOrderItems(
-        supabase as unknown as CeramicCountClient,
-        id,
-      );
-      // A DB failure must throw (→ 500), not read as "no ceramics": a silent
-      // false would 404 a legitimately returnable order.
-      if (error) throw new Error(`returns: ceramic count failed for ${id}: ${error.message}`);
-      return (count ?? 0) > 0;
-    },
-    saveReturn: async (id, d) => {
-      // Guard with IS NULL so concurrent requests don't create duplicate ShipX shipments.
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          inpost_return_shipment_id: d.returnShipmentId,
-          return_requested_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .is('inpost_return_shipment_id', null);
-      if (error) throw error;
-    },
-    inpost: getInPost(),
-    studioConfig,
-  });
+  let result;
+  try {
+    result = await createOrderReturn(orderId, {
+      loadOrder: async (id) => {
+        const { data } = await supabase
+          .from('orders')
+          .select(
+            'id, status, delivery_method, email, receiver_first_name, receiver_last_name, receiver_phone, locale, inpost_return_shipment_id',
+          )
+          .eq('id', id)
+          .maybeSingle();
+        return data as (OrderForReturn & {
+          status: string;
+          delivery_method: string;
+          inpost_return_shipment_id: string | null;
+        }) | null;
+      },
+      hasCeramicItems: async (id) => {
+        const { count, error } = await countCeramicOrderItems(
+          supabase as unknown as CeramicCountClient,
+          id,
+        );
+        // A DB failure must throw (→ 500), not read as "no ceramics": a silent
+        // false would 404 a legitimately returnable order.
+        if (error) throw new Error(`returns: ceramic count failed for ${id}: ${error.message}`);
+        return (count ?? 0) > 0;
+      },
+      saveReturn: async (id, d) => {
+        // Guard with IS NULL so concurrent requests don't create duplicate ShipX shipments.
+        const { error } = await supabase
+          .from('orders')
+          .update({
+            inpost_return_shipment_id: d.returnShipmentId,
+            return_requested_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .is('inpost_return_shipment_id', null);
+        if (error) throw error;
+      },
+      inpost: getInPost(),
+      studioConfig,
+    });
+  } catch (err) {
+    console.error('returns: failed', { orderId, err });
+    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
+  }
 
   if (!result.ok) {
     // Single opaque body for all ineligible states — distinct reasons in logs only.
-    console.info('returns: ineligible', { orderId, reason: result.reason });
+    if (result.reason === 'no_ceramic_items') {
+      console.info('returns: print_order_not_eligible', { orderId });
+    } else {
+      console.info('returns: ineligible', { orderId, reason: result.reason });
+    }
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 

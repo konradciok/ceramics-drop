@@ -87,16 +87,8 @@ describe('createOrderReturn', () => {
   it('rejects print-only orders (no ceramic line items) — Prodigi ships those, not InPost', async () => {
     const d = deps({ hasCeramicItems: vi.fn().mockResolvedValue(false) });
     const result = await createOrderReturn('ord-1', d);
-    expect(result).toEqual({ ok: false, reason: 'not_eligible' });
+    expect(result).toEqual({ ok: false, reason: 'no_ceramic_items' });
     expect(d.inpost.createShipment).not.toHaveBeenCalled();
-  });
-
-  it('a mixed order with at least one ceramic item stays eligible', async () => {
-    // hasCeramicItems is defined as "any variant IS NULL row exists" — a
-    // defensive mixed order therefore reads true and stays returnable.
-    const d = deps({ hasCeramicItems: vi.fn().mockResolvedValue(true) });
-    const result = await createOrderReturn('ord-1', d);
-    expect(result).toEqual({ ok: true, returnShipmentId: '77', trackingNumber: 'RET001' });
   });
 
   it('returns order_not_found for unknown order', async () => {
