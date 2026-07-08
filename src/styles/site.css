@@ -424,6 +424,10 @@ ul { list-style:none; padding:0; margin:0; }
     flex-wrap:wrap; width:auto; overflow-x:visible; scroll-snap-type:none;
   }
 }
+@media (min-width:561px) {
+  /* switcher wraps (no horizontal overflow) at this width — drop the scroll-edge fade */
+  .shop-switch.edge-fade-x { -webkit-mask-image: none; mask-image: none; }
+}
 .shop-switch a {
   font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase; white-space:nowrap;
   padding:11px 20px; border-radius:999px; border:1px solid var(--c-line); transition:all .25s var(--ease);

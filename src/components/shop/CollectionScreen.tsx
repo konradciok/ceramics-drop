@@ -13,7 +13,8 @@ import { Gallery } from './Gallery';
 import { StatusFilter } from './StatusFilter';
 import { richTags } from '@/components/ui/richTags';
 
-// Bento is piloted on one category; flip to `true` for all once bounce/browse metrics clear.
+// Bento is piloted on one category. To roll out to all, pass `bento`
+// unconditionally to <Gallery> below (plan Step 6) — do NOT set this to `true`.
 const BENTO_PILOT: CategorySlug = 'kubki';
 
 export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
