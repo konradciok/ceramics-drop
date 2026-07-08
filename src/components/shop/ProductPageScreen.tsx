@@ -12,10 +12,10 @@ import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
 import type { Product } from '@/lib/types';
 
-type Props = { product: Product; soldIds: readonly string[] };
+type Props = { product: Product; soldIds: readonly string[]; noteOverride?: string };
 
 /** Full product detail page layout — server component with client islands. */
-export async function ProductPageScreen({ product, soldIds }: Props) {
+export async function ProductPageScreen({ product, soldIds, noteOverride }: Props) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
   const { fmt } = currencyFormatter(currency);
@@ -25,7 +25,8 @@ export async function ProductPageScreen({ product, soldIds }: Props) {
   const categoryName = t(cat.nameKey);
   const displayName = `${name} Nº ${product.num}`;
   const rawNotes = t.raw(`notes.${product.category}`) as unknown;
-  const note = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
+  const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
+  const note = noteOverride ?? fallbackNote;
 
   const images = [product.image, ...(product.gallery ?? [])];
   const soldSet = new Set(soldIds);

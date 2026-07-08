@@ -57,6 +57,8 @@ interface CloudflareEnv {
   PRODIGI_CALLBACK_TOKEN: string;
   PRINT_ASSET_TOKEN_SECRET: string;
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
+  // CMS preview-token HMAC secret (admin draft preview links). Dedicated, fail-closed.
+  CMS_PREVIEW_SECRET: string;
   // Cloudflare Access — admin route protection (worker.ts auth guard + src/lib/admin/access.ts).
   // CF_ACCESS_TEAM_DOMAIN: full issuer origin, e.g. https://<team>.cloudflareaccess.com
   // CF_ACCESS_AUD: Application Audience tag from the Access application settings.

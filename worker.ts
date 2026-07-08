@@ -28,6 +28,14 @@ export default {
       if (!result.ok) {
         return new Response('Not found', { status: result.status });
       }
+      // Always strip a client-supplied actor header, then set it only from the
+      // verified result. Without the strip, a forged X-Admin-Actor-Email survives
+      // when result.email is absent (local bypass, or a JWT with no email claim)
+      // and is then trusted for audit attribution.
+      const headers = new Headers(request.headers);
+      headers.delete('X-Admin-Actor-Email');
+      if (result.email) headers.set('X-Admin-Actor-Email', result.email);
+      request = new Request(request, { headers });
     }
     return handler.fetch(request, env, ctx);
   },

@@ -185,19 +185,20 @@ type PrintProductArgs = {
   locale: Locale;
   t: (key: string) => string;
   tRaw: (key: string) => unknown;
+  description?: string;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw }: PrintProductArgs): Graph {
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride }: PrintProductArgs): Graph {
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const name = `${singular} Nº ${design.num}`;
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
-  const description = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
+  const description = descriptionOverride ?? (Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '');
   const homeUrl = absoluteUrl(locale, '/');
   const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
@@ -242,19 +243,20 @@ type ProductArgs = {
   locale: Locale;
   t: (key: string) => string;
   tRaw: (key: string) => unknown;
+  description?: string;
 };
 
 /**
  * `@graph` for an individual product page: a `BreadcrumbList` (Home → category → product)
  * plus a `Product` node with images, description, and PLN offer.
  */
-export function productSchema({ product, locale, t, tRaw }: ProductArgs): Graph {
+export function productSchema({ product, locale, t, tRaw, description: descriptionOverride }: ProductArgs): Graph {
   const category = getCategory(product.category);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
   const name = `${singular} Nº ${product.num}`;
   const rawNotes = tRaw(`notes.${product.category}`);
-  const description = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
+  const description = descriptionOverride ?? (Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '');
   const homeUrl = absoluteUrl(locale, '/');
   const collectionUrl = absoluteUrl(locale, `/${product.category}`);
   const productUrl = absoluteUrl(locale, `/${product.category}/${product.id}`);

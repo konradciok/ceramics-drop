@@ -16,6 +16,19 @@
 .adm a { color: inherit; text-decoration: none; }
 .adm * { box-sizing: border-box; }
 
+/* Visually hidden but available to assistive tech (empty table column headers). */
+.adm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---- Top bar ---------------------------------------------------------- */
 .adm-top {
   position: sticky;
@@ -317,6 +330,97 @@
 .adm-action-msg { margin-top: 10px; font-size: 13px; }
 .adm-action-msg.ok { color: #2f6b3f; }
 .adm-action-msg.err { color: #a23b2e; }
+.adm-actions--top { margin-top: 0; align-items: center; }
+.adm-inline-action { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ---- Content CMS ------------------------------------------------------- */
+.adm-locale-grid { display: flex; gap: 6px; flex-wrap: wrap; }
+.adm-locale {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 22px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-line);
+  background: #fff;
+  color: rgba(58, 40, 24, .6);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.adm-locale.published { color: #2f6b3f; background: rgba(47, 107, 63, .1); border-color: rgba(47, 107, 63, .2); }
+.adm-locale.pending { color: var(--c-terracotta-deep); background: rgba(156, 90, 44, .12); border-color: rgba(156, 90, 44, .2); }
+.adm-locale.missing { color: rgba(58, 40, 24, .45); background: var(--c-line-soft); }
+.adm-sub--tight { margin-bottom: 0; }
+.adm-editor { display: grid; gap: 14px; }
+.adm-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--c-line);
+  padding-bottom: 10px;
+}
+.adm-tab {
+  font: inherit;
+  border: 1px solid var(--c-line);
+  background: #fff;
+  border-radius: var(--r-pill);
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--c-espresso);
+}
+.adm-tab.is-active { border-color: var(--c-espresso); box-shadow: inset 0 0 0 1px var(--c-espresso); }
+.adm-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.adm-note-list { display: grid; gap: 12px; }
+.adm-note-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--c-line-soft);
+  border-radius: var(--r-sharp);
+  background: var(--c-paper);
+}
+.adm-note-media img,
+.adm-note-media .adm-item-noimg {
+  display: block;
+  width: 72px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--r-sharp);
+  background: var(--c-bone);
+}
+.adm-note-body { display: grid; gap: 7px; min-width: 0; }
+.adm-note-label { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.adm-note-body textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 84px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sharp);
+  background: #fff;
+  color: var(--c-espresso);
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+.adm-note-body textarea:focus { outline: none; border-color: var(--c-terracotta); }
+.adm-note-body textarea.has-error { border-color: #a23b2e; }
+.adm-field-error { margin: 2px 0 0; color: #a23b2e; font-size: 12.5px; }
 
 /* ---- Fulfillment ------------------------------------------------------ */
 .adm-fulfillment-table th:nth-child(3),
@@ -480,6 +584,12 @@
 
   .adm-actions { flex-direction: column; }
   .adm-actions .adm-btn { width: 100%; }
+  .adm-actions--top { align-items: stretch; width: 100%; }
+  .adm-editor-head { flex-direction: column; align-items: stretch; }
+  .adm-note-row { grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 10px; }
+  .adm-note-media img,
+  .adm-note-media .adm-item-noimg { width: 56px; height: 70px; }
+  .adm-note-label { flex-direction: column; gap: 2px; }
 
   .adm-h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 }

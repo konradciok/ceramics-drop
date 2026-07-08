@@ -146,4 +146,10 @@ describe('productSchema', () => {
     expect(enOffer.priceCurrency).toBe('EUR');
     expect(enOffer.price).toBe(PRICE_EUR.kubki);
   });
+
+  it('uses an explicit description override when CMS content is resolved', () => {
+    const cmsGraph = productSchema({ product, locale: 'pl', t, tRaw, description: 'CMS opis' });
+    const cmsNodes = cmsGraph['@graph'] as unknown as Record<string, unknown>[];
+    expect(cmsNodes[1]['description']).toBe('CMS opis');
+  });
 });
