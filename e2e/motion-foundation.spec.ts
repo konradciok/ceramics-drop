@@ -9,14 +9,16 @@ test.describe('@ci Spec A — motion foundation', () => {
   test('reveal degrades to visible under reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    const opacity = await page.evaluate(() => {
+    // Synthetic probe: the homepage renders no .reveal nodes, so this tests the
+    // primitive in isolation. Native toHaveCSS gives Playwright auto-retry.
+    await page.evaluate(() => {
       const el = document.createElement('div');
+      el.id = 'reveal-probe';
       el.className = 'reveal';
       el.textContent = 'x';
       document.body.appendChild(el);
-      return getComputedStyle(el).opacity;
     });
-    expect(opacity).toBe('1');
+    await expect(page.locator('#reveal-probe')).toHaveCSS('opacity', '1');
   });
 
   test('reveal is hidden pre-scroll only where animation-timeline is supported', async ({ page }) => {

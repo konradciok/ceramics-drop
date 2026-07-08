@@ -81,6 +81,9 @@ export function Gallery({ products, bento = false }: Props) {
               product={p}
               feature={bento ? featureKind(i) : undefined}
               reveal={bento}
+              // Spec B: per-tile --reveal-delay cascade (cap at index 5 so the tail
+              // doesn't lag). No-op where animation-timeline is unsupported / reduced.
+              revealDelay={bento ? `${Math.min(i, 5) * 0.06}s` : undefined}
               onOpen={(prod) => {
                 // Capture the focused element (the tile button) before state update
                 triggerRef.current = document.activeElement as HTMLElement;

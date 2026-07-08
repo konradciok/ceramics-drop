@@ -18,6 +18,7 @@ import {
 } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
+import type { CSSProperties } from 'react';
 
 type Props = {
   product: Product;
@@ -25,10 +26,12 @@ type Props = {
   onOpen?: (product: Product) => void;
   feature?: 'lead' | 'wide';
   reveal?: boolean;
+  /** Per-tile reveal cascade delay (Spec B `--reveal-delay`). */
+  revealDelay?: string;
 };
 
 /** Gallery tile — Google-Photos-style select + a distinct "add" button. */
-export function ProductTile({ product, onOpen, feature, reveal }: Props) {
+export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: Props) {
   const t = useTranslations();
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
@@ -51,6 +54,7 @@ export function ProductTile({ product, onOpen, feature, reveal }: Props) {
   return (
     <div
       className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}${feature ? ` tile--${feature}` : ''}${reveal ? ' reveal' : ''}`}
+      style={reveal ? ({ ['--reveal-delay' as string]: revealDelay } as CSSProperties) : undefined}
       onClick={() => {
         if (product.sold) {
           // Demand signal for already-sold pieces — important for drops. The tile
