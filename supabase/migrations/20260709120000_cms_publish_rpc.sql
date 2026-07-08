@@ -23,20 +23,22 @@ create or replace function publish_cms_version(
 language plpgsql
 set search_path = public, pg_temp
 as $$
-declare
-  v_found boolean;
 begin
-  -- Lock the document row so concurrent publishes for the same doc serialize.
-  perform 1 from cms_documents where id = p_document_id for update;
+  -- Qualify EVERY column reference with a table alias. The RETURNS TABLE
+  -- columns (id, document_id, locale, version, status, ...) are also
+  -- OUT-parameter names in scope here, so a bare `id` / `status` /
+  -- `document_id` is ambiguous (SQLSTATE 42702) between the table column and
+  -- the output parameter.
+  perform 1 from cms_documents d where d.id = p_document_id for update;
   if not found then
     raise 'document_not_found';
   end if;
 
   -- The target version must exist for this locale.
-  perform 1 from cms_document_versions
-    where document_id = p_document_id
-      and locale = p_locale
-      and version = p_version;
+  perform 1 from cms_document_versions v
+    where v.document_id = p_document_id
+      and v.locale = p_locale
+      and v.version = p_version;
   if not found then
     raise 'version_not_found';
   end if;
@@ -44,23 +46,23 @@ begin
   -- Demote any currently-published version for this locale, then promote the
   -- target. Safe under the partial unique index: after the demote there are
   -- zero published rows for this locale, so the promote cannot conflict.
-  update cms_document_versions
+  update cms_document_versions v
      set status = 'draft'
-   where document_id = p_document_id
-     and locale = p_locale
-     and status = 'published';
+   where v.document_id = p_document_id
+     and v.locale = p_locale
+     and v.status = 'published';
 
-  update cms_document_versions
+  update cms_document_versions v
      set status = 'published'
-   where document_id = p_document_id
-     and locale = p_locale
-     and version = p_version;
+   where v.document_id = p_document_id
+     and v.locale = p_locale
+     and v.version = p_version;
 
-  update cms_documents
+  update cms_documents d
      set status = 'published',
          updated_at = now(),
          published_at = now()
-   where id = p_document_id;
+   where d.id = p_document_id;
 
   return query
     select v.id, v.document_id, v.locale, v.version, v.status, v.payload, v.created_by, v.created_at
