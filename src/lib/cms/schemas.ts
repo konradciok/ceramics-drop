@@ -12,7 +12,7 @@ export const cmsKindSchema = z.enum(CMS_DOCUMENT_KINDS);
 const noteString = z.string().trim().min(1, 'Opis nie może być pusty');
 
 export const productNotesBaseSchema = z.object({
-  notes: z.array(noteString),
+  notes: z.record(z.string(), noteString),
 });
 
 const plainText = z.string().trim().min(1).refine((value) => !/[<>]/.test(value), {
@@ -58,10 +58,11 @@ export const deliveryNoticeSchema = z.object({
   p3: plainText,
 });
 
-export function productNotesExpectedCount(slug: string): number | null {
-  if (slug === PRINTS_SLUG) return getPrintDesigns().length;
+/** Live ids whose notes a payload must cover, in catalogue order (null = unknown slug). */
+export function productNoteIds(slug: string): string[] | null {
+  if (slug === PRINTS_SLUG) return getPrintDesigns().map((design) => design.id);
   try {
-    return getProductsByCategory(slug as CategorySlug).length;
+    return getProductsByCategory(slug as CategorySlug).map((product) => product.id);
   } catch {
     return null;
   }
@@ -69,8 +70,8 @@ export function productNotesExpectedCount(slug: string): number | null {
 
 export function validateProductNotesPayload(slug: string, payload: unknown): ProductNotesPayload {
   const parsed = productNotesBaseSchema.parse(payload);
-  const expected = productNotesExpectedCount(slug);
-  if (expected === null) {
+  const ids = productNoteIds(slug);
+  if (ids === null) {
     throw new z.ZodError([
       {
         code: 'custom',
@@ -80,15 +81,21 @@ export function validateProductNotesPayload(slug: string, payload: unknown): Pro
       },
     ]);
   }
-  if (parsed.notes.length !== expected) {
-    throw new z.ZodError([
-      {
-        code: 'custom',
-        path: ['notes'],
-        message: `Expected ${expected} notes for "${slug}", got ${parsed.notes.length}`,
-        input: parsed.notes,
-      },
-    ]);
+  const expected = new Set(ids);
+  const got = new Set(Object.keys(parsed.notes));
+  for (const id of expected) {
+    if (!got.has(id)) {
+      throw new z.ZodError([
+        { code: 'custom', path: ['notes', id], message: `Brak opisu dla ${id}`, input: undefined },
+      ]);
+    }
+  }
+  for (const id of got) {
+    if (!expected.has(id)) {
+      throw new z.ZodError([
+        { code: 'custom', path: ['notes', id], message: `Nieznany identyfikator ${id}`, input: id },
+      ]);
+    }
   }
   return parsed;
 }

@@ -11,9 +11,15 @@ type PreviewPayload = {
   exp: number;
 };
 
+// Dedicated HMAC secret for preview tokens — never reused from Stripe/Supabase.
+// Fail closed: if unset, minting throws (admin sees the error) and verification
+// throws too, but getProductNote wraps it in .catch → storefront falls back to
+// published/messages, so a missing secret never breaks a PDP.
 function getPreviewSecret(): string {
   const env = getCloudflareContext().env as CloudflareEnv & Record<string, string | undefined>;
-  return env.CMS_PREVIEW_SECRET ?? env.PRINT_ASSET_TOKEN_SECRET ?? env.STRIPE_WEBHOOK_SECRET ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret = env.CMS_PREVIEW_SECRET;
+  if (!secret) throw new Error('CMS_PREVIEW_SECRET unset');
+  return secret;
 }
 
 function base64Url(bytes: Uint8Array): string {

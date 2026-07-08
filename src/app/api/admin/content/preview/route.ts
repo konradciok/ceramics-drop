@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mintPreviewToken } from '@/lib/cms/server';
+import { editableDocument } from '@/lib/admin/content';
 import { contentError, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
 import { getProductsByCategory } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
@@ -20,6 +21,9 @@ function previewPath(kind: string, slug: string, locale: string): string {
 export async function POST(req: Request) {
   const parsed = await parseJson(req, versionBodySchema);
   if (!parsed.ok) return parsed.res;
+  if (!editableDocument(parsed.data.kind, parsed.data.slug)) {
+    return NextResponse.json({ error: 'unsupported_document' }, { status: 404 });
+  }
   try {
     const token = await mintPreviewToken(parsed.data);
     return NextResponse.json({ token, path: previewPath(parsed.data.kind, parsed.data.slug, parsed.data.locale) });

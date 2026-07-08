@@ -10,13 +10,14 @@ type Props = {
 };
 
 type FieldErrors = Record<string, string>;
+type NotesById = Record<string, string>;
 
 const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 
-function notesFromPayload(payload: unknown, count: number): string[] {
-  const notes = (payload as { notes?: unknown })?.notes;
-  if (!Array.isArray(notes)) return Array.from({ length: count }, () => '');
-  return Array.from({ length: count }, (_, i) => (typeof notes[i] === 'string' ? notes[i] : ''));
+function notesFromPayload(payload: unknown, ids: string[]): NotesById {
+  const raw = (payload as { notes?: unknown })?.notes;
+  const obj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  return Object.fromEntries(ids.map((id) => [id, typeof obj[id] === 'string' ? obj[id] : '']));
 }
 
 async function postJson(path: string, body: unknown) {
@@ -41,30 +42,37 @@ export function ContentEditor({ state }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [notesByLocale, setNotesByLocale] = useState<Record<CmsLocale, string[]>>(() => {
+  const itemIds = useMemo(() => state.items.map((item) => item.id), [state.items]);
+  const [notesByLocale, setNotesByLocale] = useState<Record<CmsLocale, NotesById>>(() => {
     return Object.fromEntries(LOCALES.map((locale) => [
       locale,
-      notesFromPayload(state.locales[locale].payload, state.items.length),
-    ])) as Record<CmsLocale, string[]>;
+      notesFromPayload(state.locales[locale].payload, itemIds),
+    ])) as Record<CmsLocale, NotesById>;
   });
 
   const notes = notesByLocale[activeLocale];
   const current = state.locales[activeLocale];
   const latestVersion = current.latestDraft?.version ?? current.published?.version ?? null;
 
-  const emptyIndexes = useMemo(
-    () => notes.map((note, index) => (note.trim() ? null : index)).filter((index): index is number => index !== null),
-    [notes],
+  // Dirty = local textarea differs from the persisted payload for this locale.
+  // Publish/preview operate on the saved version, so an unsaved edit would
+  // silently re-publish stale copy — block both until the draft is saved.
+  const savedNotes = (current.payload as { notes?: NotesById })?.notes ?? {};
+  const isDirty = itemIds.some((id) => (notes[id] ?? '').trim() !== (savedNotes[id] ?? '').trim());
+
+  const emptyIds = useMemo(
+    () => itemIds.map((id) => (notes[id]?.trim() ? null : id)).filter((id): id is string => id !== null),
+    [notes, itemIds],
   );
 
-  function updateNote(index: number, value: string) {
+  function updateNote(id: string, value: string) {
     setNotesByLocale((prev) => ({
       ...prev,
-      [activeLocale]: prev[activeLocale].map((note, i) => (i === index ? value : note)),
+      [activeLocale]: { ...prev[activeLocale], [id]: value },
     }));
     setErrors((prev) => {
       const next = { ...prev };
-      delete next[`notes.${index}`];
+      delete next[`notes.${id}`];
       delete next.notes;
       return next;
     });
@@ -168,22 +176,23 @@ export function ContentEditor({ state }: Props) {
             <button className="adm-btn" type="button" disabled={busy !== null || pending} onClick={saveDraft}>
               {busy === 'draft' ? 'Zapisuje...' : 'Zapisz szkic'}
             </button>
-            <button className="adm-btn" type="button" disabled={!latestVersion || busy !== null || pending} onClick={preview}>
+            <button className="adm-btn" type="button" disabled={!latestVersion || isDirty || busy !== null || pending} onClick={preview}>
               {busy === 'preview' ? 'Otwieram...' : 'Podglad'}
             </button>
-            <button className="adm-btn" type="button" disabled={!latestVersion || busy !== null || pending} onClick={publish}>
+            <button className="adm-btn" type="button" disabled={!latestVersion || isDirty || busy !== null || pending} onClick={publish}>
               {busy === 'publish' ? 'Publikuje...' : 'Publikuj'}
             </button>
           </div>
         </div>
 
-        {emptyIndexes.length > 0 ? (
-          <div className="adm-banner">{emptyIndexes.length} pustych opisow. Publikacja wymaga kompletu niepustych notatek.</div>
+        {isDirty ? <div className="adm-banner">Masz niezapisane zmiany — zapisz szkic przed podgladem lub publikacja.</div> : null}
+        {emptyIds.length > 0 ? (
+          <div className="adm-banner">{emptyIds.length} pustych opisow. Publikacja wymaga kompletu niepustych notatek.</div>
         ) : null}
         {errors.notes ? <p className="adm-field-error">{errors.notes}</p> : null}
 
         <div className="adm-note-list">
-          {state.items.map((item, index) => (
+          {state.items.map((item) => (
             <label className="adm-note-row" key={item.id}>
               <span className="adm-note-media">
                 {item.image ? (
@@ -199,12 +208,12 @@ export function ContentEditor({ state }: Props) {
                   <span className="adm-mono">{item.id}</span>
                 </span>
                 <textarea
-                  className={errors[`notes.${index}`] ? 'has-error' : ''}
-                  value={notes[index] ?? ''}
-                  onChange={(event) => updateNote(index, event.target.value)}
+                  className={errors[`notes.${item.id}`] ? 'has-error' : ''}
+                  value={notes[item.id] ?? ''}
+                  onChange={(event) => updateNote(item.id, event.target.value)}
                   rows={3}
                 />
-                {errors[`notes.${index}`] ? <span className="adm-field-error">{errors[`notes.${index}`]}</span> : null}
+                {errors[`notes.${item.id}`] ? <span className="adm-field-error">{errors[`notes.${item.id}`]}</span> : null}
               </span>
             </label>
           ))}

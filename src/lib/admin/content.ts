@@ -236,20 +236,6 @@ export async function saveDraft(params: {
   return data as CmsVersionRow;
 }
 
-async function latestUsableLocalePayload(documentId: string, locale: CmsLocale): Promise<CmsVersionRow | null> {
-  const supabase = adminSupabase();
-  const { data, error } = await supabase
-    .from('cms_document_versions')
-    .select('id, document_id, locale, version, status, payload, created_by, created_at')
-    .eq('document_id', documentId)
-    .eq('locale', locale)
-    .in('status', ['draft', 'published'])
-    .order('version', { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  return ((data as CmsVersionRow[] | null) ?? [])[0] ?? null;
-}
-
 export async function publishVersion(params: {
   kind: CmsDocumentKind;
   slug: string;
@@ -257,6 +243,7 @@ export async function publishVersion(params: {
   version: number;
   actorEmail?: string | null;
 }): Promise<CmsVersionRow> {
+  if (!editableDocument(params.kind, params.slug)) throw new Error('unsupported_document');
   const row = await getRawDocument(params.kind, params.slug);
   if (!row) throw new Error('document_not_found');
 
@@ -265,38 +252,21 @@ export async function publishVersion(params: {
   if (!target) throw new Error('version_not_found');
   validateCmsPayload(params.kind, params.slug, target.payload);
 
-  for (const locale of CMS_LOCALES) {
-    const candidate = locale === params.locale ? target : await latestUsableLocalePayload(row.id, locale);
-    if (!candidate) throw new Error(`missing_locale:${locale}`);
-    validateCmsPayload(params.kind, params.slug, candidate.payload);
-  }
-
-  const supabase = adminSupabase();
   const previous = versions.find((v) => v.locale === params.locale && v.status === 'published') ?? null;
-  const now = new Date().toISOString();
-  const demote = await supabase
-    .from('cms_document_versions')
-    .update({ status: 'draft' })
-    .eq('document_id', row.id)
-    .eq('locale', params.locale)
-    .eq('status', 'published');
-  if (demote.error) throw demote.error;
 
-  const promote = await supabase
-    .from('cms_document_versions')
-    .update({ status: 'published' })
-    .eq('document_id', row.id)
-    .eq('locale', params.locale)
-    .eq('version', params.version)
-    .select('id, document_id, locale, version, status, payload, created_by, created_at')
-    .single();
-  if (promote.error) throw promote.error;
-
-  const docUpdate = await supabase
-    .from('cms_documents')
-    .update({ status: 'published', updated_at: now, published_at: now })
-    .eq('id', row.id);
-  if (docUpdate.error) throw docUpdate.error;
+  // Atomic publish: demote old published → promote target → mark doc published,
+  // in one Postgres transaction under a document-level FOR UPDATE lock (see
+  // migration publish_cms_version). The storefront already falls back per-locale
+  // when a locale has no published version, so only the requested locale is gated.
+  const supabase = adminSupabase();
+  const { data, error } = await supabase.rpc('publish_cms_version', {
+    p_document_id: row.id,
+    p_locale: params.locale,
+    p_version: params.version,
+  });
+  if (error) throw error;
+  const promoted = ((data as CmsVersionRow[] | null) ?? [])[0];
+  if (!promoted) throw new Error('version_not_found');
 
   await supabase.from('cms_audit_log').insert({
     document_id: row.id,
@@ -307,7 +277,7 @@ export async function publishVersion(params: {
     after: target.payload,
   });
 
-  return promote.data as CmsVersionRow;
+  return promoted;
 }
 
 export async function revertVersion(params: {
@@ -317,6 +287,7 @@ export async function revertVersion(params: {
   version: number;
   actorEmail?: string | null;
 }): Promise<CmsVersionRow> {
+  if (!editableDocument(params.kind, params.slug)) throw new Error('unsupported_document');
   const row = await getRawDocument(params.kind, params.slug);
   if (!row) throw new Error('document_not_found');
   const source = ((row.cms_document_versions ?? []) as CmsVersionRow[]).find(

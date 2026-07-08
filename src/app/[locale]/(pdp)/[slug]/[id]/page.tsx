@@ -24,8 +24,12 @@ type Props = {
 };
 
 /** Builds `<title>`, `<meta description>`, hreflang alternates, and OG image for a product page. */
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { locale, slug, id } = await params;
+  const preview = (await searchParams)?.preview;
+  // Any ?preview= URL is an admin-only draft view — never indexable, even if the
+  // token is invalid (the body would just fall back to published copy).
+  const robots = preview ? { index: false, follow: false } : undefined;
 
   if (slug === PRINT_SLUG) {
     const design = getPrintById(id);
@@ -35,11 +39,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const displayName = `${singular} Nº ${design.num}`;
     const rawNotes = t.raw(`notes.${PRINT_SLUG}`) as unknown;
     const fallbackDescription = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
-    const description = await getProductNote(PRINT_SLUG, locale as Locale, design.noteIndex).catch(() => fallbackDescription);
+    const description = await getProductNote(PRINT_SLUG, locale as Locale, design.id, preview).catch(() => fallbackDescription);
     return {
       title: displayName,
       description,
       alternates: productAlternates(locale as Locale, slug, id),
+      robots,
       openGraph: {
         images: [{ url: `${SITE_URL}${design.image}`, width: 1200, height: 1500, alt: displayName }],
       },
@@ -57,12 +62,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const fallbackDescription = Array.isArray(rawNotes)
     ? ((rawNotes[product.noteIndex] as string) ?? '')
     : '';
-  const description = await getProductNote(product.category, locale as Locale, product.noteIndex).catch(() => fallbackDescription);
+  const description = await getProductNote(product.category, locale as Locale, product.id, preview).catch(() => fallbackDescription);
 
   return {
     title: displayName,
     description,
     alternates: productAlternates(locale as Locale, slug, id),
+    robots,
     openGraph: {
       images: [{ url: `${SITE_URL}${product.image}`, width: 1200, height: 1500, alt: displayName }],
     },
@@ -79,7 +85,7 @@ export default async function Page({ params, searchParams }: Props) {
     const design = getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const note = await getProductNote(PRINT_SLUG, locale as Locale, design.noteIndex, preview);
+    const note = await getProductNote(PRINT_SLUG, locale as Locale, design.id, preview);
     return (
       <main>
         <JsonLd
@@ -108,7 +114,7 @@ export default async function Page({ params, searchParams }: Props) {
   ]);
 
   const product = soldIds.includes(base.id) ? { ...base, sold: true } : base;
-  const note = await getProductNote(product.category, locale as Locale, product.noteIndex, preview);
+  const note = await getProductNote(product.category, locale as Locale, product.id, preview);
 
   return (
     <main>

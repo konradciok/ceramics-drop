@@ -45,6 +45,10 @@ create table cms_audit_log (
 create index cms_audit_log_document_idx
   on cms_audit_log(document_id, created_at desc);
 
+-- Service-role only: RLS is enabled with no policies, so anon/authenticated
+-- clients read nothing. All CMS access goes through the service-role key in
+-- server code. Add explicit permissive policies before any client-side Supabase
+-- usage of these tables.
 alter table cms_documents enable row level security;
 alter table cms_document_versions enable row level security;
 alter table cms_audit_log enable row level security;

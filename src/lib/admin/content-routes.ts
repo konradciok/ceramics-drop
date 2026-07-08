@@ -17,7 +17,11 @@ export const versionBodySchema = contentRefSchema.extend({
 });
 
 export function actorEmail(req: Request): string | null {
-  return req.headers.get('Cf-Access-Authenticated-User-Email') ?? req.headers.get('X-Admin-Actor-Email');
+  // X-Admin-Actor-Email is set by worker.ts ONLY after the Cloudflare Access
+  // JWT verifies, so it is the trusted source. Prefer it over the client-facing
+  // Cf-Access-Authenticated-User-Email, which under STUDIO_ADMIN_LOCAL_BYPASS
+  // (no verification) a client could forge into the audit log.
+  return req.headers.get('X-Admin-Actor-Email') ?? req.headers.get('Cf-Access-Authenticated-User-Email');
 }
 
 export async function parseJson<T>(req: Request, schema: z.ZodSchema<T>): Promise<{ ok: true; data: T } | { ok: false; res: NextResponse }> {

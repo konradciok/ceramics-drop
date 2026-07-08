@@ -19,8 +19,12 @@ export type ProductNotesSlug = CategorySlug;
 export type CmsDocumentStatus = 'draft' | 'published' | 'archived';
 export type CmsVersionStatus = 'draft' | 'published';
 
+// Notes are keyed by product/design id, NOT array position. The catalogue's
+// display order/num can shift via the inventory-review diff, but ids are stable
+// tokens — keying by id keeps a persisted payload assigned to the right piece
+// after a reorder (an array would silently mis-assign copy). See AGENTS.md.
 export type ProductNotesPayload = {
-  notes: string[];
+  notes: Record<string, string>;
 };
 
 export type CollectionCopyPayload = {
