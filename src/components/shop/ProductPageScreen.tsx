@@ -7,6 +7,7 @@ import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
+import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
@@ -77,6 +78,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
+              <PdpDelivery product={product} currency={currency} />
               <AddToCartButton product={product} />
             </div>
           </div>

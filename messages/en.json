@@ -206,6 +206,10 @@
     "approx": "approx.",
     "permalink": "View product page →"
   },
+  "pdp": {
+    "estimatedFrom": "Estimated from",
+    "trust": "The price you see is the price you pay — no hidden fees at checkout."
+  },
   "ceramic": {
     "mixedCart": "Ceramics are ordered separately from prints — finish or empty your prints cart first."
   },
