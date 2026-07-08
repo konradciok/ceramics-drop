@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSoldIds } from '@/lib/inventory';
-import { buildFeedItems, buildMetaXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
+import { buildFeedItemsCms, buildMetaXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const soldIds = new Set(await getSoldIds());
-    const items = buildFeedItems(locale, soldIds);
+    const items = await buildFeedItemsCms(locale, soldIds);
     const xml = buildMetaXml(items, locale);
 
     return new Response(xml, {

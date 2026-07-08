@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/admin/orders', label: 'Zamówienia' },
   { href: '/admin/customers', label: 'Klienci' },
   { href: '/admin/inventory', label: 'Magazyn' },
+  { href: '/admin/content', label: 'Tresci' },
 ];
 
 export function AdminNav() {

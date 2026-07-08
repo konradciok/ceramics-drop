@@ -19,7 +19,7 @@ import type { PrintDesign } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
 
-export async function PrintProductScreen({ design }: { design: PrintDesign }) {
+export async function PrintProductScreen({ design, noteOverride }: { design: PrintDesign; noteOverride?: string }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
   const printCurrency = toChargeableCurrency(currency);
@@ -29,7 +29,8 @@ export async function PrintProductScreen({ design }: { design: PrintDesign }) {
   const singular = t('product.print');
   const displayName = `${singular} Nº ${design.num}`;
   const rawNotes = t.raw(`notes.${SLUG}`) as unknown;
-  const note = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
+  const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
+  const note = noteOverride ?? fallbackNote;
   const images = [design.image, ...(design.gallery ?? [])];
 
   // Size dimensions the design offers, e.g. "A4 · 21 × 29,7 cm".

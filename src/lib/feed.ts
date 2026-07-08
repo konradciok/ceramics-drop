@@ -2,6 +2,7 @@ import { getPublicProducts, CATEGORIES } from './products';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME } from './site';
+import { getProductNotes } from './cms/messages';
 import type { CategorySlug } from './types';
 import type { Locale } from '@/i18n/routing';
 
@@ -102,7 +103,7 @@ export type FeedItem = {
   shipping: Array<{ country: string; service: string; price: string }>;
 };
 
-export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedItem[] {
+function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, string[]>>): FeedItem[] {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale);
   const products = getPublicProducts();
@@ -112,7 +113,7 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
     const singularName = (msg.product as Record<string, string>)[cat.singularKey] ?? cat.singularKey;
     const title = `${singularName} #${product.num}`;
 
-    const notesForCategory = (msg.notes as Record<string, string[]>)[product.category] ?? [];
+    const notesForCategory = notesBySlug?.[product.category] ?? (msg.notes as Record<string, string[]>)[product.category] ?? [];
     const description = notesForCategory[product.noteIndex] ?? title;
 
     const path = `/${product.category}/${product.id}`;
@@ -149,6 +150,16 @@ export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedIt
       shipping,
     };
   });
+}
+
+export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedItem[] {
+  return buildFeedItemsWithNotes(locale, soldIds);
+}
+
+export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>): Promise<FeedItem[]> {
+  const slugs = [...new Set(getPublicProducts().map((product) => product.category))];
+  const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
+  return buildFeedItemsWithNotes(locale, soldIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, string[]>>);
 }
 
 function itemToGoogleXml(item: FeedItem): string {

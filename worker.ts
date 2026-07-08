@@ -28,6 +28,11 @@ export default {
       if (!result.ok) {
         return new Response('Not found', { status: result.status });
       }
+      if (result.email) {
+        const headers = new Headers(request.headers);
+        headers.set('X-Admin-Actor-Email', result.email);
+        request = new Request(request, { headers });
+      }
     }
     return handler.fetch(request, env, ctx);
   },
