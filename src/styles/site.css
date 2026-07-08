@@ -1060,11 +1060,12 @@ ul { list-style:none; padding:0; margin:0; }
   *,*::before,*::after {
     animation-duration:.01ms !important;
     animation-iteration-count:1 !important;
+    animation-timeline:none !important;
     transition-duration:.01ms !important;
     scroll-behavior:auto !important;
   }
   .marquee-track { animation:none; }
-  .fade-in { opacity:1; transform:none; transition:none; }
+  .fade-in, .reveal, .reveal--scale { opacity:1 !important; transform:none !important; transition:none !important; }
 }
 
 /* ─── ERROR PAGE ──────────────────────────────────────────── */

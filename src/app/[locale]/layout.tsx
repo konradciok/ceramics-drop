@@ -1,6 +1,7 @@
 import '@/styles/fonts.css';
 import '@/styles/tokens.css';
 import '@/styles/site.css';
+import '@/styles/motion.css';
 
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
