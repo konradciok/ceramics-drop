@@ -10,16 +10,18 @@ import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/l
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
+import { featureKind } from '@/lib/bento';
 import { ProductTile } from './ProductTile';
 import { Lightbox } from './Lightbox';
 import { SelectionBar } from './SelectionBar';
 
 type Props = {
   products: Product[];
+  bento?: boolean;
 };
 
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
-export function Gallery({ products }: Props) {
+export function Gallery({ products, bento = false }: Props) {
   const currency = useCurrency();
   const { code: analyticsCurrency } = currencyFormatter(currency);
   // Memoised so the array reference is stable across renders (only changes when
@@ -72,11 +74,13 @@ export function Gallery({ products }: Props) {
           {status === 'sold' ? t('filter.emptySold') : t('filter.emptyAvailable')}
         </p>
       ) : (
-        <div className="gallery" data-count={visible.length}>
-          {visible.map((p) => (
+        <div className={`gallery${bento ? ' gallery--bento' : ''}`} data-count={visible.length}>
+          {visible.map((p, i) => (
             <ProductTile
               key={p.id}
               product={p}
+              feature={bento ? featureKind(i) : undefined}
+              reveal={bento}
               onOpen={(prod) => {
                 // Capture the focused element (the tile button) before state update
                 triggerRef.current = document.activeElement as HTMLElement;
