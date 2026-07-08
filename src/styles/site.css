@@ -1196,3 +1196,24 @@ ul { list-style:none; padding:0; margin:0; }
   text-transform:uppercase; background:rgba(58,40,24,.65);
   color:var(--c-paper); padding:4px 8px; border-radius:var(--r-pill);
 }
+
+/* ─── Collection bento (Spec B) ───────────────────────────────── */
+.gallery--bento { grid-auto-flow: dense; }
+
+/* Lead: full-width band on mobile (needs an explicit ratio since the img is
+   absolutely positioned), a 2×2 feature from 561px up (height from the tracks). */
+.gallery--bento .tile--lead {
+  grid-column: span 2;
+  aspect-ratio: 16 / 10;
+  content-visibility: visible;
+}
+@media (min-width: 561px) {
+  .gallery--bento .tile--lead { grid-row: span 2; aspect-ratio: auto; }
+  /* Wide: 2×1 from 561px up; height comes from the 1× tile sharing its row.
+     On mobile it has no override → stays a normal 1× tile (keeps density). */
+  .gallery--bento .tile--wide {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    content-visibility: visible;
+  }
+}
