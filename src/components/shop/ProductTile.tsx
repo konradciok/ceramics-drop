@@ -18,15 +18,20 @@ import {
 } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import type { Product } from '@/lib/types';
+import type { CSSProperties } from 'react';
 
 type Props = {
   product: Product;
   /** Open the lightbox for this piece. */
   onOpen?: (product: Product) => void;
+  feature?: 'lead' | 'wide';
+  reveal?: boolean;
+  /** Per-tile reveal cascade delay (Spec B `--reveal-delay`). */
+  revealDelay?: string;
 };
 
 /** Gallery tile — Google-Photos-style select + a distinct "add" button. */
-export function ProductTile({ product, onOpen }: Props) {
+export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: Props) {
   const t = useTranslations();
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
@@ -41,9 +46,15 @@ export function ProductTile({ product, onOpen }: Props) {
   const displayName = `${name} Nº ${product.num}`;
   const gallery = product.gallery ?? [];
 
+  const sizes =
+    feature === 'lead' ? '(min-width:1101px) 50vw, (min-width:561px) 66vw, 100vw'
+    : feature === 'wide' ? '(min-width:1101px) 50vw, (min-width:561px) 66vw, 50vw'
+    : '(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw';
+
   return (
     <div
-      className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}`}
+      className={`tile${product.sold ? ' sold' : ''}${selected ? ' selected' : ''}${feature ? ` tile--${feature}` : ''}${reveal ? ' reveal' : ''}`}
+      style={reveal ? ({ ['--reveal-delay' as string]: revealDelay } as CSSProperties) : undefined}
       onClick={() => {
         if (product.sold) {
           // Demand signal for already-sold pieces — important for drops. The tile
@@ -80,11 +91,11 @@ export function ProductTile({ product, onOpen }: Props) {
         onClick={(e) => { if (!product.sold) e.preventDefault(); }}
       />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={product.image} srcSet={srcSet(product.image)} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt={displayName} loading="lazy" />
+      <img src={product.image} srcSet={srcSet(product.image)} sizes={sizes} alt={displayName} loading="lazy" />
       {gallery.length > 0 && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="tile-alt" src={gallery[0]} srcSet={srcSet(gallery[0])} sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw" alt="" aria-hidden="true" loading="lazy" />
+          <img className="tile-alt" src={gallery[0]} srcSet={srcSet(gallery[0])} sizes={sizes} alt="" aria-hidden="true" loading="lazy" />
           <span className="tile-multi" aria-hidden="true">{gallery.length + 1}</span>
         </>
       )}

@@ -424,6 +424,10 @@ ul { list-style:none; padding:0; margin:0; }
     flex-wrap:wrap; width:auto; overflow-x:visible; scroll-snap-type:none;
   }
 }
+@media (min-width:561px) {
+  /* switcher wraps (no horizontal overflow) at this width — drop the scroll-edge fade */
+  .shop-switch.edge-fade-x { -webkit-mask-image: none; mask-image: none; }
+}
 .shop-switch a {
   font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase; white-space:nowrap;
   padding:11px 20px; border-radius:999px; border:1px solid var(--c-line); transition:all .25s var(--ease);
@@ -1060,11 +1064,12 @@ ul { list-style:none; padding:0; margin:0; }
   *,*::before,*::after {
     animation-duration:.01ms !important;
     animation-iteration-count:1 !important;
+    animation-timeline:none !important;
     transition-duration:.01ms !important;
     scroll-behavior:auto !important;
   }
   .marquee-track { animation:none; }
-  .fade-in { opacity:1; transform:none; transition:none; }
+  .fade-in, .reveal, .reveal--scale { opacity:1 !important; transform:none !important; transition:none !important; }
 }
 
 /* ─── ERROR PAGE ──────────────────────────────────────────── */
@@ -1194,4 +1199,25 @@ ul { list-style:none; padding:0; margin:0; }
   font-family:var(--f-cond); font-size:10px; letter-spacing:.16em;
   text-transform:uppercase; background:rgba(58,40,24,.65);
   color:var(--c-paper); padding:4px 8px; border-radius:var(--r-pill);
+}
+
+/* ─── Collection bento (Spec B) ───────────────────────────────── */
+.gallery--bento { grid-auto-flow: dense; }
+
+/* Lead: full-width band on mobile (needs an explicit ratio since the img is
+   absolutely positioned), a 2×2 feature from 561px up (height from the tracks). */
+.gallery--bento .tile--lead {
+  grid-column: span 2;
+  aspect-ratio: 16 / 10;
+  content-visibility: visible;
+}
+@media (min-width: 561px) {
+  .gallery--bento .tile--lead { grid-row: span 2; aspect-ratio: auto; }
+  /* Wide: 2×1 from 561px up; height comes from the 1× tile sharing its row.
+     On mobile it has no override → stays a normal 1× tile (keeps density). */
+  .gallery--bento .tile--wide {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    content-visibility: visible;
+  }
 }
