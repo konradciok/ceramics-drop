@@ -38,7 +38,7 @@ export default async function ContentHistoryPage({ params }: Props) {
                       <th>Status</th>
                       <th>Autor</th>
                       <th>Utworzono</th>
-                      <th />
+                      <th><span className="adm-sr-only">Akcje</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -48,7 +48,7 @@ export default async function ContentHistoryPage({ params }: Props) {
                         <td data-label="Status"><StatusPill status={version.status} /></td>
                         <td data-label="Autor">{version.created_by ?? <span className="adm-muted">—</span>}</td>
                         <td className="adm-num" data-label="Utworzono">{formatDateTime(version.created_at)}</td>
-                        <td data-label="">
+                        <td data-label="Akcje">
                           <RevertButton kind={state.kind} slug={state.slug} locale={locale} version={version.version} />
                         </td>
                       </tr>

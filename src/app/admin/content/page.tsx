@@ -38,7 +38,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
               <th>Locale</th>
               <th>Aktualizacja</th>
               <th>Publikacja</th>
-              <th />
+              <th><span className="adm-sr-only">Akcje</span></th>
             </tr>
           </thead>
           <tbody>
@@ -64,7 +64,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
                 </td>
                 <td className="adm-num" data-label="Aktualizacja">{formatDateTime(doc.updatedAt)}</td>
                 <td className="adm-num" data-label="Publikacja">{formatDateTime(doc.publishedAt)}</td>
-                <td data-label="">
+                <td data-label="Akcje">
                   <Link className="adm-btn" href={`/admin/content/${doc.kind}/${doc.slug}`}>Edytuj</Link>
                 </td>
               </tr>
