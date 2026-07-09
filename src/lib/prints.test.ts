@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
+import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
+import { priceOfVariant } from './print-pricing';
+import type { PrintVariantSelection } from './types';
 
 describe('getPrintDesigns', () => {
   it('returns only published designs', () => {
@@ -43,5 +46,30 @@ describe('isVariantAvailable', () => {
   it('rejects framed=false with non-none colour', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(isVariantAvailable(fap01, { size: '30x40', framed: false, mount: false, frameColour: 'black' } as any)).toBe(false);
+  });
+});
+
+describe('published print variant coverage', () => {
+  it('has SKU and pricing coverage for every sellable variant', () => {
+    for (const design of getPrintDesigns()) {
+      for (const size of design.sizes) {
+        const selections: PrintVariantSelection[] = [
+          { size, framed: false, mount: false, frameColour: 'none' },
+          ...PRINT_FRAME_COLOURS.flatMap((frameColour) => [
+            { size, framed: true, mount: false, frameColour },
+            { size, framed: true, mount: true, frameColour },
+          ] satisfies PrintVariantSelection[]),
+        ];
+
+        for (const sel of selections) {
+          if (!isVariantAvailable(design, sel)) continue;
+          const key = variantKey(sel);
+          expect(PRODIGI_SKU_MAP[key], `${design.id} ${key}`).toBeDefined();
+          expect(priceOfVariant(design, sel, 'pln'), `${design.id} ${key} PLN`).toBeGreaterThan(0);
+          expect(priceOfVariant(design, sel, 'eur'), `${design.id} ${key} EUR`).toBeGreaterThan(0);
+          expect(priceOfVariant(design, sel, 'gbp'), `${design.id} ${key} GBP`).toBeGreaterThan(0);
+        }
+      }
+    }
   });
 });

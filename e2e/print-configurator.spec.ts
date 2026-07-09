@@ -19,4 +19,19 @@ test.describe('fine-art print configurator @ci', () => {
     await expect(page.getByTestId('opt-colour-black')).not.toBeVisible();
     await expect(page.getByTestId('opt-mount-false')).not.toBeVisible();
   });
+
+  test('styles selector controls and updates mounted variant price', async ({ page }) => {
+    await page.goto('/fine-art-prints/fap01');
+
+    await expect(page.locator('.print-axis').first()).toHaveCSS('border-top-style', 'none');
+    await expect(page.getByTestId('opt-size-30x40')).toHaveCSS('background-color', 'rgb(58, 40, 24)');
+
+    await page.getByTestId('opt-size-70x100').click();
+    await page.getByTestId('opt-framed-true').click();
+    await page.getByTestId('opt-colour-natural').click();
+    await page.getByTestId('opt-mount-true').click();
+
+    await expect(page.getByTestId('opt-mount-true')).toHaveCSS('background-color', 'rgb(58, 40, 24)');
+    await expect(page.getByTestId('print-price')).toHaveText('720 zł');
+  });
 });
