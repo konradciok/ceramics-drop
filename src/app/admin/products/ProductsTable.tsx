@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { DataTable, type Column } from '@/components/admin/DataTable';
 import type { ProductListRow } from '@/lib/admin/catalog-list';
 import type { ProductDisplayStatus } from '@/lib/catalog/status';
 
@@ -76,48 +77,44 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
         ))}
       </div>
 
-      <div className="adm-tablewrap">
-        <table className="adm-table adm-table--stack">
-          <thead>
-            <tr>
-              <th>Produkt</th>
-              <th>Kategoria</th>
-              <th>Status</th>
-              <th>Magazyn</th>
-              <th>Warianty</th>
-              <th>Cena</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((r) => (
-              <tr key={r.id}>
-                <td data-label="Produkt">
-                  <div className="adm-item">
-                    {r.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.image} alt="" />
-                    ) : (
-                      <div className="adm-item-noimg" />
-                    )}
-                    <div className="adm-item-meta">
-                      <div>{r.title}</div>
-                      <div className="id">{r.id}</div>
-                    </div>
-                  </div>
-                </td>
-                <td data-label="Kategoria">{r.categoryLabel}</td>
-                <td data-label="Status"><span className={`adm-pill ${STATUS_META[r.status].pill}`}>{STATUS_META[r.status].label}</span></td>
-                <td data-label="Magazyn">{r.stockLabel}</td>
-                <td data-label="Warianty">{r.variantCount}</td>
-                <td data-label="Cena">{r.priceLabel}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 ? (
-              <tr><td colSpan={6} className="adm-empty">Brak produktów pasujących do filtrów.</td></tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={COLUMNS}
+        rows={filtered}
+        getRowKey={(r) => r.id}
+        empty="Brak produktów pasujących do filtrów."
+      />
     </>
   );
 }
+
+const COLUMNS: Column<ProductListRow>[] = [
+  {
+    key: 'product',
+    header: 'Produkt',
+    render: (r) => (
+      <div className="adm-item">
+        {r.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={r.image} alt="" />
+        ) : (
+          <div className="adm-item-noimg" />
+        )}
+        <div className="adm-item-meta">
+          <div>{r.title}</div>
+          <div className="id">{r.id}</div>
+        </div>
+      </div>
+    ),
+  },
+  { key: 'category', header: 'Kategoria', render: (r) => r.categoryLabel },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (r) => (
+      <span className={`adm-pill ${STATUS_META[r.status].pill}`}>{STATUS_META[r.status].label}</span>
+    ),
+  },
+  { key: 'stock', header: 'Magazyn', render: (r) => r.stockLabel },
+  { key: 'variants', header: 'Warianty', render: (r) => r.variantCount },
+  { key: 'price', header: 'Cena', render: (r) => r.priceLabel },
+];
