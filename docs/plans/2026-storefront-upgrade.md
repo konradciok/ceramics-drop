@@ -2,6 +2,19 @@
 
 This document outlines the strategic design and technical upgrade plan for transforming the Anna Ciok Studio storefront into a modern, beautiful, and conversion-friendly e-commerce experience tailored for 2026 trends.
 
+## Rollout Status
+
+Build order: **Spec A → C → B → D**. (B shipped ahead of C — it depends only on A and was piloted first.)
+
+| Spec | Surface | Status |
+|------|---------|--------|
+| **A** — Motion & Surface Foundation | cross-cutting CSS primitives (`.reveal`, `.edge-fade-x`, `.surface-grain`, reduced-motion hardening) | ✅ **Shipped** — PR [#122](https://github.com/konradciok/ceramics-drop/pull/122), merged 2026-07-08 |
+| **B** — Collection Bento | editorial bento grid + scroll-reveal stagger, **piloted on `/kubki` only** | ✅ **Shipped (pilot)** — PR [#122](https://github.com/konradciok/ceramics-drop/pull/122). Full rollout to all categories + `/sklep` deferred pending bounce/browse metrics. |
+| **C** — PDP Transparency + View-Transition Morph | honest all-in cost on the ceramic PDP (C-core) + tile→hero morph (C-morph) | ⬜ **Next** |
+| **D** — Homepage Hero + Shrinking Header | scrollytelling hero + `scroll()`-driven shrinking nav | ⬜ Upcoming (depends on A only) |
+
+**Next up:** Spec C — [`docs/superpowers/plans/2026-07-07-storefront-pdp-transparency-morph-plan.md`](./superpowers/plans/2026-07-07-storefront-pdp-transparency-morph-plan.md).
+
 ## 1. Aesthetic Vision: Human-Centric & Tactile
 In 2026, the trend for high-end ceramics and wall art is shifting towards "human-centric" design that emphasizes tactile storytelling and emotional connection.
 
