@@ -9,7 +9,31 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Product } from '../types';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts } from './mappers';
-import type { MediaSeedRow, ProductSeedRow } from './types';
+import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
+
+/** The catalogue rows the admin list reads (products + their variants). */
+export interface CatalogRows {
+  products: ProductSeedRow[];
+  variants: VariantSeedRow[];
+}
+
+/**
+ * Read every catalogue product + variant row. Returns empty arrays when the
+ * shadow tables have not been backfilled yet — callers fall back to the code
+ * registry and surface a "run catalog:backfill" hint.
+ */
+export async function listCatalogRows(supabase: SupabaseClient): Promise<CatalogRows> {
+  const [productsRes, variantsRes] = await Promise.all([
+    supabase.from('products').select('*'),
+    supabase.from('product_variants').select('*'),
+  ]);
+  if (productsRes.error) throw new Error(`list products: ${productsRes.error.message}`);
+  if (variantsRes.error) throw new Error(`list variants: ${variantsRes.error.message}`);
+  return {
+    products: (productsRes.data ?? []) as ProductSeedRow[],
+    variants: (variantsRes.data ?? []) as VariantSeedRow[],
+  };
+}
 
 /**
  * Idempotently mirror the code registry into the catalog tables.
