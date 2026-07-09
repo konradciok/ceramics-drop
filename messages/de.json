@@ -110,6 +110,7 @@
     "emailLabel": "E-Mail",
     "messageLabel": "Nachricht (optional)",
     "consentLabel": "Ich möchte über künftige Stücke und Drops informiert werden.",
+    "privacyNote": "Wir verwenden deine Daten nur, um auf diese Anfrage zu antworten. Siehe unsere <link>Datenschutzerklärung</link>.",
     "submit": "Senden",
     "submitting": "Senden…"
   },

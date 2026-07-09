@@ -110,6 +110,7 @@
     "emailLabel": "E-mail",
     "messageLabel": "Wiadomość (opcjonalnie)",
     "consentLabel": "Chcę otrzymywać informacje o przyszłych pracach i dropach.",
+    "privacyNote": "Podane dane wykorzystamy tylko po to, by odezwać się w sprawie tej prośby. Zobacz <link>politykę prywatności</link>.",
     "submit": "Wyślij",
     "submitting": "Wysyłam…"
   },

@@ -48,7 +48,10 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
 
   return (
     <>
-      <ProductViewAnalytics product={product} />
+      {/* Showroom pieces aren't purchasable — don't fire ecommerce view_item
+          (it would pollute demand funnels); the showroom_product_view engagement
+          event on tiles / the /showroom page covers this surface instead. */}
+      {!showroom && <ProductViewAnalytics product={product} />}
       <article className="pdp">
         <div className="pdp-inner">
           <nav className="pdp-breadcrumb" aria-label="breadcrumb">

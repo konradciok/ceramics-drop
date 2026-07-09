@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { richTags } from '@/components/ui/richTags';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -103,6 +105,14 @@ export function ShowroomInterestForm({ productId }: { productId: string }) {
         />
         <span>{t('showroom.consentLabel')}</span>
       </label>
+      {/* Lawful basis: with consent unticked, the email + message are stored only
+          to fulfil this one interest request (studio reply), never for marketing. */}
+      <p className="showroom-interest-privacy">
+        {t.rich('showroom.privacyNote', {
+          ...richTags,
+          link: (c) => <Link href="/polityka-prywatnosci" className="inline">{c}</Link>,
+        })}
+      </p>
       <button
         type="submit"
         className="btn btn-primary lb-add"

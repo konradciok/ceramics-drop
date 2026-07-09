@@ -10,6 +10,14 @@ describe('buildFeedItems', () => {
     expect(available?.availability).toBe('in stock');
   });
 
+  it('marks showroom products as out of stock (not advertised as buyable)', () => {
+    const items = buildFeedItems('pl', new Set(), new Set(['k02']));
+    const showroom = items.find((i) => i.id === 'k02');
+    const available = items.find((i) => i.id !== 'k02');
+    expect(showroom?.availability).toBe('out of stock');
+    expect(available?.availability).toBe('in stock');
+  });
+
   it('formats PLN prices with PLN currency', () => {
     const items = buildFeedItems('pl', new Set());
     const kubek = items.find((i) => i.category === 'kubki');

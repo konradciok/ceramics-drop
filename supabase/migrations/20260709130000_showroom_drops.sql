@@ -83,20 +83,19 @@ begin
   from unnest(p_ids) as id
   where not exists (select 1 from piece_state where product_id = id);
 
-  -- A piece conflicts unless it is free, already reserved by this same order
-  -- (idempotent retry), or holds an expired reservation. Showroom pieces are
-  -- never purchasable, so they always conflict regardless of status.
+  -- A piece is reservable when it is free (and not showroom), already reserved
+  -- by THIS same order (idempotent retry — honoured even if it was toggled into
+  -- showroom mid-checkout, so F4 is preserved), or holds an expired reservation
+  -- (and not showroom). Showroom blocks NEW purchases and stale-hold takeovers,
+  -- but never bricks a buyer's own live hold.
   select coalesce(array_agg(product_id), '{}')
     into conflicts
   from piece_state
   where product_id = any(p_ids)
-    and (
-      showroom = true
-      or not (
-        status = 'available'
-        or (status = 'reserved' and order_id = p_order_id)
-        or (status = 'reserved' and reserved_until <= now())
-      )
+    and not (
+      (status = 'available' and showroom = false)
+      or (status = 'reserved' and order_id = p_order_id)
+      or (status = 'reserved' and reserved_until <= now() and showroom = false)
     );
 
   conflicts := conflicts || missing;

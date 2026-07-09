@@ -110,6 +110,7 @@
     "emailLabel": "Email",
     "messageLabel": "Message (optional)",
     "consentLabel": "I'd like to hear about future pieces and drops.",
+    "privacyNote": "We'll only use your details to reply about this request. See our <link>privacy policy</link>.",
     "submit": "Send",
     "submitting": "Sending…"
   },

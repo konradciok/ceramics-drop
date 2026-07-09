@@ -1298,6 +1298,8 @@ ul { list-style:none; padding:0; margin:0; }
   display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.4; cursor:pointer;
 }
 .showroom-interest-consent input { margin-top:2px; }
+.showroom-interest-privacy { font-size:12px; line-height:1.5; color:var(--c-espresso); opacity:.75; }
+.showroom-interest-privacy .inline { color:inherit; text-decoration:underline; }
 .showroom-interest-thanks {
   margin-top:12px; font-size:15px; line-height:1.6; color:var(--c-espresso);
 }

@@ -110,6 +110,7 @@
     "emailLabel": "Correo electrónico",
     "messageLabel": "Mensaje (opcional)",
     "consentLabel": "Quiero recibir información sobre futuras piezas y drops.",
+    "privacyNote": "Solo usaremos tus datos para responder a esta solicitud. Consulta nuestra <link>política de privacidad</link>.",
     "submit": "Enviar",
     "submitting": "Enviando…"
   },

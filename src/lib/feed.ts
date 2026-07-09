@@ -103,7 +103,7 @@ export type FeedItem = {
   shipping: Array<{ country: string; service: string; price: string }>;
 };
 
-function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>): FeedItem[] {
+function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>): FeedItem[] {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale);
   const products = getPublicProducts();
@@ -141,7 +141,9 @@ function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, notes
       link,
       imageLink,
       additionalImages,
-      availability: soldIds.has(product.id) ? 'out of stock' : 'in stock',
+      // Showroom pieces are visible but not purchasable — never advertise them
+      // in stock in merchant feeds (matches reserve_pieces + JSON-LD).
+      availability: soldIds.has(product.id) || showroomIds.has(product.id) ? 'out of stock' : 'in stock',
       price: priceStr,
       category: product.category,
       material: 'Ceramics',
@@ -154,14 +156,14 @@ function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, notes
   });
 }
 
-export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>): FeedItem[] {
-  return buildFeedItemsWithNotes(locale, soldIds);
+export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): FeedItem[] {
+  return buildFeedItemsWithNotes(locale, soldIds, showroomIds);
 }
 
-export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>): Promise<FeedItem[]> {
+export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
   const slugs = [...new Set(getPublicProducts().map((product) => product.category))];
   const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
-  return buildFeedItemsWithNotes(locale, soldIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>);
+  return buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>);
 }
 
 function itemToGoogleXml(item: FeedItem): string {
