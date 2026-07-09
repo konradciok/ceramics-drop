@@ -1154,6 +1154,48 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
 .pdp-body .lb-specs { margin-top:auto; }
 
+/* Fine-art print configurator */
+.print-config { margin:0 0 24px; display:flex; flex-direction:column; gap:14px; }
+.print-axis {
+  border:0; margin:0; padding:0; min-inline-size:0;
+  display:flex; flex-direction:column; gap:8px;
+}
+.print-axis-label {
+  padding:0; font-family:var(--f-cond); font-size:11px; letter-spacing:.16em;
+  line-height:1.2; text-transform:uppercase; color:var(--c-espresso-muted);
+}
+.print-opts { display:flex; flex-wrap:wrap; gap:8px; }
+.print-opt {
+  appearance:none;
+  min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px 15px; border:1px solid var(--c-line); border-radius:var(--r-pill);
+  background:transparent; color:var(--c-espresso);
+  font-family:var(--f-cond); font-size:13px; letter-spacing:.06em; line-height:1;
+  transition:background .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease),opacity .2s ease;
+}
+.print-opt:hover { background:var(--c-bone); border-color:rgba(58,40,24,.28); }
+.print-opt.active,
+.print-opt[aria-checked="true"] {
+  background:var(--c-espresso); border-color:var(--c-espresso); color:var(--c-paper);
+}
+.print-opt:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:2px; }
+.print-opt-colour::before {
+  content:''; width:13px; height:13px; border-radius:50%;
+  border:1px solid rgba(58,40,24,.2); background:var(--c-bone);
+}
+.print-opt-colour[data-colour="black"]::before { background:var(--c-espresso); border-color:rgba(250,246,236,.35); }
+.print-opt-colour[data-colour="white"]::before { background:var(--c-paper); }
+.print-opt-colour[data-colour="natural"]::before { background:var(--c-sand); }
+.print-opt-colour.active::before,
+.print-opt-colour[aria-checked="true"]::before { border-color:rgba(250,246,236,.7); }
+.print-price {
+  font-family:var(--f-display); font-weight:400; font-size:22px; line-height:1;
+  margin:2px 0 0;
+}
+.print-config .lb-add { margin-top:2px; }
+.print-paper-note { font-size:15px; line-height:1.55; opacity:.78; margin:10px 0 0; }
+.pdp-body .pay-error { color:var(--c-terracotta); font-size:14px; line-height:1.5; margin:0; }
+
 /* Lightbox permalink link */
 .lb-permalink {
   display:block; text-align:center; margin-top:14px;

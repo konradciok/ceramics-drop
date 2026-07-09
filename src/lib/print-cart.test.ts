@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   encodePrintToken, decodePrintToken, isPrintToken,
   variantKey, variantLabel, PRODIGI_SKU_MAP,
+  PRINT_SIZES, PRINT_FRAME_COLOURS,
 } from './print-cart';
 
 describe('isPrintToken', () => {
@@ -60,8 +61,10 @@ describe('variantLabel', () => {
 });
 
 describe('PRODIGI_SKU_MAP', () => {
-  it('has exactly 21 entries', () => {
-    expect(Object.keys(PRODIGI_SKU_MAP)).toHaveLength(21);
+  // 1 unframed + 2 framed states (with/without mount) per colour, per size.
+  const expectedCount = PRINT_SIZES.length * (1 + PRINT_FRAME_COLOURS.length * 2);
+  it('covers every size × frame × mount × colour variant', () => {
+    expect(Object.keys(PRODIGI_SKU_MAP)).toHaveLength(expectedCount);
   });
   it('maps unframed 30x40 to FAP-12X16', () => {
     expect(PRODIGI_SKU_MAP[variantKey({ size: '30x40', framed: false, mount: false, frameColour: 'none' })].sku)

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
+import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
+import { priceOfVariant } from './print-pricing';
+import type { PrintVariantSelection } from './types';
 
 describe('getPrintDesigns', () => {
   it('returns only published designs', () => {
@@ -43,5 +46,38 @@ describe('isVariantAvailable', () => {
   it('rejects framed=false with non-none colour', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(isVariantAvailable(fap01, { size: '30x40', framed: false, mount: false, frameColour: 'black' } as any)).toBe(false);
+  });
+});
+
+describe('published print variant coverage', () => {
+  it('has SKU and pricing coverage for every sellable variant', () => {
+    let checked = 0;
+    for (const design of getPrintDesigns()) {
+      for (const size of design.sizes) {
+        // Mirror sellable axes directly: mount only when the design offers it,
+        // so the sweep never generates a combo that isVariantAvailable must skip.
+        const selections: PrintVariantSelection[] = [
+          { size, framed: false, mount: false, frameColour: 'none' },
+          ...PRINT_FRAME_COLOURS.flatMap((frameColour) => {
+            const framed: PrintVariantSelection[] = [{ size, framed: true, mount: false, frameColour }];
+            if (design.mountAvailable) framed.push({ size, framed: true, mount: true, frameColour });
+            return framed;
+          }),
+        ];
+
+        for (const sel of selections) {
+          if (!isVariantAvailable(design, sel)) continue;
+          const key = variantKey(sel);
+          expect(PRODIGI_SKU_MAP[key], `${design.id} ${key}`).toBeDefined();
+          expect(priceOfVariant(design, sel, 'pln'), `${design.id} ${key} PLN`).toBeGreaterThan(0);
+          expect(priceOfVariant(design, sel, 'eur'), `${design.id} ${key} EUR`).toBeGreaterThan(0);
+          expect(priceOfVariant(design, sel, 'gbp'), `${design.id} ${key} GBP`).toBeGreaterThan(0);
+          checked++;
+        }
+      }
+    }
+    // Guard against a silent green pass: if availability rules change such that
+    // nothing is exercised, fail loudly instead of reporting vacuous coverage.
+    expect(checked).toBeGreaterThan(0);
   });
 });
