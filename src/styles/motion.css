@@ -29,6 +29,26 @@
           mask-image: linear-gradient(to right, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
 }
 
+/* Shrinking header (Spec D). Padding + logo scale down over the first 80px of
+   scroll. HeaderHeightProbe keeps --header-h in sync (correct: the header is
+   shrunk exactly when scrolled). Reduced-motion off via Spec A's reset. */
+@supports (animation-timeline: scroll()) {
+  .header-inner {
+    animation: hdr-shrink linear both;
+    animation-timeline: scroll();
+    animation-range: 0 80px;
+  }
+  @keyframes hdr-shrink { to { padding-top: 8px; padding-bottom: 8px; } }
+
+  .brand img {
+    animation: hdr-logo linear both;
+    animation-timeline: scroll();
+    animation-range: 0 80px;
+    transform-origin: left center;
+  }
+  @keyframes hdr-logo { to { transform: scale(.78); } }
+}
+
 /* Generated grain for tactile warmth. Desaturated noise behind content,
    non-interactive, static, faint. Dial via --grain-opacity; set 0 to disable. */
 .surface-grain { position: relative; isolation: isolate; }
