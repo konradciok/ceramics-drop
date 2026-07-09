@@ -11,7 +11,7 @@ import { smallest } from '@/lib/images';
 import type { CategorySlug, PrintVariantSelection } from '@/lib/types';
 
 /** Internal PL singular labels per family (admin is Polish-only, no i18n machinery). */
-const CATEGORY_LABEL: Record<CategorySlug, string> = {
+export const CATEGORY_LABEL: Record<CategorySlug, string> = {
   kubki: 'Kubek',
   wazony: 'Wazon mały',
   'wazony-srednie': 'Wazon średni',
