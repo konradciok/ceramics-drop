@@ -20,3 +20,17 @@ test('@ci header does not shrink under reduced motion', async ({ page }) => {
   await page.waitForTimeout(150);
   expect((await header.boundingBox())!.height).toBe(tall);
 });
+
+test('@ci hero CTA is in the first viewport before scroll (mobile + desktop)', async ({ page }) => {
+  for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    await page.setViewportSize(vp);
+    await page.goto('/');
+    await expect(page.locator('.hero-actions .btn-primary')).toBeInViewport();
+  }
+});
+
+test('@ci hero beat caption renders and is visible under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await expect(page.locator('.hero-beat-cap')).toBeVisible();
+});

@@ -84,11 +84,20 @@ export default async function HomePage({ params }: Props) {
         </div>
       </section>
 
+      {/* ── HERO BEAT 2 — macro reveal (Spec D) ──────────────────── */}
+      <section className="hero-beat">
+        <div className="hero-beat-inner">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="reveal reveal--scale" src={storyImage.src} srcSet={srcSet(storyImage.src)} sizes="(min-width:861px) 60vw, 100vw" alt={t('home.heroBeatAlt')} width={storyImage.width} height={storyImage.height} />
+          <p className="hero-beat-cap reveal">{t('home.heroBeatCap')}</p>
+        </div>
+      </section>
+
       {/* ── MARQUEE ──────────────────────────────────────────────── */}
       <Marquee items={t.raw('home.marquee') as string[]} />
 
       {/* ── COLLECTIONS ──────────────────────────────────────────── */}
-      <section className="section collections">
+      <section className="section collections reveal">
         <div className="section-inner">
           <SectionHead
             eyebrow={t('home.colEyebrow')}
@@ -124,7 +133,7 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       {/* ── EDITORIAL ────────────────────────────────────────────── */}
-      <section className="section editorial">
+      <section className="section editorial reveal">
         <div className="section-inner">
           <div className="editorial-shot">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -134,7 +143,7 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       {/* ── STUDIO STORY ─────────────────────────────────────────── */}
-      <section className="section" id="studio">
+      <section className="section reveal" id="studio">
         <div className="section-inner">
           <div className="story">
             <div className="story-art">
@@ -161,7 +170,7 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       {/* ── CRAFT / JAK TO DZIAŁA ────────────────────────────────── */}
-      <section className="section craft" id="jak">
+      <section className="section craft reveal" id="jak">
         <div className="section-inner">
           <SectionHead
             eyebrow={t('home.craftEyebrow')}
