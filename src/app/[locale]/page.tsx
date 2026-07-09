@@ -12,7 +12,7 @@ import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
-import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE } from '@/lib/editorial-images';
+import { HOME_EDITORIAL_IMAGE, HOME_HERO_BEAT_IMAGE, HOME_STORY_IMAGE } from '@/lib/editorial-images';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -88,7 +88,7 @@ export default async function HomePage({ params }: Props) {
       <section className="hero-beat">
         <div className="hero-beat-inner">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="reveal reveal--scale" src={storyImage.src} srcSet={srcSet(storyImage.src)} sizes="(min-width:861px) 60vw, 100vw" alt={t('home.heroBeatAlt')} width={storyImage.width} height={storyImage.height} />
+          <img className="reveal reveal--scale" src={HOME_HERO_BEAT_IMAGE.src} srcSet={srcSet(HOME_HERO_BEAT_IMAGE.src)} sizes="(min-width:861px) 60vw, 100vw" alt={t('home.heroBeatAlt')} width={HOME_HERO_BEAT_IMAGE.width} height={HOME_HERO_BEAT_IMAGE.height} />
           <p className="hero-beat-cap reveal">{t('home.heroBeatCap')}</p>
         </div>
       </section>
