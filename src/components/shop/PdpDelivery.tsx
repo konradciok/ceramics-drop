@@ -23,7 +23,9 @@ export async function PdpDelivery({ product, currency }: { product: Product; cur
         <li><span>{t('ship.paczkomatT')}</span><span>{fmt(locker)}</span></li>
         <li><span>{t('ship.courierT')}</span><span>{fmt(courier)}</span></li>
       </ul>
-      <p className="pdp-delivery-trust">{t('pdp.trust')}</p>
+      <p className="pdp-delivery-trust">
+        {t(currency === 'gbp' ? 'pdp.trustGbp' : 'pdp.trust')}
+      </p>
     </div>
   );
 }

@@ -46,5 +46,7 @@ test('@ci PDP delivery block: estimated total, options, trust — GBP', async ({
   await expect(opts.nth(0).locator('span').nth(1)).toHaveText('Free'); // pickup (cart.free, en)
   await expect(opts.nth(1).locator('span').nth(1)).toHaveText(/^£\s*5$/); // paczkomat
   await expect(opts.nth(2).locator('span').nth(1)).toHaveText(/^£\s*12$/); // kurier
-  await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toBeVisible();
+  await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toHaveText(
+    /import charges on delivery/i,
+  );
 });

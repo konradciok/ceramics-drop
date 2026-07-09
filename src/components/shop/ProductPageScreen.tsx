@@ -63,6 +63,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                 {name} <em>Nº {product.num}</em>
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
+              {!product.sold && <PdpDelivery product={product} currency={currency} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -78,7 +79,6 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              {!product.sold && <PdpDelivery product={product} currency={currency} />}
               <AddToCartButton product={product} />
             </div>
           </div>

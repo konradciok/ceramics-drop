@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { validateCart } from './checkout';
 import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf, priceOfCurrency, shippingOfCurrency } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import { PRICE_GBP, SHIPPING_GBP, toGBPPence, shippingGBPPence, orderAmountGBPPence } from './pricing';
@@ -188,6 +189,51 @@ describe('shippingOfCurrency', () => {
   // claim that usd/cad shipping is "supported".
   it('routes non-switchable currencies through the EUR default (unreachable in practice)', () => {
     expect(shippingOfCurrency('usd', 'paczkomat')).toBe(shippingOfCurrency('eur', 'paczkomat'));
+  });
+});
+
+/** PDP estimated total (item + paczkomat) must match checkout PaymentIntent amount. */
+describe('PDP estimate ↔ checkout parity (paczkomat)', () => {
+  const product = { category: 'kubki' as CategorySlug, price: PRICE_PLN.kubki };
+  const method = 'paczkomat' as const;
+
+  it('PLN minor units match orderAmountGrosze', () => {
+    const cart = validateCart(['k01'], 'pln');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountGrosze(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'pln') + shippingOfCurrency('pln', method);
+    expect(checkoutMinor).toBe(toGrosze(pdpMajor));
+  });
+
+  it('EUR minor units match orderAmountEuroCents', () => {
+    const cart = validateCart(['k01'], 'eur');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountEuroCents(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'eur') + shippingOfCurrency('eur', method);
+    expect(checkoutMinor).toBe(toEuroCents(pdpMajor));
+  });
+
+  it('GBP minor units match orderAmountGBPPence', () => {
+    const cart = validateCart(['k01'], 'gbp');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountGBPPence(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'gbp') + shippingOfCurrency('gbp', method);
+    expect(checkoutMinor).toBe(toGBPPence(pdpMajor));
   });
 });
 
