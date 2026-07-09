@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getProductById, CATEGORIES, isCategoryHidden } from '@/lib/products';
 import { getPrintById } from '@/lib/prints';
-import { getSoldIds } from '@/lib/inventory';
+import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { printProductSchema, productSchema } from '@/lib/seo/structured-data';
 import { productAlternates } from '@/lib/seo/urls';
@@ -105,15 +105,20 @@ export default async function Page({ params, searchParams }: Props) {
   const base = getProductById(id);
   if (!base || base.category !== (slug as CategorySlug) || isCategoryHidden(base.category)) notFound();
 
-  const [t, soldIds] = await Promise.all([
+  const [t, soldIds, showroomIds] = await Promise.all([
     getTranslations({ locale }),
     getSoldIds().catch((err) => {
       console.error('getSoldIds failed on PDP', { locale, slug, id, err });
       return [] as string[];
     }),
+    getShowroomIds().catch((err) => {
+      console.error('getShowroomIds failed on PDP', { locale, slug, id, err });
+      return [] as string[];
+    }),
   ]);
 
-  const product = soldIds.includes(base.id) ? { ...base, sold: true } : base;
+  const withSold = soldIds.includes(base.id) ? { ...base, sold: true } : base;
+  const product = showroomIds.includes(base.id) ? { ...withSold, showroom: true } : withSold;
   const note = await getProductNote(product.category, locale as Locale, product.id, preview);
 
   return (
@@ -127,7 +132,7 @@ export default async function Page({ params, searchParams }: Props) {
           description: note,
         })}
       />
-      <ProductPageScreen product={product} soldIds={soldIds} noteOverride={note} />
+      <ProductPageScreen product={product} soldIds={soldIds} showroomIds={showroomIds} noteOverride={note} />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import {
   buildPrintShippingConfirmation,
   buildReturnLabelEmail,
   buildShippingConfirmation,
+  buildShowroomInterestEmail,
   type CustomerShippingOrder,
   type LabelEmailOrder,
   type OrderConfirmationOrder,
@@ -84,6 +85,40 @@ describe('buildNewOrderToStudioEmail', () => {
     expect(html).toContain('50×70 cm');
     expect(html).toContain('czarna'); // frame colour, PL studio copy
     expect(html).toContain('GLOBAL-CFP-20X28');
+  });
+});
+
+describe('buildShowroomInterestEmail', () => {
+  it('includes product id, email, locale and message', () => {
+    const { subject, html } = buildShowroomInterestEmail({
+      interest: {
+        productId: 'k01',
+        email: 'fan@example.com',
+        message: 'Love this glaze',
+        consentMarketing: true,
+        locale: 'en',
+      },
+    });
+    expect(subject).toContain('k01');
+    expect(html).toContain('k01');
+    expect(html).toContain('fan@example.com');
+    expect(html).toContain('Love this glaze');
+    expect(html).toContain('Tak'); // consent yes
+  });
+
+  it('escapes HTML in the customer message', () => {
+    const { html } = buildShowroomInterestEmail({
+      interest: {
+        productId: 'k01',
+        email: 'x@example.com',
+        message: '<script>alert(1)</script>',
+        consentMarketing: false,
+        locale: 'pl',
+      },
+    });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).toContain('Nie'); // consent no
   });
 });
 

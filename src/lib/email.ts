@@ -278,6 +278,54 @@ export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder 
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio showroom-interest notification ────────────────────────────────────
+
+export type ShowroomInterest = {
+  productId: string;
+  email: string;
+  message?: string | null;
+  consentMarketing: boolean;
+  locale: string;
+};
+
+/** Pure function — subject + inner HTML for the "new showroom interest" studio email. */
+export function buildShowroomInterestEmail(params: { interest: ShowroomInterest }): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const { interest } = params;
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Praca', value: escapeHtml(interest.productId) },
+    { label: 'E-mail', value: escapeHtml(interest.email) },
+    { label: 'Język', value: escapeHtml(interest.locale) },
+    { label: 'Zgoda marketingowa', value: interest.consentMarketing ? 'Tak' : 'Nie' },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Nowe zainteresowanie pracą ze showroomu.</strong>'),
+    emailDetailTable(rows),
+    interest.message ? emailMutedParagraph(escapeHtml(interest.message)) : '',
+  ].join('');
+
+  return {
+    subject: `[Showroom] Nowe zainteresowanie — ${interest.productId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Notify the studio of a new showroom-interest submission. Throws if Resend isn't configured (caller must catch). */
+export async function emailShowroomInterestToStudio(params: { interest: ShowroomInterest }): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildShowroomInterestEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Studio print-refund alert ────────────────────────────────────────────────
 
 export type PrintRefundAlert = {

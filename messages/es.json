@@ -31,11 +31,13 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "sklep": "Todas las piezas",
+    "showroom": "Showroom",
     "gallery": "Galería",
     "fineArtPrints": "Impresiones artísticas"
   },
   "nav": {
     "sklep": "Tienda",
+    "showroom": "Showroom",
     "gallery": "Galería",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
@@ -93,7 +95,24 @@
     "seeAll": "Ver todo"
   },
   "gallery": {
-    "sold": "Ya encontró casa"
+    "sold": "Ya encontró casa",
+    "showroom": "Showroom"
+  },
+  "showroom": {
+    "eyebrow": "Retrospectiva",
+    "title": "Showroom — piezas <em>de drops anteriores.</em>",
+    "lead": "Estas piezas ya no están a la venta. Míralas y dinos si quieres una pieza similar en un próximo drop.",
+    "empty": "El showroom está vacío por ahora.",
+    "pdpCopy": "Esta pieza formó parte de un drop anterior y ya no está disponible. Puedes guardarla como inspiración y decirnos si te gustaría ver piezas similares en un próximo drop.",
+    "interestCta": "Solicita una pieza similar",
+    "interestThanks": "Gracias — te avisaremos cuando aparezca algo similar.",
+    "interestError": "Algo salió mal. Inténtalo de nuevo.",
+    "emailLabel": "Correo electrónico",
+    "messageLabel": "Mensaje (opcional)",
+    "consentLabel": "Quiero recibir información sobre futuras piezas y drops.",
+    "privacyNote": "Solo usaremos tus datos para responder a esta solicitud. Consulta nuestra <link>política de privacidad</link>.",
+    "submit": "Enviar",
+    "submitting": "Enviando…"
   },
   "galleryPage": {
     "eyebrow": "Galería editorial",
@@ -775,6 +794,7 @@
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
       "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta.",
+      "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop.",
       "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
     }
   },

@@ -66,9 +66,9 @@ export function isCategoryHidden(slug: CategorySlug): boolean {
   return HIDDEN_CATEGORIES.has(slug);
 }
 
-/** Whether a piece may be bought — not sold and not in a hidden family. */
+/** Whether a piece may be bought — not sold, not in the showroom, and not in a hidden family. */
 export function isProductPurchasable(product: Product): boolean {
-  return !product.sold && !isCategoryHidden(product.category);
+  return !product.sold && !product.showroom && !isCategoryHidden(product.category);
 }
 
 /** CATEGORY_ORDER minus hidden families — nav / footer / switcher / jump-nav. */
@@ -174,6 +174,20 @@ const PRICE_OVERRIDE: Record<string, number> = {};
 /** Per-product measure overrides. */
 const MEASURE_OVERRIDE: Record<string, string> = {};
 
+/* ------------------------------------------------------------------
+   Drop membership — which limited sales event a piece was released in.
+   ------------------------------------------------------------------
+   A static, code-owned fact (like `category`), not a DB column: drop
+   membership records when a piece was authored into the catalogue and never
+   needs runtime reassignment. Every current product belongs to Drop #1; a
+   future drop adds an entry per new id here and a `drops` row via
+   `npm run drop:create`. The `drops` table is the source of truth for a
+   drop's status (active/ended) and display label. */
+const DEFAULT_DROP_ID = 'drop-1';
+const DROP_OVERRIDE: Record<string, string> = {
+  // e.g. 'k28': 'drop-2' when the next drop ships.
+};
+
 function buildProducts(): Product[] {
   const base = buildBase().filter((p) => !REMOVED.has(p.id));
 
@@ -215,6 +229,7 @@ function buildProducts(): Product[] {
         price: PRICE_OVERRIDE[p.id] ?? cat.price,
         measure: MEASURE_OVERRIDE[p.id] ?? cat.measure,
         sold: false,
+        dropId: DROP_OVERRIDE[p.id] ?? DEFAULT_DROP_ID,
         noteIndex: i,
       });
     });

@@ -32,8 +32,9 @@ export function GroupedGallery({ products }: Props) {
   const { code: analyticsCurrency } = currencyFormatter(currency);
 
   // Flat list of purchasable pieces — index space shared by the lightbox and
-  // the select_item analytics event (matches the per-category Gallery).
-  const available = useMemo(() => products.filter((p) => !p.sold), [products]);
+  // the select_item analytics event (matches the per-category Gallery). Showroom
+  // pieces are excluded: not purchasable, never open the lightbox.
+  const available = useMemo(() => products.filter((p) => !p.sold && !p.showroom), [products]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 

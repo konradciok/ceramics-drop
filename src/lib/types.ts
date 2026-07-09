@@ -34,6 +34,14 @@ export interface Product {
   measure: string;
   /** Whether the piece has already sold (1/1 → removed from sale). */
   sold: boolean;
+  /**
+   * Runtime-merged from `piece_state.showroom`: the piece is retired into the
+   * showroom (still visible, no longer purchasable). Defaults to undefined
+   * (not in showroom); overlaid at render time exactly like `sold`.
+   */
+  showroom?: boolean;
+  /** Which sales-event drop this piece was released in. References `drops.id`. */
+  dropId: string;
   /** 0-based index into the category's `notes` array (description lookup). */
   noteIndex: number;
 }

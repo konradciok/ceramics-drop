@@ -67,6 +67,8 @@ type CollectionArgs = {
    * would otherwise always report `InStock`.
    */
   soldIds?: readonly string[];
+  /** Live showroom piece ids (from `getShowroomIds()`) — never advertised InStock. */
+  showroomIds?: readonly string[];
 };
 
 /**
@@ -75,10 +77,11 @@ type CollectionArgs = {
  * Pieces are one-of-a-kind, so the price is the shared family price and
  * availability degrades to `SoldOut` once a piece sells.
  */
-export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionArgs): Graph {
+export function collectionSchema({ slug, locale, t, soldIds = [], showroomIds = [] }: CollectionArgs): Graph {
   const category = getCategory(slug);
   const products = getProductsByCategory(slug);
   const sold = new Set(soldIds);
+  const showroom = new Set(showroomIds);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
   const homeUrl = absoluteUrl(locale, '/');
@@ -110,7 +113,7 @@ export function collectionSchema({ slug, locale, t, soldIds = [] }: CollectionAr
               '@type': 'Offer',
               price: locale === 'pl' ? category.price : PRICE_EUR[slug],
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
-              availability: availabilityFor(p.sold || sold.has(p.id)),
+              availability: availabilityFor(p.sold || sold.has(p.id) || showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
             },
           },
@@ -285,7 +288,8 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           '@type': 'Offer',
           price: locale === 'pl' ? product.price : PRICE_EUR[product.category],
           priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
-          availability: availabilityFor(product.sold),
+          // Showroom pieces are not purchasable — never advertise them InStock.
+          availability: availabilityFor(product.sold || product.showroom === true),
           url: productUrl,
         },
       },

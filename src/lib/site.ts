@@ -13,6 +13,7 @@ export const SITE_NAME = 'Anna Ciok Ceramics';
 export const SITE_PATHS = [
   '/',
   '/sklep',
+  '/showroom',
   '/gallery',
   '/kubki',
   '/wazony',

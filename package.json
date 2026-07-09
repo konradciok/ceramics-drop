@@ -21,6 +21,7 @@
     "optimize-images": "node scripts/optimize-images.mjs",
     "notes:generate": "node scripts/generate-product-notes.mjs",
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
+    "drop:create": "tsx scripts/create-drop.ts",
     "sync-prodigi-skus": "tsx scripts/sync-prodigi-skus.ts",
     "debug:meta-capi": "node scripts/debug-meta-capi.mjs",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",
