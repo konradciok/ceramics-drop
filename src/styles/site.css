@@ -1332,3 +1332,9 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-delivery-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .pdp-delivery-opts li { display: flex; justify-content: space-between; font-size: 14px; opacity: .8; }
 .pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }
+
+/* ─── Hero beat band (Spec D) ─────────────────────────────────── */
+.hero-beat { background: var(--c-cream); padding: 0 var(--gut) clamp(48px,7vw,96px); }
+.hero-beat-inner { max-width: var(--max); margin: 0 auto; display: grid; gap: 18px; justify-items: center; }
+.hero-beat-inner img { width: min(100%, 720px); height: auto; border-radius: var(--r-sharp); }
+.hero-beat-cap { max-width: 40ch; text-align: center; font-family: var(--f-display); font-style: italic; font-size: clamp(18px,2.4vw,26px); line-height: 1.4; color: var(--c-espresso-muted); margin: 0; }

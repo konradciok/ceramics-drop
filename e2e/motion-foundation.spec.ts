@@ -9,8 +9,9 @@ test.describe('@ci Spec A — motion foundation', () => {
   test('reveal degrades to visible under reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    // Synthetic probe: the homepage renders no .reveal nodes, so this tests the
-    // primitive in isolation. Native toHaveCSS gives Playwright auto-retry.
+    // Synthetic probe: tests the primitive in isolation, independent of the
+    // page's own .reveal nodes (the homepage gained some in Spec D). Native
+    // toHaveCSS gives Playwright auto-retry.
     await page.evaluate(() => {
       const el = document.createElement('div');
       el.id = 'reveal-probe';

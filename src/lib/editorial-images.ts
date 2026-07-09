@@ -28,6 +28,10 @@ export const EDITORIAL_IMAGES = {
 
 export const HOME_EDITORIAL_IMAGE = EDITORIAL_IMAGES.aniaSunlight;
 export const HOME_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
+// Hero beat 2 (Spec D): a close macro of glazed, hand-painted pieces — must
+// match the home.heroBeatAlt/heroBeatCap copy and stay distinct from the
+// portrait used in the #studio story below it.
+export const HOME_HERO_BEAT_IMAGE = EDITORIAL_IMAGES.photo02;
 export const STUDIO_HEAD_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
 export const STUDIO_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
 
