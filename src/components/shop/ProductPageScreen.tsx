@@ -78,7 +78,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              <PdpDelivery product={product} currency={currency} />
+              {!product.sold && <PdpDelivery product={product} currency={currency} />}
               <AddToCartButton product={product} />
             </div>
           </div>
