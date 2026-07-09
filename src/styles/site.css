@@ -1166,6 +1166,7 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .print-opts { display:flex; flex-wrap:wrap; gap:8px; }
 .print-opt {
+  appearance:none;
   min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
   padding:10px 15px; border:1px solid var(--c-line); border-radius:var(--r-pill);
   background:transparent; color:var(--c-espresso);
@@ -1193,7 +1194,7 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .print-config .lb-add { margin-top:2px; }
 .print-paper-note { font-size:15px; line-height:1.55; opacity:.78; margin:10px 0 0; }
-.pdp-body .pay-error { color:var(--c-terracotta-deep); font-size:14px; line-height:1.5; margin:0; }
+.pdp-body .pay-error { color:var(--c-terracotta); font-size:14px; line-height:1.5; margin:0; }
 
 /* Lightbox permalink link */
 .lb-permalink {
