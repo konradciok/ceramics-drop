@@ -10,6 +10,7 @@ import '@/styles/admin.css';
 
 import type { Metadata } from 'next';
 import { AdminNav } from './AdminNav';
+import { ToastProvider } from '@/components/admin/Toast';
 
 export const metadata: Metadata = {
   title: 'Studio Admin',
@@ -20,14 +21,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <html lang="pl">
       <body>
-        <div className="adm">
-          <header className="adm-top">
-            <span className="adm-brand">Anna&nbsp;Ciok · <b>Admin</b></span>
-            <AdminNav />
-            <span className="adm-top-tag">studio</span>
-          </header>
-          <main className="adm-main">{children}</main>
-        </div>
+        <ToastProvider>
+          <div className="adm">
+            <header className="adm-top">
+              <span className="adm-brand">Anna&nbsp;Ciok · <b>Admin</b></span>
+              <AdminNav />
+              <span className="adm-top-tag">studio</span>
+            </header>
+            <main className="adm-main">{children}</main>
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );
