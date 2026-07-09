@@ -18,6 +18,7 @@ export type ProductDisplayStatus =
   | 'draft'
   | 'hidden'
   | 'sold'
+  | 'showroom'
   | 'reserved'
   | 'out_of_stock'
   | 'active';
@@ -27,6 +28,8 @@ export interface StatusPieceInput {
   status: 'available' | 'reserved' | 'sold';
   /** reserved but the hold has lapsed → effectively available again. */
   reservedExpired: boolean;
+  /** Retired into the showroom: visible, no longer purchasable. */
+  showroom: boolean;
 }
 
 export interface StatusInput {
@@ -44,8 +47,10 @@ export interface StatusInput {
  * Resolve the single display status. Catalogue-level states (archived, draft,
  * hidden) take precedence over stock/sale state, because a draft or archived
  * product is not on sale regardless of its inventory. For an otherwise-active
- * product the piece_state / stock overlay decides: sold → reserved (live hold)
- * → out_of_stock → active.
+ * product the piece_state / stock overlay decides: sold → showroom → reserved
+ * (live hold) → out_of_stock → active. Showroom mirrors production
+ * `isProductPurchasable` (a showroom piece is visible but not buyable); it sits
+ * after `sold` so a sold piece retired into the showroom still reads as sold.
  */
 export function resolveProductStatus(input: StatusInput): ProductDisplayStatus {
   const { catalogStatus, categoryHidden, piece, hasStock } = input;
@@ -56,6 +61,7 @@ export function resolveProductStatus(input: StatusInput): ProductDisplayStatus {
 
   // catalogStatus === 'active' below.
   if (piece?.status === 'sold') return 'sold';
+  if (piece?.showroom) return 'showroom';
   if (piece?.status === 'reserved' && !piece.reservedExpired) return 'reserved';
   if (!hasStock) return 'out_of_stock';
   return 'active';

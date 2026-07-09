@@ -47,6 +47,37 @@ describe('assembleProductRows', () => {
     expect(k01.stockLabel).toBe('0/1');
   });
 
+  it('marks showroom ceramics as visible-but-not-purchasable', () => {
+    const rows = assembleProductRows(
+      catalog,
+      new Map([['k01', piece({ product_id: 'k01', status: 'available', showroom: true })]]),
+    );
+    const k01 = rows.find((r) => r.id === 'k01')!;
+    expect(k01).toMatchObject({ status: 'showroom', purchasable: false, stockLabel: '0/1' });
+  });
+
+  it('shows a hold hint in the stock column for a live reservation', () => {
+    const k01 = assembleProductRows(
+      catalog,
+      new Map([['k01', piece({ product_id: 'k01', status: 'reserved' })]]),
+    ).find((r) => r.id === 'k01')!;
+    expect(k01.status).toBe('reserved');
+    expect(k01.stockLabel).toBe('1/1 · hold');
+  });
+
+  it('treats an active product whose every variant is inactive as out of stock', () => {
+    const synthetic = {
+      products: [
+        { ...catalog.products[0], id: 'zz01', type: 'ceramic' as const, category_slug: 'kubki' as const, status: 'active' as const },
+      ],
+      variants: [
+        { ...catalog.variants[0], product_id: 'zz01', active: false, track_inventory: false },
+      ],
+    };
+    const row = assembleProductRows(synthetic, new Map())[0];
+    expect(row.status).toBe('out_of_stock');
+  });
+
   it('shows a live reservation but treats an expired hold as available', () => {
     const live = assembleProductRows(
       catalog,

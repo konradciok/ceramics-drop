@@ -8,6 +8,7 @@ import type { ProductDisplayStatus } from '@/lib/catalog/status';
 const STATUS_META: Record<ProductDisplayStatus, { label: string; pill: string }> = {
   active: { label: 'Aktywny', pill: 'available' },
   reserved: { label: 'Rezerwacja', pill: 'reserved' },
+  showroom: { label: 'Showroom', pill: 'showroom' },
   sold: { label: 'Sprzedany', pill: 'sold' },
   out_of_stock: { label: 'Brak stanu', pill: 'expired' },
   draft: { label: 'Szkic', pill: 'pending' },
@@ -17,12 +18,6 @@ const STATUS_META: Record<ProductDisplayStatus, { label: string; pill: string }>
 
 type TypeFilter = 'all' | 'ceramic' | 'print';
 type SortKey = 'category' | 'status' | 'price';
-
-/** Numeric PLN from a "123 zł" / "od 123 zł" label for price sorting; NaN → last. */
-function priceValue(label: string): number {
-  const m = label.match(/(\d+)/);
-  return m ? Number(m[1]) : Number.POSITIVE_INFINITY;
-}
 
 export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
   const [query, setQuery] = useState('');
@@ -46,7 +41,7 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
       return true;
     });
     if (sort === 'status') out.sort((a, b) => a.status.localeCompare(b.status));
-    else if (sort === 'price') out.sort((a, b) => priceValue(a.priceLabel) - priceValue(b.priceLabel));
+    else if (sort === 'price') out.sort((a, b) => a.priceValue - b.priceValue);
     // 'category' keeps the server order (category → num).
     return out;
   }, [rows, query, type, status, sort]);
@@ -62,9 +57,9 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Szukaj produktów"
         />
-        <button className={`adm-chip ${type === 'all' ? 'is-active' : ''}`} onClick={() => setType('all')}>Wszystkie</button>
-        <button className={`adm-chip ${type === 'ceramic' ? 'is-active' : ''}`} onClick={() => setType('ceramic')}>Ceramika</button>
-        <button className={`adm-chip ${type === 'print' ? 'is-active' : ''}`} onClick={() => setType('print')}>Druki</button>
+        <button type="button" className={`adm-chip ${type === 'all' ? 'is-active' : ''}`} onClick={() => setType('all')}>Wszystkie</button>
+        <button type="button" className={`adm-chip ${type === 'ceramic' ? 'is-active' : ''}`} onClick={() => setType('ceramic')}>Ceramika</button>
+        <button type="button" className={`adm-chip ${type === 'print' ? 'is-active' : ''}`} onClick={() => setType('print')}>Druki</button>
         <select className="adm-select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sortowanie">
           <option value="category">Sortuj: kategoria</option>
           <option value="status">Sortuj: status</option>
@@ -73,9 +68,9 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
       </div>
 
       <div className="adm-toolbar">
-        <button className={`adm-chip ${status === 'all' ? 'is-active' : ''}`} onClick={() => setStatus('all')}>Każdy status</button>
+        <button type="button" className={`adm-chip ${status === 'all' ? 'is-active' : ''}`} onClick={() => setStatus('all')}>Każdy status</button>
         {statusesPresent.map((s) => (
-          <button key={s} className={`adm-chip ${status === s ? 'is-active' : ''}`} onClick={() => setStatus(s)}>
+          <button type="button" key={s} className={`adm-chip ${status === s ? 'is-active' : ''}`} onClick={() => setStatus(s)}>
             {STATUS_META[s].label}
           </button>
         ))}

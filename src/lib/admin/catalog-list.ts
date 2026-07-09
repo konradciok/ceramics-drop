@@ -31,12 +31,18 @@ export interface ProductListRow {
   /** '1/1' | '0/1' for ceramics, 'POD' for prints. */
   stockLabel: string;
   priceLabel: string;
+  /** Numeric PLN for sorting, decoupled from the display label. Infinity when unpriced. */
+  priceValue: number;
 }
 
 export interface ProductListResult {
   rows: ProductListRow[];
-  /** Where the catalogue came from — 'registry' means backfill hasn't run yet. */
+  /** Where the catalogue came from — 'registry' means backfill hasn't run (or is incomplete). */
   source: 'db' | 'registry';
+  /** DB catalogue product count (0 when un-backfilled). */
+  dbCount: number;
+  /** Products the backfill would insert from the registry. */
+  expectedCount: number;
 }
 
 const zl = (n: number | null): string => (n == null ? '—' : `${n} zł`);
@@ -64,30 +70,39 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
     const piece = pieceById.get(p.id) ?? null;
     const ref = productRef(p.id);
 
-    // Sellable stock: a tracked variant needs qty > 0; POD (untracked) is always in stock.
+    // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
     const hasStock = variants.length === 0
       ? true
-      : variants.some((v) => (v.track_inventory ? v.stock_quantity > 0 : true));
+      : variants.some((v) => v.active && (v.track_inventory ? v.stock_quantity > 0 : true));
 
     const status = resolveProductStatus({
       catalogStatus: p.status,
       categoryHidden: isCategoryHidden(p.category_slug),
-      piece: piece ? { status: piece.status, reservedExpired: piece.reservedExpired } : null,
+      piece: piece
+        ? { status: piece.status, reservedExpired: piece.reservedExpired, showroom: piece.showroom }
+        : null,
       hasStock,
     });
 
+    const printPrices = p.type === 'print'
+      ? variants.map((v) => v.price_pln).filter((n): n is number => n != null)
+      : [];
+    const priceValue = p.type === 'print'
+      ? (printPrices.length ? Math.min(...printPrices) : Number.POSITIVE_INFINITY)
+      : (p.price_pln ?? Number.POSITIVE_INFINITY);
     const priceLabel = p.type === 'print'
-      ? (() => {
-          const prices = variants.map((v) => v.price_pln).filter((n): n is number => n != null);
-          return prices.length ? `od ${Math.min(...prices)} zł` : '—';
-        })()
+      ? (printPrices.length ? `od ${Math.min(...printPrices)} zł` : '—')
       : zl(p.price_pln);
 
+    // Reconcile the Magazyn column with purchasability (not just the raw sold flag),
+    // so it never contradicts the status pill next to it.
     const stockLabel = p.type === 'print'
       ? 'POD'
-      : piece?.status === 'sold'
-        ? '0/1'
-        : '1/1';
+      : status === 'active'
+        ? '1/1'
+        : status === 'reserved'
+          ? '1/1 · hold'
+          : '0/1';
 
     return {
       id: p.id,
@@ -102,6 +117,7 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
       variantCount: variants.length,
       stockLabel,
       priceLabel,
+      priceValue,
     };
   });
 
@@ -119,14 +135,27 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
  */
 export async function listProducts(): Promise<ProductListResult> {
   const supabase = adminSupabase();
-  const [pieces, dbRows] = await Promise.all([listInventory(), listCatalogRows(supabase)]);
-  const source: 'db' | 'registry' = dbRows.products.length > 0 ? 'db' : 'registry';
-  const catalog: CatalogRows = source === 'db'
-    ? dbRows
-    : (() => {
-        const seed = buildCatalogSeed();
-        return { products: seed.products, variants: seed.variants };
-      })();
+  // A transient DB failure on the catalogue read must not take down the page —
+  // fall back to the registry (same path as an un-backfilled DB).
+  const [pieces, dbRows] = await Promise.all([
+    listInventory(),
+    listCatalogRows(supabase).catch(() => ({ products: [], variants: [] }) as CatalogRows),
+  ]);
+  const seed = buildCatalogSeed();
+  const registry: CatalogRows = { products: seed.products, variants: seed.variants };
+
+  // Only trust the DB catalogue once it is COMPLETE. A partial/interrupted backfill
+  // (or a registry that grew since the last sync) would otherwise silently drop
+  // products from the list — so fall back to the registry and let the page warn.
+  const complete = dbRows.products.length >= registry.products.length;
+  const source: 'db' | 'registry' = dbRows.products.length > 0 && complete ? 'db' : 'registry';
+  const catalog = source === 'db' ? dbRows : registry;
+
   const pieceById = new Map(pieces.map((p) => [p.product_id, p]));
-  return { rows: assembleProductRows(catalog, pieceById), source };
+  return {
+    rows: assembleProductRows(catalog, pieceById),
+    source,
+    dbCount: dbRows.products.length,
+    expectedCount: registry.products.length,
+  };
 }
