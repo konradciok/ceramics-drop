@@ -2,6 +2,8 @@ import { listProducts } from '@/lib/admin/catalog-list';
 import type { ProductDisplayStatus } from '@/lib/catalog/status';
 import { ProductsTable } from './ProductsTable';
 
+// Consistent with the other admin pages (orders, inventory): force request-time
+// rendering so admin data is never statically cached.
 export const dynamic = 'force-dynamic';
 
 /** KPI tiles that partition every product (counts sum to rows.length). */

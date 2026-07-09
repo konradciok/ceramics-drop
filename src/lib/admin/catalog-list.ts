@@ -71,9 +71,11 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
     const ref = productRef(p.id);
 
     // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
-    const hasStock = variants.length === 0
-      ? true
-      : variants.some((v) => v.active && (v.track_inventory ? v.stock_quantity > 0 : true));
+    // A product with NO variants is unknown-stock (e.g. a partial backfill) → not
+    // sellable, so it never falsely counts as active/purchasable.
+    const hasStock =
+      variants.length > 0 &&
+      variants.some((v) => v.active && (v.track_inventory ? v.stock_quantity > 0 : true));
 
     const status = resolveProductStatus({
       catalogStatus: p.status,
@@ -139,7 +141,12 @@ export async function listProducts(): Promise<ProductListResult> {
   // fall back to the registry (same path as an un-backfilled DB).
   const [pieces, dbRows] = await Promise.all([
     listInventory(),
-    listCatalogRows(supabase).catch(() => ({ products: [], variants: [] }) as CatalogRows),
+    listCatalogRows(supabase).catch((err) => {
+      // Log so a persistent DB failure is distinguishable from an un-backfilled DB
+      // (both otherwise render the same registry-fallback banner).
+      console.error('[admin/products] listCatalogRows failed, falling back to registry', err);
+      return { products: [], variants: [] } as CatalogRows;
+    }),
   ]);
   const seed = buildCatalogSeed();
   const registry: CatalogRows = { products: seed.products, variants: seed.variants };

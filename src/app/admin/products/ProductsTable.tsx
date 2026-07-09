@@ -57,9 +57,9 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Szukaj produktów"
         />
-        <button type="button" className={`adm-chip ${type === 'all' ? 'is-active' : ''}`} onClick={() => setType('all')}>Wszystkie</button>
-        <button type="button" className={`adm-chip ${type === 'ceramic' ? 'is-active' : ''}`} onClick={() => setType('ceramic')}>Ceramika</button>
-        <button type="button" className={`adm-chip ${type === 'print' ? 'is-active' : ''}`} onClick={() => setType('print')}>Druki</button>
+        <button type="button" aria-pressed={type === 'all'} className={`adm-chip ${type === 'all' ? 'is-active' : ''}`} onClick={() => setType('all')}>Wszystkie</button>
+        <button type="button" aria-pressed={type === 'ceramic'} className={`adm-chip ${type === 'ceramic' ? 'is-active' : ''}`} onClick={() => setType('ceramic')}>Ceramika</button>
+        <button type="button" aria-pressed={type === 'print'} className={`adm-chip ${type === 'print' ? 'is-active' : ''}`} onClick={() => setType('print')}>Druki</button>
         <select className="adm-select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sortowanie">
           <option value="category">Sortuj: kategoria</option>
           <option value="status">Sortuj: status</option>
@@ -68,9 +68,9 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
       </div>
 
       <div className="adm-toolbar">
-        <button type="button" className={`adm-chip ${status === 'all' ? 'is-active' : ''}`} onClick={() => setStatus('all')}>Każdy status</button>
+        <button type="button" aria-pressed={status === 'all'} className={`adm-chip ${status === 'all' ? 'is-active' : ''}`} onClick={() => setStatus('all')}>Każdy status</button>
         {statusesPresent.map((s) => (
-          <button type="button" key={s} className={`adm-chip ${status === s ? 'is-active' : ''}`} onClick={() => setStatus(s)}>
+          <button type="button" key={s} aria-pressed={status === s} className={`adm-chip ${status === s ? 'is-active' : ''}`} onClick={() => setStatus(s)}>
             {STATUS_META[s].label}
           </button>
         ))}

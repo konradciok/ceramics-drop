@@ -65,6 +65,18 @@ describe('assembleProductRows', () => {
     expect(k01.stockLabel).toBe('1/1 · hold');
   });
 
+  it('treats an active product with no variants as out of stock (partial backfill guard)', () => {
+    const synthetic = {
+      products: [
+        { ...catalog.products[0], id: 'zz02', type: 'ceramic' as const, category_slug: 'kubki' as const, status: 'active' as const },
+      ],
+      variants: [],
+    };
+    const row = assembleProductRows(synthetic, new Map())[0];
+    expect(row.status).toBe('out_of_stock');
+    expect(row.purchasable).toBe(false);
+  });
+
   it('treats an active product whose every variant is inactive as out of stock', () => {
     const synthetic = {
       products: [
