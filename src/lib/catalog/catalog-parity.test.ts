@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { getProducts } from '../products';
-import { PRINT_DESIGNS } from '../prints';
+import { PRINT_DESIGNS, isVariantAvailable } from '../prints';
 import { PRODIGI_SKU_MAP } from '../print-cart';
+import { priceOfVariant } from '../print-pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
 import { mapCeramicProducts } from './mappers';
 
@@ -59,11 +60,31 @@ describe('catalog seed ↔ registry parity', () => {
     }
   });
 
+  it('emits only sellable, correctly-priced variants for published designs', () => {
+    const byId = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
+    const publishedIds = new Set(PRINT_DESIGNS.filter((d) => d.published).map((d) => d.id));
+    const publishedVariants = seed.variants.filter(
+      (v) => v.axes !== null && publishedIds.has(v.product_id),
+    );
+    expect(publishedVariants.length).toBeGreaterThan(0);
+    for (const v of publishedVariants) {
+      const design = byId.get(v.product_id)!;
+      // Matches the exact sellability rule checkout.ts / cart-lines.ts enforce.
+      expect(isVariantAvailable(design, v.axes!), v.variant_key).toBe(true);
+      // Prices are derived from print-pricing.ts and must stay in lockstep with it.
+      expect(v.price_pln, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'pln'));
+      expect(v.price_eur, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'eur'));
+      expect(v.price_gbp, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'gbp'));
+    }
+  });
+
   it('enumerates the expected variant count per design', () => {
+    const fap01 = PRINT_DESIGNS.find((d) => d.id === 'fap01')!;
+    const fap02 = PRINT_DESIGNS.find((d) => d.id === 'fap02')!;
     // fap01/fap03: 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21.
-    expect(enumeratePrintVariants(PRINT_DESIGNS[0])).toHaveLength(21); // fap01
+    expect(enumeratePrintVariants(fap01)).toHaveLength(21);
     // fap02: 2 sizes × (1 unframed + 2 colours, no mount) = 6.
-    expect(enumeratePrintVariants(PRINT_DESIGNS[1])).toHaveLength(6); // fap02
+    expect(enumeratePrintVariants(fap02)).toHaveLength(6);
   });
 
   it('marks exactly one primary image per product and preserves galleries', () => {

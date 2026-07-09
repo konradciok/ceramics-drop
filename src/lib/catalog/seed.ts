@@ -16,6 +16,7 @@ import { getProducts } from '../products';
 import { PRINT_DESIGNS } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { variantKey, PRODIGI_SKU_MAP } from '../print-cart';
+import { priceOfVariant } from '../print-pricing';
 import type { CatalogSeed } from './types';
 
 /**
@@ -26,13 +27,20 @@ import type { CatalogSeed } from './types';
  * design still yields its variant rows (flagged inactive).
  */
 export function enumeratePrintVariants(design: PrintDesign): PrintVariantSelection[] {
+  const excluded = new Set(design.unavailable ?? []);
   const out: PrintVariantSelection[] = [];
+  const add = (sel: PrintVariantSelection) => {
+    // Structural exclusions (design.unavailable) are published-independent, so a
+    // draft design still yields its variant rows minus the excluded keys —
+    // matching the sellability rules in isVariantAvailable (prints.ts).
+    if (!excluded.has(variantKey(sel))) out.push(sel);
+  };
   for (const size of design.sizes) {
-    out.push({ size, framed: false, mount: false, frameColour: 'none' });
+    add({ size, framed: false, mount: false, frameColour: 'none' });
     for (const frameColour of design.frameColours as PrintFrameColour[]) {
-      out.push({ size, framed: true, mount: false, frameColour });
+      add({ size, framed: true, mount: false, frameColour });
       if (design.mountAvailable) {
-        out.push({ size, framed: true, mount: true, frameColour });
+        add({ size, framed: true, mount: true, frameColour });
       }
     }
   }
@@ -121,9 +129,12 @@ function printRows(seed: CatalogSeed): void {
         variant_key: key,
         sku: mapped?.sku ?? null,
         axes: sel,
-        price_pln: null,
-        price_eur: null,
-        price_gbp: null,
+        // Derived from print-pricing.ts at seed time (major units). checkout still
+        // reads print-pricing.ts directly; the parity test asserts these stay in
+        // lockstep so the shadow copy can never silently drift.
+        price_pln: priceOfVariant(d, sel, 'pln'),
+        price_eur: priceOfVariant(d, sel, 'eur'),
+        price_gbp: priceOfVariant(d, sel, 'gbp'),
         is_default: i === 0, // cheapest sellable (unframed, smallest size)
         active: d.published,
         position: i,
