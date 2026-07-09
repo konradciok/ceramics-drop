@@ -1,4 +1,4 @@
-import { needsShipment } from '@/lib/shipx';
+import { needsShipment, LABEL_READY_STATUS } from '@/lib/shipx';
 import type { ProductRef } from './products';
 import { productRef } from './products';
 import { listOrders, getOrder, isPrintOnly, type AdminOrder, type OrderItem } from './data';
@@ -19,6 +19,15 @@ function isShipmentMethod(method: string | null | undefined): method is 'paczkom
 function meaningfulTransitStatus(status: string | null | undefined): boolean {
   const normalized = status?.trim().toLowerCase();
   return !!normalized && !INITIAL_SHIPMENT_STATUSES.has(normalized);
+}
+
+/** Shipment was created in ShipX but the offer was not bought — label not printable yet. */
+export function shipmentNeedsBuy(
+  order: Pick<AdminOrder, 'inpost_shipment_id' | 'delivery_status'>,
+): boolean {
+  if (!order.inpost_shipment_id) return false;
+  const status = order.delivery_status?.trim().toLowerCase();
+  return status !== LABEL_READY_STATUS;
 }
 
 export function computeFulfillmentStage(order: AdminOrder): FulfillmentStage {

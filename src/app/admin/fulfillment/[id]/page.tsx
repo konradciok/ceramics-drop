@@ -151,7 +151,12 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
 
           <section className="adm-panel">
             <h3>Akcje</h3>
-            <FulfillmentActions orderId={order.id} stage={order.stage} />
+            <FulfillmentActions
+              orderId={order.id}
+              stage={order.stage}
+              inpostShipmentId={order.inpost_shipment_id}
+              deliveryStatus={order.delivery_status}
+            />
           </section>
 
           <nav className="adm-fulfillment-nav">

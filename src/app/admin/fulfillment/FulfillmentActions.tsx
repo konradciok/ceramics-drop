@@ -2,22 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FulfillmentStage } from '@/lib/admin/fulfillment';
+import { shipmentNeedsBuy, type FulfillmentStage } from '@/lib/admin/fulfillment';
 
 type Props = {
   orderId: string;
   stage: FulfillmentStage;
+  inpostShipmentId: string | null;
+  deliveryStatus: string | null;
   compact?: boolean;
 };
 
-export function FulfillmentActions({ orderId, stage, compact = false }: Props) {
+export function FulfillmentActions({ orderId, stage, inpostShipmentId, deliveryStatus, compact = false }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const openLabel = () => window.open(`/api/admin/label?orderId=${orderId}`, '_blank', 'noopener');
+  const needsBuy = shipmentNeedsBuy({ inpost_shipment_id: inpostShipmentId, delivery_status: deliveryStatus });
 
-  async function createShipment() {
+  async function retryShipment() {
     setBusy(true);
     setMsg(null);
     try {
@@ -47,14 +50,20 @@ export function FulfillmentActions({ orderId, stage, compact = false }: Props) {
   return (
     <div className={compact ? 'adm-fulfillment-actions compact' : 'adm-fulfillment-actions'}>
       {stage === 'blocked' ? (
-        <button className="adm-btn" disabled={busy} onClick={createShipment}>
+        <button className="adm-btn" disabled={busy} onClick={retryShipment}>
           {busy ? 'Tworzę…' : 'Utwórz przesyłkę'}
         </button>
       ) : null}
       {stage === 'ready' || stage === 'in_transit' ? (
-        <button className="adm-btn" onClick={openLabel}>
-          Drukuj etykietę
-        </button>
+        needsBuy ? (
+          <button className="adm-btn" disabled={busy} onClick={retryShipment}>
+            {busy ? 'Kupuję…' : 'Ponów'}
+          </button>
+        ) : (
+          <button className="adm-btn" onClick={openLabel}>
+            Drukuj etykietę
+          </button>
+        )
       ) : null}
       {msg && <p className={`adm-action-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</p>}
     </div>

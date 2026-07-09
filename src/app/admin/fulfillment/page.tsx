@@ -115,7 +115,15 @@ export default async function FulfillmentPage({ searchParams }: { searchParams: 
                       <td data-label="Dostawa">{deliveryLine(order)}</td>
                       <td data-label="Paczka">{packingCell(order.delivery_method, order.items.map((it) => it.product_id))}</td>
                       <td data-label="Status"><span className={`adm-pill ${order.stage}`}>{STAGE_LABEL[order.stage]}</span></td>
-                      <td data-label="Akcja"><FulfillmentActions orderId={order.id} stage={order.stage} compact /></td>
+                      <td data-label="Akcja">
+                        <FulfillmentActions
+                          orderId={order.id}
+                          stage={order.stage}
+                          inpostShipmentId={order.inpost_shipment_id}
+                          deliveryStatus={order.delivery_status}
+                          compact
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

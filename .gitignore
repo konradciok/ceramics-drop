@@ -43,6 +43,7 @@ docs/logs-*.json
 # playwright
 /test-results/
 /playwright-report/
+/.playwright-mcp/
 /e2e/REPORT.md
 
 # typescript

@@ -3,6 +3,7 @@ import {
   computeFulfillmentStage,
   fulfillmentQueueIndex,
   orderFulfillmentQueue,
+  shipmentNeedsBuy,
   type FulfillmentOrder,
 } from './fulfillment';
 import type { AdminOrder } from './data';
@@ -76,6 +77,21 @@ describe('computeFulfillmentStage', () => {
       ],
     });
     expect(computeFulfillmentStage(mixed)).toBe('blocked');
+  });
+});
+
+describe('shipmentNeedsBuy', () => {
+  it('is false when there is no shipment', () => {
+    expect(shipmentNeedsBuy(order())).toBe(false);
+  });
+
+  it('is true when a shipment exists but is not confirmed', () => {
+    expect(shipmentNeedsBuy(order({ inpost_shipment_id: '42', delivery_status: 'created' }))).toBe(true);
+    expect(shipmentNeedsBuy(order({ inpost_shipment_id: '42', delivery_status: null }))).toBe(true);
+  });
+
+  it('is false once ShipX reports confirmed', () => {
+    expect(shipmentNeedsBuy(order({ inpost_shipment_id: '42', delivery_status: 'confirmed' }))).toBe(false);
   });
 });
 
