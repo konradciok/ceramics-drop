@@ -121,6 +121,7 @@ function pickOldestShipment(shipments: ShipxShipment[], orderId: string): ShipxS
 export async function createOrderShipment(
   paymentIntentId: string,
   deps: CreateShipmentDeps,
+  opts?: { adoptExisting?: boolean },
 ): Promise<void> {
   const order = await deps.loadOrder(paymentIntentId);
   if (!order) return;
@@ -160,7 +161,8 @@ export async function createOrderShipment(
   // already created in ShipX, not mint a second one that orphans the first.
   // A lookup failure is NOT swallowed — creating despite an unknown lookup
   // result could itself produce the duplicate this guards against.
-  const existing = await deps.inpost.findShipmentsByReference(order.id);
+  const adoptExisting = opts?.adoptExisting !== false;
+  const existing = adoptExisting ? await deps.inpost.findShipmentsByReference(order.id) : [];
   const shipment =
     existing.length > 0
       ? pickOldestShipment(existing, order.id)

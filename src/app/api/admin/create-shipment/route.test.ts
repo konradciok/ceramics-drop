@@ -13,11 +13,11 @@ vi.mock('@/lib/inpost', () => ({ getInPost: mocks.getInPost }));
 
 const ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
-function req(orderId = ORDER_ID) {
+function req(orderId = ORDER_ID, recreate = false) {
   return new Request('http://localhost/api/admin/create-shipment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orderId }),
+    body: JSON.stringify({ orderId, recreate }),
   }) as Parameters<typeof POST>[0];
 }
 
@@ -28,6 +28,10 @@ function supabaseForOrder(
   const maybeSingle = vi.fn().mockResolvedValue({ data: order, error: null });
   const eqOrders = vi.fn(() => ({ maybeSingle }));
   const selectOrders = vi.fn(() => ({ eq: eqOrders }));
+
+  const updateEq = vi.fn().mockResolvedValue({ error: null });
+  const update = vi.fn(() => ({ eq: updateEq }));
+
   const countResult =
     typeof ceramicCount === 'number'
       ? { count: ceramicCount, error: null }
@@ -35,10 +39,11 @@ function supabaseForOrder(
   const isNull = vi.fn().mockResolvedValue(countResult);
   const eqItems = vi.fn(() => ({ is: isNull }));
   const selectItems = vi.fn(() => ({ eq: eqItems }));
-  const from = vi.fn((table: string) =>
-    table === 'order_items' ? { select: selectItems } : { select: selectOrders },
-  );
-  return { from };
+  const from = vi.fn((table: string) => {
+    if (table === 'order_items') return { select: selectItems };
+    return { select: selectOrders, update };
+  });
+  return { from, update, updateEq };
 }
 
 function adminOrder(overrides: Record<string, unknown> = {}) {
@@ -75,6 +80,7 @@ describe('POST /api/admin/create-shipment', () => {
         saveDispatchOrderId: expect.any(Function),
         inpost: expect.any(Object),
       }),
+      undefined,
     );
   });
 
@@ -132,6 +138,40 @@ describe('POST /api/admin/create-shipment', () => {
 
     expect(res.status).toBe(500);
     expect(body).toEqual({ error: 'db down' });
+    expect(mocks.createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('recreates a shipment when recreate is true', async () => {
+    const sb = supabaseForOrder(adminOrder({ inpost_shipment_id: '42' }));
+    mocks.adminSupabase.mockReturnValue(sb);
+
+    const res = await POST(req(ORDER_ID, true));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ message: 'Nowa przesyłka utworzona.' });
+    expect(sb.update).toHaveBeenCalledWith({
+      inpost_shipment_id: null,
+      inpost_tracking_number: null,
+      inpost_dispatch_order_id: null,
+      delivery_status: null,
+      inpost_label_emailed_at: null,
+    });
+    expect(mocks.createOrderShipment).toHaveBeenCalledWith(
+      'pi_1',
+      expect.any(Object),
+      { adoptExisting: false },
+    );
+  });
+
+  it('returns 409 when recreate is requested without an existing shipment', async () => {
+    mocks.adminSupabase.mockReturnValue(supabaseForOrder(adminOrder()));
+
+    const res = await POST(req(ORDER_ID, true));
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body).toEqual({ error: 'Brak przesyłki do zastąpienia.' });
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
 

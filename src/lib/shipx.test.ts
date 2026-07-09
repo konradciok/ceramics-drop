@@ -247,8 +247,29 @@ describe('parseShipxWebhook', () => {
 });
 
 describe('pickBuyableOffer', () => {
-  it('returns selected_offer.id as a string when present', () => {
-    expect(pickBuyableOffer({ selected_offer: { id: 99 } })).toBe('99');
+  it('returns selected_offer.id as a string when present and buyable', () => {
+    expect(pickBuyableOffer({ selected_offer: { id: 99, status: 'selected' } })).toBe('99');
+  });
+
+  it('skips an expired selected_offer and falls through to available offers', () => {
+    expect(
+      pickBuyableOffer({
+        selected_offer: { id: 99, status: 'expired' },
+        offers: [
+          { id: 99, status: 'expired' },
+          { id: 2, status: 'available' },
+        ],
+      }),
+    ).toBe('2');
+  });
+
+  it('returns null when every offer is expired', () => {
+    expect(
+      pickBuyableOffer({
+        selected_offer: { id: 99, status: 'expired' },
+        offers: [{ id: 99, status: 'expired' }],
+      }),
+    ).toBeNull();
   });
 
   it('returns first available offer id when no selected_offer', () => {
@@ -282,7 +303,7 @@ describe('pickBuyableOffer', () => {
     expect(pickBuyableOffer({})).toBeNull();
   });
 
-  it('returns "0" for a numeric id of 0 (falsy but valid)', () => {
-    expect(pickBuyableOffer({ selected_offer: { id: 0 } })).toBe('0');
+  it('returns "0" for a numeric id of 0 when the offer is buyable', () => {
+    expect(pickBuyableOffer({ selected_offer: { id: 0, status: 'selected' } })).toBe('0');
   });
 });

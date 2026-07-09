@@ -160,6 +160,23 @@ describe('createOrderShipment', () => {
     expect(d.inpost.buyShipment).toHaveBeenCalledWith('42', '99');
   });
 
+  it('adoptExisting: false always creates a fresh shipment instead of adopting by reference', async () => {
+    const findShipmentsByReference = vi.fn().mockResolvedValue([{ id: 99, status: 'created', reference: order.id }]);
+    const base = deps();
+    const d = deps({
+      inpost: {
+        ...base.inpost,
+        findShipmentsByReference,
+      },
+    });
+
+    await createOrderShipment('pi_1', d, { adoptExisting: false });
+
+    expect(findShipmentsByReference).not.toHaveBeenCalled();
+    expect(d.inpost.createShipment).toHaveBeenCalledOnce();
+    expect(d.saveShipment).toHaveBeenCalledWith(order.id, expect.objectContaining({ shipmentId: '42' }));
+  });
+
   it('idempotent replay: retries buy when delivery_status is not confirmed', async () => {
     const d = deps({
       loadOrder: vi.fn().mockResolvedValue({

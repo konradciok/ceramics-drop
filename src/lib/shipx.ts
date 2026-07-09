@@ -132,21 +132,28 @@ export const DEFAULT_COURIER_PARCEL = {
 /** ShipX status at which the printable label becomes available. */
 export const LABEL_READY_STATUS = 'confirmed';
 
+/** Offer statuses that can still be passed to `buyShipment`. */
+const BUYABLE_OFFER_STATUSES = new Set(['available', 'selected']);
+
+function isBuyableOffer(offer: { id?: number | string; status?: string } | null | undefined): boolean {
+  if (offer?.id === undefined || offer.id === null) return false;
+  const status = offer.status?.trim().toLowerCase();
+  return !!status && BUYABLE_OFFER_STATUSES.has(status);
+}
+
 /**
  * Pick the offer id to pass to `buyShipment`. Returns the id as a string, or
- * null when no buyable offer exists. Priority: `selected_offer` first, then
- * the first offer with status `'available'` or `'selected'`.
+ * null when no buyable offer exists. Priority: `selected_offer` first (when
+ * still buyable), then the first offer with status `'available'` or `'selected'`.
  */
 export function pickBuyableOffer(shipment: {
   offers?: Array<{ id: number | string; status?: string; service?: { id?: string } }>;
-  selected_offer?: { id: number | string } | null;
+  selected_offer?: { id: number | string; status?: string } | null;
 }): string | null {
-  if (shipment.selected_offer?.id !== undefined && shipment.selected_offer.id !== null) {
-    return String(shipment.selected_offer.id);
+  if (isBuyableOffer(shipment.selected_offer)) {
+    return String(shipment.selected_offer!.id);
   }
-  const found = (shipment.offers ?? []).find(
-    (o) => o.status === 'available' || o.status === 'selected',
-  );
+  const found = (shipment.offers ?? []).find((o) => isBuyableOffer(o));
   return found !== undefined ? String(found.id) : null;
 }
 
