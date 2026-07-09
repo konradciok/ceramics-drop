@@ -23,9 +23,21 @@ describe('runAdminAction', () => {
     expect((await runAdminAction('/p', { fetchImpl })).text).toBe('Gotowe.');
   });
 
-  it('surfaces the API error reason on a non-2xx', async () => {
+  it('maps a known error code to a friendly PL label', async () => {
     const fetchImpl = (async () => jsonResponse(409, { error: 'order_conflict' })) as unknown as typeof fetch;
-    expect(await runAdminAction('/p', { fetchImpl })).toEqual({ ok: false, text: 'order_conflict' });
+    const out = await runAdminAction('/p', { fetchImpl });
+    expect(out.ok).toBe(false);
+    expect(out.text).toMatch(/odśwież stronę/);
+  });
+
+  it('passes an unknown error code through verbatim', async () => {
+    const fetchImpl = (async () => jsonResponse(400, { error: 'weird_reason' })) as unknown as typeof fetch;
+    expect(await runAdminAction('/p', { fetchImpl })).toEqual({ ok: false, text: 'weird_reason' });
+  });
+
+  it('honours a per-call errorMap override', async () => {
+    const fetchImpl = (async () => jsonResponse(400, { error: 'boom' })) as unknown as typeof fetch;
+    expect((await runAdminAction('/p', { fetchImpl, errorMap: { boom: 'Bum!' } })).text).toBe('Bum!');
   });
 
   it('falls back to HTTP <status> when the error body has no reason', async () => {

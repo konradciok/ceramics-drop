@@ -26,7 +26,9 @@ export function OrderActions(props: Props) {
   const onConfirm = () => {
     if (!confirming) return;
     const path = confirming === 'refund' ? '/api/admin/refund' : '/api/admin/release-reservation';
-    void run(confirming, path, { body }).then((ok) => {
+    // Keep the success toast (a refund returns "…(re_…)") so the id survives for a
+    // Stripe Dashboard cross-check instead of auto-dismissing.
+    void run(confirming, path, { body, stickyToast: true }).then((ok) => {
       if (ok) setConfirming(null);
     });
   };

@@ -2,31 +2,58 @@
 
 /* Lightweight toast stack for the admin surface. Mounted once in the admin
    layout; useAdminAction() pushes an entry on every action outcome so operators
-   get consistent "saved / failed" feedback instead of per-component inline text. */
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+   get consistent "saved / failed" feedback. Errors (and payment mutations that
+   carry an id worth keeping) stick until dismissed; routine successes auto-hide. */
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 interface ToastItem {
   id: number;
   ok: boolean;
   text: string;
+  sticky: boolean;
 }
 
 interface ToastApi {
-  notify: (ok: boolean, text: string) => void;
+  notify: (ok: boolean, text: string, opts?: { sticky?: boolean }) => void;
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
 
-const TTL_MS = 4000;
+const TTL_MS = 5000;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
+  const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  const notify = useCallback((ok: boolean, text: string) => {
-    const id = (idRef.current += 1);
-    setItems((prev) => [...prev, { id, ok, text }]);
-    setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), TTL_MS);
+  const dismiss = useCallback((id: number) => {
+    const handle = timers.current.get(id);
+    if (handle) {
+      clearTimeout(handle);
+      timers.current.delete(id);
+    }
+    setItems((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const notify = useCallback<ToastApi['notify']>(
+    (ok, text, opts) => {
+      // Failures stay until dismissed (need attention); successes auto-hide unless
+      // the caller asks to keep them (e.g. a refund id).
+      const sticky = opts?.sticky ?? !ok;
+      const id = (idRef.current += 1);
+      setItems((prev) => [...prev, { id, ok, text, sticky }]);
+      if (!sticky) timers.current.set(id, setTimeout(() => dismiss(id), TTL_MS));
+    },
+    [dismiss],
+  );
+
+  // Clear any pending timers on unmount.
+  useEffect(() => {
+    const map = timers.current;
+    return () => {
+      for (const handle of map.values()) clearTimeout(handle);
+      map.clear();
+    };
   }, []);
 
   return (
@@ -35,7 +62,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div className="adm-toasts" aria-live="polite" aria-atomic="false">
         {items.map((t) => (
           <div key={t.id} role="status" className={`adm-toast ${t.ok ? 'ok' : 'err'}`}>
-            {t.text}
+            <span>{t.text}</span>
+            <button
+              type="button"
+              className="adm-toast-close"
+              aria-label="Zamknij"
+              onClick={() => dismiss(t.id)}
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
