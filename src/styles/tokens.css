@@ -11,6 +11,8 @@
   --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2;
   --c-espresso-muted:rgba(58,40,24,.74);
   --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);
+  --c-success:#2f6b3f; --c-danger:#a23b2e;
+  --c-success-border:rgba(47,107,63,.3); --c-danger-border:rgba(162,59,46,.35);
   --f-display:'Jost','Helvetica Neue',Arial,sans-serif;
   --f-cond:'Jost','Helvetica Neue',Arial,sans-serif;
   --f-body:'Jost','Helvetica Neue',Arial,sans-serif;
