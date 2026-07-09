@@ -28,6 +28,7 @@ test.describe('fine-art print configurator @ci', () => {
 
     await page.getByTestId('opt-size-70x100').click();
     await expect(page.getByTestId('opt-size-30x40')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByTestId('opt-size-70x100')).toHaveAttribute('aria-checked', 'true');
     await page.getByTestId('opt-framed-true').click();
     await page.getByTestId('opt-colour-natural').click();
     await page.getByTestId('opt-mount-true').click();
