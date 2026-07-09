@@ -356,7 +356,7 @@
 
 /* Confirmation modal for destructive actions. */
 .adm-modal-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(58, 40, 24, .35); display: flex; align-items: center; justify-content: center; padding: 16px; }
-.adm-modal { background: var(--c-cream); border: 1px solid var(--c-line-soft); border-radius: var(--r-soft, 8px); padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 8px 32px rgba(58, 40, 24, .25); }
+.adm-modal { background: var(--c-cream); border: 1px solid var(--c-line-soft); border-radius: var(--r-sharp); padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 8px 32px rgba(58, 40, 24, .25); }
 .adm-modal-title { margin: 0 0 8px; font-size: 15px; }
 .adm-modal-body { font-size: 14px; color: var(--c-espresso); }
 .adm-modal-actions { margin-top: 16px; }

@@ -4,7 +4,16 @@
    layout; useAdminAction() pushes an entry on every action outcome so operators
    get consistent "saved / failed" feedback. Errors (and payment mutations that
    carry an id worth keeping) stick until dismissed; routine successes auto-hide. */
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 interface ToastItem {
   id: number;
@@ -21,7 +30,9 @@ const ToastContext = createContext<ToastApi | null>(null);
 
 const TTL_MS = 5000;
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+/** Provides the toast context and renders the toast stack. Mount once, high in
+    the admin tree (the admin layout). */
+export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
@@ -56,8 +67,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Stable value so useToast() consumers (e.g. useAdminAction across the admin)
+  // don't re-render every time a toast appears/disappears.
+  const value = useMemo(() => ({ notify }), [notify]);
+
   return (
-    <ToastContext.Provider value={{ notify }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="adm-toasts" aria-live="polite" aria-atomic="false">
         {items.map((t) => (
@@ -78,6 +93,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Access the toast API. Throws if used outside a {@link ToastProvider}. */
 export function useToast(): ToastApi {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within a ToastProvider');

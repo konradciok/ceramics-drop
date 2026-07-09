@@ -5,10 +5,11 @@
    Accessible: labelled dialog, initial focus on confirm, Tab trap, Escape to
    cancel (both gated while an action is in flight so a mid-request dismiss can't
    leave the operator thinking it was cancelled). */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 const TITLE_ID = 'adm-confirm-title';
 
+/** Modal that asks the operator to confirm a destructive admin action. */
 export function ConfirmModal({
   open,
   title,
@@ -22,7 +23,7 @@ export function ConfirmModal({
 }: {
   open: boolean;
   title?: string;
-  message: React.ReactNode;
+  message: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
@@ -47,7 +48,13 @@ export function ConfirmModal({
       }
       if (e.key === 'Tab') {
         const focusables = dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])');
-        if (!focusables || focusables.length === 0) return;
+        if (!focusables || focusables.length === 0) {
+          // While busy both buttons are disabled — keep focus on the dialog itself
+          // rather than letting Tab escape to the page behind the backdrop.
+          e.preventDefault();
+          dialogRef.current?.focus();
+          return;
+        }
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
         if (e.shiftKey && document.activeElement === first) {
@@ -76,6 +83,7 @@ export function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={TITLE_ID}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id={TITLE_ID} className={title ? 'adm-modal-title' : 'adm-sr-only'}>

@@ -51,4 +51,13 @@ describe('runAdminAction', () => {
     }) as unknown as typeof fetch;
     expect(await runAdminAction('/p', { fetchImpl })).toEqual({ ok: false, text: 'offline' });
   });
+
+  it('maps an aborted request (timeout) to a friendly message', async () => {
+    const fetchImpl = (async () => {
+      throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+    }) as unknown as typeof fetch;
+    const out = await runAdminAction('/p', { fetchImpl });
+    expect(out.ok).toBe(false);
+    expect(out.text).toMatch(/czas oczekiwania/);
+  });
 });
