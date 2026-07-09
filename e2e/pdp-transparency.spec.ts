@@ -18,7 +18,7 @@ test('@ci PDP delivery block: estimated total, options, trust — PLN', async ({
   await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toBeVisible();
 });
 
-test('@ci PDP delivery block: estimated total and options — EUR', async ({ page }) => {
+test('@ci PDP delivery block: estimated total, options, trust — EUR', async ({ page }) => {
   // /en defaults to EUR (no CF-IPCountry in test). 25 + 5 = 30.
   await page.goto('/en/kubki/k01');
   await expect(page.getByTestId('pdp-est-total')).toHaveText(/^30\s*€$/);
@@ -30,7 +30,7 @@ test('@ci PDP delivery block: estimated total and options — EUR', async ({ pag
   await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toBeVisible();
 });
 
-test('@ci PDP delivery block: estimated total and options — GBP', async ({ page }) => {
+test('@ci PDP delivery block: estimated total, options, trust — GBP', async ({ page }) => {
   // /en + currency_pref=gbp → GBP. 22 + 5 = 27. gbp() formats as "£27".
   await page.goto('/en/kubki/k01');
   // The middleware seeds currency_pref=eur as a Secure cookie on first visit
