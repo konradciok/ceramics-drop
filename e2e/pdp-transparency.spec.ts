@@ -23,9 +23,11 @@ test('@ci PDP delivery block: estimated total and options — EUR', async ({ pag
   await page.goto('/en/kubki/k01');
   await expect(page.getByTestId('pdp-est-total')).toHaveText(/^30\s*€$/);
   const opts = page.getByTestId('pdp-delivery').locator('.pdp-delivery-opts li');
+  await expect(opts).toHaveCount(3);
   await expect(opts.nth(0).locator('span').nth(1)).toHaveText('Free'); // pickup (cart.free, en)
   await expect(opts.nth(1).locator('span').nth(1)).toHaveText(/^5\s*€$/); // paczkomat
   await expect(opts.nth(2).locator('span').nth(1)).toHaveText(/^10\s*€$/); // kurier
+  await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toBeVisible();
 });
 
 test('@ci PDP delivery block: estimated total and options — GBP', async ({ page }) => {
@@ -40,6 +42,9 @@ test('@ci PDP delivery block: estimated total and options — GBP', async ({ pag
   await page.reload();
   await expect(page.getByTestId('pdp-est-total')).toHaveText(/^£\s*27$/);
   const opts = page.getByTestId('pdp-delivery').locator('.pdp-delivery-opts li');
+  await expect(opts).toHaveCount(3);
+  await expect(opts.nth(0).locator('span').nth(1)).toHaveText('Free'); // pickup (cart.free, en)
   await expect(opts.nth(1).locator('span').nth(1)).toHaveText(/^£\s*5$/); // paczkomat
   await expect(opts.nth(2).locator('span').nth(1)).toHaveText(/^£\s*12$/); // kurier
+  await expect(page.getByTestId('pdp-delivery').locator('.pdp-delivery-trust')).toBeVisible();
 });
