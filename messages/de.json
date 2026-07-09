@@ -206,6 +206,11 @@
     "approx": "ca.",
     "permalink": "Produktseite ansehen →"
   },
+  "pdp": {
+    "estimatedFrom": "Geschätzt ab",
+    "trust": "Der angezeigte Preis ist der Endpreis — keine versteckten Kosten an der Kasse.",
+    "trustGbp": "Der angezeigte Preis ist der Endpreis an der Kasse. Bei Lieferung ins Vereinigte Königreich können Importgebühren anfallen."
+  },
   "ceramic": {
     "mixedCart": "Keramik wird getrennt von Prints bestellt — schließe zuerst deine Print-Bestellung ab oder leere den Warenkorb."
   },

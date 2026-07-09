@@ -7,6 +7,7 @@ import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
+import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
@@ -62,6 +63,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                 {name} <em>Nº {product.num}</em>
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
+              {!product.sold && <PdpDelivery product={product} currency={currency} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf, priceOfCurrency } from './pricing';
+import { validateCart } from './checkout';
+import { PRICE_PLN, SHIPPING_PLN, toGrosze, orderAmountGrosze, shippingGrosze, priceOf, priceOfCurrency, shippingOfCurrency } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, toEuroCents, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import { PRICE_GBP, SHIPPING_GBP, toGBPPence, shippingGBPPence, orderAmountGBPPence } from './pricing';
 import type { CategorySlug } from './types';
@@ -171,6 +172,68 @@ describe('EUR pricing helpers', () => {
 
   it('orderAmountEuroCents handles odbior (free)', () => {
     expect(orderAmountEuroCents([5000], 'odbior')).toBe(5000); // 5000 + 0
+  });
+});
+
+describe('shippingOfCurrency', () => {
+  it('returns the per-currency flat shipping in major units', () => {
+    expect(shippingOfCurrency('pln', 'paczkomat')).toBe(20);
+    expect(shippingOfCurrency('eur', 'kurier')).toBe(10);
+    expect(shippingOfCurrency('gbp', 'kurier')).toBe(12);
+    expect(shippingOfCurrency('pln', 'odbior')).toBe(0);
+  });
+  // Intentional asymmetry: priceOfCurrency THROWS for usd/cad (no price table),
+  // so the item price is computed before shipping is ever read — usd/cad never
+  // reach shippingOfCurrency in a real flow. Its EUR default is only exercised
+  // for the real switchable currencies. This test documents that, it isn't a
+  // claim that usd/cad shipping is "supported".
+  it('routes non-switchable currencies through the EUR default (unreachable in practice)', () => {
+    expect(shippingOfCurrency('usd', 'paczkomat')).toBe(shippingOfCurrency('eur', 'paczkomat'));
+  });
+});
+
+/** PDP estimated total (item + paczkomat) must match checkout PaymentIntent amount. */
+describe('PDP estimate ↔ checkout parity (paczkomat)', () => {
+  const product = { category: 'kubki' as CategorySlug, price: PRICE_PLN.kubki };
+  const method = 'paczkomat' as const;
+
+  it('PLN minor units match orderAmountGrosze', () => {
+    const cart = validateCart(['k01'], 'pln');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountGrosze(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'pln') + shippingOfCurrency('pln', method);
+    expect(checkoutMinor).toBe(toGrosze(pdpMajor));
+  });
+
+  it('EUR minor units match orderAmountEuroCents', () => {
+    const cart = validateCart(['k01'], 'eur');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountEuroCents(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'eur') + shippingOfCurrency('eur', method);
+    expect(checkoutMinor).toBe(toEuroCents(pdpMajor));
+  });
+
+  it('GBP minor units match orderAmountGBPPence', () => {
+    const cart = validateCart(['k01'], 'gbp');
+    expect(cart.ok).toBe(true);
+    if (!cart.ok) return;
+
+    const checkoutMinor = orderAmountGBPPence(
+      cart.items.map((i) => i.unit_price),
+      method,
+    );
+    const pdpMajor = priceOfCurrency(product, 'gbp') + shippingOfCurrency('gbp', method);
+    expect(checkoutMinor).toBe(toGBPPence(pdpMajor));
   });
 });
 

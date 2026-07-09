@@ -206,6 +206,11 @@
     "approx": "ok.",
     "permalink": "Strona tej pracy →"
   },
+  "pdp": {
+    "estimatedFrom": "Szacunkowo od",
+    "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
+    "trustGbp": "Cena widoczna to cena przy kasie. Zamówienia do UK mogą wiązać się z opłatami importowymi przy dostawie."
+  },
   "ceramic": {
     "mixedCart": "Ceramika zamawiana jest osobno od printów — najpierw dokończ lub opróżnij koszyk z printami."
   },

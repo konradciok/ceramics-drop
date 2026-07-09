@@ -30,7 +30,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { SHIPPING_PLN, SHIPPING_EUR, SHIPPING_GBP, priceOfCurrency, type DeliveryMethod } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -239,8 +239,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     l.kind === 'print'
       ? priceOfVariant(l.design, l.sel, printCurrency)
       : priceOfCurrency(l.product, currency);
-  const shippingOf = (method: ShipId) =>
-    currency === 'gbp' ? SHIPPING_GBP[method] : currency === 'pln' ? SHIPPING_PLN[method] : SHIPPING_EUR[method];
+  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
   // ceramic carts keep the InPost price list.

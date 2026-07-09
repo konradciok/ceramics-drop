@@ -187,6 +187,25 @@ export function priceOfCurrency(
   }
 }
 
+/**
+ * Display shipping price (major units) for a delivery method in a display
+ * currency. usd/cad hit the EUR default, but — unlike priceOfCurrency, which
+ * THROWS for usd/cad — that path is never reached in practice: the item price
+ * (priceOfCurrency) is computed first and throws, so no usd/cad order gets as
+ * far as reading shipping. The asymmetry is deliberate and safe.
+ */
+export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): number {
+  switch (currency) {
+    case 'pln':
+      return SHIPPING_PLN[method];
+    case 'gbp':
+      return SHIPPING_GBP[method];
+    case 'eur':
+    default:
+      return SHIPPING_EUR[method];
+  }
+}
+
 /** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
 export function toEuroCents(euros: number): number {
   return Math.round(euros * 100);

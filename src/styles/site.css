@@ -1221,3 +1221,11 @@ ul { list-style:none; padding:0; margin:0; }
     content-visibility: visible;
   }
 }
+
+/* ─── PDP delivery transparency (Spec C-core) ─────────────────── */
+.pdp-delivery { margin: 20px 0; padding: 16px 0; border-top: 1px solid var(--c-line-soft); }
+.pdp-delivery-est { display: flex; justify-content: space-between; align-items: baseline; font-size: 17px; }
+.pdp-delivery-est .v { font-weight: 500; }
+.pdp-delivery-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
+.pdp-delivery-opts li { display: flex; justify-content: space-between; font-size: 14px; opacity: .8; }
+.pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }

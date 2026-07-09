@@ -206,6 +206,11 @@
     "approx": "aprox.",
     "permalink": "Ver esta pieza →"
   },
+  "pdp": {
+    "estimatedFrom": "Estimado desde",
+    "trust": "El precio que ves es el precio que pagas — sin cargos ocultos al finalizar.",
+    "trustGbp": "El precio mostrado es lo que pagas al finalizar. Los pedidos al Reino Unido pueden tener cargos de importación en la entrega."
+  },
   "ceramic": {
     "mixedCart": "La cerámica se pide por separado de las láminas — primero finaliza o vacía tu carrito de láminas."
   },
