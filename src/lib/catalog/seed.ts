@@ -121,7 +121,13 @@ function printRows(seed: CatalogSeed): void {
       note_index: d.noteIndex,
     });
 
-    enumeratePrintVariants(d).forEach((sel, i) => {
+    const sels = enumeratePrintVariants(d);
+    // Default = the cheapest sellable variant (matches fromPriceOf semantics),
+    // rather than the first enumerated one — robust even if `design.unavailable`
+    // ever excludes the smallest unframed variant.
+    const prices = sels.map((sel) => priceOfVariant(d, sel, 'pln'));
+    const defaultIdx = prices.reduce((best, p, i) => (p < prices[best] ? i : best), 0);
+    sels.forEach((sel, i) => {
       const key = variantKey(sel);
       const mapped = PRODIGI_SKU_MAP[key];
       seed.variants.push({
@@ -132,10 +138,10 @@ function printRows(seed: CatalogSeed): void {
         // Derived from print-pricing.ts at seed time (major units). checkout still
         // reads print-pricing.ts directly; the parity test asserts these stay in
         // lockstep so the shadow copy can never silently drift.
-        price_pln: priceOfVariant(d, sel, 'pln'),
+        price_pln: prices[i],
         price_eur: priceOfVariant(d, sel, 'eur'),
         price_gbp: priceOfVariant(d, sel, 'gbp'),
-        is_default: i === 0, // cheapest sellable (unframed, smallest size)
+        is_default: i === defaultIdx,
         active: d.published,
         position: i,
         track_inventory: false, // POD — no held stock

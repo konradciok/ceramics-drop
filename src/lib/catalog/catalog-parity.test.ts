@@ -49,6 +49,16 @@ describe('catalog seed ↔ registry parity', () => {
     }
   });
 
+  it('gives every product exactly one default variant (one-default index)', () => {
+    const defaultsByProduct = new Map<string, number>();
+    for (const v of seed.variants) {
+      if (v.is_default) defaultsByProduct.set(v.product_id, (defaultsByProduct.get(v.product_id) ?? 0) + 1);
+    }
+    for (const p of seed.products) {
+      expect(defaultsByProduct.get(p.id), p.id).toBe(1);
+    }
+  });
+
   it('maps every print variant to a known Prodigi SKU', () => {
     const printVariants = seed.variants.filter((v) => v.axes !== null);
     expect(printVariants.length).toBeGreaterThan(0);
