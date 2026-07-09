@@ -5,7 +5,7 @@ import { CollectionScreen } from '@/components/shop/CollectionScreen';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { collectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
-import { getSoldIds } from '@/lib/inventory';
+import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { CATEGORIES } from '@/lib/products';
 import { assertCategoryPublic } from '@/lib/category-guard';
 import type { Locale } from '@/i18n/routing';
@@ -36,13 +36,14 @@ export default async function Page({ params }: Props) {
   const { locale, slug } = await params;
   if (!(slug in CATEGORIES)) notFound();
   setRequestLocale(locale);
-  const [t, soldIds] = await Promise.all([
+  const [t, soldIds, showroomIds] = await Promise.all([
     getTranslations({ locale }),
     getSoldIds().catch(() => [] as string[]),
+    getShowroomIds().catch(() => [] as string[]),
   ]);
   return (
     <main>
-      <JsonLd data={collectionSchema({ slug: slug as CategorySlug, locale: locale as Locale, t, soldIds })} />
+      <JsonLd data={collectionSchema({ slug: slug as CategorySlug, locale: locale as Locale, t, soldIds, showroomIds })} />
       <CollectionScreen slug={slug as CategorySlug} />
     </main>
   );

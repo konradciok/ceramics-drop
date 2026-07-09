@@ -210,7 +210,10 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
 
     fetch('/api/inventory')
       .then((r) => r.json())
-      .then(({ sold }: { sold: string[] }) => sold.forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
+      .then(({ sold, showroom = [] }: { sold: string[]; showroom?: string[] }) =>
+        // Prune anything no longer purchasable — sold pieces and showroom-retired
+        // pieces alike — exactly as the server reserve_pieces guard would reject.
+        [...sold, ...showroom].forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
       .catch(() => {});
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps

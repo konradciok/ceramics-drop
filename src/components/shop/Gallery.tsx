@@ -26,8 +26,10 @@ export function Gallery({ products, bento = false }: Props) {
   const { code: analyticsCurrency } = currencyFormatter(currency);
   // Memoised so the array reference is stable across renders (only changes when
   // the `products` prop changes), which lets us use `available` directly in
-  // useEffect deps without triggering the effect on every render.
-  const available = useMemo(() => products.filter((p) => !p.sold), [products]);
+  // useEffect deps without triggering the effect on every render. Showroom pieces
+  // are excluded — they never open the lightbox and aren't purchasable, so they
+  // must stay out of the lightbox/analytics index space.
+  const available = useMemo(() => products.filter((p) => !p.sold && !p.showroom), [products]);
   const t = useTranslations();
   const mounted = useMounted();
   const storedStatus = useFilter((s) => s.status);

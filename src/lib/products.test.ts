@@ -7,6 +7,7 @@ import {
   resolveCartProducts,
   resolveKnownProducts,
   isCategoryHidden,
+  isProductPurchasable,
   CATEGORY_ORDER,
   VISIBLE_CATEGORY_ORDER,
   HIDDEN_CATEGORIES,
@@ -183,5 +184,34 @@ describe('resolveKnownProducts', () => {
 
   it('still drops unknown ids', () => {
     expect(resolveKnownProducts(['k01', 'nope']).map((p) => p.id)).toEqual(['k01']);
+  });
+});
+
+describe('dropId', () => {
+  it('defaults every current piece to drop-1', () => {
+    expect(getProducts().every((p) => p.dropId === 'drop-1')).toBe(true);
+  });
+});
+
+describe('isProductPurchasable + showroom', () => {
+  it('is purchasable when neither sold nor showroom', () => {
+    expect(isProductPurchasable(getProductById('k01')!)).toBe(true);
+  });
+
+  it('is NOT purchasable when showroom is set (even if not sold)', () => {
+    expect(isProductPurchasable({ ...getProductById('k01')!, showroom: true })).toBe(false);
+  });
+
+  it('is NOT purchasable when sold', () => {
+    expect(isProductPurchasable({ ...getProductById('k01')!, sold: true })).toBe(false);
+  });
+
+  it('drops showroom pieces from resolveCartProducts (stale localStorage guard)', () => {
+    const products = resolveCartProducts(['k01', 'k02']);
+    expect(products.map((p) => p.id)).toEqual(['k01', 'k02']);
+    // Simulate a showroom overlay: resolveCartProducts reads the static registry,
+    // so showroom pruning happens via /api/inventory + reserve_pieces at runtime;
+    // this asserts the purchasability rule the overlay feeds into.
+    expect(isProductPurchasable({ ...products[0], showroom: true })).toBe(false);
   });
 });

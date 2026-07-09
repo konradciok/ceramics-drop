@@ -97,6 +97,8 @@ export type Piece = {
   status: PieceStatus;
   reserved_until: string | null;
   order_id: string | null;
+  showroom: boolean;
+  showroom_entered_at: string | null;
   /** reserved but the hold has lapsed (stuck — candidate for release). */
   reservedExpired: boolean;
 };
@@ -107,7 +109,7 @@ export async function listInventory(): Promise<Piece[]> {
   const supabase = adminSupabase();
   const { data, error } = await supabase
     .from('piece_state')
-    .select('product_id, status, reserved_until, order_id')
+    .select('product_id, status, reserved_until, order_id, showroom, showroom_entered_at')
     .order('status', { ascending: true })
     .order('product_id', { ascending: true });
   if (error) throw error;
@@ -116,8 +118,49 @@ export async function listInventory(): Promise<Piece[]> {
   const now = Date.now();
   return ((data as RawPiece[] | null) ?? []).map((p) => ({
     ...p,
+    showroom: p.showroom ?? false,
     reservedExpired: p.status === 'reserved' && !!p.reserved_until && new Date(p.reserved_until).getTime() < now,
   }));
+}
+
+// ── Drops ─────────────────────────────────────────────────────────────────────
+export type DropStatus = 'active' | 'ended';
+export type Drop = {
+  id: string;
+  label: string;
+  status: DropStatus;
+  started_at: string | null;
+  ended_at: string | null;
+};
+
+export async function listDrops(): Promise<Drop[]> {
+  const supabase = adminSupabase();
+  const { data, error } = await supabase
+    .from('drops')
+    .select('id, label, status, started_at, ended_at')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data as Drop[] | null) ?? [];
+}
+
+// ── Showroom interest ─────────────────────────────────────────────────────────
+export type Interest = {
+  product_id: string;
+  email: string;
+  message: string | null;
+  consent_marketing: boolean;
+  locale: string;
+  created_at: string;
+};
+
+export async function listInterest(): Promise<Interest[]> {
+  const supabase = adminSupabase();
+  const { data, error } = await supabase
+    .from('product_interest')
+    .select('product_id, email, message, consent_marketing, locale, created_at')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as Interest[] | null) ?? [];
 }
 
 export const NO_EMAIL = '(brak e-maila)';

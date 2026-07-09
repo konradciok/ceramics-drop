@@ -31,11 +31,13 @@
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
     "sklep": "Alle Stücke",
+    "showroom": "Showroom",
     "gallery": "Galerie",
     "fineArtPrints": "Kunstdrucke"
   },
   "nav": {
     "sklep": "Shop",
+    "showroom": "Showroom",
     "gallery": "Galerie",
     "kubki": "Tassen",
     "wazony": "Kleine Vasen",
@@ -93,7 +95,23 @@
     "seeAll": "Alle ansehen"
   },
   "gallery": {
-    "sold": "Hat ein Zuhause gefunden"
+    "sold": "Hat ein Zuhause gefunden",
+    "showroom": "Showroom"
+  },
+  "showroom": {
+    "eyebrow": "Retrospektive",
+    "title": "Showroom — Stücke <em>aus früheren Drops.</em>",
+    "lead": "Diese Stücke sind nicht mehr im Verkauf. Sieh sie dir an und sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest.",
+    "empty": "Der Showroom ist derzeit leer.",
+    "pdpCopy": "Dieses Stück war Teil eines früheren Keramik-Drops und ist nicht mehr verfügbar. Du kannst es als Inspiration speichern und uns sagen, ob du ähnliche Stücke in einem künftigen Drop sehen möchtest.",
+    "interestCta": "Ähnliches Stück anfragen",
+    "interestThanks": "Danke — wir melden uns, wenn etwas Ähnliches erscheint.",
+    "interestError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "emailLabel": "E-Mail",
+    "messageLabel": "Nachricht (optional)",
+    "consentLabel": "Ich möchte über künftige Stücke und Drops informiert werden.",
+    "submit": "Senden",
+    "submitting": "Senden…"
   },
   "galleryPage": {
     "eyebrow": "Redaktionelle Galerie",
@@ -775,6 +793,7 @@
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig. Sechs einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat. Zehn einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "sklep": "Anna Cioks vollständige Kollektion: 125 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig.",
+      "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest.",
       "fineArtPrints": "Fine-Art-Drucke auf 200 g/m²-Papier — gerahmt oder ungerahmt."
     }
   },

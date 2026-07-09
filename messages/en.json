@@ -31,11 +31,13 @@
     "regulamin": "Terms",
     "polityka": "Privacy policy",
     "sklep": "All pieces",
+    "showroom": "Showroom",
     "gallery": "Gallery",
     "fineArtPrints": "Fine Art Prints"
   },
   "nav": {
     "sklep": "Shop",
+    "showroom": "Showroom",
     "gallery": "Gallery",
     "kubki": "Mugs",
     "wazony": "Small vases",
@@ -93,7 +95,23 @@
     "seeAll": "See all"
   },
   "gallery": {
-    "sold": "Found a home"
+    "sold": "Found a home",
+    "showroom": "Showroom"
+  },
+  "showroom": {
+    "eyebrow": "Retrospective",
+    "title": "Showroom — pieces <em>from previous drops.</em>",
+    "lead": "These pieces are no longer for sale. Browse them and let us know if you'd like a similar piece in a future drop.",
+    "empty": "The showroom is empty for now.",
+    "pdpCopy": "This piece was part of a previous ceramic drop and is no longer available. You can save it as inspiration and let us know if you'd like to see similar pieces in a future drop.",
+    "interestCta": "Request a similar piece",
+    "interestThanks": "Thank you — we'll be in touch when something similar appears.",
+    "interestError": "Something went wrong. Please try again.",
+    "emailLabel": "Email",
+    "messageLabel": "Message (optional)",
+    "consentLabel": "I'd like to hear about future pieces and drops.",
+    "submit": "Send",
+    "submitting": "Sending…"
   },
   "galleryPage": {
     "eyebrow": "Editorial gallery",
@@ -775,6 +793,7 @@
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
       "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
+      "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop.",
       "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
     }
   },

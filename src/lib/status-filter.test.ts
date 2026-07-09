@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { filterByStatus, STATUS_FILTERS } from './status-filter';
 import type { Product } from '@/lib/types';
 
-const mk = (id: string, sold: boolean): Product => ({
+const mk = (id: string, sold: boolean, showroom = false): Product => ({
   id,
   category: 'kubki',
   num: '01',
@@ -10,6 +10,8 @@ const mk = (id: string, sold: boolean): Product => ({
   price: 95,
   measure: '10 cm',
   sold,
+  showroom,
+  dropId: 'drop-1',
   noteIndex: 0,
 });
 
@@ -26,6 +28,11 @@ describe('filterByStatus', () => {
 
   it('sold → only sold pieces', () => {
     expect(filterByStatus(products, 'sold').map((p) => p.id)).toEqual(['k02']);
+  });
+
+  it('available → excludes showroom pieces (visible but not purchasable)', () => {
+    const withShowroom = [mk('k01', false), mk('k02', false, true), mk('k03', false)];
+    expect(filterByStatus(withShowroom, 'available').map((p) => p.id)).toEqual(['k01', 'k03']);
   });
 
   it('available → empty when everything is sold', () => {

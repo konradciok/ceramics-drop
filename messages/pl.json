@@ -31,11 +31,13 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "sklep": "Wszystkie prace",
+    "showroom": "Showroom",
     "gallery": "Galeria",
     "fineArtPrints": "Grafiki artystyczne"
   },
   "nav": {
     "sklep": "Sklep",
+    "showroom": "Showroom",
     "gallery": "Galeria",
     "kubki": "Kubki",
     "wazony": "Małe wazony",
@@ -93,7 +95,23 @@
     "seeAll": "Zobacz wszystkie"
   },
   "gallery": {
-    "sold": "Już znalazła dom"
+    "sold": "Już znalazła dom",
+    "showroom": "Showroom"
+  },
+  "showroom": {
+    "eyebrow": "Retrospektywa",
+    "title": "Showroom — prace <em>z poprzednich dropów.</em>",
+    "lead": "Te prace są już niedostępne w sprzedaży. Możesz je obejrzeć i dać znać, jeśli chcesz podobny egzemplarz w kolejnym dropie.",
+    "empty": "Showroom jest na razie pusty.",
+    "pdpCopy": "Ta praca była częścią wcześniejszego dropu i nie jest już dostępna. Możesz zapisać ją jako inspirację i dać nam znać, jeśli chcesz zobaczyć podobne prace w kolejnym dropie.",
+    "interestCta": "Poproś o podobną pracę",
+    "interestThanks": "Dziękujemy — odezwiemy się, gdy pojawi się coś podobnego.",
+    "interestError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "emailLabel": "E-mail",
+    "messageLabel": "Wiadomość (opcjonalnie)",
+    "consentLabel": "Chcę otrzymywać informacje o przyszłych pracach i dropach.",
+    "submit": "Wyślij",
+    "submitting": "Wysyłam…"
   },
   "galleryPage": {
     "eyebrow": "Galeria editorialowa",
@@ -775,6 +793,7 @@
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna.",
+      "showroom": "Prace z wcześniejszych dropów — do obejrzenia, już niedostępne w sprzedaży. Zostaw znak, jeśli chcesz podobny egzemplarz w przyszłości.",
       "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
     }
   },

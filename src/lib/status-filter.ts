@@ -15,7 +15,8 @@ export const STATUS_FILTERS: StatusFilter[] = ['all', 'available', 'sold'];
 export function filterByStatus(products: Product[], status: StatusFilter): Product[] {
   switch (status) {
     case 'available':
-      return products.filter((p) => !p.sold);
+      // Showroom pieces are visible but not purchasable — excluded from "available".
+      return products.filter((p) => !p.sold && !p.showroom);
     case 'sold':
       return products.filter((p) => p.sold);
     default:

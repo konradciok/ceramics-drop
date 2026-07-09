@@ -7,16 +7,17 @@ import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
+import { ShowroomInterestForm } from './ShowroomInterestForm';
 import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
 import type { Product } from '@/lib/types';
 
-type Props = { product: Product; soldIds: readonly string[]; noteOverride?: string };
+type Props = { product: Product; soldIds: readonly string[]; showroomIds?: readonly string[]; noteOverride?: string };
 
 /** Full product detail page layout — server component with client islands. */
-export async function ProductPageScreen({ product, soldIds, noteOverride }: Props) {
+export async function ProductPageScreen({ product, soldIds, showroomIds = [], noteOverride }: Props) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
   const { fmt } = currencyFormatter(currency);
@@ -31,12 +32,18 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
 
   const images = [product.image, ...(product.gallery ?? [])];
   const soldSet = new Set(soldIds);
+  const showroomSet = new Set(showroomIds);
   const soldLabel = t('gallery.sold');
+  const showroomLabel = t('gallery.showroom');
+  const showroom = product.showroom === true;
 
-  // Up to 4 sibling pieces from the same category with live sold overlay applied
+  // Up to 4 sibling pieces from the same category with live sold + showroom overlay
   const siblings = getProductsByCategory(product.category)
     .filter((p) => p.id !== product.id)
-    .map((p) => (soldSet.has(p.id) ? { ...p, sold: true } : p))
+    .map((p) => {
+      const merged = soldSet.has(p.id) ? { ...p, sold: true } : p;
+      return showroomSet.has(p.id) ? { ...merged, showroom: true } : merged;
+    })
     .slice(0, 4);
 
   return (
@@ -63,7 +70,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                 {name} <em>Nº {product.num}</em>
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
-              {!product.sold && <PdpDelivery product={product} currency={currency} />}
+              {!product.sold && !showroom && <PdpDelivery product={product} currency={currency} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -79,7 +86,14 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              <AddToCartButton product={product} />
+              {showroom ? (
+                <div className="pdp-showroom" data-testid="pdp-showroom">
+                  <p className="pdp-showroom-copy">{t('showroom.pdpCopy')}</p>
+                  <ShowroomInterestForm productId={product.id} />
+                </div>
+              ) : (
+                <AddToCartButton product={product} />
+              )}
             </div>
           </div>
         </div>
@@ -97,6 +111,7 @@ export async function ProductPageScreen({ product, soldIds, noteOverride }: Prop
                     product={p}
                     displayName={`${t(`product.${CATEGORIES[p.category].singularKey}`)} Nº ${p.num}`}
                     soldLabel={soldLabel}
+                    showroomLabel={showroomLabel}
                     priceLabel={fmt(priceOfCurrency(p, currency))}
                   />
                 ))}

@@ -6,15 +6,16 @@ type Props = {
   product: Product;
   displayName: string;
   soldLabel: string;
+  showroomLabel: string;
   priceLabel: string;
 };
 
 /** Static linked tile used in "More from this collection" — no client state. */
-export function ProductTileLink({ product, displayName, soldLabel, priceLabel }: Props) {
+export function ProductTileLink({ product, displayName, soldLabel, showroomLabel, priceLabel }: Props) {
   return (
     <Link
       href={`/${product.category}/${product.id}`}
-      className="tile-static"
+      className={`tile-static${product.showroom ? ' showroom' : ''}`}
       aria-label={displayName}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -29,7 +30,11 @@ export function ProductTileLink({ product, displayName, soldLabel, priceLabel }:
         <span>{displayName}</span>
         <span>{priceLabel}</span>
       </div>
-      {product.sold && <span className="sold-tag">{soldLabel}</span>}
+      {product.showroom ? (
+        <span className="showroom-tag">{showroomLabel}</span>
+      ) : product.sold ? (
+        <span className="sold-tag">{soldLabel}</span>
+      ) : null}
     </Link>
   );
 }
