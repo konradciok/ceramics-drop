@@ -35,6 +35,7 @@
 @supports (animation-timeline: scroll()) {
   .header-inner {
     animation: hdr-shrink linear both;
+    animation-duration: 1ms; /* Firefox needs a non-zero duration to apply scroll timelines */
     animation-timeline: scroll();
     animation-range: 0 80px;
   }
@@ -42,6 +43,7 @@
 
   .brand img {
     animation: hdr-logo linear both;
+    animation-duration: 1ms;
     animation-timeline: scroll();
     animation-range: 0 80px;
     transform-origin: left center;
@@ -54,6 +56,7 @@
 @supports (animation-timeline: view()) {
   .hero-art img {
     animation: hero-par linear both;
+    animation-duration: 1ms;
     animation-timeline: view();
     animation-range: cover;
   }

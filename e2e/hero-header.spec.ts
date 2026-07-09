@@ -6,9 +6,7 @@ test('@ci header shrinks on scroll', async ({ page }) => {
   const header = page.locator('#site-header');
   const tall = (await header.boundingBox())!.height;
   await page.mouse.wheel(0, 200);
-  await page.waitForTimeout(150);
-  const short = (await header.boundingBox())!.height;
-  expect(short).toBeLessThan(tall);
+  await expect.poll(async () => (await header.boundingBox())!.height).toBeLessThan(tall);
 });
 
 test('@ci header does not shrink under reduced motion', async ({ page }) => {
@@ -17,7 +15,10 @@ test('@ci header does not shrink under reduced motion', async ({ page }) => {
   const header = page.locator('#site-header');
   const tall = (await header.boundingBox())!.height;
   await page.mouse.wheel(0, 200);
-  await page.waitForTimeout(150);
+  // Deterministic wait: the scroll has landed and a frame has painted — if the
+  // shrink animation were (wrongly) active, it would have applied by now.
+  await page.waitForFunction(() => window.scrollY > 0);
+  await page.evaluate(() => new Promise(requestAnimationFrame));
   expect((await header.boundingBox())!.height).toBe(tall);
 });
 
