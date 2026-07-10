@@ -3,8 +3,15 @@
    ------------------------------------------------------------
    The cart store is a flat string[] mixing ceramic ids (`k01`) and print
    tokens (`print:fap01:a3:satin:oak`). This resolves both to a tagged union
-   the cart UI can render, mirroring validateCart's server-side resolution so
-   the two never diverge. Unknown / unavailable entries are dropped.
+   the cart UI can render. Unknown / unavailable entries are dropped.
+
+   This runs client-side, so it reads the code registry synchronously via the
+   `registry*` helpers — it physically cannot call the service-role Supabase
+   client. checkout's `validateCart` reads the CATALOG_SOURCE-aware async
+   accessors instead. While CATALOG_SOURCE='code' (the default) the two sources
+   are identical; reconciling the client cart against a DB source once
+   CATALOG_SOURCE='db' is a Stage 4 follow-up (a server cart-resolve path),
+   tracked as a hard dependency before the flag is flipped in production.
    ============================================================ */
 import { registryProductById, isCategoryHidden } from './products';
 import { registryPrintById, isVariantAvailable } from './prints';
