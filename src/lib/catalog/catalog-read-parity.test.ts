@@ -1,26 +1,24 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { getProducts } from '../products';
-import { PRINT_DESIGNS } from '../prints';
 import { buildCatalogSeed } from './seed';
-import { mapCeramicProducts, mapPrintDesigns } from './mappers';
+import { mapCeramicProducts, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
 
 /**
- * Accessor-level parity gate for the Stage 3b flip: the DB read path
- * (mappers over the backfill seed rows — the same rows the DB holds) must
- * reconstruct the registry EXACTLY, so flipping CATALOG_SOURCE=db is a no-op for
- * the storefront. Runs without a live DB by operating on buildCatalogSeed().
+ * Accessor-level parity gate for the Stage 3b flip: repository ordering and the
+ * CATALOG_SOURCE flag must match registry semantics before the storefront flips.
  */
 describe('catalog read path ↔ registry parity', () => {
   const seed = buildCatalogSeed();
 
-  it('reconstructs ceramics identically to getProducts()', () => {
-    expect(mapCeramicProducts(seed.products, seed.media)).toEqual(getProducts());
-  });
-
-  it('reconstructs print designs identically to PRINT_DESIGNS (incl. drafts)', () => {
-    const rebuilt = mapPrintDesigns(seed.products, seed.variants, seed.media);
-    expect(rebuilt).toEqual(PRINT_DESIGNS);
+  it('recovers CATEGORY_ORDER from alphabetical DB row order', () => {
+    const ceramics = seed.products.filter((p) => p.type === 'ceramic');
+    const dbOrder = [...ceramics].sort((a, b) => {
+      const byCat = a.category_slug.localeCompare(b.category_slug);
+      return byCat !== 0 ? byCat : a.num.localeCompare(b.num, undefined, { numeric: true });
+    });
+    expect(dbOrder[0]?.id).not.toBe(getProducts()[0]?.id);
+    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(getProducts());
   });
 });
 

@@ -8,7 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
 import { buildCatalogSeed } from './seed';
-import { mapCeramicProducts, mapPrintDesigns } from './mappers';
+import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
 
 /** The catalogue rows the admin list reads (products + their variants). */
@@ -84,23 +84,16 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
  * any storefront surface.
  */
 export async function readCeramicProducts(supabase: SupabaseClient): Promise<Product[]> {
-  const productsRes = await supabase
-    .from('products')
-    .select('*')
-    .eq('type', 'ceramic')
-    .order('category_slug', { ascending: true })
-    .order('num', { ascending: true });
+  const productsRes = await supabase.from('products').select('*').eq('type', 'ceramic');
   if (productsRes.error) throw new Error(`read products: ${productsRes.error.message}`);
 
-  const ids = (productsRes.data ?? []).map((r) => r.id);
+  const rows = sortCeramicProductRows((productsRes.data ?? []) as ProductSeedRow[]);
+  const ids = rows.map((r) => r.id);
   if (ids.length === 0) return [];
   const mediaRes = await supabase.from('product_media').select('*').in('product_id', ids);
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
-  return mapCeramicProducts(
-    (productsRes.data ?? []) as ProductSeedRow[],
-    (mediaRes.data ?? []) as MediaSeedRow[],
-  );
+  return mapCeramicProducts(rows, (mediaRes.data ?? []) as MediaSeedRow[]);
 }
 
 /**

@@ -4,7 +4,7 @@ import { PRINT_DESIGNS, isVariantAvailable } from '../prints';
 import { PRODIGI_SKU_MAP } from '../print-cart';
 import { priceOfVariant } from '../print-pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
-import { mapCeramicProducts } from './mappers';
+import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 
 /**
  * Parity canary: the DB-backed catalogue (backfilled from the code registry) must
@@ -19,6 +19,29 @@ describe('catalog seed ↔ registry parity', () => {
   it('round-trips ceramics back to getProducts() exactly', () => {
     const rebuilt = mapCeramicProducts(seed.products, seed.media);
     expect(rebuilt).toEqual(getProducts());
+  });
+
+  it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {
+    const rebuilt = mapPrintDesigns(seed.products, seed.variants, seed.media);
+    expect(rebuilt).toEqual(PRINT_DESIGNS);
+  });
+
+  it('registry print designs do not use unavailable/prices until mapper support (Stage 5)', () => {
+    for (const d of PRINT_DESIGNS) {
+      expect(d.unavailable, d.id).toBeUndefined();
+      expect(d.prices, d.id).toBeUndefined();
+    }
+  });
+
+  it('excludes inactive variants from axis recovery on published designs only', () => {
+    const variants = seed.variants.map((v) =>
+      v.product_id === 'fap01' && v.axes?.size === '70x100' ? { ...v, active: false } : v,
+    );
+    const rebuilt = mapPrintDesigns(seed.products, variants, seed.media);
+    const fap01 = rebuilt.find((d) => d.id === 'fap01');
+    expect(fap01?.sizes).toEqual(['30x40', '50x70']);
+    const fap04 = rebuilt.find((d) => d.id === 'fap04');
+    expect(fap04).toEqual(PRINT_DESIGNS.find((d) => d.id === 'fap04'));
   });
 
   it('emits one product row per ceramic piece (the 125-count contract)', () => {

@@ -6,8 +6,23 @@
    `buildCatalogSeed()` back to `getProducts()` without a live DB, and so the
    eventual storefront flip (Stage 3) reuses the exact same reconstruction.
    ============================================================ */
-import type { PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
+import { CATEGORY_ORDER } from '../products';
+import type { CategorySlug, PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
 import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
+
+function ceramicCategoryRank(slug: CategorySlug): number {
+  const i = CATEGORY_ORDER.indexOf(slug);
+  return i === -1 ? CATEGORY_ORDER.length : i;
+}
+
+/** Order ceramic product rows by CATEGORY_ORDER then display num (not alphabetical slug). */
+export function sortCeramicProductRows(products: ProductSeedRow[]): ProductSeedRow[] {
+  return [...products].sort((a, b) => {
+    const byCat = ceramicCategoryRank(a.category_slug) - ceramicCategoryRank(b.category_slug);
+    if (byCat !== 0) return byCat;
+    return a.num.localeCompare(b.num, undefined, { numeric: true });
+  });
+}
 
 /** Group media rows by product id, each list sorted by `position`. */
 function mediaByProduct(media: MediaSeedRow[]): Map<string, MediaSeedRow[]> {
@@ -71,7 +86,8 @@ function distinctInOrder<T>(values: T[]): T[] {
  * Reconstruct `PrintDesign[]` from catalog rows — the inverse of `printRows`
  * in seed.ts. Axes (size / frame colour / mount) are recovered from the variant
  * rows in `position` order; `published` comes from the product status; media
- * gives image + gallery.
+ * gives image + gallery. Inactive variants are excluded from axis recovery on
+ * published designs only (drafts seed every variant inactive).
  *
  * NOTE (Stage 3a): `unavailable` and per-size `prices` overrides are NOT stored
  * as such in the shadow tables (variants are the flattened form), so they are
@@ -96,7 +112,10 @@ export function mapPrintDesigns(
   const out: PrintDesign[] = [];
   for (const row of products) {
     if (row.type !== 'print') continue;
-    const vs = variantsFor.get(row.id) ?? [];
+    const allVs = variantsFor.get(row.id) ?? [];
+    // Published designs: honour per-variant deactivation. Drafts seed all variants
+    // inactive, so axis recovery must still read them to match the registry.
+    const vs = row.status === 'active' ? allVs.filter((v) => v.active) : allVs;
     const axes = vs.map((v) => v.axes).filter((a): a is NonNullable<VariantSeedRow['axes']> => a !== null);
     const imgs = mediaFor.get(row.id) ?? [];
     const primary = imgs.find((m) => m.is_primary) ?? imgs[0];

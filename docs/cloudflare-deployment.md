@@ -199,6 +199,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
+- `CATALOG_SOURCE` — (optional, Stage 3b) runtime var selecting the storefront catalogue source: omit or `code` for the static registry (default); set to `db` only after `npm run catalog:backfill` and the parity gate pass. Not a `NEXT_PUBLIC_*` build var — set as a Workers runtime variable when flipping.
 
 ### npm version (lockfile)
 

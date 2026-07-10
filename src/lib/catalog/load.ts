@@ -3,7 +3,8 @@
    ------------------------------------------------------------
    Thin cached wrappers over the repository readers, returning the exact
    `Product[]` / `PrintDesign[]` shapes the registry produces. Cached under the
-   `catalog` tag so admin catalog writes (Stage 4) can revalidate it.
+   `catalog` tag so admin catalog writes (Stage 4) can revalidate it via
+   `revalidateTag('catalog', 'max')` (match the `inventory` / webhook pattern).
 
    Stage 3a ships these but does NOT wire them into the storefront accessors —
    that async cutover is Stage 3b, gated behind CATALOG_SOURCE=db.
