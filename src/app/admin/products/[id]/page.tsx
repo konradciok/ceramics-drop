@@ -25,7 +25,11 @@ export default async function ProductEditorPage({ params }: Props) {
           </p>
         </div>
         <div className="adm-actions adm-actions--top">
-          <Link className="adm-btn" href={state.pdpPath} target="_blank">Strona publiczna</Link>
+          {state.row.status === 'active' ? (
+            <Link className="adm-btn" href={state.pdpPath} target="_blank">Strona publiczna</Link>
+          ) : (
+            <span className="adm-muted">Niedostępny publicznie (status: {state.row.status})</span>
+          )}
           <Link className="adm-btn" href={state.notesHref}>Opis (Treści)</Link>
         </div>
       </div>

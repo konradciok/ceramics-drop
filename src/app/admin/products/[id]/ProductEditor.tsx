@@ -27,6 +27,9 @@ const ERROR_MAP: Record<string, string> = {
 export function ProductEditor({ state }: { state: ProductEditorState }) {
   const { row } = state;
   const isCeramic = row.type === 'ceramic';
+  // Before the backfill the DB row doesn't exist, so saves would 404 — lock the
+  // mutating controls (the page shows a "run catalog:backfill" banner).
+  const locked = state.source === 'registry';
   const { run, busy } = useAdminAction();
 
   const [num, setNum] = useState(row.num);
@@ -49,8 +52,10 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
       slug,
     };
     if (isCeramic) {
-      const n = Number(pricePln);
-      if (pricePln.trim() !== '' && Number.isFinite(n)) body.price_pln = Math.trunc(n);
+      // Send the raw number (no truncation) so the server Zod integer check
+      // rejects a decimal/NaN with validation_failed instead of us silently
+      // rounding it — the operator sees the error rather than a wrong price.
+      if (pricePln.trim() !== '') body.price_pln = Number(pricePln);
       body.measure = measure;
     }
     await run('save', savePath, { body, successText: 'Zapisano zmiany.', errorMap: ERROR_MAP });
@@ -78,7 +83,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             <>
               <label className="adm-note-label">
                 Cena (PLN, zł)
-                <input type="number" min={0} value={pricePln} onChange={(e) => setPricePln(e.target.value)} />
+                <input type="number" min={0} step={1} value={pricePln} onChange={(e) => setPricePln(e.target.value)} />
               </label>
               <label className="adm-note-label">
                 Wymiary
@@ -116,7 +121,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
         </section>
 
         <div className="adm-actions">
-          <button className="adm-btn" disabled={busy !== null} onClick={saveMeta}>
+          <button className="adm-btn" disabled={busy !== null || locked} onClick={saveMeta}>
             {busy === 'save' ? 'Zapisywanie…' : 'Zapisz zmiany'}
           </button>
         </div>
@@ -130,22 +135,22 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
           </p>
           <div className="adm-actions">
             {status !== 'active' && (
-              <button className="adm-btn" disabled={busy !== null} onClick={() => setPublish('active')}>
+              <button className="adm-btn" disabled={busy !== null || locked} onClick={() => setPublish('active')}>
                 Aktywuj
               </button>
             )}
             {status !== 'draft' && (
-              <button className="adm-btn" disabled={busy !== null} onClick={() => setPublish('draft')}>
+              <button className="adm-btn" disabled={busy !== null || locked} onClick={() => setPublish('draft')}>
                 Do szkicu
               </button>
             )}
             {status !== 'hidden' && (
-              <button className="adm-btn" disabled={busy !== null} onClick={() => setPublish('hidden')}>
+              <button className="adm-btn" disabled={busy !== null || locked} onClick={() => setPublish('hidden')}>
                 Ukryj
               </button>
             )}
             {status !== 'archived' && (
-              <button className="adm-btn" disabled={busy !== null} onClick={() => setConfirmArchive(true)}>
+              <button className="adm-btn" disabled={busy !== null || locked} onClick={() => setConfirmArchive(true)}>
                 Archiwizuj
               </button>
             )}

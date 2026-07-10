@@ -31,5 +31,7 @@ export function productError(error: unknown): NextResponse {
   if (message === 'slug_taken') {
     return NextResponse.json({ error: message }, { status: 409 });
   }
-  return NextResponse.json({ error: message || 'catalog_write_failed' }, { status: 500 });
+  // Keep raw DB/Supabase detail in the server log only — never leak it to the client.
+  console.error('[admin/products] catalog write failed', error);
+  return NextResponse.json({ error: 'catalog_write_failed' }, { status: 500 });
 }
