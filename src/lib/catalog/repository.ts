@@ -6,9 +6,9 @@
    into any public path yet.
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Product } from '../types';
+import type { PrintDesign, Product } from '../types';
 import { buildCatalogSeed } from './seed';
-import { mapCeramicProducts } from './mappers';
+import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
 
 /** The catalogue rows the admin list reads (products + their variants). */
@@ -99,6 +99,37 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
 
   return mapCeramicProducts(
     (productsRes.data ?? []) as ProductSeedRow[],
+    (mediaRes.data ?? []) as MediaSeedRow[],
+  );
+}
+
+/**
+ * Read the print catalogue from the DB and reconstruct `PrintDesign[]` (all
+ * designs, published and draft — `getPrintById` needs the drafts too). Reserved
+ * for the Stage 3b flip; not yet called by any storefront surface. Variants and
+ * media are read in `position` order so the axis/gallery reconstruction is stable.
+ */
+export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintDesign[]> {
+  const productsRes = await supabase
+    .from('products')
+    .select('*')
+    .eq('type', 'print')
+    .order('num', { ascending: true });
+  if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
+
+  const ids = (productsRes.data ?? []).map((r) => r.id);
+  if (ids.length === 0) return [];
+
+  const [variantsRes, mediaRes] = await Promise.all([
+    supabase.from('product_variants').select('*').in('product_id', ids).order('position', { ascending: true }),
+    supabase.from('product_media').select('*').in('product_id', ids).order('position', { ascending: true }),
+  ]);
+  if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
+  if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);
+
+  return mapPrintDesigns(
+    (productsRes.data ?? []) as ProductSeedRow[],
+    (variantsRes.data ?? []) as VariantSeedRow[],
     (mediaRes.data ?? []) as MediaSeedRow[],
   );
 }

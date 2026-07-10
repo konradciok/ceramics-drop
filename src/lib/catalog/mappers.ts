@@ -6,8 +6,8 @@
    `buildCatalogSeed()` back to `getProducts()` without a live DB, and so the
    eventual storefront flip (Stage 3) reuses the exact same reconstruction.
    ============================================================ */
-import type { Product } from '../types';
-import type { MediaSeedRow, ProductSeedRow } from './types';
+import type { PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
+import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
 
 /** Group media rows by product id, each list sorted by `position`. */
 function mediaByProduct(media: MediaSeedRow[]): Map<string, MediaSeedRow[]> {
@@ -48,6 +48,77 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       sold: false,
       dropId: row.drop_id ?? '',
       noteIndex: row.note_index ?? 0,
+    });
+  }
+
+  return out;
+}
+
+/** Distinct values in first-seen order (variants are read in `position` order). */
+function distinctInOrder<T>(values: T[]): T[] {
+  const seen = new Set<T>();
+  const out: T[] = [];
+  for (const v of values) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      out.push(v);
+    }
+  }
+  return out;
+}
+
+/**
+ * Reconstruct `PrintDesign[]` from catalog rows — the inverse of `printRows`
+ * in seed.ts. Axes (size / frame colour / mount) are recovered from the variant
+ * rows in `position` order; `published` comes from the product status; media
+ * gives image + gallery.
+ *
+ * NOTE (Stage 3a): `unavailable` and per-size `prices` overrides are NOT stored
+ * as such in the shadow tables (variants are the flattened form), so they are
+ * left unset here. The current registry designs (fap01–fap04) use neither, so
+ * the round-trip is exact for today's data; proper storage of those fields lands
+ * with print CRUD (Stage 5). `variants`/`media` must be passed in `position` order.
+ */
+export function mapPrintDesigns(
+  products: ProductSeedRow[],
+  variants: VariantSeedRow[],
+  media: MediaSeedRow[],
+): PrintDesign[] {
+  const mediaFor = mediaByProduct(media);
+  const variantsFor = new Map<string, VariantSeedRow[]>();
+  for (const v of variants) {
+    const list = variantsFor.get(v.product_id) ?? [];
+    list.push(v);
+    variantsFor.set(v.product_id, list);
+  }
+  for (const list of variantsFor.values()) list.sort((a, b) => a.position - b.position);
+
+  const out: PrintDesign[] = [];
+  for (const row of products) {
+    if (row.type !== 'print') continue;
+    const vs = variantsFor.get(row.id) ?? [];
+    const axes = vs.map((v) => v.axes).filter((a): a is NonNullable<VariantSeedRow['axes']> => a !== null);
+    const imgs = mediaFor.get(row.id) ?? [];
+    const primary = imgs.find((m) => m.is_primary) ?? imgs[0];
+    const gallery = imgs.filter((m) => !m.is_primary).map((m) => m.url);
+
+    const sizes = distinctInOrder(axes.map((a) => a.size)) as PrintSize[];
+    const frameColours = distinctInOrder(
+      axes.filter((a) => a.framed && a.frameColour !== 'none').map((a) => a.frameColour),
+    ) as PrintFrameColour[];
+    const mountAvailable = axes.some((a) => a.mount);
+
+    out.push({
+      id: row.id,
+      category: 'fine-art-prints',
+      num: row.num,
+      image: primary?.url ?? '',
+      ...(gallery.length ? { gallery } : {}),
+      noteIndex: row.note_index ?? 0,
+      sizes,
+      frameColours,
+      mountAvailable,
+      published: row.status === 'active',
     });
   }
 
