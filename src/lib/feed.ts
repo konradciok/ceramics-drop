@@ -103,10 +103,13 @@ export type FeedItem = {
   shipping: Array<{ country: string; service: string; price: string }>;
 };
 
-async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>): Promise<FeedItem[]> {
+async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>, prefetchedProducts?: Awaited<ReturnType<typeof getPublicProducts>>): Promise<FeedItem[]> {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale);
-  const products = await getPublicProducts();
+  // The CMS builder already loaded the public catalogue (to derive the note
+  // slugs), so reuse it instead of re-reading — under CATALOG_SOURCE=db the
+  // accessor rebuilds catalogue maps per call, so a second read is real work.
+  const products = prefetchedProducts ?? await getPublicProducts();
 
   return products.map((product) => {
     const cat = CATEGORIES[product.category];
@@ -161,9 +164,10 @@ export async function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, s
 }
 
 export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
-  const slugs = [...new Set((await getPublicProducts()).map((product) => product.category))];
+  const products = await getPublicProducts();
+  const slugs = [...new Set(products.map((product) => product.category))];
   const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
-  return buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>);
+  return buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>, products);
 }
 
 function itemToGoogleXml(item: FeedItem): string {
