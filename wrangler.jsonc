@@ -8,6 +8,10 @@
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Storefront catalogue source: 'db' reads shadow tables (Stage 3b flip). Rollback → remove or set 'code'.
+  "vars": {
+    "CATALOG_SOURCE": "db"
+  },
   // Expire abandoned checkout orders (cancel open PI, free reserved pieces) every 15 minutes.
   "triggers": { "crons": ["*/15 * * * *"] },
   "assets": {

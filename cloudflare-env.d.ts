@@ -68,6 +68,8 @@ interface CloudflareEnv {
   CF_ACCESS_AUD?: string;
   ADMIN_ALLOWED_EMAILS?: string;
   STUDIO_ADMIN_LOCAL_BYPASS?: string;
+  /** Storefront catalogue source — 'db' reads shadow tables; omit or any other value => code registry. */
+  CATALOG_SOURCE?: string;
 }
 
 declare namespace Cloudflare {
