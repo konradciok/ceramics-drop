@@ -103,10 +103,10 @@ export type FeedItem = {
   shipping: Array<{ country: string; service: string; price: string }>;
 };
 
-function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>): FeedItem[] {
+async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>): Promise<FeedItem[]> {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale);
-  const products = getPublicProducts();
+  const products = await getPublicProducts();
 
   return products.map((product) => {
     const cat = CATEGORIES[product.category];
@@ -156,12 +156,12 @@ function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showr
   });
 }
 
-export function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): FeedItem[] {
+export async function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
   return buildFeedItemsWithNotes(locale, soldIds, showroomIds);
 }
 
 export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
-  const slugs = [...new Set(getPublicProducts().map((product) => product.category))];
+  const slugs = [...new Set((await getPublicProducts()).map((product) => product.category))];
   const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
   return buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>);
 }

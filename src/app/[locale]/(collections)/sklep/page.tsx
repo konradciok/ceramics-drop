@@ -32,7 +32,7 @@ export default async function Page({ params }: Props) {
   const showroom = new Set(showroomIds);
   // Sold/showroom overlays are best-effort: a Supabase outage must not take the
   // storefront down. Fall back to none — reserve_pieces is the real guard.
-  const products = getPublicProducts().map((p) => {
+  const products = (await getPublicProducts()).map((p) => {
     const merged = sold.has(p.id) ? { ...p, sold: true } : p;
     return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
   });

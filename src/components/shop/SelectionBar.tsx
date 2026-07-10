@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
-import { resolveCartProducts } from '@/lib/products';
+import { registryResolveCartProducts } from '@/lib/products';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
@@ -18,7 +18,7 @@ export function SelectionBar() {
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
-  const products = resolveCartProducts(ids);
+  const products = registryResolveCartProducts(ids);
   const n = products.length;
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 

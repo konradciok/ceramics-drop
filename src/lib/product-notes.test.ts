@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import pl from '../../messages/pl.json';
-import { getProductsByCategory } from './products';
+import { registryProductsByCategory } from './products';
 import {
   applyCategoryDraftToMessagesFile,
   buildCategoryDraft,
@@ -28,7 +28,7 @@ function makeTempDir(prefix: string): string {
 
 describe('product notes drafts', () => {
   it('builds kubki draft entries in the same order as the frontend noteIndex lookup', () => {
-    const products = getProductsByCategory('kubki');
+    const products = registryProductsByCategory('kubki');
     const currentNotes = [...pl.notes.kubki];
     const proposedNotes = products.map((product) => `Nowy opis ${product.id}`);
 
@@ -59,7 +59,7 @@ describe('product notes drafts', () => {
   });
 
   it('writes a review draft file without mutating the source messages object', () => {
-    const products = getProductsByCategory('talerze-srednie');
+    const products = registryProductsByCategory('talerze-srednie');
     const currentNotes = [...pl.notes['talerze-srednie']];
     const proposedNotes = products.map((product) => `Roboczy opis ${product.id}`);
     const before = JSON.stringify(pl.notes['talerze-srednie']);
@@ -84,7 +84,7 @@ describe('product notes drafts', () => {
   });
 
   it('updates only the targeted category when applying a reviewed draft to messages/pl.json', () => {
-    const products = getProductsByCategory('kubki');
+    const products = registryProductsByCategory('kubki');
     const currentNotes = [...pl.notes.kubki];
     const proposedNotes = products.map((product) => `Zatwierdzony opis ${product.id}`);
     const messagesPath = path.join(makeTempDir('product-notes-write-'), 'pl.json');
@@ -113,7 +113,7 @@ describe('product notes drafts', () => {
   });
 
   it('rejects drafts whose item count no longer matches the category product count', () => {
-    const products = getProductsByCategory('kubki');
+    const products = registryProductsByCategory('kubki');
     const currentNotes = [...pl.notes.kubki];
     const proposedNotes = products.slice(0, -1).map((product) => `Za krótki opis ${product.id}`);
 
@@ -130,7 +130,7 @@ describe('product notes drafts', () => {
   });
 
   it('fails validation when a product image is missing', () => {
-    const products = getProductsByCategory('kubki');
+    const products = registryProductsByCategory('kubki');
     const currentNotes = [...pl.notes.kubki];
     const proposedNotes = products.map((product) => `Opis ${product.id}`);
     const draft = buildCategoryDraft({

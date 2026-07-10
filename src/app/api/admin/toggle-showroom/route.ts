@@ -6,7 +6,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { adminSupabase } from '@/lib/admin/clients';
-import { getProductById } from '@/lib/products';
+import { registryProductById } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (productIds.length === 0) {
     return NextResponse.json({ error: 'productIds required' }, { status: 400 });
   }
-  const unknown = productIds.filter((id) => !getProductById(id));
+  const unknown = productIds.filter((id) => !registryProductById(id));
   if (unknown.length > 0) {
     return NextResponse.json({ error: `Unknown product id(s): ${unknown.join(', ')}` }, { status: 400 });
   }

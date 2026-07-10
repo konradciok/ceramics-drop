@@ -32,7 +32,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const robots = preview ? { index: false, follow: false } : undefined;
 
   if (slug === PRINT_SLUG) {
-    const design = getPrintById(id);
+    const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const singular = t('product.print');
@@ -51,7 +51,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     };
   }
 
-  const product = getProductById(id);
+  const product = await getProductById(id);
   if (!product || product.category !== slug || isCategoryHidden(product.category)) notFound();
 
   const t = await getTranslations({ locale });
@@ -82,7 +82,7 @@ export default async function Page({ params, searchParams }: Props) {
   setRequestLocale(locale);
 
   if (slug === PRINT_SLUG) {
-    const design = getPrintById(id);
+    const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const note = await getProductNote(PRINT_SLUG, locale as Locale, design.id, preview);
@@ -102,7 +102,7 @@ export default async function Page({ params, searchParams }: Props) {
     );
   }
 
-  const base = getProductById(id);
+  const base = await getProductById(id);
   if (!base || base.category !== (slug as CategorySlug) || isCategoryHidden(base.category)) notFound();
 
   const [t, soldIds, showroomIds] = await Promise.all([

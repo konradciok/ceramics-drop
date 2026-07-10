@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getProducts } from '../products';
+import { registryProducts } from '../products';
 import { PRINT_DESIGNS, isVariantAvailable } from '../prints';
 import { PRODIGI_SKU_MAP } from '../print-cart';
 import { priceOfVariant } from '../print-pricing';
@@ -16,9 +16,9 @@ import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 describe('catalog seed ↔ registry parity', () => {
   const seed = buildCatalogSeed();
 
-  it('round-trips ceramics back to getProducts() exactly', () => {
+  it('round-trips ceramics back to registryProducts() exactly', () => {
     const rebuilt = mapCeramicProducts(seed.products, seed.media);
-    expect(rebuilt).toEqual(getProducts());
+    expect(rebuilt).toEqual(registryProducts());
   });
 
   it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {
@@ -47,7 +47,7 @@ describe('catalog seed ↔ registry parity', () => {
   it('emits one product row per ceramic piece (the 125-count contract)', () => {
     const ceramics = seed.products.filter((p) => p.type === 'ceramic');
     expect(ceramics).toHaveLength(125);
-    expect(ceramics).toHaveLength(getProducts().length);
+    expect(ceramics).toHaveLength(registryProducts().length);
   });
 
   it('emits one product row per print design (published and draft)', () => {
@@ -59,7 +59,7 @@ describe('catalog seed ↔ registry parity', () => {
   });
 
   it('gives every ceramic a single default variant tracked at qty 1', () => {
-    for (const p of getProducts()) {
+    for (const p of registryProducts()) {
       const variants = seed.variants.filter((v) => v.product_id === p.id);
       expect(variants, p.id).toHaveLength(1);
       expect(variants[0]).toMatchObject({

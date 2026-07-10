@@ -3,8 +3,8 @@ import { validateCart, MAX_CART } from './checkout';
 import { encodePrintToken } from './print-cart';
 
 describe('validateCart', () => {
-  it('maps known ids to products with grosze prices', () => {
-    const r = validateCart(['k01', 'v01']);
+  it('maps known ids to products with grosze prices', async () => {
+    const r = await validateCart(['k01', 'v01']);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.items.map((i) => i.product_id)).toEqual(['k01', 'v01']);
@@ -13,64 +13,64 @@ describe('validateCart', () => {
     }
   });
 
-  it('rejects an empty cart', () => {
-    expect(validateCart([]).ok).toBe(false);
+  it('rejects an empty cart', async () => {
+    expect((await validateCart([])).ok).toBe(false);
   });
 
-  it('rejects unknown ids', () => {
-    expect(validateCart(['nope']).ok).toBe(false);
+  it('rejects unknown ids', async () => {
+    expect((await validateCart(['nope'])).ok).toBe(false);
   });
 
-  it('dedupes repeated ids (1/1 — one each)', () => {
-    const r = validateCart(['k01', 'k01']);
+  it('dedupes repeated ids (1/1 — one each)', async () => {
+    const r = await validateCart(['k01', 'k01']);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.items).toHaveLength(1);
   });
 
-  it('rejects carts above MAX_CART', () => {
+  it('rejects carts above MAX_CART', async () => {
     const many = Array.from({ length: MAX_CART + 1 }, (_, i) => `x${i}`);
-    expect(validateCart(many).ok).toBe(false);
+    expect((await validateCart(many)).ok).toBe(false);
   });
 
-  it('resolves items to euro-cents when currency is eur', () => {
+  it('resolves items to euro-cents when currency is eur', async () => {
     // k01 is kubki → PRICE_EUR.kubki = 25 → toEuroCents(25) = 2500
-    const result = validateCart(['k01'], 'eur');
+    const result = await validateCart(['k01'], 'eur');
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2500 }] });
   });
 
-  it('default currency (no arg) still produces grosze', () => {
+  it('default currency (no arg) still produces grosze', async () => {
     // k01 is kubki → product.price = PRICE_PLN.kubki = 95 → toGrosze(95) = 9500
-    const result = validateCart(['k01']);
+    const result = await validateCart(['k01']);
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
   });
 
-  it('resolves items to pence when currency is gbp', () => {
+  it('resolves items to pence when currency is gbp', async () => {
     // k01 is kubki → PRICE_GBP.kubki = 22 → toGBPPence(22) = 2200
-    const result = validateCart(['k01'], 'gbp');
+    const result = await validateCart(['k01'], 'gbp');
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
   });
 
-  it('accepts a valid print token', () => {
+  it('accepts a valid print token', async () => {
     const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    const result = validateCart([token], 'pln');
+    const result = await validateCart([token], 'pln');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
     expect(result.items[0].unit_price).toBe(45500); // (150 base + 305 frame) PLN × 100
   });
 
-  it('rejects a mixed ceramics + prints cart', () => {
+  it('rejects a mixed ceramics + prints cart', async () => {
     const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    expect(validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });
+    expect(await validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });
   });
 
-  it('rejects an unknown design id in print token', () => {
+  it('rejects an unknown design id in print token', async () => {
     const token = encodePrintToken('fap99', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
   });
 
-  it('rejects an unpublished design', () => {
+  it('rejects an unpublished design', async () => {
     const token = encodePrintToken('fap04', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
   });
 });

@@ -36,7 +36,7 @@ export async function PrintProductScreen({ design, noteOverride }: { design: Pri
   // Size dimensions the design offers, e.g. "A4 · 21 × 29,7 cm".
   const sizeLines = design.sizes.map((s) => `${t(`print.size.${s}`)} · ${t(`print.sizeHint.${s}`)}`).join(' / ');
 
-  const siblings = getPrintDesigns()
+  const siblings = (await getPrintDesigns())
     .filter((d) => d.id !== design.id)
     .slice(0, 4);
 

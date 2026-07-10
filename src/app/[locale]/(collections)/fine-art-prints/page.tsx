@@ -22,9 +22,10 @@ export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale });
+  const schema = await printCollectionSchema({ locale: locale as Locale, t });
   return (
     <main>
-      <JsonLd data={printCollectionSchema({ locale: locale as Locale, t })} />
+      <JsonLd data={schema} />
       <PrintCollectionScreen locale={locale as Locale} />
     </main>
   );

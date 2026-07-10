@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     currencyFromCookieHeader(locale, req.headers.get('cookie')),
   );
 
-  const valid = validateCart(body.ids, chargeCurrency);
+  const valid = await validateCart(body.ids, chargeCurrency);
   if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
 
   // Delivery details (method, receiver contact, locker/address) are collected

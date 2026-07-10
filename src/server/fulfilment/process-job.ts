@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { SITE_URL } from '@/lib/site';
-import { getPrintById } from '@/lib/prints';
+import { registryPrintById } from '@/lib/prints';
 import { signPrintAssetUrl } from '@/lib/print-assets';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
 import { buildProdigiPayload, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
@@ -9,7 +9,7 @@ import type { FulfilmentJobMessage } from '../prodigi/types';
 async function getAssetUrl(productId: string, env: CloudflareEnv): Promise<string> {
   if (!env.PRINT_ASSETS || !env.PRINT_ASSET_TOKEN_SECRET) {
     // Local dev / sandbox fallback — the public storefront image.
-    const design = getPrintById(productId);
+    const design = registryPrintById(productId);
     return `${SITE_URL}${design?.image ?? `/uploads/${productId}.webp`}`;
   }
   // HMAC-signed URL served by /api/print-assets/[id] (streams from R2).

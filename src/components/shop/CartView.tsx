@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
-import { CATEGORIES, getProductById, isCategoryHidden } from '@/lib/products';
+import { CATEGORIES, registryProductById, isCategoryHidden } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
@@ -191,7 +191,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('invalid'))))
         .then(({ product_ids }: { product_ids: string[] }) => {
           const hasHidden = product_ids.some((id) => {
-            const p = getProductById(id);
+            const p = registryProductById(id);
             return p !== undefined && isCategoryHidden(p.category);
           });
           if (hasHidden) { setPrivateSaleError(true); return; }

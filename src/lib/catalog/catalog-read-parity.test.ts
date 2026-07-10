@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { getProducts } from '../products';
+import { registryProducts } from '../products';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
@@ -17,8 +17,8 @@ describe('catalog read path ↔ registry parity', () => {
       const byCat = a.category_slug.localeCompare(b.category_slug);
       return byCat !== 0 ? byCat : a.num.localeCompare(b.num, undefined, { numeric: true });
     });
-    expect(dbOrder[0]?.id).not.toBe(getProducts()[0]?.id);
-    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(getProducts());
+    expect(dbOrder[0]?.id).not.toBe(registryProducts()[0]?.id);
+    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(registryProducts());
   });
 });
 

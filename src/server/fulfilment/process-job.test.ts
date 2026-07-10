@@ -30,7 +30,7 @@ vi.mock('../prodigi/client', () => ({
 }));
 vi.mock('../prodigi/mapper', () => ({ buildProdigiPayload: vi.fn(() => ({})) }));
 vi.mock('@/lib/print-assets', () => ({ signPrintAssetUrl: vi.fn().mockResolvedValue('https://cdn.example.com/asset.jpg') }));
-vi.mock('@/lib/prints', () => ({ getPrintById: vi.fn().mockReturnValue({ image: '/uploads/fap-01.webp' }) }));
+vi.mock('@/lib/prints', () => ({ registryPrintById: vi.fn().mockReturnValue({ image: '/uploads/fap-01.webp' }) }));
 vi.mock('@/lib/site', () => ({ SITE_URL: 'https://anna-ciok.studio' }));
 
 const MSG = { orderId: 'ord-1', jobId: 'job-1' };

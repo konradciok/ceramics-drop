@@ -1,12 +1,13 @@
 /**
  * LOCAL-ONLY admin product display helpers. Resolves an order line's stable
  * `product_id` to a human label + thumbnail using the storefront registry
- * (`getProductById`). Unknown ids (e.g. retired smoke-test pieces still
+ * (`registryProductById` — admin labels are code-derived and stay on the
+ * synchronous registry). Unknown ids (e.g. retired smoke-test pieces still
  * referenced by old orders) degrade to showing the raw id.
  */
-import { getProductById } from '@/lib/products';
+import { registryProductById } from '@/lib/products';
 import { variantLabel } from '@/lib/print-cart';
-import { getPrintById } from '@/lib/prints';
+import { registryPrintById } from '@/lib/prints';
 import { smallest } from '@/lib/images';
 import type { CategorySlug, PrintVariantSelection } from '@/lib/types';
 
@@ -33,7 +34,7 @@ export type ProductRef = {
 };
 
 export function productRef(productId: string, variant?: unknown): ProductRef {
-  const p = getProductById(productId);
+  const p = registryProductById(productId);
   if (p) {
     return {
       id: p.id,
@@ -43,7 +44,7 @@ export function productRef(productId: string, variant?: unknown): ProductRef {
       known: true,
     };
   }
-  const print = getPrintById(productId);
+  const print = registryPrintById(productId);
   if (print) {
     const sel = variant as PrintVariantSelection | undefined;
     const suffix = sel ? ` · ${variantLabel(sel, 'pl')}` : '';

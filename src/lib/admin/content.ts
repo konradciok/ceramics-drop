@@ -1,6 +1,6 @@
 import { adminSupabase } from './clients';
-import { CATEGORY_ORDER, CATEGORIES, getProductsByCategory } from '@/lib/products';
-import { getPrintDesigns } from '@/lib/prints';
+import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
+import { registryPrintDesigns } from '@/lib/prints';
 import { fallbackProductNotes } from '@/lib/cms/messages';
 import { CMS_LOCALES, type CmsDocumentKind, type CmsLocale, type CmsPayload, type CmsVersionRow } from '@/lib/cms/types';
 import { validateCmsPayload } from '@/lib/cms/schemas';
@@ -72,13 +72,13 @@ export function editableDocument(kind: string, slug: string): EditableContentDoc
 
 export function contentItems(slug: string): ContentItem[] {
   if (slug === 'fine-art-prints') {
-    return getPrintDesigns().map((design) => ({
+    return registryPrintDesigns().map((design) => ({
       id: design.id,
       label: `Druk Nº ${design.num}`,
       image: design.image,
     }));
   }
-  return getProductsByCategory(slug as CategorySlug).map((product) => ({
+  return registryProductsByCategory(slug as CategorySlug).map((product) => ({
     id: product.id,
     label: `${product.category} Nº ${product.num}`,
     image: product.image,

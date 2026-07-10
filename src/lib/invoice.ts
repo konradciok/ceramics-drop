@@ -1,8 +1,8 @@
 import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
-import { getProductById, CATEGORIES } from './products';
-import { getPrintById } from './prints';
+import { registryProductById, CATEGORIES } from './products';
+import { registryPrintById } from './prints';
 import { variantLabel } from './print-cart';
 import type { PrintVariantSelection } from './types';
 import plMessages from '../../messages/pl.json';
@@ -122,12 +122,12 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       if (variant) {
         // Fine-art print: design name + chosen variant. The SKU also disambiguates
         // the idempotency key so two variants of the same design both invoice.
-        const design = getPrintById(it.product_id);
+        const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
         label = `${printName} Nº ${design?.num ?? ''}`.trim()
           + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
       } else {
-        const product = getProductById(it.product_id);
+        const product = registryProductById(it.product_id);
         label = product
           ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
           : it.product_id;

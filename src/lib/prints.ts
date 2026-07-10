@@ -1,5 +1,6 @@
 import type { PrintDesign, PrintVariantSelection } from './types';
 import { variantKey } from './print-cart';
+import { catalogSource } from './catalog/source';
 
 export const PRINT_DESIGNS: PrintDesign[] = [
   {
@@ -53,14 +54,44 @@ export const PRINT_DESIGNS: PrintDesign[] = [
 
 const BY_ID = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
 
-/** Published designs in registry order. */
-export function getPrintDesigns(): PrintDesign[] {
+/* ------------------------------------------------------------------
+   Sync registry helpers — read ONLY the code registry, never the DB.
+   ------------------------------------------------------------------
+   Mirror of products.ts: the public accessors below are async (CATALOG_SOURCE),
+   but client cart surfaces and code-derived admin/fulfilment labels stay on the
+   synchronous registry in Stage 3b. At parity these equal the async accessors
+   in 'code' mode. */
+export function registryPrintDesigns(): PrintDesign[] {
   return PRINT_DESIGNS.filter((d) => d.published);
 }
 
-/** Resolve by id including unpublished — lets checkout reject hidden vs unknown. */
-export function getPrintById(id: string): PrintDesign | undefined {
+export function registryPrintById(id: string): PrintDesign | undefined {
   return BY_ID.get(id);
+}
+
+/**
+ * Async catalog core — 'code' returns the registry designs; 'db' reads the
+ * catalog shadow tables (cached, Stage 3a) including drafts. Dynamic import of
+ * the DB path keeps Cloudflare-only code out of the default 'code' flag and
+ * breaks the load → repository → seed → prints import cycle.
+ */
+async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<string, PrintDesign> }> {
+  if (catalogSource() === 'code') {
+    return { designs: PRINT_DESIGNS, byId: BY_ID };
+  }
+  const { loadPrintDesignsFromDb } = await import('./catalog/load');
+  const designs = await loadPrintDesignsFromDb();
+  return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
+}
+
+/** Published designs in registry order. */
+export async function getPrintDesigns(): Promise<PrintDesign[]> {
+  return (await loadPrintCatalog()).designs.filter((d) => d.published);
+}
+
+/** Resolve by id including unpublished — lets checkout reject hidden vs unknown. */
+export async function getPrintById(id: string): Promise<PrintDesign | undefined> {
+  return (await loadPrintCatalog()).byId.get(id);
 }
 
 /** Whether a variant is sellable for this design. */

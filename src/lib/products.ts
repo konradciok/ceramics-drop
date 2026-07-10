@@ -17,6 +17,7 @@
    ============================================================ */
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
+import { catalogSource } from './catalog/source';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -249,12 +250,81 @@ const PRODUCTS_BY_CATEGORY = CATEGORY_ORDER.reduce(
   {} as Record<CategorySlug, Product[]>,
 );
 
+/* ------------------------------------------------------------------
+   Sync registry helpers — read ONLY the code registry, never the DB.
+   ------------------------------------------------------------------
+   The public accessors below became async in Stage 3b so they can read the
+   catalog shadow tables when CATALOG_SOURCE=db. These helpers keep the code
+   registry available synchronously for the surfaces that cannot (or should not)
+   go async in this stage: client components (which physically can't call the
+   service-role Supabase client) and code-derived admin/fulfilment labels. At
+   parity (registry == DB) they return exactly what the async accessors do in
+   'code' mode; a later stage (4/7) migrates these onto the async catalog once
+   DB-only products exist. */
+export function registryProducts(): Product[] {
+  return PRODUCTS;
+}
+
+export function registryProductById(id: string): Product | undefined {
+  return PRODUCT_BY_ID.get(id);
+}
+
+export function registryProductsByCategory(slug: CategorySlug): Product[] {
+  return PRODUCTS_BY_CATEGORY[slug];
+}
+
+/** Registry-only resolve (no DB) — used by client/code-derived cart surfaces. */
+export function registryResolveKnownProducts(ids: string[]): Product[] {
+  return ids
+    .map((id) => PRODUCT_BY_ID.get(id))
+    .filter((p): p is Product => p !== undefined);
+}
+
+/** Registry-only cart resolve (no DB) — mirrors resolveCartProducts on the client. */
+export function registryResolveCartProducts(ids: string[]): Product[] {
+  return registryResolveKnownProducts(ids).filter(isProductPurchasable);
+}
+
+/* ------------------------------------------------------------------
+   Async catalog core — the single source the public accessors delegate to.
+   ------------------------------------------------------------------
+   'code' → the prebuilt registry structures (wrapped in a resolved promise,
+   effectively zero-cost). 'db' → the cached DB read (loadCeramicProductsFromDb,
+   Stage 3a), from which the same id/category groupings are rebuilt with the
+   same logic. The db branch is a DYNAMIC import so the Cloudflare-only DB code
+   never loads in node/tests under the default 'code' flag, and to avoid a
+   static import cycle (load → repository → seed → products). */
+type CeramicCatalog = {
+  products: Product[];
+  byId: Map<string, Product>;
+  byCategory: Record<CategorySlug, Product[]>;
+};
+
+function groupByCategory(products: Product[]): Record<CategorySlug, Product[]> {
+  return CATEGORY_ORDER.reduce(
+    (acc, slug) => {
+      acc[slug] = products.filter((p) => p.category === slug);
+      return acc;
+    },
+    {} as Record<CategorySlug, Product[]>,
+  );
+}
+
+async function loadCeramicCatalog(): Promise<CeramicCatalog> {
+  if (catalogSource() === 'code') {
+    return { products: PRODUCTS, byId: PRODUCT_BY_ID, byCategory: PRODUCTS_BY_CATEGORY };
+  }
+  const { loadCeramicProductsFromDb } = await import('./catalog/load');
+  const products = await loadCeramicProductsFromDb();
+  return { products, byId: new Map(products.map((p) => [p.id, p])), byCategory: groupByCategory(products) };
+}
+
 /**
  * Returns every product across the nine categories, each with image
  * path, optional gallery, sold flag, price, measure, and display index.
  */
-export function getProducts(): Product[] {
-  return PRODUCTS;
+export async function getProducts(): Promise<Product[]> {
+  return (await loadCeramicCatalog()).products;
 }
 
 /**
@@ -262,22 +332,23 @@ export function getProducts(): Product[] {
  * the full catalogue minus the hidden families. Sold pieces are kept (the sold
  * overlay is applied at render time; feeds mark them out-of-stock).
  */
-export function getPublicProducts(): Product[] {
-  return PRODUCTS.filter((p) => !isCategoryHidden(p.category));
+export async function getPublicProducts(): Promise<Product[]> {
+  return (await loadCeramicCatalog()).products.filter((p) => !isCategoryHidden(p.category));
 }
 
-export function getProductsByCategory(slug: CategorySlug): Product[] {
-  return PRODUCTS_BY_CATEGORY[slug];
+export async function getProductsByCategory(slug: CategorySlug): Promise<Product[]> {
+  return (await loadCeramicCatalog()).byCategory[slug];
 }
 
-export function getProductById(id: string): Product | undefined {
-  return PRODUCT_BY_ID.get(id);
+export async function getProductById(id: string): Promise<Product | undefined> {
+  return (await loadCeramicCatalog()).byId.get(id);
 }
 
 /** Resolve known products by id without filtering sold pieces. */
-export function resolveKnownProducts(ids: string[]): Product[] {
+export async function resolveKnownProducts(ids: string[]): Promise<Product[]> {
+  const { byId } = await loadCeramicCatalog();
   return ids
-    .map((id) => PRODUCT_BY_ID.get(id))
+    .map((id) => byId.get(id))
     .filter((p): p is Product => p !== undefined);
 }
 
@@ -287,6 +358,6 @@ export function resolveKnownProducts(ids: string[]): Product[] {
  * in hidden (withdrawn) families. Used by the cart surfaces so stale
  * localStorage can never reintroduce sold or withdrawn inventory.
  */
-export function resolveCartProducts(ids: string[]): Product[] {
-  return resolveKnownProducts(ids).filter(isProductPurchasable);
+export async function resolveCartProducts(ids: string[]): Promise<Product[]> {
+  return (await resolveKnownProducts(ids)).filter(isProductPurchasable);
 }

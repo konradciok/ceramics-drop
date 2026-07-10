@@ -30,8 +30,8 @@
    in the system), so the output is guidance, not a carrier contract.
    Fine-art prints ship via the Prodigi flow and are excluded here.
    ============================================================ */
-import { getProductById } from './products';
-import { getPrintById } from './prints';
+import { registryProductById } from './products';
+import { registryPrintById } from './prints';
 import { isPrintToken } from './print-cart';
 import type { CategorySlug } from './types';
 
@@ -282,11 +282,11 @@ function buildUnits(
       printDesigns.push(id.split(':')[1] ?? id);
       continue;
     }
-    if (getPrintById(id)) {
+    if (registryPrintById(id)) {
       printDesigns.push(id);
       continue;
     }
-    const product = getProductById(id);
+    const product = registryProductById(id);
     const spec: PackSpec | undefined =
       product && product.category !== 'fine-art-prints' ? PACK_SPECS[product.category] : undefined;
     if (!product || !spec) {
@@ -421,7 +421,7 @@ export function recommendPacking(productIds: string[]): PackingPlan {
   // Small vases may ship on their side (studio policy) — take the lying plan
   // only when it is strictly cheaper (fewer parcels or smaller gabaryty).
   const categories = new Set(
-    productIds.map((id) => getProductById(id)?.category).filter((c): c is CategorySlug => !!c),
+    productIds.map((id) => registryProductById(id)?.category).filter((c): c is CategorySlug => !!c),
   );
   let vasesLaid = false;
   // A single gabaryt-A parcel is already the cheapest possible planCost ([1, 0] —

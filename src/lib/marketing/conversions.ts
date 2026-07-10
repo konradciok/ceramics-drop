@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
-import { resolveKnownProducts } from '../products';
-import { getPrintById } from '../prints';
+import { registryResolveKnownProducts } from '../products';
+import { registryPrintById } from '../prints';
 import { variantLabel } from '../print-cart';
 import { toAnalyticsItem } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
@@ -50,7 +50,7 @@ export async function sendPurchaseConversions(
   const ids = order.items.map((i) => i.product_id);
 
   const productById = new Map(
-    resolveKnownProducts(ids).map((p) => [p.id, p]),
+    registryResolveKnownProducts(ids).map((p) => [p.id, p]),
   );
 
   const metaContents = order.items.map((item) => ({
@@ -63,7 +63,7 @@ export async function sendPurchaseConversions(
     // Print line: ceramic registry can't resolve a design id, so build the item
     // from the print registry + persisted variant (value/contents already correct).
     if (item.variant) {
-      const design = getPrintById(item.product_id);
+      const design = registryPrintById(item.product_id);
       return {
         item_id: item.product_id,
         item_name: design ? `Print Nº ${design.num}` : item.product_id,

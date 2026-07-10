@@ -2,36 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
 
 describe('buildFeedItems', () => {
-  it('marks sold products as out of stock and others as in stock', () => {
-    const items = buildFeedItems('pl', new Set(['k01']));
+  it('marks sold products as out of stock and others as in stock', async () => {
+    const items = await buildFeedItems('pl', new Set(['k01']));
     const sold = items.find((i) => i.id === 'k01');
     const available = items.find((i) => i.id !== 'k01');
     expect(sold?.availability).toBe('out of stock');
     expect(available?.availability).toBe('in stock');
   });
 
-  it('marks showroom products as out of stock (not advertised as buyable)', () => {
-    const items = buildFeedItems('pl', new Set(), new Set(['k02']));
+  it('marks showroom products as out of stock (not advertised as buyable)', async () => {
+    const items = await buildFeedItems('pl', new Set(), new Set(['k02']));
     const showroom = items.find((i) => i.id === 'k02');
     const available = items.find((i) => i.id !== 'k02');
     expect(showroom?.availability).toBe('out of stock');
     expect(available?.availability).toBe('in stock');
   });
 
-  it('formats PLN prices with PLN currency', () => {
-    const items = buildFeedItems('pl', new Set());
+  it('formats PLN prices with PLN currency', async () => {
+    const items = await buildFeedItems('pl', new Set());
     const kubek = items.find((i) => i.category === 'kubki');
     expect(kubek?.price).toMatch(/^\d+\.00 PLN$/);
   });
 
-  it('formats EUR prices with EUR currency for en locale', () => {
-    const items = buildFeedItems('en', new Set());
+  it('formats EUR prices with EUR currency for en locale', async () => {
+    const items = await buildFeedItems('en', new Set());
     const kubek = items.find((i) => i.category === 'kubki');
     expect(kubek?.price).toMatch(/^\d+\.00 EUR$/);
   });
 
-  it('uses German product names for de locale', () => {
-    const items = buildFeedItems('de', new Set());
+  it('uses German product names for de locale', async () => {
+    const items = await buildFeedItems('de', new Set());
     const kubek = items.find((i) => i.category === 'kubki');
     expect(kubek?.title).toMatch(/^Tasse #\d+$/);
   });

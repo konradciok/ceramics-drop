@@ -20,7 +20,7 @@ const SLUG = 'fine-art-prints';
 
 export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   const t = await getTranslations();
-  const designs = getPrintDesigns();
+  const designs = await getPrintDesigns();
   const currency = await getCurrency(locale);
   const printCurrency = toChargeableCurrency(currency);
   const { fmt } = currencyFormatter(printCurrency);

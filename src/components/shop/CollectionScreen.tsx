@@ -24,7 +24,7 @@ export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
 
   const t = await getTranslations();
   const [base, soldIds, showroomIds] = await Promise.all([
-    Promise.resolve(getProductsByCategory(slug)),
+    getProductsByCategory(slug),
     // Sold-state overlay is best-effort: a Supabase outage must not take the
     // whole storefront down. Fall back to "nothing sold" — the checkout
     // reservation (reserve_pieces) is the real double-sale guard.

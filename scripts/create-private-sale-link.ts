@@ -14,7 +14,7 @@
  */
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import { getProductById, isCategoryHidden } from '../src/lib/products';
+import { registryProductById, isCategoryHidden } from '../src/lib/products';
 import { SITE_URL } from '../src/lib/site';
 
 const DEFAULT_BASE_URL = SITE_URL;
@@ -63,12 +63,12 @@ async function main(): Promise<void> {
   const ids = [...new Set(itemsArg.split(',').map((s) => s.trim()).filter(Boolean))];
   if (ids.length === 0) throw new Error('--items resolved to no product ids.');
 
-  const unknown = ids.filter((id) => !getProductById(id));
+  const unknown = ids.filter((id) => !registryProductById(id));
   if (unknown.length > 0) throw new Error(`Unknown product id(s): ${unknown.join(', ')}. Check the catalogue ids in src/lib/products.ts.`);
 
   // Withdrawn families are hard-blocked at checkout (validateCart → not_for_sale),
   // so a link minted for one would always 400 at pay. Fail loudly here instead.
-  const hidden = ids.filter((id) => isCategoryHidden(getProductById(id)!.category));
+  const hidden = ids.filter((id) => isCategoryHidden(registryProductById(id)!.category));
   if (hidden.length > 0) throw new Error(`Withdrawn (hidden) families cannot be sold — checkout blocks them: ${hidden.join(', ')}.`);
 
   const daysRaw = getArg('days') ?? '14';
