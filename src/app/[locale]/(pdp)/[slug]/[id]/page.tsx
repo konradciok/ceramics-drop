@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { getProductById, CATEGORIES, isCategoryHidden } from '@/lib/products';
+import { getProductById, CATEGORIES, isProductPublic } from '@/lib/products';
 import { getPrintById } from '@/lib/prints';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -52,7 +52,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
 
   const product = await getProductById(id);
-  if (!product || product.category !== slug || isCategoryHidden(product.category)) notFound();
+  // Wrong-category URL, a hidden family, or a non-active DB status → real 404.
+  if (!product || product.category !== slug || !isProductPublic(product)) notFound();
 
   const t = await getTranslations({ locale });
   const cat = CATEGORIES[product.category];
@@ -62,10 +63,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const fallbackDescription = Array.isArray(rawNotes)
     ? ((rawNotes[product.noteIndex] as string) ?? '')
     : '';
-  const description = await getProductNote(product.category, locale as Locale, product.id, preview).catch(() => fallbackDescription);
+  const note = await getProductNote(product.category, locale as Locale, product.id, preview).catch(() => fallbackDescription);
+  // DB SEO overrides (db mode, when set) win over the derived title / CMS note.
+  const description = product.seoDescription ?? note;
 
   return {
-    title: displayName,
+    title: product.seoTitle ?? displayName,
     description,
     alternates: productAlternates(locale as Locale, slug, id),
     robots,
@@ -103,7 +106,7 @@ export default async function Page({ params, searchParams }: Props) {
   }
 
   const base = await getProductById(id);
-  if (!base || base.category !== (slug as CategorySlug) || isCategoryHidden(base.category)) notFound();
+  if (!base || base.category !== (slug as CategorySlug) || !isProductPublic(base)) notFound();
 
   const [t, soldIds, showroomIds] = await Promise.all([
     getTranslations({ locale }),

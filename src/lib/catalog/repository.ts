@@ -9,7 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
-import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
+import type { MediaSeedRow, ProductSeedRow, ProductStatus, VariantSeedRow } from './types';
+import type { ProductUpdateInput } from './schemas';
 
 /** The catalogue rows the admin list reads (products + their variants). */
 export interface CatalogRows {
@@ -125,4 +126,123 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
     (variantsRes.data ?? []) as VariantSeedRow[],
     (mediaRes.data ?? []) as MediaSeedRow[],
   );
+}
+
+/* ============================================================
+   Write path (Stage 4a) — admin product metadata + publish status.
+   Discrete, non-transactional single-row updates (no partial-unique-index
+   swaps yet — those land with variants/media in 4b/5). Every mutation records
+   a catalog_audit_log row. `updated_at` is set explicitly (repo convention:
+   there is no moddatetime trigger).
+   ============================================================ */
+
+/** A single product row plus its variants + media, for the admin editor. */
+export interface ProductEditorRow {
+  product: ProductSeedRow;
+  variants: VariantSeedRow[];
+  media: MediaSeedRow[];
+}
+
+/** Read one product (with variants + media) for the editor. Null when absent. */
+export async function readProductRow(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<ProductEditorRow | null> {
+  const productRes = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+  if (productRes.error) throw new Error(`read product: ${productRes.error.message}`);
+  if (!productRes.data) return null;
+
+  const [variantsRes, mediaRes] = await Promise.all([
+    supabase.from('product_variants').select('*').eq('product_id', id).order('position', { ascending: true }),
+    supabase.from('product_media').select('*').eq('product_id', id).order('position', { ascending: true }),
+  ]);
+  if (variantsRes.error) throw new Error(`read variants: ${variantsRes.error.message}`);
+  if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
+
+  return {
+    product: productRes.data as ProductSeedRow,
+    variants: (variantsRes.data ?? []) as VariantSeedRow[],
+    media: (mediaRes.data ?? []) as MediaSeedRow[],
+  };
+}
+
+/** Insert an audit row; failures are logged, not fatal (the write already committed). */
+async function writeCatalogAudit(
+  supabase: SupabaseClient,
+  entry: { product_id: string; actor_email: string | null; action: string; before: unknown; after: unknown },
+): Promise<void> {
+  const res = await supabase.from('catalog_audit_log').insert(entry);
+  if (res.error) console.error('[catalog] audit write failed', entry.product_id, res.error.message);
+}
+
+/** Postgres unique-violation code (e.g. a slug collision on products.slug). */
+const PG_UNIQUE_VIOLATION = '23505';
+
+/**
+ * Patch a product's editable metadata. Throws `product_not_found` (unknown id)
+ * or `slug_taken` (unique violation on `slug`); the caller maps these to
+ * 404 / 409 via `productError`.
+ */
+export async function updateProductMeta(
+  supabase: SupabaseClient,
+  id: string,
+  patch: ProductUpdateInput,
+  actorEmail: string | null,
+): Promise<ProductSeedRow> {
+  const before = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+  if (before.error) throw new Error(`load product: ${before.error.message}`);
+  if (!before.data) throw new Error('product_not_found');
+
+  const res = await supabase
+    .from('products')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  if (res.error) {
+    if (res.error.code === PG_UNIQUE_VIOLATION) throw new Error('slug_taken');
+    throw new Error(`update product: ${res.error.message}`);
+  }
+  if (!res.data) throw new Error('product_not_found');
+
+  await writeCatalogAudit(supabase, {
+    product_id: id,
+    actor_email: actorEmail,
+    action: 'update',
+    before: before.data,
+    after: res.data,
+  });
+  return res.data as ProductSeedRow;
+}
+
+/**
+ * Transition a product's publish status. Archiving is a soft-archive (status
+ * only — the row and its order history are never deleted). The first activation
+ * stamps `published_at`. Throws `product_not_found`.
+ */
+export async function updateProductStatus(
+  supabase: SupabaseClient,
+  id: string,
+  status: ProductStatus,
+  actorEmail: string | null,
+): Promise<ProductSeedRow> {
+  const before = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+  if (before.error) throw new Error(`load product: ${before.error.message}`);
+  if (!before.data) throw new Error('product_not_found');
+
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  if (status === 'active' && !before.data.published_at) patch.published_at = new Date().toISOString();
+
+  const res = await supabase.from('products').update(patch).eq('id', id).select('*').maybeSingle();
+  if (res.error) throw new Error(`update status: ${res.error.message}`);
+  if (!res.data) throw new Error('product_not_found');
+
+  await writeCatalogAudit(supabase, {
+    product_id: id,
+    actor_email: actorEmail,
+    action: `status:${status}`,
+    before: before.data,
+    after: res.data,
+  });
+  return res.data as ProductSeedRow;
 }

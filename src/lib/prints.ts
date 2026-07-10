@@ -79,9 +79,16 @@ async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<s
   if (catalogSource() === 'code') {
     return { designs: PRINT_DESIGNS, byId: BY_ID };
   }
-  const { loadPrintDesignsFromDb } = await import('./catalog/load');
-  const designs = await loadPrintDesignsFromDb();
-  return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
+  try {
+    const { loadPrintDesignsFromDb } = await import('./catalog/load');
+    const designs = await loadPrintDesignsFromDb();
+    return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
+  } catch (err) {
+    // Same resilience default as loadCeramicCatalog: fall back to the registry
+    // on a DB read failure rather than breaking print PDPs + checkout.
+    console.error('[catalog] print DB read failed; falling back to code registry', err);
+    return { designs: PRINT_DESIGNS, byId: BY_ID };
+  }
 }
 
 /** Published designs in registry order. */

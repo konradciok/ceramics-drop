@@ -44,6 +44,24 @@ export interface Product {
   dropId: string;
   /** 0-based index into the category's `notes` array (description lookup). */
   noteIndex: number;
+  /**
+   * Catalog publish status from the DB `products.status` column, surfaced only
+   * in CATALOG_SOURCE=db mode. The code registry leaves it undefined, which is
+   * treated as `'active'` everywhere — so `code` mode is unaffected. Drives
+   * per-product public visibility (see `isProductPublic` / `isProductPurchasable`
+   * in products.ts); distinct from the runtime `sold` / `showroom` overlays,
+   * which still render (sold pieces show a badge) whereas a non-active status
+   * withdraws the product entirely.
+   */
+  status?: 'draft' | 'active' | 'hidden' | 'archived';
+  /**
+   * SEO overrides from the DB (`products.seo_title` / `seo_description`),
+   * surfaced only in db mode when set (undefined in the code registry). When
+   * present they take precedence in the PDP `generateMetadata`; otherwise the
+   * derived title / CMS note are used.
+   */
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 /** Structural metadata for a product family / collection page. */

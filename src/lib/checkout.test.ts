@@ -1,6 +1,28 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { validateCart, MAX_CART } from './checkout';
 import { encodePrintToken } from './print-cart';
+import type { Product } from './types';
+
+// Mock the DB catalog loader so we can exercise the CATALOG_SOURCE=db path
+// (getProductById → loadCeramicCatalog → dynamic import of ./catalog/load).
+vi.mock('./catalog/load', () => ({
+  loadCeramicProductsFromDb: vi.fn(),
+  loadPrintDesignsFromDb: vi.fn(),
+}));
+import { loadCeramicProductsFromDb } from './catalog/load';
+
+const k01 = (status?: Product['status']): Product => ({
+  id: 'k01',
+  category: 'kubki',
+  num: '01',
+  image: '/uploads/kubek-1.webp',
+  price: 95,
+  measure: '8 × 8 × 10 cm',
+  sold: false,
+  dropId: 'drop-1',
+  noteIndex: 0,
+  ...(status ? { status } : {}),
+});
 
 describe('validateCart', () => {
   it('maps known ids to products with grosze prices', async () => {
@@ -72,5 +94,28 @@ describe('validateCart', () => {
   it('rejects an unpublished design', async () => {
     const token = encodePrintToken('fap04', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+  });
+});
+
+describe('validateCart status gating (CATALOG_SOURCE=db)', () => {
+  const original = process.env.CATALOG_SOURCE;
+  afterEach(() => {
+    if (original === undefined) delete process.env.CATALOG_SOURCE;
+    else process.env.CATALOG_SOURCE = original;
+    vi.clearAllMocks();
+  });
+
+  it('hard-blocks a non-active ceramic with not_for_sale (before any reservation)', async () => {
+    process.env.CATALOG_SOURCE = 'db';
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k01('hidden')]);
+    expect(await validateCart(['k01'], 'pln')).toEqual({ ok: false, reason: 'not_for_sale' });
+  });
+
+  it('accepts the same ceramic once active', async () => {
+    process.env.CATALOG_SOURCE = 'db';
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k01()]);
+    const r = await validateCart(['k01'], 'pln');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.items[0]).toEqual({ product_id: 'k01', unit_price: 9500 });
   });
 });

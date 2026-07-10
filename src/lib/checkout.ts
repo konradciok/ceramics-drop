@@ -1,4 +1,4 @@
-import { getProductById, isCategoryHidden, registryProducts } from './products';
+import { getProductById, isProductPublic, registryProducts } from './products';
 import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
@@ -57,9 +57,10 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     const id = raw;
     const product = await getProductById(id);
     if (!product) return { ok: false, reason: 'unknown' };
-    // Hard block: a withdrawn family can never be bought — not via a stale cart,
-    // not via a private-sale link (validateCart runs before either reservation).
-    if (isCategoryHidden(product.category)) return { ok: false, reason: 'not_for_sale' };
+    // Hard block: a withdrawn product (hidden family, or a non-active DB status
+    // draft/hidden/archived) can never be bought — not via a stale cart, not via
+    // a private-sale link (validateCart runs before either reservation).
+    if (!isProductPublic(product)) return { ok: false, reason: 'not_for_sale' };
     seen.add(id);
     const unit_price =
       currency === 'eur' ? toEuroCents(PRICE_EUR[product.category]) :

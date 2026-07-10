@@ -63,6 +63,14 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       sold: false,
       dropId: row.drop_id ?? '',
       noteIndex: row.note_index ?? 0,
+      // Surface `status` ONLY when it is not the default 'active', so an active
+      // ceramic stays byte-identical to the code registry (which carries no
+      // status field) and the parity tests keep round-tripping. A non-active
+      // status flows through to isProductPublic and withdraws the product.
+      ...(row.status !== 'active' ? { status: row.status } : {}),
+      // SEO overrides only when set (registry has none → parity preserved).
+      ...(row.seo_title ? { seoTitle: row.seo_title } : {}),
+      ...(row.seo_description ? { seoDescription: row.seo_description } : {}),
     });
   }
 
