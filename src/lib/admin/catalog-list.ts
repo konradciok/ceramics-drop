@@ -12,10 +12,11 @@ import { adminSupabase } from '@/lib/admin/clients';
 import { listInventory, type Piece } from '@/lib/admin/data';
 import { CATEGORY_LABEL, productRef } from '@/lib/admin/products';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
-import { listCatalogRows, type CatalogRows } from '@/lib/catalog/repository';
+import { listCatalogRows, readProductRow, type CatalogRows } from '@/lib/catalog/repository';
 import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplayStatus } from '@/lib/catalog/status';
 import { CATEGORY_ORDER, isCategoryHidden } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
+import type { ProductSeedRow } from '@/lib/catalog/types';
 
 export interface ProductListRow {
   id: string;
@@ -164,5 +165,49 @@ export async function listProducts(): Promise<ProductListResult> {
     source,
     dbCount: dbRows.products.length,
     expectedCount: registry.products.length,
+  };
+}
+
+export interface ProductEditorState {
+  row: ProductSeedRow;
+  title: string;
+  image: string | null;
+  categoryLabel: string;
+  /** 'registry' = the DB row is missing (backfill not run) — saves will 404 until it is. */
+  source: 'db' | 'registry';
+  /** id-based PDP path for the "view on site" link (PL default locale). */
+  pdpPath: string;
+  /** Deep link to the category's description document in the Content module. */
+  notesHref: string;
+}
+
+/**
+ * Load one product for the `/admin/products/[id]` editor. Prefers the DB row;
+ * falls back to the registry seed row (so the page still renders before the
+ * backfill, though saving will 404 until the row exists in the DB).
+ */
+export async function getProductEditorState(id: string): Promise<ProductEditorState | null> {
+  const supabase = adminSupabase();
+  const dbRow = await readProductRow(supabase, id).catch((err) => {
+    console.error('[admin/products] readProductRow failed, falling back to registry seed', err);
+    return null;
+  });
+
+  let row = dbRow?.product ?? null;
+  const source: 'db' | 'registry' = dbRow ? 'db' : 'registry';
+  if (!row) {
+    row = buildCatalogSeed().products.find((p) => p.id === id) ?? null;
+  }
+  if (!row) return null;
+
+  const ref = productRef(id);
+  return {
+    row,
+    title: ref.label,
+    image: ref.image,
+    categoryLabel: CATEGORY_LABEL[row.category_slug] ?? row.category_slug,
+    source,
+    pdpPath: `/${row.category_slug}/${row.id}`,
+    notesHref: `/admin/content/product_notes/${row.category_slug}`,
   };
 }

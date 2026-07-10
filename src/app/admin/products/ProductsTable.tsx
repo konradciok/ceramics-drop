@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import type { ProductListRow } from '@/lib/admin/catalog-list';
 import type { ProductDisplayStatus } from '@/lib/catalog/status';
@@ -92,7 +93,7 @@ const COLUMNS: Column<ProductListRow>[] = [
     key: 'product',
     header: 'Produkt',
     render: (r) => (
-      <div className="adm-item">
+      <Link className="adm-item" href={`/admin/products/${r.id}`}>
         {r.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={r.image} alt="" />
@@ -103,7 +104,7 @@ const COLUMNS: Column<ProductListRow>[] = [
           <div>{r.title}</div>
           <div className="id">{r.id}</div>
         </div>
-      </div>
+      </Link>
     ),
   },
   { key: 'category', header: 'Kategoria', render: (r) => r.categoryLabel },

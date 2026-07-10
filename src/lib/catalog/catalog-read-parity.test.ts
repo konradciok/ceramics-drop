@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   getProducts,
+  getPublicProducts,
   getProductById,
   getProductsByCategory,
   registryProducts,
@@ -89,6 +90,33 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     );
     // The DB branch was actually taken (not the registry short-circuit).
     expect(loadCeramicProductsFromDb).toHaveBeenCalled();
+  });
+
+  it('withdraws a non-active ceramic from public surfaces but still resolves it by id', async () => {
+    process.env.CATALOG_SOURCE = 'db';
+    // Same catalogue as the registry, but k01 is flipped to draft in the DB.
+    const withDraft = dbCeramics.map((p) => (p.id === 'k01' ? { ...p, status: 'draft' as const } : p));
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(withDraft);
+
+    const publicIds = new Set((await getPublicProducts()).map((p) => p.id));
+    expect(publicIds.has('k01')).toBe(false); // draft → withdrawn from /sklep, sitemap, feeds
+    expect((await getProductsByCategory('kubki')).some((p) => p.id === 'k01')).toBe(false);
+    // Still resolvable by id (admin / PDP guard decides visibility itself).
+    expect((await getProductById('k01'))?.status).toBe('draft');
+    // Every other piece stays public.
+    expect(publicIds.has('k04')).toBe(true);
+  });
+
+  it('falls back to the code registry when the ceramic DB read fails (no throw)', async () => {
+    process.env.CATALOG_SOURCE = 'db';
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+
+    // Storefront stays up on the registry instead of throwing.
+    expect(await getProducts()).toEqual(registryProducts());
+    expect((await getProductById('k01'))?.id).toBe('k01');
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 
   it('getPrintDesigns()/getPrintById() deep-equal the registry via the DB path', async () => {

@@ -67,9 +67,21 @@ export function isCategoryHidden(slug: CategorySlug): boolean {
   return HIDDEN_CATEGORIES.has(slug);
 }
 
-/** Whether a piece may be bought — not sold, not in the showroom, and not in a hidden family. */
+/**
+ * Whether a product is publicly visible (collection grids, /sklep, PDP, sitemap,
+ * feeds). A non-`active` DB status (`draft`/`hidden`/`archived`) withdraws the
+ * product; a hidden family withdraws its whole set. `sold`/`showroom` are NOT
+ * checked here — those pieces still render (with a badge), they are just not
+ * purchasable. In `CATALOG_SOURCE=code` mode `status` is undefined ⇒ `active`,
+ * so this collapses to the pre-Stage-4 category-only visibility.
+ */
+export function isProductPublic(product: Product): boolean {
+  return (product.status ?? 'active') === 'active' && !isCategoryHidden(product.category);
+}
+
+/** Whether a piece may be bought — publicly visible AND not sold / not in the showroom. */
 export function isProductPurchasable(product: Product): boolean {
-  return !product.sold && !product.showroom && !isCategoryHidden(product.category);
+  return !product.sold && !product.showroom && isProductPublic(product);
 }
 
 /** CATEGORY_ORDER minus hidden families — nav / footer / switcher / jump-nav. */
@@ -310,13 +322,27 @@ function groupByCategory(products: Product[]): Record<CategorySlug, Product[]> {
   );
 }
 
+const REGISTRY_CATALOG: CeramicCatalog = {
+  products: PRODUCTS,
+  byId: PRODUCT_BY_ID,
+  byCategory: PRODUCTS_BY_CATEGORY,
+};
+
 async function loadCeramicCatalog(): Promise<CeramicCatalog> {
-  if (catalogSource() === 'code') {
-    return { products: PRODUCTS, byId: PRODUCT_BY_ID, byCategory: PRODUCTS_BY_CATEGORY };
+  if (catalogSource() === 'code') return REGISTRY_CATALOG;
+  try {
+    const { loadCeramicProductsFromDb } = await import('./catalog/load');
+    const products = await loadCeramicProductsFromDb();
+    return { products, byId: new Map(products.map((p) => [p.id, p])), byCategory: groupByCategory(products) };
+  } catch (err) {
+    // Resilience default (Stage 4a): a DB read failure degrades to the code
+    // registry — identical to the DB at parity — rather than 500-ing every
+    // storefront surface + checkout. The blip is logged; edits reappear once the
+    // DB recovers. (Trade-off: a non-active product briefly reappears during an
+    // outage. Reversible to fail-loud by rethrowing here.)
+    console.error('[catalog] ceramic DB read failed; falling back to code registry', err);
+    return REGISTRY_CATALOG;
   }
-  const { loadCeramicProductsFromDb } = await import('./catalog/load');
-  const products = await loadCeramicProductsFromDb();
-  return { products, byId: new Map(products.map((p) => [p.id, p])), byCategory: groupByCategory(products) };
 }
 
 /**
@@ -333,11 +359,13 @@ export async function getProducts(): Promise<Product[]> {
  * overlay is applied at render time; feeds mark them out-of-stock).
  */
 export async function getPublicProducts(): Promise<Product[]> {
-  return (await loadCeramicCatalog()).products.filter((p) => !isCategoryHidden(p.category));
+  return (await loadCeramicCatalog()).products.filter(isProductPublic);
 }
 
 export async function getProductsByCategory(slug: CategorySlug): Promise<Product[]> {
-  return (await loadCeramicCatalog()).byCategory[slug];
+  // Public grid + PDP siblings + collection JSON-LD read this — withdraw any
+  // non-active product (db mode only; `code` has no status ⇒ all active).
+  return ((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic);
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {

@@ -7,6 +7,7 @@ import {
   resolveCartProducts,
   resolveKnownProducts,
   isCategoryHidden,
+  isProductPublic,
   isProductPurchasable,
   CATEGORY_ORDER,
   VISIBLE_CATEGORY_ORDER,
@@ -75,7 +76,9 @@ describe('getProducts', () => {
 
   it('caches the registry — same reference across calls', async () => {
     expect(await getProducts()).toBe(await getProducts());
-    expect(await getProductsByCategory('kubki')).toBe(await getProductsByCategory('kubki'));
+    // getProductsByCategory now filters by isProductPublic, so it returns a fresh
+    // (equal) array each call rather than the cached PRODUCTS_BY_CATEGORY ref.
+    expect(await getProductsByCategory('kubki')).toEqual(await getProductsByCategory('kubki'));
   });
 
   it('returns the registry instance from lookups', async () => {
@@ -202,6 +205,34 @@ describe('resolveKnownProducts', () => {
 describe('dropId', () => {
   it('defaults every current piece to drop-1', async () => {
     expect((await getProducts()).every((p) => p.dropId === 'drop-1')).toBe(true);
+  });
+});
+
+describe('isProductPublic (status → visibility)', () => {
+  it('treats a missing status (code registry) as active/public', async () => {
+    const k01 = (await getProductById('k01'))!;
+    expect(k01.status).toBeUndefined();
+    expect(isProductPublic(k01)).toBe(true);
+  });
+
+  it('is public only for active status', () => {
+    const base = { category: 'kubki' as const } as Parameters<typeof isProductPublic>[0];
+    expect(isProductPublic({ ...base, status: 'active' })).toBe(true);
+    expect(isProductPublic({ ...base, status: 'draft' })).toBe(false);
+    expect(isProductPublic({ ...base, status: 'hidden' })).toBe(false);
+    expect(isProductPublic({ ...base, status: 'archived' })).toBe(false);
+  });
+
+  it('keeps sold/showroom pieces public (they still render with a badge)', async () => {
+    const k01 = (await getProductById('k01'))!;
+    expect(isProductPublic({ ...k01, sold: true })).toBe(true);
+    expect(isProductPublic({ ...k01, showroom: true })).toBe(true);
+  });
+
+  it('a non-active status also makes the product non-purchasable', async () => {
+    const k01 = (await getProductById('k01'))!;
+    expect(isProductPurchasable({ ...k01, status: 'hidden' })).toBe(false);
+    expect(isProductPurchasable({ ...k01, status: 'active' })).toBe(true);
   });
 });
 
