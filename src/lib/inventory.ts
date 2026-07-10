@@ -79,7 +79,7 @@ export async function getShowroomProducts(): Promise<ShowroomEntry[]> {
   const dropLabel = new Map((drops ?? []).map((d) => [d.id as string, d.label as string]));
   const order = new Map(CATEGORY_ORDER.map((slug, i) => [slug, i]));
 
-  return resolveKnownProducts((pieces ?? []).map((p) => p.product_id as string))
+  return (await resolveKnownProducts((pieces ?? []).map((p) => p.product_id as string)))
     .map((product) => ({
       product: { ...product, showroom: true, sold: soldSet.has(product.id) },
       dropLabel: dropLabel.get(product.dropId) ?? null,

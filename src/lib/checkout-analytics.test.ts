@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getProductById } from './products';
+import { registryProductById } from './products';
 import {
   forgetRememberedCheckout,
   hasFiredPurchaseOnce,
@@ -13,7 +13,7 @@ import {
 } from './checkout-analytics';
 
 const product = (id: string) => {
-  const found = getProductById(id);
+  const found = registryProductById(id);
   if (!found) throw new Error(`Missing product fixture: ${id}`);
   return found;
 };

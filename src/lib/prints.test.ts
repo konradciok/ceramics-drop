@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
 import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
 import { priceOfVariant } from './print-pricing';
-import type { PrintVariantSelection } from './types';
+import type { PrintDesign, PrintVariantSelection } from './types';
 
 describe('getPrintDesigns', () => {
-  it('returns only published designs', () => {
-    const designs = getPrintDesigns();
+  it('returns only published designs', async () => {
+    const designs = await getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
     expect(designs.map(d => d.id)).toEqual(['fap01', 'fap02', 'fap03']);
     expect(designs.find(d => d.id === 'fap04')).toBeUndefined();
@@ -14,16 +14,19 @@ describe('getPrintDesigns', () => {
 });
 
 describe('getPrintById', () => {
-  it('resolves unpublished designs (so checkout can reject them)', () => {
-    expect(getPrintById('fap04')?.published).toBe(false);
+  it('resolves unpublished designs (so checkout can reject them)', async () => {
+    expect((await getPrintById('fap04'))?.published).toBe(false);
   });
-  it('returns undefined for unknown id', () => {
-    expect(getPrintById('unknown')).toBeUndefined();
+  it('returns undefined for unknown id', async () => {
+    expect(await getPrintById('unknown')).toBeUndefined();
   });
 });
 
 describe('isVariantAvailable', () => {
-  const fap01 = getPrintById('fap01')!;
+  let fap01: PrintDesign;
+  beforeAll(async () => {
+    fap01 = (await getPrintById('fap01'))!;
+  });
 
   it('accepts valid unframed variant', () => {
     expect(isVariantAvailable(fap01, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(true);
@@ -31,16 +34,16 @@ describe('isVariantAvailable', () => {
   it('accepts valid framed+mount variant', () => {
     expect(isVariantAvailable(fap01, { size: '50x70', framed: true, mount: true, frameColour: 'natural' })).toBe(true);
   });
-  it('rejects unpublished design', () => {
-    const fap04 = getPrintById('fap04')!;
+  it('rejects unpublished design', async () => {
+    const fap04 = (await getPrintById('fap04'))!;
     expect(isVariantAvailable(fap04, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
-  it('rejects mount when design does not offer it', () => {
-    const fap02 = getPrintById('fap02')!;
+  it('rejects mount when design does not offer it', async () => {
+    const fap02 = (await getPrintById('fap02'))!;
     expect(isVariantAvailable(fap02, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(false);
   });
-  it('rejects size not offered by design', () => {
-    const fap02 = getPrintById('fap02')!;
+  it('rejects size not offered by design', async () => {
+    const fap02 = (await getPrintById('fap02'))!;
     expect(isVariantAvailable(fap02, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
   it('rejects framed=false with non-none colour', () => {
@@ -50,9 +53,9 @@ describe('isVariantAvailable', () => {
 });
 
 describe('published print variant coverage', () => {
-  it('has SKU and pricing coverage for every sellable variant', () => {
+  it('has SKU and pricing coverage for every sellable variant', async () => {
     let checked = 0;
-    for (const design of getPrintDesigns()) {
+    for (const design of await getPrintDesigns()) {
       for (const size of design.sizes) {
         // Mirror sellable axes directly: mount only when the design offers it,
         // so the sweep never generates a combo that isVariantAvailable must skip.

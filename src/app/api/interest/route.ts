@@ -10,7 +10,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { getProductById } from '@/lib/products';
+import { registryProductById } from '@/lib/products';
 import { getShowroomIds } from '@/lib/inventory';
 import { emailShowroomInterestToStudio } from '@/lib/email';
 import { getClientIp } from '@/lib/client-ip';
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const consentMarketing = body.consent_marketing === true;
   const locale = (routing.locales as readonly string[]).includes(String(body.locale)) ? String(body.locale) : 'pl';
 
-  if (!productId || !getProductById(productId)) {
+  if (!productId || !registryProductById(productId)) {
     return NextResponse.json({ error: 'unknown_product' }, { status: 400 });
   }
   if (!EMAIL_RE.test(email)) {

@@ -38,7 +38,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const showroom = product.showroom === true;
 
   // Up to 4 sibling pieces from the same category with live sold + showroom overlay
-  const siblings = getProductsByCategory(product.category)
+  const siblings = (await getProductsByCategory(product.category))
     .filter((p) => p.id !== product.id)
     .map((p) => {
       const merged = soldSet.has(p.id) ? { ...p, sold: true } : p;

@@ -8,7 +8,7 @@ import { getPublicProducts } from '@/lib/products';
 const LAST_MODIFIED = new Date();
 
 /** Generates all site URLs for search-engine crawlers: category pages + individual product pages across all three locales. */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
   const paths = SITE_PATHS.filter((path) => !NOINDEX_PATHS.includes(path));
 
@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  for (const product of getPublicProducts()) {
+  for (const product of await getPublicProducts()) {
     const path = `/${product.category}/${product.id}`;
     for (const locale of routing.locales) {
       entries.push({

@@ -1,14 +1,16 @@
-import { getProductById, getProducts, isCategoryHidden } from './products';
+import { getProductById, isCategoryHidden, registryProducts } from './products';
 import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
-import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
+import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant } from './print-pricing';
 import type { PrintVariantSelection } from './types';
 
 // Hard sanity bound: every one-of-a-kind ceramic plus every print design in
 // each of its 21 fulfilment variants. Derived so it can't drift when the
-// catalogue changes.
-export const MAX_CART = getProducts().length + getPrintDesigns().length * 21;
+// catalogue changes. Uses the code registry (not the async DB accessors) so it
+// stays a module-load constant — it is an upper bound, and registry == DB at
+// parity, so the exact source is immaterial here.
+export const MAX_CART = registryProducts().length + registryPrintDesigns().length * 21;
 
 export type CheckoutVariant = PrintVariantSelection & {
   prodigiSku: string;
@@ -24,7 +26,7 @@ export type ValidateResult =
  * Resolve raw cart ids to deduped, catalog-known items.
  * unit_price is in grosze (PLN), euro-cents (EUR), or pence (GBP) depending on currency.
  */
-export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 'pln'): ValidateResult {
+export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 'pln'): Promise<ValidateResult> {
   if (!Array.isArray(rawIds) || rawIds.length === 0) return { ok: false, reason: 'empty' };
   if (rawIds.length > MAX_CART) return { ok: false, reason: 'too_many' };
 
@@ -35,7 +37,7 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 
     if (isPrintToken(raw)) {
       const dec = decodePrintToken(raw);
       if (!dec) return { ok: false, reason: 'unknown' };
-      const design = getPrintById(dec.designId);
+      const design = await getPrintById(dec.designId);
       if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
       const skuInfo = PRODIGI_SKU_MAP[variantKey(dec.sel)];
       if (!skuInfo) return { ok: false, reason: 'unknown' };
@@ -53,7 +55,7 @@ export function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'gbp' = 
       continue;
     }
     const id = raw;
-    const product = getProductById(id);
+    const product = await getProductById(id);
     if (!product) return { ok: false, reason: 'unknown' };
     // Hard block: a withdrawn family can never be bought — not via a stale cart,
     // not via a private-sale link (validateCart runs before either reservation).

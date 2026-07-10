@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CUSTOM_CARTONS, PACK_SPECS, PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
-import { CATEGORIES, CATEGORY_ORDER, getProductById } from './products';
+import { CATEGORIES, CATEGORY_ORDER, registryProductById } from './products';
 import { encodePrintToken } from './print-cart';
 
 /** Every input id lands in exactly one parcel (unknown/print ids excluded). */
@@ -241,7 +241,7 @@ describe('recommendPacking', () => {
       const plan = recommendPacking(ids);
       expect(plan.manualReview).toBe(false);
       expect(plan.packages.length).toBeGreaterThan(0);
-      const known = ids.filter((id) => getProductById(id));
+      const known = ids.filter((id) => registryProductById(id));
       expect(packedIds(plan)).toEqual([...known].sort());
       assertInvariants(plan);
     }

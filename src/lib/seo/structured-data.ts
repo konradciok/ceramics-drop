@@ -77,9 +77,9 @@ type CollectionArgs = {
  * Pieces are one-of-a-kind, so the price is the shared family price and
  * availability degrades to `SoldOut` once a piece sells.
  */
-export function collectionSchema({ slug, locale, t, soldIds = [], showroomIds = [] }: CollectionArgs): Graph {
+export async function collectionSchema({ slug, locale, t, soldIds = [], showroomIds = [] }: CollectionArgs): Promise<Graph> {
   const category = getCategory(slug);
-  const products = getProductsByCategory(slug);
+  const products = await getProductsByCategory(slug);
   const sold = new Set(soldIds);
   const showroom = new Set(showroomIds);
   const singular = t(`product.${category.singularKey}`);
@@ -134,8 +134,8 @@ type PrintCollectionArgs = {
  * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
  * print is configurable, not a single SKU.
  */
-export function printCollectionSchema({ locale, t }: PrintCollectionArgs): Graph {
-  const designs = getPrintDesigns();
+export async function printCollectionSchema({ locale, t }: PrintCollectionArgs): Promise<Graph> {
+  const designs = await getPrintDesigns();
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');

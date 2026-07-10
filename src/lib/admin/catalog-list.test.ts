@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
-import { getProducts } from '@/lib/products';
+import { registryProducts } from '@/lib/products';
 import { PRINT_DESIGNS } from '@/lib/prints';
 import type { Piece } from '@/lib/admin/data';
 import { assembleProductRows } from './catalog-list';
@@ -22,7 +22,7 @@ function piece(overrides: Partial<Piece> & Pick<Piece, 'product_id' | 'status'>)
 describe('assembleProductRows', () => {
   it('produces one row per catalogue product (ceramics + prints)', () => {
     const rows = assembleProductRows(catalog, new Map());
-    expect(rows).toHaveLength(getProducts().length + PRINT_DESIGNS.length);
+    expect(rows).toHaveLength(registryProducts().length + PRINT_DESIGNS.length);
   });
 
   it('defaults an untouched ceramic to active, 1/1, one variant', () => {

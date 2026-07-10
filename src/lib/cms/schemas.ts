@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { getPrintDesigns } from '@/lib/prints';
-import { getProductsByCategory } from '@/lib/products';
+import { registryPrintDesigns } from '@/lib/prints';
+import { registryProductsByCategory } from '@/lib/products';
 import { CMS_DOCUMENT_KINDS, CMS_LOCALES, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
 
@@ -60,9 +60,9 @@ export const deliveryNoticeSchema = z.object({
 
 /** Live ids whose notes a payload must cover, in catalogue order (null = unknown slug). */
 export function productNoteIds(slug: string): string[] | null {
-  if (slug === PRINTS_SLUG) return getPrintDesigns().map((design) => design.id);
+  if (slug === PRINTS_SLUG) return registryPrintDesigns().map((design) => design.id);
   try {
-    return getProductsByCategory(slug as CategorySlug).map((product) => product.id);
+    return registryProductsByCategory(slug as CategorySlug).map((product) => product.id);
   } catch {
     return null;
   }

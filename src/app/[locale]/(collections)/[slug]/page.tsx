@@ -41,9 +41,10 @@ export default async function Page({ params }: Props) {
     getSoldIds().catch(() => [] as string[]),
     getShowroomIds().catch(() => [] as string[]),
   ]);
+  const schema = await collectionSchema({ slug: slug as CategorySlug, locale: locale as Locale, t, soldIds, showroomIds });
   return (
     <main>
-      <JsonLd data={collectionSchema({ slug: slug as CategorySlug, locale: locale as Locale, t, soldIds, showroomIds })} />
+      <JsonLd data={schema} />
       <CollectionScreen slug={slug as CategorySlug} />
     </main>
   );

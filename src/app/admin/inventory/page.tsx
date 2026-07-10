@@ -1,6 +1,6 @@
 import { listInventory, listDrops, listInterest } from '@/lib/admin/data';
 import { productRef } from '@/lib/admin/products';
-import { getProductById } from '@/lib/products';
+import { registryProductById } from '@/lib/products';
 import { formatDateTime } from '../ui';
 import { InventoryManager, type InventoryRow, type DropInfo } from './InventoryManager';
 
@@ -37,7 +37,7 @@ export default async function InventoryPage() {
       status: p.status,
       showroom: p.showroom,
       // Drop membership is a static, code-owned fact on the product registry.
-      dropId: getProductById(p.product_id)?.dropId ?? null,
+      dropId: registryProductById(p.product_id)?.dropId ?? null,
       reservedUntilLabel: p.reserved_until ? formatDateTime(p.reserved_until) : '—',
       reservedExpired: p.reservedExpired,
       orderId: p.order_id,

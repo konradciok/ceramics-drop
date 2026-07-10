@@ -12,7 +12,7 @@
    axis rules from `prints.ts` / `print-cart.ts`.
    ============================================================ */
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../types';
-import { getProducts } from '../products';
+import { registryProducts } from '../products';
 import { PRINT_DESIGNS } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { variantKey, PRODIGI_SKU_MAP } from '../print-cart';
@@ -48,7 +48,7 @@ export function enumeratePrintVariants(design: PrintDesign): PrintVariantSelecti
 }
 
 function ceramicRows(seed: CatalogSeed): void {
-  for (const p of getProducts()) {
+  for (const p of registryProducts()) {
     seed.products.push({
       id: p.id,
       type: 'ceramic',

@@ -2,8 +2,8 @@ import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { publishVersion } from '@/lib/admin/content';
 import { actorEmail, contentError, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
-import { getProductsByCategory } from '@/lib/products';
-import { getPrintDesigns } from '@/lib/prints';
+import { registryProductsByCategory } from '@/lib/products';
+import { registryPrintDesigns } from '@/lib/prints';
 import type { CmsLocale } from '@/lib/cms/types';
 import type { CategorySlug } from '@/lib/types';
 
@@ -15,9 +15,9 @@ function localizedPath(locale: CmsLocale, path: string): string {
 
 function revalidateProductNotes(slug: string, locale: CmsLocale) {
   if (slug === 'fine-art-prints') {
-    for (const design of getPrintDesigns()) revalidatePath(localizedPath(locale, `/fine-art-prints/${design.id}`));
+    for (const design of registryPrintDesigns()) revalidatePath(localizedPath(locale, `/fine-art-prints/${design.id}`));
   } else {
-    for (const product of getProductsByCategory(slug as CategorySlug)) {
+    for (const product of registryProductsByCategory(slug as CategorySlug)) {
       revalidatePath(localizedPath(locale, `/${slug}/${product.id}`));
     }
   }

@@ -1,5 +1,5 @@
-import { CATEGORIES, getProductById } from './products';
-import { getPrintById } from './prints';
+import { CATEGORIES, registryProductById } from './products';
+import { registryPrintById } from './prints';
 import { decodePrintToken, isPrintToken, variantLabel } from './print-cart';
 import type { Product } from './types';
 import type { CurrencyCode } from './format';
@@ -115,7 +115,7 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
   if (isPrintToken(id)) {
     const dec = decodePrintToken(id);
     if (!dec) return null;
-    const design = getPrintById(dec.designId);
+    const design = registryPrintById(dec.designId);
     if (!design) return null;
     // A print has no single catalogue price — without the caller-supplied price
     // a 0 would silently understate cart/purchase values, so drop the item.
@@ -130,7 +130,7 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
       quantity: 1,
     };
   }
-  const product = getProductById(id);
+  const product = registryProductById(id);
   if (!product) return null;
   return toAnalyticsItem(product, { priceOverride });
 }

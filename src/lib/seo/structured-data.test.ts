@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { collectionSchema, organizationSchema, productSchema } from './structured-data';
-import { getProductsByCategory } from '@/lib/products';
+import { registryProductsByCategory } from '@/lib/products';
 import { PRICE_EUR } from '@/lib/pricing';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
@@ -34,21 +34,24 @@ describe('organizationSchema', () => {
 });
 
 describe('collectionSchema', () => {
-  const graph = collectionSchema({ slug: 'kubki', locale: 'pl', t });
-  const nodes = graph['@graph'] as unknown as Node[];
+  let nodes: Node[];
+  beforeAll(async () => {
+    const graph = await collectionSchema({ slug: 'kubki', locale: 'pl', t });
+    nodes = graph['@graph'] as unknown as Node[];
+  });
 
   it('contains a BreadcrumbList and an ItemList', () => {
     expect(nodes.map((n) => n['@type'])).toEqual(['BreadcrumbList', 'ItemList']);
   });
 
   it('lists every piece in the family as a Product', () => {
-    const expected = getProductsByCategory('kubki').length;
+    const expected = registryProductsByCategory('kubki').length;
     expect(nodes[1].numberOfItems).toBe(expected);
     expect(nodes[1].itemListElement).toHaveLength(expected);
   });
 
   it('prices every offer in PLN and maps availability from catalog sold flags', () => {
-    const products = getProductsByCategory('kubki');
+    const products = registryProductsByCategory('kubki');
     (nodes[1].itemListElement ?? []).forEach(({ item }, i) => {
       const expected = products[i].sold
         ? 'https://schema.org/SoldOut'
@@ -60,8 +63,8 @@ describe('collectionSchema', () => {
     });
   });
 
-  it('en locale emits EUR currency and PRICE_EUR price in collection offers', () => {
-    const enGraph = collectionSchema({ slug: 'kubki', locale: 'en', t });
+  it('en locale emits EUR currency and PRICE_EUR price in collection offers', async () => {
+    const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t });
     const enNodes = enGraph['@graph'] as unknown as Node[];
     (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('EUR');
@@ -69,10 +72,10 @@ describe('collectionSchema', () => {
     });
   });
 
-  it('maps live soldIds to SoldOut, leaving the rest at their catalog state', () => {
-    const products = getProductsByCategory('kubki');
+  it('maps live soldIds to SoldOut, leaving the rest at their catalog state', async () => {
+    const products = registryProductsByCategory('kubki');
     const soldId = products[0].id; // first piece, e.g. "k01"
-    const soldGraph = collectionSchema({ slug: 'kubki', locale: 'pl', t, soldIds: [soldId] });
+    const soldGraph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, soldIds: [soldId] });
     const items = (soldGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
 
     items.forEach(({ item }, i) => {
@@ -86,7 +89,7 @@ describe('collectionSchema', () => {
 });
 
 describe('productSchema', () => {
-  const products = getProductsByCategory('kubki');
+  const products = registryProductsByCategory('kubki');
   const product = { ...products[0], sold: false };
   const tRaw = (key: string) => {
     // Return a stub notes array so noteIndex lookup works

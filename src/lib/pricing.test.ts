@@ -197,8 +197,8 @@ describe('PDP estimate ↔ checkout parity (paczkomat)', () => {
   const product = { category: 'kubki' as CategorySlug, price: PRICE_PLN.kubki };
   const method = 'paczkomat' as const;
 
-  it('PLN minor units match orderAmountGrosze', () => {
-    const cart = validateCart(['k01'], 'pln');
+  it('PLN minor units match orderAmountGrosze', async () => {
+    const cart = await validateCart(['k01'], 'pln');
     expect(cart.ok).toBe(true);
     if (!cart.ok) return;
 
@@ -210,8 +210,8 @@ describe('PDP estimate ↔ checkout parity (paczkomat)', () => {
     expect(checkoutMinor).toBe(toGrosze(pdpMajor));
   });
 
-  it('EUR minor units match orderAmountEuroCents', () => {
-    const cart = validateCart(['k01'], 'eur');
+  it('EUR minor units match orderAmountEuroCents', async () => {
+    const cart = await validateCart(['k01'], 'eur');
     expect(cart.ok).toBe(true);
     if (!cart.ok) return;
 
@@ -223,8 +223,8 @@ describe('PDP estimate ↔ checkout parity (paczkomat)', () => {
     expect(checkoutMinor).toBe(toEuroCents(pdpMajor));
   });
 
-  it('GBP minor units match orderAmountGBPPence', () => {
-    const cart = validateCart(['k01'], 'gbp');
+  it('GBP minor units match orderAmountGBPPence', async () => {
+    const cart = await validateCart(['k01'], 'gbp');
     expect(cart.ok).toBe(true);
     if (!cart.ok) return;
 
