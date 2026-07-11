@@ -111,6 +111,74 @@ export async function resolvePrintAsset(
   };
 }
 
+/** Fulfilment-time asset record for signing and logging (ready or retired). */
+export type FulfilmentAssetRecord = {
+  id: string;
+  r2Key: string;
+  sha256: string;
+  revision: string;
+  status: string;
+};
+
+/**
+ * Load an asset row for queue-time URL signing. Returns `null` when the row is
+ * absent, revoked, or staged. `ready` and `retired` are both servable —
+ * retirement only blocks new checkout assignments, not historical snapshots.
+ * `staged` is excluded: those objects may not exist in R2 yet, and the signed
+ * route rejects them anyway — signing a staged asset would cause Prodigi to
+ * see a 404.
+ */
+export async function getAssetForFulfilment(
+  assetId: string,
+): Promise<FulfilmentAssetRecord | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('print_fulfilment_assets')
+    .select('id, r2_key, sha256, revision, status')
+    .eq('id', assetId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`getAssetForFulfilment: lookup failed for ${assetId}: ${error.message}`);
+  }
+  if (!data || (data.status !== 'ready' && data.status !== 'retired')) return null;
+  return {
+    id: data.id,
+    r2Key: data.r2_key,
+    sha256: data.sha256,
+    revision: data.revision,
+    status: data.status,
+  };
+}
+
+/**
+ * Signed-route resolver: load the immutable R2 key for a snapshotted assetId.
+ * Permits `ready` and `retired`; rejects `revoked` and unknown ids.
+ */
+export async function resolveAssetR2Key(assetId: string): Promise<{
+  r2Key: string;
+  contentType: 'image/jpeg' | 'image/png';
+  status: string;
+} | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('print_fulfilment_assets')
+    .select('r2_key, content_type, status')
+    .eq('id', assetId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`resolveAssetR2Key: lookup failed for ${assetId}: ${error.message}`);
+  }
+  if (!data || data.status === 'revoked') return null;
+  if (data.status !== 'ready' && data.status !== 'retired') return null;
+  return {
+    r2Key: data.r2_key,
+    contentType: data.content_type as 'image/jpeg' | 'image/png',
+    status: data.status,
+  };
+}
+
 /**
  * Publish-guard (Phase 5) + admin view of a product's asset coverage. `ready` is
  * true iff every active variant has a usable assignment (ready + dim-matched).

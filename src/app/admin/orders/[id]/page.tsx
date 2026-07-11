@@ -83,13 +83,20 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <h3>Pozycje</h3>
             {order.items.map((it) => {
               const ref = productRef(it.product_id);
+              const variant = it.variant as {
+                assetSha256?: string;
+                assetId?: string;
+              } | null | undefined;
+              const assetHint = variant?.assetSha256
+                ? ` · asset ${variant.assetSha256.slice(0, 8)}`
+                : '';
               return (
                 <div className="adm-item" key={it.product_id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {ref.image ? <img src={ref.image} alt="" /> : <div className="adm-item-noimg" />}
                   <div className="adm-item-meta">
                     <div>{ref.label}{!ref.known && <span className="adm-muted"> (wycofany)</span>}</div>
-                    <div className="id">{ref.id} · {ref.category}</div>
+                    <div className="id">{ref.id} · {ref.category}{assetHint}</div>
                   </div>
                   <div className="adm-num">{formatMoney(it.unit_price, order.currency)}</div>
                 </div>

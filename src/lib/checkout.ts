@@ -3,6 +3,7 @@ import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './prici
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant } from './print-pricing';
+import { resolvePrintAsset } from '@/server/print-assets/repository';
 import type { PrintVariantSelection } from './types';
 
 // Hard sanity bound: every one-of-a-kind ceramic plus every print design in
@@ -15,12 +16,18 @@ export const MAX_CART = registryProducts().length + registryPrintDesigns().lengt
 export type CheckoutVariant = PrintVariantSelection & {
   prodigiSku: string;
   printAreaPx: { w: number; h: number };
+  assetId: string;
+  assetKey: string;
+  assetSha256: string;
+  assetContentType: 'image/jpeg' | 'image/png';
+  assetWidthPx: number;
+  assetHeightPx: number;
 };
 
 export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant };
 export type ValidateResult =
   | { ok: true; items: CheckoutItem[] }
-  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' };
+  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' | 'print_asset_unavailable' | 'print_asset_error' };
 
 /**
  * Resolve raw cart ids to deduped, catalog-known items.
@@ -41,6 +48,15 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
       const skuInfo = PRODIGI_SKU_MAP[variantKey(dec.sel)];
       if (!skuInfo) return { ok: false, reason: 'unknown' };
+      let asset;
+      try {
+        asset = await resolvePrintAsset(dec.designId, variantKey(dec.sel));
+      } catch {
+        // Transient Supabase error — let the buyer retry rather than collapsing
+        // checkout with a 500 before any PI or reservation is created.
+        return { ok: false, reason: 'print_asset_error' };
+      }
+      if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
       const major = priceOfVariant(design, dec.sel, currency);
       const unit_price =
@@ -50,7 +66,17 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       items.push({
         product_id: dec.designId,
         unit_price,
-        variant: { ...dec.sel, prodigiSku: skuInfo.sku, printAreaPx: skuInfo.printAreaPx },
+        variant: {
+          ...dec.sel,
+          prodigiSku: skuInfo.sku,
+          printAreaPx: skuInfo.printAreaPx,
+          assetId: asset.assetId,
+          assetKey: asset.r2Key,
+          assetSha256: asset.sha256,
+          assetContentType: asset.contentType,
+          assetWidthPx: asset.widthPx,
+          assetHeightPx: asset.heightPx,
+        },
       });
       continue;
     }

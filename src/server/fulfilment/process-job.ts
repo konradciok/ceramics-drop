@@ -1,19 +1,86 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { SITE_URL } from '@/lib/site';
-import { registryPrintById } from '@/lib/prints';
 import { signPrintAssetUrl } from '@/lib/print-assets';
+import { getAssetForFulfilment } from '@/server/print-assets/repository';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
-import { buildProdigiPayload, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
+import { buildProdigiPayload, printItemAssetKey, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
 import type { FulfilmentJobMessage } from '../prodigi/types';
 
-async function getAssetUrl(productId: string, env: CloudflareEnv): Promise<string> {
-  if (!env.PRINT_ASSETS || !env.PRINT_ASSET_TOKEN_SECRET) {
-    // Local dev / sandbox fallback — the public storefront image.
-    const design = registryPrintById(productId);
-    return `${SITE_URL}${design?.image ?? `/uploads/${productId}.webp`}`;
+type AssetResolveResult =
+  | { ok: true; url: string; shaPrefix: string; revision: string }
+  | { ok: false; kind: 'action_required'; reason: string }
+  | { ok: false; kind: 'retryable'; reason: string };
+
+function shaPrefix(sha256: string): string {
+  return sha256.slice(0, 8);
+}
+
+async function resolveSignedAssetUrl(
+  item: PrintItemRow,
+  env: CloudflareEnv,
+): Promise<AssetResolveResult> {
+  const { variant } = item;
+  if (!variant.assetId) {
+    return { ok: false, kind: 'action_required', reason: `order item ${item.product_id} has no snapshotted assetId` };
   }
-  // HMAC-signed URL served by /api/print-assets/[id] (streams from R2).
-  return signPrintAssetUrl(productId, env.PRINT_ASSET_TOKEN_SECRET);
+  if (!env.PRINT_ASSETS || !env.PRINT_ASSET_TOKEN_SECRET) {
+    return {
+      ok: false,
+      kind: 'action_required',
+      reason: 'PRINT_ASSETS binding or PRINT_ASSET_TOKEN_SECRET missing — cannot sign fulfilment asset',
+    };
+  }
+
+  let record;
+  try {
+    record = await getAssetForFulfilment(variant.assetId);
+  } catch (e) {
+    return { ok: false, kind: 'retryable', reason: String(e) };
+  }
+
+  if (!record) {
+    return {
+      ok: false,
+      kind: 'action_required',
+      reason: `fulfilment asset ${variant.assetId} not found or revoked (sha ${shaPrefix(variant.assetSha256)})`,
+    };
+  }
+
+  // Defense in depth: checkout snapshot fields must agree with the live DB row.
+  if (record.sha256 !== variant.assetSha256) {
+    return {
+      ok: false,
+      kind: 'action_required',
+      reason: `asset ${variant.assetId} sha mismatch at fulfilment (snapshot ${shaPrefix(variant.assetSha256)}, db ${shaPrefix(record.sha256)})`,
+    };
+  }
+  if (record.r2Key !== variant.assetKey) {
+    return {
+      ok: false,
+      kind: 'action_required',
+      reason: `asset ${variant.assetId} r2_key mismatch at fulfilment (snapshot ${variant.assetKey}, db ${record.r2Key})`,
+    };
+  }
+
+  try {
+    const obj = await env.PRINT_ASSETS.head(record.r2Key);
+    if (!obj) {
+      return {
+        ok: false,
+        kind: 'action_required',
+        reason: `R2 object missing for asset ${variant.assetId} revision ${record.revision} (sha ${shaPrefix(record.sha256)})`,
+      };
+    }
+  } catch (e) {
+    return { ok: false, kind: 'retryable', reason: `R2 head failed for asset ${variant.assetId}: ${String(e)}` };
+  }
+
+  const url = await signPrintAssetUrl(variant.assetId, env.PRINT_ASSET_TOKEN_SECRET);
+  return {
+    ok: true,
+    url,
+    shaPrefix: shaPrefix(record.sha256),
+    revision: record.revision,
+  };
 }
 
 export async function processJob(
@@ -83,15 +150,33 @@ export async function processJob(
     return;
   }
 
-  // 4. Generate asset URLs.
+  // 4. Resolve signed asset URLs — fail-closed; never fall back to storefront WebP.
   const assetUrls: Record<string, string> = {};
+  const assetMeta: string[] = [];
   for (const item of items) {
-    assetUrls[item.product_id] = await getAssetUrl(item.product_id, env);
+    const resolved = await resolveSignedAssetUrl(item, env);
+    if (!resolved.ok) {
+      const status = resolved.kind === 'retryable' ? 'failed_retryable' : 'failed_action_required';
+      await failJob(status, resolved.reason, (job.attempts ?? 0) + 1);
+      if (resolved.kind === 'retryable') throw new Error(resolved.reason);
+      return;
+    }
+    assetUrls[printItemAssetKey(item)] = resolved.url;
+    assetMeta.push(`${item.variant.assetId} rev ${resolved.revision} sha ${resolved.shaPrefix}`);
   }
+  console.info(
+    `processJob: order ${orderId} signing ${items.length} asset(s): ${assetMeta.join('; ')}`,
+  );
 
   // 5. Build and POST Prodigi order.
   const client = prodigiClient(env);
-  const payload = buildProdigiPayload(order, items, assetUrls, env);
+  let payload;
+  try {
+    payload = buildProdigiPayload(order, items, assetUrls, env);
+  } catch (e) {
+    await failJob('failed_action_required', String(e), (job.attempts ?? 0) + 1);
+    return;
+  }
 
   let prodigiOrderId: string;
   try {

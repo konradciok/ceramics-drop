@@ -145,13 +145,13 @@ Gate: current behavior is characterized, remote asset inventory is recorded, and
 
 ### Phase 1 — Asset metadata and atomic assignment
 
-- [ ] Add `supabase/migrations/<timestamp>_print_fulfilment_assets.sql` with both tables, per-variant print-area columns, constraints, indexes, RLS, and the atomic publish RPC.
-- [ ] Extend `VariantSeedRow`, `buildCatalogSeed()`, mappers, and parity tests so every print `product_variants` row carries the exact `PRODIGI_SKU_MAP[variant_key].printAreaPx`; ceramics carry nulls.
-- [ ] Correct `sync-prodigi-skus.ts` to validate each offered attribute combination and compare its returned dimensions to the per-variant catalogue contract. Keep `pod_variants` as a SKU lookup/cache, not the sole dimension authority.
-- [ ] Add row types and server repository helpers under `src/server/print-assets/`.
-- [ ] Implement `getPrintAssetReadiness(productId)` and `resolvePrintAsset(productId, variantKey)` against the DB-backed catalogue.
-- [ ] Ensure `catalog:backfill` neither deletes nor rewrites asset records/assignments.
-- [ ] Add migration/RPC tests for incomplete mapping, wrong-product asset, dimension mismatch, immutable ready metadata, atomic swap, retirement, and repeat publication.
+- [x] Add `supabase/migrations/<timestamp>_print_fulfilment_assets.sql` with both tables, per-variant print-area columns, constraints, indexes, RLS, and the atomic publish RPC.
+- [x] Extend `VariantSeedRow`, `buildCatalogSeed()`, mappers, and parity tests so every print `product_variants` row carries the exact `PRODIGI_SKU_MAP[variant_key].printAreaPx`; ceramics carry nulls.
+- [x] Correct `sync-prodigi-skus.ts` to validate each offered attribute combination and compare its returned dimensions to the per-variant catalogue contract. Keep `pod_variants` as a SKU lookup/cache, not the sole dimension authority.
+- [x] Add row types and server repository helpers under `src/server/print-assets/`.
+- [x] Implement `getPrintAssetReadiness(productId)` and `resolvePrintAsset(productId, variantKey)` against the DB-backed catalogue.
+- [x] Ensure `catalog:backfill` neither deletes nor rewrites asset records/assignments.
+- [x] Add migration/RPC tests for incomplete mapping, wrong-product asset, dimension mismatch, immutable ready metadata, atomic swap, retirement, and repeat publication.
 
 Gate: a revision can be staged and atomically assigned to every active variant, while the old assignment remains live on any failure.
 
@@ -181,14 +181,14 @@ Gate: `fap01` can be prepared twice byte-for-byte, visually approved, uploaded, 
 
 ### Phase 3 — Checkout snapshot and fail-closed fulfilment
 
-- [ ] Extend `CheckoutVariant` in `src/lib/checkout.ts` with the resolved asset snapshot.
-- [ ] Resolve assignments from the server repository during print validation; add `print_asset_unavailable` to the result/error contract and localized cart copy.
-- [ ] Persist the snapshot unchanged in `order_items.variant` from `src/app/api/checkout/route.ts`.
-- [ ] Update `PrintItemRow` in `src/server/prodigi/mapper.ts` and validate that snapshot dimensions match `printAreaPx` before payload construction.
-- [ ] Refactor `process-job.ts` to sign `item.variant.assetId`; delete the public WebP fallback.
-- [ ] Classify a missing DB row/object as `failed_action_required`; classify transient DB/R2 lookup failures as retryable. A bad asset must never reach `postOrder()`.
-- [ ] Include the asset revision/hash prefix in safe structured logs and admin fulfilment detail, but never include the signed URL.
-- [ ] Bump the Prodigi idempotency-key payload version only if the request contract changes for already-retryable jobs; document the transition so an old paid order cannot create a duplicate.
+- [x] Extend `CheckoutVariant` in `src/lib/checkout.ts` with the resolved asset snapshot.
+- [x] Resolve assignments from the server repository during print validation; add `print_asset_unavailable` to the result/error contract and localized cart copy.
+- [x] Persist the snapshot unchanged in `order_items.variant` from `src/app/api/checkout/route.ts`.
+- [x] Update `PrintItemRow` in `src/server/prodigi/mapper.ts` and validate that snapshot dimensions match `printAreaPx` before payload construction.
+- [x] Refactor `process-job.ts` to sign `item.variant.assetId`; delete the public WebP fallback.
+- [x] Classify a missing DB row/object as `failed_action_required`; classify transient DB/R2 lookup failures as retryable. A bad asset must never reach `postOrder()`.
+- [x] Include the asset revision/hash prefix in safe structured logs and admin fulfilment detail, but never include the signed URL.
+- [x] Bump the Prodigi idempotency-key payload version only if the request contract changes for already-retryable jobs; document the transition so an old paid order cannot create a duplicate.
 
 Gate: a paid order continues to reference the exact same immutable asset after a newer design revision is published, and all missing-asset paths stop before the Prodigi API call.
 

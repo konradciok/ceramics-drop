@@ -204,6 +204,52 @@ describe('POST /api/checkout', () => {
     expect(createPaymentIntent).not.toHaveBeenCalled();
   });
 
+  it('maps print_asset_error from validateCart to 503 (transient DB failure, buyer should retry)', async () => {
+    validateCart.mockReturnValueOnce(
+      { ok: false, reason: 'print_asset_error' } as unknown as ReturnType<typeof validateCart>,
+    );
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['print:fap01:50x70:true:false:black'],
+        locale: 'pl',
+        delivery_method: 'kurier',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'print_asset_error' });
+    expect(reserveRpc).not.toHaveBeenCalled();
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it('maps print_asset_unavailable from validateCart to 409 before reserving or charging', async () => {
+    validateCart.mockReturnValueOnce(
+      { ok: false, reason: 'print_asset_unavailable' } as unknown as ReturnType<typeof validateCart>,
+    );
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['print:fap01:50x70:true:false:black'],
+        locale: 'pl',
+        delivery_method: 'kurier',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'print_asset_unavailable' });
+    expect(reserveRpc).not.toHaveBeenCalled();
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+  });
+
   it('uses EUR currency when locale is es', async () => {
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {

@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { validateCart, MAX_CART } from './checkout';
 import { encodePrintToken } from './print-cart';
 import type { Product } from './types';
@@ -9,7 +9,20 @@ vi.mock('./catalog/load', () => ({
   loadCeramicProductsFromDb: vi.fn(),
   loadPrintDesignsFromDb: vi.fn(),
 }));
+vi.mock('@/server/print-assets/repository', () => ({
+  resolvePrintAsset: vi.fn(),
+}));
 import { loadCeramicProductsFromDb } from './catalog/load';
+import { resolvePrintAsset } from '@/server/print-assets/repository';
+
+const MOCK_ASSET = {
+  assetId: 'asset-uuid-1',
+  r2Key: 'prints/fap01/rev1/3600x4800-abc.jpg',
+  sha256: 'a'.repeat(64),
+  contentType: 'image/jpeg' as const,
+  widthPx: 4800,
+  heightPx: 7200,
+};
 
 const k01 = (status?: Product['status']): Product => ({
   id: 'k01',
@@ -25,6 +38,10 @@ const k01 = (status?: Product['status']): Product => ({
 });
 
 describe('validateCart', () => {
+  beforeEach(() => {
+    vi.mocked(resolvePrintAsset).mockResolvedValue(MOCK_ASSET);
+  });
+
   it('maps known ids to products with grosze prices', async () => {
     const r = await validateCart(['k01', 'v01']);
     expect(r.ok).toBe(true);
@@ -72,13 +89,34 @@ describe('validateCart', () => {
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
   });
 
-  it('accepts a valid print token', async () => {
+  it('accepts a valid print token and snapshots the resolved asset', async () => {
     const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     const result = await validateCart([token], 'pln');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
     expect(result.items[0].unit_price).toBe(45500); // (150 base + 305 frame) PLN × 100
+    expect(result.items[0].variant).toMatchObject({
+      assetId: MOCK_ASSET.assetId,
+      assetKey: MOCK_ASSET.r2Key,
+      assetSha256: MOCK_ASSET.sha256,
+      assetContentType: MOCK_ASSET.contentType,
+      assetWidthPx: MOCK_ASSET.widthPx,
+      assetHeightPx: MOCK_ASSET.heightPx,
+    });
+    expect(resolvePrintAsset).toHaveBeenCalledWith('fap01', '50x70:true:false:black');
+  });
+
+  it('rejects a print variant with no ready asset', async () => {
+    vi.mocked(resolvePrintAsset).mockResolvedValueOnce(null);
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_unavailable' });
+  });
+
+  it('returns print_asset_error on a transient DB error from resolvePrintAsset', async () => {
+    vi.mocked(resolvePrintAsset).mockRejectedValueOnce(new Error('connection reset'));
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_error' });
   });
 
   it('rejects a mixed ceramics + prints cart', async () => {
