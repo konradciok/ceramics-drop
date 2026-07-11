@@ -65,7 +65,8 @@ insert into product_variants (product_id, variant_key, print_area_width_px, prin
 insert into print_fulfilment_assets (id, product_id, revision, r2_key, sha256, content_type, width_px, height_px, byte_size, status) values
   ('e0000000-0000-0000-0000-000000000001', 'tap_p5', 'r1', 'prints/tap_p5/r1/a.jpg',  'sha_5a', 'image/jpeg', 3600, 4800, 123456, 'ready'),
   ('e0000000-0000-0000-0000-000000000002', 'tap_p5', 'r1', 'prints/tap_p5/r1/b.jpg',  'sha_5b', 'image/jpeg', 3600, 4800, 123456, 'ready'),
-  ('e0000000-0000-0000-0000-000000000003', 'tap_p5', 'r2', 'prints/tap_p5/r2/bad.jpg', 'sha_5c', 'image/jpeg', 3600, 4800, 123456, 'staged');
+  ('e0000000-0000-0000-0000-000000000003', 'tap_p5', 'r2', 'prints/tap_p5/r2/bad.jpg', 'sha_5c', 'image/jpeg', 3600, 4800, 123456, 'staged'),
+  ('e0000000-0000-0000-0000-000000000004', 'tap_p5', 'r2', 'prints/tap_p5/r2/a.jpg',  'sha_5d', 'image/jpeg', 3600, 4800, 123456, 'ready');
 
 -- tap_p6: immutability trigger (one ready asset, one staged asset).
 insert into products (id, type, category_slug, num) values ('tap_p6', 'print', 'fine-art-prints', '08');
@@ -265,7 +266,7 @@ select lives_ok(
 select throws_ok(
   $$ select publish_print_asset_revision(
        'tap_p5', 'r2',
-       '[{"variant_key":"a","asset_id":"e0000000-0000-0000-0000-000000000001"},{"variant_key":"b","asset_id":"e0000000-0000-0000-0000-000000000003"}]'::jsonb) $$,
+       '[{"variant_key":"a","asset_id":"e0000000-0000-0000-0000-000000000004"},{"variant_key":"b","asset_id":"e0000000-0000-0000-0000-000000000003"}]'::jsonb) $$,
   'asset_not_ready',
   'publish: a failing re-publish raises before swapping'
 );
