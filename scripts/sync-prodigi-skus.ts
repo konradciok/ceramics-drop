@@ -11,6 +11,11 @@
  * `variants[0]`), flags intra-SKU disagreement and contract mismatches, and
  * exits non-zero if any problem is found.
  *
+ * Expected non-zero exit: GLOBAL-CFP-12X16 currently reports intra-SKU
+ * disagreement (3614×4795 vs 3600×4800 mounted variants). Upserts still succeed
+ * with NULL cached dims in pod_variants; the per-variant catalogue contract in
+ * product_variants / PRODIGI_SKU_MAP is authoritative for fulfilment.
+ *
  * Run: npm run sync-prodigi-skus
  * Requires PRODIGI_API_KEY_SANDBOX and SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in env
  * (loaded from .dev.vars or .env.local automatically).

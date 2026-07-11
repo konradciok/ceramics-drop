@@ -73,6 +73,7 @@ export async function resolvePrintAsset(
       .select('print_area_width_px, print_area_height_px')
       .eq('product_id', productId)
       .eq('variant_key', variantKey)
+      .eq('active', true)
       .maybeSingle(),
   ]);
 
@@ -159,7 +160,7 @@ export async function getPrintAssetReadiness(
     productId,
     totalActiveVariants: activeVariants.length,
     ready: missing.length === 0,
-    // ponytail: default Array.prototype.sort() is lexicographic + stable for
+    // Note: default Array.prototype.sort() is lexicographic + stable for
     // strings — exactly the "sorted, stable" contract. Add a comparator only
     // if variant keys ever need locale-aware ordering.
     missing: missing.sort(),

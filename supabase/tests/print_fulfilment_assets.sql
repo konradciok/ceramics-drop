@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(26);
+select plan(30);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -102,6 +102,40 @@ select is(
      where product_id = 'tap_p1' and variant_key = 'a'),
   'a0000000-0000-0000-0000-000000000001',
   'publish: assignment row written for variant a'
+);
+
+-- First publish writes a catalog_audit_log row (action, before, after.revision).
+select is(
+  (select action from catalog_audit_log
+     where product_id = 'tap_p1'
+     order by created_at desc limit 1),
+  'print_asset_publish',
+  'publish: writes catalog_audit_log with print_asset_publish action'
+);
+
+select is(
+  (select before from catalog_audit_log
+     where product_id = 'tap_p1'
+     order by created_at asc limit 1),
+  '[]'::jsonb,
+  'publish: first audit before snapshot is empty assignment set'
+);
+
+select is(
+  (select after->>'revision' from catalog_audit_log
+     where product_id = 'tap_p1'
+     order by created_at desc limit 1),
+  'r1',
+  'publish: audit after.revision matches p_revision'
+);
+
+select is(
+  jsonb_array_length(
+    (select after->'assignments' from catalog_audit_log
+       where product_id = 'tap_p1'
+       order by created_at desc limit 1)),
+  2,
+  'publish: audit after.assignments carries the full assignment set'
 );
 
 -- Re-publishing the same revision replaces cleanly.

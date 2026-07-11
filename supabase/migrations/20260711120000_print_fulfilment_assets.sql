@@ -10,6 +10,10 @@
 -- additive: two new tables, two nullable columns on product_variants, an
 -- immutability trigger, and one RPC.
 --
+-- After applying in an environment with existing product_variants rows, run
+-- `npm run catalog:backfill` so print variants receive print_area_*_px before
+-- any publish_print_asset_revision call (null print areas fail-closed).
+--
 -- Same RLS posture as the catalog shadow tables / piece_state / orders: deny
 -- all to anon/authenticated; only the service-role key (used server-side)
 -- bypasses RLS. RPCs are hardened with `set search_path = public, pg_temp`

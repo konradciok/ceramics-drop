@@ -119,13 +119,30 @@ describe('resolvePrintAsset', () => {
     expect(await resolvePrintAsset('fap01', '50x70_unframed')).toBeNull();
   });
 
-  it('returns null when the variant row is absent (inactive/unknown key)', async () => {
+  it('returns null when the variant row is absent (unknown key)', async () => {
     setupResolve({
       assignment: { asset_id: 'a1', print_fulfilment_assets: READY_ASSET },
       variant: null,
     });
     const { resolvePrintAsset } = await import('./repository');
     expect(await resolvePrintAsset('fap01', '50x70_unframed')).toBeNull();
+  });
+
+  it('scopes variant lookup to active rows only', async () => {
+    const variantChain = makeChain({ data: null, error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'print_variant_asset_assignments') {
+        return makeChain({
+          data: { asset_id: 'a1', print_fulfilment_assets: READY_ASSET },
+          error: null,
+        });
+      }
+      if (table === 'product_variants') return variantChain;
+      return makeChain({ data: null, error: null });
+    });
+    const { resolvePrintAsset } = await import('./repository');
+    expect(await resolvePrintAsset('fap01', '50x70_unframed')).toBeNull();
+    expect(variantChain.eq).toHaveBeenCalledWith('active', true);
   });
 });
 
