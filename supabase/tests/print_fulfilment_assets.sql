@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(30);
+select plan(31);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
