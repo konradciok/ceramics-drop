@@ -21,6 +21,14 @@ type AssetRow = {
   status: string;
 };
 
+/** PostgREST may return a many-side embed as an object or a one-element array. */
+function coalesceNestedAsset<T extends Pick<AssetRow, 'status' | 'width_px' | 'height_px'>>(
+  value: T | T[] | null | undefined,
+): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
 /**
  * Usable = an assigned asset that is `ready` AND whose width/height equal the
  * variant's print area. A null `print_area_*_px` (unseeded variant) compares
@@ -28,10 +36,10 @@ type AssetRow = {
  * `getPrintAssetReadiness` so the two stay in lockstep.
  */
 function isUsable(
-  asset: AssetRow | null,
+  asset: Pick<AssetRow, 'status' | 'width_px' | 'height_px'> | null,
   printAreaWidth: number | null,
   printAreaHeight: number | null,
-): asset is AssetRow {
+): asset is Pick<AssetRow, 'status' | 'width_px' | 'height_px'> {
   return (
     asset !== null &&
     asset.status === READY &&
@@ -86,7 +94,9 @@ export async function resolvePrintAsset(
       `resolvePrintAsset: variant lookup failed for ${productId}/${variantKey}: ${variant.error.message}`,
     );
 
-  const asset = (assigned.data?.print_fulfilment_assets ?? null) as AssetRow | null;
+  const asset = coalesceNestedAsset(
+    assigned.data?.print_fulfilment_assets as AssetRow | AssetRow[] | null | undefined,
+  );
   const paw = variant.data?.print_area_width_px ?? null;
   const pah = variant.data?.print_area_height_px ?? null;
   if (!isUsable(asset, paw, pah)) return null;
@@ -141,12 +151,18 @@ export async function getPrintAssetReadiness(
   }>;
 
   // Index assignments by variant_key for O(1) lookup.
-  const assetByKey = new Map<string, AssetRow | null>();
-  for (const row of (assignments.data ?? []) as Array<{
-    variant_key: string;
-    print_fulfilment_assets: AssetRow | null;
-  }>) {
-    assetByKey.set(row.variant_key, row.print_fulfilment_assets);
+  const assetByKey = new Map<string, Pick<AssetRow, 'status' | 'width_px' | 'height_px'> | null>();
+  for (const row of assignments.data ?? []) {
+    assetByKey.set(
+      row.variant_key,
+      coalesceNestedAsset(
+        row.print_fulfilment_assets as
+          | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>
+          | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>[]
+          | null
+          | undefined,
+      ),
+    );
   }
 
   const missing: string[] = [];
