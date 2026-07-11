@@ -64,7 +64,10 @@ const PRODUCT_FAMILY: Record<CategorySlug, string> = {
   'fine-art-prints': 'prints', // ponytail: excluded from feed, but TS needs exhaustive map
 };
 
-const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
+// Exported so structured-data.ts can reuse the same per-locale shipping
+// destination for `Offer.shippingDetails` — keep the feed and on-page schema
+// in agreement on where each locale's Offer is quoted for.
+export const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
   pl: 'PL',
   en: 'IE',
   es: 'ES',

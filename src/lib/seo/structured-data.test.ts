@@ -12,11 +12,29 @@ const t = (key: string) => key;
  * schema-dts types are deliberately strict unions that can't be index-accessed
  * directly; in tests we treat the emitted schema as the plain JSON it serialises to.
  */
-type Offer = { priceCurrency: string; availability: string; url: string };
+type Offer = {
+  priceCurrency: string;
+  availability: string;
+  url: string;
+  shippingDetails?: { shippingRate: { value: number; currency: string }; shippingDestination: { addressCountry: string } }[];
+  hasMerchantReturnPolicy?: { merchantReturnDays: number; returnPolicyCategory: string };
+};
 type Node = {
   '@type': string;
   numberOfItems?: number;
-  itemListElement?: { item: { image: string; offers: Offer } }[];
+  itemListElement?: { item: { image: string; description?: string; brand?: { name: string }; offers: Offer } }[];
+};
+
+/**
+ * Stub raw-message accessor: for `notes.*` keys, returns an array-like proxy
+ * that answers 'stub note' for any numeric index — real `noteIndex` values
+ * aren't sequential from 0, so a plain short array would silently miss most items.
+ */
+const tRaw = (key: string): unknown => {
+  if (!key.startsWith('notes.')) return key;
+  return new Proxy([] as string[], {
+    get: (target, prop) => (prop in target ? target[prop as keyof string[]] : 'stub note'),
+  });
 };
 
 describe('organizationSchema', () => {
@@ -36,7 +54,7 @@ describe('organizationSchema', () => {
 describe('collectionSchema', () => {
   let nodes: Node[];
   beforeAll(async () => {
-    const graph = await collectionSchema({ slug: 'kubki', locale: 'pl', t });
+    const graph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw });
     nodes = graph['@graph'] as unknown as Node[];
   });
 
@@ -63,19 +81,58 @@ describe('collectionSchema', () => {
     });
   });
 
+  it('sets brand on every item and a description from the tRaw notes fallback', () => {
+    (nodes[1].itemListElement ?? []).forEach(({ item }) => {
+      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok' });
+      expect(item.description).toBe('stub note');
+    });
+  });
+
+  it('prefers a CMS-resolved note over the tRaw fallback when notes are provided', async () => {
+    const products = registryProductsByCategory('kubki');
+    const firstId = products[0].id;
+    const cmsGraph = await collectionSchema({
+      slug: 'kubki',
+      locale: 'pl',
+      t,
+      tRaw,
+      notes: { [firstId]: 'cms note' },
+    });
+    const cmsNodes = cmsGraph['@graph'] as unknown as Node[];
+    const items = cmsNodes[1].itemListElement ?? [];
+    expect(items[0].item.description).toBe('cms note');
+    expect(items[1].item.description).toBe('stub note');
+  });
+
+  it('attaches ceramics shippingDetails and a 14-day hasMerchantReturnPolicy to every offer', () => {
+    (nodes[1].itemListElement ?? []).forEach(({ item }) => {
+      expect(item.offers.shippingDetails).toHaveLength(2);
+      item.offers.shippingDetails?.forEach((rate) => {
+        expect(rate.shippingRate.currency).toBe('PLN');
+        expect(rate.shippingDestination.addressCountry).toBe('PL');
+      });
+      expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBe(14);
+      expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCategory).toBe(
+        'https://schema.org/MerchantReturnFiniteReturnWindow',
+      );
+    });
+  });
+
   it('en locale emits EUR currency and PRICE_EUR price in collection offers', async () => {
-    const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t });
+    const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t, tRaw });
     const enNodes = enGraph['@graph'] as unknown as Node[];
     (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('EUR');
       expect((item.offers as unknown as { price: number }).price).toBe(PRICE_EUR.kubki);
+      expect(item.offers.shippingDetails?.[0].shippingRate.currency).toBe('EUR');
+      expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe('IE');
     });
   });
 
   it('maps live soldIds to SoldOut, leaving the rest at their catalog state', async () => {
     const products = registryProductsByCategory('kubki');
     const soldId = products[0].id; // first piece, e.g. "k01"
-    const soldGraph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, soldIds: [soldId] });
+    const soldGraph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw, soldIds: [soldId] });
     const items = (soldGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
 
     items.forEach(({ item }, i) => {
@@ -124,6 +181,24 @@ describe('productSchema', () => {
     const offer = nodes[1]['offers'] as { url: string; priceCurrency: string };
     expect(offer.url).toBe(`${SITE_URL}/kubki/${product.id}`);
     expect(offer.priceCurrency).toBe('PLN');
+  });
+
+  it('sets brand to Anna Ciok, matching the <g:brand> literal in feed.ts', () => {
+    expect(nodes[1]['brand']).toEqual({ '@type': 'Brand', name: 'Anna Ciok' });
+  });
+
+  it('attaches ceramics shippingDetails (2 InPost rates) and a 14-day hasMerchantReturnPolicy', () => {
+    const offer = nodes[1]['offers'] as {
+      shippingDetails: { shippingRate: { value: number; currency: string }; shippingDestination: { addressCountry: string } }[];
+      hasMerchantReturnPolicy: { merchantReturnDays: number; returnFees: string };
+    };
+    expect(offer.shippingDetails).toHaveLength(2);
+    offer.shippingDetails.forEach((rate) => {
+      expect(rate.shippingRate.currency).toBe('PLN');
+      expect(rate.shippingDestination.addressCountry).toBe('PL');
+    });
+    expect(offer.hasMerchantReturnPolicy.merchantReturnDays).toBe(14);
+    expect(offer.hasMerchantReturnPolicy.returnFees).toBe('https://schema.org/ReturnShippingFees');
   });
 
   it('maps sold flag to SoldOut / InStock availability', () => {
