@@ -1,0 +1,219 @@
+/**
+ * Pure helpers for Phase 2b of the print-asset pipeline
+ * (docs/plans/print-asset-pipeline.md → Phase 2 `upload` / `verify` / `publish`
+ * bullets). Consumes the `manifest.json` Phase 2a wrote
+ * (src/lib/print-assets-prepare.ts) and produces the deterministic row/decision
+ * shapes the three operator scripts turn into R2 and Supabase I/O.
+ *
+ * No I/O, no Sharp, no wrangler, no Supabase — importable by the scripts and by
+ * unit tests without a live bucket or database. The scripts own the side
+ * effects; this module owns the fail-closed decisions.
+ */
+import type { ManifestDerivative, PrepareManifest } from './print-assets-prepare';
+
+// ── Staging rows — print_fulfilment_assets ───────────────────────────────────
+
+/** Content-type union `print_fulfilment_assets.content_type` accepts (check constraint). */
+export type AssetContentType = 'image/jpeg' | 'image/png';
+
+/**
+ * An insertable `print_fulfilment_assets` row (snake_case = the exact column
+ * names the migration defines). `upload` stages these with `status='staged'`
+ * only after every R2 put succeeds; `verify` promotes them to `ready`.
+ */
+export interface StagedAssetRow {
+  product_id: string;
+  revision: string;
+  profile_key: string;
+  r2_key: string;
+  sha256: string;
+  content_type: AssetContentType;
+  width_px: number;
+  height_px: number;
+  byte_size: number;
+  status: 'staged';
+}
+
+function assertContentType(value: string, r2Key: string): AssetContentType {
+  if (value !== 'image/jpeg' && value !== 'image/png') {
+    throw new Error(
+      `Derivative ${r2Key} has content-type "${value}", which print_fulfilment_assets.content_type does not accept ` +
+        '(only image/jpeg | image/png).',
+    );
+  }
+  return value;
+}
+
+/**
+ * One staged `print_fulfilment_assets` row per manifest derivative. The
+ * derivative already carries the content-addressed `r2Key`, the hash, and the
+ * decoded dimensions the migration's columns require — this is a straight
+ * projection, not a re-derivation, so `verify`/`publish` compare against the
+ * same bytes `prepare` produced.
+ */
+export function buildStagedRows(manifest: PrepareManifest): StagedAssetRow[] {
+  return manifest.derivatives.map((d) => ({
+    product_id: manifest.product,
+    revision: manifest.revision,
+    profile_key: d.profileKey,
+    r2_key: d.r2Key,
+    sha256: d.sha256,
+    content_type: assertContentType(d.contentType, d.r2Key),
+    width_px: d.width,
+    height_px: d.height,
+    byte_size: d.byteSize,
+    status: 'staged',
+  }));
+}
+
+// ── Upload decision — reuse vs put vs abort ───────────────────────────────────
+
+/** What `upload` should do with one derivative given the current remote state. */
+export type UploadAction = 'put' | 'skip';
+
+export interface RemoteProbe {
+  /** Full SHA-256 of the object already at the derivative's key, if present. */
+  sha256: string;
+}
+
+/**
+ * Decide whether a derivative must be uploaded (`put`) or already exists
+ * byte-identically (`skip`). The R2 key is content-addressed
+ * (`…/{w}x{h}-{sha256}.{ext}`), so a present object whose streamed hash differs
+ * from the derivative's is a corrupted/foreign object under an immutable key:
+ * abort loudly rather than overwrite (plan §2 "Never overwrite a key").
+ */
+export function decideUploadAction(
+  derivative: Pick<ManifestDerivative, 'sha256' | 'r2Key'>,
+  remote: RemoteProbe | null,
+): UploadAction {
+  if (remote === null) return 'put';
+  if (remote.sha256 !== derivative.sha256) {
+    throw new Error(
+      `Refusing to overwrite ${derivative.r2Key}: an object already exists at this content-addressed key but its ` +
+        `SHA-256 (${remote.sha256.slice(0, 12)}…) does not match the local derivative (${derivative.sha256.slice(0, 12)}…). ` +
+        'This key must never carry different bytes — investigate before re-running.',
+    );
+  }
+  return 'skip';
+}
+
+// ── Staging reconciliation — idempotent re-runs ───────────────────────────────
+
+export interface StagedRowPartition {
+  /** Rows whose r2_key has no existing DB row — safe to insert. */
+  toInsert: StagedAssetRow[];
+  /** r2_keys already present with a MATCHING sha256 — nothing to do. */
+  alreadyStaged: string[];
+  /** r2_keys present with a DIFFERENT sha256 — an immutable-key violation. */
+  conflicts: string[];
+}
+
+/**
+ * Split desired staged rows against the rows already in `print_fulfilment_assets`
+ * for this (product, revision). Re-running `upload` after a partial failure must
+ * be idempotent: keys already staged with matching bytes are skipped, brand-new
+ * keys are inserted, and a same-key/different-hash row is a conflict the caller
+ * must refuse (the content-addressed key guarantees this can only happen if a
+ * row was hand-edited or a hash collided — either way, do not silently proceed).
+ */
+export function partitionStagedRows(
+  desired: StagedAssetRow[],
+  existingByKey: Map<string, { sha256: string }>,
+): StagedRowPartition {
+  const toInsert: StagedAssetRow[] = [];
+  const alreadyStaged: string[] = [];
+  const conflicts: string[] = [];
+
+  for (const row of desired) {
+    const existing = existingByKey.get(row.r2_key);
+    if (!existing) {
+      toInsert.push(row);
+    } else if (existing.sha256 === row.sha256) {
+      alreadyStaged.push(row.r2_key);
+    } else {
+      conflicts.push(row.r2_key);
+    }
+  }
+
+  return { toInsert, alreadyStaged, conflicts };
+}
+
+// ── Verify — remote object vs manifest ────────────────────────────────────────
+
+/** Facts read back from R2 for one object (streamed hash + decoded image header). */
+export interface RemoteObjectFacts {
+  sha256: string;
+  byteSize: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Compare a re-downloaded R2 object against the manifest derivative that
+ * produced it. A full SHA-256 match already proves byte-identity; size and
+ * decoded dimensions are checked too so a mismatch is reported specifically
+ * rather than as an opaque hash difference. Returns error strings (empty =
+ * verified) so `verify` can report every problem for a profile at once.
+ */
+export function compareRemoteToManifest(
+  derivative: ManifestDerivative,
+  remote: RemoteObjectFacts,
+): string[] {
+  const errors: string[] = [];
+  if (remote.sha256 !== derivative.sha256) {
+    errors.push(
+      `sha256 mismatch: remote ${remote.sha256.slice(0, 12)}… vs manifest ${derivative.sha256.slice(0, 12)}…`,
+    );
+  }
+  if (remote.byteSize !== derivative.byteSize) {
+    errors.push(`byte size mismatch: remote ${remote.byteSize} vs manifest ${derivative.byteSize}`);
+  }
+  if (remote.width !== derivative.width || remote.height !== derivative.height) {
+    errors.push(
+      `dimension mismatch: remote ${remote.width}x${remote.height} vs manifest ${derivative.width}x${derivative.height}`,
+    );
+  }
+  return errors;
+}
+
+// ── Publish — assignments for publish_print_asset_revision ────────────────────
+
+/** One `(variant_key, asset_id)` pair in the `p_assignments` jsonb the RPC takes. */
+export interface PublishAssignment {
+  variant_key: string;
+  asset_id: string;
+}
+
+/**
+ * Turn the manifest's variant→profile assignments into the variant→asset_id
+ * assignments the `publish_print_asset_revision` RPC consumes. Each variant maps
+ * to its profile's derivative, and each derivative's R2 key resolves to the uuid
+ * of the `ready` DB row the caller looked up. Fails closed when a profile has no
+ * derivative or a derivative has no ready DB row — the RPC would reject those
+ * anyway, but surfacing the missing key here gives a precise operator error.
+ */
+export function buildPublishAssignments(
+  manifest: PrepareManifest,
+  assetIdByR2Key: Map<string, string>,
+): PublishAssignment[] {
+  const r2KeyByProfile = new Map(manifest.derivatives.map((d) => [d.profileKey, d.r2Key]));
+
+  return manifest.assignments.map((assignment) => {
+    const r2Key = r2KeyByProfile.get(assignment.profileKey);
+    if (!r2Key) {
+      throw new Error(
+        `Variant "${assignment.variantKey}" maps to profile "${assignment.profileKey}", but the manifest has no ` +
+          'derivative for that profile.',
+      );
+    }
+    const assetId = assetIdByR2Key.get(r2Key);
+    if (!assetId) {
+      throw new Error(
+        `No ready print_fulfilment_assets row for ${r2Key} (variant "${assignment.variantKey}", profile ` +
+          `"${assignment.profileKey}"). Run print-assets:verify to promote staged assets to ready before publishing.`,
+      );
+    }
+    return { variant_key: assignment.variantKey, asset_id: assetId };
+  });
+}
