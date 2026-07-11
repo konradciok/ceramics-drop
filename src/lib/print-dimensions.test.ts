@@ -56,8 +56,9 @@ describe('validateProdigiDimensions', () => {
       product(CFP_12X16, [{ w: 9999, h: 9999 }]),
     );
     expect(report.contractMismatches).toHaveLength(1);
-    expect(report.contractMismatches[0].variantIndex).toBe(0);
-    expect(report.contractMismatches[0].prodigi).toEqual({ w: 9999, h: 9999 });
+    expect(report.contractMismatches[0]).toEqual({ variantIndex: 0, prodigi: { w: 9999, h: 9999 } });
+    // Lock the slimmer shape — guards against re-adding the deduped contractDims field.
+    expect(report.contractMismatches[0]).not.toHaveProperty('contractDims');
     expect(report.hasProblem).toBe(true);
   });
 
