@@ -13,19 +13,34 @@ import Stripe from 'stripe';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 /** Env widened so the optional ADMIN_* keys (absent from cloudflare-env.d.ts) read cleanly. */
-function adminEnv(): CloudflareEnv & Record<string, string | undefined> {
-  return getCloudflareContext().env as CloudflareEnv & Record<string, string | undefined>;
+type AdminEnv = CloudflareEnv & Record<string, string | undefined>;
+
+function adminEnv(): AdminEnv {
+  return getCloudflareContext().env as AdminEnv;
+}
+
+/**
+ * Pure client factories — no `getCloudflareContext()` dependency, so callers
+ * outside an OpenNext/Workers request (e.g. `scripts/orders-cli.ts`) can build
+ * the same clients from their own loaded env. Mirrors `supabaseFromEnv()`.
+ */
+export function adminSupabaseFromEnv(url: string, key: string): SupabaseClient {
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export function adminStripeFromEnv(key: string): Stripe {
+  return new Stripe(key, { httpClient: Stripe.createFetchHttpClient() });
 }
 
 export function adminSupabase(): SupabaseClient {
   const env = adminEnv();
   const url = env.ADMIN_SUPABASE_URL ?? env.SUPABASE_URL;
   const key = env.ADMIN_SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
-  return createClient(url, key, { auth: { persistSession: false } });
+  return adminSupabaseFromEnv(url, key);
 }
 
 export function adminStripe(): Stripe {
   const env = adminEnv();
   const key = env.ADMIN_STRIPE_SECRET_KEY ?? env.STRIPE_SECRET_KEY;
-  return new Stripe(key, { httpClient: Stripe.createFetchHttpClient() });
+  return adminStripeFromEnv(key);
 }

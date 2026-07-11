@@ -13,7 +13,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
     server: {
       deps: {
         // Inline next-intl so the `next/server` alias above is applied to the

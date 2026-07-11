@@ -1,0 +1,35 @@
+---
+description: Prefer npm run orders for order/inventory inspection and admin mutations
+globs: src/lib/admin/**,src/app/api/admin/**,src/app/admin/**,scripts/orders-cli.ts,docs/orders-cli.md
+alwaysApply: false
+---
+
+# Orders CLI
+
+When the task involves **inspecting order/inventory/fulfilment state or running an admin mutation** (refund, release-reservation, resend-confirmation, create-shipment), prefer `npm run orders` over raw Supabase SQL, ad-hoc scripts, or the Cloudflare-Access-gated `/admin` UI.
+
+```bash
+npm run orders -- [--env-file .dev.vars] [--compact] <resource> <action>
+```
+
+Reference: `docs/orders-cli.md` (commands, safety guards, exit codes, smoke test).
+
+## Use the CLI for
+
+- Merged order inspection (`order get <uuid>` — order + line items, `piece_state`, `prodigi_orders`/`fulfilment_jobs`, Stripe PaymentIntent summary)
+- Order/inventory listing and filtering (`order list`, `inventory list`)
+- Running the four admin mutations from a terminal/agent session instead of the gated `/admin` UI: `order refund`, `order release-reservation`, `order resend-confirmation`, `order create-shipment`
+
+## Do not use the CLI for
+
+- Replacing automated tests (`src/lib/admin/actions.test.ts` / `scripts/orders-cli.test.ts` mock Supabase/Stripe/InPost; the CLI makes real requests)
+- Pure storefront/UI work with no order/admin data surface
+
+## Safety defaults
+
+- Keys from `.env.local` → `.dev.vars` → `--env-file` → `process.env` (same precedence as `prodigi-cli`)
+- Reads work against whatever Supabase project is loaded — no target guard
+- Every mutation requires `--confirm <order-id>` matching the target id exactly
+- Mutations are blocked against a non-production Supabase project unless `--allow-nonprod` is passed
+- PII (email, name, phone, address) is redacted by default; use `--show-pii` only when operationally necessary
+- Adding a fifth admin mutation? Add it to `src/lib/admin/actions.ts` first (dependency-injected clients) so the `/api/admin/*` route and the CLI call the same function — do not duplicate the logic in the route and the CLI separately

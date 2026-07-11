@@ -8,7 +8,7 @@ const { mockFrom, mockGetOrderActions, mockCancelOrder, mockAlertEmail } = vi.ho
   mockAlertEmail: vi.fn(),
 }));
 
-vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
+vi.mock('@/lib/supabase', () => ({ supabaseFromEnv: () => ({ from: mockFrom }) }));
 vi.mock('../prodigi/client', () => ({
   prodigiClient: vi.fn(() => ({ getOrderActions: mockGetOrderActions, cancelOrder: mockCancelOrder })),
 }));
@@ -227,7 +227,7 @@ describe('cancelPrintFulfilment', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockGetOrderActions.mockResolvedValue({ outcome: 'Error', cancel: { isAvailable: 'Yes' } });
     setup({ printCount: 1, po: CANCELLABLE_PO });
-    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBe('best_effort_failed');
     expect(mockCancelOrder).not.toHaveBeenCalled();
     expect(mockAlertEmail).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe('cancelPrintFulfilment', () => {
   it('never throws: a DB error on the order_items count is swallowed and captured in Sentry', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     setup({ itemsResult: { count: null, error: { message: 'db down' } } });
-    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBe('best_effort_failed');
     expect(Sentry.captureException).toHaveBeenCalled();
     expect(mockGetOrderActions).not.toHaveBeenCalled();
     expect(mockAlertEmail).not.toHaveBeenCalled();
@@ -249,7 +249,7 @@ describe('cancelPrintFulfilment', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockGetOrderActions.mockRejectedValue(new Error('prodigi down'));
     setup({ printCount: 1, po: CANCELLABLE_PO });
-    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBe('manual_cancel_required');
     expect(Sentry.captureException).toHaveBeenCalled();
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
       'print_refund_manual_cancel_required',
@@ -264,7 +264,7 @@ describe('cancelPrintFulfilment', () => {
     mockGetOrderActions.mockResolvedValue({ outcome: 'Ok', cancel: { isAvailable: 'No' } });
     mockAlertEmail.mockRejectedValue(new Error('resend down'));
     setup({ printCount: 1, po: SHIPPED_PO });
-    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBeUndefined();
+    await expect(cancelPrintFulfilment('o1', ENV)).resolves.toBe('best_effort_failed');
     expect(Sentry.captureException).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
   });

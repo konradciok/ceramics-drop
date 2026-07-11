@@ -23,6 +23,7 @@
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
     "drop:create": "tsx scripts/create-drop.ts",
     "prodigi": "tsx scripts/prodigi-cli.ts",
+    "orders": "tsx scripts/orders-cli.ts",
     "sync-prodigi-skus": "tsx scripts/sync-prodigi-skus.ts",
     "print-assets:inventory": "tsx scripts/print-asset-inventory.ts",
     "print-fulfilment:check-jobs": "tsx scripts/check-print-fulfilment-jobs.ts",

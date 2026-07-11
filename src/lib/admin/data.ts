@@ -4,6 +4,7 @@
  * and reduce in JS rather than push aggregates into SQL — simpler and plenty
  * fast. Source of truth = Supabase; the order-detail page enriches with Stripe.
  */
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { adminSupabase } from './clients';
 
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
@@ -64,9 +65,9 @@ function normalise(row: RawOrder): AdminOrder {
 
 export async function listOrders(
   filter?: { status?: OrderStatus; email?: string },
-  opts?: { withItems?: boolean },
+  opts?: { withItems?: boolean; supabase?: SupabaseClient },
 ): Promise<AdminOrder[]> {
-  const supabase = adminSupabase();
+  const supabase = opts?.supabase ?? adminSupabase();
   // Line items are only needed by the order-detail page; callers that just
   // count/sum (KPIs) skip the join. The select string is dynamic, so supabase's
   // literal-type query parser can't infer the row shape — cast through unknown.
@@ -79,9 +80,9 @@ export async function listOrders(
   return ((data as unknown as RawOrder[] | null) ?? []).map(normalise);
 }
 
-export async function getOrder(id: string): Promise<AdminOrder | null> {
+export async function getOrder(id: string, opts?: { supabase?: SupabaseClient }): Promise<AdminOrder | null> {
   if (!isUuid(id)) return null;
-  const supabase = adminSupabase();
+  const supabase = opts?.supabase ?? adminSupabase();
   const { data, error } = await supabase
     .from('orders')
     .select(`${ORDER_COLUMNS}, order_items(product_id, unit_price, variant)`)
@@ -105,8 +106,8 @@ export type Piece = {
 
 type RawPiece = Omit<Piece, 'reservedExpired'>;
 
-export async function listInventory(): Promise<Piece[]> {
-  const supabase = adminSupabase();
+export async function listInventory(opts?: { supabase?: SupabaseClient }): Promise<Piece[]> {
+  const supabase = opts?.supabase ?? adminSupabase();
   const { data, error } = await supabase
     .from('piece_state')
     .select('product_id, status, reserved_until, order_id, showroom, showroom_entered_at')

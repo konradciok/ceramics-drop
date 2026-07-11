@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { supabaseFromEnv } from '@/lib/supabase';
 import { emailPrintRefundAlertToStudio } from '@/lib/email';
 import { prodigiClient } from '../prodigi/client';
 
@@ -21,10 +21,23 @@ import { prodigiClient } from '../prodigi/client';
  * Best-effort relative to Stripe: never throws — a Prodigi/DB/email hiccup here
  * must not 5xx the refund webhook into an endless retry loop. Every failure
  * path lands in Sentry, so nothing no-ops silently.
+ *
+ * Returns a small status object so callers (the admin refund CLI/route) can
+ * surface what happened without the function ever throwing:
+ *  - `no_print_items`        — ceramic order, Prodigi never involved
+ *  - `cancelled`             — job/order stopped (or nothing was in flight)
+ *  - `manual_cancel_required`— in production/shipped or cancel refused; studio alerted
+ *  - `best_effort_failed`    — a DB/Prodigi/email hiccup was swallowed (see Sentry)
  */
-export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv): Promise<void> {
+export type CancelPrintOutcome =
+  | 'no_print_items'
+  | 'cancelled'
+  | 'manual_cancel_required'
+  | 'best_effort_failed';
+
+export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv): Promise<CancelPrintOutcome> {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = supabaseFromEnv(env);
     const now = new Date().toISOString();
 
     const { count, error: itemsErr } = await supabase
@@ -33,7 +46,7 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
       .eq('order_id', orderId)
       .not('variant', 'is', null);
     if (itemsErr) throw new Error(`cancelPrintFulfilment: order_items count failed for ${orderId}: ${itemsErr.message}`);
-    if (!count) return; // ceramic order — Prodigi was never involved
+    if (!count) return 'no_print_items'; // ceramic order — Prodigi was never involved
 
     const { data: po, error: poErr } = await supabase
       .from('prodigi_orders')
@@ -78,12 +91,12 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
           stage: 'w trakcie wysyłki do Prodigi',
         });
       }
-      return;
+      return 'cancelled';
     }
 
     // Stage uses raw Prodigi casing ('Cancelled') — same convention as
     // processJob ('InProgress') and the callback upsert.
-    if (po.prodigi_status_stage === 'Cancelled' || po.cancel_alerted_at) return; // already handled
+    if (po.prodigi_status_stage === 'Cancelled' || po.cancel_alerted_at) return 'cancelled'; // already handled
 
     const client = prodigiClient(env);
     let cancelled = false;
@@ -119,7 +132,7 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
         .update({ prodigi_status_stage: 'Cancelled', updated_at: now })
         .eq('prodigi_order_id', po.prodigi_order_id);
       if (upErr) throw new Error(`cancelPrintFulfilment: stage update failed for ${orderId}: ${upErr.message}`);
-      return;
+      return 'cancelled';
     }
 
     // In production / shipped / cancel refused → a human must resolve it.
@@ -131,7 +144,7 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
       .is('cancel_alerted_at', null)
       .select('order_id');
     if (claimErr) throw new Error(`cancelPrintFulfilment: alert claim failed for ${orderId}: ${claimErr.message}`);
-    if (!claimed || claimed.length === 0) return; // another path already alerted
+    if (!claimed || claimed.length === 0) return 'manual_cancel_required'; // another path already alerted
 
     Sentry.captureMessage('print_refund_manual_cancel_required', {
       level: 'warning',
@@ -144,8 +157,10 @@ export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv)
       prodigiOrderId: po.prodigi_order_id,
       stage: po.prodigi_status_stage,
     });
+    return 'manual_cancel_required';
   } catch (err) {
     console.error('cancelPrintFulfilment failed for', orderId, err);
     Sentry.captureException(err);
+    return 'best_effort_failed';
   }
 }
