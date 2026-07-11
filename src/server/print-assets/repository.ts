@@ -122,8 +122,11 @@ export type FulfilmentAssetRecord = {
 
 /**
  * Load an asset row for queue-time URL signing. Returns `null` when the row is
- * absent or revoked. `ready` and `retired` are both servable — retirement only
- * blocks new checkout assignments, not historical snapshots.
+ * absent, revoked, or staged. `ready` and `retired` are both servable —
+ * retirement only blocks new checkout assignments, not historical snapshots.
+ * `staged` is excluded: those objects may not exist in R2 yet, and the signed
+ * route rejects them anyway — signing a staged asset would cause Prodigi to
+ * see a 404.
  */
 export async function getAssetForFulfilment(
   assetId: string,
@@ -138,7 +141,7 @@ export async function getAssetForFulfilment(
   if (error) {
     throw new Error(`getAssetForFulfilment: lookup failed for ${assetId}: ${error.message}`);
   }
-  if (!data || data.status === 'revoked') return null;
+  if (!data || (data.status !== 'ready' && data.status !== 'retired')) return null;
   return {
     id: data.id,
     r2Key: data.r2_key,

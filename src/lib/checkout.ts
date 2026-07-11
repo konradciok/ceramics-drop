@@ -27,7 +27,7 @@ export type CheckoutVariant = PrintVariantSelection & {
 export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant };
 export type ValidateResult =
   | { ok: true; items: CheckoutItem[] }
-  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' | 'print_asset_unavailable' };
+  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' | 'print_asset_unavailable' | 'print_asset_error' };
 
 /**
  * Resolve raw cart ids to deduped, catalog-known items.
@@ -48,7 +48,14 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
       const skuInfo = PRODIGI_SKU_MAP[variantKey(dec.sel)];
       if (!skuInfo) return { ok: false, reason: 'unknown' };
-      const asset = await resolvePrintAsset(dec.designId, variantKey(dec.sel));
+      let asset;
+      try {
+        asset = await resolvePrintAsset(dec.designId, variantKey(dec.sel));
+      } catch {
+        // Transient Supabase error — let the buyer retry rather than collapsing
+        // checkout with a 500 before any PI or reservation is created.
+        return { ok: false, reason: 'print_asset_error' };
+      }
       if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
       const major = priceOfVariant(design, dec.sel, currency);

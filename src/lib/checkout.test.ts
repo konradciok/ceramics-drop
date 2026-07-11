@@ -113,6 +113,12 @@ describe('validateCart', () => {
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_unavailable' });
   });
 
+  it('returns print_asset_error on a transient DB error from resolvePrintAsset', async () => {
+    vi.mocked(resolvePrintAsset).mockRejectedValueOnce(new Error('connection reset'));
+    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_error' });
+  });
+
   it('rejects a mixed ceramics + prints cart', async () => {
     const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });

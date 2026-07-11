@@ -45,12 +45,19 @@ async function resolveSignedAssetUrl(
     };
   }
 
-  // Defense in depth: the checkout snapshot must match the live row we sign.
+  // Defense in depth: checkout snapshot fields must agree with the live DB row.
   if (record.sha256 !== variant.assetSha256) {
     return {
       ok: false,
       kind: 'action_required',
       reason: `asset ${variant.assetId} sha mismatch at fulfilment (snapshot ${shaPrefix(variant.assetSha256)}, db ${shaPrefix(record.sha256)})`,
+    };
+  }
+  if (record.r2Key !== variant.assetKey) {
+    return {
+      ok: false,
+      kind: 'action_required',
+      reason: `asset ${variant.assetId} r2_key mismatch at fulfilment (snapshot ${variant.assetKey}, db ${record.r2Key})`,
     };
   }
 

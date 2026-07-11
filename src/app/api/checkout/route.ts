@@ -65,7 +65,10 @@ export async function POST(req: Request) {
 
   const valid = await validateCart(body.ids, chargeCurrency);
   if (!valid.ok) {
-    const status = valid.reason === 'print_asset_unavailable' ? 409 : 400;
+    const status =
+      valid.reason === 'print_asset_unavailable' ? 409 :
+      valid.reason === 'print_asset_error' ? 503 :
+      400;
     return NextResponse.json({ error: valid.reason }, { status });
   }
 

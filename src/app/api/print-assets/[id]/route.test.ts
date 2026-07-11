@@ -87,6 +87,40 @@ describe('GET /api/print-assets/[id]', () => {
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
+  it('403 when the exp query param is missing (sig only)', async () => {
+    const { sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(
+      new Request(`http://localhost/api/print-assets/${ASSET_ID}?sig=${sig}`),
+      params(ASSET_ID),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'forbidden' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+    expect(mockResolveAssetR2Key).not.toHaveBeenCalled();
+  });
+
+  it('403 when exp is not a number', async () => {
+    const { sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(
+      new Request(`http://localhost/api/print-assets/${ASSET_ID}?exp=not-a-number&sig=${sig}`),
+      params(ASSET_ID),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'forbidden' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+    expect(mockResolveAssetR2Key).not.toHaveBeenCalled();
+  });
+
+  it('403 on an expired exp (signature was once valid)', async () => {
+    // Minted well in the past; verifyPrintAssetSig rejects expired links.
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET, 1_000);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'forbidden' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+    expect(mockResolveAssetR2Key).not.toHaveBeenCalled();
+  });
+
   it('403 on a wrong signature', async () => {
     const { exp } = await mintSig(ASSET_ID, SECRET);
     const res = await GET(buildRequest(ASSET_ID, { exp, sig: 'deadbeef' }), params(ASSET_ID));

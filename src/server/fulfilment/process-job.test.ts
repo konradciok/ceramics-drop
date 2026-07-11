@@ -265,6 +265,43 @@ describe('processJob', () => {
     });
   });
 
+  it('marks failed_retryable when getAssetForFulfilment throws a transient DB error', async () => {
+    mockGetAssetForFulfilment.mockRejectedValueOnce(new Error('connection reset'));
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    // processJob should re-throw so the queue retries.
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).rejects.toThrow('connection reset');
+
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_retryable',
+      last_error: expect.stringContaining('connection reset'),
+    });
+  });
+
+  it('marks failed_action_required when snapshot r2_key disagrees with DB record', async () => {
+    mockGetAssetForFulfilment.mockResolvedValueOnce({
+      id: ASSET_ID,
+      r2Key: 'prints/fap01/rev1/DIFFERENT-key.jpg', // mismatch
+      sha256: ASSET_SHA,
+      revision: '2026-07-10-r1',
+      status: 'ready',
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_action_required',
+      last_error: expect.stringContaining('r2_key mismatch'),
+    });
+  });
+
   it('marks job failed_action_required when shipping address is missing', async () => {
     setupMocks({ orderData: { id: 'ord-1', status: 'paid', shipping_address: null } });
     const { processJob } = await import('./process-job');

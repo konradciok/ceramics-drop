@@ -52,6 +52,16 @@ function setupReadiness({
   });
 }
 
+/** Wire a single `print_fulfilment_assets` row (or null) for fulfilment/route helpers. */
+function setupSingleAsset(row: Record<string, unknown> | null) {
+  mockFrom.mockImplementation(() => makeChain({ data: row, error: null }));
+}
+
+/** Wire a DB error for a single-table query. */
+function setupSingleAssetError() {
+  mockFrom.mockImplementation(() => makeChain({ data: null, error: { message: 'connection reset' } }));
+}
+
 beforeEach(() => vi.clearAllMocks());
 
 // ── resolvePrintAsset ─────────────────────────────────────────────────────────
@@ -257,5 +267,110 @@ describe('getPrintAssetReadiness', () => {
     });
     const { getPrintAssetReadiness } = await import('./repository');
     expect((await getPrintAssetReadiness('fap01')).missing).toEqual(['a', 'm', 'z']);
+  });
+});
+
+// ── getAssetForFulfilment ─────────────────────────────────────────────────────
+
+describe('getAssetForFulfilment', () => {
+  const BASE = {
+    id: 'asset-1',
+    r2_key: 'prints/fap01/rev1/4800x7200-abc.jpg',
+    sha256: 'a'.repeat(64),
+    revision: '2026-07-10-r1',
+    status: 'ready',
+  };
+
+  it('returns the record for a ready asset', async () => {
+    setupSingleAsset(BASE);
+    const { getAssetForFulfilment } = await import('./repository');
+    expect(await getAssetForFulfilment('asset-1')).toEqual({
+      id: 'asset-1',
+      r2Key: BASE.r2_key,
+      sha256: BASE.sha256,
+      revision: BASE.revision,
+      status: 'ready',
+    });
+  });
+
+  it('returns the record for a retired asset (historical orders still valid)', async () => {
+    setupSingleAsset({ ...BASE, status: 'retired' });
+    const { getAssetForFulfilment } = await import('./repository');
+    const result = await getAssetForFulfilment('asset-1');
+    expect(result?.status).toBe('retired');
+  });
+
+  it('returns null for a staged asset (no R2 object yet, route would 404)', async () => {
+    setupSingleAsset({ ...BASE, status: 'staged' });
+    const { getAssetForFulfilment } = await import('./repository');
+    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+  });
+
+  it('returns null for a revoked asset', async () => {
+    setupSingleAsset({ ...BASE, status: 'revoked' });
+    const { getAssetForFulfilment } = await import('./repository');
+    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+  });
+
+  it('returns null when the row is absent', async () => {
+    setupSingleAsset(null);
+    const { getAssetForFulfilment } = await import('./repository');
+    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+  });
+
+  it('throws on a DB error (caller marks job failed_retryable)', async () => {
+    setupSingleAssetError();
+    const { getAssetForFulfilment } = await import('./repository');
+    await expect(getAssetForFulfilment('asset-1')).rejects.toThrow('connection reset');
+  });
+});
+
+// ── resolveAssetR2Key ─────────────────────────────────────────────────────────
+
+describe('resolveAssetR2Key', () => {
+  const BASE = {
+    r2_key: 'prints/fap01/rev1/4800x7200-abc.jpg',
+    content_type: 'image/jpeg',
+    status: 'ready',
+  };
+
+  it('returns the r2Key and contentType for a ready asset', async () => {
+    setupSingleAsset(BASE);
+    const { resolveAssetR2Key } = await import('./repository');
+    expect(await resolveAssetR2Key('asset-1')).toEqual({
+      r2Key: BASE.r2_key,
+      contentType: 'image/jpeg',
+      status: 'ready',
+    });
+  });
+
+  it('returns the record for a retired asset', async () => {
+    setupSingleAsset({ ...BASE, status: 'retired' });
+    const { resolveAssetR2Key } = await import('./repository');
+    expect(await resolveAssetR2Key('asset-1')).toMatchObject({ status: 'retired' });
+  });
+
+  it('returns null for a staged asset', async () => {
+    setupSingleAsset({ ...BASE, status: 'staged' });
+    const { resolveAssetR2Key } = await import('./repository');
+    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+  });
+
+  it('returns null for a revoked asset', async () => {
+    setupSingleAsset({ ...BASE, status: 'revoked' });
+    const { resolveAssetR2Key } = await import('./repository');
+    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+  });
+
+  it('returns null when the row is absent', async () => {
+    setupSingleAsset(null);
+    const { resolveAssetR2Key } = await import('./repository');
+    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+  });
+
+  it('throws on a DB error', async () => {
+    setupSingleAssetError();
+    const { resolveAssetR2Key } = await import('./repository');
+    await expect(resolveAssetR2Key('asset-1')).rejects.toThrow('connection reset');
   });
 });
