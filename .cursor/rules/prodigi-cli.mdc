@@ -1,0 +1,35 @@
+---
+description: Prefer npm run prodigi for Prodigi API inspection and sandbox operations
+globs: src/server/prodigi/**,src/server/fulfilment/**,scripts/prodigi-cli.ts,scripts/sync-prodigi-skus.ts,docs/prodigi-cli.md,src/lib/print-cart.ts,src/lib/print-pricing.ts,src/lib/print-shipping.ts,src/lib/print-assets.ts,src/lib/prints.ts
+alwaysApply: false
+---
+
+# Prodigi CLI
+
+When the task involves **calling or debugging the Prodigi API**, prefer `npm run prodigi` over ad-hoc `curl`, one-off scripts, or throwaway fetch code.
+
+```bash
+npm run prodigi -- [--env-file .dev.vars] [--compact] <resource> <action>
+```
+
+Reference: `docs/prodigi-cli.md` (commands, payloads, exit codes, smoke test).
+
+## Use the CLI for
+
+- SKU / product lookup (`product get <sku>`)
+- Sandbox quotes and order lifecycle (`quote create`, `order create`, `order get`, `order actions`, mutations, `order cancel`)
+- Investigating a `prodigi_order_id` from `prodigi_orders` or admin fulfilment views
+- Spine calculation and shipping-method experiments
+
+## Do not use the CLI for
+
+- **Paid production print orders** — live `order create` is blocked; paid orders flow Stripe webhook → `enqueueProdigi()` → `FULFILMENT_QUEUE` → `process-job.ts`
+- Replacing automated tests (unit tests mock `fetch`; CLI makes real sandbox requests)
+- Pure storefront/UI work with no Prodigi API surface
+
+## Safety defaults
+
+- Sandbox unless `--live` is explicit (`PRODIGI_ENV` from runtime files is ignored)
+- Keys from `.env.local` → `.dev.vars` → `--env-file` → `process.env`
+- Live mutations need `--confirm-live <ord_id>`; metadata replacement needs `--replace-metadata`
+- PII is redacted by default; use `--show-pii` only when operationally necessary
