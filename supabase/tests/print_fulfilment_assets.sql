@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(21);
+select plan(26);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -173,6 +173,24 @@ select throws_ok(
   'publish: a ready asset against a null print-area variant raises dimension_mismatch'
 );
 
+-- Scenario 4b (revision mismatch): assets tagged r1 cannot publish as r2.
+select throws_ok(
+  $$ select publish_print_asset_revision(
+       'tap_p1', 'r2',
+       '[{"variant_key":"a","asset_id":"a0000000-0000-0000-0000-000000000001"},{"variant_key":"b","asset_id":"a0000000-0000-0000-0000-000000000002"}]'::jsonb) $$,
+  'revision_mismatch',
+  'publish: assets whose revision differs from p_revision raise revision_mismatch'
+);
+
+-- Scenario 4c (invalid asset_id): malformed uuid rejected before cast.
+select throws_ok(
+  $$ select publish_print_asset_revision(
+       'tap_p1', 'r1',
+       '[{"variant_key":"a","asset_id":"not-a-uuid"},{"variant_key":"b","asset_id":"a0000000-0000-0000-0000-000000000002"}]'::jsonb) $$,
+  'invalid_asset_id',
+  'publish: a malformed asset_id raises invalid_asset_id'
+);
+
 -- Scenario 5 (asset not ready): staged / retired / revoked are all rejected.
 select throws_ok(
   $$ select publish_print_asset_revision(
@@ -226,7 +244,7 @@ select is(
   'publish: a failed swap leaves the prior assignment intact'
 );
 
--- Scenario 7 (immutability + retirement + staged→ready).
+-- Scenario 7 (immutability + status transitions + staged→ready).
 -- (a) mutating a ready asset's content columns is blocked by the trigger.
 select throws_ok(
   $$ update print_fulfilment_assets set r2_key = 'prints/tap_p6/r1/mutated.jpg' where id = 'f0000000-0000-0000-0000-000000000001' $$,
@@ -240,18 +258,37 @@ select throws_ok(
   'trigger: changing a ready asset dimension raises asset_immutable'
 );
 
--- (b) a ready → retired status transition is allowed (the trigger ignores
--- status-only changes on a ready row).
+-- (b) a ready → retired status transition is allowed.
 select lives_ok(
   $$ update print_fulfilment_assets set status = 'retired' where id = 'f0000000-0000-0000-0000-000000000001' $$,
   'trigger: ready -> retired status transition is allowed'
 );
 
--- (c) a staged → ready promotion is allowed (the trigger only fires when
--- old.status = 'ready').
+-- (c) retired assets stay content-immutable (historical order fulfilment).
+select throws_ok(
+  $$ update print_fulfilment_assets set r2_key = 'prints/tap_p6/r1/retired-mutated.jpg' where id = 'f0000000-0000-0000-0000-000000000001' $$,
+  'asset_immutable',
+  'trigger: changing a retired asset r2_key raises asset_immutable'
+);
+
+-- (d) a staged → ready promotion is allowed.
 select lives_ok(
   $$ update print_fulfilment_assets set status = 'ready' where id = 'f0000000-0000-0000-0000-000000000002' $$,
   'trigger: staged -> ready promotion is allowed'
+);
+
+-- (e) revision is frozen once an asset is ready.
+select throws_ok(
+  $$ update print_fulfilment_assets set revision = 'r99' where id = 'f0000000-0000-0000-0000-000000000002' $$,
+  'asset_immutable',
+  'trigger: changing a ready asset revision raises asset_immutable'
+);
+
+-- (f) ready → staged is forbidden (would orphan live assignments).
+select throws_ok(
+  $$ update print_fulfilment_assets set status = 'staged' where id = 'f0000000-0000-0000-0000-000000000002' $$,
+  'invalid_status_transition',
+  'trigger: ready -> staged raises invalid_status_transition'
 );
 
 select * from finish();

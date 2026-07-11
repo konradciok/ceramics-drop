@@ -19,8 +19,8 @@
 -- 1. print_fulfilment_assets ──────────────────────────────────────────────────
 -- One row per uploaded R2 object. The `r2_key` is content-addressed
 -- (prints/{productId}/{revision}/{w}x{h}-{sha256}.{jpg|png}) and never reused.
--- Once `status = 'ready'` the content columns are frozen by the trigger below;
--- only status / verified_at may transition thereafter.
+-- Once promoted past `staged`, content columns are frozen by the trigger below;
+-- only allowed status transitions and verified_at may change thereafter.
 create table print_fulfilment_assets (
   id            uuid primary key default gen_random_uuid(),
   product_id    text not null references products(id) on delete cascade,
@@ -28,10 +28,11 @@ create table print_fulfilment_assets (
   profile_key   text,                          -- distinct dimension set, e.g. '3600x4800'
   r2_key        text not null unique,          -- prints/{id}/{rev}/{w}x{h}-{sha256}.{jpg|png}
   sha256        text not null,
-  content_type  text not null,                 -- 'image/jpeg' | 'image/png'
-  width_px      integer not null,
-  height_px     integer not null,
-  byte_size     bigint not null,
+  content_type  text not null
+                check (content_type in ('image/jpeg', 'image/png')),
+  width_px      integer not null check (width_px > 0),
+  height_px     integer not null check (height_px > 0),
+  byte_size     bigint not null check (byte_size > 0),
   status        text not null default 'staged'
                 check (status in ('staged', 'ready', 'retired', 'revoked')),
   created_at    timestamptz not null default now(),
@@ -63,29 +64,55 @@ create table print_variant_asset_assignments (
 
 alter table print_variant_asset_assignments enable row level security;
 
+create index print_variant_asset_assignments_asset_idx
+  on print_variant_asset_assignments (asset_id);
+
 -- 3. Per-variant print-area pixels ─────────────────────────────────────────────
 -- The database-side contract the publish RPC checks: a `ready` asset's
 -- width/height must equal the variant's print area (seeded from
 -- PRODIGI_SKU_MAP[variant_key].printAreaPx in Task 1b). null for ceramics.
 alter table product_variants
   add column print_area_width_px  integer,
-  add column print_area_height_px integer;
+  add column print_area_height_px integer,
+  add constraint product_variants_print_area_paired check (
+    (print_area_width_px is null and print_area_height_px is null)
+    or (print_area_width_px is not null and print_area_height_px is not null
+        and print_area_width_px > 0 and print_area_height_px > 0)
+  );
 
--- 4. Immutability guard ───────────────────────────────────────────────────────
--- Once an asset is `ready`, its content columns (the object identity: r2_key,
--- hash, content type, byte size, dimensions, and owning product) are frozen.
--- Only status and verified_at may change on a ready asset. Retiring/revoking a
--- ready asset (a status transition) is allowed; mutating its bytes is not.
--- revision / profile_key are stable by convention (set once at staging and part
--- of the r2_key path, which IS guarded).
+-- 4. Update guard (immutability + status transitions) ───────────────────────────
+-- Content columns (revision, profile_key, r2_key, hash, type, byte size,
+-- dimensions, owning product) freeze once an asset leaves `staged`. Historical
+-- orders may reference `retired` assets via the signed route (Phase 4), so
+-- immutability extends through retired and revoked — not only `ready`.
+--
+-- Allowed status transitions:
+--   staged  → ready | revoked
+--   ready   → retired | revoked
+--   retired → revoked
+--   revoked → (none)
 create or replace function guard_print_asset_immutable()
 returns trigger
 language plpgsql
 set search_path = public, pg_temp
 as $$
 begin
-  if old.status = 'ready' then
-    if new.r2_key       is distinct from old.r2_key
+  if new.status is distinct from old.status then
+    if old.status = 'staged' and new.status not in ('ready', 'revoked') then
+      raise 'invalid_status_transition';
+    elsif old.status = 'ready' and new.status not in ('retired', 'revoked') then
+      raise 'invalid_status_transition';
+    elsif old.status = 'retired' and new.status <> 'revoked' then
+      raise 'invalid_status_transition';
+    elsif old.status = 'revoked' then
+      raise 'invalid_status_transition';
+    end if;
+  end if;
+
+  if old.status in ('ready', 'retired', 'revoked') then
+    if new.revision     is distinct from old.revision
+    or new.profile_key  is distinct from old.profile_key
+    or new.r2_key       is distinct from old.r2_key
     or new.sha256       is distinct from old.sha256
     or new.content_type is distinct from old.content_type
     or new.width_px     is distinct from old.width_px
@@ -95,6 +122,7 @@ begin
       raise 'asset_immutable';
     end if;
   end if;
+
   return new;
 end;
 $$;
@@ -182,10 +210,19 @@ begin
       );
   end if;
 
+  -- (2b) Reject malformed asset_id values before casting to uuid.
+  if exists (
+    select 1
+      from jsonb_array_elements(p_assignments) j(elem)
+     where not ((j.elem->>'asset_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+  ) then
+    raise 'invalid_asset_id';
+  end if;
+
   -- (3) Per-assignment readiness: asset exists, belongs to this product, is
-  -- `ready`, and its dimensions equal the variant's print area. A null
-  -- print_area_*_px (variant not yet seeded) compares unequal → dimension
-  -- mismatch, i.e. fail-closed. Raise the first classified failure.
+  -- `ready`, matches p_revision, and its dimensions equal the variant's print
+  -- area. A null print_area_*_px (variant not yet seeded) compares unequal →
+  -- dimension mismatch, i.e. fail-closed. Raise the first classified failure.
   select a.var_key, a.reason
     into v_fail_key, v_fail_reason
     from (
@@ -195,6 +232,8 @@ begin
                  then 'wrong_product'
                when pfa.status <> 'ready'
                  then 'asset_not_ready'
+               when pfa.revision is distinct from p_revision
+                 then 'revision_mismatch'
                when pfa.width_px  is distinct from pv.print_area_width_px
                  or pfa.height_px is distinct from pv.print_area_height_px
                  then 'dimension_mismatch'
@@ -209,6 +248,7 @@ begin
        where pfa.id is null
           or pfa.product_id is distinct from p_product_id
           or pfa.status <> 'ready'
+          or pfa.revision is distinct from p_revision
           or pfa.width_px  is distinct from pv.print_area_width_px
           or pfa.height_px is distinct from pv.print_area_height_px
     ) a
