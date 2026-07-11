@@ -60,6 +60,14 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
   const productIds = seed.products.map((p) => p.id);
 
   // Replace variants + media for the seeded products (media first — it FKs variants).
+  // NOTE: this delete+reinsert of product_variants is safe for the print-asset
+  // pipeline. print_variant_asset_assignments is deliberately NOT FK'd to the
+  // surrogate product_variants.id — it keys on the natural (product_id, variant_key)
+  // and FKs products(id) (migration 20260711120000, lines 53–55), precisely because
+  // the variant row is replaceable. print_fulfilment_assets FKs products(id) too.
+  // So neither asset table is touched or orphaned here: product rows survive (they
+  // upsert on id), and the natural key a variant is re-inserted under is unchanged.
+  // Backfill never references print_fulfilment_assets / print_variant_asset_assignments.
   const delMedia = await supabase.from('product_media').delete().in('product_id', productIds);
   if (delMedia.error) throw new Error(`backfill clear media: ${delMedia.error.message}`);
 

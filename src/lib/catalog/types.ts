@@ -48,6 +48,12 @@ export interface VariantSeedRow {
   stock_quantity: number;
   allow_backorder: boolean;
   low_stock_threshold: number | null;
+  // Per-variant print-area pixel contract (300 DPI) the publish_print_asset_revision
+  // RPC checks ready assets against. Seeded from PRODIGI_SKU_MAP[variant_key].printAreaPx
+  // for prints; null for ceramics. Fulfilment metadata only — no counterpart in the
+  // registry Product/PrintDesign types, so the mapper never surfaces it.
+  print_area_width_px: number | null;
+  print_area_height_px: number | null;
 }
 
 /** A row of the `product_media` table (backfill/insert shape). */
