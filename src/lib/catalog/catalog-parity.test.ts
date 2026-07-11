@@ -93,6 +93,25 @@ describe('catalog seed ↔ registry parity', () => {
     }
   });
 
+  it('seeds per-variant print-area pixels from PRODIGI_SKU_MAP (null for ceramics)', () => {
+    // Ceramics carry no print-area contract.
+    for (const v of seed.variants.filter((v) => v.axes === null)) {
+      expect(v.print_area_width_px, v.product_id).toBeNull();
+      expect(v.print_area_height_px, v.product_id).toBeNull();
+    }
+    // Every enumerated print variant is structurally valid (enumeratePrintVariants
+    // excludes only design.unavailable keys), so each must resolve in the SKU map
+    // and carry its exact print-area pixels — the contract publish_print_asset_revision enforces.
+    const printVariants = seed.variants.filter((v) => v.axes !== null);
+    expect(printVariants.length).toBeGreaterThan(0);
+    for (const v of printVariants) {
+      const mapped = PRODIGI_SKU_MAP[v.variant_key];
+      expect(mapped, v.variant_key).toBeDefined();
+      expect(v.print_area_width_px, v.variant_key).toBe(mapped.printAreaPx.w);
+      expect(v.print_area_height_px, v.variant_key).toBe(mapped.printAreaPx.h);
+    }
+  });
+
   it('emits only sellable, correctly-priced variants for published designs', () => {
     const byId = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
     const publishedIds = new Set(PRINT_DESIGNS.filter((d) => d.published).map((d) => d.id));

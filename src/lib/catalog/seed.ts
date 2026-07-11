@@ -87,6 +87,9 @@ function ceramicRows(seed: CatalogSeed): void {
       stock_quantity: 1,
       allow_backorder: false,
       low_stock_threshold: null,
+      // Ceramics have no print-area contract.
+      print_area_width_px: null,
+      print_area_height_px: null,
     });
 
     // Primary image + gallery (in registry order).
@@ -148,6 +151,11 @@ function printRows(seed: CatalogSeed): void {
         stock_quantity: 0,
         allow_backorder: true,
         low_stock_threshold: null,
+        // Per-variant print-area pixels at 300 DPI from the Prodigi SKU map; the
+        // publish_print_asset_revision RPC checks ready assets against these.
+        // Absent key → null → RPC treats it as a dimension mismatch (fail-closed).
+        print_area_width_px: mapped?.printAreaPx.w ?? null,
+        print_area_height_px: mapped?.printAreaPx.h ?? null,
       });
     });
 
