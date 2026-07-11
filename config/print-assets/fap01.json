@@ -1,0 +1,34 @@
+{
+  "_comment": "PLACEHOLDER crops — see config/print-assets/README.md. Do not treat as approved artwork direction.",
+  "product": "fap01",
+  "profiles": {
+    "3600x4800": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 3600, "height": 4800 }
+    },
+    "3614x4795": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 3614, "height": 4795 }
+    },
+    "2400x3600": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 2400, "height": 3600 }
+    },
+    "6000x8400": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 6000, "height": 8400 }
+    },
+    "4800x7200": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 4800, "height": 7200 }
+    },
+    "8400x12000": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 8400, "height": 12000 }
+    },
+    "7200x10800": {
+      "format": "jpg",
+      "crop": { "left": 0, "top": 0, "width": 7200, "height": 10800 }
+    }
+  }
+}
