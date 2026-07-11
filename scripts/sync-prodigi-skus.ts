@@ -52,7 +52,11 @@ if (missing.length) {
   process.exit(1);
 }
 
-const supabase = createClient(merged.SUPABASE_URL!, merged.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient(
+  merged.SUPABASE_URL!,
+  merged.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } },
+);
 
 const env = {
   PRODIGI_ENV: 'sandbox',
@@ -86,7 +90,7 @@ function printReport(r: ProdigiDimensionReport): void {
     console.log(`      pod_variants dims stored as NULL; per-variant catalogue contract is authoritative.`);
   }
   for (const m of r.contractMismatches) {
-    console.log(`    ✗ MISMATCH variant [${m.variantIndex}] ${m.prodigi.w}×${m.prodigi.h}px vs contract {${m.contractDims.map((d) => `${d.w}×${d.h}`).join(' | ')}}`);
+    console.log(`    ✗ MISMATCH variant [${m.variantIndex}] ${m.prodigi.w}×${m.prodigi.h}px vs contract {${r.contractDims.map((d) => `${d.w}×${d.h}`).join(' | ')}}`);
   }
 }
 

@@ -1,34 +1,9 @@
 /**
- * Row types for the print-asset fulfilment tables (migration
- * `20260711120000_print_fulfilment_assets.sql`). Mirrors the table shapes the
- * repository reads; the column set of `PrintFulfilmentAssetRow` is the full row
- * so other layers (Phase 4 signed route) can reuse it without re-querying.
+ * Contract types returned by the print-asset repository (migration
+ * `20260711120000_print_fulfilment_assets.sql`). These are the fixed shapes
+ * Phase 3 (checkout snapshot) and Phase 5 (publish guard) consume — field names
+ * are part of the contract, do not rename.
  */
-
-/** A row of `print_fulfilment_assets`. */
-export interface PrintFulfilmentAssetRow {
-  id: string;
-  product_id: string;
-  revision: string;
-  profile_key: string | null;
-  r2_key: string;
-  sha256: string;
-  content_type: 'image/jpeg' | 'image/png';
-  width_px: number;
-  height_px: number;
-  byte_size: number;
-  status: 'staged' | 'ready' | 'retired' | 'revoked';
-  created_at: string;
-  verified_at: string | null;
-}
-
-/** A row of `print_variant_asset_assignments`. */
-export interface PrintVariantAssetAssignmentRow {
-  product_id: string;
-  variant_key: string;
-  asset_id: string;
-  created_at: string;
-}
 
 /**
  * The checkout-time view of an asset usable for a NEW order. Field names are the

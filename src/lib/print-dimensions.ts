@@ -32,8 +32,6 @@ export interface VariantDim {
 export interface ContractMismatch {
   variantIndex: number;
   prodigi: { w: number; h: number };
-  /** The distinct dims the contract allows for this SKU. */
-  contractDims: { w: number; h: number }[];
 }
 
 export interface ProdigiDimensionReport {
@@ -94,7 +92,7 @@ export function validateProdigiDimensions(
     ? []
     : variants
         .filter((v) => !contractDims.some((c) => sameDim(c, v)))
-        .map((v) => ({ variantIndex: v.index, prodigi: { w: v.w, h: v.h }, contractDims }));
+        .map((v) => ({ variantIndex: v.index, prodigi: { w: v.w, h: v.h } }));
 
   const hasProblem = intraSkuDisagreement || contractMismatches.length > 0 || unknownSku;
 
