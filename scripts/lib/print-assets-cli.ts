@@ -9,12 +9,23 @@ import type { PrepareManifest } from '../../src/lib/print-assets-prepare';
 
 export const ROOT = path.resolve(__dirname, '..', '..');
 
-/** `--flag value` or `--flag=value`; mirrors print-assets-prepare.ts. */
+/**
+ * `--flag value` or `--flag=value`; mirrors print-assets-prepare.ts. The
+ * separate-value form rejects a missing value or one that looks like the next
+ * flag (`--product --revision r1` must not read `--revision` as the product);
+ * the explicit `--flag=--value` form stays allowed for the rare literal case.
+ */
 export function getArg(name: string): string | undefined {
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
+    if (a === `--${name}`) {
+      const value = argv[i + 1];
+      if (value === undefined || value.startsWith('--')) {
+        throw new Error(`Missing value for --${name}`);
+      }
+      return value;
+    }
     if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
   }
   return undefined;
@@ -24,9 +35,30 @@ export function hasFlag(name: string): boolean {
   return process.argv.slice(2).includes(`--${name}`);
 }
 
+/** A single path segment safe to interpolate under `design/print-assets/`. */
+const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Reject a productId/revision that isn't a plain path segment — no separators,
+ * no `..` — so operator-supplied args can't traverse out of the print-assets
+ * tree when they build a manifest/derivative path.
+ */
+function assertSafeSegment(kind: string, value: string): string {
+  if (!SAFE_SEGMENT.test(value) || value === '..') {
+    throw new Error(`Invalid ${kind} "${value}": expected a plain name (letters, digits, . _ -), no path separators.`);
+  }
+  return value;
+}
+
 /** Absolute path to a revision's local output directory (gitignored `design/` tree). */
 export function revisionDir(productId: string, revision: string): string {
-  return path.join(ROOT, 'design', 'print-assets', productId, revision);
+  return path.join(
+    ROOT,
+    'design',
+    'print-assets',
+    assertSafeSegment('product', productId),
+    assertSafeSegment('revision', revision),
+  );
 }
 
 /**

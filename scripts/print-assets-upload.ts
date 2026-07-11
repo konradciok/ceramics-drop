@@ -41,15 +41,21 @@ import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
 import { hashFile } from './lib/image-facts';
 
 /**
- * Probe an R2 key: download it to a scratch file and hash it, or `null` when
- * absent. A failed get is treated as "cannot prove present" → the caller
- * uploads (and an auth/network fault surfaces at put time, never as a silent
- * skip).
+ * Probe an R2 key: download it to a scratch file and hash it, `null` when the
+ * object is definitively absent, or THROW when the get failed for any other
+ * reason (auth, throttling, network). A transient fault must never be mistaken
+ * for "absent" and fall through to an overwriting `r2Put` — fail closed.
  */
 async function probeRemote(bucket: string, key: string, scratchDir: string): Promise<RemoteProbe | null> {
   const dest = path.join(scratchDir, `probe-${key.replace(/[^a-zA-Z0-9]/g, '_')}`);
   const got = r2GetToFile(bucket, key, dest);
-  if (!got.ok) return null;
+  if (!got.ok) {
+    if (got.kind === 'absent') return null;
+    throw new Error(
+      `Cannot determine whether ${key} already exists (get failed, not a clean not-found): ${got.error}. ` +
+        'Refusing to upload — resolve the R2 access issue and re-run.',
+    );
+  }
   const sha256 = await hashFile(dest);
   fs.rmSync(dest, { force: true });
   return { sha256 };
@@ -81,8 +87,10 @@ async function main(): Promise<void> {
         );
       }
 
+      // Probe even in --dry-run: it's read-only, and skipping it would report
+      // "would upload" for objects that already exist byte-identically.
       process.stdout.write(`  ${d.profileKey}  ${d.r2Key}  … `);
-      const remote = dryRun ? null : await probeRemote(bucket, d.r2Key, scratchDir);
+      const remote = await probeRemote(bucket, d.r2Key, scratchDir);
       const action = decideUploadAction(d, remote);
 
       if (action === 'skip') {

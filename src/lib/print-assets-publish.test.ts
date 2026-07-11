@@ -5,9 +5,19 @@ import {
   partitionStagedRows,
   compareRemoteToManifest,
   buildPublishAssignments,
+  diffVariantCoverage,
   type StagedAssetRow,
 } from './print-assets-publish';
 import type { ManifestDerivative, PrepareManifest } from './print-assets-prepare';
+
+// Module-scope regexes (avoid re-compiling inside each assertion).
+const CONTENT_TYPE_REJECTED_RE = /content_type does not accept/;
+const REFUSING_OVERWRITE_RE = /Refusing to overwrite/;
+const SHA256_MISMATCH_RE = /sha256 mismatch/;
+const BYTE_SIZE_MISMATCH_RE = /byte size mismatch/;
+const DIMENSION_MISMATCH_RE = /dimension mismatch/;
+const NO_READY_ROW_RE = /No ready print_fulfilment_assets row/;
+const NO_DERIVATIVE_RE = /no\s+derivative for that profile/;
 
 /** A minimal two-profile manifest: two derivatives, three variants (one shared). */
 function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
@@ -72,7 +82,7 @@ describe('buildStagedRows', () => {
   it('rejects a derivative with a content-type the DB check constraint forbids', () => {
     const m = manifest();
     (m.derivatives[0] as ManifestDerivative).contentType = 'image/webp';
-    expect(() => buildStagedRows(m)).toThrow(/content_type does not accept/);
+    expect(() => buildStagedRows(m)).toThrow(CONTENT_TYPE_REJECTED_RE);
   });
 });
 
@@ -88,9 +98,7 @@ describe('decideUploadAction', () => {
   });
 
   it('aborts when a different object already occupies the immutable key', () => {
-    expect(() => decideUploadAction(derivative, { sha256: 'f'.repeat(64) })).toThrow(
-      /Refusing to overwrite/,
-    );
+    expect(() => decideUploadAction(derivative, { sha256: 'f'.repeat(64) })).toThrow(REFUSING_OVERWRITE_RE);
   });
 });
 
@@ -142,9 +150,9 @@ describe('compareRemoteToManifest', () => {
       height: 200,
     });
     expect(errors).toHaveLength(3);
-    expect(errors[0]).toMatch(/sha256 mismatch/);
-    expect(errors[1]).toMatch(/byte size mismatch/);
-    expect(errors[2]).toMatch(/dimension mismatch/);
+    expect(errors[0]).toMatch(SHA256_MISMATCH_RE);
+    expect(errors[1]).toMatch(BYTE_SIZE_MISMATCH_RE);
+    expect(errors[2]).toMatch(DIMENSION_MISMATCH_RE);
   });
 });
 
@@ -166,13 +174,30 @@ describe('buildPublishAssignments', () => {
 
   it('fails closed when a profile derivative has no ready DB row', () => {
     const partial = new Map([[m.derivatives[0].r2Key, '11111111-1111-1111-1111-111111111111']]);
-    expect(() => buildPublishAssignments(m, partial)).toThrow(/No ready print_fulfilment_assets row/);
+    expect(() => buildPublishAssignments(m, partial)).toThrow(NO_READY_ROW_RE);
   });
 
   it('fails closed when an assignment references a profile with no derivative', () => {
     const broken = manifest({
       assignments: [{ variantKey: 'ghost', profileKey: '9999x9999' }],
     });
-    expect(() => buildPublishAssignments(broken, assetIdByR2Key)).toThrow(/no\s+derivative for that profile/);
+    expect(() => buildPublishAssignments(broken, assetIdByR2Key)).toThrow(NO_DERIVATIVE_RE);
+  });
+});
+
+describe('diffVariantCoverage', () => {
+  it('reports no drift when active variants match the manifest exactly', () => {
+    const diff = diffVariantCoverage(['a', 'b'], ['b', 'a']);
+    expect(diff).toEqual({ missing: [], extra: [] });
+  });
+
+  it('flags an active variant added since prepare as missing', () => {
+    const diff = diffVariantCoverage(['a', 'b', 'c'], ['a', 'b']);
+    expect(diff).toEqual({ missing: ['c'], extra: [] });
+  });
+
+  it('flags a manifest variant no longer active as extra', () => {
+    const diff = diffVariantCoverage(['a'], ['a', 'b']);
+    expect(diff).toEqual({ missing: [], extra: ['b'] });
   });
 });

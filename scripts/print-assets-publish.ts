@@ -18,7 +18,7 @@
  *   npm run print-assets:publish -- --product fap01 --revision 2026-07-11-r1 --dry-run
  *   npm run print-assets:publish -- --product fap01 --revision 2026-07-11-r1 --confirm 2026-07-11-r1
  */
-import { buildPublishAssignments } from '../src/lib/print-assets-publish';
+import { buildPublishAssignments, diffVariantCoverage } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
 import { getArg, hasFlag, loadManifest } from './lib/print-assets-cli';
 
@@ -40,6 +40,26 @@ async function main(): Promise<void> {
   const manifest = loadManifest(productId, revision);
   const supabase = loadSupabaseClient();
   console.log(`print-assets:publish — product=${productId} revision=${revision}${dryRun ? '  [DRY RUN]' : ''}`);
+
+  // Preflight: the manifest's assignments were frozen at prepare time. If the
+  // product's active variants changed since, the RPC would fail with an opaque
+  // `assignment_mismatch` — surface the precise drift and stop first.
+  const activeVariants = await supabase
+    .from('product_variants')
+    .select('variant_key')
+    .eq('product_id', productId)
+    .eq('active', true);
+  if (activeVariants.error) throw new Error(`Failed to read active variants: ${activeVariants.error.message}`);
+  const activeKeys = (activeVariants.data ?? []).map((r) => r.variant_key as string);
+  const manifestKeys = manifest.assignments.map((a) => a.variantKey);
+  const { missing, extra } = diffVariantCoverage(activeKeys, manifestKeys);
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `Catalogue changed since prepare — re-run print-assets:prepare for ${productId} @ ${revision}.\n` +
+        (missing.length ? `  active variants not in manifest: ${missing.join(', ')}\n` : '') +
+        (extra.length ? `  manifest variants no longer active: ${extra.join(', ')}` : ''),
+    );
+  }
 
   // Resolve every derivative's ready asset id. Only `ready` rows are eligible —
   // buildPublishAssignments fails closed if any profile has no ready row, and

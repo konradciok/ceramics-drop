@@ -177,6 +177,34 @@ export function compareRemoteToManifest(
   return errors;
 }
 
+// ── Publish preflight — catalogue drift since prepare ─────────────────────────
+
+export interface VariantCoverageDiff {
+  /** active variant_keys the manifest does not cover (added since prepare). */
+  missing: string[];
+  /** manifest variant_keys no longer active (removed/deactivated since prepare). */
+  extra: string[];
+}
+
+/**
+ * Compare the manifest's assignment variant_keys (frozen at prepare time)
+ * against the product's currently-active variant_keys. Any drift means the
+ * catalogue changed since prepare — the atomic RPC would reject it with an
+ * opaque `assignment_mismatch`, so publish surfaces this precise diff first and
+ * tells the operator to re-run prepare. Sorted for stable output.
+ */
+export function diffVariantCoverage(
+  activeKeys: string[],
+  manifestKeys: string[],
+): VariantCoverageDiff {
+  const active = new Set(activeKeys);
+  const manifest = new Set(manifestKeys);
+  return {
+    missing: activeKeys.filter((k) => !manifest.has(k)).sort(),
+    extra: manifestKeys.filter((k) => !active.has(k)).sort(),
+  };
+}
+
 // ── Publish — assignments for publish_print_asset_revision ────────────────────
 
 /** One `(variant_key, asset_id)` pair in the `p_assignments` jsonb the RPC takes. */

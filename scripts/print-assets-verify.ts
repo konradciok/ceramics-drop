@@ -17,6 +17,9 @@
  * mismatch, missing row, or already-revoked/retired asset aborts with NO
  * promotion. Idempotent: rows already `ready` are left as-is.
  *
+ * `--dry-run` still downloads and verifies every object (that IS the check) —
+ * it only skips the staged → ready DB promotion. It does not write to R2.
+ *
  * Usage:
  *   npm run print-assets:verify -- --product fap01 --revision 2026-07-11-r1
  *   npm run print-assets:verify -- --product fap01 --revision 2026-07-11-r1 --dry-run
@@ -41,6 +44,7 @@ async function main(): Promise<void> {
   const manifest = loadManifest(productId, revision);
   const bucket = printAssetsBucket();
   console.log(`print-assets:verify — product=${productId} revision=${revision} bucket=${bucket}`);
+  if (dryRun) console.log('  [DRY RUN] downloads + verifies every object; skips the staged → ready promotion.');
 
   const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-assets-verify-'));
   const problems: string[] = [];

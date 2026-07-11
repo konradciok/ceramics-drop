@@ -11,11 +11,43 @@
  * bucket-name resolution are read-only.
  */
 import { spawnSync } from 'node:child_process';
+import { loadLocalEnv } from './script-env';
 
-/** Matches wrangler.jsonc → r2_buckets[0].bucket_name. Override for non-prod buckets. */
-export function printAssetsBucket(): string {
-  return process.env.PRINT_ASSETS_BUCKET ?? 'anna-ciok-print-assets';
+/** Abort a hung Wrangler invocation (e.g. blocked on interactive login) rather than block the operator forever. */
+const WRANGLER_TIMEOUT_MS = 120_000;
+
+/**
+ * Resolve the print-assets bucket from the same env stack the scripts use for
+ * Supabase (`.env.local` < `.dev.vars` < `--env-file` < process.env), NOT just
+ * `process.env` — otherwise a `PRINT_ASSETS_BUCKET` staging override placed in
+ * `.dev.vars` would be silently ignored and the operator would target prod.
+ * Default matches wrangler.jsonc → r2_buckets[0].bucket_name.
+ */
+export function resolveBucketName(env: Record<string, string | undefined>): string {
+  return env.PRINT_ASSETS_BUCKET ?? 'anna-ciok-print-assets';
 }
+
+export function printAssetsBucket(): string {
+  return resolveBucketName(loadLocalEnv());
+}
+
+/**
+ * Classify a failed `r2 object get`. A missing object is the normal
+ * first-upload case (R2 returns NoSuchKey → "The specified key does not
+ * exist."); anything else (auth, throttling, network, broken pipe) is a fault
+ * the caller must NOT paper over by assuming the object is absent. Broad
+ * not-found matching keeps the happy path working while everything unclassified
+ * fails closed.
+ */
+export function classifyR2GetFailure(stderr: string): 'absent' | 'error' {
+  return /does not exist|not found|no such key|nosuchkey|\b404\b|10007/i.test(stderr)
+    ? 'absent'
+    : 'error';
+}
+
+export type R2GetResult =
+  | { ok: true }
+  | { ok: false; kind: 'absent' | 'error'; error: string };
 
 export interface R2Result {
   ok: boolean;
@@ -23,6 +55,9 @@ export interface R2Result {
 }
 
 function describeFailure(res: ReturnType<typeof spawnSync>): string {
+  if (res.error && (res.error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
+    return `wrangler timed out after ${WRANGLER_TIMEOUT_MS}ms (possibly awaiting interactive login)`;
+  }
   return (
     (typeof res.stderr === 'string' ? res.stderr.trim() : '') ||
     res.error?.message ||
@@ -31,18 +66,20 @@ function describeFailure(res: ReturnType<typeof spawnSync>): string {
 }
 
 /**
- * Download `{bucket}/{key}` to `destPath`. `ok:false` means the object is
- * absent OR the request failed (auth/network) — Wrangler 4.x does not give a
- * machine-readable "not found", so callers must treat a failed get as "cannot
- * prove the object is present" and fail closed, never as a definitive delete.
+ * Download `{bucket}/{key}` to `destPath`. On failure, `kind` distinguishes a
+ * definitively-absent object (`absent` — safe to proceed to upload) from an
+ * unresolved fault (`error` — the caller must fail closed and never assume the
+ * key is free to overwrite).
  */
-export function r2GetToFile(bucket: string, key: string, destPath: string): R2Result {
+export function r2GetToFile(bucket: string, key: string, destPath: string): R2GetResult {
   const res = spawnSync(
     'npx',
     ['wrangler', 'r2', 'object', 'get', `${bucket}/${key}`, '--remote', '--file', destPath],
-    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' },
+    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS },
   );
-  return res.status === 0 ? { ok: true } : { ok: false, error: describeFailure(res) };
+  if (res.status === 0) return { ok: true };
+  const error = describeFailure(res);
+  return { ok: false, kind: classifyR2GetFailure(error), error };
 }
 
 /**
@@ -71,7 +108,7 @@ export function r2Put(
       contentType,
       '--remote',
     ],
-    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' },
+    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS },
   );
   return res.status === 0 ? { ok: true } : { ok: false, error: describeFailure(res) };
 }

@@ -163,9 +163,9 @@ Add scripts and package commands:
 
 ```text
 npm run print-assets:prepare -- --product fap01 --revision 2026-07-10-r1 --source <path>
-npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1 --remote
-npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1 --remote
-npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1 --confirm 2026-07-10-r1
 ```
 
 - [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate source metadata, apply explicit crops, output exact-size JPG/PNG files, preserve/embed the approved colour profile, and emit a manifest containing hashes and assignments.
