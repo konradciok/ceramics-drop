@@ -53,8 +53,12 @@ export interface InPostClient {
   buyShipment(id: string, offerId: number | string): Promise<ShipxShipment>;
 }
 
-export function getInPost(): InPostClient {
-  const { env } = getCloudflareContext();
+/**
+ * Build an InPost client from an explicit env (mirrors `supabaseFromEnv()`).
+ * Use this in contexts without request ALS (e.g. the orders CLI), where
+ * `getCloudflareContext()` is unavailable.
+ */
+export function inpostFromEnv(env: CloudflareEnv): InPostClient {
   // Normalize first so whitespace-only values don't slip past the guard.
   const apiUrl = env.INPOST_API_URL?.trim();
   const apiToken = env.INPOST_API_TOKEN?.trim();
@@ -136,4 +140,9 @@ export function getInPost(): InPostClient {
       return (await res.json()) as ShipxShipment;
     },
   };
+}
+
+/** Server-only InPost client, created per request from the current Workers env. */
+export function getInPost(): InPostClient {
+  return inpostFromEnv(getCloudflareContext().env);
 }

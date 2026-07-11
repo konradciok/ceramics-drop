@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { supabaseFromEnv } from '@/lib/supabase';
 import { emailPrintRefundAlertToStudio } from '@/lib/email';
 import { prodigiClient } from '../prodigi/client';
 
@@ -24,7 +24,7 @@ import { prodigiClient } from '../prodigi/client';
  */
 export async function cancelPrintFulfilment(orderId: string, env: CloudflareEnv): Promise<void> {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = supabaseFromEnv(env);
     const now = new Date().toISOString();
 
     const { count, error: itemsErr } = await supabase

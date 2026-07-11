@@ -8,7 +8,7 @@ const { mockFrom, mockGetOrderActions, mockCancelOrder, mockAlertEmail } = vi.ho
   mockAlertEmail: vi.fn(),
 }));
 
-vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
+vi.mock('@/lib/supabase', () => ({ supabaseFromEnv: () => ({ from: mockFrom }) }));
 vi.mock('../prodigi/client', () => ({
   prodigiClient: vi.fn(() => ({ getOrderActions: mockGetOrderActions, cancelOrder: mockCancelOrder })),
 }));

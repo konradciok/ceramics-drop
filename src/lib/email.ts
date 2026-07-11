@@ -849,8 +849,10 @@ export async function emailOrderConfirmationToCustomer(params: {
   order: OrderConfirmationOrder;
   locale: string;
   kind?: OrderEmailKind;
+  /** Explicit env (e.g. from the orders CLI) — defaults to the current Workers env. */
+  env?: CloudflareEnv;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
 
   if (!env.RESEND_API_KEY) {
