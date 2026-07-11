@@ -1,8 +1,39 @@
 # Print Asset Pipeline — Current-State Remediation Plan
 
 > Date: 2026-07-10  
-> Status: proposed  
+> Status: in progress — Phase 0–1 complete on `glm/upload` (see *Implementation Status* below)  
 > Scope: print-ready artwork only (`fine-art-prints` → R2 → Prodigi)
+
+## Implementation Status
+
+> Handoff for a fresh thread. Branch: **`glm/upload`** (worktree `.claude/worktrees/glm+upload`), off `main` @ `4785a64`. Resume here, then continue with **Phase 2** via `superpowers:subagent-driven-development` — the recovery map is `.superpowers/sdd/progress.md` (per-task briefs/reports alongside; gitignored scratch, so trust `git log` if absent).
+
+**Commit range so far:** `4785a64..0db4e15` — Phase 0 + Phase 1 complete, every task reviewed clean.
+
+### ✅ Done (reviewed)
+
+- **Phase 0 — Safety baseline** (`9e94cba`, `a03f5ee`, `7fe8798`, `2d630b2`): characterization tests for HMAC signing (`src/lib/print-assets.test.ts`), the `/api/print-assets/[id]` route, and `process-job.ts` (signed branch + the public-WebP fallback captured as a test to **invert in Phase 3**); read-only R2 legacy-master inventory (`npm run print-assets:inventory`, `--dry-run` verified; `--remote` is an operator step).
+- **Phase 1 — Asset metadata + atomic assignment** (`15a3de7`, `53d481e`, `4aa7145`, `2e884da`, `0db4e15`):
+  - **Migration `20260711120000_print_fulfilment_assets.sql`**: `print_fulfilment_assets` + `print_variant_asset_assignments`, `product_variants.print_area_*_px`, the `asset_immutable` trigger, and the atomic `publish_print_asset_revision` RPC (exact-coverage, ready+dim+product checks, atomic swap, audit). Repo convention: RPCs use `set search_path` hardening, **not** `security definer`.
+  - **Catalog seed** carries per-variant `printAreaPx` from `PRODIGI_SKU_MAP`; backfill confirmed non-destructive (assignments key on natural `(product_id, variant_key)`, no FK to variant id).
+  - **`sync-prodigi-skus`** fixed: pure core `src/lib/print-dimensions.ts` (+tests), iterates ALL variants, NULLs `pod_variants` on intra-SKU disagreement, exits non-zero on mismatch. Per-variant correlation deferred (`ProdigiProductResponse` variants carry no attribute id).
+  - **Server repo `src/server/print-assets/`**: `resolvePrintAsset` (ready+dim-matched or null) + `getPrintAssetReadiness`; read-only, no N+1, DB errors throw.
+  - **pgTAP** `supabase/tests/print_fulfilment_assets.sql`: 21 assertions, all 7 scenarios.
+
+### ⏳ Not yet executed (operational — need creds/env/human, not code)
+
+pgTAP run (`supabase test db`, needs Docker); R2 `--remote` inventory + Phase 2 upload/verify; Phase 4 deployed smoke test; Phase 5 Prodigi sandbox order + visual artwork review; Phase 0 "confirm no in-flight print jobs".
+
+### ▶︎ Next — Phase 2: prepare / upload / verify / publish
+
+- **2a — prepare** (`scripts/print-assets-prepare.ts`): Sharp exact derivatives + manifest. **Brief already written: `.superpowers/sdd/task-6-brief.md`** — dispatch the implementer from it (config + manifest schemas are the stable contract 2b consumes). Suggested model: `sonnet` (testable headlessly with tiny fixtures).
+- **2b — upload + verify + publish**: wrangler R2 `put` (hash-check before reuse), streamed verify (head + GET, no full-object load), explicit-confirm `publish_print_asset_revision` RPC.
+
+Then Phase 3 (checkout snapshot + fail-closed fulfilment — the critical cutover), Phase 4 (sign `assetId` + env-aware route + `HEAD`), Phase 5 (publish guard + admin + docs + cutover), then the final whole-branch review.
+
+### Deferred Minor findings (triage at final review)
+
+Recorded per-task in `.superpowers/sdd/progress.md`: Task 2 wrong-sig regex guard; Task 4 spawn-error/dry-run shape; Task 5 `v_count` int/bigint + raw UUID error + no `content_type` CHECK; Task 12 single-variant mismatch caching + O(n²) distinctDims + core in `src/lib/`; Task 13 `AssetRow` overpromise + no error-throw test + height-mismatch + `status` union; Task 14 new-revision sub-case + 2/7 trigger columns.
 
 ## Outcome
 
@@ -135,23 +166,23 @@ Local development can use an explicitly seeded local R2 bucket through `npm run 
 
 ### Phase 0 — Safety baseline and characterization
 
-- [ ] Add `src/lib/print-assets.test.ts` covering deterministic signing, tampering, malformed signatures, expiry boundary, and future expiry.
-- [ ] Add `src/app/api/print-assets/[id]/route.test.ts` covering missing configuration, invalid signature, unknown/revoked asset, missing R2 object, `GET`, and `HEAD` metadata.
-- [ ] Expand `src/server/fulfilment/process-job.test.ts` to prove the R2/signed-URL branch and capture the current fallback as a test that will be inverted in Phase 3.
-- [ ] Add a read-only inventory command that reports which current published designs have the legacy `{productId}/master.jpg` object. Do not infer readiness from the code registry alone.
+- [x] Add `src/lib/print-assets.test.ts` covering deterministic signing, tampering, malformed signatures, expiry boundary, and future expiry.
+- [x] Add `src/app/api/print-assets/[id]/route.test.ts` covering missing configuration, invalid signature, unknown/revoked asset, missing R2 object, `GET`, and `HEAD` metadata.
+- [x] Expand `src/server/fulfilment/process-job.test.ts` to prove the R2/signed-URL branch and capture the current fallback as a test that will be inverted in Phase 3.
+- [x] Add a read-only inventory command that reports which current published designs have the legacy `{productId}/master.jpg` object. Do not infer readiness from the code registry alone.
 - [ ] Confirm all current live print orders/jobs are either absent or complete before changing key semantics.
 
 Gate: current behavior is characterized, remote asset inventory is recorded, and no in-flight job depends on an expiring implementation change.
 
 ### Phase 1 — Asset metadata and atomic assignment
 
-- [ ] Add `supabase/migrations/<timestamp>_print_fulfilment_assets.sql` with both tables, per-variant print-area columns, constraints, indexes, RLS, and the atomic publish RPC.
-- [ ] Extend `VariantSeedRow`, `buildCatalogSeed()`, mappers, and parity tests so every print `product_variants` row carries the exact `PRODIGI_SKU_MAP[variant_key].printAreaPx`; ceramics carry nulls.
-- [ ] Correct `sync-prodigi-skus.ts` to validate each offered attribute combination and compare its returned dimensions to the per-variant catalogue contract. Keep `pod_variants` as a SKU lookup/cache, not the sole dimension authority.
-- [ ] Add row types and server repository helpers under `src/server/print-assets/`.
-- [ ] Implement `getPrintAssetReadiness(productId)` and `resolvePrintAsset(productId, variantKey)` against the DB-backed catalogue.
-- [ ] Ensure `catalog:backfill` neither deletes nor rewrites asset records/assignments.
-- [ ] Add migration/RPC tests for incomplete mapping, wrong-product asset, dimension mismatch, immutable ready metadata, atomic swap, retirement, and repeat publication.
+- [x] Add `supabase/migrations/20260711120000_print_fulfilment_assets.sql` with both tables, per-variant print-area columns, constraints, indexes, RLS, and the atomic publish RPC.
+- [x] Extend `VariantSeedRow`, `buildCatalogSeed()`, mappers, and parity tests so every print `product_variants` row carries the exact `PRODIGI_SKU_MAP[variant_key].printAreaPx`; ceramics carry nulls.
+- [x] Correct `sync-prodigi-skus.ts` to validate each offered attribute combination and compare its returned dimensions to the per-variant catalogue contract. Keep `pod_variants` as a SKU lookup/cache, not the sole dimension authority.
+- [x] Add row types and server repository helpers under `src/server/print-assets/`.
+- [x] Implement `getPrintAssetReadiness(productId)` and `resolvePrintAsset(productId, variantKey)` against the DB-backed catalogue.
+- [x] Ensure `catalog:backfill` neither deletes nor rewrites asset records/assignments.
+- [x] Add migration/RPC tests for incomplete mapping, wrong-product asset, dimension mismatch, immutable ready metadata, atomic swap, retirement, and repeat publication.
 
 Gate: a revision can be staged and atomically assigned to every active variant, while the old assignment remains live on any failure.
 
