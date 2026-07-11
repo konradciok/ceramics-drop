@@ -17,4 +17,17 @@ describe('getWorkerOrigin', () => {
       'https://staging.anna-ciok.studio',
     );
   });
+
+  it('strips trailing slashes to avoid double-slash URLs', () => {
+    expect(getWorkerOrigin({ WORKER_ORIGIN: 'https://staging.anna-ciok.studio/' })).toBe(
+      'https://staging.anna-ciok.studio',
+    );
+    expect(getWorkerOrigin({ WORKER_ORIGIN: 'https://staging.anna-ciok.studio///' })).toBe(
+      'https://staging.anna-ciok.studio',
+    );
+  });
+
+  it('falls back to SITE_URL when WORKER_ORIGIN is only slashes', () => {
+    expect(getWorkerOrigin({ WORKER_ORIGIN: '/' })).toBe(SITE_URL);
+  });
 });

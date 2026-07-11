@@ -93,7 +93,12 @@ export async function GET(
   const auth = await authorizeAndResolve(req, assetId, env);
   if (!auth.ok) return auth.response;
 
-  const obj = await env.PRINT_ASSETS!.get(auth.asset.r2Key);
+  let obj;
+  try {
+    obj = await env.PRINT_ASSETS!.get(auth.asset.r2Key);
+  } catch {
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 });
+  }
   if (!obj) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   return new Response(obj.body, { headers: assetHeaders(obj, auth.asset.contentType) });
@@ -110,7 +115,12 @@ export async function HEAD(
   const auth = await authorizeAndResolve(req, assetId, env);
   if (!auth.ok) return auth.response;
 
-  const obj = await env.PRINT_ASSETS!.head(auth.asset.r2Key);
+  let obj;
+  try {
+    obj = await env.PRINT_ASSETS!.head(auth.asset.r2Key);
+  } catch {
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 });
+  }
   if (!obj) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   return new Response(null, { headers: assetHeaders(obj, auth.asset.contentType) });

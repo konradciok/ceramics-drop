@@ -175,6 +175,14 @@ describe('GET /api/print-assets/[id]', () => {
     expect(ENV.mockGet).toHaveBeenCalledWith(R2_KEY);
   });
 
+  it('503 when the R2 get() call throws (transient infra failure)', async () => {
+    ENV.mockGet.mockRejectedValueOnce(new Error('r2 timeout'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
+  });
+
   it('streams the object body and sets the headers from httpMetadata', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object({ contentType: 'image/png', size: 4096 }));
     const { exp, sig } = await mintSig(ASSET_ID, SECRET);
@@ -245,6 +253,14 @@ describe('HEAD /api/print-assets/[id]', () => {
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'not_found' });
     expect(ENV.mockHead).toHaveBeenCalledWith(R2_KEY);
+  });
+
+  it('503 when the R2 head() call throws (transient infra failure)', async () => {
+    ENV.mockHead.mockRejectedValueOnce(new Error('r2 timeout'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
   });
 
   it('returns metadata headers with no body', async () => {
