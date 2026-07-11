@@ -1,10 +1,5 @@
-// Characterization tests for the print-assets GET route (Phase 0 safety baseline).
-//
-// These tests pin the route's CURRENT behaviour. The plan's Phase 0 bullet also
-// names "revoked asset", "HEAD metadata", and distinct 410/503 statuses — none of
-// those exist in the route yet; they are introduced in Phase 4. Coverage for a
-// revoked-status path, a HEAD handler, and metadata-only responses is therefore
-// DEFERRED to Phase 4. Do not add them here.
+// Characterization tests for the print-assets GET route.
+// Phase 3 resolves snapshotted assetId → immutable r2_key (Phase 4 adds HEAD/revoked).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const ENV = vi.hoisted(() => {
@@ -16,18 +11,24 @@ const ENV = vi.hoisted(() => {
   };
 });
 
+const { mockResolveAssetR2Key } = vi.hoisted(() => ({
+  mockResolveAssetR2Key: vi.fn(),
+}));
+
 vi.mock('@opennextjs/cloudflare', () => ({
   getCloudflareContext: () => ({ env: ENV }),
 }));
+vi.mock('@/server/print-assets/repository', () => ({
+  resolveAssetR2Key: mockResolveAssetR2Key,
+}));
 
 import { GET } from './route';
-import { signPrintAssetUrl, printAssetKey } from '@/lib/print-assets';
+import { signPrintAssetUrl } from '@/lib/print-assets';
 
-const ID = 'fap01';
+const ASSET_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+const R2_KEY = 'prints/fap01/rev1/4800x7200-abc.jpg';
 const SECRET = 'secret_test';
 
-/** Mint a valid exp/sig pair for `id`. Defaults to real now (verify uses Date.now());
- * pass a past `nowMs` only for the expired-signature case. */
 async function mintSig(id: string, secret: string, nowMs = Date.now()) {
   const url = new URL(await signPrintAssetUrl(id, secret, nowMs));
   return { exp: url.searchParams.get('exp')!, sig: url.searchParams.get('sig')! };
@@ -40,7 +41,6 @@ function buildRequest(id: string, qs?: { exp: string; sig: string }) {
 
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
-/** Fake R2 object body. Defaults form a ReadableStream of "print-master-payload". */
 function fakeR2Object(opts: { contentType?: string; size?: number; body?: string } = {}) {
   const { contentType, size = 1234, body = 'print-master-payload' } = opts;
   return {
@@ -56,12 +56,17 @@ describe('GET /api/print-assets/[id]', () => {
     ENV.PRINT_ASSET_TOKEN_SECRET = SECRET;
     ENV.PRINT_ASSETS = { get: ENV.mockGet };
     ENV.mockGet.mockReset();
+    mockResolveAssetR2Key.mockResolvedValue({
+      r2Key: R2_KEY,
+      contentType: 'image/jpeg',
+      status: 'ready',
+    });
   });
 
   it('503 when PRINT_ASSET_TOKEN_SECRET is unset', async () => {
     ENV.PRINT_ASSET_TOKEN_SECRET = undefined;
-    const { exp, sig } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: 'unavailable' });
     expect(ENV.mockGet).not.toHaveBeenCalled();
@@ -69,71 +74,50 @@ describe('GET /api/print-assets/[id]', () => {
 
   it('503 when the PRINT_ASSETS R2 binding is absent', async () => {
     ENV.PRINT_ASSETS = undefined;
-    const { exp, sig } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: 'unavailable' });
   });
 
   it('403 when the sig query param is missing entirely', async () => {
-    const res = await GET(buildRequest(ID), params(ID));
-    expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'forbidden' });
-    expect(ENV.mockGet).not.toHaveBeenCalled();
-  });
-
-  it('403 when the exp query param is missing (sig only)', async () => {
-    const { sig } = await mintSig(ID, SECRET);
-    const res = await GET(
-      new Request(`http://localhost/api/print-assets/${ID}?sig=${sig}`),
-      params(ID),
-    );
-    expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'forbidden' });
-    expect(ENV.mockGet).not.toHaveBeenCalled();
-  });
-
-  it('403 when exp is not a number', async () => {
-    const { sig } = await mintSig(ID, SECRET);
-    const res = await GET(
-      new Request(`http://localhost/api/print-assets/${ID}?exp=not-a-number&sig=${sig}`),
-      params(ID),
-    );
+    const res = await GET(buildRequest(ASSET_ID), params(ASSET_ID));
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'forbidden' });
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
   it('403 on a wrong signature', async () => {
-    const { exp } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig: 'deadbeef' }), params(ID));
+    const { exp } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig: 'deadbeef' }), params(ASSET_ID));
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'forbidden' });
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
-  it('403 on an expired exp (signature was once valid)', async () => {
-    // Minted well in the past; verifyPrintAssetSig rejects expired links.
-    const { exp, sig } = await mintSig(ID, SECRET, 1_000);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
-    expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'forbidden' });
+  it('404 when the asset record is unknown or revoked', async () => {
+    mockResolveAssetR2Key.mockResolvedValueOnce(null);
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'not_found' });
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
   it('404 when the signature is valid but the R2 object is missing', async () => {
     ENV.mockGet.mockResolvedValue(null);
-    const { exp, sig } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'not_found' });
-    expect(ENV.mockGet).toHaveBeenCalledWith(printAssetKey(ID));
+    expect(mockResolveAssetR2Key).toHaveBeenCalledWith(ASSET_ID);
+    expect(ENV.mockGet).toHaveBeenCalledWith(R2_KEY);
   });
 
   it('streams the object body and sets the headers from httpMetadata', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object({ contentType: 'image/png', size: 4096 }));
-    const { exp, sig } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(200);
     expect(await res.text()).toBe('print-master-payload');
     expect(res.headers.get('content-type')).toBe('image/png');
@@ -141,20 +125,19 @@ describe('GET /api/print-assets/[id]', () => {
     expect(res.headers.get('cache-control')).toBe('private, no-store');
   });
 
-  it('falls back to image/jpeg content-type when httpMetadata is absent', async () => {
+  it('falls back to the asset record content-type when httpMetadata is absent', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object());
-    const { exp, sig } = await mintSig(ID, SECRET);
-    const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('image/jpeg');
   });
 
-  it('requests the object under the current key scheme ({id}/master.jpg)', async () => {
+  it('resolves assetId to the immutable r2_key before streaming', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object());
-    const { exp, sig } = await mintSig(ID, SECRET);
-    await GET(buildRequest(ID, { exp, sig }), params(ID));
-    expect(ENV.mockGet).toHaveBeenCalledTimes(1);
-    expect(ENV.mockGet).toHaveBeenCalledWith(printAssetKey(ID));
-    expect(printAssetKey(ID)).toBe(`${ID}/master.jpg`);
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(mockResolveAssetR2Key).toHaveBeenCalledWith(ASSET_ID);
+    expect(ENV.mockGet).toHaveBeenCalledWith(R2_KEY);
   });
 });

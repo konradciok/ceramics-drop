@@ -64,7 +64,10 @@ export async function POST(req: Request) {
   );
 
   const valid = await validateCart(body.ids, chargeCurrency);
-  if (!valid.ok) return NextResponse.json({ error: valid.reason }, { status: 400 });
+  if (!valid.ok) {
+    const status = valid.reason === 'print_asset_unavailable' ? 409 : 400;
+    return NextResponse.json({ error: valid.reason }, { status });
+  }
 
   // Delivery details (method, receiver contact, locker/address) are collected
   // pre-payment so InPost has everything it needs once the order is paid.

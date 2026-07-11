@@ -383,6 +383,11 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
           setCheckoutError(t('cart.checkoutError'));
           return;
         }
+        if (conflict.error === 'print_asset_unavailable') {
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'print_asset_unavailable', status: 409 }));
+          setCheckoutError(t('cart.printAssetUnavailable'));
+          return;
+        }
         const sold = conflict.sold ?? [];
         sold.forEach((id) => remove(id));
         pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409, sold_count: sold.length }));

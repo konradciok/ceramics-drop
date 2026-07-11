@@ -18,9 +18,10 @@ describe('isTerminalStatus', () => {
 
 // ── processJob guard tests ────────────────────────────────────────────────────
 
-const { mockFrom, mockPostOrder } = vi.hoisted(() => ({
+const { mockFrom, mockPostOrder, mockGetAssetForFulfilment } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockPostOrder: vi.fn(),
+  mockGetAssetForFulfilment: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
@@ -30,15 +31,41 @@ vi.mock('../prodigi/client', () => ({
     constructor(m: string, s: number, b: unknown, r: boolean) { super(m); this.status = s; this.body = b; this.retryable = r; }
   },
 }));
-vi.mock('../prodigi/mapper', () => ({ buildProdigiPayload: vi.fn(() => ({})) }));
+vi.mock('../prodigi/mapper', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../prodigi/mapper')>();
+  return { ...actual, buildProdigiPayload: vi.fn(() => ({})) };
+});
 vi.mock('@/lib/print-assets', () => ({ signPrintAssetUrl: vi.fn().mockResolvedValue('https://cdn.example.com/asset.jpg') }));
-vi.mock('@/lib/prints', () => ({ registryPrintById: vi.fn().mockReturnValue({ image: '/uploads/fap-01.webp' }) }));
-vi.mock('@/lib/site', () => ({ SITE_URL: 'https://anna-ciok.studio' }));
+vi.mock('@/server/print-assets/repository', () => ({
+  getAssetForFulfilment: mockGetAssetForFulfilment,
+}));
 
 const MSG = { orderId: 'ord-1', jobId: 'job-1' };
-const ENV = {} as CloudflareEnv; // no PRINT_ASSETS → falls back to public URL
-// Bindings present → getAssetUrl takes the signed-R2 branch.
-const ENV_SIGNED = { PRINT_ASSETS: {} as R2Bucket, PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret' } as CloudflareEnv;
+const ASSET_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+const ASSET_SHA = 'a'.repeat(64);
+const PRINT_VARIANT = {
+  size: '50x70',
+  framed: true,
+  mount: false,
+  frameColour: 'black',
+  prodigiSku: 'GLOBAL-CFP-20X28',
+  printAreaPx: { w: 4800, h: 7200 },
+  assetId: ASSET_ID,
+  assetKey: 'prints/fap01/rev1/4800x7200-abc.jpg',
+  assetSha256: ASSET_SHA,
+  assetContentType: 'image/jpeg' as const,
+  assetWidthPx: 4800,
+  assetHeightPx: 7200,
+};
+const PRINT_ITEMS = [
+  { product_id: 'fap01', unit_price: 42000, variant: PRINT_VARIANT },
+];
+const ENV = {} as CloudflareEnv;
+const mockHead = vi.fn().mockResolvedValue({ size: 1234 });
+const ENV_SIGNED = {
+  PRINT_ASSETS: { head: mockHead } as unknown as R2Bucket,
+  PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret',
+} as CloudflareEnv;
 const CTX = {} as ExecutionContext;
 
 /** Build a thenable chain where every method returns the chain.
@@ -71,8 +98,6 @@ function setupMocks({
       jobCallCount++;
       const claimResult = { data: claimData, error: null };
       const updateResult = { error: null };
-      // First call is the atomic claim (ends in .maybeSingle()).
-      // Subsequent calls are failJob/success updates (awaited at .eq() level).
       return makeChain(jobCallCount === 1 ? claimResult : updateResult, {
         maybeSingle: vi.fn().mockResolvedValue(claimResult),
       });
@@ -94,13 +119,20 @@ describe('processJob', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPostOrder.mockResolvedValue({ order: { id: 'pr_order_1' } });
+    mockGetAssetForFulfilment.mockResolvedValue({
+      id: ASSET_ID,
+      r2Key: PRINT_VARIANT.assetKey,
+      sha256: ASSET_SHA,
+      revision: '2026-07-10-r1',
+      status: 'ready',
+    });
+    mockHead.mockResolvedValue({ size: 1234 });
   });
 
   it('returns early when job is already claimed (duplicate queue delivery)', async () => {
-    setupMocks({ claimData: null }); // conditional UPDATE matched no rows
+    setupMocks({ claimData: null });
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV, CTX);
-    // Only one from() call — the claim attempt. Orders are never loaded.
     expect(mockFrom).toHaveBeenCalledTimes(1);
     expect(mockFrom).toHaveBeenCalledWith('fulfilment_jobs');
   });
@@ -109,15 +141,11 @@ describe('processJob', () => {
     setupMocks({ orderData: { id: 'ord-1', status: 'pending', shipping_address: null } });
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV, CTX);
-    // Expect a second fulfilment_jobs call (the failJob update)
     const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
     expect(tables).toContain('orders');
     expect(tables.filter((t: string) => t === 'fulfilment_jobs').length).toBe(2);
-    // The second fulfilment_jobs call's update arg should be failed_action_required
     const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ status: 'failed_action_required' });
-    // The refund-before-submission race: a refunded/failed/expired order must
-    // never reach Prodigi.
     expect(mockPostOrder).not.toHaveBeenCalled();
   });
 
@@ -132,25 +160,20 @@ describe('processJob', () => {
     shipping_address: { street: 'Hauptstr.', building_number: '1', city: 'Berlin', post_code: '10115', country_code: 'DE' },
     delivery_method: 'kurier',
   };
-  const PRINT_ITEMS = [
-    { product_id: 'fap01', unit_price: 42000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' } },
-  ];
 
   it('happy path: claims, POSTs to Prodigi, persists prodigi_orders, marks fulfilment_submitted', async () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { processJob } = await import('./process-job');
-    await processJob(MSG, ENV, CTX);
+    await processJob(MSG, ENV_SIGNED, CTX);
 
     expect(mockPostOrder).toHaveBeenCalledTimes(1);
     const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
-    // prodigi_orders upsert carries the returned Prodigi order id.
     const poChain = mockFrom.mock.results[tables.lastIndexOf('prodigi_orders')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect(poChain['upsert'].mock.calls[0][0]).toMatchObject({
       order_id: 'ord-1',
       prodigi_order_id: 'pr_order_1',
       prodigi_status_stage: 'InProgress',
     });
-    // Final job update marks submission (attempts incremented).
     const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect(lastJobChain['update'].mock.calls[0][0]).toMatchObject({ status: 'fulfilment_submitted', attempts: 1 });
   });
@@ -158,14 +181,13 @@ describe('processJob', () => {
   it('409 duplicate at Prodigi: recovers the existing order id instead of failing the job', async () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { ProdigiError } = await import('../prodigi/client');
-    // Mocked ProdigiError signature: (message, status, body, retryable).
     mockPostOrder.mockRejectedValueOnce(
       new (ProdigiError as unknown as new (m: string, s: number, b: unknown, r: boolean) => Error)(
         'Prodigi 409: duplicate', 409, { order: { id: 'pr_existing' } }, false,
       ),
     );
     const { processJob } = await import('./process-job');
-    await processJob(MSG, ENV, CTX);
+    await processJob(MSG, ENV_SIGNED, CTX);
 
     const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
     const poChain = mockFrom.mock.results[tables.lastIndexOf('prodigi_orders')].value as Record<string, ReturnType<typeof vi.fn>>;
@@ -174,62 +196,73 @@ describe('processJob', () => {
     expect(lastJobChain['update'].mock.calls[0][0]).toMatchObject({ status: 'fulfilment_submitted' });
   });
 
-  it('uses a signed R2 asset URL when PRINT_ASSETS binding and token secret are present', async () => {
+  it('signs the snapshotted assetId and passes assetId-keyed URLs to buildProdigiPayload', async () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV_SIGNED, CTX);
 
-    // getAssetUrl's signed branch calls signPrintAssetUrl with the product id + secret.
-    expect(vi.mocked(signPrintAssetUrl)).toHaveBeenCalledWith('fap01', 'test-asset-secret');
-    // The signed URL reaches buildProdigiPayload's assetUrls — not the public WebP.
+    expect(vi.mocked(signPrintAssetUrl)).toHaveBeenCalledWith(ASSET_ID, 'test-asset-secret');
     expect(vi.mocked(buildProdigiPayload)).toHaveBeenCalledTimes(1);
     const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
-    expect(assetUrls).toEqual({ fap01: 'https://cdn.example.com/asset.jpg' });
+    expect(assetUrls).toEqual({ [ASSET_ID]: 'https://cdn.example.com/asset.jpg' });
   });
 
-  // PHASE 3 INVERSION: today this asserts the public-image fallback IS used when the
-  // R2 binding is absent. After the Phase-3 fail-closed refactor, flip it to assert the
-  // job moves to failed_action_required and buildProdigiPayload/postOrder are never
-  // reached with a display image (no silent fallback in fulfilment).
-  it('falls back to the public storefront image when R2 binding is absent (Phase 3: invert to fail-closed)', async () => {
+  it('marks failed_action_required when R2 binding is absent (no public-image fallback)', async () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV, CTX);
 
     expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
-    expect(vi.mocked(buildProdigiPayload)).toHaveBeenCalledTimes(1);
-    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
-    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+    expect(vi.mocked(buildProdigiPayload)).not.toHaveBeenCalled();
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_action_required',
+      last_error: expect.stringContaining('PRINT_ASSETS'),
+    });
   });
 
-  // PHASE 3 INVERSION: partial binding misconfiguration (one present, one absent)
-  // today falls back to the public WebP — the same hazard as a missing binding.
-  it('falls back when PRINT_ASSETS is present but PRINT_ASSET_TOKEN_SECRET is absent (Phase 3: invert)', async () => {
+  it('marks failed_action_required when PRINT_ASSETS is present but PRINT_ASSET_TOKEN_SECRET is absent', async () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { processJob } = await import('./process-job');
-    await processJob(
-      MSG,
-      { PRINT_ASSETS: {} as R2Bucket } as CloudflareEnv,
-      CTX,
-    );
+    await processJob(MSG, { PRINT_ASSETS: { head: mockHead } as unknown as R2Bucket } as CloudflareEnv, CTX);
 
     expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
-    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
-    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ status: 'failed_action_required' });
   });
 
-  it('falls back when PRINT_ASSET_TOKEN_SECRET is present but PRINT_ASSETS is absent (Phase 3: invert)', async () => {
+  it('marks failed_action_required when the snapshotted asset row is missing', async () => {
+    mockGetAssetForFulfilment.mockResolvedValueOnce(null);
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { processJob } = await import('./process-job');
-    await processJob(
-      MSG,
-      { PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret' } as CloudflareEnv,
-      CTX,
-    );
+    await processJob(MSG, ENV_SIGNED, CTX);
 
-    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
-    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
-    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_action_required',
+      last_error: expect.stringContaining('not found or revoked'),
+    });
+  });
+
+  it('marks failed_action_required when the R2 object is missing', async () => {
+    mockHead.mockResolvedValueOnce(null);
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const secondJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((secondJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_action_required',
+      last_error: expect.stringContaining('R2 object missing'),
+    });
   });
 
   it('marks job failed_action_required when shipping address is missing', async () => {

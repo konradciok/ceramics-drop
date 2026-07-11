@@ -29,6 +29,7 @@ interface R2ObjectBody extends R2Object {
 
 interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
+  head(key: string): Promise<R2Object | null>;
 }
 
 interface Service<_T = unknown> {

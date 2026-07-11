@@ -32,7 +32,30 @@ export interface PrintItemRow {
     mount: boolean;
     frameColour: string;
     printAreaPx: { w: number; h: number };
+    assetId: string;
+    assetKey: string;
+    assetSha256: string;
+    assetContentType: 'image/jpeg' | 'image/png';
+    assetWidthPx: number;
+    assetHeightPx: number;
   };
+}
+
+/** Unique per line item — two variants of the same design can carry different assets. */
+export function printItemAssetKey(item: PrintItemRow): string {
+  return item.variant.assetId;
+}
+
+function assertSnapshotDimensions(item: PrintItemRow): void {
+  const { variant } = item;
+  if (
+    variant.assetWidthPx !== variant.printAreaPx.w ||
+    variant.assetHeightPx !== variant.printAreaPx.h
+  ) {
+    throw new Error(
+      `asset dimensions ${variant.assetWidthPx}x${variant.assetHeightPx} do not match print area ${variant.printAreaPx.w}x${variant.printAreaPx.h} for ${item.product_id} (asset ${variant.assetId})`,
+    );
+  }
 }
 
 const CURRENCY_CODE: Record<'pln' | 'eur' | 'gbp', string> = {
@@ -77,13 +100,14 @@ function buildRecipient(order: OrderRow): ProdigiRecipient {
 export function buildProdigiPayload(
   order: OrderRow,
   printItems: PrintItemRow[],
-  assetUrls: Record<string, string>,  // product_id → presigned URL
+  assetUrls: Record<string, string>,  // assetId → signed URL
   env: CloudflareEnv,
 ): ProdigiOrderRequest {
   const items: ProdigiOrderItem[] = printItems.map((item) => {
-    const assetUrl = assetUrls[item.product_id];
+    assertSnapshotDimensions(item);
+    const assetUrl = assetUrls[item.variant.assetId];
     if (!assetUrl) {
-      throw new Error(`missing Prodigi asset URL for product ${item.product_id}`);
+      throw new Error(`missing Prodigi asset URL for asset ${item.variant.assetId} (${item.product_id})`);
     }
     return {
       sku:    item.variant.prodigiSku,
