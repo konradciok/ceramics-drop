@@ -145,11 +145,21 @@ export function validateProfileCoverage(
 
 // ── Manifest ─────────────────────────────────────────────────────────────────
 
+/** `format` → MIME, the exact values `print_fulfilment_assets.content_type` accepts. */
+const CONTENT_TYPE_BY_FORMAT: Record<DerivativeFormat, string> = {
+  jpg: 'image/jpeg',
+  png: 'image/png',
+};
+
 export interface ManifestDerivative {
   profileKey: string;
   width: number;
   height: number;
   format: DerivativeFormat;
+  /** MIME type Phase 2b must set as R2 HTTP metadata and stage into
+   *  `print_fulfilment_assets.content_type` — `wrangler r2 object put`
+   *  does not infer content-type from the key, so this is the contract. */
+  contentType: string;
   sha256: string;
   byteSize: number;
   r2Key: string;
@@ -197,6 +207,7 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
       width: profile.w,
       height: profile.h,
       format: meta.format,
+      contentType: CONTENT_TYPE_BY_FORMAT[meta.format],
       sha256: meta.sha256,
       byteSize: meta.byteSize,
       r2Key: buildR2Key(input.product, input.revision, profile.w, profile.h, meta.sha256, meta.format),
@@ -246,6 +257,12 @@ export function validateManifest(manifest: PrepareManifest, config: PrepareConfi
     if (configured.format !== derivative.format) {
       errors.push(
         `Derivative for profile ${profileKey} has format ${derivative.format}, expected ${configured.format}`,
+      );
+    }
+    const expectedContentType = CONTENT_TYPE_BY_FORMAT[derivative.format];
+    if (derivative.contentType !== expectedContentType) {
+      errors.push(
+        `Derivative for profile ${profileKey} has contentType "${derivative.contentType}", expected "${expectedContentType}" for format ${derivative.format}`,
       );
     }
   }

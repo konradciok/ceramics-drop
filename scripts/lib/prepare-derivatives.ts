@@ -35,9 +35,15 @@ export interface DerivativeResult {
  * as the requested format, and return the encoded bytes + their sha256.
  *
  * Deterministic: fixed JPEG quality (no default-jitter), no chroma-subsample
- * variance, and metadata explicitly stripped (Sharp strips by default unless
- * `.withMetadata()` is called) so two runs on the same input produce
- * byte-identical output.
+ * variance, and a fixed input file, so two runs on the same input produce
+ * byte-identical output. `.withMetadata()` carries the source's colour
+ * profile (ICC) through to the derivative — plan Phase 2 requires the
+ * approved master's colour intent survive into the Prodigi-bound file rather
+ * than being silently stripped (Sharp strips by default unless
+ * `.withMetadata()` is called).
+ *
+ * PNG derivatives fail closed on unexpected source alpha (see below) — JPG
+ * has no alpha channel to preserve, so it flattens onto white instead.
  *
  * Fails fast with a descriptive error when the crop region extends past the
  * source's actual pixel bounds — Sharp's own `extract` error is generic
@@ -62,9 +68,21 @@ export async function generateDerivative(
     );
   }
 
+  // PNG has no flatten-onto-white escape hatch the way the JPG path does —
+  // an RGBA master would silently produce a PNG with transparency Prodigi
+  // never asked for. Fail closed rather than guess a background.
+  if (format === 'png' && meta.hasAlpha) {
+    throw new Error(
+      'Source image has an alpha channel; PNG derivatives with transparency are not supported for print ' +
+        'fulfilment (Prodigi prints onto opaque paper). Flatten the master onto an explicit background before ' +
+        'preparing, or configure this profile as "jpg" in config/print-assets/{productId}.json.',
+    );
+  }
+
   let pipeline = sharp(sourcePath)
     .extract(crop)
-    .resize(targetWidth, targetHeight, { fit: 'fill' });
+    .resize(targetWidth, targetHeight, { fit: 'fill' })
+    .withMetadata();
 
   // JPG must never carry transparency (plan: "no alpha surprise" — flag it by
   // flattening onto white rather than letting the encoder silently drop it).
@@ -85,4 +103,18 @@ export async function generateDerivative(
 export function writeDerivative(outputPath: string, buffer: Buffer): void {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, buffer);
+}
+
+/**
+ * Prepare a clean revision output directory. When `force` is set and the
+ * directory already exists (a re-run of the same revision), remove it first
+ * — otherwise a re-run with a different crop config can leave stale
+ * `{profile}-{oldSha256}.{ext}` files beside a `manifest.json` that no longer
+ * references them, which is confusing for Phase 2b's upload/verify step.
+ */
+export function prepareOutputDir(outputDir: string, opts: { force: boolean }): void {
+  if (opts.force && fs.existsSync(outputDir)) {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(outputDir, { recursive: true });
 }

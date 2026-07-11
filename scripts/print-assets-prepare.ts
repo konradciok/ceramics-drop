@@ -4,11 +4,17 @@
  * docs/plans/print-asset-pipeline.md → Phase 2, `prepare` bullets, Settled
  * Architecture §1).
  *
- * Enumerates a print design's active variants, deduplicates them into
- * distinct print-area dimension profiles, validates the tracked crop config
- * for each profile against the source master, generates exact-size
+ * Enumerates a print product's active DB variants (`product_variants.active`
+ * — the same source of truth `publish_print_asset_revision` and
+ * `getPrintAssetReadiness` check, not the code registry), deduplicates them
+ * into distinct print-area dimension profiles, validates the tracked crop
+ * config for each profile against the source master, generates exact-size
  * derivatives via Sharp, and writes a manifest that Phase 2b (upload/verify/
  * publish — not yet built) consumes.
+ *
+ * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars /
+ * env) and that `npm run catalog:backfill` has seeded `products` /
+ * `product_variants` for the product.
  *
  * Usage:
  *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-11-r1 --source <path>
@@ -29,9 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { registryPrintById } from '../src/lib/prints';
-import { enumeratePrintVariants } from '../src/lib/catalog/seed';
-import { variantKey, PRODIGI_SKU_MAP } from '../src/lib/print-cart';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   buildManifest,
   distinctProfiles,
@@ -42,11 +46,38 @@ import {
   validateProfileCoverage,
   type DerivativeFormat,
   type PrepareConfig,
-  type VariantDimension,
 } from '../src/lib/print-assets-prepare';
-import { generateDerivative, writeDerivative } from './lib/prepare-derivatives';
+import { generateDerivative, prepareOutputDir, writeDerivative } from './lib/prepare-derivatives';
+import { activeVariantDimensions } from './lib/db-variants';
 
 const ROOT = path.resolve(__dirname, '..');
+
+/** `.env.local` / `.dev.vars` → `process.env`, mirroring backfill-catalog.ts / sync-prodigi-skus.ts. */
+function parseEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) return {};
+  const parsed: Record<string, string> = {};
+  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const separator = line.indexOf('=');
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    let value = line.slice(separator + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    parsed[key] = value;
+  }
+  return parsed;
+}
+
+function loadSupabaseClient(): SupabaseClient {
+  const env = { ...parseEnvFile('.env.local'), ...parseEnvFile('.dev.vars'), ...process.env };
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .dev.vars, .env.local, or process env.');
+  }
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+}
 
 /** Minimal --flag value parser (supports `--flag value` and `--flag=value`), mirroring create-drop.ts. */
 function getArg(name: string): string | undefined {
@@ -78,33 +109,6 @@ function loadConfig(productId: string): PrepareConfig {
   return parsed;
 }
 
-/** Enumerate the design's active (structurally-valid) variants with their contracted print-area pixels. */
-function activeVariantDimensions(productId: string): VariantDimension[] {
-  const design = registryPrintById(productId);
-  if (!design) {
-    throw new Error(`Unknown print product id: "${productId}". Check src/lib/prints.ts.`);
-  }
-  const sels = enumeratePrintVariants(design);
-  const out: VariantDimension[] = [];
-  const unmapped: string[] = [];
-  for (const sel of sels) {
-    const key = variantKey(sel);
-    const mapped = PRODIGI_SKU_MAP[key];
-    if (!mapped) {
-      unmapped.push(key);
-      continue;
-    }
-    out.push({ variantKey: key, w: mapped.printAreaPx.w, h: mapped.printAreaPx.h });
-  }
-  if (unmapped.length > 0) {
-    throw new Error(
-      `Design "${productId}" has active variant(s) with no PRODIGI_SKU_MAP entry: ${unmapped.join(', ')}. ` +
-        'Add them to src/lib/print-cart.ts before preparing derivatives.',
-    );
-  }
-  return out;
-}
-
 async function main(): Promise<void> {
   const productId = getArg('product');
   const revision = getArg('revision');
@@ -124,8 +128,11 @@ async function main(): Promise<void> {
   console.log(`print-assets:prepare — product=${productId} revision=${revision}`);
   console.log(`  source: ${resolvedSource}`);
 
-  // 1. Enumerate active variants → distinct dimension profiles.
-  const variantDims = activeVariantDimensions(productId);
+  // 1. Enumerate active variants (DB `product_variants.active` — the SAME
+  //    source of truth publish_print_asset_revision/getPrintAssetReadiness
+  //    check, not the code registry) → distinct dimension profiles.
+  const supabase = loadSupabaseClient();
+  const variantDims = await activeVariantDimensions(supabase, productId);
   const profiles = distinctProfiles(variantDims);
   console.log(`  ${variantDims.length} active variant(s) → ${profiles.length} distinct profile(s): ${profiles.map((p) => p.profileKey).join(', ')}`);
 
@@ -180,9 +187,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 5. Generate one derivative per distinct profile.
+  // 5. Generate one derivative per distinct profile. When --force reuses an
+  //    existing revision dir, clear it first so a changed crop config can't
+  //    leave stale {profile}-{oldSha256}.{ext} files beside the new manifest.
   const derivativeMeta: Record<string, { sha256: string; byteSize: number; format: DerivativeFormat }> = {};
-  fs.mkdirSync(outputDir, { recursive: true });
+  prepareOutputDir(outputDir, { force });
 
   for (const profile of profiles) {
     const configured = config.profiles[profile.profileKey];

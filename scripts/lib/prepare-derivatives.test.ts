@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { generateDerivative } from './prepare-derivatives';
+import { generateDerivative, prepareOutputDir } from './prepare-derivatives';
 
 let tmpDir: string;
 let redPng: string; // 200x300, r=255 — big enough to downscale to any test target
@@ -68,5 +68,67 @@ describe('generateDerivative', () => {
     const result = await generateDerivative(rgbaPng, crop, 100, 150, 'jpg');
     const meta = await sharp(result.buffer).metadata();
     expect(meta.hasAlpha).toBe(false);
+  });
+
+  it('rejects a PNG derivative from a source with an alpha channel', async () => {
+    const rgbaPng = path.join(tmpDir, 'rgba-source-2.png');
+    await sharp({ create: { width: 200, height: 300, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 0.5 } } })
+      .png()
+      .toFile(rgbaPng);
+    const crop = { left: 0, top: 0, width: 200, height: 300 };
+    await expect(generateDerivative(rgbaPng, crop, 100, 150, 'png')).rejects.toThrow(/alpha/i);
+  });
+
+  it('produces PNGs fine from an opaque (no-alpha) source', async () => {
+    const crop = { left: 0, top: 0, width: 200, height: 300 };
+    const result = await generateDerivative(redPng, crop, 100, 150, 'png');
+    expect(result.format).toBe('png');
+  });
+
+  it('carries the source ICC colour profile through to the derivative', async () => {
+    const profiledPng = path.join(tmpDir, 'profiled-source.png');
+    await sharp({ create: { width: 200, height: 300, channels: 3, background: { r: 10, g: 20, b: 30 } } })
+      .withMetadata({ icc: 'srgb' })
+      .png()
+      .toFile(profiledPng);
+    const crop = { left: 0, top: 0, width: 200, height: 300 };
+    const result = await generateDerivative(profiledPng, crop, 100, 150, 'jpg');
+    const meta = await sharp(result.buffer).metadata();
+    expect(meta.icc).toBeDefined();
+  });
+});
+
+describe('prepareOutputDir', () => {
+  let dirTmp: string;
+
+  beforeAll(() => {
+    dirTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prepare-output-dir-'));
+  });
+
+  afterAll(() => {
+    fs.rmSync(dirTmp, { recursive: true, force: true });
+  });
+
+  it('creates the output dir when it does not exist', () => {
+    const outDir = path.join(dirTmp, 'fresh');
+    prepareOutputDir(outDir, { force: false });
+    expect(fs.existsSync(outDir)).toBe(true);
+  });
+
+  it('leaves existing files untouched when force is not set', () => {
+    const outDir = path.join(dirTmp, 'no-force');
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'kept.txt'), 'kept');
+    prepareOutputDir(outDir, { force: false });
+    expect(fs.existsSync(path.join(outDir, 'kept.txt'))).toBe(true);
+  });
+
+  it('removes stale files from a prior run when force is set', () => {
+    const outDir = path.join(dirTmp, 'forced');
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'stale-3600x4800-oldhash.jpg'), 'stale');
+    prepareOutputDir(outDir, { force: true });
+    expect(fs.existsSync(outDir)).toBe(true);
+    expect(fs.readdirSync(outDir)).toEqual([]);
   });
 });
