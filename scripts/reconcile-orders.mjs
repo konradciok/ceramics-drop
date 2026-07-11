@@ -53,9 +53,10 @@ const TEMPLATE_ALIASES = {
   shippingConfirmation: 'shipping-confirmation',
 };
 
-// ── Production guard constants ────────────────────────────────────────────────
-const EXPECTED_SUPABASE_REF = 'wnlysejenowymjdxlnaq';
-const EXPECTED_INPOST_HOST = 'api-shipx-pl.easypack24.net';
+// ── Production guard constants (shared with scripts/orders-cli.ts via scripts/prod-target.json) ─
+const { EXPECTED_SUPABASE_REF, EXPECTED_INPOST_HOST } = JSON.parse(
+  fs.readFileSync(new URL('./prod-target.json', import.meta.url), 'utf8'),
+);
 
 // ── InPost / ShipX constants ──────────────────────────────────────────────────
 const LABEL_READY_STATUS = 'confirmed';

@@ -38,8 +38,10 @@ import {
   type ActionResult,
 } from '../src/lib/admin/actions';
 
-/** Mirrors scripts/reconcile-orders.mjs's EXPECTED_SUPABASE_REF — the one production project. */
-const EXPECTED_SUPABASE_REF = 'wnlysejenowymjdxlnaq';
+import prodTarget from './prod-target.json';
+
+/** Single source of truth for the production project ref — shared with scripts/reconcile-orders.mjs (see scripts/prod-target.json). */
+const EXPECTED_SUPABASE_REF = prodTarget.EXPECTED_SUPABASE_REF;
 const PIECE_STATUSES: readonly PieceStatus[] = ['available', 'reserved', 'sold'];
 
 export interface CliDependencies {

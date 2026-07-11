@@ -39,7 +39,12 @@ INPOST_API_URL=...             # order create-shipment
 INPOST_API_TOKEN=...
 INPOST_ORGANIZATION_ID=...
 RESEND_API_KEY=...             # order resend-confirmation (checked inside emailOrderConfirmationToCustomer)
+PRODIGI_API_KEY_SANDBOX=...    # order refund, only when the order has print line items (cancelPrintFulfilment)
+PRODIGI_API_KEY_LIVE=...
+PRODIGI_ENV=...
 ```
+
+`order refund` on a print order is best-effort against Prodigi: a missing/invalid `PRODIGI_*` key (or any other Prodigi/DB/email hiccup) never fails the refund itself — the Stripe refund has already happened by that point — but it does surface in the response as `printFulfilment: "best_effort_failed"` (see Mutations below) and is captured in Sentry. Set the Prodigi keys before refunding a print order so cancellation isn't silently skipped.
 
 The local-admin `ADMIN_SUPABASE_URL` / `ADMIN_SUPABASE_SERVICE_ROLE_KEY` / `ADMIN_STRIPE_SECRET_KEY` overrides (see `src/lib/admin/clients.ts`) are honored with the same precedence as the admin UI, so a `.dev.vars` already set up for local-admin-against-production needs no changes.
 
@@ -61,7 +66,7 @@ npm run orders -- order refund 3fa2c1de-... --confirm 3fa2c1de-...
 
 Mutations are additionally blocked unless the loaded `SUPABASE_URL` resolves to the expected production project ref. Pass `--allow-nonprod` to run a mutation against a different project on purpose (e.g. a scratch/test project) — so a stray `--env-file` can't silently write to (or silently no-op against) the wrong database.
 
-- `order refund <uuid> --confirm <uuid>` — full Stripe refund only (no partial refunds — the `charge.refunded` webhook only relists pieces on a full refund), then stops Prodigi fulfilment for print orders.
+- `order refund <uuid> --confirm <uuid>` — full Stripe refund only (no partial refunds — the `charge.refunded` webhook only relists pieces on a full refund), then stops Prodigi fulfilment for print orders. The response includes `printFulfilment` (`no_print_items` | `cancelled` | `manual_cancel_required` | `best_effort_failed`) — check it after refunding a print order; anything other than `no_print_items`/`cancelled` means Prodigi needs a manual look (already alerted to Sentry/studio email, but worth confirming).
 - `order release-reservation <uuid> --confirm <uuid>` — cancels the order's PaymentIntent if still pending, then frees any pieces stuck in `reserved` (private-sale orders return to `sold`, never relisted publicly).
 - `order resend-confirmation <uuid> --confirm <uuid>` — re-sends the customer order-confirmation email.
 - `order create-shipment <uuid> [--recreate] --confirm <uuid>` — (re)creates the InPost shipment for a paid ceramic order; idempotent unless `--recreate` is passed. Print-only orders are rejected (Prodigi ships those, not InPost).

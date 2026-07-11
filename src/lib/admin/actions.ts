@@ -14,7 +14,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { InPostClient } from '@/lib/inpost';
-import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
+import { cancelPrintFulfilment, type CancelPrintOutcome } from '@/server/fulfilment/cancel-print';
 import { emailOrderConfirmationToCustomer } from '@/lib/email';
 import { createOrderShipment } from '@/lib/shipment';
 import { ShipxApiError } from '@/lib/shipx-errors';
@@ -24,10 +24,13 @@ import { releaseReservedPieces } from '@/lib/piece-release';
 import type { CancelOutcome } from '@/lib/expire-orders';
 import type { DeliveryMethod } from '@/lib/pricing';
 
-export type ActionResult = { status: number; body: { message: string } | { error: string } };
+export type ActionResult = {
+  status: number;
+  body: { message: string; printFulfilment?: CancelPrintOutcome } | { error: string };
+};
 
-function ok(message: string): ActionResult {
-  return { status: 200, body: { message } };
+function ok(message: string, extra?: { printFulfilment?: CancelPrintOutcome }): ActionResult {
+  return { status: 200, body: { message, ...extra } };
 }
 function fail(status: number, error: string): ActionResult {
   return { status, body: { error } };
@@ -73,9 +76,11 @@ export async function refundOrder(deps: RefundDeps, orderId: string): Promise<Ac
   // Print orders: stop the Prodigi side immediately — the charge.refunded
   // webhook re-runs this later as the backstop (idempotent, never throws).
   // Deliberately outside the try: once the refund exists, a fulfilment hiccup
-  // must not be reported back as a failed refund.
-  await cancelPrintFulfilment(orderId, env);
-  return ok(`Zwrot utworzony (${refundId}). Status zaktualizuje webhook.`);
+  // must not be reported back as a failed refund. The outcome is surfaced
+  // (not just logged to Sentry) so a CLI/admin caller sees when Prodigi needs
+  // manual follow-up instead of assuming the refund fully cleaned up.
+  const printFulfilment = await cancelPrintFulfilment(orderId, env);
+  return ok(`Zwrot utworzony (${refundId}). Status zaktualizuje webhook.`, { printFulfilment });
 }
 
 // ── release reservation ──────────────────────────────────────────────────────

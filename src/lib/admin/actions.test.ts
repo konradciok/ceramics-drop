@@ -41,17 +41,20 @@ describe('refundOrder', () => {
     return { refunds: { create } } as unknown as import('stripe').default;
   }
 
-  it('refunds a paid order, then stops print fulfilment (in that order)', async () => {
+  it('refunds a ceramic order, then stops print fulfilment (in that order)', async () => {
     const supabase = supabaseForOrder({ payment_intent_id: 'pi_1', status: 'paid' });
     const refundsCreate = vi.fn().mockResolvedValue({ id: 're_1' });
-    mocks.cancelPrintFulfilment.mockResolvedValue(undefined);
+    mocks.cancelPrintFulfilment.mockResolvedValue('no_print_items');
 
     const result = await refundOrder(
       { supabase: supabase as never, stripe: stripeWith(refundsCreate), env: ENV },
       ORDER_ID,
     );
 
-    expect(result).toEqual({ status: 200, body: { message: 'Zwrot utworzony (re_1). Status zaktualizuje webhook.' } });
+    expect(result).toEqual({
+      status: 200,
+      body: { message: 'Zwrot utworzony (re_1). Status zaktualizuje webhook.', printFulfilment: 'no_print_items' },
+    });
     expect(refundsCreate).toHaveBeenCalledWith(
       { payment_intent: 'pi_1' },
       { idempotencyKey: 'admin_refund_pi_1' },
@@ -60,6 +63,19 @@ describe('refundOrder', () => {
     expect(mocks.cancelPrintFulfilment.mock.invocationCallOrder[0]).toBeGreaterThan(
       refundsCreate.mock.invocationCallOrder[0],
     );
+  });
+
+  it('surfaces a manual_cancel_required print outcome so a caller can flag it for follow-up', async () => {
+    const supabase = supabaseForOrder({ payment_intent_id: 'pi_1', status: 'paid' });
+    const refundsCreate = vi.fn().mockResolvedValue({ id: 're_1' });
+    mocks.cancelPrintFulfilment.mockResolvedValue('manual_cancel_required');
+
+    const result = await refundOrder(
+      { supabase: supabase as never, stripe: stripeWith(refundsCreate), env: ENV },
+      ORDER_ID,
+    );
+
+    expect(result.body).toMatchObject({ printFulfilment: 'manual_cancel_required' });
   });
 
   it('a Stripe refund failure returns 502 and never touches fulfilment', async () => {
@@ -160,6 +176,17 @@ describe('releaseReservation', () => {
     expect(result).toEqual({ status: 200, body: { message: 'Zwolniono 2 prac(e).' } });
     expect(cancel).toHaveBeenCalledWith('pi_1');
     expect(supabase.update).toHaveBeenCalledWith({ status: 'expired' });
+  });
+
+  it('forwards the private_sale_id so freed pieces return to sold, not available', async () => {
+    const supabase = supabaseForOrder({ status: 'pending', private_sale_id: 'ps_1', payment_intent_id: 'pi_1' });
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mocks.releaseReservedPieces.mockResolvedValue(['k03']);
+
+    const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+
+    expect(result).toEqual({ status: 200, body: { message: 'Zwolniono 1 prac(e).' } });
+    expect(mocks.releaseReservedPieces).toHaveBeenCalledWith(supabase, { id: ORDER_ID, private_sale_id: 'ps_1' });
   });
 
   it('reports no pieces to free without touching order status', async () => {
