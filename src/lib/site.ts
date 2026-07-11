@@ -21,6 +21,7 @@ export const SITE_PATHS = [
   '/',
   '/sklep',
   '/showroom',
+  '/fine-art-prints',
   '/gallery',
   '/kubki',
   '/wazony',
