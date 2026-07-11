@@ -1,7 +1,7 @@
 import { getPublicProducts, CATEGORIES } from './products';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { absoluteUrl } from './seo/urls';
-import { SITE_URL, SITE_NAME } from './site';
+import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
 import { getProductNotes } from './cms/messages';
 import type { CategorySlug } from './types';
 import type { Locale } from '@/i18n/routing';
@@ -193,7 +193,7 @@ function itemToGoogleXml(item: FeedItem): string {
     <g:image_link>${escapeXml(item.imageLink)}</g:image_link>
     <g:availability>${item.availability}</g:availability>
     <g:price>${escapeXml(item.price)}</g:price>
-    <g:brand>Anna Ciok</g:brand>
+    <g:brand>${escapeXml(PRODUCT_BRAND_NAME)}</g:brand>
     <g:condition>new</g:condition>
     <g:identifier_exists>no</g:identifier_exists>
     <g:material>${escapeXml(item.material)}</g:material>
@@ -219,7 +219,7 @@ function itemToMetaXml(item: FeedItem): string {
     <g:image_link>${escapeXml(item.imageLink)}</g:image_link>
     <g:availability>${item.availability}</g:availability>
     <g:price>${escapeXml(item.price)}</g:price>
-    <g:brand>Anna Ciok</g:brand>
+    <g:brand>${escapeXml(PRODUCT_BRAND_NAME)}</g:brand>
     <g:condition>new</g:condition>
     <g:identifier_exists>no</g:identifier_exists>
     <g:material>${escapeXml(item.material)}</g:material>

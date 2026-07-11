@@ -4,6 +4,13 @@ export const SITE_URL = 'https://anna-ciok.studio';
 /** Brand name — a proper noun, identical across locales. Single source for metadata + JSON-LD. */
 export const SITE_NAME = 'Anna Ciok Ceramics';
 
+/**
+ * Merchant `brand` value — deliberately the artist's name, not `SITE_NAME`.
+ * Shared by the Google/Meta feed (`<g:brand>`, feed.ts) and the on-page
+ * `Product.brand` JSON-LD (structured-data.ts) so they never disagree.
+ */
+export const PRODUCT_BRAND_NAME = 'Anna Ciok';
+
 /** App routes under `[locale]` (path segment only, leading slash).
  *
  *  The collection routes list all visible families. This is kept static (not
@@ -35,5 +42,7 @@ export const SITE_PATHS = [
 /**
  * Routes that should not be indexed — cart/checkout surfaces are session-specific
  * and often empty. Excluded from the sitemap and marked `robots: noindex` per page.
+ * `/koszyk/return` isn't in `SITE_PATHS` (never sitemapped), but is listed here
+ * too for documentation parity with its own `noindex` layout.
  */
-export const NOINDEX_PATHS: readonly string[] = ['/koszyk'];
+export const NOINDEX_PATHS: readonly string[] = ['/koszyk', '/koszyk/return'];

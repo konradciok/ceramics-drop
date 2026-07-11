@@ -24,8 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale });
-  const notes = await getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>);
+  const [t, notes] = await Promise.all([
+    getTranslations({ locale }),
+    getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
+  ]);
   const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes });
   return (
     <main>

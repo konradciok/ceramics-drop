@@ -6,53 +6,113 @@ import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
 import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
-import { SITE_NAME, SITE_URL } from '@/lib/site';
+import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
 import { SHIPPING_COUNTRY } from '@/lib/feed';
+import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 
 const PRINTS_SLUG = 'fine-art-prints';
-
-/** Matches the literal <g:brand> value in feed.ts — keep them identical so the
- *  Merchant feed and on-page schema never disagree on brand. */
-const BRAND_NAME = 'Anna Ciok';
 
 /** Matches the copy on /dostawa-i-zwroty (shipping.s5P / s5Li2 / s5Li3): 14-day
  *  right of withdrawal, buyer pays return shipping, refund within 14 days. */
 const RETURN_WINDOW_DAYS = 14;
 
 /**
+ * Studio fulfilment is Poland-based regardless of the buyer's market (see
+ * /dostawa-i-zwroty and o-studiu — the June drop travelled to Poland for the
+ * summer), so returns are always sent back to PL even though the offer's
+ * `applicableCountry` (the market the policy covers) tracks the locale.
+ */
+const RETURN_POLICY_COUNTRY = 'PL';
+
+/** Resolves a Product description: an explicit CMS override, falling through
+ *  to the static `notes.<slug>` array on an empty override too — `??` alone
+ *  would let an empty-string CMS note win over a real fallback. */
+function resolveDescription(override: string | undefined, rawNotes: unknown, noteIndex: number): string {
+  if (override) return override;
+  return Array.isArray(rawNotes) ? ((rawNotes[noteIndex] as string) || '') : '';
+}
+
+/**
  * Ceramics ship on the two InPost rates already advertised in feed.ts —
  * mirror them here (and reuse its `SHIPPING_COUNTRY`) so the Merchant feed
- * and this on-page `Offer.shippingDetails` never disagree.
+ * and this on-page `Offer.shippingDetails` never disagree. Handling/transit
+ * time matches /dostawa-i-zwroty (shipping.s2P): parcels go out 1-3 business
+ * days after payment, InPost usually delivers the next business day.
  */
 function shippingDetailsFor(locale: Locale) {
   const rates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
   const currency = locale === 'pl' ? 'PLN' : 'EUR';
   const addressCountry = SHIPPING_COUNTRY[locale];
+  const deliveryTime = {
+    '@type': 'ShippingDeliveryTime' as const,
+    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 3, unitCode: 'DAY' },
+    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 1, unitCode: 'DAY' },
+  };
   return [
     {
       '@type': 'OfferShippingDetails' as const,
       shippingRate: { '@type': 'MonetaryAmount' as const, value: rates.paczkomat, currency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry },
+      deliveryTime,
     },
     {
       '@type': 'OfferShippingDetails' as const,
       shippingRate: { '@type': 'MonetaryAmount' as const, value: rates.kurier, currency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry },
+      deliveryTime,
     },
   ];
 }
 
-/** Ceramics-only 14-day right-of-withdrawal return policy (see /dostawa-i-zwroty). */
-function merchantReturnPolicy() {
+/**
+ * Ceramics-only 14-day right-of-withdrawal return policy (see /dostawa-i-zwroty).
+ * `applicableCountry` is the market the offer/policy covers (tracks the
+ * locale's shipping destination); `returnPolicyCountry` is the fixed address
+ * returns are actually sent back to.
+ */
+function merchantReturnPolicy(locale: Locale) {
   return {
     '@type': 'MerchantReturnPolicy' as const,
     returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
     merchantReturnDays: RETURN_WINDOW_DAYS,
     returnMethod: 'https://schema.org/ReturnByMail' as const,
     returnFees: 'https://schema.org/ReturnShippingFees' as const,
-    applicableCountry: 'PL',
+    applicableCountry: SHIPPING_COUNTRY[locale],
+    returnPolicyCountry: RETURN_POLICY_COUNTRY,
+  };
+}
+
+/**
+ * Prints ship by Prodigi courier — no InPost rates apply. Uses the locale's
+ * representative market (`SHIPPING_COUNTRY`) with Prodigi's real per-country
+ * rate for both the loose and framed variant (see print-shipping.ts).
+ */
+function printShippingDetailsFor(locale: Locale) {
+  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
+  const currency = locale === 'pl' ? 'pln' : 'eur';
+  const priceCurrency = locale === 'pl' ? 'PLN' : 'EUR';
+  return [
+    {
+      '@type': 'OfferShippingDetails' as const,
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency), currency: priceCurrency },
+      shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
+    },
+    {
+      '@type': 'OfferShippingDetails' as const,
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency), currency: priceCurrency },
+      shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
+    },
+  ];
+}
+
+/** Prints are made-to-order and not returnable (see buildPrintShippingConfirmation
+ *  in email.ts) — a distinct policy from ceramics' 14-day window, not an omission. */
+function printReturnPolicy() {
+  return {
+    '@type': 'MerchantReturnPolicy' as const,
+    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted' as const,
   };
 }
 
@@ -156,10 +216,10 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
           item: {
             '@type': 'Product',
             name: `${singular} Nº ${p.num}`,
-            description: notes?.[p.id] ?? (Array.isArray(rawNotes) ? ((rawNotes[p.noteIndex] as string) ?? '') : ''),
+            description: resolveDescription(notes?.[p.id], rawNotes, p.noteIndex),
             image: `${SITE_URL}${p.image}`,
             category: categoryName,
-            brand: { '@type': 'Brand', name: BRAND_NAME },
+            brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
             offers: {
               '@type': 'Offer',
               price: locale === 'pl' ? category.price : PRICE_EUR[slug],
@@ -167,7 +227,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               availability: availabilityFor(p.sold || sold.has(p.id) || showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
               shippingDetails: shippingDetailsFor(locale),
-              hasMerchantReturnPolicy: merchantReturnPolicy(),
+              hasMerchantReturnPolicy: merchantReturnPolicy(locale),
             },
           },
         })),
@@ -222,10 +282,10 @@ export async function printCollectionSchema({ locale, t, tRaw, notes }: PrintCol
             item: {
               '@type': 'Product',
               name: `${singular} Nº ${d.num}`,
-              description: notes?.[d.id] ?? (Array.isArray(rawNotes) ? ((rawNotes[d.noteIndex] as string) ?? '') : ''),
+              description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
               image: `${SITE_URL}${d.image}`,
               category: categoryName,
-              brand: { '@type': 'Brand', name: BRAND_NAME },
+              brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
               offers: {
                 '@type': 'AggregateOffer',
                 priceCurrency,
@@ -234,6 +294,8 @@ export async function printCollectionSchema({ locale, t, tRaw, notes }: PrintCol
                 offerCount: prices.length,
                 availability: 'https://schema.org/InStock',
                 url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
+                shippingDetails: printShippingDetailsFor(locale),
+                hasMerchantReturnPolicy: printReturnPolicy(),
               },
             },
           };
@@ -261,7 +323,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const singular = t('product.print');
   const name = `${singular} Nº ${design.num}`;
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
-  const description = descriptionOverride ?? (Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '');
+  const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
   const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
@@ -287,7 +349,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
         sku: design.id,
         image: images,
         category: categoryName,
-        brand: { '@type': 'Brand', name: BRAND_NAME },
+        brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
         offers: {
           '@type': 'AggregateOffer',
           priceCurrency,
@@ -296,6 +358,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
           url: productUrl,
+          shippingDetails: printShippingDetailsFor(locale),
+          hasMerchantReturnPolicy: printReturnPolicy(),
         },
       },
     ],
@@ -320,7 +384,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
   const categoryName = t(category.nameKey);
   const name = `${singular} Nº ${product.num}`;
   const rawNotes = tRaw(`notes.${product.category}`);
-  const description = descriptionOverride ?? (Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '');
+  const description = resolveDescription(descriptionOverride, rawNotes, product.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
   const collectionUrl = absoluteUrl(locale, `/${product.category}`);
   const productUrl = absoluteUrl(locale, `/${product.category}/${product.id}`);
@@ -345,7 +409,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
         sku: product.id,
         image: images,
         category: categoryName,
-        brand: { '@type': 'Brand', name: BRAND_NAME },
+        brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
         offers: {
           '@type': 'Offer',
           price: locale === 'pl' ? product.price : PRICE_EUR[product.category],
@@ -354,7 +418,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           availability: availabilityFor(product.sold || product.showroom === true),
           url: productUrl,
           shippingDetails: shippingDetailsFor(locale),
-          hasMerchantReturnPolicy: merchantReturnPolicy(),
+          hasMerchantReturnPolicy: merchantReturnPolicy(locale),
         },
       },
     ],
