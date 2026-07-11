@@ -28,7 +28,8 @@ create table print_fulfilment_assets (
   profile_key   text,                          -- distinct dimension set, e.g. '3600x4800'
   r2_key        text not null unique,          -- prints/{id}/{rev}/{w}x{h}-{sha256}.{jpg|png}
   sha256        text not null,
-  content_type  text not null,                 -- 'image/jpeg' | 'image/png'
+  content_type  text not null
+                check (content_type in ('image/jpeg', 'image/png')),
   width_px      integer not null,
   height_px     integer not null,
   byte_size     bigint not null,

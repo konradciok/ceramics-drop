@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(21);
+select plan(22);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -78,6 +78,17 @@ insert into products (id, type, category_slug, num) values ('tap_pc', 'ceramic',
 insert into product_variants (product_id, variant_key) values ('tap_pc', 'default');
 
 -- ── Tests ───────────────────────────────────────────────────────────────────
+
+-- content_type CHECK: an invalid MIME is rejected at insert, before it can
+-- ever reach staging/publish — a typo here must fail loudly at write time,
+-- not later at publish or route-serve time.
+select throws_ok(
+  $$ insert into print_fulfilment_assets (product_id, revision, r2_key, sha256, content_type, width_px, height_px, byte_size, status)
+     values ('tap_p1', 'r1', 'prints/tap_p1/r1/bad-mime.jpg', 'sha_bad', 'image/jpg', 3600, 4800, 123456, 'staged') $$,
+  '23514',
+  null, -- skip matching the (locale-dependent) message text; errcode is enough
+  'print_fulfilment_assets: an invalid content_type is rejected by the CHECK constraint'
+);
 
 -- product_not_found: a non-print product is rejected by the `type = 'print'
 -- ` lock (step 1 of the RPC, before any assignment is examined).

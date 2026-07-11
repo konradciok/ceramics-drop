@@ -116,10 +116,18 @@ describe('buildManifest', () => {
       width: 3600,
       height: 4800,
       format: 'jpg',
+      contentType: 'image/jpeg',
       sha256: 'b'.repeat(64),
       byteSize: 111,
       r2Key: 'prints/fap01/2026-07-11-r1/3600x4800-' + 'b'.repeat(64) + '.jpg',
     });
+  });
+
+  it('sets the MIME contentType from format for both jpg and png', () => {
+    const manifest = buildManifest(makeManifestInputs());
+    const byKey = new Map(manifest.derivatives.map((d) => [d.profileKey, d]));
+    expect(byKey.get('3600x4800')?.contentType).toBe('image/jpeg');
+    expect(byKey.get('3614x4795')?.contentType).toBe('image/png');
   });
 
   it('maps every variant_key to its profile in assignments', () => {
@@ -166,6 +174,14 @@ describe('validateManifest', () => {
     bad.width = 9999;
     const errors = validateManifest(manifest, CONFIG);
     expect(errors.some((e) => e.includes('3600x4800'))).toBe(true);
+  });
+
+  it('fails when a derivative contentType does not match its format', () => {
+    const manifest = buildManifest(makeManifestInputs());
+    const bad = manifest.derivatives.find((d) => d.profileKey === '3600x4800')!;
+    bad.contentType = 'image/png';
+    const errors = validateManifest(manifest, CONFIG);
+    expect(errors.some((e) => e.includes('contentType'))).toBe(true);
   });
 });
 
