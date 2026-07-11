@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { signPrintAssetUrl } from '@/lib/print-assets';
+import { getWorkerOrigin } from '@/lib/site.server';
 import { getAssetForFulfilment } from '@/server/print-assets/repository';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
 import { buildProdigiPayload, printItemAssetKey, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
@@ -74,7 +75,12 @@ async function resolveSignedAssetUrl(
     return { ok: false, kind: 'retryable', reason: `R2 head failed for asset ${variant.assetId}: ${String(e)}` };
   }
 
-  const url = await signPrintAssetUrl(variant.assetId, env.PRINT_ASSET_TOKEN_SECRET);
+  const url = await signPrintAssetUrl(
+    variant.assetId,
+    env.PRINT_ASSET_TOKEN_SECRET,
+    Date.now(),
+    getWorkerOrigin(env),
+  );
   return {
     ok: true,
     url,

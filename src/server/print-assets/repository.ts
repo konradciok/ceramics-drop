@@ -155,11 +155,12 @@ export async function getAssetForFulfilment(
  * Signed-route resolver: load the immutable R2 key for a snapshotted assetId.
  * Permits `ready` and `retired`; rejects `revoked` and unknown ids.
  */
-export async function resolveAssetR2Key(assetId: string): Promise<{
-  r2Key: string;
-  contentType: 'image/jpeg' | 'image/png';
-  status: string;
-} | null> {
+export type ResolveAssetR2KeyResult =
+  | { kind: 'found'; r2Key: string; contentType: 'image/jpeg' | 'image/png'; status: string }
+  | { kind: 'revoked' }
+  | { kind: 'not_found' };
+
+export async function resolveAssetR2Key(assetId: string): Promise<ResolveAssetR2KeyResult> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('print_fulfilment_assets')
@@ -170,9 +171,11 @@ export async function resolveAssetR2Key(assetId: string): Promise<{
   if (error) {
     throw new Error(`resolveAssetR2Key: lookup failed for ${assetId}: ${error.message}`);
   }
-  if (!data || data.status === 'revoked') return null;
-  if (data.status !== 'ready' && data.status !== 'retired') return null;
+  if (!data) return { kind: 'not_found' };
+  if (data.status === 'revoked') return { kind: 'revoked' };
+  if (data.status !== 'ready' && data.status !== 'retired') return { kind: 'not_found' };
   return {
+    kind: 'found',
     r2Key: data.r2_key,
     contentType: data.content_type as 'image/jpeg' | 'image/png',
     status: data.status,

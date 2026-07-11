@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { isTerminalStatus, mapProdigiStage } from './status-map';
 import { buildProdigiPayload } from '../prodigi/mapper';
 import { signPrintAssetUrl } from '@/lib/print-assets';
+import { SITE_URL } from '@/lib/site';
 
 describe('mapProdigiStage', () => {
   it('maps InProduction', () => expect(mapProdigiStage('InProduction')).toBe('in_production'));
@@ -201,7 +202,12 @@ describe('processJob', () => {
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV_SIGNED, CTX);
 
-    expect(vi.mocked(signPrintAssetUrl)).toHaveBeenCalledWith(ASSET_ID, 'test-asset-secret');
+    expect(vi.mocked(signPrintAssetUrl)).toHaveBeenCalledWith(
+      ASSET_ID,
+      'test-asset-secret',
+      expect.any(Number),
+      SITE_URL,
+    );
     expect(vi.mocked(buildProdigiPayload)).toHaveBeenCalledTimes(1);
     const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
     expect(assetUrls).toEqual({ [ASSET_ID]: 'https://cdn.example.com/asset.jpg' });

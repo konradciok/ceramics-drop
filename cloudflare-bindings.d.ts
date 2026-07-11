@@ -20,6 +20,7 @@ interface R2HTTPMetadata {
 interface R2Object {
   readonly key: string;
   readonly size: number;
+  readonly httpEtag: string;
   readonly httpMetadata?: R2HTTPMetadata;
 }
 

@@ -1,13 +1,17 @@
-// Characterization tests for the print-assets GET route.
-// Phase 3 resolves snapshotted assetId → immutable r2_key (Phase 4 adds HEAD/revoked).
+// Characterization tests for the print-assets GET/HEAD routes.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const ENV = vi.hoisted(() => {
   const mockGet = vi.fn();
+  const mockHead = vi.fn();
   return {
     PRINT_ASSET_TOKEN_SECRET: 'secret_test' as string | undefined,
-    PRINT_ASSETS: { get: mockGet } as { get: typeof mockGet } | undefined,
+    PRINT_ASSETS: { get: mockGet, head: mockHead } as {
+      get: typeof mockGet;
+      head: typeof mockHead;
+    } | undefined,
     mockGet,
+    mockHead,
   };
 });
 
@@ -22,30 +26,39 @@ vi.mock('@/server/print-assets/repository', () => ({
   resolveAssetR2Key: mockResolveAssetR2Key,
 }));
 
-import { GET } from './route';
+import { GET, HEAD } from './route';
 import { signPrintAssetUrl } from '@/lib/print-assets';
 
 const ASSET_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const R2_KEY = 'prints/fap01/rev1/4800x7200-abc.jpg';
 const SECRET = 'secret_test';
+const ETAG = '"abc123"';
+
+const FOUND_ASSET = {
+  kind: 'found' as const,
+  r2Key: R2_KEY,
+  contentType: 'image/jpeg' as const,
+  status: 'ready',
+};
 
 async function mintSig(id: string, secret: string, nowMs = Date.now()) {
   const url = new URL(await signPrintAssetUrl(id, secret, nowMs));
   return { exp: url.searchParams.get('exp')!, sig: url.searchParams.get('sig')! };
 }
 
-function buildRequest(id: string, qs?: { exp: string; sig: string }) {
+function buildRequest(id: string, qs?: { exp: string; sig: string }, method = 'GET') {
   const search = qs ? `?exp=${qs.exp}&sig=${qs.sig}` : '';
-  return new Request(`http://localhost/api/print-assets/${id}${search}`);
+  return new Request(`http://localhost/api/print-assets/${id}${search}`, { method });
 }
 
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
-function fakeR2Object(opts: { contentType?: string; size?: number; body?: string } = {}) {
-  const { contentType, size = 1234, body = 'print-master-payload' } = opts;
+function fakeR2Object(opts: { contentType?: string; size?: number; body?: string; httpEtag?: string } = {}) {
+  const { contentType, size = 1234, body = 'print-master-payload', httpEtag = ETAG } = opts;
   return {
     body: new Response(body).body,
     size,
+    httpEtag,
     httpMetadata: contentType ? { contentType } : undefined,
   };
 }
@@ -54,13 +67,10 @@ describe('GET /api/print-assets/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ENV.PRINT_ASSET_TOKEN_SECRET = SECRET;
-    ENV.PRINT_ASSETS = { get: ENV.mockGet };
+    ENV.PRINT_ASSETS = { get: ENV.mockGet, head: ENV.mockHead };
     ENV.mockGet.mockReset();
-    mockResolveAssetR2Key.mockResolvedValue({
-      r2Key: R2_KEY,
-      contentType: 'image/jpeg',
-      status: 'ready',
-    });
+    ENV.mockHead.mockReset();
+    mockResolveAssetR2Key.mockResolvedValue(FOUND_ASSET);
   });
 
   it('503 when PRINT_ASSET_TOKEN_SECRET is unset', async () => {
@@ -112,7 +122,6 @@ describe('GET /api/print-assets/[id]', () => {
   });
 
   it('403 on an expired exp (signature was once valid)', async () => {
-    // Minted well in the past; verifyPrintAssetSig rejects expired links.
     const { exp, sig } = await mintSig(ASSET_ID, SECRET, 1_000);
     const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(403);
@@ -129,12 +138,30 @@ describe('GET /api/print-assets/[id]', () => {
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
-  it('404 when the asset record is unknown or revoked', async () => {
-    mockResolveAssetR2Key.mockResolvedValueOnce(null);
+  it('503 when the asset DB lookup throws', async () => {
+    mockResolveAssetR2Key.mockRejectedValueOnce(new Error('connection reset'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+  });
+
+  it('404 when the asset record is unknown', async () => {
+    mockResolveAssetR2Key.mockResolvedValueOnce({ kind: 'not_found' });
     const { exp, sig } = await mintSig(ASSET_ID, SECRET);
     const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'not_found' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+  });
+
+  it('410 when the asset is revoked', async () => {
+    mockResolveAssetR2Key.mockResolvedValueOnce({ kind: 'revoked' });
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(410);
+    expect(await res.json()).toEqual({ error: 'gone' });
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
@@ -148,6 +175,14 @@ describe('GET /api/print-assets/[id]', () => {
     expect(ENV.mockGet).toHaveBeenCalledWith(R2_KEY);
   });
 
+  it('503 when the R2 get() call throws (transient infra failure)', async () => {
+    ENV.mockGet.mockRejectedValueOnce(new Error('r2 timeout'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
+  });
+
   it('streams the object body and sets the headers from httpMetadata', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object({ contentType: 'image/png', size: 4096 }));
     const { exp, sig } = await mintSig(ASSET_ID, SECRET);
@@ -156,6 +191,7 @@ describe('GET /api/print-assets/[id]', () => {
     expect(await res.text()).toBe('print-master-payload');
     expect(res.headers.get('content-type')).toBe('image/png');
     expect(res.headers.get('content-length')).toBe('4096');
+    expect(res.headers.get('etag')).toBe(ETAG);
     expect(res.headers.get('cache-control')).toBe('private, no-store');
   });
 
@@ -173,5 +209,69 @@ describe('GET /api/print-assets/[id]', () => {
     await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(mockResolveAssetR2Key).toHaveBeenCalledWith(ASSET_ID);
     expect(ENV.mockGet).toHaveBeenCalledWith(R2_KEY);
+  });
+});
+
+describe('HEAD /api/print-assets/[id]', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ENV.PRINT_ASSET_TOKEN_SECRET = SECRET;
+    ENV.PRINT_ASSETS = { get: ENV.mockGet, head: ENV.mockHead };
+    ENV.mockGet.mockReset();
+    ENV.mockHead.mockReset();
+    mockResolveAssetR2Key.mockResolvedValue(FOUND_ASSET);
+  });
+
+  it('403 when the signature is invalid', async () => {
+    const res = await HEAD(buildRequest(ASSET_ID), params(ASSET_ID));
+    expect(res.status).toBe(403);
+    expect(ENV.mockHead).not.toHaveBeenCalled();
+  });
+
+  it('503 when the asset DB lookup throws', async () => {
+    mockResolveAssetR2Key.mockRejectedValueOnce(new Error('connection reset'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
+    expect(ENV.mockHead).not.toHaveBeenCalled();
+  });
+
+  it('410 when the asset is revoked', async () => {
+    mockResolveAssetR2Key.mockResolvedValueOnce({ kind: 'revoked' });
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(410);
+    expect(await res.json()).toEqual({ error: 'gone' });
+    expect(ENV.mockHead).not.toHaveBeenCalled();
+  });
+
+  it('404 when the R2 object is missing', async () => {
+    ENV.mockHead.mockResolvedValue(null);
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'not_found' });
+    expect(ENV.mockHead).toHaveBeenCalledWith(R2_KEY);
+  });
+
+  it('503 when the R2 head() call throws (transient infra failure)', async () => {
+    ENV.mockHead.mockRejectedValueOnce(new Error('r2 timeout'));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'unavailable' });
+  });
+
+  it('returns metadata headers with no body', async () => {
+    ENV.mockHead.mockResolvedValue(fakeR2Object({ contentType: 'image/jpeg', size: 8192 }));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await HEAD(buildRequest(ASSET_ID, { exp, sig }, 'HEAD'), params(ASSET_ID));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('');
+    expect(res.headers.get('content-type')).toBe('image/jpeg');
+    expect(res.headers.get('content-length')).toBe('8192');
+    expect(res.headers.get('etag')).toBe(ETAG);
+    expect(res.headers.get('cache-control')).toBe('private, no-store');
   });
 });

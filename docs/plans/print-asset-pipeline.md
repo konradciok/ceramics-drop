@@ -194,12 +194,12 @@ Gate: a paid order continues to reference the exact same immutable asset after a
 
 ### Phase 4 — Signed route and environment hardening
 
-- [ ] Update `src/lib/print-assets.ts` to sign/verify `assetId:exp` and accept an explicit public origin.
-- [ ] Update `/api/print-assets/[id]` to resolve the immutable key, implement `HEAD`, return metadata/ETag, and distinguish 403, 404, 410, and 503 without leaking bucket keys.
-- [ ] Extend the minimal `R2Bucket` shapes in `cloudflare-bindings.d.ts` for `head`, `httpEtag`, and required metadata, then run `npm run cf-typegen`.
-- [ ] Make the fulfilment/callback origin environment-aware as required by `docs/plans/staging-plan.md`; production remains `https://anna-ciok.studio`.
-- [ ] Verify that Cloudflare Access/WAF rules do not block Prodigi's unsigned network request to the **HMAC-protected** print asset route.
-- [ ] Add a deployed smoke test that fetches a signed URL without exposing the signature in CI logs.
+- [x] Update `src/lib/print-assets.ts` to sign/verify `assetId:exp` and accept an explicit public origin.
+- [x] Update `/api/print-assets/[id]` to resolve the immutable key, implement `HEAD`, return metadata/ETag, and distinguish 403, 404, 410, and 503 without leaking bucket keys.
+- [x] Extend the minimal `R2Bucket` shapes in `cloudflare-bindings.d.ts` for `head`, `httpEtag`, and required metadata, then run `npm run cf-typegen`.
+- [x] Make the fulfilment/callback origin environment-aware as required by `docs/plans/staging-plan.md`; production remains `https://anna-ciok.studio`.
+- [ ] Verify that Cloudflare Access/WAF rules do not block Prodigi's unsigned network request to the **HMAC-protected** print asset route. Before staging goes behind Access (`docs/plans/staging-plan.md`), add a Zero Trust **Access Bypass policy** (path-based) for `/api/print-assets/*` and confirm `/api/webhooks/prodigi/*` is likewise reachable — Prodigi cannot present a JWT, only the HMAC query params. Production is unaffected today (`worker.ts` only gates `/admin`). _(operator check — confirm in PR before merge)_
+- [ ] Add a deployed smoke test that fetches a signed URL without exposing the signature in CI logs. _(follow-up — not in this PR)_
 
 Gate: production and staging generate URLs to their own Workers/buckets and Prodigi sandbox reports the submitted asset status as downloaded/complete.
 

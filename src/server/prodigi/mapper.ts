@@ -1,4 +1,4 @@
-import { SITE_URL } from '@/lib/site';
+import { getWorkerOrigin } from '@/lib/site.server';
 import type { ProdigiOrderItem, ProdigiOrderRequest, ProdigiRecipient } from './types';
 
 /**
@@ -127,7 +127,7 @@ export function buildProdigiPayload(
     idempotencyKey:    `prodigi:${env.PRODIGI_ENV}:order:${order.id}:v1`,
     // ponytail: Prodigi's API only accepts a plain callbackUrl string — no custom request headers.
     // URL token is the only available auth mechanism; Prodigi does not sign outgoing callbacks.
-    callbackUrl:       `${SITE_URL}/api/webhooks/prodigi/${env.PRODIGI_CALLBACK_TOKEN}`,
+    callbackUrl:       `${getWorkerOrigin(env)}/api/webhooks/prodigi/${env.PRODIGI_CALLBACK_TOKEN}`,
     merchantReference: order.id,
     recipient:         buildRecipient(order),
     items,
