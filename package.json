@@ -23,6 +23,8 @@
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
     "drop:create": "tsx scripts/create-drop.ts",
     "sync-prodigi-skus": "tsx scripts/sync-prodigi-skus.ts",
+    "print-assets:inventory": "tsx scripts/print-asset-inventory.ts",
+    "print-fulfilment:check-jobs": "tsx scripts/check-print-fulfilment-jobs.ts",
     "catalog:backfill": "tsx scripts/backfill-catalog.ts",
     "debug:meta-capi": "node scripts/debug-meta-capi.mjs",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",

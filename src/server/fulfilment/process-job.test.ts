@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { isTerminalStatus, mapProdigiStage } from './status-map';
+import { buildProdigiPayload } from '../prodigi/mapper';
+import { signPrintAssetUrl } from '@/lib/print-assets';
 
 describe('mapProdigiStage', () => {
   it('maps InProduction', () => expect(mapProdigiStage('InProduction')).toBe('in_production'));
@@ -35,6 +37,8 @@ vi.mock('@/lib/site', () => ({ SITE_URL: 'https://anna-ciok.studio' }));
 
 const MSG = { orderId: 'ord-1', jobId: 'job-1' };
 const ENV = {} as CloudflareEnv; // no PRINT_ASSETS → falls back to public URL
+// Bindings present → getAssetUrl takes the signed-R2 branch.
+const ENV_SIGNED = { PRINT_ASSETS: {} as R2Bucket, PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret' } as CloudflareEnv;
 const CTX = {} as ExecutionContext;
 
 /** Build a thenable chain where every method returns the chain.
@@ -168,6 +172,64 @@ describe('processJob', () => {
     expect(poChain['upsert'].mock.calls[0][0]).toMatchObject({ prodigi_order_id: 'pr_existing' });
     const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
     expect(lastJobChain['update'].mock.calls[0][0]).toMatchObject({ status: 'fulfilment_submitted' });
+  });
+
+  it('uses a signed R2 asset URL when PRINT_ASSETS binding and token secret are present', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    // getAssetUrl's signed branch calls signPrintAssetUrl with the product id + secret.
+    expect(vi.mocked(signPrintAssetUrl)).toHaveBeenCalledWith('fap01', 'test-asset-secret');
+    // The signed URL reaches buildProdigiPayload's assetUrls — not the public WebP.
+    expect(vi.mocked(buildProdigiPayload)).toHaveBeenCalledTimes(1);
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://cdn.example.com/asset.jpg' });
+  });
+
+  // PHASE 3 INVERSION: today this asserts the public-image fallback IS used when the
+  // R2 binding is absent. After the Phase-3 fail-closed refactor, flip it to assert the
+  // job moves to failed_action_required and buildProdigiPayload/postOrder are never
+  // reached with a display image (no silent fallback in fulfilment).
+  it('falls back to the public storefront image when R2 binding is absent (Phase 3: invert to fail-closed)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV, CTX);
+
+    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
+    expect(vi.mocked(buildProdigiPayload)).toHaveBeenCalledTimes(1);
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+  });
+
+  // PHASE 3 INVERSION: partial binding misconfiguration (one present, one absent)
+  // today falls back to the public WebP — the same hazard as a missing binding.
+  it('falls back when PRINT_ASSETS is present but PRINT_ASSET_TOKEN_SECRET is absent (Phase 3: invert)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(
+      MSG,
+      { PRINT_ASSETS: {} as R2Bucket } as CloudflareEnv,
+      CTX,
+    );
+
+    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+  });
+
+  it('falls back when PRINT_ASSET_TOKEN_SECRET is present but PRINT_ASSETS is absent (Phase 3: invert)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(
+      MSG,
+      { PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret' } as CloudflareEnv,
+      CTX,
+    );
+
+    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
   });
 
   it('marks job failed_action_required when shipping address is missing', async () => {
