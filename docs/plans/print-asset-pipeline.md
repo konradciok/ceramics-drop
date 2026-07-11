@@ -135,11 +135,11 @@ Local development can use an explicitly seeded local R2 bucket through `npm run 
 
 ### Phase 0 — Safety baseline and characterization
 
-- [ ] Add `src/lib/print-assets.test.ts` covering deterministic signing, tampering, malformed signatures, expiry boundary, and future expiry.
-- [ ] Add `src/app/api/print-assets/[id]/route.test.ts` covering missing configuration, invalid signature, unknown/revoked asset, missing R2 object, `GET`, and `HEAD` metadata.
-- [ ] Expand `src/server/fulfilment/process-job.test.ts` to prove the R2/signed-URL branch and capture the current fallback as a test that will be inverted in Phase 3.
-- [ ] Add a read-only inventory command that reports which current published designs have the legacy `{productId}/master.jpg` object. Do not infer readiness from the code registry alone.
-- [ ] Confirm all current live print orders/jobs are either absent or complete before changing key semantics.
+- [x] Add `src/lib/print-assets.test.ts` covering deterministic signing, tampering, malformed signatures, expiry boundary, and future expiry.
+- [x] Add `src/app/api/print-assets/[id]/route.test.ts` covering missing configuration, invalid signature, unknown/revoked asset, missing R2 object, `GET`, and `HEAD` metadata (HEAD/revoked deferred to Phase 4 — see file header).
+- [x] Expand `src/server/fulfilment/process-job.test.ts` to prove the R2/signed-URL branch and capture the current fallback as a test that will be inverted in Phase 3.
+- [x] Add a read-only inventory command that reports which current published designs have the legacy `{productId}/master.jpg` object (`npm run print-assets:inventory`; enumerates via `getPrintDesigns()`, not the code registry alone).
+- [ ] Confirm all current live print orders/jobs are either absent or complete before changing key semantics (`npm run print-fulfilment:check-jobs` — run against prod and paste JSON in the PR before merge).
 
 Gate: current behavior is characterized, remote asset inventory is recorded, and no in-flight job depends on an expiring implementation change.
 
@@ -238,6 +238,8 @@ Gate: an operator can add or revise a print using documented commands, the admin
 6. Keep legacy `{productId}/master.jpg` objects for one release window, but remove all code paths that select them.
 
 Rollback the application to the prior release only while legacy objects still exist. After the snapshot format is live, forward compatibility is required: the old route must not be redeployed if it cannot serve `assetId` snapshots. Database assignment rollback is an atomic republish of the last known-good revision; never overwrite or mutate the bad R2 object.
+
+**Queue safety during rollback:** pause or drain the `prodigi-fulfilment` queue before rolling back application code. A rolled-back `process-job.ts` must not consume jobs whose `order_items.variant` already carries an `assetId` snapshot — those orders require the Phase 3+ consumer. Either (a) leave snapshot orders on the new release until their jobs complete, or (b) re-queue them only after verifying the target release understands `assetId`. Never roll back into a build that would silently substitute legacy `{productId}/master.jpg` or the public WebP for a snapshotted order.
 
 ## Explicit Non-Goals
 

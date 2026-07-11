@@ -202,6 +202,36 @@ describe('processJob', () => {
     expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
   });
 
+  // PHASE 3 INVERSION: partial binding misconfiguration (one present, one absent)
+  // today falls back to the public WebP — the same hazard as a missing binding.
+  it('falls back when PRINT_ASSETS is present but PRINT_ASSET_TOKEN_SECRET is absent (Phase 3: invert)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(
+      MSG,
+      { PRINT_ASSETS: {} as R2Bucket } as CloudflareEnv,
+      CTX,
+    );
+
+    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+  });
+
+  it('falls back when PRINT_ASSET_TOKEN_SECRET is present but PRINT_ASSETS is absent (Phase 3: invert)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(
+      MSG,
+      { PRINT_ASSET_TOKEN_SECRET: 'test-asset-secret' } as CloudflareEnv,
+      CTX,
+    );
+
+    expect(vi.mocked(signPrintAssetUrl)).not.toHaveBeenCalled();
+    const assetUrls = vi.mocked(buildProdigiPayload).mock.calls[0][2] as Record<string, string>;
+    expect(assetUrls).toEqual({ fap01: 'https://anna-ciok.studio/uploads/fap-01.webp' });
+  });
+
   it('marks job failed_action_required when shipping address is missing', async () => {
     setupMocks({ orderData: { id: 'ord-1', status: 'paid', shipping_address: null } });
     const { processJob } = await import('./process-job');

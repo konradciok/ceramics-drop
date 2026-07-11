@@ -82,6 +82,28 @@ describe('GET /api/print-assets/[id]', () => {
     expect(ENV.mockGet).not.toHaveBeenCalled();
   });
 
+  it('403 when the exp query param is missing (sig only)', async () => {
+    const { sig } = await mintSig(ID, SECRET);
+    const res = await GET(
+      new Request(`http://localhost/api/print-assets/${ID}?sig=${sig}`),
+      params(ID),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'forbidden' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+  });
+
+  it('403 when exp is not a number', async () => {
+    const { sig } = await mintSig(ID, SECRET);
+    const res = await GET(
+      new Request(`http://localhost/api/print-assets/${ID}?exp=not-a-number&sig=${sig}`),
+      params(ID),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'forbidden' });
+    expect(ENV.mockGet).not.toHaveBeenCalled();
+  });
+
   it('403 on a wrong signature', async () => {
     const { exp } = await mintSig(ID, SECRET);
     const res = await GET(buildRequest(ID, { exp, sig: 'deadbeef' }), params(ID));
@@ -120,7 +142,7 @@ describe('GET /api/print-assets/[id]', () => {
   });
 
   it('falls back to image/jpeg content-type when httpMetadata is absent', async () => {
-    ENV.mockGet.mockResolvedValue(fakeR2Object({ httpMetadata: undefined } as never));
+    ENV.mockGet.mockResolvedValue(fakeR2Object());
     const { exp, sig } = await mintSig(ID, SECRET);
     const res = await GET(buildRequest(ID, { exp, sig }), params(ID));
     expect(res.status).toBe(200);
