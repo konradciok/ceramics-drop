@@ -9,8 +9,9 @@
  * `getPrintAssetReadiness` check, not the code registry), deduplicates them
  * into distinct print-area dimension profiles, validates the tracked crop
  * config for each profile against the source master, generates exact-size
- * derivatives via Sharp, and writes a manifest that Phase 2b (upload/verify/
- * publish — not yet built) consumes.
+ * derivatives via Sharp, and writes a manifest that Phase 2b
+ * (upload/verify/publish — scripts/print-assets-{upload,verify,publish}.ts)
+ * consumes.
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars /
  * env) and that `npm run catalog:backfill` has seeded `products` /
@@ -35,7 +36,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   buildManifest,
   distinctProfiles,
@@ -49,49 +49,8 @@ import {
 } from '../src/lib/print-assets-prepare';
 import { generateDerivative, prepareOutputDir, writeDerivative } from './lib/prepare-derivatives';
 import { activeVariantDimensions } from './lib/db-variants';
-
-const ROOT = path.resolve(__dirname, '..');
-
-/** `.env.local` / `.dev.vars` → `process.env`, mirroring backfill-catalog.ts / sync-prodigi-skus.ts. */
-function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) return {};
-  const parsed: Record<string, string> = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    parsed[key] = value;
-  }
-  return parsed;
-}
-
-function loadSupabaseClient(): SupabaseClient {
-  const env = { ...parseEnvFile('.env.local'), ...parseEnvFile('.dev.vars'), ...process.env };
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .dev.vars, .env.local, or process env.');
-  }
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-}
-
-/** Minimal --flag value parser (supports `--flag value` and `--flag=value`), mirroring create-drop.ts. */
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
-function hasFlag(name: string): boolean {
-  return process.argv.slice(2).includes(`--${name}`);
-}
+import { loadSupabaseClient } from './lib/script-env';
+import { getArg, hasFlag, revisionDir, ROOT } from './lib/print-assets-cli';
 
 /** Load config/print-assets/{productId}.json. Fails loudly if missing/malformed. */
 function loadConfig(productId: string): PrepareConfig {
@@ -178,7 +137,7 @@ async function main(): Promise<void> {
   }
   console.log('  all crops validated (aspect match, no enlargement, within source bounds)');
 
-  const outputDir = path.join(ROOT, 'design', 'print-assets', productId, revision);
+  const outputDir = revisionDir(productId, revision);
   refuseOverwrite(outputDir, { exists: () => fs.existsSync(outputDir), force });
 
   if (dryRun) {

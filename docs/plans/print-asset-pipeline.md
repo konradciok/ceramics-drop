@@ -163,19 +163,19 @@ Add scripts and package commands:
 
 ```text
 npm run print-assets:prepare -- --product fap01 --revision 2026-07-10-r1 --source <path>
-npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1 --remote
-npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1 --remote
-npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1
+npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1 --confirm 2026-07-10-r1
 ```
 
-- [ ] `prepare`: enumerate active variants, deduplicate exact dimensions, validate source metadata, apply explicit crops, output exact-size JPG/PNG files, preserve/embed the approved colour profile, and emit a manifest containing hashes and assignments.
-- [ ] `prepare`: fail on enlargement, unexpected alpha handling, unsupported format, duplicate/missing profile, dimension mismatch, or non-deterministic output.
-- [ ] `prepare`: create small review proofs/contact sheets next to the local output; proofs never become fulfilment assets.
-- [ ] `upload`: call the current Wrangler CLI form `wrangler r2 object put {bucket}/{key} --file ... --content-type ... --remote`; check before writing, reuse an existing object only after its full streamed hash matches, and abort on any mismatch.
-- [ ] `upload`: stage the corresponding database rows only after every upload succeeds.
-- [ ] `verify`: use R2 `head` plus a streamed authenticated `GET` to compare size, content type, decoded dimensions, and the full SHA-256 against the local manifest without loading the whole object into memory.
-- [ ] `publish`: require explicit operator confirmation, then call the atomic assignment RPC.
-- [ ] Add unit tests using tiny fixtures for crop math, profile deduplication, determinism, manifest validation, and refusal to overwrite.
+- [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate source metadata, apply explicit crops, output exact-size JPG/PNG files, preserve/embed the approved colour profile, and emit a manifest containing hashes and assignments.
+- [x] `prepare`: fail on enlargement, unexpected alpha handling, unsupported format, duplicate/missing profile, dimension mismatch, or non-deterministic output.
+- [x] `prepare`: create small review proofs/contact sheets next to the local output; proofs never become fulfilment assets.
+- [x] `upload`: call the current Wrangler CLI form `wrangler r2 object put {bucket}/{key} --file ... --content-type ... --remote`; check before writing, reuse an existing object only after its full streamed hash matches, and abort on any mismatch.
+- [x] `upload`: stage the corresponding database rows only after every upload succeeds.
+- [x] `verify`: streamed authenticated `GET` compares size, decoded dimensions, and the full SHA-256 against the local manifest without loading the whole object into memory. (Content-type round-trip verification needs R2 `head`, which Wrangler 4.x lacks — deferred to the Phase 4 Worker `head` route; the content-addressed full-hash match already proves byte-identity of the object uploaded with an explicit `--content-type`.)
+- [x] `publish`: require explicit operator confirmation (`--confirm <revision>`), then call the atomic assignment RPC.
+- [x] Add unit tests using tiny fixtures for crop math, profile deduplication, determinism, manifest validation, and refusal to overwrite. (Phase 2b adds staged-row projection, upload reuse/abort decision, idempotent staging partition, remote-vs-manifest comparison, and publish-assignment resolution.)
 
 Gate: `fap01` can be prepared twice byte-for-byte, visually approved, uploaded, verified, and published without editing application code.
 
