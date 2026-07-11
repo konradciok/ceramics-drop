@@ -69,6 +69,14 @@ describe('buildProdigiPayload', () => {
     expect(payload.callbackUrl).toContain('/api/webhooks/prodigi/test-token');
   });
 
+  it('uses WORKER_ORIGIN when set', () => {
+    const payload = buildProdigiPayload(order, [printItem], assetUrls, {
+      ...mockEnv,
+      WORKER_ORIGIN: 'https://staging.anna-ciok.studio',
+    });
+    expect(payload.callbackUrl).toBe('https://staging.anna-ciok.studio/api/webhooks/prodigi/test-token');
+  });
+
   it('maps the ShipX address + receiver columns to the Prodigi recipient', () => {
     const payload = buildProdigiPayload(order, [printItem], assetUrls, mockEnv);
     expect(payload.recipient).toEqual({

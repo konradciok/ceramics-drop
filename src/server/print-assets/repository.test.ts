@@ -338,6 +338,7 @@ describe('resolveAssetR2Key', () => {
     setupSingleAsset(BASE);
     const { resolveAssetR2Key } = await import('./repository');
     expect(await resolveAssetR2Key('asset-1')).toEqual({
+      kind: 'found',
       r2Key: BASE.r2_key,
       contentType: 'image/jpeg',
       status: 'ready',
@@ -347,25 +348,25 @@ describe('resolveAssetR2Key', () => {
   it('returns the record for a retired asset', async () => {
     setupSingleAsset({ ...BASE, status: 'retired' });
     const { resolveAssetR2Key } = await import('./repository');
-    expect(await resolveAssetR2Key('asset-1')).toMatchObject({ status: 'retired' });
+    expect(await resolveAssetR2Key('asset-1')).toMatchObject({ kind: 'found', status: 'retired' });
   });
 
-  it('returns null for a staged asset', async () => {
+  it('returns not_found for a staged asset', async () => {
     setupSingleAsset({ ...BASE, status: 'staged' });
     const { resolveAssetR2Key } = await import('./repository');
-    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+    expect(await resolveAssetR2Key('asset-1')).toEqual({ kind: 'not_found' });
   });
 
-  it('returns null for a revoked asset', async () => {
+  it('returns revoked for a revoked asset', async () => {
     setupSingleAsset({ ...BASE, status: 'revoked' });
     const { resolveAssetR2Key } = await import('./repository');
-    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+    expect(await resolveAssetR2Key('asset-1')).toEqual({ kind: 'revoked' });
   });
 
-  it('returns null when the row is absent', async () => {
+  it('returns not_found when the row is absent', async () => {
     setupSingleAsset(null);
     const { resolveAssetR2Key } = await import('./repository');
-    expect(await resolveAssetR2Key('asset-1')).toBeNull();
+    expect(await resolveAssetR2Key('asset-1')).toEqual({ kind: 'not_found' });
   });
 
   it('throws on a DB error', async () => {

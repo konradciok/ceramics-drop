@@ -70,6 +70,8 @@ interface CloudflareEnv {
   STUDIO_ADMIN_LOCAL_BYPASS?: string;
   /** Storefront catalogue source — 'db' reads shadow tables; omit or any other value => code registry. */
   CATALOG_SOURCE?: string;
+  /** Optional public origin override for non-production Workers (e.g. staging). Falls back to SITE_URL. */
+  WORKER_ORIGIN?: string;
 }
 
 declare namespace Cloudflare {
