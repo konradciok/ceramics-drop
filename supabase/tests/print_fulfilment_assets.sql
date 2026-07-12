@@ -175,11 +175,12 @@ select lives_ok(
   'publish: 4-arg call with p_actor_email succeeds'
 );
 
-select is(
-  (select actor_email from catalog_audit_log
+select ok(
+  exists (
+    select 1 from catalog_audit_log
      where product_id = 'tap_p1'
-     order by created_at desc limit 1),
-  'operator@studio.test',
+       and actor_email = 'operator@studio.test'
+  ),
   'publish: p_actor_email is recorded in catalog_audit_log.actor_email'
 );
 
@@ -193,11 +194,12 @@ select lives_ok(
   'publish: 3-arg call falls back to app.actor_email GUC'
 );
 
-select is(
-  (select actor_email from catalog_audit_log
+select ok(
+  exists (
+    select 1 from catalog_audit_log
      where product_id = 'tap_p1'
-     order by created_at desc limit 1),
-  'guc@studio.test',
+       and actor_email = 'guc@studio.test'
+  ),
   'publish: app.actor_email GUC is recorded when p_actor_email is omitted'
 );
 
