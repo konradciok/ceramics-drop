@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
-import type { PrintAssetReadiness, ResolvedPrintAsset } from './types';
+import type { PrintAssetCoverage, PrintAssetReadiness, PrintAssetVariantCoverage, ResolvedPrintAsset } from './types';
 
 /**
  * Server-side repository (read-only) for the print-asset fulfilment tables.
@@ -19,7 +19,14 @@ type AssetRow = {
   width_px: number;
   height_px: number;
   status: string;
+  revision?: string;
+  verified_at?: string | null;
 };
+
+type CoverageAssetRow = Pick<
+  AssetRow,
+  'id' | 'revision' | 'status' | 'width_px' | 'height_px' | 'verified_at'
+>;
 
 /** PostgREST may return a many-side embed as an object or a one-element array. */
 function coalesceNestedAsset<T extends Pick<AssetRow, 'status' | 'width_px' | 'height_px'>>(
@@ -192,6 +199,19 @@ export async function resolveAssetR2Key(assetId: string): Promise<ResolveAssetR2
 export async function getPrintAssetReadiness(
   productId: string,
 ): Promise<PrintAssetReadiness> {
+  const coverage = await getPrintAssetCoverage(productId);
+  return {
+    productId: coverage.productId,
+    ready: coverage.ready,
+    totalActiveVariants: coverage.totalActiveVariants,
+    missing: coverage.missing,
+  };
+}
+
+/** Admin read model: readiness summary plus per-variant assignment detail. */
+export async function getPrintAssetCoverage(
+  productId: string,
+): Promise<PrintAssetCoverage> {
   const supabase = getSupabaseAdmin();
 
   const [variants, assignments] = await Promise.all([
@@ -199,20 +219,23 @@ export async function getPrintAssetReadiness(
       .from('product_variants')
       .select('variant_key, print_area_width_px, print_area_height_px')
       .eq('product_id', productId)
-      .eq('active', true),
+      .eq('active', true)
+      .order('variant_key'),
     supabase
       .from('print_variant_asset_assignments')
-      .select('variant_key, print_fulfilment_assets(status, width_px, height_px)')
+      .select(
+        'variant_key, print_fulfilment_assets(id, revision, status, width_px, height_px, verified_at)',
+      )
       .eq('product_id', productId),
   ]);
 
   if (variants.error)
     throw new Error(
-      `getPrintAssetReadiness: variants lookup failed for ${productId}: ${variants.error.message}`,
+      `getPrintAssetCoverage: variants lookup failed for ${productId}: ${variants.error.message}`,
     );
   if (assignments.error)
     throw new Error(
-      `getPrintAssetReadiness: assignments lookup failed for ${productId}: ${assignments.error.message}`,
+      `getPrintAssetCoverage: assignments lookup failed for ${productId}: ${assignments.error.message}`,
     );
 
   const activeVariants = (variants.data ?? []) as Array<{
@@ -221,35 +244,48 @@ export async function getPrintAssetReadiness(
     print_area_height_px: number | null;
   }>;
 
-  // Index assignments by variant_key for O(1) lookup.
-  const assetByKey = new Map<string, Pick<AssetRow, 'status' | 'width_px' | 'height_px'> | null>();
+  const assetByKey = new Map<string, CoverageAssetRow | null>();
   for (const row of assignments.data ?? []) {
     assetByKey.set(
       row.variant_key,
       coalesceNestedAsset(
         row.print_fulfilment_assets as
-          | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>
-          | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>[]
+          | CoverageAssetRow
+          | CoverageAssetRow[]
           | null
           | undefined,
       ),
     );
   }
 
-  const missing: string[] = [];
-  for (const v of activeVariants) {
-    if (!isUsable(assetByKey.get(v.variant_key) ?? null, v.print_area_width_px, v.print_area_height_px)) {
-      missing.push(v.variant_key);
-    }
-  }
+  const variantRows: PrintAssetVariantCoverage[] = activeVariants.map((v) => {
+    const asset = assetByKey.get(v.variant_key) ?? null;
+    const usable = isUsable(asset, v.print_area_width_px, v.print_area_height_px);
+    return {
+      variantKey: v.variant_key,
+      printAreaWidthPx: v.print_area_width_px,
+      printAreaHeightPx: v.print_area_height_px,
+      usable,
+      asset: asset
+        ? {
+            id: asset.id,
+            revision: asset.revision ?? '',
+            widthPx: asset.width_px,
+            heightPx: asset.height_px,
+            status: asset.status,
+            verifiedAt: asset.verified_at ?? null,
+          }
+        : null,
+    };
+  });
+
+  const missing = variantRows.filter((v) => !v.usable).map((v) => v.variantKey).sort();
 
   return {
     productId,
     totalActiveVariants: activeVariants.length,
     ready: missing.length === 0,
-    // Note: default Array.prototype.sort() is lexicographic + stable for
-    // strings — exactly the "sorted, stable" contract. Add a comparator only
-    // if variant keys ever need locale-aware ordering.
-    missing: missing.sort(),
+    missing,
+    variants: variantRows,
   };
 }

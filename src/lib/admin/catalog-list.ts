@@ -17,6 +17,14 @@ import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplaySt
 import { CATEGORY_ORDER, isCategoryHidden } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import type { ProductSeedRow } from '@/lib/catalog/types';
+import { getPrintAssetCoverage } from '@/server/print-assets/repository';
+import type { PrintAssetCoverage } from '@/server/print-assets/types';
+
+/** Print asset coverage load result for the product editor (prints in db mode only). */
+export type ProductPrintAssetsState =
+  | { status: 'na' }
+  | { status: 'ok'; coverage: PrintAssetCoverage }
+  | { status: 'error' };
 
 export interface ProductListRow {
   id: string;
@@ -179,6 +187,8 @@ export interface ProductEditorState {
   pdpPath: string;
   /** Deep link to the category's description document in the Content module. */
   notesHref: string;
+  /** Print fulfilment asset coverage (prints in db mode; na for ceramics/registry). */
+  printAssets: ProductPrintAssetsState;
 }
 
 /**
@@ -201,6 +211,17 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
   if (!row) return null;
 
   const ref = productRef(id);
+  let printAssets: ProductPrintAssetsState = { status: 'na' };
+  if (row.type === 'print' && source === 'db') {
+    try {
+      const coverage = await getPrintAssetCoverage(id);
+      printAssets = { status: 'ok', coverage };
+    } catch (err) {
+      console.error('[admin/products] getPrintAssetCoverage failed', err);
+      printAssets = { status: 'error' };
+    }
+  }
+
   return {
     row,
     title: ref.label,
@@ -209,5 +230,6 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
     source,
     pdpPath: `/${row.category_slug}/${row.id}`,
     notesHref: `/admin/content/product_notes/${row.category_slug}`,
+    printAssets,
   };
 }

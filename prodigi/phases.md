@@ -64,7 +64,7 @@ Write this matrix into `prodigi/sku-catalog.md` with real values from Prodigi AP
 All 5 require explicit decisions documented in `prodigi/decisions.md`:
 
 1. **Variant axes** — confirm sizes, frame colours, mount options from Prodigi API (P0-1 resolves this; document confirmed values)
-2. **Asset hosting** — R2 presigned URL vs Worker proxy vs public path
+2. **Asset hosting** — **shipped:** R2 masters + HMAC-signed Worker proxy (`/api/print-assets/{assetId}`); see `decisions.md` Q2 and `docs/print-asset-runbook.md`
 3. **Queue vs direct** — Cloudflare Queue binding or `ctx.waitUntil` inline fallback
 4. **Ceramics vs prints** — separate customers and carts; ceramics = drop/InPost, prints = Prodigi direct ship (see `decisions.md` Q4)
 5. **Storefront token format** — confirm no other code has consumed the old `print:id:size:paper:frame` token before changing it
@@ -190,7 +190,7 @@ This phase implements the storefront side. It runs largely in parallel with Phas
 ### P3-2: Asset URL generation (`src/server/prodigi/assets.ts`)
 
 - Given `order_id` + `pod_variant_id` → return a URL Prodigi can fetch.
-- **Decided (Q2):** R2 presigned GET generated in queue consumer (requires R2 bucket + binding).
+- **Decided (Q2):** R2 masters + HMAC-signed `/api/print-assets/{assetId}` URL minted in queue consumer (`PRINT_ASSETS` binding + `PRINT_ASSET_TOKEN_SECRET`).
 - Fallback: publicly accessible URL if master files are in `public/uploads/` (print-ready versions).
 - Log safe fields only; never log full signed URL.
 

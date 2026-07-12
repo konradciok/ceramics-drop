@@ -359,23 +359,17 @@ queue consumer / process-job.ts:
 
 ---
 
-## Asset handling (MVP approach)
+## Asset handling (shipped — print-asset pipeline)
 
-Print files must be accessible via a permanent URL. Master artwork files are not yet stored anywhere server-side. Options:
+Print files must be accessible via a **public HTTPS URL** when Prodigi submits the order. **Implemented architecture:**
 
-**Option A (decided — Q2):** R2 presigned URLs generated in the queue consumer when submitting to Prodigi.
-- Upload master artwork to Cloudflare R2 (manual or script)
-- Generate presigned GET URL with long expiry (30 days) per order item
-- Regenerate if expired before Prodigi downloads
+- **R2** stores immutable content-addressed masters (`anna-ciok-print-assets` / `PRINT_ASSETS` binding).
+- **Operator pipeline:** `npm run print-assets:prepare|upload|verify|publish` (see `docs/print-asset-runbook.md`).
+- **Checkout** snapshots `assetId` into `order_items.variant` (immutable per paid order).
+- **Queue consumer** mints an **HMAC-signed Worker URL** (`/api/print-assets/{assetId}?exp=&sig=`) — R2 bindings have no `createSignedUrl`; the Worker streams after verify.
+- **`ready` and `retired`** assets are servable; **`revoked`** returns 410 (emergency stop via admin).
 
-**Option B (robust):** Worker asset-proxy endpoint
-- `/api/print-assets/{token}` — token maps to artwork file + order item
-- Worker streams from R2 to Prodigi
-- Full control over expiry, revocation, access logging
-
-Either option requires a Cloudflare R2 bucket binding in `wrangler.jsonc` and artwork upload workflow.
-
-**Image sizing:** Use `printAreaSizes` from `GET /products/{sku}` to preflight dimensions. The mounted variant print area is smaller than the frame size. Never use `stretchToPrintArea`. Prefer generating a correctly sized image over relying on API-side crop.
+**Image sizing:** Exact derivatives per distinct print-area profile; `fillPrintArea` is defense-in-depth only. See `docs/plans/print-asset-pipeline.md`.
 
 ---
 
@@ -483,7 +477,7 @@ Do not set `PRODIGI_ENV=live` until all items below are verified:
 All five P0-4 questions answered 2026-06-26:
 
 1. **Variant axes** — 3 sizes, framed/mount/colour model, 21 variants (`sku-catalog.md`)
-2. **Asset hosting** — Cloudflare R2, presigned GET at queue consumer time
+2. **Asset hosting** — Cloudflare R2 + HMAC-signed Worker proxy at queue consumer time (`docs/print-asset-runbook.md`)
 3. **Queue** — `FULFILMENT_QUEUE` (Cloudflare Queue), not inline webhook
 4. **Ceramics vs prints** — separate customers/carts; ceramics = drops + InPost; prints = Prodigi ship; no mixed cart
 5. **Token format** — `print:{designId}:{size}:{framed}:{mount}:{frame_colour}`
