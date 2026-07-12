@@ -1,0 +1,55 @@
+name: post-deploy-smoke
+
+# Prod deploys via Cloudflare Workers Builds, not Actions, so the signed-route
+# smoke runs as a SEPARATE workflow (manual + scheduled), not a CI step. It
+# HEADs a freshly minted signed /api/print-assets/[id] URL against the live
+# origin. Pre-launch (PRINT_SMOKE_STRICT unset) it skips green when no sellable asset
+# exists; set PRINT_SMOKE_STRICT=true after first publish so a missing asset fails.
+#
+# ⚠️ This workflow needs SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and
+# PRINT_ASSET_TOKEN_SECRET as GitHub repo secrets — a second copy of those
+# credentials. Prefer the narrowest viable Supabase key, keep this on the
+# default branch, and keep the schedule infrequent until the gate is real.
+on:
+  workflow_dispatch:
+    branches: [main]
+  schedule:
+    # Daily ~06:17 UTC (off the :00 fleet). Pre-launch this is a green skip.
+    - cron: '17 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  print-asset-smoke:
+    if: github.ref_name == github.event.repository.default_branch
+    name: Print-asset signed-route smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install (locked)
+        run: npm ci
+
+      - name: Smoke (signed print-asset HEAD)
+        # Pre-launch: repo variable PRINT_SMOKE_STRICT unset/false → --allow-missing.
+        # After first ready asset: set PRINT_SMOKE_STRICT=true so a missing asset fails.
+        run: |
+          EXTRA=()
+          if [ "${{ vars.PRINT_SMOKE_STRICT }}" != "true" ]; then
+            EXTRA+=(--allow-missing)
+          fi
+          npm run print-asset:smoke -- --origin https://anna-ciok.studio --json "${EXTRA[@]}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PRINT_ASSET_TOKEN_SECRET: ${{ secrets.PRINT_ASSET_TOKEN_SECRET }}

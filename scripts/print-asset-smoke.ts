@@ -2,11 +2,14 @@
  * Deployed smoke probe for /api/print-assets/[id] — HEAD a freshly minted
  * signed URL against a live origin. Never logs `sig`.
  *
- *   npm run print-asset:smoke -- [--origin https://anna-ciok.studio] [--asset-id <uuid>] [--json]
+ *   npm run print-asset:smoke -- [--origin https://anna-ciok.studio] [--asset-id <uuid>] [--json] [--allow-missing]
  *   npm run print-asset:smoke -- --env-file .dev.vars
  *
  * Requires PRINT_ASSET_TOKEN_SECRET + Supabase (to resolve a ready asset when
- * --asset-id is omitted). Exits non-zero when HEAD is not 200 or metadata is missing.
+ * --asset-id is omitted). Exits non-zero when HEAD is not 200 or metadata is
+ * missing. --allow-missing downgrades the "no ready/retired asset" case to an
+ * exit-0 skip (for pre-launch CI, where no asset is published yet); an explicit
+ * --asset-id that is missing/wrong-status still errors.
  */
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { probeSignedPrintAssetHead } from '../src/lib/print-asset-smoke';
@@ -20,7 +23,8 @@ import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
  */
 async function resolveAssetId(
   explicit: string | undefined,
-): Promise<{ assetId: string; productId: string; profileKey: string }> {
+  allowMissing: boolean,
+): Promise<{ assetId: string; productId: string; profileKey: string } | null> {
   const supabase = loadSupabaseClient();
 
   if (explicit) {
@@ -50,31 +54,34 @@ async function resolveAssetId(
     if (data) return { assetId: data.id, productId: data.product_id, profileKey: data.profile_key };
   }
 
+  if (allowMissing) return null;
   throw new Error(
     'no ready/retired print_fulfilment_assets row — run prepare/upload/verify/publish first',
   );
 }
 
-function parseArgs(): { origin?: string; assetId?: string; json: boolean } {
+function parseArgs(): { origin?: string; assetId?: string; json: boolean; allowMissing: boolean } {
   const argv = process.argv.slice(2);
   let origin: string | undefined;
   let assetId: string | undefined;
   let json = false;
+  let allowMissing = false;
 
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--origin') origin = argv[++i] ?? origin;
     else if (argv[i] === '--asset-id') assetId = argv[++i];
     else if (argv[i] === '--json') json = true;
+    else if (argv[i] === '--allow-missing') allowMissing = true;
     else if (argv[i] === '--help' || argv[i] === '-h') {
-      console.log(`Usage: npm run print-asset:smoke -- [--origin <url>] [--asset-id <uuid>] [--json] [--env-file <path>]`);
+      console.log(`Usage: npm run print-asset:smoke -- [--origin <url>] [--asset-id <uuid>] [--json] [--allow-missing] [--env-file <path>]`);
       process.exit(0);
     }
   }
-  return { origin, assetId, json };
+  return { origin, assetId, json, allowMissing };
 }
 
 async function main(): Promise<void> {
-  const { origin: originOverride, assetId: explicitAssetId, json } = parseArgs();
+  const { origin: originOverride, assetId: explicitAssetId, json, allowMissing } = parseArgs();
   const env = loadLocalEnv();
   const secret = env.PRINT_ASSET_TOKEN_SECRET;
   if (!secret) {
@@ -82,7 +89,16 @@ async function main(): Promise<void> {
   }
 
   const origin = originOverride ?? getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN });
-  const { assetId, productId, profileKey } = await resolveAssetId(explicitAssetId);
+  const resolved = await resolveAssetId(explicitAssetId, allowMissing);
+  if (!resolved) {
+    // --allow-missing: no sellable asset yet (pre-launch). Exit 0 so the
+    // post-deploy smoke stays green until a real asset is published.
+    const reason = 'skipped: no sellable asset yet';
+    if (json) console.log(JSON.stringify({ skipped: true, reason }, null, 2));
+    else console.log(reason);
+    return;
+  }
+  const { assetId, productId, profileKey } = resolved;
   const signedUrl = await signPrintAssetUrl(assetId, secret, Date.now(), origin.replace(/\/$/, ''));
   const probe = await probeSignedPrintAssetHead(signedUrl);
 

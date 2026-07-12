@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(31);
+select plan(35);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -162,6 +162,45 @@ select is(
   (select count(*)::int from print_variant_asset_assignments where product_id = 'tap_p1'),
   2,
   'publish: repeat publish leaves exactly the active variant count'
+);
+
+-- p_actor_email (added 2026-07-12): the explicit actor is recorded on the audit
+-- row; the param defaults to null and falls back to the app.actor_email GUC, so
+-- every 3-arg call above left actor_email null (backward-compatible).
+select lives_ok(
+  $$ select publish_print_asset_revision(
+       'tap_p1', 'r1',
+       '[{"variant_key":"a","asset_id":"a0000000-0000-0000-0000-000000000001"},{"variant_key":"b","asset_id":"a0000000-0000-0000-0000-000000000002"}]'::jsonb,
+       'operator@studio.test') $$,
+  'publish: 4-arg call with p_actor_email succeeds'
+);
+
+select ok(
+  exists (
+    select 1 from catalog_audit_log
+     where product_id = 'tap_p1'
+       and actor_email = 'operator@studio.test'
+  ),
+  'publish: p_actor_email is recorded in catalog_audit_log.actor_email'
+);
+
+-- p_actor_email omitted: falls back to app.actor_email GUC (backward-compatible 3-arg path).
+select set_config('app.actor_email', 'guc@studio.test', true);
+
+select lives_ok(
+  $$ select publish_print_asset_revision(
+       'tap_p1', 'r1',
+       '[{"variant_key":"a","asset_id":"a0000000-0000-0000-0000-000000000001"},{"variant_key":"b","asset_id":"a0000000-0000-0000-0000-000000000002"}]'::jsonb) $$,
+  'publish: 3-arg call falls back to app.actor_email GUC'
+);
+
+select ok(
+  exists (
+    select 1 from catalog_audit_log
+     where product_id = 'tap_p1'
+       and actor_email = 'guc@studio.test'
+  ),
+  'publish: app.actor_email GUC is recorded when p_actor_email is omitted'
 );
 
 -- Scenario 2 (incomplete mapping): missing, extra, and duplicate variant keys.

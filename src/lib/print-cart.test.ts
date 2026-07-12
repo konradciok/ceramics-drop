@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   encodePrintToken, decodePrintToken, isPrintToken,
-  variantKey, variantLabel, PRODIGI_SKU_MAP,
+  variantKey, variantLabel, printVariantButtonState, PRODIGI_SKU_MAP,
   PRINT_SIZES, PRINT_FRAME_COLOURS,
 } from './print-cart';
 
@@ -57,6 +57,46 @@ describe('variantLabel', () => {
   it('labels a framed print in Polish', () => {
     const sel = { size: '50x70' as const, framed: true, mount: false, frameColour: 'black' as const };
     expect(variantLabel(sel, 'pl')).toBe('50×70 cm · rama czarna');
+  });
+});
+
+describe('printVariantButtonState', () => {
+  const sel = { size: '30x40' as const, framed: false, mount: false, frameColour: 'none' as const };
+
+  it('enables a variant whose key is in usableVariantKeys', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: true, usableVariantKeys: [variantKey(sel)], sel, inCart: false,
+    })).toBe('add');
+  });
+
+  it('gates a variant whose key is NOT in usableVariantKeys (asset unavailable)', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: true, usableVariantKeys: ['50x70:false:false:none'], sel, inCart: false,
+    })).toBe('disabledAsset');
+  });
+
+  it('never gates when usableVariantKeys is undefined (registry mode / no rows / fetch error)', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: true, usableVariantKeys: undefined, sel, inCart: false,
+    })).toBe('add');
+  });
+
+  it('gates every variant when usableVariantKeys is an empty array (nothing usable)', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: true, usableVariantKeys: [], sel, inCart: false,
+    })).toBe('disabledAsset');
+  });
+
+  it('keeps the remove path reachable when an in-cart variant becomes non-usable', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: true, usableVariantKeys: [], sel, inCart: true,
+    })).toBe('remove');
+  });
+
+  it('reports structural unavailable (not asset) when the variant is not offered', () => {
+    expect(printVariantButtonState({
+      structurallyAvailable: false, usableVariantKeys: undefined, sel, inCart: false,
+    })).toBe('disabledStructural');
   });
 });
 

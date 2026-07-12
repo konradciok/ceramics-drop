@@ -268,7 +268,8 @@
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
     "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować.",
     "privateSalePrintsNotice": "Linki do prywatnych zamówień dotyczą tylko ceramiki — usuń printy z koszyka, aby kontynuować.",
-    "printAssetUnavailable": "Ten wariant printu jest chwilowo niedostępny — usuń go z koszyka lub spróbuj ponownie później."
+    "printAssetUnavailable": "Ten wariant printu jest chwilowo niedostępny — usuń go z koszyka lub spróbuj ponownie później.",
+    "printAssetError": "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -844,6 +845,7 @@
     "addToCart": "Dodaj do koszyka",
     "inCart": "W koszyku",
     "unavailable": "Niedostępna",
+    "assetUnavailable": "Ten wariant jest chwilowo niedostępny",
     "paperNote": "Druk na papierze Fine Art EMA 200 g/m²",
     "from": "Od {price}",
     "sectionDetails": "Detale",

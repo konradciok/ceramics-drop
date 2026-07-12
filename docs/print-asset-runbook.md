@@ -31,6 +31,7 @@ npm run print-assets:upload -- --product fap01 --revision 2026-07-12-r1
 npm run print-assets:verify -- --product fap01 --revision 2026-07-12-r1
 
 # 5. Atomic assignment to all active variants (requires explicit confirm)
+#    Optional --actor <email> records the operator in catalog_audit_log.
 npm run print-assets:publish -- --product fap01 --revision 2026-07-12-r1 --confirm 2026-07-12-r1
 
 # 6. Confirm readiness in admin (/admin/products/fap01) — all variants green
@@ -112,14 +113,16 @@ Inventory check: `npm run print-assets:inventory`
 After at least one asset is `ready` or `retired`:
 
 ```bash
-npm run print-asset:smoke -- --origin https://anna-ciok.studio [--asset-id <uuid>] [--json]
+npm run print-asset:smoke -- --origin https://anna-ciok.studio [--asset-id <uuid>] [--json] [--allow-missing]
 # or, to target the origin from .dev.vars / an --env-file's WORKER_ORIGIN instead of --origin:
 npm run print-asset:smoke -- --env-file .dev.vars
 ```
 
 HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero on failure. Use after publish and before sandbox orders. When `--asset-id` is omitted the probe prefers a `ready` row (proof something sellable is live) and only falls back to `retired` if none exists.
 
-Requires `PRINT_ASSET_TOKEN_SECRET` **and** `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — `resolveAssetId()` always looks up the asset row in Supabase (to fetch `product_id`/`profile_key`/`status`), even when `--asset-id` is passed explicitly.
+Requires `PRINT_ASSET_TOKEN_SECRET` **and** `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — `resolveAssetId()` always looks up the asset row in Supabase (to fetch `product_id`/`profile_key`/`status`), even when `--asset-id` is passed explicitly. `--allow-missing` downgrades the "no ready/retired asset" case to an exit-0 skip (`skipped: no sellable asset yet`); an explicit `--asset-id` that is missing or wrong-status still errors.
+
+**CI:** `.github/workflows/post-deploy-smoke.yml` runs this probe daily (and on dispatch). While repo variable `PRINT_SMOKE_STRICT` is unset/false it passes `--allow-missing` (pre-launch green skip); set `PRINT_SMOKE_STRICT=true` after the first `ready` asset so a missing asset fails the run. Restricted to the `main` branch. It needs `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PRINT_ASSET_TOKEN_SECRET` as GitHub repo secrets — a second copy of those credentials, so prefer the narrowest viable key and keep the schedule infrequent until the gate is real.
 
 ## Cutover evidence (Phase 6)
 
