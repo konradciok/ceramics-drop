@@ -16,7 +16,7 @@
  *
  * Usage:
  *   npm run print-assets:publish -- --product fap01 --revision 2026-07-11-r1 --dry-run
- *   npm run print-assets:publish -- --product fap01 --revision 2026-07-11-r1 --confirm 2026-07-11-r1
+ *   npm run print-assets:publish -- --product fap01 --revision 2026-07-11-r1 --confirm 2026-07-11-r1 --actor you@studio
  */
 import { buildPublishAssignments, diffVariantCoverage } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
   const productId = getArg('product');
   const revision = getArg('revision');
   const confirm = getArg('confirm');
-  const actor = getArg('actor');
+  const actor = getArg('actor')?.trim() || undefined;
   const dryRun = hasFlag('dry-run');
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');

@@ -4,16 +4,16 @@ overview: "Five independent code fixes hardening the Print Asset Pipeline: a ser
 todos:
   - id: f1
     content: "F1: server-side asset-readiness gate on print PDPs (page -> PrintProductScreen -> PrintConfigurator), handle in-cart edge, add i18n print.assetUnavailable"
-    status: pending
+    status: completed
   - id: f3
     content: "F3: document 409/503 in AGENTS.md, handle 503 print_asset_error in CartView (keep attemptId), add i18n cart.printAssetError"
-    status: pending
+    status: completed
   - id: f4
     content: "F4: migration adding p_actor_email to publish_print_asset_revision + --actor flag in publish CLI + runbook note"
-    status: pending
+    status: completed
   - id: f2ci
     content: "F2: --allow-missing flag in smoke script + post-deploy-smoke.yml workflow + docs (flag secret sprawl)"
-    status: pending
+    status: completed
   - id: f5
     content: "F5 (DEFERRED): revoke_print_asset RPC under product lock + revoke.ts refactor + test rewrite + pgTAP. Do NOT implement unless explicitly approved."
     status: pending
@@ -59,15 +59,17 @@ import { getPrintAssetCoverage } from '@/server/print-assets/repository';
 const coverage = await getPrintAssetCoverage(design.id).catch(() => null);
 
 const usableVariantKeys =
-  coverage && coverage.variants.length > 0
-    ? coverage.variants.filter((v) => v.usable).map((v) => v.variantKey)
-    : undefined; // undefined = do NOT gate (registry mode / no rows / fetch error)
+  coverage == null
+    ? undefined
+    : coverage.variants.length === 0
+      ? []
+      : coverage.variants.filter((v) => v.usable).map((v) => v.variantKey);
 ```
 
 - `undefined` deliberately means "don't gate", so an incomplete backfill or a transient repository error never bricks the store. An empty array (`[]`) is a real "nothing usable" signal and *will* gate every variant.
 - Pass `usableVariantKeys` to `<PrintProductScreen … />`.
 
-2. **`src/components/shop/PrintProductScreen.tsx`** — add prop and forward it:
+1. **`src/components/shop/PrintProductScreen.tsx`** — add prop and forward it:
 
 ```ts
 export async function PrintProductScreen({
@@ -83,7 +85,7 @@ export async function PrintProductScreen({
   <PrintConfigurator design={design} usableVariantKeys={usableVariantKeys} />
 ```
 
-3. **`src/components/shop/PrintConfigurator.tsx`**:
+1. **`src/components/shop/PrintConfigurator.tsx`**:
 
 - Add prop `usableVariantKeys?: string[]` to the component signature.
 - Import `variantKey` from `@/lib/print-cart` (already exported; add to the existing import from that module).
@@ -115,7 +117,7 @@ const available = isVariantAvailable(design, sel) && assetReady;
 
   Rationale for the copy split: `print.unavailable` = structurally not offered (retired/never sold); `print.assetUnavailable` = offered but temporarily un-buyable (asset not ready / revoked). Two distinct buyer meanings.
 
-4. **i18n** — add key `print.assetUnavailable` to `messages/pl.json`, `messages/en.json`, `messages/es.json`, `messages/de.json`. Suggested copy (adapt to house tone; do not alter existing keys):
+1. **i18n** — add key `print.assetUnavailable` to `messages/pl.json`, `messages/en.json`, `messages/es.json`, `messages/de.json`. Suggested copy (adapt to house tone; do not alter existing keys):
    - pl: "Ten wariant jest chwilowo niedostępny"
    - en: "This option is temporarily unavailable"
    - es: "Esta opción no está disponible temporalmente"
@@ -129,7 +131,7 @@ const available = isVariantAvailable(design, sel) && assetReady;
 
 ### Acceptance
 
-- New unit test in `src/components/shop/` (configurator): given `usableVariantKeys=['30x40:false:false:none']`, a selection matching a non-listed key renders the disabled button with `print.assetUnavailable`; a matching key renders the enabled add button; `usableVariantKeys={undefined}` never gates.
+- Unit test in `src/lib/print-cart.test.ts` covering `printVariantButtonState`: given `usableVariantKeys=['30x40:false:false:none']`, a non-listed key → `disabledAsset`; a matching key → `add`; `usableVariantKeys={undefined}` never gates; `[]` gates every variant.
 - A variant already in cart that becomes non-usable still renders an interactive button that removes it.
 - Manual: a print PDP whose active variant has no ready asset shows disabled + `print.assetUnavailable`.
 
@@ -159,7 +161,7 @@ if (res.status === 503) {
 
    Placement: after the `429` block and before `if (!res.ok)`. (Optionally parse the body to confirm `error === 'print_asset_error'`, but a bare 503 from this route is unambiguous.)
 
-3. **i18n** — add `cart.printAssetError` to all four `messages/*.json` (sits beside the existing `cart.printAssetUnavailable`). Copy should say "try again in a moment", e.g.:
+1. **i18n** — add `cart.printAssetError` to all four `messages/*.json` (sits beside the existing `cart.printAssetUnavailable`). Copy should say "try again in a moment", e.g.:
    - pl: "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę."
    - en: "Something went wrong for a moment. Please try again."
    - es: "Algo falló momentáneamente. Inténtalo de nuevo."
@@ -167,7 +169,7 @@ if (res.status === 503) {
 
 ### Acceptance
 
-- Unit test (CartView): a mocked 503 with `{ error: 'print_asset_error' }` renders `cart.printAssetError`, does **not** call `resetAttemptId`, and pushes `checkout_error` with `reason: 'print_asset_error', status: 503`.
+- Unit test in `src/lib/checkout-client.test.ts`: `checkoutPreBodyError(503, { error: 'print_asset_error' })` → `cart.printAssetError` / `print_asset_error` analytics; `shouldKeepAttemptIdOnCatch(503)` is true (attemptId kept on catch).
 - Existing 409 `print_asset_unavailable` handling remains untouched and green.
 
 ---
@@ -211,9 +213,9 @@ Prod deploys via Cloudflare Workers Builds, not GitHub Actions, so "post-deploy"
 
 2. **New workflow** `.github/workflows/post-deploy-smoke.yml`:
    - Triggers: `workflow_dispatch` (manual post-deploy) and `schedule`. **Prefer daily (or dispatch-only) until fap01 is live** — hourly is noise while the smoke is a no-op skip.
-   - Step: `npm ci` → `npm run print-asset:smoke -- --origin https://anna-ciok.studio --json --allow-missing`.
+   - Step: `npm ci` → `npm run print-asset:smoke -- --origin https://anna-ciok.studio --json` (adds `--allow-missing` until repo variable `PRINT_SMOKE_STRICT=true`).
 
-3. **`docs/plans/print-asset-pipeline.md`** (Phase 6 CI bullet) + runbook: before fap01 the workflow is green (skip); after fap01 it is a hard gate.
+3. **`docs/plans/print-asset-pipeline.md`** (Phase 6 CI bullet) + runbook: before fap01 the workflow is green (skip); after fap01 set `PRINT_SMOKE_STRICT=true` so a missing asset fails the run.
 
 ### Side effect to flag before implementing (call out in the PR/commit)
 
@@ -245,7 +247,7 @@ If and only if approved:
 
 - `npm run lint`
 - `npm run typecheck` (runs both `tsconfig.json` and `tsconfig.worker.json`)
-- `npm test` (adds F1 configurator test + CartView 503 test)
+- `npm test` (adds `printVariantButtonState` + `checkoutPreBodyError` unit tests)
 - `npm run build`
 - pgTAP (F4): `supabase db start && supabase test db`
 - Manual: a print PDP with a variant lacking a ready asset shows the disabled button + `print.assetUnavailable`; a valid variant adds normally; an in-cart-but-now-unusable variant can still be removed.

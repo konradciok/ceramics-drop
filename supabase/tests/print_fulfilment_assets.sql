@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(33);
+select plan(35);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -181,6 +181,24 @@ select is(
      order by created_at desc limit 1),
   'operator@studio.test',
   'publish: p_actor_email is recorded in catalog_audit_log.actor_email'
+);
+
+-- p_actor_email omitted: falls back to app.actor_email GUC (backward-compatible 3-arg path).
+select set_config('app.actor_email', 'guc@studio.test', true);
+
+select lives_ok(
+  $$ select publish_print_asset_revision(
+       'tap_p1', 'r1',
+       '[{"variant_key":"a","asset_id":"a0000000-0000-0000-0000-000000000001"},{"variant_key":"b","asset_id":"a0000000-0000-0000-0000-000000000002"}]'::jsonb) $$,
+  'publish: 3-arg call falls back to app.actor_email GUC'
+);
+
+select is(
+  (select actor_email from catalog_audit_log
+     where product_id = 'tap_p1'
+     order by created_at desc limit 1),
+  'guc@studio.test',
+  'publish: app.actor_email GUC is recorded when p_actor_email is omitted'
 );
 
 -- Scenario 2 (incomplete mapping): missing, extra, and duplicate variant keys.

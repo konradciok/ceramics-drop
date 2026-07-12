@@ -32,6 +32,7 @@ import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
@@ -394,22 +395,24 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         setCheckoutError(t('cart.soldOut'));
         return;
       }
-      if (res.status === 429) {
-        // Too many checkout attempts — show a wait-and-retry message rather than
-        // the generic "payment failed", which would invite rapid retries.
-        // Keep the attemptId: the limiter rejects before any reserve/Stripe
-        // work, so the idempotency key is untouched and still good.
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'rate_limited', status: 429 }));
-        setCheckoutError(t('cart.rateLimited'));
-        return;
-      }
-      if (res.status === 503) {
-        // Transient print-asset resolution failure — fires before any
-        // reserve/Stripe work, so the attemptId is untouched and still good.
-        // Keep it and let the buyer retry (mirror the 429 path).
-        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'print_asset_error', status: 503 }));
-        setCheckoutError(t('cart.printAssetError'));
-        return;
+      if (res.status === 429 || res.status === 503) {
+        let body: { error?: string } | undefined;
+        if (res.status === 503) {
+          try {
+            body = (await res.json()) as { error?: string };
+          } catch {
+            // Bare 503 from checkout is unambiguous.
+          }
+        }
+        const preBody = checkoutPreBodyError(res.status, body);
+        if (preBody) {
+          pushDataLayer(buildEngagementEvent('checkout_error', {
+            reason: preBody.analyticsReason,
+            status: preBody.analyticsStatus,
+          }));
+          setCheckoutError(t(preBody.errorKey));
+          return;
+        }
       }
       if (!res.ok) {
         // Abandon the attemptId: Stripe may have cached this failure under its
@@ -455,7 +458,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       // checkout_in_progress/unavailable (keep-required), and a kept id
       // converges on retry while a wrong reset wipes the cart against the
       // buyer's own live hold. A pure network error also keeps it — see above.
-      if (gotResponse && !resOk && resStatus !== 409) resetAttemptId();
+      if (gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
       // Received-but-unprocessable responses are not network errors — report
       // the real status so analytics can tell a parse failure from an outage.
       pushDataLayer(buildEngagementEvent(

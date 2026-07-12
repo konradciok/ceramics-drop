@@ -96,9 +96,11 @@ export default async function Page({ params, searchParams }: Props) {
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
     const usableVariantKeys =
-      coverage && coverage.variants.length > 0
-        ? coverage.variants.filter((v) => v.usable).map((v) => v.variantKey)
-        : undefined;
+      coverage == null
+        ? undefined
+        : coverage.variants.length === 0
+          ? []
+          : coverage.variants.filter((v) => v.usable).map((v) => v.variantKey);
     return (
       <main>
         <JsonLd

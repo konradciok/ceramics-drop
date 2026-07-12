@@ -122,7 +122,7 @@ HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero o
 
 Requires `PRINT_ASSET_TOKEN_SECRET` **and** `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — `resolveAssetId()` always looks up the asset row in Supabase (to fetch `product_id`/`profile_key`/`status`), even when `--asset-id` is passed explicitly. `--allow-missing` downgrades the "no ready/retired asset" case to an exit-0 skip (`skipped: no sellable asset yet`); an explicit `--asset-id` that is missing or wrong-status still errors.
 
-**CI:** `.github/workflows/post-deploy-smoke.yml` runs this probe daily (and on dispatch) with `--allow-missing`. Pre-launch (no `ready`/`retired` asset) it skips green; once an asset is published, a non-200 HEAD fails the run. It needs `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PRINT_ASSET_TOKEN_SECRET` as GitHub repo secrets — a second copy of those credentials, so prefer the narrowest viable key and keep the schedule infrequent until the gate is real.
+**CI:** `.github/workflows/post-deploy-smoke.yml` runs this probe daily (and on dispatch). While repo variable `PRINT_SMOKE_STRICT` is unset/false it passes `--allow-missing` (pre-launch green skip); set `PRINT_SMOKE_STRICT=true` after the first `ready` asset so a missing asset fails the run. Restricted to the `main` branch. It needs `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PRINT_ASSET_TOKEN_SECRET` as GitHub repo secrets — a second copy of those credentials, so prefer the narrowest viable key and keep the schedule infrequent until the gate is real.
 
 ## Cutover evidence (Phase 6)
 

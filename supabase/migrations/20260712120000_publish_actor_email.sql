@@ -166,7 +166,7 @@ begin
   insert into catalog_audit_log (product_id, actor_email, action, before, after)
   values (
     p_product_id,
-    coalesce(p_actor_email, nullif(current_setting('app.actor_email', true), '')),
+    coalesce(nullif(p_actor_email, ''), nullif(current_setting('app.actor_email', true), '')),
     'print_asset_publish',
     v_before,
     jsonb_build_object('revision', p_revision, 'assignments', p_assignments)
