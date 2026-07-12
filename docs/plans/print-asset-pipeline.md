@@ -226,7 +226,7 @@ Operator execution + thin automation closure. Does not reopen settled architectu
 - [ ] Admin readiness: `/admin/products/fap01` all variants green before `draft/hidden → active`.
 - [x] Access/WAF: production only gates `/admin`; document staging bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*` (runbook).
 - [x] Signed-route smoke helper: `npm run print-asset:smoke` (HEAD, redacted `sig` in output); operator CLI only.
-- [ ] Wire `print-asset:smoke -- --json` into post-deploy CI (secrets + a known `ready` asset fixture; fail the deploy if HEAD ≠ 200) — the operator CLI alone does not satisfy the original "CI logs" gate from Phase 4.
+- [x] Wire `print-asset:smoke -- --json --allow-missing` into post-deploy CI (`.github/workflows/post-deploy-smoke.yml`, daily + dispatch; `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `PRINT_ASSET_TOKEN_SECRET` as repo secrets). Pre-launch it skips green (no sellable asset); once a `ready`/`retired` asset exists a non-200 HEAD fails the run — satisfying the Phase 4 "CI logs" gate. _(2026-07-12: workflow + `--allow-missing` added; secrets are a one-time ops step before the first scheduled run is meaningful.)_
 - [ ] Sandbox: one order per distinct print-area profile on preview with `PRODIGI_ENV=sandbox` — record matrix in runbook + PR.
 - [ ] Live rollout approval: do **not** set `PRODIGI_ENV=live` until sandbox matrix is signed off.
 

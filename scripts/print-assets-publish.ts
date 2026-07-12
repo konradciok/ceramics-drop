@@ -26,6 +26,7 @@ async function main(): Promise<void> {
   const productId = getArg('product');
   const revision = getArg('revision');
   const confirm = getArg('confirm');
+  const actor = getArg('actor');
   const dryRun = hasFlag('dry-run');
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
     p_product_id: productId,
     p_revision: revision,
     p_assignments: assignments,
+    p_actor_email: actor ?? null,
   });
   if (published.error) throw new Error(`publish_print_asset_revision failed: ${published.error.message}`);
 

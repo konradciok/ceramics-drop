@@ -15,6 +15,34 @@ export function variantKey(sel: PrintVariantSelection): string {
   return `${sel.size}:${sel.framed}:${sel.mount}:${sel.frameColour}`;
 }
 
+/**
+ * Storefront configurator gate: which button state a print variant is in. Pure
+ * + unit-tested because the configurator is a client island and the repo has no
+ * DOM render-test harness. Checkout re-resolves the asset and fail-closes
+ * regardless — this only moves the "unavailable" signal forward to the PDP.
+ * The cart-holds-ceramics rule is handled upstream in the component.
+ *
+ *   add                — structurally offered, asset ready, not in cart
+ *   remove             — already in cart (removal is ALWAYS allowed, even when
+ *                        the asset has since become non-usable, so a buyer is
+ *                        never trapped with an un-buyable variant)
+ *   disabledAsset      — offered but the asset isn't usable right now
+ *   disabledStructural — not offered at all (retired / never-sold combination)
+ */
+export type PrintVariantButtonState = 'add' | 'remove' | 'disabledAsset' | 'disabledStructural';
+
+export function printVariantButtonState(args: {
+  structurallyAvailable: boolean;
+  usableVariantKeys: string[] | undefined;
+  sel: PrintVariantSelection;
+  inCart: boolean;
+}): PrintVariantButtonState {
+  if (args.inCart) return 'remove';
+  const assetReady = args.usableVariantKeys == null || args.usableVariantKeys.includes(variantKey(args.sel));
+  if (args.structurallyAvailable && assetReady) return 'add';
+  return args.structurallyAvailable ? 'disabledAsset' : 'disabledStructural';
+}
+
 /** Encode a variant selection into a cart token. */
 export function encodePrintToken(designId: string, sel: PrintVariantSelection): string {
   return `${TOKEN_PREFIX}:${designId}:${sel.size}:${sel.framed}:${sel.mount}:${sel.frameColour}`;

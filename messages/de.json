@@ -268,7 +268,8 @@
     "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden.",
     "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren.",
     "privateSalePrintsNotice": "Private Bestelllinks gelten nur für Keramik — entferne Prints aus dem Warenkorb, um fortzufahren.",
-    "printAssetUnavailable": "Diese Print-Variante ist vorübergehend nicht verfügbar — entferne sie aus dem Warenkorb oder versuche es später erneut."
+    "printAssetUnavailable": "Diese Print-Variante ist vorübergehend nicht verfügbar — entferne sie aus dem Warenkorb oder versuche es später erneut.",
+    "printAssetError": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut."
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",
@@ -844,6 +845,7 @@
     "addToCart": "In den Warenkorb",
     "inCart": "Im Warenkorb",
     "unavailable": "Nicht verfügbar",
+    "assetUnavailable": "Diese Option ist vorübergehend nicht verfügbar",
     "paperNote": "Druck auf Fine Art EMA 200 g/m² Papier",
     "from": "Ab {price}",
     "sectionDetails": "Details",

@@ -19,7 +19,15 @@ import type { PrintDesign } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
 
-export async function PrintProductScreen({ design, noteOverride }: { design: PrintDesign; noteOverride?: string }) {
+export async function PrintProductScreen({
+  design,
+  noteOverride,
+  usableVariantKeys,
+}: {
+  design: PrintDesign;
+  noteOverride?: string;
+  usableVariantKeys?: string[];
+}) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
   const printCurrency = toChargeableCurrency(currency);
@@ -61,7 +69,7 @@ export async function PrintProductScreen({ design, noteOverride }: { design: Pri
             </h1>
             {note && <p className="pdp-note">{note}</p>}
 
-            <PrintConfigurator design={design} />
+            <PrintConfigurator design={design} usableVariantKeys={usableVariantKeys} />
 
             <div className="lb-specs print-specs">
               <div className="lb-spec">

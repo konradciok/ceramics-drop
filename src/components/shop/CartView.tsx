@@ -403,6 +403,14 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         setCheckoutError(t('cart.rateLimited'));
         return;
       }
+      if (res.status === 503) {
+        // Transient print-asset resolution failure — fires before any
+        // reserve/Stripe work, so the attemptId is untouched and still good.
+        // Keep it and let the buyer retry (mirror the 429 path).
+        pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'print_asset_error', status: 503 }));
+        setCheckoutError(t('cart.printAssetError'));
+        return;
+      }
       if (!res.ok) {
         // Abandon the attemptId: Stripe may have cached this failure under its
         // idempotency key, and the server already released any hold it took —

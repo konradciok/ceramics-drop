@@ -268,7 +268,8 @@
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago.",
     "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar.",
     "privateSalePrintsNotice": "Los enlaces de pedido privado son solo para cerámica — elimina las láminas del carrito para continuar.",
-    "printAssetUnavailable": "Esta variante de lámina no está disponible temporalmente — elimínala del carrito o inténtalo más tarde."
+    "printAssetUnavailable": "Esta variante de lámina no está disponible temporalmente — elimínala del carrito o inténtalo más tarde.",
+    "printAssetError": "Algo falló momentáneamente. Inténtalo de nuevo."
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
@@ -844,6 +845,7 @@
     "addToCart": "Añadir al carrito",
     "inCart": "En el carrito",
     "unavailable": "No disponible",
+    "assetUnavailable": "Esta opción no está disponible temporalmente",
     "paperNote": "Impreso en papel Fine Art EMA 200 g/m²",
     "from": "Desde {price}",
     "sectionDetails": "Detalles",

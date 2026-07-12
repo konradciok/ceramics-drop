@@ -14,11 +14,17 @@ import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
-import { encodePrintToken, isPrintToken, variantLabel } from '@/lib/print-cart';
+import { encodePrintToken, isPrintToken, printVariantButtonState, variantLabel } from '@/lib/print-cart';
 import { buildPrintAddToCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib/types';
 
-export function PrintConfigurator({ design }: { design: PrintDesign }) {
+export function PrintConfigurator({
+  design,
+  usableVariantKeys,
+}: {
+  design: PrintDesign;
+  usableVariantKeys?: string[];
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const currency = useCurrency();
@@ -34,7 +40,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
     frameColour: 'none',
   });
 
-  const available = isVariantAvailable(design, sel);
+  const structurallyAvailable = isVariantAvailable(design, sel);
   const price = priceOfVariant(design, sel, printCurrency);
   const token = encodePrintToken(design.id, sel);
 
@@ -42,6 +48,10 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
   const inCart = ids.includes(token);
+  // Best-effort UX gating only — checkout re-resolves and fail-closes. The
+  // decision table (incl. the in-cart remove edge) is pure + unit-tested in
+  // print-cart.test.ts; the repo has no DOM render harness for the island.
+  const buttonState = printVariantButtonState({ structurallyAvailable, usableVariantKeys, sel, inCart });
   // Hard rule: ceramics and prints are separate orders — block adding a print
   // while the cart holds ceramics (checkout rejects mixed carts server-side too).
   const cartHasCeramics = ids.some((id) => !isPrintToken(id));
@@ -171,7 +181,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
           </button>
           <p className="pay-error" data-testid="print-mixed-note">{t('print.mixedCart')}</p>
         </>
-      ) : available ? (
+      ) : buttonState === 'add' || buttonState === 'remove' ? (
         <button
           type="button"
           className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}
@@ -199,7 +209,7 @@ export function PrintConfigurator({ design }: { design: PrintDesign }) {
         </button>
       ) : (
         <button type="button" className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="print-add">
-          {t('print.unavailable')}
+          {buttonState === 'disabledAsset' ? t('print.assetUnavailable') : t('print.unavailable')}
         </button>
       )}
 

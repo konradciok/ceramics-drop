@@ -268,7 +268,8 @@
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods.",
     "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue.",
     "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue.",
-    "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later."
+    "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later.",
+    "printAssetError": "Something went wrong for a moment. Please try again."
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
@@ -844,6 +845,7 @@
     "addToCart": "Add to cart",
     "inCart": "In cart",
     "unavailable": "Unavailable",
+    "assetUnavailable": "This option is temporarily unavailable",
     "paperNote": "Printed on Fine Art EMA 200 g/m² paper",
     "from": "From {price}",
     "sectionDetails": "Details",

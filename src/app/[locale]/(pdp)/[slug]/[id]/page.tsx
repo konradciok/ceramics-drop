@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getProductById, CATEGORIES, isProductPublic } from '@/lib/products';
 import { getPrintById } from '@/lib/prints';
+import { getPrintAssetCoverage } from '@/server/print-assets/repository';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { printProductSchema, productSchema } from '@/lib/seo/structured-data';
@@ -88,7 +89,16 @@ export default async function Page({ params, searchParams }: Props) {
     const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const note = await getProductNote(PRINT_SLUG, locale as Locale, design.id, preview);
+    const [note, coverage] = await Promise.all([
+      getProductNote(PRINT_SLUG, locale as Locale, design.id, preview),
+      getPrintAssetCoverage(design.id).catch(() => null),
+    ]);
+    // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
+    // array is a real "nothing usable" signal and gates every variant.
+    const usableVariantKeys =
+      coverage && coverage.variants.length > 0
+        ? coverage.variants.filter((v) => v.usable).map((v) => v.variantKey)
+        : undefined;
     return (
       <main>
         <JsonLd
@@ -100,7 +110,7 @@ export default async function Page({ params, searchParams }: Props) {
             description: note,
           })}
         />
-        <PrintProductScreen design={design} noteOverride={note} />
+        <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} />
       </main>
     );
   }
