@@ -20,6 +20,12 @@ import type { ProductSeedRow } from '@/lib/catalog/types';
 import { getPrintAssetCoverage } from '@/server/print-assets/repository';
 import type { PrintAssetCoverage } from '@/server/print-assets/types';
 
+/** Print asset coverage load result for the product editor (prints in db mode only). */
+export type ProductPrintAssetsState =
+  | { status: 'na' }
+  | { status: 'ok'; coverage: PrintAssetCoverage }
+  | { status: 'error' };
+
 export interface ProductListRow {
   id: string;
   type: 'ceramic' | 'print';
@@ -181,8 +187,8 @@ export interface ProductEditorState {
   pdpPath: string;
   /** Deep link to the category's description document in the Content module. */
   notesHref: string;
-  /** Print fulfilment asset coverage (prints only, null when registry fallback). */
-  printAssets: PrintAssetCoverage | null;
+  /** Print fulfilment asset coverage (prints in db mode; na for ceramics/registry). */
+  printAssets: ProductPrintAssetsState;
 }
 
 /**
@@ -205,13 +211,16 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
   if (!row) return null;
 
   const ref = productRef(id);
-  const printAssets =
-    row.type === 'print' && source === 'db'
-      ? await getPrintAssetCoverage(id).catch((err) => {
-          console.error('[admin/products] getPrintAssetCoverage failed', err);
-          return null;
-        })
-      : null;
+  let printAssets: ProductPrintAssetsState = { status: 'na' };
+  if (row.type === 'print' && source === 'db') {
+    try {
+      const coverage = await getPrintAssetCoverage(id);
+      printAssets = { status: 'ok', coverage };
+    } catch (err) {
+      console.error('[admin/products] getPrintAssetCoverage failed', err);
+      printAssets = { status: 'error' };
+    }
+  }
 
   return {
     row,

@@ -42,4 +42,13 @@ describe('POST /api/admin/revoke-print-asset', () => {
     expect(res.status).toBe(400);
     expect(mocks.revokePrintAssetAction).not.toHaveBeenCalled();
   });
+
+  it('returns 500 when the action throws', async () => {
+    mocks.adminSupabase.mockReturnValue({});
+    mocks.revokePrintAssetAction.mockRejectedValue(new Error('db down'));
+
+    const res = await POST(req({ assetId: 'asset-1' }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'revoke_failed' });
+  });
 });

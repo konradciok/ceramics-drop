@@ -39,6 +39,8 @@ npm run print-assets:publish -- --product fap01 --revision 2026-07-12-r1 --confi
 
 **Gate:** `getPrintAssetReadiness(fap01).ready === true` before `draft/hidden → active`.
 
+**Known limitation (Stage 4a):** readiness is checked in application code, then status is updated in a separate statement — a concurrent revoke or assignment change between the two could theoretically allow activation with stale coverage. Frequency is low; a DB-side RPC guard is deferred unless this surfaces in production.
+
 ## Revision replacement (corrected artwork)
 
 1. Run **prepare → upload → verify → publish** with a **new revision** string.

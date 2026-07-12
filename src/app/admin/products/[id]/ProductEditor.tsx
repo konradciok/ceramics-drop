@@ -48,8 +48,12 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
 
   const savePath = `/api/admin/products/${row.id}`;
   const publishPath = `${savePath}/publish`;
-  const printAssets = state.printAssets;
-  const canActivatePrint = !printAssets || printAssets.ready;
+  const printAssetsState = state.printAssets;
+  const printCoverage = printAssetsState.status === 'ok' ? printAssetsState.coverage : null;
+  const canActivatePrint =
+    isCeramic ||
+    printAssetsState.status === 'na' ||
+    (printAssetsState.status === 'ok' && printAssetsState.coverage.ready);
 
   async function saveMeta() {
     const body: Record<string, unknown> = {
@@ -127,13 +131,20 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
           </label>
         </section>
 
-        {!isCeramic && printAssets && (
+        {!isCeramic && printAssetsState.status === 'ok' && (
           <PrintAssetCoveragePanel
-            coverage={printAssets}
+            coverage={printCoverage!}
             locked={locked}
             busy={busy}
             onRevoke={(assetId, force) => setRevokeTarget({ assetId, force })}
           />
+        )}
+        {!isCeramic && printAssetsState.status === 'error' && (
+          <section className="adm-editor">
+            <p className="adm-muted">
+              Nie udało się wczytać pokrycia assetów — odśwież stronę lub sprawdź logi serwera.
+            </p>
+          </section>
         )}
 
         <div className="adm-actions">
@@ -157,7 +168,9 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
                 onClick={() => setPublish('active')}
                 title={
                   !isCeramic && !canActivatePrint
-                    ? `Brakujące warianty: ${printAssets?.missing.join(', ') ?? ''}`
+                    ? printAssetsState.status === 'error'
+                      ? 'Nie udało się zweryfikować gotowości assetów'
+                      : `Brakujące warianty: ${printCoverage?.missing.join(', ') ?? ''}`
                     : undefined
                 }
               >
@@ -181,10 +194,15 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             )}
           </div>
           <p className="adm-muted">Status wpływa na sklep tylko w trybie CATALOG_SOURCE=db.</p>
-          {!isCeramic && printAssets && !printAssets.ready && (
+          {!isCeramic && printAssetsState.status === 'error' && (
+            <p className="adm-muted">
+              Aktywacja zablokowana — nie udało się zweryfikować gotowości assetów.
+            </p>
+          )}
+          {!isCeramic && printCoverage && !printCoverage.ready && (
             <p className="adm-muted">
               Aktywacja zablokowana — brak gotowych assetów dla:{' '}
-              <span className="adm-mono">{printAssets.missing.join(', ')}</span>. Użyj skryptów{' '}
+              <span className="adm-mono">{printCoverage.missing.join(', ')}</span>. Użyj skryptów{' '}
               <span className="adm-mono">print-assets:*</span>.
             </p>
           )}

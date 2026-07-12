@@ -1,4 +1,4 @@
-/* LOCAL-ONLY admin route: emergency-revoke a print fulfilment asset. */
+/* Cloudflare Access-gated admin route: emergency-revoke a print fulfilment asset. */
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { actorEmail } from '@/lib/admin/product-routes';
@@ -19,9 +19,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'asset_id_required' }, { status: 400 });
   }
 
-  const result = await revokePrintAssetAction(adminSupabase(), assetId, {
-    force: body.force === true,
-    actorEmail: actorEmail(req),
-  });
-  return NextResponse.json(result.body, { status: result.status });
+  try {
+    const result = await revokePrintAssetAction(adminSupabase(), assetId, {
+      force: body.force === true,
+      actorEmail: actorEmail(req),
+    });
+    return NextResponse.json(result.body, { status: result.status });
+  } catch (err) {
+    console.error('[admin/revoke-print-asset] revoke failed', err);
+    return NextResponse.json({ error: 'revoke_failed' }, { status: 500 });
+  }
 }

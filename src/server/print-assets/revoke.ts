@@ -33,31 +33,45 @@ export async function revokePrintAsset(
   if (asset.status === 'revoked') return { ok: false, reason: 'already_revoked' };
   if (!REVOCABLE.has(asset.status)) return { ok: false, reason: 'invalid_status' };
 
-  const { data: assignments, error: assignErr } = await supabase
+  // Two reads (no FK between assignments and product_variants on the natural key).
+  const { data: assignmentRows, error: assignErr } = await supabase
     .from('print_variant_asset_assignments')
-    .select('variant_key, product_variants!inner(active)')
+    .select('product_id, variant_key')
     .eq('asset_id', assetId);
 
   if (assignErr) throw new Error(`revokePrintAsset: assignment lookup failed: ${assignErr.message}`);
 
-  const activeAssigned = (assignments ?? [])
-    .filter((row) => {
-      const pv = row.product_variants as { active: boolean } | { active: boolean }[];
-      const active = Array.isArray(pv) ? pv[0]?.active : pv?.active;
-      return active === true;
-    })
-    .map((row) => row.variant_key as string)
-    .sort();
+  const variantKeys = [...new Set((assignmentRows ?? []).map((row) => row.variant_key as string))];
+  let activeAssigned: string[] = [];
+
+  if (variantKeys.length > 0) {
+    const { data: variants, error: variantErr } = await supabase
+      .from('product_variants')
+      .select('variant_key, active')
+      .eq('product_id', asset.product_id)
+      .in('variant_key', variantKeys);
+
+    if (variantErr) throw new Error(`revokePrintAsset: variant lookup failed: ${variantErr.message}`);
+
+    const activeKeys = new Set(
+      (variants ?? []).filter((row) => row.active === true).map((row) => row.variant_key as string),
+    );
+    activeAssigned = variantKeys.filter((key) => activeKeys.has(key)).sort();
+  }
 
   if (activeAssigned.length > 0 && !opts?.force) {
     return { ok: false, reason: 'still_assigned', assignedVariants: activeAssigned };
   }
 
-  const { error: updateErr } = await supabase
+  const { data: updated, error: updateErr } = await supabase
     .from('print_fulfilment_assets')
     .update({ status: 'revoked' })
-    .eq('id', assetId);
+    .eq('id', assetId)
+    .eq('status', asset.status)
+    .select('id')
+    .maybeSingle();
   if (updateErr) throw new Error(`revokePrintAsset: update failed: ${updateErr.message}`);
+  if (!updated) return { ok: false, reason: 'already_revoked' };
 
   const audit = await supabase.from('catalog_audit_log').insert({
     product_id: asset.product_id,
@@ -66,7 +80,9 @@ export async function revokePrintAsset(
     before: { asset_id: asset.id, status: asset.status, revision: asset.revision },
     after: { asset_id: asset.id, status: 'revoked', force: opts?.force === true },
   });
-  if (audit.error) throw new Error(`revokePrintAsset: audit failed: ${audit.error.message}`);
+  if (audit.error) {
+    console.error('[print-assets] revoke audit failed', asset.product_id, audit.error.message);
+  }
 
   return { ok: true };
 }
