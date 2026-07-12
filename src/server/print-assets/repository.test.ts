@@ -13,7 +13,7 @@ function makeChain(result: unknown): Record<string, unknown> {
     catch: (fn: (e: unknown) => unknown) => Promise.resolve(result).catch(fn),
     finally: (fn: () => void) => Promise.resolve(result).finally(fn),
   };
-  for (const m of ['eq', 'select']) {
+  for (const m of ['eq', 'select', 'order']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain['maybeSingle'] = vi.fn().mockResolvedValue(result);
@@ -267,6 +267,100 @@ describe('getPrintAssetReadiness', () => {
     });
     const { getPrintAssetReadiness } = await import('./repository');
     expect((await getPrintAssetReadiness('fap01')).missing).toEqual(['a', 'm', 'z']);
+  });
+});
+
+// ── getPrintAssetCoverage ─────────────────────────────────────────────────────
+
+describe('getPrintAssetCoverage', () => {
+  const DIMS = { print_area_width_px: 3600, print_area_height_px: 4800 };
+  const READY_ASSET = {
+    id: 'asset-1',
+    revision: '2026-07-10-r1',
+    status: 'ready',
+    width_px: 3600,
+    height_px: 4800,
+    verified_at: '2026-07-10T12:00:00.000Z',
+  };
+
+  function setupCoverage({
+    variants,
+    assignments,
+  }: {
+    variants: Record<string, unknown>[];
+    assignments: Record<string, unknown>[];
+  }) {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'product_variants') return makeChain({ data: variants, error: null });
+      if (table === 'print_variant_asset_assignments')
+        return makeChain({ data: assignments, error: null });
+      return makeChain({ data: null, error: null });
+    });
+  }
+
+  it('returns per-variant asset detail and readiness summary', async () => {
+    setupCoverage({
+      variants: [
+        { variant_key: 'a', ...DIMS },
+        { variant_key: 'b', ...DIMS },
+      ],
+      assignments: [
+        { variant_key: 'a', print_fulfilment_assets: READY_ASSET },
+        { variant_key: 'b', print_fulfilment_assets: { ...READY_ASSET, status: 'revoked' } },
+      ],
+    });
+    const { getPrintAssetCoverage } = await import('./repository');
+    expect(await getPrintAssetCoverage('fap01')).toEqual({
+      productId: 'fap01',
+      ready: false,
+      totalActiveVariants: 2,
+      missing: ['b'],
+      variants: [
+        {
+          variantKey: 'a',
+          printAreaWidthPx: 3600,
+          printAreaHeightPx: 4800,
+          usable: true,
+          asset: {
+            id: 'asset-1',
+            revision: '2026-07-10-r1',
+            widthPx: 3600,
+            heightPx: 4800,
+            status: 'ready',
+            verifiedAt: '2026-07-10T12:00:00.000Z',
+          },
+        },
+        {
+          variantKey: 'b',
+          printAreaWidthPx: 3600,
+          printAreaHeightPx: 4800,
+          usable: false,
+          asset: {
+            id: 'asset-1',
+            revision: '2026-07-10-r1',
+            widthPx: 3600,
+            heightPx: 4800,
+            status: 'revoked',
+            verifiedAt: '2026-07-10T12:00:00.000Z',
+          },
+        },
+      ],
+    });
+  });
+
+  it('marks variants with no assignment as missing with null asset', async () => {
+    setupCoverage({
+      variants: [{ variant_key: 'a', ...DIMS }],
+      assignments: [],
+    });
+    const { getPrintAssetCoverage } = await import('./repository');
+    const coverage = await getPrintAssetCoverage('fap01');
+    expect(coverage.missing).toEqual(['a']);
+    expect(coverage.variants[0]).toMatchObject({
+      variantKey: 'a',
+      usable: false,
+      asset: null,
+    });
   });
 });
 

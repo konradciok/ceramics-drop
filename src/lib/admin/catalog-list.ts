@@ -17,6 +17,8 @@ import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplaySt
 import { CATEGORY_ORDER, isCategoryHidden } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import type { ProductSeedRow } from '@/lib/catalog/types';
+import { getPrintAssetCoverage } from '@/server/print-assets/repository';
+import type { PrintAssetCoverage } from '@/server/print-assets/types';
 
 export interface ProductListRow {
   id: string;
@@ -179,6 +181,8 @@ export interface ProductEditorState {
   pdpPath: string;
   /** Deep link to the category's description document in the Content module. */
   notesHref: string;
+  /** Print fulfilment asset coverage (prints only, null when registry fallback). */
+  printAssets: PrintAssetCoverage | null;
 }
 
 /**
@@ -201,6 +205,14 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
   if (!row) return null;
 
   const ref = productRef(id);
+  const printAssets =
+    row.type === 'print' && source === 'db'
+      ? await getPrintAssetCoverage(id).catch((err) => {
+          console.error('[admin/products] getPrintAssetCoverage failed', err);
+          return null;
+        })
+      : null;
+
   return {
     row,
     title: ref.label,
@@ -209,5 +221,6 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
     source,
     pdpPath: `/${row.category_slug}/${row.id}`,
     notesHref: `/admin/content/product_notes/${row.category_slug}`,
+    printAssets,
   };
 }

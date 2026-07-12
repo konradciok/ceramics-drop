@@ -30,3 +30,24 @@ export interface PrintAssetReadiness {
   /** active variant_keys with no usable assignment (sorted, stable) */
   missing: string[];
 }
+
+/** Per-variant fulfilment asset row for the admin product editor (read-only). */
+export interface PrintAssetVariantCoverage {
+  variantKey: string;
+  printAreaWidthPx: number | null;
+  printAreaHeightPx: number | null;
+  usable: boolean;
+  asset: {
+    id: string;
+    revision: string;
+    widthPx: number;
+    heightPx: number;
+    status: string;
+    verifiedAt: string | null;
+  } | null;
+}
+
+/** Admin view: readiness summary plus per-variant assignment detail. */
+export interface PrintAssetCoverage extends PrintAssetReadiness {
+  variants: PrintAssetVariantCoverage[];
+}

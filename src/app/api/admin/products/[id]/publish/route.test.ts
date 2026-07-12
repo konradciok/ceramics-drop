@@ -4,9 +4,12 @@ import { POST } from './route';
 const mocks = vi.hoisted(() => ({ adminSupabase: vi.fn() }));
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
+vi.mock('@/server/print-assets/repository', () => ({ getPrintAssetReadiness: vi.fn() }));
 import { revalidateTag } from 'next/cache';
+import { getPrintAssetReadiness } from '@/server/print-assets/repository';
 
 const ROW = { id: 'k01', type: 'ceramic', category_slug: 'kubki', status: 'draft', published_at: null };
+const PRINT_ROW = { id: 'fap01', type: 'print', category_slug: 'fine-art-prints', status: 'draft', published_at: null };
 
 function supabase(opts: { before?: unknown } = {}) {
   const { before = ROW } = opts;
@@ -73,5 +76,22 @@ describe('POST /api/admin/products/[id]/publish', () => {
     mocks.adminSupabase.mockReturnValue(supabase({ before: null }).supabase);
     const res = await POST(req({ status: 'active' }), ctx('zz99'));
     expect(res.status).toBe(404);
+  });
+
+  it('blocks print activation when fulfilment assets are incomplete → 409', async () => {
+    vi.mocked(getPrintAssetReadiness).mockResolvedValue({
+      productId: 'fap01',
+      ready: false,
+      totalActiveVariants: 2,
+      missing: ['50x70_unframed'],
+    });
+    mocks.adminSupabase.mockReturnValue(supabase({ before: PRINT_ROW }).supabase);
+
+    const res = await POST(req({ status: 'active' }), ctx('fap01'));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      error: 'print_assets_incomplete',
+      missing: ['50x70_unframed'],
+    });
   });
 });

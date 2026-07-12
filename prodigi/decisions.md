@@ -54,11 +54,11 @@ export type PrintFrameColour = 'black' | 'white' | 'natural'
 | `public/uploads/` | Display WebP only (existing storefront tiles) |
 | **R2 bucket** | Print masters at fulfilment resolution (per `sku-catalog.md` px) |
 
-**Fulfilment URL:** R2 **presigned GET** passed to Prodigi in `assets[].url` at order time. TTL must cover queue retry window (generate fresh presign in the queue consumer, not at checkout).
+**Fulfilment URL (updated 2026-07-12):** **HMAC-signed Worker proxy** at `/api/print-assets/{assetId}?exp=&sig=`. The queue consumer mints a fresh URL per retry (7-day TTL). R2 bucket bindings do **not** expose `createSignedUrl` — the Worker streams from `PRINT_ASSETS` after signature verification.
 
-**Infra (Phase 1/3):** R2 bucket binding in `wrangler.jsonc`, upload workflow (manual script or admin). No Worker streaming proxy for MVP.
+**Infra:** R2 bucket `anna-ciok-print-assets` (`PRINT_ASSETS` binding), `FULFILMENT_QUEUE` (`prodigi-fulfilment`), operator scripts `npm run print-assets:*`, admin readiness at `/admin/products/[id]`. See `docs/print-asset-runbook.md`.
 
-**Constraint:** Prodigi fetches the asset when the job runs; presigned URL must be valid at consumer execution time.
+**Constraint:** Prodigi fetches the asset when the job runs; each queue attempt mints a new signed URL. Never log the `sig` query param.
 
 ---
 

@@ -205,11 +205,11 @@ Gate: production and staging generate URLs to their own Workers/buckets and Prod
 
 ### Phase 5 — Publish guard, admin visibility, docs, and cutover
 
-- [ ] Block `draft/hidden → active` for print products in `updateProductStatus()` unless readiness covers every active variant.
-- [ ] Show asset readiness, revision, dimensions, verified timestamp, and missing variants in the existing admin product editor. Upload UI remains out of scope for v1; scripts are the write path.
-- [ ] Add a “revoke” action that is separate from “retire”; retirement preserves historical fulfilment, revocation is an emergency stop.
-- [ ] Update `prodigi/decisions.md`, `prodigi/masterprompt.md`, `prodigi/phases.md`, `docs/cloudflare-deployment.md`, `.env.example`, and `AGENTS.md` to describe the shipped proxy and commands accurately.
-- [ ] Add an operator runbook for new artwork, revision replacement, rollback to a prior assignment, emergency revocation, DLQ recovery, and safe R2 cleanup.
+- [x] Block `draft/hidden → active` for print products in `updateProductStatus()` unless readiness covers every active variant.
+- [x] Show asset readiness, revision, dimensions, verified timestamp, and missing variants in the existing admin product editor. Upload UI remains out of scope for v1; scripts are the write path.
+- [x] Add a “revoke” action that is separate from “retire”; retirement preserves historical fulfilment, revocation is an emergency stop.
+- [x] Update `prodigi/decisions.md`, `prodigi/masterprompt.md`, `prodigi/phases.md`, `docs/cloudflare-deployment.md`, `.env.example`, and `AGENTS.md` to describe the shipped proxy and commands accurately.
+- [x] Add an operator runbook for new artwork, revision replacement, rollback to a prior assignment, emergency revocation, DLQ recovery, and safe R2 cleanup.
 - [ ] Run the full regression gate: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run preview:cf`, and the print checkout E2E.
 - [ ] Place one Prodigi sandbox order for each distinct print-area profile (not all frame colours when the binary is shared), verify download/crop/status callbacks, then approve live rollout.
 

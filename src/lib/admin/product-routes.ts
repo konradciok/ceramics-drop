@@ -7,6 +7,7 @@
    ============================================================ */
 import { NextResponse } from 'next/server';
 import { revalidateTag, revalidatePath } from 'next/cache';
+import { PrintAssetsIncompleteError } from '@/lib/catalog/repository';
 
 export { actorEmail, parseJson } from './content-routes';
 
@@ -30,6 +31,12 @@ export function productError(error: unknown): NextResponse {
   }
   if (message === 'slug_taken') {
     return NextResponse.json({ error: message }, { status: 409 });
+  }
+  if (error instanceof PrintAssetsIncompleteError) {
+    return NextResponse.json(
+      { error: 'print_assets_incomplete', missing: error.missing },
+      { status: 409 },
+    );
   }
   // Keep raw DB/Supabase detail in the server log only — never leak it to the client.
   console.error('[admin/products] catalog write failed', error);

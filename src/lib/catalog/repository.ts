@@ -7,6 +7,7 @@
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
+import { getPrintAssetReadiness } from '@/server/print-assets/repository';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import type { MediaSeedRow, ProductSeedRow, ProductStatus, VariantSeedRow } from './types';
@@ -223,10 +224,22 @@ export async function updateProductMeta(
   return res.data as ProductSeedRow;
 }
 
+export class PrintAssetsIncompleteError extends Error {
+  readonly missing: string[];
+
+  constructor(missing: string[]) {
+    super('print_assets_incomplete');
+    this.name = 'PrintAssetsIncompleteError';
+    this.missing = missing;
+  }
+}
+
 /**
  * Transition a product's publish status. Archiving is a soft-archive (status
  * only — the row and its order history are never deleted). The first activation
- * stamps `published_at`. Throws `product_not_found`.
+ * stamps `published_at`. Print products cannot move to `active` unless every
+ * active variant has a ready fulfilment asset. Throws `product_not_found` or
+ * `PrintAssetsIncompleteError`.
  */
 export async function updateProductStatus(
   supabase: SupabaseClient,
@@ -237,6 +250,17 @@ export async function updateProductStatus(
   const before = await supabase.from('products').select('*').eq('id', id).maybeSingle();
   if (before.error) throw new Error(`load product: ${before.error.message}`);
   if (!before.data) throw new Error('product_not_found');
+
+  if (
+    status === 'active' &&
+    before.data.type === 'print' &&
+    before.data.status !== 'active'
+  ) {
+    const readiness = await getPrintAssetReadiness(id);
+    if (!readiness.ready) {
+      throw new PrintAssetsIncompleteError(readiness.missing);
+    }
+  }
 
   const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (status === 'active' && !before.data.published_at) patch.published_at = new Date().toISOString();
