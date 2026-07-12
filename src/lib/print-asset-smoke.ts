@@ -38,6 +38,11 @@ export async function probeSignedPrintAssetHead(
   try {
     response = await fetchFn(signedUrl, { method: 'HEAD' });
   } catch (e) {
+    // Some runtimes embed the request URL verbatim in network-error messages
+    // (e.g. Node's "Failed to parse URL from <url>") — scrub it so `sig` never
+    // reaches a log/JSON report via the error string.
+    const rawMessage = e instanceof Error ? e.message : String(e);
+    const message = rawMessage.split(signedUrl).join(safeUrl);
     return {
       ok: false,
       status: 0,
@@ -45,7 +50,7 @@ export async function probeSignedPrintAssetHead(
       contentType: null,
       contentLength: null,
       etag: null,
-      error: e instanceof Error ? e.message : String(e),
+      error: message,
     };
   }
 
@@ -54,7 +59,10 @@ export async function probeSignedPrintAssetHead(
   const contentLength = contentLengthRaw ? Number(contentLengthRaw) : null;
   const etag = response.headers.get('etag');
 
-  if (!response.ok) {
+  // The route contract (`src/app/api/print-assets/[id]/route.ts`) always
+  // returns exactly 200 on success — treat any other status as a failure,
+  // not just non-2xx (`response.ok` would accept 201/206).
+  if (response.status !== 200) {
     return {
       ok: false,
       status: response.status,

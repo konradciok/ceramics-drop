@@ -10,14 +10,20 @@
  */
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { probeSignedPrintAssetHead } from '../src/lib/print-asset-smoke';
-import { SITE_URL } from '../src/lib/site';
+import { getWorkerOrigin } from '../src/lib/site.server';
 import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
 
+/**
+ * Prefer a `ready` asset (proves something sellable is live); only fall back
+ * to `retired` when no `ready` row exists (proves historical fulfilment still
+ * serves, e.g. right after a revision swap).
+ */
 async function resolveAssetId(
   explicit: string | undefined,
 ): Promise<{ assetId: string; productId: string; profileKey: string }> {
+  const supabase = loadSupabaseClient();
+
   if (explicit) {
-    const supabase = loadSupabaseClient();
     const { data, error } = await supabase
       .from('print_fulfilment_assets')
       .select('id, product_id, profile_key, status')
@@ -31,26 +37,27 @@ async function resolveAssetId(
     return { assetId: data.id, productId: data.product_id, profileKey: data.profile_key };
   }
 
-  const supabase = loadSupabaseClient();
-  const { data, error } = await supabase
-    .from('print_fulfilment_assets')
-    .select('id, product_id, profile_key')
-    .in('status', ['ready', 'retired'])
-    .order('verified_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(`asset lookup failed: ${error.message}`);
-  if (!data) {
-    throw new Error(
-      'no ready/retired print_fulfilment_assets row — run prepare/upload/verify/publish first',
-    );
+  for (const status of ['ready', 'retired'] as const) {
+    const { data, error } = await supabase
+      .from('print_fulfilment_assets')
+      .select('id, product_id, profile_key')
+      .eq('status', status)
+      .order('verified_at', { ascending: false })
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`asset lookup failed: ${error.message}`);
+    if (data) return { assetId: data.id, productId: data.product_id, profileKey: data.profile_key };
   }
-  return { assetId: data.id, productId: data.product_id, profileKey: data.profile_key };
+
+  throw new Error(
+    'no ready/retired print_fulfilment_assets row — run prepare/upload/verify/publish first',
+  );
 }
 
-function parseArgs(): { origin: string; assetId?: string; json: boolean } {
+function parseArgs(): { origin?: string; assetId?: string; json: boolean } {
   const argv = process.argv.slice(2);
-  let origin = process.env.WORKER_ORIGIN ?? SITE_URL;
+  let origin: string | undefined;
   let assetId: string | undefined;
   let json = false;
 
@@ -67,13 +74,14 @@ function parseArgs(): { origin: string; assetId?: string; json: boolean } {
 }
 
 async function main(): Promise<void> {
-  const { origin, assetId: explicitAssetId, json } = parseArgs();
+  const { origin: originOverride, assetId: explicitAssetId, json } = parseArgs();
   const env = loadLocalEnv();
   const secret = env.PRINT_ASSET_TOKEN_SECRET;
   if (!secret) {
     throw new Error('PRINT_ASSET_TOKEN_SECRET required (.dev.vars / --env-file / process env)');
   }
 
+  const origin = originOverride ?? getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN });
   const { assetId, productId, profileKey } = await resolveAssetId(explicitAssetId);
   const signedUrl = await signPrintAssetUrl(assetId, secret, Date.now(), origin.replace(/\/$/, ''));
   const probe = await probeSignedPrintAssetHead(signedUrl);

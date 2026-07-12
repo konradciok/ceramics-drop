@@ -57,4 +57,50 @@ describe('probeSignedPrintAssetHead', () => {
     expect(result.url).toBe(redactSignedPrintAssetUrl(signedUrl));
     expect(result.url).not.toContain('a'.repeat(64));
   });
+
+  it('rejects a non-200 2xx response (e.g. 206 Partial Content)', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 206,
+        headers: { 'content-type': 'image/jpeg', 'content-length': '12345' },
+      }),
+    );
+    const signedUrl = 'https://example.test/api/print-assets/z?exp=1&sig=' + 'c'.repeat(64);
+
+    const result = await probeSignedPrintAssetHead(signedUrl, fetchFn);
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(206);
+  });
+
+  it('redacts the signed URL out of a network-error message', async () => {
+    const signedUrl = 'https://example.test/api/print-assets/w?exp=1&sig=' + 'd'.repeat(64);
+    const fetchFn = vi.fn().mockRejectedValue(new Error(`Failed to parse URL from ${signedUrl}`));
+
+    const result = await probeSignedPrintAssetHead(signedUrl, fetchFn);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).not.toContain('d'.repeat(64));
+      expect(result.error).toContain(redactSignedPrintAssetUrl(signedUrl));
+    }
+  });
+
+  it('fails closed on a 200 HEAD missing content-length', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 200,
+        headers: { 'content-type': 'image/jpeg' },
+      }),
+    );
+    const signedUrl = 'https://example.test/api/print-assets/y?exp=1&sig=' + 'b'.repeat(64);
+
+    const result = await probeSignedPrintAssetHead(signedUrl, fetchFn);
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(200);
+    if (!result.ok) {
+      expect(result.error).toBe('missing content-type or content-length on 200 HEAD');
+    }
+  });
 });

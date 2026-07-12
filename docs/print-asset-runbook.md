@@ -113,9 +113,13 @@ After at least one asset is `ready` or `retired`:
 
 ```bash
 npm run print-asset:smoke -- --origin https://anna-ciok.studio [--asset-id <uuid>] [--json]
+# or, to target the origin from .dev.vars / an --env-file's WORKER_ORIGIN instead of --origin:
+npm run print-asset:smoke -- --env-file .dev.vars
 ```
 
-HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero on failure. Use after publish and before sandbox orders.
+HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero on failure. Use after publish and before sandbox orders. When `--asset-id` is omitted the probe prefers a `ready` row (proof something sellable is live) and only falls back to `retired` if none exists.
+
+Requires `PRINT_ASSET_TOKEN_SECRET` **and** `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — `resolveAssetId()` always looks up the asset row in Supabase (to fetch `product_id`/`profile_key`/`status`), even when `--asset-id` is passed explicitly.
 
 ## Cutover evidence (Phase 6)
 
