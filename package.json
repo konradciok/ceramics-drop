@@ -31,6 +31,7 @@
     "print-assets:upload": "tsx scripts/print-assets-upload.ts",
     "print-assets:verify": "tsx scripts/print-assets-verify.ts",
     "print-assets:publish": "tsx scripts/print-assets-publish.ts",
+    "print-asset:smoke": "tsx scripts/print-asset-smoke.ts",
     "catalog:backfill": "tsx scripts/backfill-catalog.ts",
     "debug:meta-capi": "node scripts/debug-meta-capi.mjs",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",

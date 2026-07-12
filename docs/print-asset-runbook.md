@@ -105,4 +105,69 @@ Inventory check: `npm run print-assets:inventory`
 | `WORKER_ORIGIN` | Public origin for signed URLs + Prodigi callbacks (staging); production defaults to `https://anna-ciok.studio` |
 | `PRINT_ASSETS_BUCKET` | Optional override for CLI upload target (`.dev.vars`) |
 
-**Access / WAF:** Prodigi fetches unsigned HTTP with HMAC query params only. If staging is placed behind Cloudflare Access, add a path bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*`.
+**Access / WAF:** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
+
+## Signed-route smoke (deployed)
+
+After at least one asset is `ready` or `retired`:
+
+```bash
+npm run print-asset:smoke -- --origin https://anna-ciok.studio [--asset-id <uuid>] [--json]
+```
+
+HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero on failure. Use after publish and before sandbox orders.
+
+## Cutover evidence (Phase 6)
+
+### Pre-cutover job check (production Supabase)
+
+Run: `npm run print-fulfilment:check-jobs -- --json`
+
+```json
+{
+  "checkedAt": "2026-07-12T09:04:20.470Z",
+  "terminalStatuses": ["completed", "shipped", "cancelled", "failed_action_required"],
+  "inflight": []
+}
+```
+
+**Result:** zero in-flight print fulfilment jobs — safe to depend on `assetId` snapshots.
+
+### Legacy R2 inventory (`{productId}/master.jpg`)
+
+Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudflare API token).
+
+**Retention plan (Rollout §6):** keep legacy objects for one release window after cutover; no code path selects them (`process-job.ts` signs snapshotted `assetId` only — no `printAssetKey()` / WebP fallback). `printAssetKey()` remains for inventory CLI only.
+
+| Design | Legacy key | Status (operator) |
+| --- | --- | --- |
+| fap01 | `fap01/master.jpg` | _pending Wrangler auth_ |
+| fap02 | `fap02/master.jpg` | _pending Wrangler auth_ |
+| fap03 | `fap03/master.jpg` | _pending Wrangler auth_ |
+
+### `fap01` distinct print-area profiles (sandbox matrix)
+
+Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order per profile** (representative variant — not every frame colour when binaries share a profile):
+
+| Profile | Representative variant | Prodigi SKU | Sandbox order | `prodigi_order_id` | Asset status |
+| --- | --- | --- | --- | --- | --- |
+| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | _pending publish_ | | |
+| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | _pending publish_ | | |
+| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | _pending publish_ | | |
+| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | _pending publish_ | | |
+| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | _pending publish_ | | |
+| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | _pending publish_ | | |
+| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | _pending publish_ | | |
+
+Destructive E2E (one profile smoke — not full matrix):
+
+```bash
+PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
+  npx playwright test e2e/print-purchase.spec.ts --grep @destructive
+```
+
+Per-profile orders: storefront checkout or `npm run prodigi -- order create` (sandbox only). Verify: `npm run prodigi -- order get <id>`, `/admin/fulfillment/[id]`, HEAD ETag/size vs manifest (`npm run print-asset:smoke`).
+
+### Live rollout approval
+
+**Status:** _not approved_ — blocked until `fap01` pipeline + full sandbox matrix complete. Do not set `PRODIGI_ENV=live` until operator signs off in PR.
