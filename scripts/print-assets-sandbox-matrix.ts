@@ -3,7 +3,7 @@
  * Uses production signed asset URLs (anna-ciok.studio) so Prodigi downloads the
  * same bytes checkout would send.
  *
- *   npm run print-assets:sandbox-matrix -- --product fap01 [--dry-run]
+ *   npm run print-assets:sandbox-matrix -- --product fap01 [--dry-run] [--run-id 2026-07-13-r2]
  */
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { getWorkerOrigin } from '../src/lib/site.server';
@@ -39,23 +39,33 @@ const MATRIX: Array<{
   },
 ];
 
-function parseArgs(): { product: string; dryRun: boolean } {
+function parseArgs(): { product: string; dryRun: boolean; runId?: string } {
   const argv = process.argv.slice(2);
   let product = 'fap01';
   let dryRun = false;
+  let runId: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--product') product = argv[++i] ?? product;
+    else if (argv[i] === '--run-id') runId = argv[++i];
     else if (argv[i] === '--dry-run') dryRun = true;
     else if (argv[i] === '--help' || argv[i] === '-h') {
-      console.log('Usage: npm run print-assets:sandbox-matrix -- [--product fap01] [--dry-run]');
+      console.log(
+        'Usage: npm run print-assets:sandbox-matrix -- [--product fap01] [--run-id <suffix>] [--dry-run]',
+      );
       process.exit(0);
     }
   }
-  return { product, dryRun };
+  return { product, dryRun, runId };
+}
+
+/** UTC date + minute — unique per run unless --run-id overrides. */
+function defaultRunId(): string {
+  const iso = new Date().toISOString();
+  return `${iso.slice(0, 10)}-${iso.slice(11, 16).replace(':', '')}`;
 }
 
 async function main(): Promise<void> {
-  const { product, dryRun } = parseArgs();
+  const { product, dryRun, runId: runIdArg } = parseArgs();
   const env = loadLocalEnv();
   const apiKey = env.PRODIGI_API_KEY_SANDBOX;
   const secret = env.PRINT_ASSET_TOKEN_SECRET;
@@ -72,7 +82,7 @@ async function main(): Promise<void> {
 
   const byProfile = new Map((assets ?? []).map((a) => [a.profile_key, a]));
   const origin = getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN }).replace(/\/$/, '');
-  const runId = new Date().toISOString().slice(0, 10);
+  const runId = runIdArg ?? defaultRunId();
   const results: Array<Record<string, unknown>> = [];
 
   for (const row of MATRIX) {
@@ -132,14 +142,16 @@ async function main(): Promise<void> {
         `Prodigi order failed for ${row.profileKey} (${res.status}): ${JSON.stringify(body)}`,
       );
     }
-    const ordId = (body as { order?: { id?: string } })?.order?.id ?? null;
+    const ordId = (body as { order?: { id?: string; status?: { stage?: string } } })?.order?.id ?? null;
+    const stage = (body as { order?: { status?: { stage?: string } } })?.order?.status?.stage ?? null;
     results.push({
       profileKey: row.profileKey,
       variantKey: row.variantKey,
       sku: row.sku,
       assetId: asset.id,
+      idempotencyKey,
       prodigiOrderId: ordId,
-      status: (body as { order?: { status?: { stage?: string } } })?.order?.status?.stage ?? null,
+      status: stage,
     });
     console.log(`✓ ${row.profileKey} → ${ordId ?? '(no id)'}`);
   }
