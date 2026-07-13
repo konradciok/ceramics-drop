@@ -75,3 +75,6 @@ skills-lock.json
 
 # scratch PR-review notes/diffs (throwaway, not repo docs)
 pr-review/
+
+# ad-hoc order/customer CSV exports — contain PII, never commit
+/exports/
