@@ -34,6 +34,11 @@ npm run print-assets:verify -- --product fap01 --revision 2026-07-12-r1
 #    Optional --actor <email> records the operator in catalog_audit_log.
 npm run print-assets:publish -- --product fap01 --revision 2026-07-12-r1 --confirm 2026-07-12-r1
 
+# 5b. Generate storefront gallery WebPs from the published fulfilment master,
+#     upload to R2 `prints/{productId}/gallery/{slot}/`, mirror to public/uploads/.
+#     Re-run when a new revision publishes and the hero should update.
+npm run print-assets:gallery -- --product fap01
+
 # 6. Confirm readiness in admin (/admin/products/fap01) — all variants green
 # 7. Activate product status (blocked until readiness is complete)
 ```

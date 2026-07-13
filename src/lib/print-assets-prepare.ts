@@ -104,6 +104,12 @@ export function validateNoEnlargement(
 
 // ── Tracked config — config/print-assets/{productId}.json ──────────────────
 
+/** Storefront gallery slot — source fulfilment profile + public/uploads stem. */
+export interface GallerySlotConfig {
+  sourceProfile: string;
+  uploadStem: string;
+}
+
 /** One explicit crop/focal per distinct print-area dimension (profileKey). */
 export interface PrepareConfig {
   product: string;
@@ -114,6 +120,8 @@ export interface PrepareConfig {
       crop: { left: number; top: number; width: number; height: number };
     }
   >;
+  /** Optional storefront gallery slots (operator `print-assets:gallery`). */
+  gallery?: Record<string, GallerySlotConfig>;
 }
 
 /**

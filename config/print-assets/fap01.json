@@ -30,5 +30,8 @@
       "format": "jpg",
       "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
     }
+  },
+  "gallery": {
+    "hero": { "sourceProfile": "8400x12000", "uploadStem": "fap-01" }
   }
 }
