@@ -1,4 +1,5 @@
 import { getWorkerOrigin } from '@/lib/site.server';
+import { buildProdigiAttributes } from '@/lib/print-prodigi-attributes';
 import type { ProdigiOrderItem, ProdigiOrderRequest, ProdigiRecipient } from './types';
 
 /**
@@ -67,16 +68,6 @@ function majorAmount(minorUnits: number): string {
   return (minorUnits / 100).toFixed(2);
 }
 
-function buildAttributes(variant: PrintItemRow['variant']): Record<string, string> {
-  if (!variant.framed) return {};
-  const attrs: Record<string, string> = { color: variant.frameColour };
-  if (variant.mount) {
-    attrs['mount'] = '2.4mm';
-    attrs['mountColor'] = 'Snow white';
-  }
-  return attrs;
-}
-
 function buildRecipient(order: OrderRow): ProdigiRecipient {
   const a = order.shipping_address;
   if (!a) {
@@ -113,7 +104,7 @@ export function buildProdigiPayload(
       sku:    item.variant.prodigiSku,
       copies: 1,
       sizing: 'fillPrintArea',
-      attributes: buildAttributes(item.variant),
+      attributes: buildProdigiAttributes(item.variant),
       assets: [{ printArea: 'default', url: assetUrl }],
       recipientCost: {
         amount:   majorAmount(item.unit_price),

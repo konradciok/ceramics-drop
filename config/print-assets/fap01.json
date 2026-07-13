@@ -1,26 +1,26 @@
 {
-  "_comment": "PLACEHOLDER crops — see config/print-assets/README.md. Do not treat as approved artwork direction.",
+  "_comment": "Source: prodigi/master-files/print-nr-1/variants/70x100.jpg (8400×12000, 7:10). Each profile uses the largest inscribed crop matching its exact Prodigi aspect, then downscales — never a center window. 2:3 mounted: 8000×12000 (~200px/side). Review proof-*.jpg before publish.",
   "product": "fap01",
   "profiles": {
     "3600x4800": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 3600, "height": 4800 }
+      "crop": { "left": 0, "top": 400, "width": 8400, "height": 11200 }
     },
     "3614x4795": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 3614, "height": 4795 }
+      "crop": { "left": 586, "top": 1205, "width": 7228, "height": 9590 }
     },
     "2400x3600": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 2400, "height": 3600 }
+      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
     },
     "6000x8400": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 6000, "height": 8400 }
+      "crop": { "left": 0, "top": 120, "width": 8400, "height": 11760 }
     },
     "4800x7200": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 4800, "height": 7200 }
+      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
     },
     "8400x12000": {
       "format": "jpg",
@@ -28,7 +28,10 @@
     },
     "7200x10800": {
       "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 7200, "height": 10800 }
+      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
     }
+  },
+  "gallery": {
+    "hero": { "sourceProfile": "8400x12000", "uploadStem": "fap-01" }
   }
 }

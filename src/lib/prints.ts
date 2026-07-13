@@ -8,7 +8,6 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     category: 'fine-art-prints',
     num: '01',
     image: '/uploads/fap-01.webp',
-    gallery: ['/uploads/fap-01-room.webp', '/uploads/fap-01-detail.webp'],
     noteIndex: 0,
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'white', 'natural'],
