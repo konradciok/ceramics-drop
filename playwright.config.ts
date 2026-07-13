@@ -3,18 +3,23 @@ import { defineConfig } from '@playwright/test';
 /**
  * E2E config — see docs/e2e-playwright-purchase-flow.md.
  *
- * Default target is the deployed storefront (NOT localhost): the Stripe
- * Dashboard webhooks and Geowidget token are wired to that host. Override with
- * PLAYWRIGHT_BASE_URL for previews / local runs.
+ * Default target is the hermetic localhost: a bare `npx playwright test` builds
+ * and serves the app itself (see webServer below) rather than hammering the
+ * production host. This is also required for @ci specs — Cloudflare bot
+ * management serves CI/runner IPs a challenge page on the prod host, leaving
+ * zero product tiles for the specs to find.
  *
- *   npx playwright test --grep @ci          # mocked, repo-safe specs
- *   npx playwright test --grep @checkout-edge  # includes the real-Stripe decline spec
+ * To run against prod (real Stripe Dashboard webhook wiring + Geowidget token),
+ * opt in explicitly:
+ *
+ *   PLAYWRIGHT_BASE_URL=https://anna-ciok.studio npx playwright test
+ *
+ *   npx playwright test --grep @ci            # mocked, repo-safe specs
+ *   npx playwright test --grep @checkout-edge # includes the real-Stripe decline spec
  */
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://anna-ciok.studio';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 // A localhost target means the hermetic mode: Playwright builds/serves the app
-// itself (see webServer below) so the @ci specs never depend on the production
-// host — where Cloudflare's bot management serves CI runner IPs a challenge page
-// instead of the storefront, leaving zero product tiles for the specs to find.
+// itself (see webServer below). Now the default, so local runs are hermetic.
 const IS_LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(BASE_URL);
 
 export default defineConfig({
