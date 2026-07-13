@@ -6,6 +6,8 @@
  * so this runs on the Workers runtime — no Node `crypto`/`Buffer`.
  */
 
+import { timingSafeEqual } from '@/lib/timing-safe-equal';
+
 const DEFAULT_TOLERANCE_SECONDS = 300;
 
 /** base64 → bytes (Workers has `atob`, no `Buffer`). Throws on invalid base64. */
@@ -21,19 +23,6 @@ function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
-}
-
-/**
- * Constant-time equality for the (fixed-length) base64 signatures. Unequal
- * lengths short-circuit — safe here because a valid HMAC-SHA256 signature is
- * always the same length — but equal-length inputs are compared in full so a
- * timing side-channel can't reveal how many leading bytes matched.
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 /**

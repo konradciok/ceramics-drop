@@ -92,14 +92,14 @@ Keep **one** separate scheduled job for real-widget release-gate mode.
 
 | Setting | Value |
 | --- | --- |
-| **Playwright `baseURL`** | `https://anna-ciok.studio` |
+| **Playwright `baseURL`** | default `http://localhost:3000` (hermetic); prod via `PLAYWRIGHT_BASE_URL=https://anna-ciok.studio` |
 | **Canonical origin** | `SITE_URL` in `src/lib/site.ts` |
 | **Alternate host** | `https://ceramics-drop.konrad-ciok.workers.dev` — only if Stripe Dashboard webhooks target this host |
 
 ```ts
 // playwright.config.ts
 use: {
-  baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'https://anna-ciok.studio',
+  baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000', // hermetic by default
   trace: 'retain-on-failure',
   screenshot: 'only-on-failure',
   video: 'retain-on-failure',
@@ -108,10 +108,13 @@ use: {
 ```
 
 ```bash
+# Hermetic (default): Playwright builds+serves the app on localhost — safe for bare local runs.
+npx playwright test
+# Real Stripe webhook wiring / live Geowidget: opt into the deployed host explicitly.
 PLAYWRIGHT_BASE_URL=https://anna-ciok.studio npx playwright test
 ```
 
-Do **not** default to `http://localhost:3000` unless explicitly requested and webhooks are wired to that host.
+Default to the hermetic localhost target. Only set `PLAYWRIGHT_BASE_URL` to the deployed host when you need real Stripe Dashboard webhook delivery or the live Geowidget — and ensure those webhooks are wired to that host.
 
 **Locale:** Polish default — no `/pl` prefix. Cart: `/koszyk`, return: `/koszyk/return`.
 
@@ -168,11 +171,16 @@ Alternate webhook host: `https://ceramics-drop.konrad-ciok.workers.dev/...` if t
 
 ## Preflight phase
 
-Run **before** the destructive checkout flow; fail fast with clear blockers.
+Run **before** the `@destructive` release-gate checkout flow against a **deployed** host; fail fast with clear blockers. Hermetic `@ci` specs on the default localhost target skip this guard — they mock checkout and never hit real Stripe webhooks.
 
 ```ts
 test.beforeEach(async ({ request, baseURL }) => {
-  expect(baseURL).not.toMatch(/localhost/); // unless E2E_ALLOW_LOCALHOST=1
+  // Release-gate only: destructive specs expect a deployed host with Dashboard webhooks.
+  if (/localhost|127\.0\.0\.1/.test(baseURL ?? '') && process.env.E2E_ALLOW_LOCALHOST !== '1') {
+    throw new Error(
+      `ENVIRONMENT BLOCKER: baseURL is ${baseURL}; set E2E_ALLOW_LOCALHOST=1 to run @destructive locally.`,
+    );
+  }
 
   const inventory = await request.get('/api/inventory');
   expect(inventory.ok()).toBeTruthy();
@@ -182,13 +190,13 @@ test.beforeEach(async ({ request, baseURL }) => {
 });
 ```
 
-**Preflight checklist:**
+**Preflight checklist (release-gate / `@destructive`):**
 
 - [ ] `GET /api/inventory` → 200
 - [ ] ≥ 2 unsold products in **different** categories (data-driven, not hardcoded IDs)
 - [ ] Client uses Stripe **test** publishable key (`pk_test_` in page source or env doc)
 - [ ] Geowidget token present at build time **or** `E2E_GEOWIDGET_MODE=mock`
-- [ ] `PLAYWRIGHT_BASE_URL` is intentional (default `https://anna-ciok.studio`)
+- [ ] `PLAYWRIGHT_BASE_URL` points at a deployed host (`https://anna-ciok.studio` or preview), **or** `E2E_ALLOW_LOCALHOST=1` for intentional local destructive runs
 - [ ] Synthetic buyer email (e.g. `e2e+playwright@example.com`)
 - [ ] Purchase spec: `test.describe.configure({ mode: 'serial' })`; CI `workers: 1` for `@destructive`
 
@@ -346,7 +354,7 @@ Do **not** fold these into the main purchase spec.
 ## Implementation requirements
 
 1. **Files:** `e2e/purchase-two-categories-paczkomat.spec.ts`, `playwright.config.ts`, optional `e2e/helpers/`.
-2. **Config:** `baseURL` default `https://anna-ciok.studio`; timeouts 60–90s for real Geowidget; artifacts `retain-on-failure`.
+2. **Config:** `baseURL` default `http://localhost:3000` (hermetic; prod via `PLAYWRIGHT_BASE_URL`); timeouts 60–90s for real Geowidget; artifacts `retain-on-failure`.
 3. **Cart reset:** `localStorage.removeItem('acc_cart_v1')` in `addInitScript` — not a hand-rolled Zustand JSON string.
 4. **Product pick:** dynamic via `/api/inventory` + catalogue; prove two categories in data.
 5. **Tags:** `@checkout @destructive` (release-gate), `@checkout @ci` (mocked widget).

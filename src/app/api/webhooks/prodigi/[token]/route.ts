@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { handleProdigiCallback } from '@/server/prodigi/callbacks';
+import { timingSafeEqual } from '@/lib/timing-safe-equal';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function POST(
   const { env } = getCloudflareContext();
   const { token } = await params;
 
-  if (token !== env.PRODIGI_CALLBACK_TOKEN) {
+  if (!env.PRODIGI_CALLBACK_TOKEN || !timingSafeEqual(token, env.PRODIGI_CALLBACK_TOKEN)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

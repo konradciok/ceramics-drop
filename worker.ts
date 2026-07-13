@@ -6,6 +6,7 @@
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
 import { processJob } from './src/server/fulfilment/process-job';
+import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
@@ -49,7 +50,7 @@ export default {
       await processJob(msg.body, env, ctx)
         .then(() => msg.ack())
         .catch((err) => {
-          if ((err as { retryable?: boolean })?.retryable === false) msg.ack();
+          if (decideMessageDisposition(err) === 'ack') msg.ack();
           else msg.retry();
         });
     }

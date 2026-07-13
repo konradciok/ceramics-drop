@@ -50,9 +50,10 @@ jobs:
       - name: Run @ci e2e tests
         run: npm run test:e2e
         env:
-          # Hermetic local target — Playwright builds/serves the app (webServer in
-          # playwright.config.ts) instead of hitting the Cloudflare-fronted prod
-          # host, which serves CI runner IPs a bot-challenge page (no product tiles).
+          # Hermetic local target — CI pre-builds above; webServer only starts the
+          # app (webServer in playwright.config.ts auto-builds on cold local runs).
+          # Avoids hitting the Cloudflare-fronted prod host, which serves CI runner
+          # IPs a bot-challenge page (no product tiles).
           # Override with the PLAYWRIGHT_BASE_URL var to point at a real deploy.
           PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'http://localhost:3000' }}
 

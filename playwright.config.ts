@@ -3,18 +3,23 @@ import { defineConfig } from '@playwright/test';
 /**
  * E2E config — see docs/e2e-playwright-purchase-flow.md.
  *
- * Default target is the deployed storefront (NOT localhost): the Stripe
- * Dashboard webhooks and Geowidget token are wired to that host. Override with
- * PLAYWRIGHT_BASE_URL for previews / local runs.
+ * Default target is the hermetic localhost: a bare `npx playwright test` builds
+ * and serves the app itself (see webServer below) rather than hammering the
+ * production host. This is also required for @ci specs — Cloudflare bot
+ * management serves CI/runner IPs a challenge page on the prod host, leaving
+ * zero product tiles for the specs to find.
  *
- *   npx playwright test --grep @ci          # mocked, repo-safe specs
- *   npx playwright test --grep @checkout-edge  # includes the real-Stripe decline spec
+ * To run against prod (real Stripe Dashboard webhook wiring + Geowidget token),
+ * opt in explicitly:
+ *
+ *   PLAYWRIGHT_BASE_URL=https://anna-ciok.studio npx playwright test
+ *
+ *   npx playwright test --grep @ci            # mocked, repo-safe specs
+ *   npx playwright test --grep @checkout-edge # includes the real-Stripe decline spec
  */
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://anna-ciok.studio';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 // A localhost target means the hermetic mode: Playwright builds/serves the app
-// itself (see webServer below) so the @ci specs never depend on the production
-// host — where Cloudflare's bot management serves CI runner IPs a challenge page
-// instead of the storefront, leaving zero product tiles for the specs to find.
+// itself (see webServer below). Now the default, so local runs are hermetic.
 const IS_LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(BASE_URL);
 
 export default defineConfig({
@@ -32,17 +37,25 @@ export default defineConfig({
   // picks). Force a single worker in CI and for every destructive run.
   workers: process.env.CI || process.env.E2E_DESTRUCTIVE === '1' ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
-  // Hermetic mode only: when pointed at localhost, build+serve the app so the
-  // @ci specs run against our own deploy artifact, not the Cloudflare-fronted
-  // prod host. Untouched for the default/release-gate runs against prod.
+  // Hermetic mode only: when pointed at localhost, build (if needed) and serve
+  // the app so @ci specs run against our own artifact, not the Cloudflare-fronted
+  // prod host. Omitted when PLAYWRIGHT_BASE_URL targets a deployed host.
   webServer: IS_LOCAL
     ? {
-        command: 'npm run start',
+        command: 'test -d .next || npm run build; npm run start',
         url: BASE_URL,
-        timeout: 120_000,
+        // Build can take several minutes on a cold tree; CI pre-builds so this
+        // usually only waits for `next start`.
+        timeout: 300_000,
         reuseExistingServer: !process.env.CI,
         stdout: 'pipe',
         stderr: 'pipe',
+        env: {
+          NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN:
+            process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN ?? 'e2e-placeholder',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+            process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_e2e_placeholder',
+        },
       }
     : undefined,
   use: {
