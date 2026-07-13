@@ -140,6 +140,37 @@ Run: `npm run print-fulfilment:check-jobs -- --json`
 
 **Result:** zero in-flight print fulfilment jobs — safe to depend on `assetId` snapshots.
 
+### Production migration sync (`publish_actor_email`)
+
+**When:** 2026-07-12 (evening). **Project:** `ceramics` (`wnlysejenowymjdxlnaq`, eu-west-1).
+
+Audited via Supabase MCP (`list_migrations` + `execute_sql` on `pg_proc`). Compared 36 local files under `supabase/migrations/` against the remote migration history.
+
+**Before apply:** `publish_print_asset_revision` on production had only three arguments (`p_product_id`, `p_revision`, `p_assignments`). The publish CLI's `--actor` / `p_actor_email` path from PR #147 was not live.
+
+**Applied:** `supabase/migrations/20260712120000_publish_actor_email.sql` via MCP `apply_migration` (recorded remotely as `20260712193555_publish_actor_email`). Drops the 3-arg OID and recreates the function with trailing `p_actor_email text default null`; audit insert uses `coalesce(nullif(p_actor_email, ''), nullif(current_setting('app.actor_email', true), ''))`.
+
+**After apply (verified):**
+
+```sql
+-- pg_get_function_arguments(publish_print_asset_revision)
+p_product_id text, p_revision text, p_assignments jsonb,
+p_actor_email text DEFAULT NULL::text
+```
+
+**No other repo migrations were pending.** Earlier print-pipeline DDL was already on production under different timestamp prefixes (same names, applied outside `supabase db push`):
+
+| Repo file prefix | Remote `schema_migrations` version | Name |
+| --- | --- | --- |
+| `20260709130000` | `20260709085801` | `showroom_drops` |
+| `20260709140000` | `20260709183732` | `catalog_shadow` |
+| `20260710120000` | `20260710132930` | `catalog_audit_log` |
+| `20260711120000` | `20260711131330` | `print_fulfilment_assets` |
+
+**Prod-only (no local file):** `20260709075434_schema_hardening` — already applied previously; no action taken.
+
+**Operator impact:** `npm run print-assets:publish -- … --actor you@studio` now records `catalog_audit_log.actor_email` on production. No app redeploy required for this DDL change.
+
 ### Legacy R2 inventory (`{productId}/master.jpg`)
 
 Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudflare API token).
@@ -158,13 +189,20 @@ Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order pe
 
 | Profile | Representative variant | Prodigi SKU | Sandbox order | `prodigi_order_id` | Asset status |
 | --- | --- | --- | --- | --- | --- |
-| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | _pending publish_ | | |
-| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | _pending publish_ | | |
-| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | _pending publish_ | | |
-| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | _pending publish_ | | |
-| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | _pending publish_ | | |
-| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | _pending publish_ | | |
-| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | _pending publish_ | | |
+| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | 2026-07-13 | `ord_1162923` | `ready` |
+| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | 2026-07-13 | `ord_1162924` | `ready` |
+| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | 2026-07-13 | `ord_1162925` | `ready` |
+| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | 2026-07-13 | `ord_1162926` | `ready` |
+| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | 2026-07-13 | `ord_1162927` | `ready` |
+| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | 2026-07-13 | `ord_1162928` | `ready` |
+| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | 2026-07-13 | `ord_1162929` | `ready` |
+
+Matrix automation (sandbox only — uses production signed asset URLs):
+
+```bash
+npm run print-assets:sandbox-matrix -- --product fap01
+npm run print-assets:sandbox-matrix -- --product fap01 --dry-run
+```
 
 Destructive E2E (one profile smoke — not full matrix):
 
@@ -177,4 +215,4 @@ Per-profile orders: storefront checkout or `npm run prodigi -- order create` (sa
 
 ### Live rollout approval
 
-**Status:** _not approved_ — blocked until `fap01` pipeline + full sandbox matrix complete. Do not set `PRODIGI_ENV=live` until operator signs off in PR.
+**Status:** _sandbox matrix placed 2026-07-13_ (`ord_1162923`–`ord_1162929`) — operator sign-off pending Prodigi asset-download completion + physical proof review. Do not set `PRODIGI_ENV=live` until signed off in PR.

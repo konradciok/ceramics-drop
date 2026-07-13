@@ -212,7 +212,7 @@ Gate: production and staging generate URLs to their own Workers/buckets and Prod
 - [x] Add an operator runbook for new artwork, revision replacement, rollback to a prior assignment, emergency revocation, DLQ recovery, and safe R2 cleanup.
 - [x] Run the local regression gate: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. _(Phase 6 PR — verified 2026-07-12: `eslint .` clean; `tsc --noEmit` + `tsc -p tsconfig.worker.json --noEmit` clean; vitest 1138/1138 passed across 101 files; `next build --webpack` succeeded.)_
 - [ ] Run `npm run preview:cf` and the print checkout E2E (`e2e/print-purchase.spec.ts`) against a deployed preview before live cutover. _(not run in this PR — requires Wrangler auth + a deployed preview; operator gate before Phase 6 sign-off)_
-- [ ] Place one Prodigi sandbox order for each distinct print-area profile (not all frame colours when the binary is shared), verify download/crop/status callbacks, then approve live rollout. _(Phase 6 operator gate — blocked until `fap01` assets published; matrix in runbook)_
+- [x] Place one Prodigi sandbox order for each distinct print-area profile — `ord_1162923`–`ord_1162929` (2026-07-13). _Remaining:_ verify download/crop/status callbacks + approve live rollout.
 
 Gate: an operator can add or revise a print using documented commands, the admin prevents incomplete publication, and sandbox proves the entire paid-order-to-download path.
 
@@ -221,14 +221,15 @@ Gate: an operator can add or revise a print using documented commands, the admin
 Operator execution + thin automation closure. Does not reopen settled architecture (HMAC Worker proxy, `assetId` snapshots, fail-closed fulfilment).
 
 - [x] Pre-cutover: `npm run print-fulfilment:check-jobs -- --json` against production — zero in-flight jobs (2026-07-12).
+- [x] Production Supabase: apply `publish_actor_email` migration — audited via MCP 2026-07-12; only pending DDL; `publish_print_asset_revision` now accepts `p_actor_email` (evidence in runbook § Cutover evidence).
 - [ ] Pre-cutover: `npm run print-assets:inventory` against production R2 (requires valid Wrangler auth) — record legacy `{productId}/master.jpg` retention; `process-job.ts` has no WebP/legacy fallback (verified in code review).
-- [ ] Production asset pipeline per published design (`fap01` first): prepare → visual sign-off → upload → verify → publish with studio-approved artwork (not placeholder crops in `config/print-assets/fap01.json`).
-- [ ] Admin readiness: `/admin/products/fap01` all variants green before `draft/hidden → active`.
+- [x] Production asset pipeline per published design (`fap01` first): revision `2026-07-12-r1` prepared, uploaded, verified, published 2026-07-12; crop config committed with studio-approved inscribed crops.
+- [x] Admin readiness: `/admin/products/fap01` — 21/21 variants assigned, all assets `ready` (product `active` in catalogue).
 - [x] Access/WAF: production only gates `/admin`; document staging bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*` (runbook).
 - [x] Signed-route smoke helper: `npm run print-asset:smoke` (HEAD, redacted `sig` in output); operator CLI only.
 - [x] Wire `print-asset:smoke -- --json --allow-missing` into post-deploy CI (`.github/workflows/post-deploy-smoke.yml`, daily + dispatch; `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `PRINT_ASSET_TOKEN_SECRET` as repo secrets). Pre-launch it skips green (no sellable asset); once a `ready`/`retired` asset exists a non-200 HEAD fails the run — satisfying the Phase 4 "CI logs" gate. _(2026-07-12: workflow + `--allow-missing` added; secrets are a one-time ops step before the first scheduled run is meaningful.)_
-- [ ] Sandbox: one order per distinct print-area profile on preview with `PRODIGI_ENV=sandbox` — record matrix in runbook + PR.
-- [ ] Live rollout approval: do **not** set `PRODIGI_ENV=live` until sandbox matrix is signed off.
+- [x] Sandbox: one order per distinct print-area profile on preview with `PRODIGI_ENV=sandbox` — `ord_1162923`–`ord_1162929` via `npm run print-assets:sandbox-matrix` (2026-07-13); matrix recorded in runbook.
+- [ ] Live rollout approval: do **not** set `PRODIGI_ENV=live` until sandbox matrix is signed off (Prodigi download complete + physical proof review).
 
 Gate: operator can publish artwork via scripts; admin blocks incomplete activation; sandbox proves paid-order → Prodigi download; production cutover explicitly approved in PR.
 
