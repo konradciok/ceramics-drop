@@ -37,17 +37,25 @@ export default defineConfig({
   // picks). Force a single worker in CI and for every destructive run.
   workers: process.env.CI || process.env.E2E_DESTRUCTIVE === '1' ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
-  // Hermetic mode only: when pointed at localhost, build+serve the app so the
-  // @ci specs run against our own deploy artifact, not the Cloudflare-fronted
-  // prod host. Untouched for the default/release-gate runs against prod.
+  // Hermetic mode only: when pointed at localhost, build (if needed) and serve
+  // the app so @ci specs run against our own artifact, not the Cloudflare-fronted
+  // prod host. Omitted when PLAYWRIGHT_BASE_URL targets a deployed host.
   webServer: IS_LOCAL
     ? {
-        command: 'npm run start',
+        command: 'test -d .next || npm run build; npm run start',
         url: BASE_URL,
-        timeout: 120_000,
+        // Build can take several minutes on a cold tree; CI pre-builds so this
+        // usually only waits for `next start`.
+        timeout: 300_000,
         reuseExistingServer: !process.env.CI,
         stdout: 'pipe',
         stderr: 'pipe',
+        env: {
+          NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN:
+            process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN ?? 'e2e-placeholder',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+            process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_e2e_placeholder',
+        },
       }
     : undefined,
   use: {

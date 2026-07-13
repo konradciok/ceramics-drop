@@ -171,11 +171,16 @@ Alternate webhook host: `https://ceramics-drop.konrad-ciok.workers.dev/...` if t
 
 ## Preflight phase
 
-Run **before** the destructive checkout flow; fail fast with clear blockers.
+Run **before** the `@destructive` release-gate checkout flow against a **deployed** host; fail fast with clear blockers. Hermetic `@ci` specs on the default localhost target skip this guard — they mock checkout and never hit real Stripe webhooks.
 
 ```ts
 test.beforeEach(async ({ request, baseURL }) => {
-  expect(baseURL).not.toMatch(/localhost/); // unless E2E_ALLOW_LOCALHOST=1
+  // Release-gate only: destructive specs expect a deployed host with Dashboard webhooks.
+  if (/localhost|127\.0\.0\.1/.test(baseURL ?? '') && process.env.E2E_ALLOW_LOCALHOST !== '1') {
+    throw new Error(
+      `ENVIRONMENT BLOCKER: baseURL is ${baseURL}; set E2E_ALLOW_LOCALHOST=1 to run @destructive locally.`,
+    );
+  }
 
   const inventory = await request.get('/api/inventory');
   expect(inventory.ok()).toBeTruthy();
@@ -185,13 +190,13 @@ test.beforeEach(async ({ request, baseURL }) => {
 });
 ```
 
-**Preflight checklist:**
+**Preflight checklist (release-gate / `@destructive`):**
 
 - [ ] `GET /api/inventory` → 200
 - [ ] ≥ 2 unsold products in **different** categories (data-driven, not hardcoded IDs)
 - [ ] Client uses Stripe **test** publishable key (`pk_test_` in page source or env doc)
 - [ ] Geowidget token present at build time **or** `E2E_GEOWIDGET_MODE=mock`
-- [ ] `PLAYWRIGHT_BASE_URL` is intentional — default is hermetic `http://localhost:3000`; prod (`https://anna-ciok.studio`) requires it set explicitly
+- [ ] `PLAYWRIGHT_BASE_URL` points at a deployed host (`https://anna-ciok.studio` or preview), **or** `E2E_ALLOW_LOCALHOST=1` for intentional local destructive runs
 - [ ] Synthetic buyer email (e.g. `e2e+playwright@example.com`)
 - [ ] Purchase spec: `test.describe.configure({ mode: 'serial' })`; CI `workers: 1` for `@destructive`
 

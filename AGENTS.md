@@ -14,8 +14,8 @@ npm run build         # Production build (next build --webpack — see Build sys
 npm run lint          # ESLint
 npm run typecheck     # tsc --noEmit (app + worker via tsconfig.worker.json)
 npm run test          # Vitest unit tests (src/**/*.test.ts; --passWithNoTests)
-npm run test:e2e      # Playwright E2E (@ci specs) — runs against deployed site by default
-npm run test:e2e:edge # Playwright E2E (@checkout-edge specs) — real Geowidget + Stripe
+npm run test:e2e      # Playwright E2E (@ci specs) — hermetic localhost by default (webServer build+serve)
+npm run test:e2e:edge # Playwright E2E (@checkout-edge specs) — real Geowidget + Stripe; set PLAYWRIGHT_BASE_URL for prod
 npm run preview:cf    # OpenNext + Wrangler local preview on :8787 (Workers runtime)
 npm run deploy:cf     # Build & deploy to Cloudflare Workers
 npm run optimize-images  # Convert design/uploads/*.png → public/uploads/*.webp
