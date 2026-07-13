@@ -106,7 +106,7 @@ Inventory check: `npm run print-assets:inventory`
 | `WORKER_ORIGIN` | Public origin for signed URLs + Prodigi callbacks (staging); production defaults to `https://anna-ciok.studio` |
 | `PRINT_ASSETS_BUCKET` | Optional override for CLI upload target (`.dev.vars`) |
 
-**Access / WAF:** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
+**Access / WAF:** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). **Required:** WAF skip for `/api/print-assets/*` so Prodigi datacenter fetches are not blocked by Bot Fight Mode before they reach the Worker (verified 2026-07-13 — matrix orders failed with zero Worker hits). If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
 
 ## Signed-route smoke (deployed)
 
@@ -179,9 +179,11 @@ Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudfl
 
 | Design | Legacy key | Status (operator) |
 | --- | --- | --- |
-| fap01 | `fap01/master.jpg` | _pending Wrangler auth_ |
-| fap02 | `fap02/master.jpg` | _pending Wrangler auth_ |
-| fap03 | `fap03/master.jpg` | _pending Wrangler auth_ |
+| fap01 | `fap01/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+| fap02 | `fap02/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+| fap03 | `fap03/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+
+**2026-07-13 run:** `npm run print-assets:inventory` — 3/3 legacy masters present in `anna-ciok-print-assets`. New pipeline objects live under `prints/{productId}/2026-07-12-r1/` (fap01: 7 content-addressed JPGs). No code path reads legacy keys; safe to delete after one release window post-live cutover.
 
 ### `fap01` distinct print-area profiles (sandbox matrix)
 
@@ -189,13 +191,13 @@ Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order pe
 
 | Profile | Representative variant | Prodigi SKU | Sandbox order | `prodigi_order_id` | Asset status |
 | --- | --- | --- | --- | --- | --- |
-| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | 2026-07-13 | `ord_1162923` | `ready` |
-| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | 2026-07-13 | `ord_1162924` | `ready` |
-| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | 2026-07-13 | `ord_1162925` | `ready` |
-| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | 2026-07-13 | `ord_1162926` | `ready` |
-| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | 2026-07-13 | `ord_1162927` | `ready` |
-| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | 2026-07-13 | `ord_1162928` | `ready` |
-| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | 2026-07-13 | `ord_1162929` | `ready` |
+| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | 2026-07-13 | `ord_1162923` | `ready` / Prodigi `Error` |
+| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | 2026-07-13 | `ord_1162924` | `ready` / Prodigi `Error` |
+| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | 2026-07-13 | `ord_1162925` | `ready` / Prodigi `Error` |
+| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | 2026-07-13 | `ord_1162926` | `ready` / Prodigi `Error` |
+| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | 2026-07-13 | `ord_1162927` | `ready` / Prodigi `Error` |
+| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | 2026-07-13 | `ord_1162928` | `ready` / Prodigi `Error` |
+| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | 2026-07-13 | `ord_1162929` | `ready` / Prodigi `Error` |
 
 Matrix automation (sandbox only — uses production signed asset URLs):
 
@@ -212,6 +214,8 @@ PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
 ```
 
 Per-profile orders: storefront checkout or `npm run prodigi -- order create` (sandbox only). Verify: `npm run prodigi -- order get <id>`, `/admin/fulfillment/[id]`, HEAD ETag/size vs manifest (`npm run print-asset:smoke`).
+
+**2026-07-13 download failure (all 7 orders):** Prodigi reports `order.items.assets.FailedToDownloaded` (`downloadAssets: Error`). Worker observability shows **zero** `/api/print-assets/*` requests during `08:56–09:10Z` when orders were placed — Prodigi's fetch never reached the Worker (blocked at Cloudflare edge). Manual `curl` / `print-asset:smoke` return **200** from normal clients. **Fix:** add a WAF **Skip** rule (or Configuration Rule) for `http.request.uri.path starts_with "/api/print-assets/"` — skip Bot Fight Mode / Browser Integrity Check / any managed rules that block datacenter fetches. HMAC `sig` remains the auth gate. Re-run matrix after the skip is live (`npm run print-assets:sandbox-matrix -- --product fap01` with a new date suffix in idempotency keys — cancel the failed `ord_1162923`–`ord_1162929` in sandbox if still open).
 
 ### Live rollout approval
 

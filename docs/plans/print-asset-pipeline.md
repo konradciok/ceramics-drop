@@ -222,7 +222,7 @@ Operator execution + thin automation closure. Does not reopen settled architectu
 
 - [x] Pre-cutover: `npm run print-fulfilment:check-jobs -- --json` against production — zero in-flight jobs (2026-07-12).
 - [x] Production Supabase: apply `publish_actor_email` migration — audited via MCP 2026-07-12; only pending DDL; `publish_print_asset_revision` now accepts `p_actor_email` (evidence in runbook § Cutover evidence).
-- [ ] Pre-cutover: `npm run print-assets:inventory` against production R2 (requires valid Wrangler auth) — record legacy `{productId}/master.jpg` retention; `process-job.ts` has no WebP/legacy fallback (verified in code review).
+- [x] Pre-cutover: `npm run print-assets:inventory` against production R2 — 3/3 legacy `{productId}/master.jpg` present (2026-07-13); retain one release window; `process-job.ts` has no WebP/legacy fallback (verified in code review).
 - [x] Production asset pipeline per published design (`fap01` first): revision `2026-07-12-r1` prepared, uploaded, verified, published 2026-07-12; crop config committed with studio-approved inscribed crops.
 - [x] Admin readiness: `/admin/products/fap01` — 21/21 variants assigned, all assets `ready` (product `active` in catalogue).
 - [x] Access/WAF: production only gates `/admin`; document staging bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*` (runbook).
