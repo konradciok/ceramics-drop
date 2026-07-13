@@ -17,20 +17,18 @@ import path from 'node:path';
 import sharp from 'sharp';
 import type { PrepareConfig } from '../src/lib/print-assets-prepare';
 import { IMG_WIDTHS } from '../src/lib/images';
-import { loadSupabaseClient } from './lib/script-env';
-import { getArg, hasFlag, loadManifest, localDerivativePath, ROOT } from './lib/print-assets-cli';
+import { getArg, hasFlag, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
+import { hashFile } from './lib/image-facts';
+import {
+  galleryR2Key,
+  resolveLatestReadyAsset,
+  type ReadyAssetDetail,
+} from './lib/print-assets-resolve';
 import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
 
 const CANONICAL_MAX_WIDTH = 1600;
 const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
 const WEBP_QUALITY = 80;
-
-interface ReadyAsset {
-  revision: string;
-  profile_key: string;
-  r2_key: string;
-  sha256: string;
-}
 
 function loadConfig(productId: string): PrepareConfig {
   const configPath = path.join(ROOT, 'config', 'print-assets', `${productId}.json`);
@@ -44,54 +42,18 @@ function loadConfig(productId: string): PrepareConfig {
   return parsed;
 }
 
-function galleryR2Key(productId: string, slot: string, filename: string): string {
-  return `prints/${productId}/gallery/${slot}/${filename}`;
-}
-
-async function resolveReadyAsset(
-  productId: string,
-  sourceProfile: string,
-  revisionArg: string | undefined,
-): Promise<ReadyAsset> {
-  const supabase = loadSupabaseClient();
-  let query = supabase
-    .from('print_fulfilment_assets')
-    .select('revision, profile_key, r2_key, sha256, verified_at')
-    .eq('product_id', productId)
-    .eq('profile_key', sourceProfile)
-    .eq('status', 'ready');
-
-  if (revisionArg) query = query.eq('revision', revisionArg);
-
-  const { data, error } = await query.order('verified_at', { ascending: false }).limit(1);
-  if (error) throw new Error(`Failed to read fulfilment assets: ${error.message}`);
-  if (!data?.length) {
-    throw new Error(
-      `No ready print_fulfilment_assets row for ${productId} profile ${sourceProfile}` +
-        (revisionArg ? ` revision ${revisionArg}` : '') +
-        '. Run prepare/upload/verify/publish first.',
-    );
-  }
-  const row = data[0]!;
-  return {
-    revision: row.revision as string,
-    profile_key: row.profile_key as string,
-    r2_key: row.r2_key as string,
-    sha256: row.sha256 as string,
-  };
-}
-
 /**
  * Resolve a local JPG/PNG derivative path when the prepare output tree exists;
  * otherwise download the immutable R2 fulfilment object to a scratch file.
  */
 async function resolveSourcePath(
   productId: string,
-  asset: ReadyAsset,
+  asset: ReadyAssetDetail,
   scratchDir: string,
   bucket: string,
 ): Promise<{ path: string; cleanup: boolean }> {
-  try {
+  const manifestPath = path.join(revisionDir(productId, asset.revision), 'manifest.json');
+  if (fs.existsSync(manifestPath)) {
     const manifest = loadManifest(productId, asset.revision);
     const derivative = manifest.derivatives.find((d) => d.profileKey === asset.profile_key);
     if (derivative) {
@@ -106,14 +68,19 @@ async function resolveSourcePath(
         return { path: localPath, cleanup: false };
       }
     }
-  } catch {
-    // No local manifest — fall through to R2.
   }
 
-  const dest = path.join(scratchDir, `source-${asset.profile_key}.jpg`);
+  const ext = path.extname(asset.r2_key) || '.jpg';
+  const dest = path.join(scratchDir, `source-${asset.profile_key}${ext}`);
   const got = r2GetToFile(bucket, asset.r2_key, dest);
   if (!got.ok) {
     throw new Error(`Failed to download fulfilment source ${asset.r2_key}: ${got.error}`);
+  }
+  const downloadedSha = await hashFile(dest);
+  if (downloadedSha !== asset.sha256) {
+    throw new Error(
+      `Integrity mismatch for ${asset.r2_key}: expected sha256 ${asset.sha256}, got ${downloadedSha}`,
+    );
   }
   return { path: dest, cleanup: true };
 }
@@ -179,7 +146,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const asset = await resolveReadyAsset(productId, slotConfig.sourceProfile, revisionArg);
+  const asset = await resolveLatestReadyAsset(productId, slotConfig.sourceProfile, revisionArg);
   const bucket = printAssetsBucket();
   const stem = slotConfig.uploadStem;
 

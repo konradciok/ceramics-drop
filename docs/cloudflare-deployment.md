@@ -136,6 +136,22 @@ Ruleset `237f07c4303b4afbaa7854baeea64c01` · rule `020447cad9604aeb9361fde0155d
 
 Verify: Security → WAF → Rate limiting rules, or `GET /zones/{zone_id}/rulesets/phases/http_ratelimit/entrypoint`.
 
+### Print-asset Prodigi downloads (WAF + Bot Fight Mode)
+
+Applied **2026-07-13** on zone `df154a46a71277a8b5b4a9e3d9af23ad` (`anna-ciok.studio`):
+
+| Control | Setting | Why |
+| --- | --- | --- |
+| **Bot Fight Mode** | **Off** | Free-plan BFM cannot be skipped per-path; it `managed_challenge`s Prodigi datacenter fetches before they reach the Worker. |
+| **WAF custom rule** `skip-waf-print-assets-prodigi` | Expression `starts_with(http.request.uri.path, "/api/print-assets/")` → Action **Skip** (managed rules + BIC) | Lets Prodigi through edge WAF; HMAC `sig` on the URL remains the auth gate. |
+| **Configuration rule** `disable-bic-print-assets` | Same path → Browser Integrity Check **Off** | Optional; complements the WAF skip. |
+
+**Do not** add bypasses for `/admin` or `/api/admin`. Prodigi only needs `/api/print-assets/*` (and `/api/webhooks/prodigi/*` for callbacks).
+
+Verify after changes: Security → Events — Prodigi IPs (`20.54.35.86`, `20.67.175.*`) should show `skip` / `firewallCustom`, not `managed_challenge` / `botFight`. Then `npm run print-assets:sandbox-matrix -- --product fap01` and confirm `downloadAssets: Complete` on all seven orders (see `docs/print-asset-runbook.md` § sandbox matrix).
+
+**Ops note:** Re-enabling Bot Fight Mode breaks print fulfilment on Free until you upgrade to Pro (Super Bot Fight Mode + per-path WAF skip) or leave BFM off.
+
 ### Local verification checklist
 
 After `npm run preview:cf` (stop preview before `deploy:cf` on Windows — preview locks `.open-next/assets`):

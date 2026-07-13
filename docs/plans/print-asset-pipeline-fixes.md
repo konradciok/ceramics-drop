@@ -254,4 +254,7 @@ If and only if approved:
 
 ## Out of scope (Phase 6 operator gates, not code)
 
-Real crops in `config/print-assets/fap01.json`, sandbox matrix pass-through, legacy R2 inventory, live-rollout sign-off.
+- [x] Real crops in `config/print-assets/fap01.json` (revision `2026-07-12-r1`, committed).
+- [x] Sandbox matrix pass-through (`ord_1162949`–`ord_1162955`, 2026-07-13).
+- [x] Legacy R2 inventory (`npm run print-assets:inventory`, 2026-07-13).
+- [ ] Live-rollout sign-off (`PRODIGI_ENV=live` + studio proof review).

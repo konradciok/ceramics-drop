@@ -16,6 +16,34 @@ export function variantKey(sel: PrintVariantSelection): string {
 }
 
 /**
+ * Parse a `variantKey()` string back into a selection. Throws on malformed keys
+ * (operator scripts only — checkout uses decodePrintToken).
+ */
+export function parseVariantKey(key: string): PrintVariantSelection {
+  const parts = key.split(':');
+  if (parts.length !== 4) throw new Error(`invalid variant key: ${key}`);
+  const [size, framedStr, mountStr, frameColour] = parts;
+  if (!PRINT_SIZES.includes(size as PrintSize)) throw new Error(`invalid variant key size: ${key}`);
+  const framed = framedStr === 'true';
+  const mount = mountStr === 'true';
+  if (framedStr !== 'true' && framedStr !== 'false') throw new Error(`invalid variant key: ${key}`);
+  if (mountStr !== 'true' && mountStr !== 'false') throw new Error(`invalid variant key: ${key}`);
+  const validColour =
+    frameColour === 'none' ||
+    PRINT_FRAME_COLOURS.includes(frameColour as PrintFrameColour);
+  if (!validColour) throw new Error(`invalid variant key colour: ${key}`);
+  if (!framed && frameColour !== 'none') throw new Error(`invalid variant key: ${key}`);
+  if (framed && frameColour === 'none') throw new Error(`invalid variant key: ${key}`);
+  if (!framed && mount) throw new Error(`invalid variant key: ${key}`);
+  return {
+    size: size as PrintSize,
+    framed,
+    mount,
+    frameColour: frameColour as PrintFrameColour | 'none',
+  };
+}
+
+/**
  * Storefront configurator gate: which button state a print variant is in. Pure
  * + unit-tested because the configurator is a client island and the repo has no
  * DOM render-test harness. Checkout re-resolves the asset and fail-closes

@@ -198,7 +198,7 @@ Gate: a paid order continues to reference the exact same immutable asset after a
 - [x] Update `/api/print-assets/[id]` to resolve the immutable key, implement `HEAD`, return metadata/ETag, and distinguish 403, 404, 410, and 503 without leaking bucket keys.
 - [x] Extend the minimal `R2Bucket` shapes in `cloudflare-bindings.d.ts` for `head`, `httpEtag`, and required metadata, then run `npm run cf-typegen`.
 - [x] Make the fulfilment/callback origin environment-aware as required by `docs/plans/staging-plan.md`; production remains `https://anna-ciok.studio`.
-- [x] Verify that Cloudflare Access/WAF rules do not block Prodigi's unsigned network request to the **HMAC-protected** print asset route. Before staging goes behind Access (`docs/plans/staging-plan.md`), add a Zero Trust **Access Bypass policy** (path-based) for `/api/print-assets/*` and confirm `/api/webhooks/prodigi/*` is likewise reachable — Prodigi cannot present a JWT, only the HMAC query params. Production is unaffected today (`worker.ts` only gates `/admin` and `/api/admin` via `isAdminPath`). _(Phase 6 — production confirmed; staging bypass documented in runbook)_
+- [x] Verify that Cloudflare Access/WAF rules do not block Prodigi's unsigned network request to the **HMAC-protected** print asset route. Production: Bot Fight Mode **off** + WAF skip for `/api/print-assets/*` (verified 2026-07-13 via sandbox matrix `ord_1162949`–`ord_1162955` — see `docs/cloudflare-deployment.md` § Print-asset Prodigi downloads and runbook § Access / WAF). Before staging goes behind Access (`docs/plans/staging-plan.md`), add a Zero Trust **Access Bypass policy** (path-based) for `/api/print-assets/*` and confirm `/api/webhooks/prodigi/*` is likewise reachable — Prodigi cannot present a JWT, only the HMAC query params. Production gates only `/admin` and `/api/admin` via `isAdminPath` in `worker.ts`.
 - [x] Add a deployed smoke probe that fetches a signed URL without exposing the signature in logs (`npm run print-asset:smoke` + `src/lib/print-asset-smoke.ts`; requires a `ready`/`retired` asset row). Operator CLI only — not yet wired into CI (see Phase 6).
 
 Gate: production and staging generate URLs to their own Workers/buckets and Prodigi sandbox reports the submitted asset status as downloaded/complete.
@@ -212,7 +212,7 @@ Gate: production and staging generate URLs to their own Workers/buckets and Prod
 - [x] Add an operator runbook for new artwork, revision replacement, rollback to a prior assignment, emergency revocation, DLQ recovery, and safe R2 cleanup.
 - [x] Run the local regression gate: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. _(Phase 6 PR — verified 2026-07-12: `eslint .` clean; `tsc --noEmit` + `tsc -p tsconfig.worker.json --noEmit` clean; vitest 1138/1138 passed across 101 files; `next build --webpack` succeeded.)_
 - [ ] Run `npm run preview:cf` and the print checkout E2E (`e2e/print-purchase.spec.ts`) against a deployed preview before live cutover. _(not run in this PR — requires Wrangler auth + a deployed preview; operator gate before Phase 6 sign-off)_
-- [x] Place one Prodigi sandbox order for each distinct print-area profile — `ord_1162923`–`ord_1162929` (2026-07-13). _Remaining:_ verify download/crop/status callbacks + approve live rollout.
+- [x] Place one Prodigi sandbox order for each distinct print-area profile and verify download — run `2026-07-13-1017`, `ord_1162949`–`ord_1162955`, all 7 `downloadAssets: Complete` (2026-07-13; required BFM off + WAF skip — runbook § Access / WAF).
 
 Gate: an operator can add or revise a print using documented commands, the admin prevents incomplete publication, and sandbox proves the entire paid-order-to-download path.
 
@@ -225,11 +225,11 @@ Operator execution + thin automation closure. Does not reopen settled architectu
 - [x] Pre-cutover: `npm run print-assets:inventory` against production R2 — 3/3 legacy `{productId}/master.jpg` present (2026-07-13); retain one release window; `process-job.ts` has no WebP/legacy fallback (verified in code review).
 - [x] Production asset pipeline per published design (`fap01` first): revision `2026-07-12-r1` prepared, uploaded, verified, published 2026-07-12; crop config committed with studio-approved inscribed crops.
 - [x] Admin readiness: `/admin/products/fap01` — 21/21 variants assigned, all assets `ready` (product `active` in catalogue).
-- [x] Access/WAF: production only gates `/admin`; document staging bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*` (runbook).
+- [x] Access/WAF: BFM off + WAF skip for `/api/print-assets/*` on production (verified 2026-07-13); staging bypass for `/api/print-assets/*` and `/api/webhooks/prodigi/*` documented in runbook.
 - [x] Signed-route smoke helper: `npm run print-asset:smoke` (HEAD, redacted `sig` in output); operator CLI only.
 - [x] Wire `print-asset:smoke -- --json --allow-missing` into post-deploy CI (`.github/workflows/post-deploy-smoke.yml`, daily + dispatch; `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `PRINT_ASSET_TOKEN_SECRET` as repo secrets). Pre-launch it skips green (no sellable asset); once a `ready`/`retired` asset exists a non-200 HEAD fails the run — satisfying the Phase 4 "CI logs" gate. _(2026-07-12: workflow + `--allow-missing` added; secrets are a one-time ops step before the first scheduled run is meaningful.)_
-- [x] Sandbox: one order per distinct print-area profile on preview with `PRODIGI_ENV=sandbox` — `ord_1162923`–`ord_1162929` via `npm run print-assets:sandbox-matrix` (2026-07-13); matrix recorded in runbook.
-- [ ] Live rollout approval: do **not** set `PRODIGI_ENV=live` until sandbox matrix is signed off (Prodigi download complete + physical proof review).
+- [x] Sandbox: full matrix pass — `ord_1162949`–`ord_1162955` (run `2026-07-13-1017`) via `npm run print-assets:sandbox-matrix`; all profiles `downloadAssets: Complete`; assets confirmed in Prodigi sandbox dashboard. Prerequisites documented in runbook § Access / WAF (BFM off + WAF skip on Free plan).
+- [ ] Live rollout approval: do **not** set `PRODIGI_ENV=live` until studio visual sign-off on proofs + explicit operator PR sign-off.
 
 Gate: operator can publish artwork via scripts; admin blocks incomplete activation; sandbox proves paid-order → Prodigi download; production cutover explicitly approved in PR.
 

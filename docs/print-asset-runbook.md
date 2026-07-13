@@ -111,7 +111,17 @@ Inventory check: `npm run print-assets:inventory`
 | `WORKER_ORIGIN` | Public origin for signed URLs + Prodigi callbacks (staging); production defaults to `https://anna-ciok.studio` |
 | `PRINT_ASSETS_BUCKET` | Optional override for CLI upload target (`.dev.vars`) |
 
-**Access / WAF:** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). **Required:** WAF skip for `/api/print-assets/*` so Prodigi datacenter fetches are not blocked by Bot Fight Mode before they reach the Worker (verified 2026-07-13 — matrix orders failed with zero Worker hits). If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
+**Access / WAF (print fulfilment):** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). **Two dashboard changes are required on `anna-ciok.studio` before Prodigi can download assets:**
+
+1. **Bot Fight Mode → Off** (Security → Settings, Bot traffic filter). On the Free plan BFM **cannot** be skipped per-path via WAF custom rules — it runs outside the Ruleset Engine. JS Detections may still display "On" in the UI when BFM is off; that label is not separately toggleable ([Cloudflare docs](https://developers.cloudflare.com/bots/get-started/bot-fight-mode/)).
+2. **WAF custom rule → Skip** (Security → Security rules → Custom rules):
+   - Expression: `starts_with(http.request.uri.path, "/api/print-assets/")`
+   - Action: **Skip** → tick **All managed rules**, **Browser Integrity Check** (and **All Super Bot Fight Mode rules** if on Pro).
+3. **Configuration rule** (optional belt-and-braces): Rules → Configuration rules → Browser Integrity Check **Off** for the same path expression.
+
+If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
+
+**Verified 2026-07-13:** With BFM off + WAF skip live, run `2026-07-13-1017` (`ord_1162949`–`ord_1162955`) — all 7 profiles `downloadAssets: Complete`; firewall events show `skip/firewallCustom` from Prodigi IPs, zero `botFight` challenges; Worker logs show GET 200 on `/api/print-assets/*`.
 
 ## Signed-route smoke (deployed)
 
@@ -174,6 +184,8 @@ p_actor_email text DEFAULT NULL::text
 
 **Prod-only (no local file):** `20260709075434_schema_hardening` — already applied previously; no action taken.
 
+**Migration timestamp policy:** Local files under `supabase/migrations/` use repo-authored prefixes; production may record a different `schema_migrations.version` when DDL was applied via Supabase Dashboard/MCP (`apply_migration`) instead of `supabase db push`. That divergence is **accepted** for this project — the table above is the operator map. Do **not** rename local migration files to match remote timestamps (breaks fresh clones that already applied the local prefix). Fresh environments: use `supabase db pull` / MCP `list_migrations` to reconcile, or apply pending files in timestamp order and accept one-time prefix skew on already-live projects.
+
 **Operator impact:** `npm run print-assets:publish -- … --actor you@studio` now records `catalog_audit_log.actor_email` on production. No app redeploy required for this DDL change.
 
 ### Legacy R2 inventory (`{productId}/master.jpg`)
@@ -192,23 +204,26 @@ Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudfl
 
 ### `fap01` distinct print-area profiles (sandbox matrix)
 
-Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order per profile** (representative variant — not every frame colour when binaries share a profile):
+Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order per profile** (representative variant — not every frame colour when binaries share a profile).
 
-| Profile | Representative variant | Prodigi SKU | Sandbox order | `prodigi_order_id` | Asset status |
-| --- | --- | --- | --- | --- | --- |
-| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | 2026-07-13 | `ord_1162923` | `ready` / Prodigi `Error` |
-| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | 2026-07-13 | `ord_1162924` | `ready` / Prodigi `Error` |
-| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | 2026-07-13 | `ord_1162925` | `ready` / Prodigi `Error` |
-| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | 2026-07-13 | `ord_1162926` | `ready` / Prodigi `Error` |
-| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | 2026-07-13 | `ord_1162927` | `ready` / Prodigi `Error` |
-| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | 2026-07-13 | `ord_1162928` | `ready` / Prodigi `Error` |
-| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | 2026-07-13 | `ord_1162929` | `ready` / Prodigi `Error` |
+**Passed run `2026-07-13-1017`** (BFM off + WAF skip live; assets visible in Prodigi sandbox dashboard):
 
-Matrix automation (sandbox only — uses production signed asset URLs):
+| Profile | Representative variant | Prodigi SKU | `prodigi_order_id` | Download |
+| --- | --- | --- | --- | --- |
+| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | `ord_1162949` | Complete |
+| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | `ord_1162950` | Complete |
+| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | `ord_1162951` | Complete |
+| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | `ord_1162952` | Complete |
+| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | `ord_1162953` | Complete |
+| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | `ord_1162954` | Complete |
+| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | `ord_1162955` | Complete |
+
+Matrix automation (sandbox only — uses production signed asset URLs; each run gets a unique UTC `runId` so Prodigi creates fresh orders):
 
 ```bash
 npm run print-assets:sandbox-matrix -- --product fap01
 npm run print-assets:sandbox-matrix -- --product fap01 --dry-run
+npm run print-assets:sandbox-matrix -- --product fap01 --run-id 2026-07-13-r3   # optional override
 ```
 
 Destructive E2E (one profile smoke — not full matrix):
@@ -218,10 +233,10 @@ PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
   npx playwright test e2e/print-purchase.spec.ts --grep @destructive
 ```
 
-Per-profile orders: storefront checkout or `npm run prodigi -- order create` (sandbox only). Verify: `npm run prodigi -- order get <id>`, `/admin/fulfillment/[id]`, HEAD ETag/size vs manifest (`npm run print-asset:smoke`).
+Per-profile orders: storefront checkout, `npm run print-assets:sandbox-matrix`, or `npm run prodigi -- order create` (sandbox only). Verify: `npm run prodigi -- order get <id>`, Prodigi sandbox dashboard, HEAD ETag/size vs manifest (`npm run print-asset:smoke`).
 
-**2026-07-13 download failure (all 7 orders):** Prodigi reports `order.items.assets.FailedToDownloaded` (`downloadAssets: Error`). Worker observability shows **zero** `/api/print-assets/*` requests during `08:56–09:10Z` when orders were placed — Prodigi's fetch never reached the Worker (blocked at Cloudflare edge). Manual `curl` / `print-asset:smoke` return **200** from normal clients. **Fix:** add a WAF **Skip** rule (or Configuration Rule) for `http.request.uri.path starts_with "/api/print-assets/"` — skip Bot Fight Mode / Browser Integrity Check / any managed rules that block datacenter fetches. HMAC `sig` remains the auth gate. Re-run matrix after the skip is live (`npm run print-assets:sandbox-matrix -- --product fap01` with a new date suffix in idempotency keys — cancel the failed `ord_1162923`–`ord_1162929` in sandbox if still open).
+**Earlier failed runs (archived):** `ord_1162923`–`ord_1162929` and `ord_1162935`–`ord_1162941` — `downloadAssets: Error` while Bot Fight Mode was on (`managed_challenge` / `botFight` in Security Events). Not valid proof; cancel in sandbox if still open.
 
 ### Live rollout approval
 
-**Status:** _sandbox matrix placed 2026-07-13_ (`ord_1162923`–`ord_1162929`) — operator sign-off pending Prodigi asset-download completion + physical proof review. Do not set `PRODIGI_ENV=live` until signed off in PR.
+**Status:** _sandbox matrix passed 2026-07-13_ (`ord_1162949`–`ord_1162955`, run `2026-07-13-1017`) — assets confirmed in Prodigi sandbox dashboard. **Remaining before `PRODIGI_ENV=live`:** studio visual sign-off on `design/print-assets/fap01/2026-07-12-r1/proof-*.jpg` + explicit operator PR sign-off. Keep Bot Fight Mode **off** on Free (or upgrade to Pro + Super Bot Fight Mode with per-path WAF skip if bot protection must stay on).

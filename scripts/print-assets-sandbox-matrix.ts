@@ -7,37 +7,10 @@
  */
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { getWorkerOrigin } from '../src/lib/site.server';
-import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
+import { buildSandboxMatrix, resolveLatestReadyByProfile } from './lib/print-assets-resolve';
+import { loadLocalEnv } from './lib/script-env';
 
-const MATRIX: Array<{
-  profileKey: string;
-  variantKey: string;
-  sku: string;
-  attributes: Record<string, string>;
-}> = [
-  { profileKey: '3600x4800', variantKey: '30x40:false:false:none', sku: 'GLOBAL-FAP-12X16', attributes: {} },
-  { profileKey: '3614x4795', variantKey: '30x40:true:false:black', sku: 'GLOBAL-CFP-12X16', attributes: { color: 'black' } },
-  {
-    profileKey: '2400x3600',
-    variantKey: '30x40:true:true:black',
-    sku: 'GLOBAL-CFPM-12X16',
-    attributes: { color: 'black', mount: '2.4mm', mountColor: 'Snow white' },
-  },
-  { profileKey: '6000x8400', variantKey: '50x70:false:false:none', sku: 'GLOBAL-FAP-20X28', attributes: {} },
-  {
-    profileKey: '4800x7200',
-    variantKey: '50x70:true:true:black',
-    sku: 'GLOBAL-CFPM-20X28',
-    attributes: { color: 'black', mount: '2.4mm', mountColor: 'Snow white' },
-  },
-  { profileKey: '8400x12000', variantKey: '70x100:false:false:none', sku: 'GLOBAL-FAP-28X40', attributes: {} },
-  {
-    profileKey: '7200x10800',
-    variantKey: '70x100:true:true:black',
-    sku: 'GLOBAL-CFPM-28X40',
-    attributes: { color: 'black', mount: '2.4mm', mountColor: 'Snow white' },
-  },
-];
+const PRODIGI_FETCH_TIMEOUT_MS = 15_000;
 
 function parseArgs(): { product: string; dryRun: boolean; runId?: string } {
   const argv = process.argv.slice(2);
@@ -72,24 +45,23 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error('PRODIGI_API_KEY_SANDBOX required');
   if (!secret) throw new Error('PRINT_ASSET_TOKEN_SECRET required');
 
-  const supabase = loadSupabaseClient();
-  const { data: assets, error } = await supabase
-    .from('print_fulfilment_assets')
-    .select('id, profile_key, revision, status')
-    .eq('product_id', product)
-    .eq('status', 'ready');
-  if (error) throw new Error(`asset lookup failed: ${error.message}`);
-
-  const byProfile = new Map((assets ?? []).map((a) => [a.profile_key, a]));
+  const byProfile = await resolveLatestReadyByProfile(product);
+  const matrix = buildSandboxMatrix();
   const origin = getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN }).replace(/\/$/, '');
   const runId = runIdArg ?? defaultRunId();
   const results: Array<Record<string, unknown>> = [];
+  let failures = 0;
 
-  for (const row of MATRIX) {
+  for (const row of matrix) {
     const asset = byProfile.get(row.profileKey);
     if (!asset) {
-      throw new Error(`no ready asset for profile ${row.profileKey} on ${product}`);
+      failures++;
+      const err = `no ready asset for profile ${row.profileKey} on ${product}`;
+      results.push({ profileKey: row.profileKey, variantKey: row.variantKey, error: err });
+      console.error(`✗ ${row.profileKey} — ${err}`);
+      continue;
     }
+
     const signedUrl = await signPrintAssetUrl(asset.id, secret, Date.now(), origin);
     const idempotencyKey = `${product}-sandbox-matrix-${runId}-${row.profileKey}`;
     const payload = {
@@ -131,32 +103,61 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const res = await fetch('https://api.sandbox.prodigi.com/v4.0/orders', {
-      method: 'POST',
-      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) {
-      throw new Error(
-        `Prodigi order failed for ${row.profileKey} (${res.status}): ${JSON.stringify(body)}`,
-      );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PRODIGI_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch('https://api.sandbox.prodigi.com/v4.0/orders', {
+        method: 'POST',
+        headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        failures++;
+        const err = `Prodigi order failed (${res.status}): ${JSON.stringify(body)}`;
+        results.push({
+          profileKey: row.profileKey,
+          variantKey: row.variantKey,
+          sku: row.sku,
+          assetId: asset.id,
+          idempotencyKey,
+          error: err,
+        });
+        console.error(`✗ ${row.profileKey} — ${err}`);
+        continue;
+      }
+      const ordId = (body as { order?: { id?: string; status?: { stage?: string } } })?.order?.id ?? null;
+      const stage = (body as { order?: { status?: { stage?: string } } })?.order?.status?.stage ?? null;
+      results.push({
+        profileKey: row.profileKey,
+        variantKey: row.variantKey,
+        sku: row.sku,
+        assetId: asset.id,
+        idempotencyKey,
+        prodigiOrderId: ordId,
+        status: stage,
+      });
+      console.log(`✓ ${row.profileKey} → ${ordId ?? '(no id)'}`);
+    } catch (err) {
+      failures++;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      results.push({
+        profileKey: row.profileKey,
+        variantKey: row.variantKey,
+        sku: row.sku,
+        assetId: asset.id,
+        idempotencyKey,
+        error: errMsg,
+      });
+      console.error(`✗ ${row.profileKey} — ${errMsg}`);
+    } finally {
+      clearTimeout(timeout);
     }
-    const ordId = (body as { order?: { id?: string; status?: { stage?: string } } })?.order?.id ?? null;
-    const stage = (body as { order?: { status?: { stage?: string } } })?.order?.status?.stage ?? null;
-    results.push({
-      profileKey: row.profileKey,
-      variantKey: row.variantKey,
-      sku: row.sku,
-      assetId: asset.id,
-      idempotencyKey,
-      prodigiOrderId: ordId,
-      status: stage,
-    });
-    console.log(`✓ ${row.profileKey} → ${ordId ?? '(no id)'}`);
   }
 
-  console.log(JSON.stringify({ product, runId, results }, null, 2));
+  console.log(JSON.stringify({ product, runId, failures, results }, null, 2));
+  if (failures > 0) process.exitCode = 1;
 }
 
 main().catch((err) => {
