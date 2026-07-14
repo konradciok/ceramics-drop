@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import {
   applyCategoryDraftToMessagesFile,
   buildCategoryDraft,
@@ -30,39 +31,47 @@ function usage() {
 `);
 }
 
-function parseArgs(argv) {
-  const options = {
-    categories: [],
-    draftPath: null,
-    write: false,
-  };
-
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    if (arg === '--category') {
-      const value = argv[i + 1];
-      if (!value || value.startsWith('--')) fail('Missing value after --category');
-      options.categories.push(value);
-      i += 1;
-      continue;
+function parseCliArgs(argv) {
+  let values;
+  let positionals;
+  try {
+    ({ values, positionals } = parseArgs({
+      options: {
+        category: { type: 'string', multiple: true },
+        draft: { type: 'string' },
+        write: { type: 'boolean' },
+        help: { type: 'boolean', short: 'h' },
+      },
+      allowPositionals: true,
+      strict: true,
+      args: argv,
+    }));
+  } catch (e) {
+    // Surface parseArgs failures with the original hand-rolled parser's error UX.
+    if (e.code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE') {
+      const opt = /'(--[a-z-]+)/.exec(e.message);
+      fail(`Missing value after ${opt ? opt[1] : '--option'}`);
+    } else {
+      const m = /'([^']+)'/.exec(e.message);
+      fail(`Unknown argument: ${m ? m[1] : ''}`);
     }
-    if (arg === '--draft') {
-      const value = argv[i + 1];
-      if (!value || value.startsWith('--')) fail('Missing value after --draft');
-      options.draftPath = path.resolve(process.cwd(), value);
-      i += 1;
-      continue;
-    }
-    if (arg === '--write') {
-      options.write = true;
-      continue;
-    }
-    if (arg === '--help' || arg === '-h') {
-      usage();
-      process.exit(0);
-    }
-    fail(`Unknown argument: ${arg}`);
   }
+
+  // Original parser rejected any positional argument; preserve that.
+  if (positionals.length > 0) {
+    fail(`Unknown argument: ${positionals[0]}`);
+  }
+
+  if (values.help) {
+    usage();
+    process.exit(0);
+  }
+
+  const options = {
+    categories: values.category ?? [],
+    draftPath: typeof values.draft === 'string' ? path.resolve(process.cwd(), values.draft) : null,
+    write: values.write === true,
+  };
 
   if (options.categories.length === 0) {
     fail('At least one --category is required.');
@@ -274,7 +283,7 @@ async function runWriteMode({ category, draftPath }) {
 }
 
 async function main() {
-  const options = parseArgs(process.argv.slice(2));
+  const options = parseCliArgs(process.argv.slice(2));
   if (options.write) {
     await runWriteMode({
       category: options.categories[0],

@@ -5,6 +5,7 @@
  *
  *   npm run print-assets:sandbox-matrix -- --product fap01 [--dry-run] [--run-id 2026-07-13-r2]
  */
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { getWorkerOrigin } from '../src/lib/site.server';
 import { buildSandboxMatrix, resolveLatestReadyByProfile } from './lib/print-assets-resolve';
@@ -13,22 +14,27 @@ import { loadLocalEnv } from './lib/script-env';
 const PRODIGI_FETCH_TIMEOUT_MS = 15_000;
 
 function parseArgs(): { product: string; dryRun: boolean; runId?: string } {
-  const argv = process.argv.slice(2);
-  let product = 'fap01';
-  let dryRun = false;
-  let runId: string | undefined;
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--product') product = argv[++i] ?? product;
-    else if (argv[i] === '--run-id') runId = argv[++i];
-    else if (argv[i] === '--dry-run') dryRun = true;
-    else if (argv[i] === '--help' || argv[i] === '-h') {
-      console.log(
-        'Usage: npm run print-assets:sandbox-matrix -- [--product fap01] [--run-id <suffix>] [--dry-run]',
-      );
-      process.exit(0);
-    }
+  const { values } = nodeParseArgs({
+    options: {
+      product: { type: 'string' },
+      'run-id': { type: 'string' },
+      'dry-run': { type: 'boolean' },
+      help: { type: 'boolean', short: 'h' },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+  if (values.help) {
+    console.log(
+      'Usage: npm run print-assets:sandbox-matrix -- [--product fap01] [--run-id <suffix>] [--dry-run]',
+    );
+    process.exit(0);
   }
-  return { product, dryRun, runId };
+  return {
+    product: typeof values.product === 'string' ? values.product : 'fap01',
+    dryRun: values['dry-run'] === true,
+    runId: typeof values['run-id'] === 'string' ? values['run-id'] : undefined,
+  };
 }
 
 /** UTC date + minute — unique per run unless --run-id overrides. */

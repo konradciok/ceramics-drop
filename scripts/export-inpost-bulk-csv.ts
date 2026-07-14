@@ -9,6 +9,7 @@
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars).
  * Prefers ADMIN_SUPABASE_* when set (mirrors local admin panel).
  */
+import { parseArgs as nodeParseArgs } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
@@ -46,20 +47,6 @@ type OrderRow = {
   shipping_address: DeliveryAddress | null;
   order_items: Array<{ product_id: string; variant: unknown | null }> | null;
 };
-
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
-
-function hasFlag(name: string): boolean {
-  return process.argv.slice(2).includes(`--${name}`);
-}
 
 function str(v: string | null | undefined): string {
   return typeof v === 'string' ? v.trim() : '';
@@ -134,6 +121,11 @@ function rowForParcel(order: OrderRow, size: string, parcelIndex: number, parcel
 }
 
 async function main(): Promise<void> {
+  const { values } = nodeParseArgs({
+    options: { output: { type: 'string' }, 'include-shipped': { type: 'boolean' } },
+    allowPositionals: true,
+    strict: false,
+  });
   const env = loadLocalEnv();
   const url = env.ADMIN_SUPABASE_URL ?? env.SUPABASE_URL;
   const key = env.ADMIN_SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
@@ -142,8 +134,8 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const includeShipped = hasFlag('include-shipped');
-  const outputArg = getArg('output');
+  const includeShipped = values['include-shipped'] === true;
+  const outputArg = typeof values.output === 'string' ? values.output : undefined;
   const today = new Date().toISOString().slice(0, 10);
   const outputPath = outputArg ?? path.join('exports', `inpost-bulk-${today}.csv`);
 

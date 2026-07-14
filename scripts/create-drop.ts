@@ -13,18 +13,9 @@
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars / env).
  */
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import { loadLocalEnv } from './lib/script-env';
-
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
 
 /** slugify a label into a drop id when --id isn't given. */
 function slugify(s: string): string {
@@ -38,10 +29,15 @@ function slugify(s: string): string {
 }
 
 async function main(): Promise<void> {
-  const label = getArg('label');
+  const { values } = nodeParseArgs({
+    options: { label: { type: 'string' }, id: { type: 'string' } },
+    allowPositionals: true,
+    strict: false,
+  });
+  const label = typeof values.label === 'string' ? values.label : undefined;
   if (!label) throw new Error('Missing --label (display label, e.g. --label "Drop #2").');
 
-  const id = (getArg('id') ?? slugify(label)).trim();
+  const id = ((typeof values.id === 'string' ? values.id : undefined) ?? slugify(label)).trim();
   if (!id) throw new Error('Could not derive a drop id — pass --id explicitly.');
 
   const env = loadLocalEnv();
