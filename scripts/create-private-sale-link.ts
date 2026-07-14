@@ -12,38 +12,12 @@
  * Apply the 20260615120000_private_sales migration before running. For a real
  * customer, point this at the PRODUCTION Supabase (its URL/key in the env).
  */
-import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { registryProductById, isCategoryHidden } from '../src/lib/products';
 import { SITE_URL } from '../src/lib/site';
+import { loadLocalEnv } from './lib/script-env';
 
 const DEFAULT_BASE_URL = SITE_URL;
-
-function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) return {};
-  const parsed: Record<string, string> = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    parsed[key] = value;
-  }
-  return parsed;
-}
-
-function loadLocalEnv(): Record<string, string | undefined> {
-  return {
-    ...parseEnvFile('.env.local'),
-    ...parseEnvFile('.dev.vars'),
-    ...process.env,
-  };
-}
 
 /** Minimal --flag value parser (supports `--flag value` and `--flag=value`). */
 function getArg(name: string): string | undefined {

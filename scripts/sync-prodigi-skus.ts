@@ -20,30 +20,13 @@
  * Requires PRODIGI_API_KEY_SANDBOX and SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in env
  * (loaded from .dev.vars or .env.local automatically).
  */
-import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import type { ProdigiProductResponse } from '../src/server/prodigi/types';
 import { PRODIGI_SKU_MAP } from '../src/lib/print-cart';
 import { validateProdigiDimensions, type ProdigiDimensionReport } from '../src/lib/print-dimensions';
+import { loadLocalEnv } from './lib/script-env';
 
-function parseEnvFile(filePath: string): Record<string, string> {
-  try {
-    return Object.fromEntries(
-      fs.readFileSync(filePath, 'utf8').split('\n')
-        .map(l => l.trim())
-        .filter(l => l && !l.startsWith('#'))
-        .flatMap((l): [string, string][] => {
-          const idx = l.indexOf('=');
-          if (idx === -1) return [];
-          const key = l.slice(0, idx).trim();
-          const value = l.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-          return key ? [[key, value]] : [];
-        }),
-    );
-  } catch { return {}; }
-}
-
-const merged = { ...parseEnvFile('.env.local'), ...parseEnvFile('.dev.vars'), ...process.env };
+const merged = loadLocalEnv();
 
 const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'PRODIGI_API_KEY_SANDBOX'] as const;
 const missing = REQUIRED.filter((k) => !merged[k]);

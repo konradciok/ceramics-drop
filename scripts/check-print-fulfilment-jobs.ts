@@ -8,33 +8,21 @@
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.dev.vars / .env.local).
  */
-import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { loadLocalEnv } from './lib/script-env';
 
 const TERMINAL = new Set(['completed', 'shipped', 'cancelled', 'failed_action_required']);
 
-function parseEnvFile(filePath: string): Record<string, string> {
-  try {
-    return Object.fromEntries(
-      fs
-        .readFileSync(filePath, 'utf8')
-        .split('\n')
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith('#'))
-        .flatMap((l): [string, string][] => {
-          const i = l.indexOf('=');
-          return i > 0 ? [[l.slice(0, i), l.slice(i + 1)]] : [];
-        }),
-    );
-  } catch {
-    return {};
-  }
-}
-
+// ponytail: normalised onto the shared script-env loader. Previously this script
+// resolved env with an inverted file order (.env.local overrode .dev.vars) and a
+// parser that did not strip surrounding quotes — both now follow the canonical
+// helper precedence (.env.local < .dev.vars < --env-file < process.env), matching
+// every other script. Only matters if both dotfiles define conflicting
+// SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY values.
 function loadEnv(): { url: string; key: string } {
-  const fileEnv = { ...parseEnvFile('.dev.vars'), ...parseEnvFile('.env.local') };
-  const url = process.env.SUPABASE_URL ?? fileEnv.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? fileEnv.SUPABASE_SERVICE_ROLE_KEY;
+  const env = loadLocalEnv();
+  const url = env.SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
     throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required');
   }
