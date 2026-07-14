@@ -5,6 +5,7 @@ import type { ProdigiOrderRequest } from './types';
 const PAYLOAD: ProdigiOrderRequest = {
   shippingMethod: 'Budget',
   idempotencyKey: 'test-key',
+  merchantReference: 'contract-smoke-test',
   recipient: {
     name: 'Test',
     address: { line1: '1 Test St', postalOrZipCode: '00-001', countryCode: 'PL', townOrCity: 'Warsaw' },
@@ -15,6 +16,7 @@ const PAYLOAD: ProdigiOrderRequest = {
 type FakeOverrides = Partial<{
   created: { order?: { id?: string; status?: { stage?: string }; items?: Array<{ id?: string; sku?: string }> }; outcome?: string };
   gotStage: string;
+  gotMerchantReference?: string | null;
   cancelAvailable: string;
   cancelOutcome: string;
   throwIn?: 'postOrder' | 'getOrder' | 'getOrderActions' | 'cancelOrder';
@@ -27,6 +29,7 @@ function buildDeps(overrides: FakeOverrides = {}): { deps: ContractSmokeDeps; cl
       order: { id: 'ord_1', status: { stage: 'InProgress' }, items: [{ id: 'item_1', sku: 'GLOBAL-FAP-12X16' }] },
     },
     gotStage: overrides.gotStage ?? 'InProgress',
+    gotMerchantReference: overrides.gotMerchantReference ?? PAYLOAD.merchantReference,
     cancelAvailable: overrides.cancelAvailable ?? 'Yes',
     cancelOutcome: overrides.cancelOutcome ?? 'Cancelled',
     throwIn: overrides.throwIn,
@@ -38,7 +41,7 @@ function buildDeps(overrides: FakeOverrides = {}): { deps: ContractSmokeDeps; cl
     }),
     getOrder: vi.fn(async () => {
       if (o.throwIn === 'getOrder') throw new Error('boom getOrder');
-      return { order: { id: 'ord_1', status: { stage: o.gotStage } } } as never;
+      return { order: { id: 'ord_1', status: { stage: o.gotStage }, merchantReference: o.gotMerchantReference ?? undefined } } as never;
     }),
     getOrderActions: vi.fn(async () => {
       if (o.throwIn === 'getOrderActions') throw new Error('boom actions');
@@ -106,5 +109,26 @@ describe('runProdigiContractSmoke', () => {
     expect(res.ok).toBe(false);
     expect(res.cancelled).toBe(true);
     expect(client.cancelOrder).toHaveBeenCalledWith('ord_1');
+  });
+
+  it('surfaces a cancel failure without masking the other steps', async () => {
+    const { deps, client } = buildDeps({ throwIn: 'cancelOrder' });
+    const res = await runProdigiContractSmoke(deps);
+    expect(res.cancelled).toBe(false);
+    expect(res.ok).toBe(false);
+    expect(client.cancelOrder).toHaveBeenCalledWith('ord_1');
+    const cancelStep = res.steps.find((s) => s.step === 'cancel');
+    expect(cancelStep?.ok).toBe(false);
+    // lifecycle steps stayed green — the cancel failure didn't mask them
+    const nonCancelOk = res.steps.filter((s) => s.step !== 'cancel').every((s) => s.ok);
+    expect(nonCancelOk).toBe(true);
+  });
+
+  it('fails when getOrder does not echo the merchantReference we sent', async () => {
+    const { deps } = buildDeps({ gotMerchantReference: 'wrong' });
+    const res = await runProdigiContractSmoke(deps);
+    expect(res.ok).toBe(false);
+    const mrFail = res.steps.find((s) => s.step === 'getOrder:merchantReference' && !s.ok);
+    expect(mrFail).toBeTruthy();
   });
 });

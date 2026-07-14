@@ -76,6 +76,15 @@ export async function runProdigiContractSmoke(deps: ContractSmokeDeps): Promise<
           ? { step: 'getOrder:id', ok: true }
           : { step: 'getOrder:id', ok: false, reason: `getOrder order.id mismatch (got ${got.order?.id}, expected ${prodigiOrderId})` },
       );
+      // callbacks.ts falls back to merchantReference when prodigi_orders has no row yet
+      // (callback raced processJob's persist) — assert Prodigi echoes what we sent.
+      if (payload.merchantReference) {
+        steps.push(
+          got.order?.merchantReference === payload.merchantReference
+            ? { step: 'getOrder:merchantReference', ok: true }
+            : { step: 'getOrder:merchantReference', ok: false, reason: `getOrder merchantReference='${got.order?.merchantReference ?? 'missing'}' (expected '${payload.merchantReference}')` },
+        );
+      }
       realStage = got.order?.status?.stage;
       steps.push(
         typeof realStage === 'string'
