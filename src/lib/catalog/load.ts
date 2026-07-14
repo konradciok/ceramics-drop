@@ -1,13 +1,15 @@
 /* ============================================================
-   Catalog loaders — cached DB reads for the storefront flip
+   Catalog loaders — cached DB reads used by the storefront accessors
    ------------------------------------------------------------
    Thin cached wrappers over the repository readers, returning the exact
    `Product[]` / `PrintDesign[]` shapes the registry produces. Cached under the
-   `catalog` tag so admin catalog writes (Stage 4) can revalidate it via
+   `catalog` tag so admin catalog writes can revalidate it via
    `revalidateTag('catalog', 'max')` (match the `inventory` / webhook pattern).
 
-   Stage 3a ships these but does NOT wire them into the storefront accessors —
-   that async cutover is Stage 3b, gated behind CATALOG_SOURCE=db.
+   Production runs CATALOG_SOURCE=db, so getProducts()/getPrintDesigns()/… and
+   the other public accessors call these loaders at runtime (dynamic import from
+   src/lib/products.ts + src/lib/prints.ts). Under CATALOG_SOURCE=code the
+   accessors skip these and return the static registry instead.
    ============================================================ */
 import { unstable_cache } from 'next/cache';
 import type { PrintDesign, Product } from '../types';

@@ -90,8 +90,8 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
 
 /**
  * Read the ceramic catalogue from the DB and reconstruct `Product[]` in
- * category → display-num order. Reserved for the Stage 3 flip; not yet called by
- * any storefront surface.
+ * category → display-num order. Called in production (CATALOG_SOURCE=db) by
+ * loadCeramicProductsFromDb via the ceramic accessors.
  */
 export async function readCeramicProducts(supabase: SupabaseClient): Promise<Product[]> {
   const productsRes = await supabase.from('products').select('*').eq('type', 'ceramic');
@@ -108,9 +108,10 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
 
 /**
  * Read the print catalogue from the DB and reconstruct `PrintDesign[]` (all
- * designs, published and draft — `getPrintById` needs the drafts too). Reserved
- * for the Stage 3b flip; not yet called by any storefront surface. Variants and
- * media are read in `position` order so the axis/gallery reconstruction is stable.
+ * designs, published and draft — `getPrintById` needs the drafts too). Called in
+ * production (CATALOG_SOURCE=db) by loadPrintDesignsFromDb via the print
+ * accessors. Variants and media are read in `position` order so the axis/gallery
+ * reconstruction is stable.
  */
 export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintDesign[]> {
   const productsRes = await supabase

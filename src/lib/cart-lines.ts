@@ -8,10 +8,10 @@
    This runs client-side, so it reads the code registry synchronously via the
    `registry*` helpers — it physically cannot call the service-role Supabase
    client. checkout's `validateCart` reads the CATALOG_SOURCE-aware async
-   accessors instead. While CATALOG_SOURCE='code' (the default) the two sources
-   are identical; reconciling the client cart against a DB source once
-   CATALOG_SOURCE='db' is a Stage 4 follow-up (a server cart-resolve path),
-   tracked as a hard dependency before the flag is flipped in production.
+   accessors instead. Production runs CATALOG_SOURCE='db', but this client-side
+   resolver still reads the code registry (it cannot reach the service-role DB
+   client from the browser); the two are kept at parity so the client view
+   matches, and a server-side cart-resolve that reads the DB is a future follow-up.
    ============================================================ */
 import { registryProductById, isCategoryHidden } from './products';
 import { registryPrintById, isVariantAvailable } from './prints';
