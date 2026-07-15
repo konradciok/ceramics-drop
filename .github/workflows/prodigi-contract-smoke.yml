@@ -11,13 +11,22 @@ name: prodigi-contract-smoke
 # default branch and never point it at a live key.
 on:
   workflow_dispatch:
-    branches: [main]
 
 permissions:
   contents: read
 
+# Self-cleaning (the runner cancels every order it creates), but a concurrency
+# group still prevents two manual dispatches racing on the same sandbox key /
+# asset and colliding on the create idempotencyKey.
+concurrency:
+  group: prodigi-contract-smoke
+  cancel-in-progress: false
+
 jobs:
   prodigi-contract-smoke:
+    # Parity with post-deploy-smoke: only run on the default branch (the
+    # checkout ref below also pins main, so this is defence-in-depth).
+    if: github.ref_name == github.event.repository.default_branch
     name: Prodigi v4 sandbox contract smoke
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -40,12 +49,13 @@ jobs:
         # is an exit-0 skip. Set PRODIGI_SMOKE_STRICT=true once a print asset is
         # published so a missing asset fails.
         run: |
-          if [ "${{ vars.PRODIGI_SMOKE_STRICT }}" = "true" ]; then
+          if [ "$PRODIGI_SMOKE_STRICT" = "true" ]; then
             npm run prodigi:contract-smoke -- --json --strict
           else
             npm run prodigi:contract-smoke -- --json
           fi
         env:
+          PRODIGI_SMOKE_STRICT: ${{ vars.PRODIGI_SMOKE_STRICT }}
           PRODIGI_API_KEY_SANDBOX: ${{ secrets.PRODIGI_API_KEY_SANDBOX }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
