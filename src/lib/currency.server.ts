@@ -13,7 +13,7 @@ import { CURRENCY_COOKIE, displayCurrencyFor, type Currency } from './currency';
 export async function getCurrency(locale: string): Promise<Currency> {
   if (locale === 'pl') return 'pln';
   const store = await cookies();
-  // Clamp to a switchable currency (EUR/GBP) so a tampered `usd`/`cad` cookie
+  // Clamp to a switchable currency (EUR/GBP) so a tampered or stale cookie
   // can't reach `priceOfCurrency` and crash server-rendered price surfaces.
   return displayCurrencyFor(locale, store.get(CURRENCY_COOKIE)?.value);
 }

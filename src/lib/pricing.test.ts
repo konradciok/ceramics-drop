@@ -172,14 +172,6 @@ describe('shippingOfCurrency', () => {
     expect(shippingOfCurrency('gbp', 'kurier')).toBe(12);
     expect(shippingOfCurrency('pln', 'odbior')).toBe(0);
   });
-  // Intentional asymmetry: priceOfCurrency THROWS for usd/cad (no price table),
-  // so the item price is computed before shipping is ever read — usd/cad never
-  // reach shippingOfCurrency in a real flow. Its EUR default is only exercised
-  // for the real switchable currencies. This test documents that, it isn't a
-  // claim that usd/cad shipping is "supported".
-  it('routes non-switchable currencies through the EUR default (unreachable in practice)', () => {
-    expect(shippingOfCurrency('usd', 'paczkomat')).toBe(shippingOfCurrency('eur', 'paczkomat'));
-  });
 });
 
 /** PDP estimated total (item + paczkomat) must match checkout PaymentIntent amount. */
@@ -240,13 +232,5 @@ describe('priceOfCurrency', () => {
 
   it('returns the EUR table price for eur', () => {
     expect(priceOfCurrency(product, 'eur')).toBe(PRICE_EUR.kubki);
-  });
-
-  it('throws for usd because the USD table is still null', () => {
-    expect(() => priceOfCurrency(product, 'usd')).toThrow();
-  });
-
-  it('throws for cad because the CAD table is still null', () => {
-    expect(() => priceOfCurrency(product, 'cad')).toThrow();
   });
 });
