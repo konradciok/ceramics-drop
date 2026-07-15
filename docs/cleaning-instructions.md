@@ -33,7 +33,7 @@ This document is the **actionable** layer. The two audit files remain useful **r
 | M-5 | DLQ configured, no consumer or alert | `wrangler.jsonc:43`, manual runbook only |
 | L-7 | Callback stale-lease CAS not tested | `callbacks.test.ts` covers fresh in-flight lease, not expired takeover |
 | O-1 | `failed_action_required` jobs set `last_error` but no alert | `process-job.ts` terminal path; no cron sweep |
-| Pony #2 | Eight scripts duplicate dotenv parsing | grep `parseEnvFile` in `scripts/` vs `scripts/lib/script-env.ts` |
+| Pony #2 | Nine scripts duplicate dotenv parsing (7 to migrate + 2 CLIs left as-is) | grep `parseEnvFile` in `scripts/` vs `scripts/lib/script-env.ts` |
 | Pony #3 | Hand-rolled arg parsers outside `node:util parseArgs` | grep `function parseArgs` / `getArg` in `scripts/` |
 | Pony #1 | USD/CAD scaffolding unreachable in live paths | `SELLABLE_CURRENCIES`, `toUSDCents`/`toCADCents` with 0 callers |
 | Pony docs | Stale catalog documentation | `AGENTS.md:42`, `src/lib/catalog/source.ts:8-10`, `load.ts:9-10` |

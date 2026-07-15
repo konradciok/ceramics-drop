@@ -33,6 +33,18 @@ the sandbox key. It can never reach the live API.
 GitHub → Actions → **prodigi-contract-smoke** → Run workflow (on `main`).
 `workflow_dispatch` only — it is never run on PRs or a schedule.
 
+**Prerequisite — the asset route must be live.** The runner mints a *production*
+signed asset URL that the Prodigi sandbox downloads during `postOrder`, so
+`/api/print-assets/[id]` must be reachable on the Worker (it is not behind
+Cloudflare Access — only `/admin` is). If `post-deploy-smoke` (or
+`npm run print-asset:smoke`) is red, this smoke will fail at `create:*` with
+little hint that the asset route is the root cause — confirm that first.
+
+**One-time setup.** Add the `PRODIGI_API_KEY_SANDBOX` repo secret (sandbox key
+only — see §Secrets), then dispatch once on `main` with `PRODIGI_SMOKE_STRICT`
+unset to confirm the pre-launch skip/green path; flip `PRODIGI_SMOKE_STRICT=true`
+after the first print asset is published.
+
 ## What a green run proves
 
 For one usable print asset, Prodigi's sandbox **accepted** the exact payload
@@ -44,7 +56,7 @@ order is cancelled in `finally` (self-cleaning; sandbox is free, but no litter).
 
 ## What a red run means
 
-The JSON report's `steps[]` names the first failing step + a `reason`:
+The JSON report's `steps[]` lists each failed step and its `reason`:
 
 | Failing step | Meaning | First place to look |
 |--------------|---------|---------------------|

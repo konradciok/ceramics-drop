@@ -55,6 +55,7 @@ The contract smoke's reason to exist is hitting the **real sandbox**. Yet the or
 - `src/server/prodigi/contract-smoke.test.ts` (134 LOC, 8 tests) — asserts the harness interprets hand-built fakes; the `mapStage` injection is a `vi.fn`, so it proves nothing about the real `mapProdigiStage`.
 - **Replace with:** inline `runProdigiContractSmoke`'s body into `scripts/prodigi-contract-smoke.ts`'s `main()` (it already imports the real `mapProdigiStage`/`prodigiClient`/`buildProdigiPayload`); drop the interface, deps type, and the `.test.ts`. The runner *is* the integration test; the sandbox run is the assertion.
 - The CI workflow (`workflow_dispatch`-only) and runbook are proportionate and stay.
+- **Owner-gated, not a default cut.** `docs/cleaning-instructions.md` defers this (Tier C). The orchestrator's injected-`mapStage` tests give *deterministic* error-path coverage — each drift case, cancel-guarantee on every path, cancel-throws, merchantReference round-trip — that a single sandbox run cannot reproduce (and the runner uses the real `mapProdigiStage`, so the wire-up is proven end-to-end by the dispatch). Do not inline without owner sign-off; the unit tests and this PR's H-1 smoke are complementary, not redundant.
 
 ---
 
@@ -91,6 +92,6 @@ The contract smoke's reason to exist is hitting the **real sandbox**. Yet the or
 
 ## Net
 
-**~−450 LOC safe core** (env/arg parsing #2 + #3, speculative Prodigi methods #4, ×100 wrappers #7, trivial dupes #9) **/ up to ~−850 LOC** if USD/CAD #1, CLI-dedup #5, contract-smoke harness #6, and the native `timingSafeEqual` swap #8 are also accepted. **−0 deps** — the manifest is already lean.
+**Safe core (~−280 LOC):** env/arg parsing #2 + #3, ×100 wrappers #7, trivial dupes #9. **Owner-gated — NOT safe-core:** #4 (Prodigi client methods, ~160 LOC — used by `scripts/prodigi-cli.ts`; see `docs/cleaning-instructions.md` Tier C / rule #5) and #6 (this PR's H-1 contract-smoke harness — deferred). **Up to ~−850 LOC** if USD/CAD #1, CLI-dedup #5, #4, #6, and the native `timingSafeEqual` swap #8 are also accepted. **−0 deps** — the manifest is already lean.
 
 Recommended first chunk: #2 + #3 + #7 + #9 (highest confidence, lowest risk, mechanical). Verify with `npm run typecheck && npm run test`.
