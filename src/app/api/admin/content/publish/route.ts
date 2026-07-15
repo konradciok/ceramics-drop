@@ -1,17 +1,13 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { publishVersion } from '@/lib/admin/content';
-import { actorEmail, contentError, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
+import { actorEmail, contentError, localizedPath, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
 import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
 import type { CmsLocale } from '@/lib/cms/types';
 import type { CategorySlug } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-function localizedPath(locale: CmsLocale, path: string): string {
-  return locale === 'pl' ? path : `/${locale}${path}`;
-}
 
 function revalidateProductNotes(slug: string, locale: CmsLocale) {
   if (slug === 'fine-art-prints') {

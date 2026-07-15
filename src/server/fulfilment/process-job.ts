@@ -3,7 +3,7 @@ import { signPrintAssetUrl } from '@/lib/print-assets';
 import { getWorkerOrigin } from '@/lib/site.server';
 import { getAssetForFulfilment } from '@/server/print-assets/repository';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
-import { buildProdigiPayload, printItemAssetKey, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
+import { buildProdigiPayload, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
 import type { FulfilmentJobMessage } from '../prodigi/types';
 
 type AssetResolveResult =
@@ -167,7 +167,7 @@ export async function processJob(
       if (resolved.kind === 'retryable') throw new Error(resolved.reason);
       return;
     }
-    assetUrls[printItemAssetKey(item)] = resolved.url;
+    assetUrls[item.variant.assetId] = resolved.url;
     assetMeta.push(`${item.variant.assetId} rev ${resolved.revision} sha ${resolved.shaPrefix}`);
   }
   console.info(

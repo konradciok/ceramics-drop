@@ -42,11 +42,6 @@ export interface PrintItemRow {
   };
 }
 
-/** Unique per line item — two variants of the same design can carry different assets. */
-export function printItemAssetKey(item: PrintItemRow): string {
-  return item.variant.assetId;
-}
-
 function assertSnapshotDimensions(item: PrintItemRow): void {
   const { variant } = item;
   if (

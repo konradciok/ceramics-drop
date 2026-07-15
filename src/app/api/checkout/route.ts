@@ -14,15 +14,13 @@ import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
+import { isUuid } from '@/lib/uuid';
 import type { MarketingContext } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 const STRIPE_PMC_ID = 'pmc_1QiwdYJ0KFK9lrjHUV93dONs';
-// Canonical 8-4-4-4-12 hex UUID shape (any version). A client-supplied id only
-// becomes the order id once it passes this trust-boundary check — see below.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PG_UNIQUE_VIOLATION = '23505';
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
@@ -137,7 +135,7 @@ export async function POST(req: Request) {
   // crypto.randomUUID()), so the format check below is the only validation
   // needed before trusting it as the order id.
   const rawAttemptId = typeof body.attemptId === 'string' ? body.attemptId : null;
-  const orderId = rawAttemptId && UUID_RE.test(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
+  const orderId = isUuid(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
 
   // A private-sale token unlocks buying specific already-`sold` pieces via a secret
   // link, without relisting them in the shop. It uses a dedicated atomic RPC that

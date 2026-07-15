@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { cmsKindSchema, cmsLocaleSchema, zodIssues } from '@/lib/cms/schemas';
+import type { CmsLocale } from '@/lib/cms/types';
 
 export const contentRefSchema = z.object({
   kind: cmsKindSchema,
@@ -15,6 +16,11 @@ export const draftBodySchema = contentRefSchema.extend({
 export const versionBodySchema = contentRefSchema.extend({
   version: z.number().int().positive(),
 });
+
+/** Prefix `path` with the locale segment unless it's the default (pl, unprefixed). */
+export function localizedPath(locale: CmsLocale, path: string): string {
+  return locale === 'pl' ? path : `/${locale}${path}`;
+}
 
 export function actorEmail(req: Request): string | null {
   // X-Admin-Actor-Email is set by worker.ts ONLY after the Cloudflare Access
