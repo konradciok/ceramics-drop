@@ -9,6 +9,10 @@ import * as Sentry from '@sentry/nextjs';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import { buildDlqAlert, buildDlqBatchAlertEmail, DLQ_QUEUE_NAME } from './src/server/fulfilment/dlq';
+import {
+  buildFailedActionAlert,
+  type FailedActionJobInput,
+} from './src/server/fulfilment/failed-action-alert';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
@@ -72,6 +76,14 @@ export default {
     ctx.waitUntil(
       sweepAbandoned(env).catch((err) =>
         console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) })),
+      ),
+    );
+    // Alert sweep for failed_action_required fulfilment jobs. Idempotent: rows
+    // are only marked alerted_at after the studio email sends, so a re-run with
+    // no new failed jobs (or a transient email failure) sends/marks nothing.
+    ctx.waitUntil(
+      sweepFailedActionJobs(env).catch((err) =>
+        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) })),
       ),
     );
   },
@@ -225,6 +237,112 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
   });
 
   console.log(JSON.stringify({ event: 'abandoned_sweep_done', ...result }));
+}
+
+/**
+ * Cron sweep: alert the studio about `fulfilment_jobs` stuck in
+ * `failed_action_required`. Idempotent via the `alerted_at` guard — rows are
+ * marked alerted only AFTER the studio email sends, so a transient email
+ * failure (or missing Resend config) retries on the next tick instead of
+ * silently dropping the alert. Sentry is best-effort and never gates the mark.
+ */
+async function sweepFailedActionJobs(env: CloudflareEnv): Promise<void> {
+  const supabase = supabaseFromEnv(env);
+
+  const { data, error } = await supabase
+    .from('fulfilment_jobs')
+    .select('id, order_id, attempts, last_error, updated_at')
+    .eq('status', 'failed_action_required')
+    .is('alerted_at', null)
+    .limit(BATCH_LIMIT);
+  if (error) throw new Error(`sweepFailedActionJobs query failed: ${error.message}`);
+
+  // Raw DB rows are snake_case; map onto the builder's camelCase input.
+  const rows = (data ?? []) as Array<{
+    id: string;
+    order_id: string;
+    attempts: number;
+    last_error: string | null;
+    updated_at: string;
+  }>;
+  const inputs: FailedActionJobInput[] = rows.map((r) => ({
+    id: r.id,
+    orderId: r.order_id,
+    attempts: r.attempts,
+    lastError: r.last_error,
+    updatedAt: r.updated_at,
+  }));
+  if (inputs.length === 0) return; // ponytail: nothing to alert — re-run sends nothing.
+
+  const alert = buildFailedActionAlert(inputs);
+  console.error(JSON.stringify(alert.log));
+
+  // Sentry is best-effort: an init/outage must not block the email or the mark.
+  try {
+    Sentry.captureMessage(alert.sentry.message, {
+      level: alert.sentry.level,
+      extra: alert.sentry.extra,
+    });
+  } catch (sentryErr) {
+    console.error(
+      JSON.stringify({ event: 'failed_action_sentry_failed', error: String(sentryErr) }),
+    );
+  }
+
+  // Email THROWS on failure (missing config or Resend error) — we only mark
+  // alerted_at after a successful send, so a failure retries next tick.
+  await sendFailedActionAlertEmail(env, alert.email);
+
+  // Mark alerted only after the email succeeded. The `.is('alerted_at', null)`
+  // guard makes this idempotent: a concurrent/re-run sweep can't double-mark.
+  const { error: markErr } = await supabase
+    .from('fulfilment_jobs')
+    .update({ alerted_at: new Date().toISOString() })
+    .in('id', inputs.map((j) => j.id))
+    .is('alerted_at', null);
+  if (markErr) throw new Error(`sweepFailedActionJobs mark failed: ${markErr.message}`);
+
+  console.log(JSON.stringify({ event: 'failed_action_alerted', count: inputs.length }));
+}
+
+/**
+ * Send the failed_action_required studio alert via Resend. Uses `env` directly
+ * (the scheduled handler has no request context). THROWS on missing config or a
+ * Resend failure — the caller only marks `alerted_at` once this resolves, so a
+ * throw correctly leaves the rows unalerted for the next cron tick.
+ */
+async function sendFailedActionAlertEmail(
+  env: CloudflareEnv,
+  email: { subject: string; html: string },
+): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing — cannot alert failed_action_required jobs');
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [env.STUDIO_NOTIFY_EMAIL],
+        reply_to: EMAIL.contact,
+        subject: email.subject,
+        html: email.html,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // Re-export the OpenNext Durable Object classes so the deployment keeps working.
