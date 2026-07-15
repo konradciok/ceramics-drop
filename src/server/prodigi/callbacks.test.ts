@@ -233,6 +233,25 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     expect(mockGetOrder).not.toHaveBeenCalled();
   });
 
+  it('takes over an event whose processing lease has expired (stale CAS takeover)', async () => {
+    // Catches a regression where a stale lease is skipped like a fresh one:
+    // if the takeover branch regressed (e.g. the age check used `>=` or the
+    // guard returned 'In flight' for stale leases too), getOrder would NOT be
+    // called and the event would never reach 'done'.
+    const LEASE_MINUTES = 5; // mirrors LEASE_MINUTES in callbacks.ts (not exported)
+    const staleStartedAt = new Date(Date.now() - (LEASE_MINUTES + 1) * 60_000).toISOString();
+    const calls = setup({
+      existingEvent: { id: 'we-1', status: 'processing', processing_started_at: staleStartedAt },
+    });
+
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+
+    expect(res.status).toBe(200);
+    expect(res.message).toBe('OK');
+    expect(mockGetOrder).toHaveBeenCalledTimes(1); // proceeded past the lease guard
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
   it('maps the Prodigi stage onto the latest fulfilment job (InProduction → in_production)', async () => {
     const calls = setup({ jobRow: { id: 'j1', status: 'fulfilment_submitted' } });
     const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
