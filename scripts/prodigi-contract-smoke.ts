@@ -47,10 +47,11 @@ function parseArgs(): { product: string; strict: boolean; json: boolean } {
   return { product, strict, json };
 }
 
-/** UTC date + minute — unique per run, folded into idempotencyKey + merchantReference. */
+/** UTC date + second — unique per run, folded into idempotencyKey + merchantReference.
+ *  Second-granularity avoids two same-minute dispatches colliding on idempotencyKey. */
 function runId(): string {
   const iso = new Date().toISOString();
-  return `${iso.slice(0, 10)}-${iso.slice(11, 16).replace(':', '')}`;
+  return `${iso.slice(0, 10)}-${iso.slice(11, 19).replace(/:/g, '')}`;
 }
 
 /**
@@ -176,7 +177,15 @@ async function main(): Promise<void> {
     assetId: asset.id,
     ...result,
   };
-  console.log(JSON.stringify(report, null, 2));
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    const tag = result.ok ? 'ok' : 'FAIL';
+    const tail = result.ok ? '' : ' — re-run with --json for the full report';
+    console.log(
+      `${tag}: prodigi contract smoke (${product}/${variantKey}, order ${result.prodigiOrderId ?? '—'}, cancelled=${result.cancelled})${tail}`,
+    );
+  }
   if (!result.ok) process.exitCode = 1;
 }
 
