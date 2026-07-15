@@ -8,7 +8,9 @@ const ENV = vi.hoisted(() => ({ FULFILMENT_DEBUG_TOKEN: 'tok_good' as string | u
 // maybeSingle) also resolves — covers the prodigi_orders array select.
 const SUPA = vi.hoisted(() => {
   const results: Record<string, { data: unknown; error: unknown }> = {};
+  const calls = { from: 0 };
   const build = (table: string) => {
+    calls.from++; // records every Supabase touch — auth-gate tests assert it stays 0
     const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,
@@ -18,7 +20,7 @@ const SUPA = vi.hoisted(() => {
       Promise.resolve(results[table] ?? { data: null, error: null }).then(resolve, reject);
     return chain;
   };
-  return { from: build, results };
+  return { from: build, results, calls };
 });
 
 vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext: () => ({ env: ENV }) }));
@@ -37,6 +39,7 @@ describe('GET /api/debug/fulfilment-status', () => {
   beforeEach(() => {
     ENV.FULFILMENT_DEBUG_TOKEN = 'tok_good';
     for (const k of Object.keys(SUPA.results)) delete SUPA.results[k];
+    SUPA.calls.from = 0;
   });
 
   it('is fail-closed: 404 when FULFILMENT_DEBUG_TOKEN is unset (no prod surface)', async () => {
@@ -44,16 +47,19 @@ describe('GET /api/debug/fulfilment-status', () => {
     const res = await GET(req('pi_123'));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'not_found' });
+    expect(SUPA.calls.from).toBe(0); // never touches Supabase when the route is absent
   });
 
   it('rejects a missing/wrong token with 401 before any lookup', async () => {
     expect((await GET(req('pi_123', null))).status).toBe(401);
     expect((await GET(req('pi_123', 'tok_bad'))).status).toBe(401);
+    expect(SUPA.calls.from).toBe(0); // auth gate runs before any .from() call
   });
 
   it('rejects a missing or non-pi_ payment_intent with 400 (valid token)', async () => {
     expect((await GET(req(null))).status).toBe(400);
     expect((await GET(req('not-a-pi'))).status).toBe(400);
+    expect(SUPA.calls.from).toBe(0); // input gate also runs before any lookup
   });
 
   it('returns nulls while the order row has not landed yet (keep polling)', async () => {
@@ -76,6 +82,7 @@ describe('GET /api/debug/fulfilment-status', () => {
       fulfilmentStatus: 'fulfilment_submitted',
       prodigiOrderId: 'prd_abc',
     });
+    expect(SUPA.calls.from).toBe(3); // orders + fulfilment_jobs + prodigi_orders — proves the spy records
   });
 
   it('maps a prodigi_orders row with a null id to prodigiOrderId null', async () => {

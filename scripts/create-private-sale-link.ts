@@ -21,14 +21,15 @@ import { loadLocalEnv } from './lib/script-env';
 const DEFAULT_BASE_URL = SITE_URL;
 
 async function main(): Promise<void> {
+  // strict + no positionals: reject typo'd flags. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
   const { values } = nodeParseArgs({
     options: {
       items: { type: 'string' },
       days: { type: 'string' },
       'base-url': { type: 'string' },
+      'env-file': { type: 'string' },
     },
-    allowPositionals: true,
-    strict: false,
   });
   const itemsArg = typeof values.items === 'string' ? values.items : undefined;
   if (!itemsArg) throw new Error('Missing --items (comma-separated product ids, e.g. --items k10,t18,t19,t22).');

@@ -441,7 +441,10 @@ function parseCliArgs(argv) {
   };
 
   for (const p of positionals) {
-    if (/^[0-9a-f-]{8,}/i.test(p)) {
+    // Anchored canonical UUID (matches src/lib/uuid.ts UUID_RE — inlined, .mjs
+    // can't import the TS module). The old loose /^[0-9a-f-]{8,}/ accepted
+    // 'deadbeef-invalid', which then failed at the UUID column downstream.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p)) {
       args.orderIds.push(p);
     } else {
       console.error(`ERROR: Unrecognised argument: ${p}`);

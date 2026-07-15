@@ -14,15 +14,17 @@ import { loadLocalEnv } from './lib/script-env';
 const PRODIGI_FETCH_TIMEOUT_MS = 15_000;
 
 function parseArgs(): { product: string; dryRun: boolean; runId?: string } {
+  // strict + no positionals: a typo'd --dryrun aborts instead of silently
+  // placing real sandbox orders (dryRun would stay false). 'env-file' is
+  // declared so it doesn't trip the strict gate — loadLocalEnv() consumes it.
   const { values } = nodeParseArgs({
     options: {
       product: { type: 'string' },
       'run-id': { type: 'string' },
       'dry-run': { type: 'boolean' },
+      'env-file': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
-    allowPositionals: true,
-    strict: false,
   });
   if (values.help) {
     console.log(

@@ -62,16 +62,18 @@ async function resolveAssetId(
 }
 
 function parseArgs(): { origin?: string; assetId?: string; json: boolean; allowMissing: boolean } {
+  // strict + no positionals: a typo'd flag (e.g. --assetid) aborts instead of
+  // silently probing an unrelated latest asset. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
   const { values } = nodeParseArgs({
     options: {
       origin: { type: 'string' },
       'asset-id': { type: 'string' },
+      'env-file': { type: 'string' },
       json: { type: 'boolean' },
       'allow-missing': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
-    allowPositionals: true,
-    strict: false,
   });
   if (values.help) {
     console.log(`Usage: npm run print-asset:smoke -- [--origin <url>] [--asset-id <uuid>] [--json] [--allow-missing] [--env-file <path>]`);

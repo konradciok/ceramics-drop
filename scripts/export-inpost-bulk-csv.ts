@@ -121,10 +121,14 @@ function rowForParcel(order: OrderRow, size: string, parcelIndex: number, parcel
 }
 
 async function main(): Promise<void> {
+  // strict + no positionals: reject typo'd flags. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
   const { values } = nodeParseArgs({
-    options: { output: { type: 'string' }, 'include-shipped': { type: 'boolean' } },
-    allowPositionals: true,
-    strict: false,
+    options: {
+      output: { type: 'string' },
+      'include-shipped': { type: 'boolean' },
+      'env-file': { type: 'string' },
+    },
   });
   const env = loadLocalEnv();
   const url = env.ADMIN_SUPABASE_URL ?? env.SUPABASE_URL;

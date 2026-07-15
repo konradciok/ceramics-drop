@@ -29,10 +29,11 @@ function slugify(s: string): string {
 }
 
 async function main(): Promise<void> {
+  // strict + no positionals: a typo'd flag (e.g. --idd) aborts instead of
+  // silently falling back to a slugified id. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
   const { values } = nodeParseArgs({
-    options: { label: { type: 'string' }, id: { type: 'string' } },
-    allowPositionals: true,
-    strict: false,
+    options: { label: { type: 'string' }, id: { type: 'string' }, 'env-file': { type: 'string' } },
   });
   const label = typeof values.label === 'string' ? values.label : undefined;
   if (!label) throw new Error('Missing --label (display label, e.g. --label "Drop #2").');

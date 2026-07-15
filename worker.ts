@@ -245,6 +245,13 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
  * marked alerted only AFTER the studio email sends, so a transient email
  * failure (or missing Resend config) retries on the next tick instead of
  * silently dropping the alert. Sentry is best-effort and never gates the mark.
+ *
+ * Deliberate trade-off (not a lease): a transient failure of the mark write
+ * after a successful send — or two overlapping cron ticks — can send a
+ * duplicate alert. Duplicates are harmless; the alternative (claim/mark before
+ * send without a lease) would SILENTLY LOSE an alert on send-failure, which is
+ * strictly worse for alerting. A full lease column is YAGNI for a sub-second
+ * sweep on a 15-min single-worker cron.
  */
 async function sweepFailedActionJobs(env: CloudflareEnv): Promise<void> {
   const supabase = supabaseFromEnv(env);
