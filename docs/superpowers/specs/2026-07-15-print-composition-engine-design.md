@@ -102,13 +102,14 @@ Beside the existing `config/print-assets/{id}.json`. A sketch (finalize types in
 ### Pipeline integration
 
 The composer (`scripts/lib/compose-master.ts` + CLI `scripts/print-assets-compose.ts`,
-`npm run print-assets:compose --product <id>`) reads the config, resolves layers, and renders **one
-composed master** at the artwork's native resolution. That master then feeds the existing
-`print-assets:prepare`, which crops/resizes per profile exactly as it does today. The downstream
-upload/verify/publish/sandbox/gallery path is untouched.
-
-Output shape (open decision — see below): default to a single composed master; compose per-profile only
-if per-size composition must differ visibly.
+`npm run print-assets:compose --product <id>`) is a **sibling to `prepare`**, not a feeder into it. It
+enumerates active variants (`activeVariantDimensions`) → dedupes to distinct profiles
+(`distinctProfiles`) → renders each profile's exact-pixel composed derivative (bg + artwork `contain` +
+signature) → writes derivatives + a **prepare-compatible `manifest.json`** (via `buildManifest`) +
+`proof-{profile}.jpg` contact sheets into the same `design/print-assets/{id}/{rev}/` layout. Downstream
+`print-assets:upload/verify/publish` read only the manifest + named files, so they are **unchanged** —
+a drop-in alternative generator. `config/print-assets/{id}.json`'s per-profile `crop` entries go unused
+for composed products; its `gallery` section still applies (consumed by `print-assets:gallery`).
 
 ### Tuning loop (no UI)
 
@@ -148,8 +149,14 @@ iteration-with-the-artist time dominates, not code — budget ~1 extra day per a
    canvas size** (canvas fill); no background image is stored. It's a default constant in
    `src/lib/print-composition.ts` (overridable per product, but expected to stay `#ded9c3`). This is a
    printed faux-matte margin inside the Prodigi print area — distinct from the physical `mount` SKU.
-2. **Composer output** — one composed master, which the existing `print-assets:prepare` then
-   crops/resizes per profile. No per-profile composition.
+2. **Composition mode — per-profile.** The composer renders each distinct print-area profile's exact
+   canvas independently (bg fill → artwork via `contain`, always fully visible → signature placed
+   relative to that canvas), at exact Prodigi pixels. Required because active profiles span multiple
+   aspect ratios (fap01: 3:4, 5:7, 7:10, 2:3) — a single master cropped per profile would re-crop the
+   artwork per size (today's manual-placeholder pain). Layout is defined once as fractions and applied
+   per profile, eliminating per-size crop authoring. The composer is a **sibling to `prepare`**, not a
+   feeder into it: it produces a prepare-compatible `manifest.json`, so `upload`/`verify`/`publish` are
+   unchanged.
 3. **Signature** — a single shared SVG, reused by every print, tracked in the repo at
    `config/print-composition/signature.svg`. Lives under `config/` (tracked) rather than `design/`
    (gitignored) because it's a small, stable brand asset that should be version-controlled, not lost
