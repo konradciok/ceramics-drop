@@ -11,7 +11,7 @@ vi.mock('./client', () => ({ prodigiClient: vi.fn(() => ({ getOrder: mockGetOrde
 vi.mock('@/lib/email', () => ({ emailPrintShippingConfirmationToCustomer: mockShipEmail }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
-import { handleProdigiCallback } from './callbacks';
+import { handleProdigiCallback, LEASE_MINUTES } from './callbacks';
 import * as Sentry from '@sentry/nextjs';
 
 const ENV = {} as CloudflareEnv;
@@ -238,7 +238,8 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     // if the takeover branch regressed (e.g. the age check used `>=` or the
     // guard returned 'In flight' for stale leases too), getOrder would NOT be
     // called and the event would never reach 'done'.
-    const LEASE_MINUTES = 5; // mirrors LEASE_MINUTES in callbacks.ts (not exported)
+    // Stale by one minute past the real lease window — value imported from callbacks.ts
+    // so the test tracks the source constant instead of mirroring it.
     const staleStartedAt = new Date(Date.now() - (LEASE_MINUTES + 1) * 60_000).toISOString();
     const calls = setup({
       existingEvent: { id: 'we-1', status: 'processing', processing_started_at: staleStartedAt },
