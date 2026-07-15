@@ -41,6 +41,13 @@
       "max_batch_size": 1,
       "max_retries": 10,
       "dead_letter_queue": "prodigi-fulfilment-dlq"
+    }, {
+      // Alert-only: the worker's queue() handler acks every DLQ message after
+      // logging + Sentry + studio email. max_retries is a bounded safety net so
+      // a handler bug cannot unbounded-retry; the no-loop guarantee comes from
+      // ackAll in the handler (the normal path never retries).
+      "queue": "prodigi-fulfilment-dlq",
+      "max_retries": 1
     }]
   },
   "r2_buckets": [

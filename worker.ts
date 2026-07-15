@@ -5,8 +5,10 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
+import * as Sentry from '@sentry/nextjs';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
+import { buildDlqAlert, buildDlqBatchAlertEmail, DLQ_QUEUE_NAME } from './src/server/fulfilment/dlq';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
@@ -14,6 +16,7 @@ import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orde
 import { releaseTargetStatus } from './src/lib/piece-release';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
+import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
 const BATCH_LIMIT = 100;
@@ -46,6 +49,13 @@ export default {
     env: CloudflareEnv,
     ctx: ExecutionContext,
   ) {
+    // Route on the queue name. The DLQ consumer is alert-only: it logs + fires
+    // Sentry + emails the studio, then acks every message — it NEVER retries,
+    // so a poison message cannot loop back through the system.
+    if (batch.queue === DLQ_QUEUE_NAME) {
+      await handleDlqBatch(batch, env, ctx);
+      return;
+    }
     for (const msg of batch.messages) {
       await processJob(msg.body, env, ctx)
         .then(() => msg.ack())
@@ -66,6 +76,96 @@ export default {
     );
   },
 } satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
+
+/**
+ * Alert-only consumer for `prodigi-fulfilment-dlq`. For each message: build the
+ * alert (pure), log it, fire Sentry, collect the email fragment, and ACK —
+ * never retry. One studio email is sent per batch (best-effort via
+ * `ctx.waitUntil`); a Sentry/Resend outage is caught + logged so it cannot
+ * crash the consumer or requeue a poison message. Acks happen inline (before
+ * the email) so the no-loop guarantee holds even if the email send fails.
+ */
+async function handleDlqBatch(
+  batch: MessageBatch<FulfilmentJobMessage>,
+  env: CloudflareEnv,
+  ctx: ExecutionContext,
+): Promise<void> {
+  const sections: string[] = [];
+  for (const msg of batch.messages) {
+    const alert = buildDlqAlert({ id: msg.id, body: msg.body, attempts: msg.attempts });
+    console.error(JSON.stringify(alert.log));
+    try {
+      Sentry.captureMessage(alert.sentry.message, {
+        level: alert.sentry.level,
+        extra: alert.sentry.extra,
+      });
+    } catch (sentryErr) {
+      // ponytail: no rethrow — a Sentry init/outage must not block the ack.
+      console.error(
+        JSON.stringify({ event: 'prodigi_dlq_sentry_failed', messageId: msg.id, error: String(sentryErr) }),
+      );
+    }
+    sections.push(alert.emailSection);
+    msg.ack(); // alert-only — ack every message, never retry/requeue
+  }
+
+  if (sections.length === 0) return;
+  ctx.waitUntil(
+    (async () => {
+      try {
+        await sendDlqAlertEmail(env, sections);
+      } catch (emailErr) {
+        console.error(
+          JSON.stringify({ event: 'prodigi_dlq_email_failed', error: String(emailErr) }),
+        );
+      }
+    })(),
+  );
+}
+
+/**
+ * Send one studio email summarising a DLQ batch via Resend. Uses `env` directly
+ * (the queue handler has no request context, so the `getCloudflareContext()`-
+ * based senders in src/lib/email.ts don't apply). Best-effort: the caller
+ * catches so a Resend failure never requeues a message.
+ */
+async function sendDlqAlertEmail(env: CloudflareEnv, sections: string[]): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    console.warn(
+      JSON.stringify({
+        event: 'prodigi_dlq_email_skipped',
+        reason: 'RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing',
+      }),
+    );
+    return;
+  }
+  const { subject, html } = buildDlqBatchAlertEmail(sections);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [env.STUDIO_NOTIFY_EMAIL],
+        reply_to: EMAIL.contact,
+        subject,
+        html,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
   const stripe = stripeFromEnv(env);
