@@ -1,0 +1,63 @@
+name: prodigi-contract-smoke
+
+# Audit H-1: prove the Prodigi v4 contract round-trips through the real
+# mapper + client against the SANDBOX. Manually triggered (workflow_dispatch)
+# only — never per-PR, never scheduled. Sandbox-only, self-cleaning (the runner
+# cancels every order it creates). Fails red on schema drift.
+#
+# ⚠️ Requires the repo secret PRODIGI_API_KEY_SANDBOX (a second copy of the
+# sandbox key, alongside SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY /
+# PRINT_ASSET_TOKEN_SECRET already used by post-deploy-smoke). Keep this on the
+# default branch and never point it at a live key.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Self-cleaning (the runner cancels every order it creates), but a concurrency
+# group still prevents two manual dispatches racing on the same sandbox key /
+# asset and colliding on the create idempotencyKey.
+concurrency:
+  group: prodigi-contract-smoke
+  cancel-in-progress: false
+
+jobs:
+  prodigi-contract-smoke:
+    # Parity with post-deploy-smoke: only run on the default branch (the
+    # checkout ref below also pins main, so this is defence-in-depth).
+    if: github.ref_name == github.event.repository.default_branch
+    name: Prodigi v4 sandbox contract smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install (locked)
+        run: npm ci
+
+      - name: Contract smoke (sandbox create → inspect → cancel)
+        # Pre-launch (PRODIGI_SMOKE_STRICT unset/false): a missing usable asset
+        # is an exit-0 skip. Set PRODIGI_SMOKE_STRICT=true once a print asset is
+        # published so a missing asset fails.
+        run: |
+          if [ "$PRODIGI_SMOKE_STRICT" = "true" ]; then
+            npm run prodigi:contract-smoke -- --json --strict
+          else
+            npm run prodigi:contract-smoke -- --json
+          fi
+        env:
+          PRODIGI_SMOKE_STRICT: ${{ vars.PRODIGI_SMOKE_STRICT }}
+          PRODIGI_API_KEY_SANDBOX: ${{ secrets.PRODIGI_API_KEY_SANDBOX }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PRINT_ASSET_TOKEN_SECRET: ${{ secrets.PRINT_ASSET_TOKEN_SECRET }}
+          WORKER_ORIGIN: https://anna-ciok.studio
