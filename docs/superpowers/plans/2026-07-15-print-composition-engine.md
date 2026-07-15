@@ -34,6 +34,39 @@ Each task produces an independently testable, committable deliverable.
 
 ---
 
+## 16. Warto zapisać wynik layoutu jako manifest
+
+Every composed derivative is accompanied by a `{profileKey}.manifest.json` — local
+provenance, gitignored, never uploaded (it is NOT listed in the pipeline
+`manifest.json`) — recording exactly how the canvas was laid out, so a derivative is
+reproducible and auditable on its own:
+
+```json
+{
+  "canvasMm": { "width": 500, "height": 700 },
+  "dpi": 300,
+  "bleedMm": 0,
+  "artworkBoxPx": { "x": 482, "y": 511, "width": 4942, "height": 6501 },
+  "signatureBoxPx": { "x": 2410, "y": 7650, "width": 1086, "height": 180 },
+  "background": "#ded9c3",
+  "sourceHash": "sha256:…",
+  "rendererVersion": "1.0.0"
+}
+```
+
+Built by `buildAssetManifest(geo, config, sourceHash)` (Task 1, pure) from the
+resolved `ComposedGeometry`; written next to each derivative by the CLI (Task 4).
+Every field is derived, not hand-typed: `canvasMm` / `artworkBoxPx` / `signatureBoxPx` /
+`dpi` come from the resolved geometry; `background` / `bleedMm` from the config;
+`sourceHash` from the artwork master; `rendererVersion` from `RENDERER_VERSION`.
+`bleedMm` defaults to `0` (config-driven) — the MVP composes to the exact Prodigi print
+area and renders no bleed, so it is recorded for provenance and only becomes meaningful
+once bleed rendering lands (a layout-model change, not a value to invent).
+`rendererVersion` (`RENDERER_VERSION`) bumps whenever the composition math changes,
+so a manifest tells you whether re-composing would reproduce the same layout.
+
+---
+
 ### Task 1: Pure layout math (geometry)
 
 **Files:**
@@ -41,7 +74,7 @@ Each task produces an independently testable, committable deliverable.
 - Test: `src/lib/print-composition.test.ts`
 
 **Interfaces:**
-- Produces: `Rect`, `CompositionLayout`, `PrintCompositionConfig`, `ComposedGeometry` types; `mmToPx(mm, dpi)`, `clampPx(value, minPx, maxPx)`, `containDimensions(srcW, srcH, maxW, maxH)`, `composeLayout(canvas, artwork, signature, config)`, and `DEFAULT_LAYOUT` / `BACKGROUND_DEFAULT` constants. Consumed by Task 3 (Sharp module) and Task 2 (parser merges `DEFAULT_LAYOUT`).
+- Produces: `Rect`, `CompositionLayout`, `PrintCompositionConfig`, `ComposedGeometry`, `AssetManifest` types; `mmToPx(mm, dpi)`, `pxToMm(px, dpi)`, `clampPx(value, minPx, maxPx)`, `containDimensions(srcW, srcH, maxW, maxH)`, `composeLayout(canvas, artwork, signature, config)`, `buildAssetManifest(geo, config, sourceHash)`, and `DEFAULT_LAYOUT` / `BACKGROUND_DEFAULT` / `RENDERER_VERSION` constants. Consumed by Task 3 (Sharp module), Task 4 (per-asset manifest writer, req. 16), and Task 2 (parser merges `DEFAULT_LAYOUT`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -51,11 +84,14 @@ Create `src/lib/print-composition.test.ts`:
 import { describe, it, expect } from 'vitest';
 import {
   mmToPx,
+  pxToMm,
   clampPx,
   containDimensions,
   composeLayout,
+  buildAssetManifest,
   DEFAULT_LAYOUT,
   BACKGROUND_DEFAULT,
+  RENDERER_VERSION,
 } from './print-composition';
 
 describe('mmToPx', () => {
@@ -91,9 +127,10 @@ describe('composeLayout', () => {
     product: 'fap01',
     artwork: 'design/prints/fap01-artwork.tif',
     background: BACKGROUND_DEFAULT,
-    signature: { src: 'config/print-composition/signature.svg' },
+    signature: 'config/print-composition/signature.svg',
     layout: DEFAULT_LAYOUT,
     opticalOffset: { x: 0, y: 0 },
+    bleedMm: 0,
   };
   const geo = composeLayout(
     { width: 3600, height: 4800 },
@@ -144,6 +181,47 @@ describe('composeLayout', () => {
     expect(() =>
       composeLayout({ width: 10, height: 10 }, { aspect: 0.7 }, { aspect: 3 }, config),
     ).toThrow(/no room/i);
+  });
+});
+
+describe('pxToMm', () => {
+  it('is the inverse of mmToPx (round-trips within a px)', () => {
+    expect(pxToMm(300, 300)).toBe(25); // 25.4 mm → 25
+    expect(pxToMm(mmToPx(100, 300), 300)).toBe(100);
+  });
+});
+
+describe('buildAssetManifest', () => {
+  const manifestConfig = {
+    product: 'fap01',
+    artwork: 'design/prints/fap01-artwork.tif',
+    background: BACKGROUND_DEFAULT,
+    signature: 'config/print-composition/signature.svg',
+    layout: DEFAULT_LAYOUT,
+    opticalOffset: { x: 0, y: 0 },
+    bleedMm: 0,
+  };
+  const geo = composeLayout({ width: 3600, height: 4800 }, { aspect: 0.7 }, { aspect: 3 }, manifestConfig);
+
+  it('maps the resolved boxes (left/top → x/y) and derives canvas mm + dpi', () => {
+    const m = buildAssetManifest(geo, manifestConfig, 'abc123');
+    expect(m.artworkBoxPx).toEqual({ x: geo.artwork.left, y: geo.artwork.top, width: geo.artwork.width, height: geo.artwork.height });
+    expect(m.signatureBoxPx.x).toBe(geo.signature.left);
+    expect(m.dpi).toBe(DEFAULT_LAYOUT.dpi);
+    expect(m.canvasMm.width).toBe(pxToMm(3600, DEFAULT_LAYOUT.dpi));
+    expect(m.bleedMm).toBe(0);
+  });
+
+  it('prefixes the source hash and stamps background + renderer version', () => {
+    const m = buildAssetManifest(geo, manifestConfig, 'abc123');
+    expect(m.sourceHash).toBe('sha256:abc123');
+    expect(m.background).toBe('#ded9c3');
+    expect(m.rendererVersion).toBe(RENDERER_VERSION);
+  });
+
+  it('flows bleedMm through from the config', () => {
+    const m = buildAssetManifest(geo, { ...manifestConfig, bleedMm: 5 }, 'abc123');
+    expect(m.bleedMm).toBe(5);
   });
 });
 ```
@@ -202,11 +280,17 @@ export interface PrintCompositionConfig {
   artwork: string;
   /** Solid canvas background, `#rrggbb`. Defaults to #ded9c3. */
   background: string;
-  /** Shared signature SVG, relative to repo root. Signature is always horizontally centred. */
-  signature: { src: string };
+  /** Shared signature SVG path, relative to repo root. Signature is always horizontally centred. */
+  signature: string;
   layout: CompositionLayout;
   /** Per-artwork optical-centering nudge, fractions of canvas. 0/0 = none. */
   opticalOffset: { x: number; y: number };
+  /**
+   * Bleed in mm, recorded in the per-asset manifest for provenance. Default 0 — the MVP
+   * composes to the exact Prodigi print area (no trim/bleed rendered); set non-zero only
+   * once bleed rendering lands (a layout-model change), or it would record a lie.
+   */
+  bleedMm: number;
 }
 
 export interface ComposedGeometry {
@@ -319,6 +403,58 @@ export function composeLayout(
     },
   };
 }
+
+/** Pixels → millimetres at `dpi`, rounded to integer (inverse of `mmToPx`). */
+export function pxToMm(px: number, dpi: number): number {
+  return Math.round((px / dpi) * 25.4);
+}
+
+/**
+ * Composition-engine version — bump whenever the layout math changes. Stamped into
+ * each per-asset manifest (req. 16) so a derivative records which renderer produced it.
+ */
+export const RENDERER_VERSION = '1.0.0';
+
+/** Per-asset layout provenance record (req. 16). Local-only; never uploaded. */
+export interface AssetManifest {
+  canvasMm: { width: number; height: number };
+  dpi: number;
+  bleedMm: number;
+  artworkBoxPx: { x: number; y: number; width: number; height: number };
+  signatureBoxPx: { x: number; y: number; width: number; height: number };
+  background: string;
+  sourceHash: string;
+  rendererVersion: string;
+}
+
+/**
+ * Build the per-asset layout manifest from a resolved `ComposedGeometry` (req. 16) —
+ * records exactly how the canvas was composed so a derivative is reproducible/auditable
+ * on its own. Every field is derived: geometry → boxes/canvas mm, config → dpi/background/bleed.
+ */
+export function buildAssetManifest(
+  geo: ComposedGeometry,
+  config: PrintCompositionConfig,
+  sourceHash: string,
+): AssetManifest {
+  const dpi = config.layout.dpi;
+  const box = (r: Rect): { x: number; y: number; width: number; height: number } => ({
+    x: r.left,
+    y: r.top,
+    width: r.width,
+    height: r.height,
+  });
+  return {
+    canvasMm: { width: pxToMm(geo.canvas.width, dpi), height: pxToMm(geo.canvas.height, dpi) },
+    dpi,
+    bleedMm: config.bleedMm,
+    artworkBoxPx: box(geo.artwork),
+    signatureBoxPx: box(geo.signature),
+    background: config.background,
+    sourceHash: `sha256:${sourceHash}`,
+    rendererVersion: RENDERER_VERSION,
+  };
+}
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
@@ -366,14 +502,15 @@ describe('parseCompositionConfig', () => {
   const minimal = {
     product: 'fap01',
     artwork: 'design/prints/fap01-artwork.tif',
-    signature: { src: 'config/print-composition/signature.svg' },
+    signature: 'config/print-composition/signature.svg',
   };
 
-  it('fills defaults for background, layout, and optical offset', () => {
+  it('fills defaults for background, layout, bleed, and optical offset', () => {
     const cfg = parseCompositionConfig(minimal, 'fap01');
     expect(cfg.background).toBe('#ded9c3');
     expect(cfg.layout).toEqual(DEFAULT_LAYOUT);
     expect(cfg.opticalOffset).toEqual({ x: 0, y: 0 });
+    expect(cfg.bleedMm).toBe(0);
   });
 
   it('rejects a product id that does not match', () => {
@@ -393,10 +530,6 @@ describe('parseCompositionConfig', () => {
     expect(cfg.layout.artworkMaxWidthFrac).toBe(0.8);
     expect(cfg.layout.marginShortSideFrac).toBe(DEFAULT_LAYOUT.marginShortSideFrac);
   });
-
-  it('rejects a layout fraction outside (0, 1]', () => {
-    expect(() => parseCompositionConfig({ ...minimal, layout: { artworkMaxWidthFrac: 1.5 } }, 'fap01')).toThrow(/fraction/i);
-  });
 });
 ```
 
@@ -412,60 +545,40 @@ Append to `src/lib/print-composition.ts`:
 ```ts
 // ── Config parsing ────────────────────────────────────────────────────────────
 
-const HEX_RE = /^#?[0-9a-f]{6}$/i;
-
-function assert(condition: unknown, message: string): asserts condition {
-  if (!condition) throw new Error(`Invalid print-composition config: ${message}`);
+function fail(message: string): never {
+  throw new Error(`Invalid print-composition config: ${message}`);
 }
 
 /**
  * Validate + normalise a raw config/print-composition/{productId}.json object.
  * `layout` and `background` are optional — they default to DEFAULT_LAYOUT /
  * #ded9c3 — so a per-product config can be as small as { product, artwork, signature }.
+ *
+ * Committed JSON loaded once per run: fail fast on the likely operator mistakes
+ * (product mismatch, missing paths, bad hex) and trust the types for layout /
+ * opticalOffset — a bad fraction surfaces in the geometry pass, not here.
  */
 export function parseCompositionConfig(
   raw: unknown,
   productId: string,
 ): PrintCompositionConfig {
-  const r = (raw ?? {}) as Record<string, unknown>;
-  assert(typeof r.product === 'string' && r.product === productId, `product must equal "${productId}"`);
-  assert(typeof r.artwork === 'string' && r.artwork.length > 0, 'artwork must be a non-empty path');
+  const r = (raw ?? {}) as Partial<PrintCompositionConfig>;
+  if (r.product !== productId) fail(`product must equal "${productId}"`);
+  if (typeof r.artwork !== 'string' || !r.artwork) fail('artwork must be a non-empty path');
+  if (typeof r.signature !== 'string' || !r.signature) fail('signature must be a non-empty path');
 
-  const background = typeof r.background === 'string' ? r.background : BACKGROUND_DEFAULT;
-  assert(HEX_RE.test(background), `background "${background}" must be #rrggbb`);
-
-  assert(
-    r.signature && typeof r.signature === 'object' && typeof (r.signature as { src?: unknown }).src === 'string' &&
-      ((r.signature as { src: string }).src.length > 0),
-    'signature.src must be a non-empty path',
-  );
-
-  const rawLayout = (r.layout ?? {}) as Record<string, number>;
-  const layout: CompositionLayout = { ...DEFAULT_LAYOUT };
-  for (const key of Object.keys(rawLayout) as (keyof CompositionLayout)[]) {
-    const value = rawLayout[key];
-    assert(typeof value === 'number' && Number.isFinite(value), `layout.${key} must be a number`);
-    if (key.endsWith('Frac')) {
-      assert(value > 0 && value <= 1, `layout.${key} fraction must be in (0, 1]`);
-    } else {
-      assert(value > 0, `layout.${key} must be positive`);
-    }
-    (layout[key] as number) = value;
-  }
-
-  const rawOffset = (r.opticalOffset ?? {}) as { x?: number; y?: number };
-  const x = rawOffset.x ?? 0;
-  const y = rawOffset.y ?? 0;
-  assert(typeof x === 'number' && Number.isFinite(x), 'opticalOffset.x must be a number');
-  assert(typeof y === 'number' && Number.isFinite(y), 'opticalOffset.y must be a number');
+  const background = r.background ?? BACKGROUND_DEFAULT;
+  if (!/^#?[0-9a-f]{6}$/i.test(background)) fail(`background "${background}" must be #rrggbb`);
+  const bleedMm = typeof r.bleedMm === 'number' && r.bleedMm >= 0 ? r.bleedMm : 0;
 
   return {
     product: r.product,
     artwork: r.artwork,
+    signature: r.signature,
     background: background.startsWith('#') ? background : `#${background}`,
-    signature: { src: (r.signature as { src: string }).src },
-    layout,
-    opticalOffset: { x, y },
+    layout: { ...DEFAULT_LAYOUT, ...r.layout },
+    opticalOffset: r.opticalOffset ?? { x: 0, y: 0 },
+    bleedMm,
   };
 }
 ```
@@ -502,7 +615,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `composeLayout`, `PrintCompositionConfig` from `src/lib/print-composition`; `DerivativeResult`, `DerivativeFormat` from `src/lib/print-assets-prepare` (`scripts/lib/prepare-derivatives.ts` re-exports `DerivativeResult`).
-- Produces: `composeDerivative(artworkPath, signaturePath, canvas, format, config): Promise<DerivativeResult>`. Consumed by Task 4 (CLI).
+- Produces: `composeDerivative(artworkPath, signaturePath, canvas, format, config): Promise<DerivativeResult & { geometry: ComposedGeometry }>` — returns the resolved geometry alongside the buffer so the CLI can emit the per-asset manifest (req. 16). Consumed by Task 4 (CLI).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -525,9 +638,10 @@ const config = {
   product: 'fap01',
   artwork: '',
   background: BACKGROUND_DEFAULT,
-  signature: { src: '' },
+  signature: '',
   layout: DEFAULT_LAYOUT,
   opticalOffset: { x: 0, y: 0 },
+  bleedMm: 0,
 };
 
 beforeAll(async () => {
@@ -543,7 +657,7 @@ beforeAll(async () => {
     signatureSvg,
     `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100"><rect width="300" height="100" fill="#222"/></svg>`,
   );
-  config.signature.src = signatureSvg;
+  config.signature = signatureSvg;
 });
 
 afterAll(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
@@ -554,6 +668,7 @@ describe('composeDerivative', () => {
     const meta = await sharp(result.buffer).metadata();
     expect(meta.width).toBe(3600);
     expect(meta.height).toBe(4800);
+    expect(result.geometry.canvas).toEqual({ width: 3600, height: 4800 }); // req. 16: geometry returned for the manifest
   });
 
   it('produces a JPG with no alpha channel', async () => {
@@ -614,6 +729,7 @@ import sharp from 'sharp';
 import {
   composeLayout,
   type PrintCompositionConfig,
+  type ComposedGeometry,
 } from '../../src/lib/print-composition';
 import type { DerivativeFormat } from '../../src/lib/print-assets-prepare';
 import type { DerivativeResult } from './prepare-derivatives';
@@ -655,7 +771,7 @@ export async function composeDerivative(
   canvas: ComposeCanvas,
   format: DerivativeFormat,
   config: PrintCompositionConfig,
-): Promise<DerivativeResult> {
+): Promise<DerivativeResult & { geometry: ComposedGeometry }> {
   const artAspect = await aspectOf(artworkPath, 'artwork');
   const sigAspect = await aspectOf(signaturePath, 'signature');
 
@@ -686,7 +802,7 @@ export async function composeDerivative(
 
   const buffer = await pipeline.toBuffer();
   const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
-  return { sha256, byteSize: buffer.byteLength, format, buffer };
+  return { sha256, byteSize: buffer.byteLength, format, buffer, geometry: geo };
 }
 ```
 
@@ -723,7 +839,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `parseCompositionConfig`, `PrintCompositionConfig` (Task 2); `composeDerivative` (Task 3); `buildManifest`, `distinctProfiles`, `refuseOverwrite`, `DerivativeFormat` (`src/lib/print-assets-prepare`); `activeVariantDimensions` (`scripts/lib/db-variants`); `prepareOutputDir`, `writeDerivative`, `DerivativeResult` (`scripts/lib/prepare-derivatives`); `loadSupabaseClient` (`scripts/lib/script-env`); `getArg`, `hasFlag`, `revisionDir`, `ROOT` (`scripts/lib/print-assets-cli`).
-- Produces: `npm run print-assets:compose -- --product <id> --revision <rev> [--force] [--dry-run]`, writing a prepare-compatible `manifest.json` + derivatives + proofs under `design/print-assets/{id}/{rev}/`.
+- Produces: `npm run print-assets:compose -- --product <id> --revision <rev> [--force] [--dry-run]`, writing a prepare-compatible `manifest.json` + derivatives + per-asset `.manifest.json` provenance (req. 16) + proofs under `design/print-assets/{id}/{rev}/`.
 
 - [ ] **Step 1: Write the CLI**
 
@@ -749,6 +865,7 @@ Create `scripts/print-assets-compose.ts`:
  * Output (gitignored): design/print-assets/{productId}/{revision}/
  *   - {w}x{h}-{sha256}.{jpg|png} per distinct profile
  *   - manifest.json (the Phase 2b contract)
+ *   - {w}x{h}.manifest.json — per-asset layout provenance, never uploaded (req. 16)
  *   - proof-{w}x{h}.jpg — 600px review proof, never uploaded
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY and a seeded product_variants
@@ -765,7 +882,7 @@ import {
   refuseOverwrite,
   type DerivativeFormat,
 } from '../src/lib/print-assets-prepare';
-import { parseCompositionConfig, type PrintCompositionConfig } from '../src/lib/print-composition';
+import { parseCompositionConfig, buildAssetManifest, type PrintCompositionConfig } from '../src/lib/print-composition';
 import { composeDerivative } from './lib/compose-master';
 import { prepareOutputDir, writeDerivative } from './lib/prepare-derivatives';
 import { activeVariantDimensions } from './lib/db-variants';
@@ -795,7 +912,7 @@ async function main(): Promise<void> {
 
   const config = loadCompositionConfig(productId);
   const artworkPath = path.resolve(ROOT, config.artwork);
-  const signaturePath = path.resolve(ROOT, config.signature.src);
+  const signaturePath = path.resolve(ROOT, config.signature);
   if (!fs.existsSync(artworkPath)) throw new Error(`Artwork master not found: ${artworkPath}`);
   if (!fs.existsSync(signaturePath)) throw new Error(`Signature not found: ${signaturePath}`);
 
@@ -853,6 +970,12 @@ async function main(): Promise<void> {
       .resize({ width: 600 })
       .jpeg({ quality: 70 })
       .toFile(path.join(outputDir, `proof-${profile.profileKey}.jpg`));
+
+    // Per-asset layout provenance (req. 16) — local-only, never uploaded.
+    fs.writeFileSync(
+      path.join(outputDir, `${profile.profileKey}.manifest.json`),
+      JSON.stringify(buildAssetManifest(result.geometry, config, sourceSha256), null, 2),
+    );
 
     console.log(`${(result.byteSize / 1024).toFixed(0)} KB → ${filename}`);
   }
@@ -944,7 +1067,7 @@ Create `config/print-composition/fap01.json`. Layout + background default, so on
   "_comment": "Composition config for fap01. background (#ded9c3) and layout default from src/lib/print-composition.ts; override layout here only if this design needs different margins/signature scale. opticalOffset tunes optical centering (fractions of canvas); tune per artwork after reviewing proof-*.jpg. Artwork path is gitignored (design/ tree).",
   "product": "fap01",
   "artwork": "design/prints/fap01-artwork.tif",
-  "signature": { "src": "config/print-composition/signature.svg" },
+  "signature": "config/print-composition/signature.svg",
   "opticalOffset": { "x": 0, "y": 0 }
 }
 ```
@@ -966,10 +1089,11 @@ shared `signature.svg`. Consumed by `npm run print-assets:compose`
 |-------|----------|---------|-------|
 | `product` | yes | — | Must match the `--product` id. |
 | `artwork` | yes | — | Path to the artwork master (gitignored `design/` tree), repo-relative. |
-| `signature.src` | yes | — | Shared SVG, repo-relative. Defaults to `config/print-composition/signature.svg`. |
+| `signature` | yes | — | Shared signature SVG path, repo-relative. Defaults to `config/print-composition/signature.svg`. |
 | `background` | no | `#ded9c3` | `#rrggbb` canvas fill. |
 | `layout` | no | see `DEFAULT_LAYOUT` | Override any subset of the fractions / mm clamps / dpi. |
 | `opticalOffset` | no | `{x:0,y:0}` | Per-artwork centering nudge, fractions of canvas. |
+| `bleedMm` | no | `0` | Bleed in mm, recorded in the per-asset manifest. MVP renders no bleed — leave `0` until bleed rendering lands. |
 
 Layout defaults live in `src/lib/print-composition.ts` (`DEFAULT_LAYOUT`): 6.5% margin
 (clamped 18–55 mm), artwork ≤85% width / ≤76% height, signature 2.8% height (8–20 mm),
@@ -1017,10 +1141,11 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 ## Verification (whole feature)
 
-- **Unit:** `npm run test` — pure geometry (`src/lib/print-composition.test.ts`), config parser (same file), and Sharp composition (`scripts/lib/compose-master.test.ts`) all green and deterministic.
+- **Unit:** `npm run test` — pure geometry + per-asset manifest builder (`src/lib/print-composition.test.ts`), config parser (same file), and Sharp composition (`scripts/lib/compose-master.test.ts`) all green and deterministic.
 - **Types/Lint:** `npm run typecheck && npm run lint` clean.
 - **End-to-end on one design (Task 5 Step 4):** `print-assets:compose` → inspect `proof-*.jpg` → `print-assets:upload` → `verify` → `publish` → `print-assets:sandbox-matrix` (a real Prodigi sandbox order per profile — the physical fidelity gate that matches the quality goal).
-- **Downstream unchanged:** confirm `print-assets:upload/verify/publish` consume the composed `manifest.json` with no code change (they read only the manifest + named files).
+- **Downstream unchanged:** confirm `print-assets:upload/verify/publish` consume the composed `manifest.json` with no code change (they read only the manifest + named files). Per-asset `{w}x{h}.manifest.json` files (req. 16) are local-only — they must NOT be listed in the pipeline manifest or uploaded.
+- **Reproducibility (the byte-identical claim):** the pipeline keys derivative filenames on sha256 and `verify` checks byte-identity, but Sharp/libvips JPEG output is not guaranteed stable across `sharp` versions or OSes. Pin `sharp` in `package.json` (avoid `^` drift) and confirm a re-compose on a second machine/CI reproduces the exact bytes before relying on it — otherwise a re-run after a bump yields new hashes → orphaned files + forced re-upload. Each per-asset manifest's `rendererVersion` (req. 16) ties a derivative to the layout math; pair it with a Sharp-version pin for full provenance.
 
 ## Out of scope (Phase 2, if the JSON-tune loop proves painful)
 
