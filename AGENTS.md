@@ -119,6 +119,7 @@ Beyond `checkout` and `stripe/webhook`, `src/app/api/` exposes:
 - **`/api/private-sale`** — resolves a single-use token to re-offer already-**sold** pieces to a specific buyer. Tokens are minted with `npm run private-sale:create`, stored in `private_sales`, and reserved atomically by `reserve_private_sale_pieces()`. Private-sale links are **ceramics-only** — checkout rejects a token combined with prints (`400 private_sale_prints_unsupported`). Spec: `docs/plans/private-sale-cart-link.md`.
 - **`/api/returns`** — creates a return shipment (requires `STUDIO_RETURN_*`).
 - **`/api/print-assets/[id]`** — signed high-res print files for Prodigi (see above).
+- **`/api/debug/fulfilment-status`** — fail-closed, secret-gated (`FULFILMENT_DEBUG_TOKEN`; 404 unless the token is set, 401 on mismatch) minimal read (`{ fulfilmentStatus, prodigiOrderId }`, no PII) looked up by `?payment_intent=`. Preview-only debug surface for the destructive print-purchase E2E to assert the Stripe→webhook→queue→Prodigi pipeline advanced (audit H-2). The test-side secret is `E2E_FULFILMENT_DEBUG_TOKEN`.
 - **`/api/admin/revoke-print-asset`** — emergency-revoke a fulfilment asset (distinct from retire; blocks checkout + returns 410 on the signed route).
 - **`/api/webhooks/prodigi/[token]`** — Prodigi status callbacks (see above).
 - **`/api/admin/*`** — back-office actions, Cloudflare Access-gated (see Admin above).
@@ -166,6 +167,7 @@ Multi-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `
 - `META_CAPI_ACCESS_TOKEN` / `GA4_API_SECRET` (+ optional `META_TEST_EVENT_CODE`) — server-side conversions
 - `STUDIO_RETURN_*` — return shipment address (required for `/api/returns`)
 - `PRODIGI_API_KEY_SANDBOX` / `PRODIGI_API_KEY_LIVE` / `PRODIGI_ENV` / `PRODIGI_CALLBACK_TOKEN` / `PRODIGI_DEFAULT_SHIPPING_METHOD` — print-on-demand fulfilment; `PRINT_ASSET_TOKEN_SECRET` signs the `/api/print-assets/[id]` URLs Prodigi pulls from
+- `FULFILMENT_DEBUG_TOKEN` — fail-closed gate for the preview-only `/api/debug/fulfilment-status` read (destructive print-purchase E2E, audit H-2); never set in production. The E2E runner passes the same value via `E2E_FULFILMENT_DEBUG_TOKEN`
 - `CF_ACCESS_TEAM_DOMAIN` / `CF_ACCESS_AUD` / `ADMIN_ALLOWED_EMAILS` — Cloudflare Access gate for `/admin` (+ `STUDIO_ADMIN_LOCAL_BYPASS` to skip it in local dev)
 - `CMS_PREVIEW_SECRET` — dedicated HMAC secret for admin draft-preview tokens (`/api/admin/content/preview` → `?preview=` on PDPs). Fail-closed: must be set or preview minting 500s; never reuse Stripe/Supabase secrets. The publish path is atomic via the `publish_cms_version()` RPC (migration `20260709120000`); notes are keyed by product id, not array position.
 
