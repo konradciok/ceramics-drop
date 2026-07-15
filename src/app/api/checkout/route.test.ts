@@ -44,9 +44,7 @@ const getClientIp = vi.fn(() => '203.0.113.50');
 const orderAmountGrosze = vi.fn(() => 9_000);
 const orderAmountEuroCents = vi.fn(() => 2_200);
 const orderAmountGBPPence = vi.fn(() => 1_900);
-const toGrosze = vi.fn((v: number) => Math.round(v * 100));
-const toEuroCents = vi.fn((v: number) => Math.round(v * 100));
-const toGBPPence = vi.fn((v: number) => Math.round(v * 100));
+const toMinor = vi.fn((v: number) => Math.round(v * 100));
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -103,9 +101,7 @@ vi.mock('@/lib/pricing', () => ({
   orderAmountGrosze,
   orderAmountEuroCents,
   orderAmountGBPPence,
-  toGrosze,
-  toEuroCents,
-  toGBPPence,
+  toMinor,
 }));
 
 const sendCheckoutStartedEvent = vi.fn(async () => {});
@@ -777,7 +773,7 @@ describe('POST /api/checkout', () => {
       const res = await post();
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', true, 'pln')) }),
+        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'pln')) }),
       );
       // The InPost ceramic price list must not be consulted for prints.
       expect(orderAmountGrosze).not.toHaveBeenCalled();
@@ -791,7 +787,7 @@ describe('POST /api/checkout', () => {
       const res = await post();
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toGrosze(printShippingOf('DE', false, 'pln')) }),
+        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', false, 'pln')) }),
       );
     });
 
@@ -806,7 +802,7 @@ describe('POST /api/checkout', () => {
       );
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toEuroCents(printShippingOf('DE', true, 'eur')) }),
+        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'eur')) }),
       );
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ currency: 'eur' }),
@@ -825,7 +821,7 @@ describe('POST /api/checkout', () => {
       );
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toGBPPence(printShippingOf('DE', true, 'gbp')) }),
+        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'gbp')) }),
       );
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ currency: 'gbp' }),

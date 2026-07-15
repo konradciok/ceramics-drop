@@ -30,14 +30,15 @@ export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
-/** Zloty (integer) → grosze. Prices have no fractional zloty, so this is ×100. */
-export function toGrosze(zloty: number): number {
-  return Math.round(zloty * 100);
+/** Major currency units → minor units. PLN/EUR/GBP are all 100-minor-unit
+ * currencies, so grosze/euro-cents/pence are all `Math.round(units × 100)`. */
+export function toMinor(units: number): number {
+  return Math.round(units * 100);
 }
 
 /** Shipping cost (grosze) for the chosen delivery method. */
 export function shippingGrosze(method: DeliveryMethod): number {
-  return toGrosze(SHIPPING_PLN[method]);
+  return toMinor(SHIPPING_PLN[method]);
 }
 
 /** Sum item amounts (grosze) plus shipping for the chosen method. */
@@ -94,11 +95,6 @@ export const SHIPPING_GBP: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
-/** Pounds (integer) → pence. */
-export function toGBPPence(pounds: number): number {
-  return Math.round(pounds * 100);
-}
-
 /**
  * USD/CAD price tables — architected for future markets but not yet launched.
  * Every category is `null`; `priceOfCurrency` throws if one is read before a
@@ -130,7 +126,7 @@ export const PRICE_CAD: Record<CategorySlug, number | null> = {
   'fine-art-prints': null,
 };
 
-/** US dollars (integer) → cents. Same ×100 math as toGrosze. */
+/** US dollars (integer) → cents. Same ×100 math as toMinor. */
 export function toUSDCents(dollars: number): number {
   return Math.round(dollars * 100);
 }
@@ -142,7 +138,7 @@ export function toCADCents(dollars: number): number {
 
 /** Shipping cost in pence for the chosen delivery method. */
 export function shippingGBPPence(method: DeliveryMethod): number {
-  return toGBPPence(SHIPPING_GBP[method]);
+  return toMinor(SHIPPING_GBP[method]);
 }
 
 /** Sum item amounts (pence) + shipping for the chosen method. */
@@ -206,14 +202,9 @@ export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): 
   }
 }
 
-/** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
-export function toEuroCents(euros: number): number {
-  return Math.round(euros * 100);
-}
-
 /** Shipping cost in euro-cents for the chosen delivery method. */
 export function shippingEuroCents(method: DeliveryMethod): number {
-  return toEuroCents(SHIPPING_EUR[method]);
+  return toMinor(SHIPPING_EUR[method]);
 }
 
 /** Sum item amounts (euro-cents) + shipping for the chosen method. */

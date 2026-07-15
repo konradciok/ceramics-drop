@@ -72,19 +72,19 @@ describe('validateCart', () => {
   });
 
   it('resolves items to euro-cents when currency is eur', async () => {
-    // k01 is kubki → PRICE_EUR.kubki = 25 → toEuroCents(25) = 2500
+    // k01 is kubki → PRICE_EUR.kubki = 25 → toMinor(25) = 2500
     const result = await validateCart(['k01'], 'eur');
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2500 }] });
   });
 
   it('default currency (no arg) still produces grosze', async () => {
-    // k01 is kubki → product.price = PRICE_PLN.kubki = 95 → toGrosze(95) = 9500
+    // k01 is kubki → product.price = PRICE_PLN.kubki = 95 → toMinor(95) = 9500
     const result = await validateCart(['k01']);
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
   });
 
   it('resolves items to pence when currency is gbp', async () => {
-    // k01 is kubki → PRICE_GBP.kubki = 22 → toGBPPence(22) = 2200
+    // k01 is kubki → PRICE_GBP.kubki = 22 → toMinor(22) = 2200
     const result = await validateCart(['k01'], 'gbp');
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
   });

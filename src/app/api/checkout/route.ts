@@ -7,7 +7,7 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toEuroCents, toGBPPence, toGrosze } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toMinor } from '@/lib/pricing';
 import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
@@ -107,10 +107,7 @@ export async function POST(req: Request) {
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
-    const shipMinor =
-      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
-      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
-      toGrosze(shipMajor);
+    const shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
       // log is the observability signal only; revisit with Prodigi POST /quotes
