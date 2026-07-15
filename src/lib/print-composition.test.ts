@@ -6,6 +6,7 @@ import {
   containDimensions,
   composeLayout,
   buildAssetManifest,
+  parseCompositionConfig,
   DEFAULT_LAYOUT,
   BACKGROUND_DEFAULT,
   RENDERER_VERSION,
@@ -139,5 +140,39 @@ describe('buildAssetManifest', () => {
   it('flows bleedMm through from the config', () => {
     const m = buildAssetManifest(geo, { ...manifestConfig, bleedMm: 5 }, 'abc123');
     expect(m.bleedMm).toBe(5);
+  });
+});
+
+describe('parseCompositionConfig', () => {
+  const minimal = {
+    product: 'fap01',
+    artwork: 'design/prints/fap01-artwork.tif',
+    signature: 'config/print-composition/signature.svg',
+  };
+
+  it('fills defaults for background, layout, bleed, and optical offset', () => {
+    const cfg = parseCompositionConfig(minimal, 'fap01');
+    expect(cfg.background).toBe('#ded9c3');
+    expect(cfg.layout).toEqual(DEFAULT_LAYOUT);
+    expect(cfg.opticalOffset).toEqual({ x: 0, y: 0 });
+    expect(cfg.bleedMm).toBe(0);
+  });
+
+  it('rejects a product id that does not match', () => {
+    expect(() => parseCompositionConfig(minimal, 'fap02')).toThrow(/product/i);
+  });
+
+  it('rejects a missing artwork path', () => {
+    expect(() => parseCompositionConfig({ ...minimal, artwork: '' }, 'fap01')).toThrow(/artwork/i);
+  });
+
+  it('rejects an invalid background hex', () => {
+    expect(() => parseCompositionConfig({ ...minimal, background: 'pink' }, 'fap01')).toThrow(/background/i);
+  });
+
+  it('merges a partial layout over the defaults', () => {
+    const cfg = parseCompositionConfig({ ...minimal, layout: { artworkMaxWidthFrac: 0.8 } }, 'fap01');
+    expect(cfg.layout.artworkMaxWidthFrac).toBe(0.8);
+    expect(cfg.layout.marginShortSideFrac).toBe(DEFAULT_LAYOUT.marginShortSideFrac);
   });
 });

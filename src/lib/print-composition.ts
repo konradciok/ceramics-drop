@@ -217,3 +217,42 @@ export function buildAssetManifest(
     rendererVersion: RENDERER_VERSION,
   };
 }
+
+// ── Config parsing ────────────────────────────────────────────────────────────
+
+function fail(message: string): never {
+  throw new Error(`Invalid print-composition config: ${message}`);
+}
+
+/**
+ * Validate + normalise a raw config/print-composition/{productId}.json object.
+ * `layout` and `background` are optional — they default to DEFAULT_LAYOUT /
+ * #ded9c3 — so a per-product config can be as small as { product, artwork, signature }.
+ *
+ * Committed JSON loaded once per run: fail fast on the likely operator mistakes
+ * (product mismatch, missing paths, bad hex) and trust the types for layout /
+ * opticalOffset — a bad fraction surfaces in the geometry pass, not here.
+ */
+export function parseCompositionConfig(
+  raw: unknown,
+  productId: string,
+): PrintCompositionConfig {
+  const r = (raw ?? {}) as Partial<PrintCompositionConfig>;
+  if (r.product !== productId) fail(`product must equal "${productId}"`);
+  if (typeof r.artwork !== 'string' || !r.artwork) fail('artwork must be a non-empty path');
+  if (typeof r.signature !== 'string' || !r.signature) fail('signature must be a non-empty path');
+
+  const background = r.background ?? BACKGROUND_DEFAULT;
+  if (!/^#?[0-9a-f]{6}$/i.test(background)) fail(`background "${background}" must be #rrggbb`);
+  const bleedMm = typeof r.bleedMm === 'number' && r.bleedMm >= 0 ? r.bleedMm : 0;
+
+  return {
+    product: r.product,
+    artwork: r.artwork,
+    signature: r.signature,
+    background: background.startsWith('#') ? background : `#${background}`,
+    layout: { ...DEFAULT_LAYOUT, ...r.layout },
+    opticalOffset: r.opticalOffset ?? { x: 0, y: 0 },
+    bleedMm,
+  };
+}
