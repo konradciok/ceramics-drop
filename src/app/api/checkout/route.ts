@@ -55,8 +55,8 @@ export async function POST(req: Request) {
       ? body.locale
       : 'pl';
   // Currency is a per-request concern driven by the `currency_pref` cookie, not
-  // the locale. Clamp to the launched, sellable currencies — USD/CAD are wired
-  // through pricing but have no Stripe branch here yet.
+  // the locale. Clamp to the launched, sellable currencies (pln/eur/gbp);
+  // anything else maps to EUR.
   const chargeCurrency = toChargeableCurrency(
     currencyFromCookieHeader(locale, req.headers.get('cookie')),
   );
