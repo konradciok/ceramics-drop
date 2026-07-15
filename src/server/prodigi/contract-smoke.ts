@@ -40,16 +40,22 @@ export async function runProdigiContractSmoke(deps: ContractSmokeDeps): Promise<
   const { client, payload, mapStage } = deps;
   const steps: SmokeStep[] = [];
   let prodigiOrderId: string | undefined;
+  let createdNew = false; // outcome === 'Created' — only Created orders are ours to cancel
   let cancelled = false;
   let realStage: string | undefined;
 
   try {
     const created = await client.postOrder(payload);
     prodigiOrderId = created.order?.id;
+    createdNew = created.outcome === 'Created';
     steps.push(
-      created.outcome
+      created.outcome === 'Created' || created.outcome === 'AlreadyExists'
         ? { step: 'create:outcome', ok: true }
-        : { step: 'create:outcome', ok: false, reason: 'postOrder response missing outcome' },
+        : {
+            step: 'create:outcome',
+            ok: false,
+            reason: `postOrder outcome='${created.outcome ?? 'missing'}' (expected 'Created' or 'AlreadyExists')`,
+          },
     );
     steps.push(
       prodigiOrderId && typeof prodigiOrderId === 'string'
@@ -111,11 +117,13 @@ export async function runProdigiContractSmoke(deps: ContractSmokeDeps): Promise<
   } catch (e) {
     steps.push({ step: 'lifecycle', ok: false, reason: e instanceof Error ? e.message : String(e) });
   } finally {
-    if (prodigiOrderId) {
+    // Only cancel an order THIS run created. An AlreadyExists replay returns a
+    // prior run's order; cancelling it would destroy another run's fixture.
+    if (prodigiOrderId && createdNew) {
       try {
         const cancel = await client.cancelOrder(prodigiOrderId);
-        cancelled = true;
         const outcome = String(cancel.outcome ?? '').toLowerCase();
+        cancelled = outcome === 'cancelled';
         steps.push(
           outcome === 'cancelled'
             ? { step: 'cancel', ok: true }

@@ -131,4 +131,30 @@ describe('runProdigiContractSmoke', () => {
     const mrFail = res.steps.find((s) => s.step === 'getOrder:merchantReference' && !s.ok);
     expect(mrFail).toBeTruthy();
   });
+
+  it('does not cancel a replayed order on AlreadyExists (idempotency replay)', async () => {
+    const { deps, client } = buildDeps({
+      created: {
+        outcome: 'AlreadyExists',
+        order: { id: 'ord_1', status: { stage: 'InProgress' }, items: [{ id: 'item_1', sku: 'GLOBAL-FAP-12X16' }] },
+      },
+    });
+    const res = await runProdigiContractSmoke(deps);
+    // create:outcome still passes — Prodigi accepted the payload and returned an order
+    const createStep = res.steps.find((s) => s.step === 'create:outcome');
+    expect(createStep?.ok).toBe(true);
+    // ...but it was not created this run, so we must NOT cancel someone else's fixture
+    expect(client.cancelOrder).not.toHaveBeenCalled();
+    expect(res.cancelled).toBe(false);
+  });
+
+  it('reports cancelled=false when cancelOrder returns a non-cancelled outcome', async () => {
+    const { deps, client } = buildDeps({ cancelOutcome: 'FailedToCancel' });
+    const res = await runProdigiContractSmoke(deps);
+    expect(res.cancelled).toBe(false);
+    expect(res.ok).toBe(false);
+    expect(client.cancelOrder).toHaveBeenCalledWith('ord_1');
+    const cancelStep = res.steps.find((s) => s.step === 'cancel' && !s.ok);
+    expect(cancelStep).toBeTruthy();
+  });
 });
