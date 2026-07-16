@@ -65,6 +65,100 @@ export function distinctProfiles(variants: VariantDimension[]): DerivativeProfil
   return [...byProfileKey.values()].sort((a, b) => a.profileKey.localeCompare(b.profileKey));
 }
 
+// ── Proportional layout (composition) ───────────────────────────────────────────
+
+/**
+ * Proportional composition rules — fractions of the target canvas, resolved to
+ * concrete pixels per profile by `resolvePlacement`. Replaces the per-profile
+ * `crop` model (docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md).
+ *
+ * Side margins are a fraction of the SHORT side (robust across portrait/
+ * landscape); vertical regions are fractions of canvas height.
+ */
+export interface PrintLayout {
+  sideMargin: number; // fraction of min(W, H), applied both sides
+  topMargin: number; // fraction of H
+  bottomMargin: number; // fraction of H
+  gapAboveSignature: number; // fraction of H (ignored when no signature)
+  signatureZoneHeight: number; // fraction of H (ignored when no signature)
+  /** Optional ceiling on the artwork box width, fraction of W. */
+  artworkMaxWidth?: number;
+  /** Optional ceiling on the artwork box height, fraction of H. */
+  artworkMaxHeight?: number;
+}
+
+/** A pixel rectangle on the canvas. */
+export interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Resolved placement of artwork + signature on one target canvas. */
+export interface Placement {
+  /** The artwork contain-target box (margins/ceilings applied). */
+  artworkBox: Box;
+  /** The signature zone, or null when the design has no signature. */
+  signatureBox: Box | null;
+  /** Contain-scaled artwork output dimensions (preserve aspect). */
+  artworkOut: { width: number; height: number };
+  /** Top-left canvas position of the scaled artwork (centred in available width). */
+  artworkPos: { x: number; y: number };
+  /** Artwork contain scale = min(boxW/srcW, boxH/srcH). Used for no-upscale validation. */
+  scale: number;
+}
+
+const round = Math.round;
+
+/**
+ * Resolve a proportional layout to concrete pixel boxes on a target canvas.
+ * Pure + deterministic (round-half-up). See spec §Layout model for the math.
+ */
+export function resolvePlacement(
+  layout: PrintLayout,
+  target: { w: number; h: number },
+  artwork: { w: number; h: number },
+  hasSignature: boolean,
+): Placement {
+  const { w, h } = target;
+  const shortSide = Math.min(w, h);
+
+  const mx = round(layout.sideMargin * shortSide);
+  const mt = round(layout.topMargin * h);
+  const mb = round(layout.bottomMargin * h);
+  const gap = hasSignature ? round(layout.gapAboveSignature * h) : 0;
+  const sigZone = hasSignature ? round(layout.signatureZoneHeight * h) : 0;
+
+  const availableW = w - 2 * mx;
+  const sigZoneTop = h - mb - sigZone;
+  const artworkBoxTop = mt;
+  const artworkBoxDerived = sigZoneTop - gap - artworkBoxTop;
+
+  const artworkBoxW =
+    layout.artworkMaxWidth != null ? Math.min(availableW, round(layout.artworkMaxWidth * w)) : availableW;
+  const artworkBoxH =
+    layout.artworkMaxHeight != null
+      ? Math.min(artworkBoxDerived, round(layout.artworkMaxHeight * h))
+      : artworkBoxDerived;
+
+  const artworkBox: Box = { x: mx, y: artworkBoxTop, width: artworkBoxW, height: artworkBoxH };
+
+  // Contain-fit the artwork into the box (preserve aspect, no crop).
+  const scale = Math.min(artworkBoxW / artwork.w, artworkBoxH / artwork.h);
+  const artworkOut = { width: round(artwork.w * scale), height: round(artwork.h * scale) };
+  const artworkPos = {
+    x: mx + round((availableW - artworkOut.width) / 2),
+    y: artworkBoxTop + round((artworkBoxH - artworkOut.height) / 2),
+  };
+
+  const signatureBox: Box | null = hasSignature
+    ? { x: mx, y: sigZoneTop, width: availableW, height: sigZone }
+    : null;
+
+  return { artworkBox, signatureBox, artworkOut, artworkPos, scale };
+}
+
 // ── Crop / enlargement guards ────────────────────────────────────────────────
 
 /**

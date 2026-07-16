@@ -8,7 +8,9 @@ import {
   validateManifest,
   refuseOverwrite,
   validateProfileCoverage,
+  resolvePlacement,
   type PrepareConfig,
+  type PrintLayout,
 } from './print-assets-prepare';
 
 describe('buildR2Key', () => {
@@ -229,5 +231,69 @@ describe('validateProfileCoverage', () => {
     const profiles = distinctProfiles([{ variantKey: 'a', w: 3600, h: 4800 }]);
     const errors = validateProfileCoverage(['9999x9999'], profiles);
     expect(errors).toHaveLength(2);
+  });
+});
+
+// ── Proportional layout (composition) ───────────────────────────────────────────
+
+const LAYOUT: PrintLayout = {
+  sideMargin: 0.1,
+  topMargin: 0.1,
+  bottomMargin: 0.1,
+  gapAboveSignature: 0.05,
+  signatureZoneHeight: 0.05,
+};
+
+describe('resolvePlacement', () => {
+  it('places a same-aspect artwork centred with proportional margins', () => {
+    // 1000x1000 canvas, 1:1 artwork fills the box.
+    const p = resolvePlacement(LAYOUT, { w: 1000, h: 1000 }, { w: 800, h: 800 }, false);
+    // sideMargin 10% of short side (1000) → mx = 100 → availableW = 800
+    expect(p.artworkBox.x).toBe(100);
+    expect(p.artworkBox.width).toBe(800);
+    // artwork 800x800 contain-fills the 800-wide box exactly
+    expect(p.artworkOut).toEqual({ width: 800, height: 800 });
+    expect(p.artworkPos).toEqual({ x: 100, y: 100 });
+    expect(p.scale).toBe(1);
+  });
+
+  it('contain-fits a different-aspect artwork without cropping', () => {
+    // Wide artwork (1600x800, 2:1) in a square box → height-limited.
+    const p = resolvePlacement(LAYOUT, { w: 1000, h: 1000 }, { w: 1600, h: 800 }, true);
+    // artworkBox height = 1000 - 100(top) - 50(gap) - 50(sig) - 100(bottom) = 700
+    expect(p.artworkBox.height).toBe(700);
+    // scale limited by height: min(800/1600, 700/800) = min(0.5, 0.875) = 0.5
+    expect(p.scale).toBe(0.5);
+    expect(p.artworkOut).toEqual({ width: 800, height: 400 });
+  });
+
+  it('reserves and returns the signature zone when hasSignature is true', () => {
+    const p = resolvePlacement(LAYOUT, { w: 1000, h: 1000 }, { w: 800, h: 800 }, true);
+    // sigZoneTop = 1000 - 100(bottom) - 50(sigZone) = 850
+    expect(p.signatureBox).toEqual({ x: 100, y: 850, width: 800, height: 50 });
+  });
+
+  it('collapses the signature zone and gap when hasSignature is false', () => {
+    const p = resolvePlacement(LAYOUT, { w: 1000, h: 1000 }, { w: 800, h: 800 }, false);
+    expect(p.signatureBox).toBeNull();
+    // artworkBox height expands into the freed gap+sig space:
+    // 1000 - 100(top) - 0 - 0 - 100(bottom) = 800
+    expect(p.artworkBox.height).toBe(800);
+  });
+
+  it('honours optional artworkMaxWidth / artworkMaxHeight ceilings', () => {
+    const layout: PrintLayout = { ...LAYOUT, artworkMaxWidth: 0.5, artworkMaxHeight: 0.4 };
+    const p = resolvePlacement(layout, { w: 1000, h: 1000 }, { w: 800, h: 800 }, false);
+    // availableW = 800, but artworkMaxWidth 0.5*1000 = 500 caps it
+    expect(p.artworkBox.width).toBe(500);
+    // derived height 800, but artworkMaxHeight 0.4*1000 = 400 caps it
+    expect(p.artworkBox.height).toBe(400);
+  });
+
+  it('uses the short side for side margins so portrait vs landscape differ correctly', () => {
+    // Landscape 1000x500 canvas, sideMargin 10% of short side (500) → mx = 50
+    const p = resolvePlacement(LAYOUT, { w: 1000, h: 500 }, { w: 800, h: 200 }, false);
+    expect(p.artworkBox.x).toBe(50);
+    expect(p.artworkBox.width).toBe(900); // 1000 - 2*50
   });
 });
