@@ -212,3 +212,11 @@ Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`)
 `src/middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this). See `docs/superpowers/plans/2026-06-08-go-to-market-execution.md` (Task 8, cancelled).
 
 New migrations go in `supabase/migrations/` with timestamp prefix. Docs for deployment, E2E testing design, and analytics setup are in `docs/`.
+
+## Knowledge Vault (Notion)
+
+A **non-code** knowledge base for this project lives in a Notion database — the stuff code and these docs can't answer: *why* decisions were made (ADR log), operational rituals (Supabase migration-drift discipline, the no-dev-DB / sell-through-robust e2e rule, destructive-test token contract), external-account & dashboard locations (Supabase ref, Cloudflare account, Stripe/InPost/Prodigi/Resend), and a glossary of domain terms (drop, showroom, POD variant, attemptId, `ponytail:` marker). Read its **Start Here** page first for the ontology and a section map of where every kind of knowledge lives.
+
+- The DB id is `NOTION_OPERATIONAL_DB_ID` (distinct from `NOTION_DATABASE_ID`, the translations DB used by `npm run i18n:*`).
+- Reach it via the **`notion` MCP server** (read/query pages), or programmatically via `scripts/notion-i18n/lib.mjs` `NotionClient` (token `NOTION_TOKEN`). Seed/maintain its structure with `node scripts/notion-vault/seed.mjs`.
+- **Do not duplicate** engineering context there — this `AGENTS.md` and `docs/` remain the engineering source of truth. The vault owns only knowledge with no canonical home in the repo; each page names its own "Source of truth" cross-link.
