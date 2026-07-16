@@ -27,6 +27,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="adm-brand">Anna&nbsp;Ciok · <b>Admin</b></span>
               <AdminNav />
               <span className="adm-top-tag">studio</span>
+              <span className="adm-top-tag adm-top-version">
+                v{process.env.NEXT_PUBLIC_APP_VERSION}
+                {process.env.NEXT_PUBLIC_GIT_SHA && process.env.NEXT_PUBLIC_GIT_SHA !== 'dev'
+                  ? ` · ${process.env.NEXT_PUBLIC_GIT_SHA}`
+                  : ''}
+              </span>
             </header>
             <main className="adm-main">{children}</main>
           </div>
