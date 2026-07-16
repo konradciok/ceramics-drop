@@ -71,6 +71,7 @@
   color: var(--c-sand);
   opacity: .8;
 }
+.adm-top-version { margin-left: .5rem; }
 
 /* ---- Layout ----------------------------------------------------------- */
 .adm-main { max-width: var(--max); margin: 0 auto; padding: clamp(24px, 4vw, 48px) var(--gut) 96px; }

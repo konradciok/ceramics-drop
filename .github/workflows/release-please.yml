@@ -1,0 +1,24 @@
+# Automated semver releases. On each push to main, release-please opens/updates a
+# "release PR" that bumps package.json + writes CHANGELOG.md from Conventional
+# Commits; merging that PR creates the vX.Y.Z tag + GitHub Release. Prod itself
+# still deploys via Cloudflare Workers Builds on every main push — this workflow
+# only manages versions/tags/changelog. See AGENTS.md § Versioning.
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@8b8fd2cc23b2e18957157a9d923d75aa0c6f6ad5 # v4
+        with:
+          release-type: node
+          # Single root package → tags as v0.7.1, not ceramics-drop-v0.7.1.
+          include-component-in-tag: false

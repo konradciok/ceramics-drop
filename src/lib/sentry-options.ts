@@ -13,6 +13,9 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
   return {
     dsn,
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
+    // Correlate every event with the release that shipped it. Inlined at build
+    // from package.json (next.config.ts) — matches the source-map `release`.
+    release: process.env.NEXT_PUBLIC_APP_VERSION,
     tracesSampleRate: isDev ? 1.0 : 0.1,
     sendDefaultPii: false,
     ignoreErrors: [

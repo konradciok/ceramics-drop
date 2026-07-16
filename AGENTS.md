@@ -193,6 +193,14 @@ See `.env.example` for the full list and setup notes. See `docs/cloudflare-deplo
 
 **Build system:** Always use webpack — never Turbopack. The `build` script in `package.json` must stay as `next build --webpack`. OpenNext cannot load Turbopack chunks at the Cloudflare Workers runtime (causes ChunkLoadError → HTTP 500 on every page). Do not remove `--webpack`, do not add `--turbo`, do not suggest switching to Turbopack for any reason.
 
+## Versioning
+
+The canonical version lives in `package.json` `version` — single source of truth; the admin badge, Sentry `release`, git tags, and `CHANGELOG.md` all derive from it. `next.config.ts` inlines it at build as `NEXT_PUBLIC_APP_VERSION` (shown in the admin header as `vX.Y.Z · <short-sha>`) and as the Sentry release (`src/lib/sentry-options.ts`).
+
+Bumps are automated by **release-please** (`.github/workflows/release-please.yml`) from Conventional Commits: it maintains a "release PR" that bumps `package.json` + writes `CHANGELOG.md`; merging it creates the `vX.Y.Z` tag + GitHub Release. Prod still deploys via Cloudflare Workers Builds on every push to `main` — the version tag lands when the release PR merges.
+
+**Commit → version mapping:** `feat:` → minor (`0.8.0`), `fix:`/`perf:` → patch (`0.7.x`), `feat!:` / `BREAKING CHANGE:` → major (`1.0.0`). `chore:`/`docs:`/`test:`/`refactor:`/`ci:` commits do **not** cut a standalone release — they fold into the next `feat:`/`fix:` release. So for a routine PR that should ship a version bump, title it `fix:` (or `feat:`) rather than `chore:`. Current series is pre-1.0 (`0.x`).
+
 ## Deployment
 
 Cloudflare Workers via OpenNext (`open-next.config.ts`). Preview locally with `npm run preview:cf`. Workers Builds CI handles production deploys on push to main.
