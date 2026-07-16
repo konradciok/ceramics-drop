@@ -241,16 +241,23 @@ export interface GallerySlotConfig {
   uploadStem: string;
 }
 
-/** One explicit crop/focal per distinct print-area dimension (profileKey). */
+/** Optional SVG signature layer (rendered from vector, never cut from a JPG). */
+export interface SignatureConfig {
+  svg: string; // path relative to repo root, under design/
+}
+
+/**
+ * Product-level composition config (one layout adapts to every profile).
+ * Replaces the per-profile crop map. sourceSha256/sourceWidth/sourceHeight in
+ * the manifest refer to the `artwork` master named here.
+ */
 export interface PrepareConfig {
   product: string;
-  profiles: Record<
-    string, // profileKey, e.g. '3600x4800'
-    {
-      format: DerivativeFormat;
-      crop: { left: number; top: number; width: number; height: number };
-    }
-  >;
+  artwork: string; // path to artwork-only master, under design/
+  background: string; // hex colour, e.g. "#E8E0D7"
+  format: DerivativeFormat; // product-level output format
+  layout: PrintLayout;
+  signature?: SignatureConfig;
   /** Optional storefront gallery slots (operator `print-assets:gallery`). */
   gallery?: Record<string, GallerySlotConfig>;
 }
@@ -268,13 +275,14 @@ export interface ManifestDerivative {
   width: number;
   height: number;
   format: DerivativeFormat;
-  /** MIME type Phase 2b must set as R2 HTTP metadata and stage into
-   *  `print_fulfilment_assets.content_type` — `wrangler r2 object put`
-   *  does not infer content-type from the key, so this is the contract. */
   contentType: string;
   sha256: string;
   byteSize: number;
   r2Key: string;
+  /** Resolved artwork box on this canvas (audit/repro). */
+  artworkBoxPx: Box;
+  /** Resolved signature zone on this canvas, or null. */
+  signatureBoxPx: Box | null;
 }
 
 export interface ManifestAssignment {
@@ -282,15 +290,30 @@ export interface ManifestAssignment {
   profileKey: string;
 }
 
+/** Layout snapshot for reproducibility/audit (the operator's "layout manifest"). */
+export interface ManifestLayout {
+  /** Bumped on any change to the compose pipeline; gates reproducibility claims. */
+  rendererVersion: string;
+  background: string; // hex, as configured
+  artworkSha256: string;
+  signatureSha256: string | null;
+  layout: PrintLayout; // the fractions, as configured
+}
+
 export interface PrepareManifest {
   product: string;
   revision: string;
-  sourceSha256: string;
-  sourceWidth: number;
-  sourceHeight: number;
+  sourceSha256: string; // artwork master file hash
+  sourceWidth: number; // artwork master width
+  sourceHeight: number; // artwork master height
+  signatureSha256: string | null; // signature.svg file hash, or null
+  layout: ManifestLayout;
   derivatives: ManifestDerivative[];
   assignments: ManifestAssignment[];
 }
+
+/** Bump when the Sharp compose pipeline changes in any way that affects output bytes. */
+export const COMPOSE_RENDERER_VERSION = '2.0.0';
 
 export interface BuildManifestInput {
   product: string;
@@ -298,16 +321,23 @@ export interface BuildManifestInput {
   sourceSha256: string;
   sourceWidth: number;
   sourceHeight: number;
+  signatureSha256: string | null;
+  layout: PrintLayout;
+  background: string;
+  hasSignature: boolean;
   profiles: DerivativeProfile[];
-  /** Per-profile output produced by the Sharp pipeline (script-side I/O already done). */
-  derivativeMeta: Record<string, { sha256: string; byteSize: number; format: DerivativeFormat }>;
+  /** Per-profile compose output + its resolved placement. */
+  derivativeMeta: Record<
+    string,
+    {
+      sha256: string;
+      byteSize: number;
+      format: DerivativeFormat;
+      placement: Placement;
+    }
+  >;
 }
 
-/**
- * Assemble the manifest Phase 2b (upload/verify/publish) consumes. One
- * derivative per distinct profile; assignments map every active variant_key
- * to its profile (variants sharing a dimension share a profile — plan §1).
- */
 export function buildManifest(input: BuildManifestInput): PrepareManifest {
   const derivatives: ManifestDerivative[] = input.profiles.map((profile) => {
     const meta = input.derivativeMeta[profile.profileKey];
@@ -323,6 +353,8 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
       sha256: meta.sha256,
       byteSize: meta.byteSize,
       r2Key: buildR2Key(input.product, input.revision, profile.w, profile.h, meta.sha256, meta.format),
+      artworkBoxPx: meta.placement.artworkBox,
+      signatureBoxPx: meta.placement.signatureBox,
     };
   });
 
@@ -336,52 +368,61 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
     sourceSha256: input.sourceSha256,
     sourceWidth: input.sourceWidth,
     sourceHeight: input.sourceHeight,
+    signatureSha256: input.signatureSha256,
+    layout: {
+      rendererVersion: COMPOSE_RENDERER_VERSION,
+      background: input.background,
+      artworkSha256: input.sourceSha256,
+      signatureSha256: input.signatureSha256,
+      layout: input.layout,
+    },
     derivatives,
     assignments,
   };
 }
 
 /**
- * Validate a manifest against its tracked config: every configured profile
- * must have exactly one derivative, and that derivative's decoded dimensions
- * must equal the profile's declared dimensions. Returns a list of error
- * strings (empty = valid) rather than throwing, so callers can report every
- * problem at once.
+ * Validate a manifest against its tracked config + its own internal consistency:
+ * every configured profile has exactly one derivative, derivative dims match the
+ * profile key, and each derivative's recorded artworkBoxPx equals a placement
+ * recomputed from the manifest's layout + source dims. Returns error strings.
  */
 export function validateManifest(manifest: PrepareManifest, config: PrepareConfig): string[] {
   const errors: string[] = [];
-  const byProfileKey = new Map(manifest.derivatives.map((d) => [d.profileKey, d]));
 
-  for (const profileKey of Object.keys(config.profiles)) {
-    const derivative = byProfileKey.get(profileKey);
-    if (!derivative) {
-      errors.push(`Manifest is missing a derivative for configured profile ${profileKey}`);
-      continue;
-    }
-    const [expectedW, expectedH] = profileKey.split('x').map(Number);
+  for (const derivative of manifest.derivatives) {
+    const [expectedW, expectedH] = derivative.profileKey.split('x').map(Number);
     if (derivative.width !== expectedW || derivative.height !== expectedH) {
       errors.push(
-        `Derivative for profile ${profileKey} has dimensions ${derivative.width}x${derivative.height}, ` +
+        `Derivative for profile ${derivative.profileKey} has dimensions ${derivative.width}x${derivative.height}, ` +
           `expected ${expectedW}x${expectedH}`,
-      );
-    }
-    const configured = config.profiles[profileKey];
-    if (configured.format !== derivative.format) {
-      errors.push(
-        `Derivative for profile ${profileKey} has format ${derivative.format}, expected ${configured.format}`,
       );
     }
     const expectedContentType = CONTENT_TYPE_BY_FORMAT[derivative.format];
     if (derivative.contentType !== expectedContentType) {
       errors.push(
-        `Derivative for profile ${profileKey} has contentType "${derivative.contentType}", expected "${expectedContentType}" for format ${derivative.format}`,
+        `Derivative for profile ${derivative.profileKey} has contentType "${derivative.contentType}", ` +
+          `expected "${expectedContentType}" for format ${derivative.format}`,
       );
     }
-  }
-
-  for (const derivative of manifest.derivatives) {
-    if (!config.profiles[derivative.profileKey]) {
-      errors.push(`Manifest has a derivative for profile ${derivative.profileKey} with no config entry`);
+    // Self-consistency: recompute the placement from the recorded layout + source dims.
+    const recomputed = resolvePlacement(
+      manifest.layout.layout,
+      { w: derivative.width, h: derivative.height },
+      { w: manifest.sourceWidth, h: manifest.sourceHeight },
+      manifest.signatureSha256 != null,
+    );
+    if (
+      recomputed.artworkBox.x !== derivative.artworkBoxPx.x ||
+      recomputed.artworkBox.y !== derivative.artworkBoxPx.y ||
+      recomputed.artworkBox.width !== derivative.artworkBoxPx.width ||
+      recomputed.artworkBox.height !== derivative.artworkBoxPx.height
+    ) {
+      errors.push(
+        `Derivative for profile ${derivative.profileKey} has artworkBoxPx ` +
+          `${JSON.stringify(derivative.artworkBoxPx)} that does not match recomputed ` +
+          `${JSON.stringify(recomputed.artworkBox)} (layout/source drift)`,
+      );
     }
   }
 

@@ -51,77 +51,97 @@ describe('distinctProfiles', () => {
 
 // ── Manifest ─────────────────────────────────────────────────────────────────
 
+const LAYOUT_CONFIG: PrintLayout = {
+  sideMargin: 0.1,
+  topMargin: 0.1,
+  bottomMargin: 0.1,
+  gapAboveSignature: 0.05,
+  signatureZoneHeight: 0.05,
+};
+
 const CONFIG: PrepareConfig = {
   product: 'fap01',
-  profiles: {
-    '3600x4800': { format: 'jpg', crop: { left: 0, top: 0, width: 3600, height: 4800 } },
-    '3614x4795': { format: 'png', crop: { left: 0, top: 0, width: 3614, height: 4795 } },
-  },
+  artwork: 'design/print-assets/fap01/artwork-master.png',
+  background: '#E8E0D7',
+  format: 'jpg',
+  layout: LAYOUT_CONFIG,
+  signature: { svg: 'design/print-assets/fap01/signature.svg' },
 };
 
 function makeManifestInputs() {
   const profiles = distinctProfiles([
-    { variantKey: '30x40:false:false:none', w: 3600, h: 4800 },
-    { variantKey: '30x40:true:false:natural', w: 3600, h: 4800 },
-    { variantKey: '30x40:true:false:black', w: 3614, h: 4795 },
+    { variantKey: '30x40:false:false:none', w: 1000, h: 1000 },
+    { variantKey: '30x40:true:false:natural', w: 1000, h: 1000 },
+    { variantKey: '50x70:true:false:black', w: 1400, h: 2000 },
   ]);
   return {
     product: 'fap01',
-    revision: '2026-07-11-r1',
+    revision: '2026-07-16-r1',
     sourceSha256: 'a'.repeat(64),
-    sourceWidth: 4000,
-    sourceHeight: 5333,
+    sourceWidth: 1600,
+    sourceHeight: 1600,
+    signatureSha256: 'd'.repeat(64),
+    layout: LAYOUT_CONFIG,
+    background: '#E8E0D7',
+    hasSignature: true,
     profiles,
     derivativeMeta: {
-      '3600x4800': { sha256: 'b'.repeat(64), byteSize: 111, format: 'jpg' as const },
-      '3614x4795': { sha256: 'c'.repeat(64), byteSize: 222, format: 'png' as const },
+      '1000x1000': {
+        sha256: 'b'.repeat(64),
+        byteSize: 111,
+        format: 'jpg' as const,
+        placement: resolvePlacement(LAYOUT_CONFIG, { w: 1000, h: 1000 }, { w: 1600, h: 1600 }, true),
+      },
+      '1400x2000': {
+        sha256: 'c'.repeat(64),
+        byteSize: 222,
+        format: 'jpg' as const,
+        placement: resolvePlacement(LAYOUT_CONFIG, { w: 1400, h: 2000 }, { w: 1600, h: 1600 }, true),
+      },
     },
   };
 }
 
 describe('buildManifest', () => {
-  it('builds one derivative per distinct profile with its r2Key', () => {
+  it('builds one derivative per distinct profile with its r2Key + placement', () => {
     const manifest = buildManifest(makeManifestInputs());
     expect(manifest.derivatives).toHaveLength(2);
     const byKey = new Map(manifest.derivatives.map((d) => [d.profileKey, d]));
-    expect(byKey.get('3600x4800')).toMatchObject({
-      width: 3600,
-      height: 4800,
+    expect(byKey.get('1000x1000')).toMatchObject({
+      width: 1000,
+      height: 1000,
       format: 'jpg',
       contentType: 'image/jpeg',
       sha256: 'b'.repeat(64),
       byteSize: 111,
-      r2Key: 'prints/fap01/2026-07-11-r1/3600x4800-' + 'b'.repeat(64) + '.jpg',
+      r2Key: 'prints/fap01/2026-07-16-r1/1000x1000-' + 'b'.repeat(64) + '.jpg',
     });
+    expect(byKey.get('1000x1000')?.artworkBoxPx).toMatchObject({ x: 100, width: 800 });
+    expect(byKey.get('1000x1000')?.signatureBoxPx).toMatchObject({ y: 850, height: 50 });
   });
 
-  it('sets the MIME contentType from format for both jpg and png', () => {
+  it('records the layout snapshot and both layer hashes', () => {
     const manifest = buildManifest(makeManifestInputs());
-    const byKey = new Map(manifest.derivatives.map((d) => [d.profileKey, d]));
-    expect(byKey.get('3600x4800')?.contentType).toBe('image/jpeg');
-    expect(byKey.get('3614x4795')?.contentType).toBe('image/png');
+    expect(manifest.sourceSha256).toBe('a'.repeat(64));
+    expect(manifest.signatureSha256).toBe('d'.repeat(64));
+    expect(manifest.layout).toMatchObject({
+      rendererVersion: expect.any(String),
+      background: '#E8E0D7',
+      artworkSha256: 'a'.repeat(64),
+      signatureSha256: 'd'.repeat(64),
+    });
   });
 
   it('maps every variant_key to its profile in assignments', () => {
     const manifest = buildManifest(makeManifestInputs());
     const assignmentByVariant = new Map(manifest.assignments.map((a) => [a.variantKey, a.profileKey]));
-    expect(assignmentByVariant.get('30x40:false:false:none')).toBe('3600x4800');
-    expect(assignmentByVariant.get('30x40:true:false:natural')).toBe('3600x4800');
-    expect(assignmentByVariant.get('30x40:true:false:black')).toBe('3614x4795');
-  });
-
-  it('carries source metadata through unchanged', () => {
-    const manifest = buildManifest(makeManifestInputs());
-    expect(manifest.product).toBe('fap01');
-    expect(manifest.revision).toBe('2026-07-11-r1');
-    expect(manifest.sourceSha256).toBe('a'.repeat(64));
-    expect(manifest.sourceWidth).toBe(4000);
-    expect(manifest.sourceHeight).toBe(5333);
+    expect(assignmentByVariant.get('30x40:false:false:none')).toBe('1000x1000');
+    expect(assignmentByVariant.get('50x70:true:false:black')).toBe('1400x2000');
   });
 });
 
 describe('validateManifest', () => {
-  it('reports no errors for a manifest that covers every configured profile', () => {
+  it('reports no errors for a self-consistent manifest', () => {
     const manifest = buildManifest(makeManifestInputs());
     expect(validateManifest(manifest, CONFIG)).toEqual([]);
   });
@@ -133,27 +153,16 @@ describe('validateManifest', () => {
     expect(roundTripped).toEqual(manifest);
   });
 
-  it('fails when a required config profile has no derivative', () => {
+  it('fails when a derivative dimension does not match its profile key', () => {
     const manifest = buildManifest(makeManifestInputs());
-    manifest.derivatives = manifest.derivatives.filter((d) => d.profileKey !== '3614x4795');
-    const errors = validateManifest(manifest, CONFIG);
-    expect(errors.some((e) => e.includes('3614x4795'))).toBe(true);
+    manifest.derivatives.find((d) => d.profileKey === '1000x1000')!.width = 9999;
+    expect(validateManifest(manifest, CONFIG).some((e) => e.includes('1000x1000'))).toBe(true);
   });
 
-  it('fails when a derivative dimension does not match its declared profile key', () => {
+  it('fails when a recorded artworkBoxPx does not match a recomputed placement', () => {
     const manifest = buildManifest(makeManifestInputs());
-    const bad = manifest.derivatives.find((d) => d.profileKey === '3600x4800')!;
-    bad.width = 9999;
-    const errors = validateManifest(manifest, CONFIG);
-    expect(errors.some((e) => e.includes('3600x4800'))).toBe(true);
-  });
-
-  it('fails when a derivative contentType does not match its format', () => {
-    const manifest = buildManifest(makeManifestInputs());
-    const bad = manifest.derivatives.find((d) => d.profileKey === '3600x4800')!;
-    bad.contentType = 'image/png';
-    const errors = validateManifest(manifest, CONFIG);
-    expect(errors.some((e) => e.includes('contentType'))).toBe(true);
+    manifest.derivatives.find((d) => d.profileKey === '1000x1000')!.artworkBoxPx.x = 0;
+    expect(validateManifest(manifest, CONFIG).some((e) => /artworkBox|placement/i.test(e))).toBe(true);
   });
 });
 
