@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   buildR2Key,
   distinctProfiles,
-  validateCropAspect,
-  validateNoEnlargement,
   buildManifest,
   validateManifest,
   refuseOverwrite,
-  validateProfileCoverage,
   resolvePlacement,
+  validateLayoutFractions,
+  validateVerticalFit,
+  validateNoUpscale,
   type PrepareConfig,
   type PrintLayout,
 } from './print-assets-prepare';
@@ -46,36 +46,6 @@ describe('distinctProfiles', () => {
     const byKey = new Map(profiles.map((p) => [p.profileKey, p]));
     expect(byKey.get('3614x4795')?.variantKeys).toEqual(['30x40:true:false:black']);
     expect(byKey.get('3600x4800')?.variantKeys).toEqual(['30x40:true:false:natural']);
-  });
-});
-
-describe('validateCropAspect', () => {
-  it('accepts a crop region whose aspect matches the target', () => {
-    // 3000x4000 crop → target 3600x4800: both 3:4.
-    expect(() =>
-      validateCropAspect({ width: 3000, height: 4000 }, { w: 3600, h: 4800 }),
-    ).not.toThrow();
-  });
-
-  it('rejects a crop region whose aspect does not match the target', () => {
-    // 3000x4000 (3:4) vs target 3614x4795 (~0.7536, not exactly 3:4).
-    expect(() =>
-      validateCropAspect({ width: 3000, height: 4000 }, { w: 3614, h: 4795 }),
-    ).toThrow(/aspect/i);
-  });
-});
-
-describe('validateNoEnlargement', () => {
-  it('accepts a source at least as large as the target', () => {
-    expect(() => validateNoEnlargement({ width: 3600, height: 4800 }, { w: 3600, h: 4800 })).not.toThrow();
-  });
-
-  it('rejects a source smaller than the target width', () => {
-    expect(() => validateNoEnlargement({ width: 3000, height: 4800 }, { w: 3600, h: 4800 })).toThrow(/enlarge/i);
-  });
-
-  it('rejects a source smaller than the target height', () => {
-    expect(() => validateNoEnlargement({ width: 3600, height: 4000 }, { w: 3600, h: 4800 })).toThrow(/enlarge/i);
   });
 });
 
@@ -203,37 +173,6 @@ describe('refuseOverwrite', () => {
   });
 });
 
-// ── Profile coverage (config ↔ active variants) ─────────────────────────────
-
-describe('validateProfileCoverage', () => {
-  it('reports no errors when config and active variants agree exactly', () => {
-    const profiles = distinctProfiles([
-      { variantKey: 'a', w: 3600, h: 4800 },
-      { variantKey: 'b', w: 3614, h: 4795 },
-    ]);
-    const errors = validateProfileCoverage(['3600x4800', '3614x4795'], profiles);
-    expect(errors).toEqual([]);
-  });
-
-  it('fails when an active profile has no config entry', () => {
-    const profiles = distinctProfiles([{ variantKey: 'a', w: 3600, h: 4800 }]);
-    const errors = validateProfileCoverage([], profiles);
-    expect(errors.some((e) => e.includes('3600x4800'))).toBe(true);
-  });
-
-  it('fails when config declares a profile no active variant needs (stale entry)', () => {
-    const profiles = distinctProfiles([{ variantKey: 'a', w: 3600, h: 4800 }]);
-    const errors = validateProfileCoverage(['3600x4800', '9999x9999'], profiles);
-    expect(errors.some((e) => e.includes('9999x9999') && e.includes('stale'))).toBe(true);
-  });
-
-  it('reports both directions of mismatch at once', () => {
-    const profiles = distinctProfiles([{ variantKey: 'a', w: 3600, h: 4800 }]);
-    const errors = validateProfileCoverage(['9999x9999'], profiles);
-    expect(errors).toHaveLength(2);
-  });
-});
-
 // ── Proportional layout (composition) ───────────────────────────────────────────
 
 const LAYOUT: PrintLayout = {
@@ -295,5 +234,62 @@ describe('resolvePlacement', () => {
     const p = resolvePlacement(LAYOUT, { w: 1000, h: 500 }, { w: 800, h: 200 }, false);
     expect(p.artworkBox.x).toBe(50);
     expect(p.artworkBox.width).toBe(900); // 1000 - 2*50
+  });
+});
+
+// ── Layout validation (runs before Sharp) ─────────────────────────────────────
+
+const VALID: PrintLayout = {
+  sideMargin: 0.1,
+  topMargin: 0.1,
+  bottomMargin: 0.1,
+  gapAboveSignature: 0.05,
+  signatureZoneHeight: 0.05,
+};
+
+describe('validateLayoutFractions', () => {
+  it('reports no errors for fractions in [0, 1]', () => {
+    expect(validateLayoutFractions(VALID)).toEqual([]);
+  });
+
+  it('rejects a fraction above 1', () => {
+    const errors = validateLayoutFractions({ ...VALID, topMargin: 1.5 });
+    expect(errors.some((e) => e.includes('topMargin'))).toBe(true);
+  });
+
+  it('rejects a negative fraction', () => {
+    const errors = validateLayoutFractions({ ...VALID, sideMargin: -0.1 });
+    expect(errors.some((e) => e.includes('sideMargin'))).toBe(true);
+  });
+});
+
+describe('validateVerticalFit', () => {
+  it('reports no errors when margins + gap + signature fit the canvas height', () => {
+    expect(validateVerticalFit(VALID, { w: 1000, h: 1000 }, true)).toEqual([]);
+  });
+
+  it('fails when the vertical stack overflows the canvas', () => {
+    // 10+10+5+5+10 = 40% — fine on 1000, but force an impossible stack:
+    const layout: PrintLayout = { ...VALID, topMargin: 0.6, bottomMargin: 0.6 };
+    const errors = validateVerticalFit(layout, { w: 1000, h: 1000 }, false);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('collapses gap + signature when hasSignature is false', () => {
+    // Would overflow only if gap+signature counted — they must not when false.
+    const layout: PrintLayout = { ...VALID, gapAboveSignature: 0.9, signatureZoneHeight: 0.9 };
+    expect(validateVerticalFit(layout, { w: 1000, h: 1000 }, false)).toEqual([]);
+  });
+});
+
+describe('validateNoUpscale', () => {
+  it('accepts an artwork at least as large as its box in the limiting dimension', () => {
+    // box ~700 tall, artwork 800 tall → scale < 1
+    expect(validateNoUpscale(VALID, { w: 1000, h: 1000 }, { w: 800, h: 800 }, true)).toEqual([]);
+  });
+
+  it('rejects an artwork that would be upscaled', () => {
+    const errors = validateNoUpscale(VALID, { w: 1000, h: 1000 }, { w: 50, h: 50 }, true);
+    expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
   });
 });

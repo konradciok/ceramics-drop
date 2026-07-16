@@ -159,41 +159,78 @@ export function resolvePlacement(
   return { artworkBox, signatureBox, artworkOut, artworkPos, scale };
 }
 
-// ── Crop / enlargement guards ────────────────────────────────────────────────
+// ── Layout validation (runs before Sharp) ────────────────────────────────────
 
-/**
- * The explicit crop region of the source master (plan §1: "Require an explicit
- * crop/focal configuration for every distinct aspect ratio. Do not silently
- * accept Sharp's or Prodigi's centre crop.").
- */
-export function validateCropAspect(
-  crop: { width: number; height: number },
-  target: { w: number; h: number },
-): void {
-  // Cross-multiply instead of comparing width/height floats directly — avoids
-  // floating-point precision drift for aspect ratios that don't terminate
-  // cleanly in binary (e.g. 3614/4795).
-  if (crop.width * target.h !== crop.height * target.w) {
-    const cropAspect = (crop.width / crop.height).toFixed(4);
-    const targetAspect = (target.w / target.h).toFixed(4);
-    throw new Error(
-      `Crop region ${crop.width}x${crop.height} (aspect ${cropAspect}) does not match ` +
-        `target aspect ${targetAspect} for ${target.w}x${target.h} print area`,
-    );
+const LAYOUT_FIELDS: (keyof PrintLayout)[] = [
+  'sideMargin',
+  'topMargin',
+  'bottomMargin',
+  'gapAboveSignature',
+  'signatureZoneHeight',
+];
+
+/** Every required layout fraction is a finite number in [0, 1]. Returns error strings (empty = valid). */
+export function validateLayoutFractions(layout: PrintLayout): string[] {
+  const errors: string[] = [];
+  for (const field of LAYOUT_FIELDS) {
+    const v = layout[field];
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
+      errors.push(`Layout field "${field}" must be a fraction in [0, 1], got ${JSON.stringify(v)}`);
+    }
   }
+  for (const field of ['artworkMaxWidth', 'artworkMaxHeight'] as const) {
+    const v = layout[field];
+    if (v != null && (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1)) {
+      errors.push(`Optional layout field "${field}" must be a fraction in [0, 1] when set, got ${JSON.stringify(v)}`);
+    }
+  }
+  return errors;
 }
 
-/** Fail preparation when the source (after crop) cannot cover the target pixels. */
-export function validateNoEnlargement(
-  source: { width: number; height: number },
+/**
+ * The vertical stack (topMargin + artwork box + gap + signatureZone + bottomMargin)
+ * must fit the canvas height for every active profile. Returns error strings.
+ */
+export function validateVerticalFit(
+  layout: PrintLayout,
   target: { w: number; h: number },
-): void {
-  if (source.width < target.w || source.height < target.h) {
-    throw new Error(
-      `Cannot enlarge: source region ${source.width}x${source.height} is smaller than ` +
-        `target ${target.w}x${target.h}`,
+  hasSignature: boolean,
+): string[] {
+  const placement = resolvePlacement(layout, target, { w: 1, h: 1 }, hasSignature);
+  const errors: string[] = [];
+  // artworkBox.y + height must not run past the signature zone top (or bottom margin).
+  const limit = placement.signatureBox ? placement.signatureBox.y : target.h;
+  if (placement.artworkBox.y + placement.artworkBox.height > limit) {
+    errors.push(
+      `Layout overflows canvas ${target.w}x${target.h}: artwork box bottom ` +
+        `${placement.artworkBox.y + placement.artworkBox.height} exceeds limit ${limit}`,
     );
   }
+  if (placement.artworkBox.height <= 0) {
+    errors.push(`Layout leaves no room for artwork on canvas ${target.w}x${target.h}`);
+  }
+  return errors;
+}
+
+/**
+ * Fail preparation when the artwork would be upscaled (contain scale > 1).
+ * The artwork source must be at least as large as its box in the limiting dimension.
+ */
+export function validateNoUpscale(
+  layout: PrintLayout,
+  target: { w: number; h: number },
+  artwork: { w: number; h: number },
+  hasSignature: boolean,
+): string[] {
+  const placement = resolvePlacement(layout, target, artwork, hasSignature);
+  if (placement.scale > 1) {
+    return [
+      `Cannot upscale artwork ${artwork.w}x${artwork.h} into box ` +
+        `${placement.artworkBox.width}x${placement.artworkBox.height} on canvas ` +
+        `${target.w}x${target.h} (scale ${placement.scale.toFixed(4)})`,
+    ];
+  }
+  return [];
 }
 
 // ── Tracked config — config/print-assets/{productId}.json ──────────────────
@@ -216,33 +253,6 @@ export interface PrepareConfig {
   >;
   /** Optional storefront gallery slots (operator `print-assets:gallery`). */
   gallery?: Record<string, GallerySlotConfig>;
-}
-
-/**
- * Validate that every configured profile has active-variant coverage and vice
- * versa, BEFORE any derivative work runs. A stale config (drifted from the
- * catalogue) must fail loudly here rather than silently under- or
- * over-producing derivatives. Returns error strings (empty = valid).
- */
-export function validateProfileCoverage(
-  configProfileKeys: string[],
-  activeProfiles: DerivativeProfile[],
-): string[] {
-  const errors: string[] = [];
-  const configSet = new Set(configProfileKeys);
-  const activeSet = new Set(activeProfiles.map((p) => p.profileKey));
-
-  for (const profileKey of activeSet) {
-    if (!configSet.has(profileKey)) {
-      errors.push(`Active variants require profile ${profileKey}, but config/print-assets/*.json has no entry for it`);
-    }
-  }
-  for (const profileKey of configSet) {
-    if (!activeSet.has(profileKey)) {
-      errors.push(`Config declares profile ${profileKey}, but no active variant requires it (stale config entry)`);
-    }
-  }
-  return errors;
 }
 
 // ── Manifest ─────────────────────────────────────────────────────────────────
