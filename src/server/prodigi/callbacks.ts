@@ -5,7 +5,7 @@ import { prodigiClient } from './client';
 import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
 import type { ProdigiOrderResponse } from './types';
 
-const LEASE_MINUTES = 5;
+export const LEASE_MINUTES = 5;
 const PG_UNIQUE_VIOLATION = '23505';
 
 /**

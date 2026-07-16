@@ -28,8 +28,8 @@ export function PrintConfigurator({
   const t = useTranslations();
   const locale = useLocale();
   const currency = useCurrency();
-  // priceOfVariant only prices pln/eur/gbp; usd/cad prints aren't offered yet, so
-  // fall back to EUR pricing for those until the tables are filled.
+  // priceOfVariant only prices pln/eur/gbp; toChargeableCurrency maps any other
+  // currency to EUR.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
 

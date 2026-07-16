@@ -13,44 +13,9 @@
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars / env).
  */
-import fs from 'node:fs';
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
-
-function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) return {};
-  const parsed: Record<string, string> = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    parsed[key] = value;
-  }
-  return parsed;
-}
-
-function loadLocalEnv(): Record<string, string | undefined> {
-  return {
-    ...parseEnvFile('.env.local'),
-    ...parseEnvFile('.dev.vars'),
-    ...process.env,
-  };
-}
-
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
+import { loadLocalEnv } from './lib/script-env';
 
 /** slugify a label into a drop id when --id isn't given. */
 function slugify(s: string): string {
@@ -64,10 +29,16 @@ function slugify(s: string): string {
 }
 
 async function main(): Promise<void> {
-  const label = getArg('label');
+  // strict + no positionals: a typo'd flag (e.g. --idd) aborts instead of
+  // silently falling back to a slugified id. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
+  const { values } = nodeParseArgs({
+    options: { label: { type: 'string' }, id: { type: 'string' }, 'env-file': { type: 'string' } },
+  });
+  const label = typeof values.label === 'string' ? values.label : undefined;
   if (!label) throw new Error('Missing --label (display label, e.g. --label "Drop #2").');
 
-  const id = (getArg('id') ?? slugify(label)).trim();
+  const id = ((typeof values.id === 'string' ? values.id : undefined) ?? slugify(label)).trim();
   if (!id) throw new Error('Could not derive a drop id — pass --id explicitly.');
 
   const env = loadLocalEnv();

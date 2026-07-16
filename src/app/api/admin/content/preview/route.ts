@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
 import { mintPreviewToken } from '@/lib/cms/server';
 import { editableDocument } from '@/lib/admin/content';
-import { contentError, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
+import { contentError, localizedPath, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
 import { registryProductsByCategory } from '@/lib/products';
+import type { CmsLocale } from '@/lib/cms/types';
 import type { CategorySlug } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-function localizedPath(locale: string, path: string): string {
-  return locale === 'pl' ? path : `/${locale}${path}`;
-}
-
-function previewPath(kind: string, slug: string, locale: string): string {
+function previewPath(kind: string, slug: string, locale: CmsLocale): string {
   if (kind !== 'product_notes') return localizedPath(locale, '/');
   if (slug === 'fine-art-prints') return localizedPath(locale, '/fine-art-prints/fap01');
   const product = registryProductsByCategory(slug as CategorySlug)[0];

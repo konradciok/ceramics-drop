@@ -12,52 +12,26 @@
  * Apply the 20260615120000_private_sales migration before running. For a real
  * customer, point this at the PRODUCTION Supabase (its URL/key in the env).
  */
-import fs from 'node:fs';
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import { registryProductById, isCategoryHidden } from '../src/lib/products';
 import { SITE_URL } from '../src/lib/site';
+import { loadLocalEnv } from './lib/script-env';
 
 const DEFAULT_BASE_URL = SITE_URL;
 
-function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) return {};
-  const parsed: Record<string, string> = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    parsed[key] = value;
-  }
-  return parsed;
-}
-
-function loadLocalEnv(): Record<string, string | undefined> {
-  return {
-    ...parseEnvFile('.env.local'),
-    ...parseEnvFile('.dev.vars'),
-    ...process.env,
-  };
-}
-
-/** Minimal --flag value parser (supports `--flag value` and `--flag=value`). */
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
-
 async function main(): Promise<void> {
-  const itemsArg = getArg('items');
+  // strict + no positionals: reject typo'd flags. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
+  const { values } = nodeParseArgs({
+    options: {
+      items: { type: 'string' },
+      days: { type: 'string' },
+      'base-url': { type: 'string' },
+      'env-file': { type: 'string' },
+    },
+  });
+  const itemsArg = typeof values.items === 'string' ? values.items : undefined;
   if (!itemsArg) throw new Error('Missing --items (comma-separated product ids, e.g. --items k10,t18,t19,t22).');
 
   const ids = [...new Set(itemsArg.split(',').map((s) => s.trim()).filter(Boolean))];
@@ -71,11 +45,11 @@ async function main(): Promise<void> {
   const hidden = ids.filter((id) => isCategoryHidden(registryProductById(id)!.category));
   if (hidden.length > 0) throw new Error(`Withdrawn (hidden) families cannot be sold — checkout blocks them: ${hidden.join(', ')}.`);
 
-  const daysRaw = getArg('days') ?? '14';
+  const daysRaw = (typeof values.days === 'string' ? values.days : undefined) ?? '14';
   const days = Number(daysRaw);
   if (!Number.isFinite(days) || days <= 0) throw new Error(`Invalid --days: ${daysRaw}`);
 
-  const baseUrl = (getArg('base-url') ?? DEFAULT_BASE_URL).replace(/\/$/, '');
+  const baseUrl = ((typeof values['base-url'] === 'string' ? values['base-url'] : undefined) ?? DEFAULT_BASE_URL).replace(/\/$/, '');
 
   const env = loadLocalEnv();
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {

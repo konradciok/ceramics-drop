@@ -11,6 +11,7 @@
  * exit-0 skip (for pre-launch CI, where no asset is published yet); an explicit
  * --asset-id that is missing/wrong-status still errors.
  */
+import { parseArgs as nodeParseArgs } from 'node:util';
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { probeSignedPrintAssetHead } from '../src/lib/print-asset-smoke';
 import { getWorkerOrigin } from '../src/lib/site.server';
@@ -61,23 +62,29 @@ async function resolveAssetId(
 }
 
 function parseArgs(): { origin?: string; assetId?: string; json: boolean; allowMissing: boolean } {
-  const argv = process.argv.slice(2);
-  let origin: string | undefined;
-  let assetId: string | undefined;
-  let json = false;
-  let allowMissing = false;
-
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--origin') origin = argv[++i] ?? origin;
-    else if (argv[i] === '--asset-id') assetId = argv[++i];
-    else if (argv[i] === '--json') json = true;
-    else if (argv[i] === '--allow-missing') allowMissing = true;
-    else if (argv[i] === '--help' || argv[i] === '-h') {
-      console.log(`Usage: npm run print-asset:smoke -- [--origin <url>] [--asset-id <uuid>] [--json] [--allow-missing] [--env-file <path>]`);
-      process.exit(0);
-    }
+  // strict + no positionals: a typo'd flag (e.g. --assetid) aborts instead of
+  // silently probing an unrelated latest asset. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
+  const { values } = nodeParseArgs({
+    options: {
+      origin: { type: 'string' },
+      'asset-id': { type: 'string' },
+      'env-file': { type: 'string' },
+      json: { type: 'boolean' },
+      'allow-missing': { type: 'boolean' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  });
+  if (values.help) {
+    console.log(`Usage: npm run print-asset:smoke -- [--origin <url>] [--asset-id <uuid>] [--json] [--allow-missing] [--env-file <path>]`);
+    process.exit(0);
   }
-  return { origin, assetId, json, allowMissing };
+  return {
+    origin: typeof values.origin === 'string' ? values.origin : undefined,
+    assetId: typeof values['asset-id'] === 'string' ? values['asset-id'] : undefined,
+    json: values.json === true,
+    allowMissing: values['allow-missing'] === true,
+  };
 }
 
 async function main(): Promise<void> {

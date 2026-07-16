@@ -11,7 +11,7 @@ vi.mock('./client', () => ({ prodigiClient: vi.fn(() => ({ getOrder: mockGetOrde
 vi.mock('@/lib/email', () => ({ emailPrintShippingConfirmationToCustomer: mockShipEmail }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
-import { handleProdigiCallback } from './callbacks';
+import { handleProdigiCallback, LEASE_MINUTES } from './callbacks';
 import * as Sentry from '@sentry/nextjs';
 
 const ENV = {} as CloudflareEnv;
@@ -231,6 +231,26 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     expect(res.status).toBe(200);
     expect(res.message).toBe('In flight');
     expect(mockGetOrder).not.toHaveBeenCalled();
+  });
+
+  it('takes over an event whose processing lease has expired (stale CAS takeover)', async () => {
+    // Catches a regression where a stale lease is skipped like a fresh one:
+    // if the takeover branch regressed (e.g. the age check used `>=` or the
+    // guard returned 'In flight' for stale leases too), getOrder would NOT be
+    // called and the event would never reach 'done'.
+    // Stale by one minute past the real lease window — value imported from callbacks.ts
+    // so the test tracks the source constant instead of mirroring it.
+    const staleStartedAt = new Date(Date.now() - (LEASE_MINUTES + 1) * 60_000).toISOString();
+    const calls = setup({
+      existingEvent: { id: 'we-1', status: 'processing', processing_started_at: staleStartedAt },
+    });
+
+    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+
+    expect(res.status).toBe(200);
+    expect(res.message).toBe('OK');
+    expect(mockGetOrder).toHaveBeenCalledTimes(1); // proceeded past the lease guard
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
   });
 
   it('maps the Prodigi stage onto the latest fulfilment job (InProduction → in_production)', async () => {

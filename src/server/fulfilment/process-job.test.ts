@@ -26,12 +26,12 @@ const { mockFrom, mockPostOrder, mockGetAssetForFulfilment } = vi.hoisted(() => 
 }));
 
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
-vi.mock('../prodigi/client', () => ({
-  prodigiClient: vi.fn(() => ({ postOrder: mockPostOrder })),
-  ProdigiError: class ProdigiError extends Error { status: number; body: unknown; retryable: boolean;
-    constructor(m: string, s: number, b: unknown, r: boolean) { super(m); this.status = s; this.body = b; this.retryable = r; }
-  },
-}));
+vi.mock('../prodigi/client', async (importOriginal) => {
+  // Spread the real module so ProdigiError is the real class — any change to its
+  // constructor signature surfaces here instead of silently passing a stand-in.
+  const actual = await importOriginal<typeof import('../prodigi/client')>();
+  return { ...actual, prodigiClient: vi.fn(() => ({ postOrder: mockPostOrder })) };
+});
 vi.mock('../prodigi/mapper', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../prodigi/mapper')>();
   return { ...actual, buildProdigiPayload: vi.fn(() => ({})) };
@@ -183,9 +183,8 @@ describe('processJob', () => {
     setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
     const { ProdigiError } = await import('../prodigi/client');
     mockPostOrder.mockRejectedValueOnce(
-      new (ProdigiError as unknown as new (m: string, s: number, b: unknown, r: boolean) => Error)(
-        'Prodigi 409: duplicate', 409, { order: { id: 'pr_existing' } }, false,
-      ),
+      // Real signature: (message, status, retryable, body) — body carries the existing order.
+      new ProdigiError('Prodigi 409: duplicate', 409, false, { order: { id: 'pr_existing' } }),
     );
     const { processJob } = await import('./process-job');
     await processJob(MSG, ENV_SIGNED, CTX);

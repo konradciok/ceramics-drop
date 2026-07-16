@@ -9,14 +9,8 @@ export const eur = (n: number): string => `${n} €`;
 /** Format a GBP amount: symbol then unit — "£22". */
 export const gbp = (n: number): string => `£${n}`;
 
-/** Format a USD amount: symbol then unit — "$22". */
-export const usd = (n: number): string => `$${n}`;
-
-/** Format a CAD amount, disambiguated from USD — "C$22". */
-export const cad = (n: number): string => `C$${n}`;
-
 /** ISO 4217 code for a `Currency` (analytics/Stripe use the upper-case code). */
-export type CurrencyCode = 'PLN' | 'EUR' | 'GBP' | 'USD' | 'CAD';
+export type CurrencyCode = 'PLN' | 'EUR' | 'GBP';
 
 /** Resolve a display currency to its price formatter and ISO currency code. */
 export function currencyFormatter(currency: Currency): {
@@ -28,10 +22,6 @@ export function currencyFormatter(currency: Currency): {
       return { fmt: pln, code: 'PLN' };
     case 'gbp':
       return { fmt: gbp, code: 'GBP' };
-    case 'usd':
-      return { fmt: usd, code: 'USD' };
-    case 'cad':
-      return { fmt: cad, code: 'CAD' };
     case 'eur':
     default:
       return { fmt: eur, code: 'EUR' };

@@ -5,13 +5,11 @@ import { useCurrencyControls } from '@/components/currency/CurrencyProvider';
 import { SWITCHABLE_CURRENCIES, type Currency } from '@/lib/currency';
 
 /** Display labels for every `Currency`. Only `SWITCHABLE_CURRENCIES` render;
- *  the rest (pln/usd/cad) are here for completeness but never shown. */
+ *  pln is here for completeness but never shown. */
 const CURRENCY_LABELS: Record<Currency, string> = {
   pln: 'PLN',
   eur: 'EUR',
   gbp: 'GBP',
-  usd: 'USD',
-  cad: 'CAD',
 };
 
 /**

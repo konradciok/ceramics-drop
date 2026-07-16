@@ -9,11 +9,13 @@
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars).
  * Prefers ADMIN_SUPABASE_* when set (mirrors local admin panel).
  */
+import { parseArgs as nodeParseArgs } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { recommendPacking } from '../src/lib/packing';
 import type { DeliveryAddress } from '../src/lib/shipx';
+import { loadLocalEnv } from './lib/script-env';
 
 const HEADERS = [
   'e-mail',
@@ -45,46 +47,6 @@ type OrderRow = {
   shipping_address: DeliveryAddress | null;
   order_items: Array<{ product_id: string; variant: unknown | null }> | null;
 };
-
-function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) return {};
-  const parsed: Record<string, string> = {};
-  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    parsed[key] = value;
-  }
-  return parsed;
-}
-
-function loadLocalEnv(): Record<string, string | undefined> {
-  return {
-    ...parseEnvFile('.env.local'),
-    ...parseEnvFile('.dev.vars'),
-    ...process.env,
-  };
-}
-
-function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) return argv[i + 1];
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
-}
-
-function hasFlag(name: string): boolean {
-  return process.argv.slice(2).includes(`--${name}`);
-}
 
 function str(v: string | null | undefined): string {
   return typeof v === 'string' ? v.trim() : '';
@@ -159,6 +121,15 @@ function rowForParcel(order: OrderRow, size: string, parcelIndex: number, parcel
 }
 
 async function main(): Promise<void> {
+  // strict + no positionals: reject typo'd flags. 'env-file' is declared so it
+  // doesn't trip the strict gate — loadLocalEnv() consumes it from argv.
+  const { values } = nodeParseArgs({
+    options: {
+      output: { type: 'string' },
+      'include-shipped': { type: 'boolean' },
+      'env-file': { type: 'string' },
+    },
+  });
   const env = loadLocalEnv();
   const url = env.ADMIN_SUPABASE_URL ?? env.SUPABASE_URL;
   const key = env.ADMIN_SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
@@ -167,8 +138,8 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const includeShipped = hasFlag('include-shipped');
-  const outputArg = getArg('output');
+  const includeShipped = values['include-shipped'] === true;
+  const outputArg = typeof values.output === 'string' ? values.output : undefined;
   const today = new Date().toISOString().slice(0, 10);
   const outputPath = outputArg ?? path.join('exports', `inpost-bulk-${today}.csv`);
 

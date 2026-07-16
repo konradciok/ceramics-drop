@@ -1,5 +1,5 @@
 import { getProductById, isProductPublic, registryProducts } from './products';
-import { PRICE_EUR, PRICE_GBP, toEuroCents, toGrosze, toGBPPence } from './pricing';
+import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant } from './print-pricing';
@@ -59,10 +59,7 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
       const major = priceOfVariant(design, dec.sel, currency);
-      const unit_price =
-        currency === 'eur' ? toEuroCents(major) :
-        currency === 'gbp' ? toGBPPence(major) :
-        toGrosze(major);
+      const unit_price = toMinor(major);
       items.push({
         product_id: dec.designId,
         unit_price,
@@ -88,10 +85,11 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     // a private-sale link (validateCart runs before either reservation).
     if (!isProductPublic(product)) return { ok: false, reason: 'not_for_sale' };
     seen.add(id);
-    const unit_price =
-      currency === 'eur' ? toEuroCents(PRICE_EUR[product.category]) :
-      currency === 'gbp' ? toGBPPence(PRICE_GBP[product.category]) :
-      toGrosze(product.price);
+    const major =
+      currency === 'eur' ? PRICE_EUR[product.category] :
+      currency === 'gbp' ? PRICE_GBP[product.category] :
+      product.price;
+    const unit_price = toMinor(major);
     items.push({ product_id: id, unit_price });
   }
   if (items.length === 0) return { ok: false, reason: 'empty' };

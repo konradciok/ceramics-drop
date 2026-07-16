@@ -62,7 +62,7 @@ describe('currencyFromCookieHeader', () => {
     expect(currencyFromCookieHeader('en', 'currency_pref=eur')).toBe('eur');
   });
 
-  it('falls back to eur for a non-switchable usd cookie', () => {
+  it('falls back to eur for an unknown usd cookie', () => {
     expect(currencyFromCookieHeader('en', 'currency_pref=usd')).toBe('eur');
   });
 

@@ -235,8 +235,8 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const hasFramed = lines.some((l) => l.kind === 'print' && l.sel.framed);
   const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
   const currency = useCurrency();
-  // priceOfVariant / printShippingOf only price pln/eur/gbp; usd/cad prints aren't
-  // offered yet, so fall back to EUR pricing for those until the tables are filled.
+  // priceOfVariant / printShippingOf only price pln/eur/gbp; toChargeableCurrency
+  // maps any other currency to EUR.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const priceOfLine = (l: CartLine) =>

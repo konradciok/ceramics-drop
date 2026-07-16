@@ -2,12 +2,14 @@
    Catalog source flag
    ------------------------------------------------------------
    Selects where the storefront product accessors read from:
-     - 'code' (default): the static registry (src/lib/products.ts, prints.ts)
-     - 'db':             the catalog shadow tables (Stage 3b flip)
+     - 'db':             the catalog shadow tables (PRODUCTION — wrangler.jsonc
+                         sets CATALOG_SOURCE=db; accessors read Supabase at runtime)
+     - 'code' (default): the static registry (src/lib/products.ts, prints.ts) —
+                         the local/test fallback when the env var is unset
 
-   Stage 3a only ships this flag + the DB read path; it is NOT yet wired into
-   the storefront accessors. The flip (making getProducts()/… delegate here) and
-   turning `db` on in production are separate, gated steps.
+   The public accessors (getProducts/getProductsByCategory/getProductById/
+   getPublicProducts/resolveCartProducts, plus the print equivalents) delegate to
+   the 'db' path via src/lib/catalog/load.ts when this returns 'db'.
    ============================================================ */
 
 export type CatalogSource = 'code' | 'db';

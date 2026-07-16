@@ -7,22 +7,20 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toEuroCents, toGBPPence, toGrosze } from '@/lib/pricing';
+import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toMinor } from '@/lib/pricing';
 import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
+import { isUuid } from '@/lib/uuid';
 import type { MarketingContext } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 const STRIPE_PMC_ID = 'pmc_1QiwdYJ0KFK9lrjHUV93dONs';
-// Canonical 8-4-4-4-12 hex UUID shape (any version). A client-supplied id only
-// becomes the order id once it passes this trust-boundary check — see below.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PG_UNIQUE_VIOLATION = '23505';
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
@@ -57,8 +55,8 @@ export async function POST(req: Request) {
       ? body.locale
       : 'pl';
   // Currency is a per-request concern driven by the `currency_pref` cookie, not
-  // the locale. Clamp to the launched, sellable currencies — USD/CAD are wired
-  // through pricing but have no Stripe branch here yet.
+  // the locale. Clamp to the launched, sellable currencies (pln/eur/gbp);
+  // anything else maps to EUR.
   const chargeCurrency = toChargeableCurrency(
     currencyFromCookieHeader(locale, req.headers.get('cookie')),
   );
@@ -107,10 +105,7 @@ export async function POST(req: Request) {
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
-    const shipMinor =
-      chargeCurrency === 'eur' ? toEuroCents(shipMajor) :
-      chargeCurrency === 'gbp' ? toGBPPence(shipMajor) :
-      toGrosze(shipMajor);
+    const shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
       // log is the observability signal only; revisit with Prodigi POST /quotes
@@ -140,7 +135,7 @@ export async function POST(req: Request) {
   // crypto.randomUUID()), so the format check below is the only validation
   // needed before trusting it as the order id.
   const rawAttemptId = typeof body.attemptId === 'string' ? body.attemptId : null;
-  const orderId = rawAttemptId && UUID_RE.test(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
+  const orderId = isUuid(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
 
   // A private-sale token unlocks buying specific already-`sold` pieces via a secret
   // link, without relisting them in the shop. It uses a dedicated atomic RPC that

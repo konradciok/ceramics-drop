@@ -1,6 +1,6 @@
-/* PLN, EUR, GBP (and future USD/CAD) prices with helpers. Currency is chosen per
- * request from the `currency_pref` cookie (see currency.ts), not from the locale:
- * `pl` → PLN, everyone else defaults to EUR and can switch to GBP. */
+/* PLN, EUR, GBP prices with helpers. Currency is chosen per request from the
+ * `currency_pref` cookie (see currency.ts), not from the locale: `pl` → PLN,
+ * everyone else defaults to EUR and can switch to GBP. */
 import type { CategorySlug } from './types';
 import type { Currency } from './currency';
 
@@ -30,14 +30,15 @@ export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
-/** Zloty (integer) → grosze. Prices have no fractional zloty, so this is ×100. */
-export function toGrosze(zloty: number): number {
-  return Math.round(zloty * 100);
+/** Major currency units → minor units. PLN/EUR/GBP are all 100-minor-unit
+ * currencies, so grosze/euro-cents/pence are all `Math.round(units × 100)`. */
+export function toMinor(units: number): number {
+  return Math.round(units * 100);
 }
 
 /** Shipping cost (grosze) for the chosen delivery method. */
 export function shippingGrosze(method: DeliveryMethod): number {
-  return toGrosze(SHIPPING_PLN[method]);
+  return toMinor(SHIPPING_PLN[method]);
 }
 
 /** Sum item amounts (grosze) plus shipping for the chosen method. */
@@ -94,55 +95,9 @@ export const SHIPPING_GBP: Record<DeliveryMethod, number> = {
   odbior: 0,
 };
 
-/** Pounds (integer) → pence. */
-export function toGBPPence(pounds: number): number {
-  return Math.round(pounds * 100);
-}
-
-/**
- * USD/CAD price tables — architected for future markets but not yet launched.
- * Every category is `null`; `priceOfCurrency` throws if one is read before a
- * real table is filled in, so an accidental USD/CAD sale can never mispriced.
- */
-export const PRICE_USD: Record<CategorySlug, number | null> = {
-  kubki: null,
-  wazony: null,
-  'wazony-srednie': null,
-  'wazony-duze': null,
-  talerzyki: null,
-  'talerze-srednie': null,
-  'talerze-duze': null,
-  'duze-michy': null,
-  'miski-falowane': null,
-  'fine-art-prints': null,
-};
-
-export const PRICE_CAD: Record<CategorySlug, number | null> = {
-  kubki: null,
-  wazony: null,
-  'wazony-srednie': null,
-  'wazony-duze': null,
-  talerzyki: null,
-  'talerze-srednie': null,
-  'talerze-duze': null,
-  'duze-michy': null,
-  'miski-falowane': null,
-  'fine-art-prints': null,
-};
-
-/** US dollars (integer) → cents. Same ×100 math as toGrosze. */
-export function toUSDCents(dollars: number): number {
-  return Math.round(dollars * 100);
-}
-
-/** Canadian dollars (integer) → cents. */
-export function toCADCents(dollars: number): number {
-  return Math.round(dollars * 100);
-}
-
 /** Shipping cost in pence for the chosen delivery method. */
 export function shippingGBPPence(method: DeliveryMethod): number {
-  return toGBPPence(SHIPPING_GBP[method]);
+  return toMinor(SHIPPING_GBP[method]);
 }
 
 /** Sum item amounts (pence) + shipping for the chosen method. */
@@ -171,16 +126,6 @@ export function priceOfCurrency(
       return product.price;
     case 'gbp':
       return PRICE_GBP[product.category];
-    case 'usd': {
-      const p = PRICE_USD[product.category];
-      if (p == null) throw new Error(`No USD price for category "${product.category}"`);
-      return p;
-    }
-    case 'cad': {
-      const p = PRICE_CAD[product.category];
-      if (p == null) throw new Error(`No CAD price for category "${product.category}"`);
-      return p;
-    }
     case 'eur':
     default:
       return PRICE_EUR[product.category];
@@ -189,10 +134,7 @@ export function priceOfCurrency(
 
 /**
  * Display shipping price (major units) for a delivery method in a display
- * currency. usd/cad hit the EUR default, but — unlike priceOfCurrency, which
- * THROWS for usd/cad — that path is never reached in practice: the item price
- * (priceOfCurrency) is computed first and throws, so no usd/cad order gets as
- * far as reading shipping. The asymmetry is deliberate and safe.
+ * currency. Unknown currencies hit the EUR default.
  */
 export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): number {
   switch (currency) {
@@ -206,14 +148,9 @@ export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): 
   }
 }
 
-/** Euros (integer) → euro-cents. Same ×100 math as toGrosze. */
-export function toEuroCents(euros: number): number {
-  return Math.round(euros * 100);
-}
-
 /** Shipping cost in euro-cents for the chosen delivery method. */
 export function shippingEuroCents(method: DeliveryMethod): number {
-  return toEuroCents(SHIPPING_EUR[method]);
+  return toMinor(SHIPPING_EUR[method]);
 }
 
 /** Sum item amounts (euro-cents) + shipping for the chosen method. */

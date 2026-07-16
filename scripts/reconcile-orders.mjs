@@ -42,6 +42,7 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseArgs } from 'node:util';
 
 // ── Email constants (mirrors src/lib/email-addresses.ts) ─────────────────────
 const EMAIL_CONTACT = 'hej@ciok.art';
@@ -393,49 +394,60 @@ function loadEnvFile(filePath) {
 // CLI arg parsing
 // ─────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(argv) {
+function parseCliArgs(argv) {
+  let values;
+  let positionals;
+  try {
+    ({ values, positionals } = parseArgs({
+      options: {
+        'dry-run': { type: 'boolean' },
+        emails: { type: 'boolean' },
+        studio: { type: 'boolean' },
+        buy: { type: 'boolean' },
+        labels: { type: 'boolean' },
+        verbose: { type: 'boolean' },
+        'allow-nonprod': { type: 'boolean' },
+        'force-studio': { type: 'boolean' },
+        'env-file': { type: 'string' },
+      },
+      allowPositionals: true,
+      strict: true,
+      args: argv,
+    }));
+  } catch (e) {
+    // Surface parseArgs failures with the original hand-rolled parser's error UX.
+    // env-file is the only string option, so INVALID_OPTION_VALUE is always it
+    // having a missing/flag-like value.
+    if (e.code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE') {
+      console.error('ERROR: --env-file requires a path argument');
+    } else {
+      const m = /'([^']+)'/.exec(e.message);
+      console.error(`ERROR: Unknown flag: ${m ? m[1] : ''}`);
+    }
+    process.exit(1);
+  }
+
   const args = {
-    dryRun: false,
-    emails: false,
-    studio: false,
-    buy: false,
-    labels: false,
-    verbose: false,
-    allowNonprod: false,
-    forceStudio: false,
-    envFile: null,
+    dryRun: values['dry-run'] === true,
+    emails: values.emails === true,
+    studio: values.studio === true,
+    buy: values.buy === true,
+    labels: values.labels === true,
+    verbose: values.verbose === true,
+    allowNonprod: values['allow-nonprod'] === true,
+    forceStudio: values['force-studio'] === true,
+    envFile: typeof values['env-file'] === 'string' ? values['env-file'] : null,
     orderIds: [],
   };
 
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '--dry-run') { args.dryRun = true; continue; }
-    if (a === '--emails') { args.emails = true; continue; }
-    if (a === '--studio') { args.studio = true; continue; }
-    if (a === '--buy') { args.buy = true; continue; }
-    if (a === '--labels') { args.labels = true; continue; }
-    if (a === '--verbose') { args.verbose = true; continue; }
-    if (a === '--allow-nonprod') { args.allowNonprod = true; continue; }
-    if (a === '--force-studio') { args.forceStudio = true; continue; }
-    if (a === '--env-file') {
-      const val = argv[i + 1];
-      if (!val || val.startsWith('--')) {
-        console.error('ERROR: --env-file requires a path argument');
-        process.exit(1);
-      }
-      args.envFile = val;
-      i++;
-      continue;
-    }
-    if (a.startsWith('--')) {
-      console.error(`ERROR: Unknown flag: ${a}`);
-      process.exit(1);
-    }
-    // Positional: order UUID
-    if (/^[0-9a-f-]{8,}/i.test(a)) {
-      args.orderIds.push(a);
+  for (const p of positionals) {
+    // Anchored canonical UUID (matches src/lib/uuid.ts UUID_RE — inlined, .mjs
+    // can't import the TS module). The old loose /^[0-9a-f-]{8,}/ accepted
+    // 'deadbeef-invalid', which then failed at the UUID column downstream.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p)) {
+      args.orderIds.push(p);
     } else {
-      console.error(`ERROR: Unrecognised argument: ${a}`);
+      console.error(`ERROR: Unrecognised argument: ${p}`);
       process.exit(1);
     }
   }
@@ -1030,7 +1042,7 @@ checkout or pass --env-file with the full path.
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseCliArgs(process.argv.slice(2));
 
   if (args.previewOnly) {
     printHelp();

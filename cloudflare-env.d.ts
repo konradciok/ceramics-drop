@@ -59,6 +59,9 @@ interface CloudflareEnv {
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
   // CMS preview-token HMAC secret (admin draft preview links). Dedicated, fail-closed.
   CMS_PREVIEW_SECRET: string;
+  // Fail-closed debug read for the destructive print-purchase E2E (audit H-2):
+  // GET /api/debug/fulfilment-status returns 404 unless this is set. Preview-only.
+  FULFILMENT_DEBUG_TOKEN?: string;
   // Cloudflare Access — admin route protection (worker.ts auth guard + src/lib/admin/access.ts).
   // CF_ACCESS_TEAM_DOMAIN: full issuer origin, e.g. https://<team>.cloudflareaccess.com
   // CF_ACCESS_AUD: Application Audience tag from the Access application settings.

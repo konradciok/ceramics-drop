@@ -3,8 +3,8 @@
    ------------------------------------------------------------
    Row shapes for the `products` / `product_variants` / `product_media`
    tables (migration 20260709140000_catalog_shadow.sql). These mirror the
-   static code registry during the strangler migration; a later stage flips
-   the storefront accessors onto them behind the CATALOG_SOURCE flag.
+   static code registry during the strangler migration; the storefront
+   accessors read them at runtime under CATALOG_SOURCE=db (production).
    ============================================================ */
 import type { CategorySlug, PrintVariantSelection } from '../types';
 

@@ -7,11 +7,15 @@ import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers
  * `@ci` block — courier-only cart UI; no Stripe, no Prodigi.
  *
  * `@destructive` block — configurator → kurier-only cart → EU country → real
- * Stripe test payment → return-page success. The webhook then enqueues a REAL
- * Prodigi order (sandbox or LIVE depending on the target host's PRODIGI_ENV).
+ * Stripe test payment → return-page success → polls the fail-closed
+ * /api/debug/fulfilment-status route to assert the order's fulfilment actually
+ * advanced (Stripe→webhook→queue→Prodigi), so a pipeline regression fails the
+ * spec instead of passing on a bare success-page assertion. The webhook
+ * enqueues a REAL Prodigi order (sandbox or LIVE per the host's PRODIGI_ENV).
  * Run only against a preview wired to PRODIGI_ENV=sandbox:
  *
  *   PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
+ *     E2E_FULFILMENT_DEBUG_TOKEN=<preview's FULFILMENT_DEBUG_TOKEN> \
  *     npx playwright test e2e/print-purchase.spec.ts --grep @destructive
  */
 
@@ -48,7 +52,7 @@ test.describe('print cart UI @ci', () => {
 test.describe('print purchase @checkout-edge @destructive', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('pays for a print to a German address and lands on the success page', async ({ page, baseURL }) => {
+  test('pays for a print to a German address and lands on the success page', async ({ page, request, baseURL }) => {
     if (/localhost|127\.0\.0\.1/.test(baseURL ?? '') && process.env.E2E_ALLOW_LOCALHOST !== '1') {
       throw new Error(
         `ENVIRONMENT BLOCKER: baseURL is ${baseURL}; set E2E_ALLOW_LOCALHOST=1 to run @destructive locally.`,
@@ -82,5 +86,46 @@ test.describe('print purchase @checkout-edge @destructive', () => {
     await page.locator(sel.paymentSubmit).click();
 
     await expect(page.locator(sel.checkoutSuccess)).toBeVisible({ timeout: 60_000 });
+
+    // ── Fulfilment advancement (audit H-2) ──────────────────────────────────
+    // The success page proves the payment, NOT that the Stripe→webhook→queue→
+    // Prodigi pipeline ran. Poll the fail-closed debug route until the order's
+    // fulfilment advanced (job submitted to Prodigi OR Prodigi accepted and
+    // minted an order id). Generous timeout: webhook + Cloudflare Queue +
+    // Prodigi sandbox round-trip can take tens of seconds.
+    const returnParams = new URL(page.url()).searchParams;
+    const clientSecret = returnParams.get('payment_intent_client_secret');
+    expect(clientSecret, 'return URL must carry payment_intent_client_secret').toBeTruthy();
+    // client_secret is `pi_<id>_secret_<secret>` — the PaymentIntent id is the prefix.
+    const paymentIntentId = clientSecret!.slice(0, clientSecret!.indexOf('_secret_'));
+
+    const debugToken = process.env.E2E_FULFILMENT_DEBUG_TOKEN;
+    expect(
+      debugToken,
+      'set E2E_FULFILMENT_DEBUG_TOKEN (must match FULFILMENT_DEBUG_TOKEN on the target preview)',
+    ).toBeTruthy();
+
+    const ADVANCED = new Set(['fulfilment_submitted', 'in_production', 'shipped']);
+    const deadline = Date.now() + 120_000;
+    let lastSeen = 'no successful response yet';
+    let advanced = false;
+    while (Date.now() < deadline && !advanced) {
+      const r = await request.get(
+        `/api/debug/fulfilment-status?payment_intent=${paymentIntentId}&ts=${Date.now()}`,
+        { headers: { 'x-fulfilment-debug-token': debugToken! } },
+      );
+      if (r.ok()) {
+        const body = (await r.json()) as { fulfilmentStatus: string | null; prodigiOrderId: string | null };
+        lastSeen = `fulfilmentStatus=${body.fulfilmentStatus ?? 'null'}, prodigiOrderId=${body.prodigiOrderId ?? 'null'}`;
+        advanced = Boolean(body.prodigiOrderId) || ADVANCED.has(body.fulfilmentStatus ?? '');
+      } else {
+        lastSeen = `debug route HTTP ${r.status()}`;
+      }
+      if (!advanced) await page.waitForTimeout(3_000);
+    }
+    expect(
+      advanced,
+      `print fulfilment did not advance within 120s — the Stripe→webhook→queue→Prodigi path may have regressed. Last seen: ${lastSeen}`,
+    ).toBe(true);
   });
 });

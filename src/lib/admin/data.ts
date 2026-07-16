@@ -6,15 +6,15 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { adminSupabase } from './clients';
+import { isUuid } from '@/lib/uuid';
 
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
 export const ORDER_STATUSES: OrderStatus[] = ['pending', 'paid', 'failed', 'expired', 'refunded'];
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** Guard before querying uuid columns — an invalid literal makes Postgres throw. */
-export function isUuid(s: string | null | undefined): s is string {
-  return !!s && UUID_RE.test(s);
-}
+// Guard before querying uuid columns — an invalid literal makes Postgres throw.
+// Re-exported from the neutral src/lib/uuid module so storefront callers (checkout)
+// need not depend on src/lib/admin.
+export { isUuid };
 
 /** `variant` is the ceramics⇄prints discriminator: NULL = ceramic, jsonb = print. */
 export type OrderItem = { product_id: string; unit_price: number; variant?: unknown };
