@@ -35,12 +35,14 @@ export interface DerivativeResult {
 /**
  * Compose one exact-pixel Prodigi derivative by layering the artwork master and
  * (optionally) an SVG signature onto a solid background canvas, using a resolved
- * proportional placement. Pure crop math lives in src/lib/print-assets-prepare.ts
+ * proportional placement. Pure layout math lives in src/lib/print-assets-prepare.ts
  * and is validated by the caller before this runs Sharp.
  *
  * Deterministic: fixed JPEG quality / chroma / mozjpeg, fixed PNG settings, and a
- * fixed input file + placement → byte-identical output across runs. ICC profile
- * of the artwork is carried through via `.withMetadata()`.
+ * fixed input file + placement → byte-identical output across runs. Sharp
+ * colour-manages artwork into sRGB; `.withMetadata()` embeds the output sRGB
+ * profile so the configured RGB background and artwork share one declared
+ * colour space.
  *
  * An RGBA artwork master is acceptable here (unlike the old crop path): alpha
  * composites onto the configured opaque background, and the output is flattened —
@@ -86,6 +88,19 @@ export async function composeDerivative(input: ComposeInput): Promise<Derivative
   return { sha256, byteSize: buffer.byteLength, format, buffer };
 }
 
+/** Decode the configured signature with Sharp and require a real, non-empty SVG. */
+export async function validateSignatureSvg(signatureSvgPath: string): Promise<void> {
+  try {
+    const metadata = await sharp(signatureSvgPath).metadata();
+    if (metadata.format !== 'svg' || !metadata.width || !metadata.height) {
+      throw new Error(`expected SVG with non-zero dimensions, decoded ${metadata.format ?? 'unknown'}`);
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Signature SVG could not be decoded: ${signatureSvgPath} (${reason})`);
+  }
+}
+
 /** Write a derivative buffer to disk, creating parent directories as needed. */
 export function writeDerivative(outputPath: string, buffer: Buffer): void {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -95,7 +110,7 @@ export function writeDerivative(outputPath: string, buffer: Buffer): void {
 /**
  * Prepare a clean revision output directory. When `force` is set and the
  * directory already exists (a re-run of the same revision), remove it first
- * — otherwise a re-run with a different crop config can leave stale
+ * — otherwise a re-run with a different layout config can leave stale
  * `{profile}-{oldSha256}.{ext}` files beside a `manifest.json` that no longer
  * references them, which is confusing for Phase 2b's upload/verify step.
  */

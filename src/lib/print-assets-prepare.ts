@@ -212,6 +212,50 @@ export function validateVerticalFit(
   return errors;
 }
 
+/** Ensure the resolved artwork and optional signature boxes are usable and remain inside the canvas. */
+export function validatePlacementFit(
+  layout: PrintLayout,
+  target: { w: number; h: number },
+  hasSignature: boolean,
+): string[] {
+  if (!Number.isInteger(target.w) || !Number.isInteger(target.h) || target.w <= 0 || target.h <= 0) {
+    return [`Target canvas must have positive integer dimensions, got ${target.w}x${target.h}`];
+  }
+
+  const placement = resolvePlacement(layout, target, { w: 1, h: 1 }, hasSignature);
+  const errors = validateVerticalFit(layout, target, hasSignature);
+  const artwork = placement.artworkBox;
+
+  if (artwork.width <= 0) {
+    errors.push(`Layout leaves no horizontal room for artwork on canvas ${target.w}x${target.h}`);
+  }
+  if (artwork.x < 0 || artwork.x + artwork.width > target.w) {
+    errors.push(
+      `Artwork box ${JSON.stringify(artwork)} exceeds horizontal bounds of canvas ${target.w}x${target.h}`,
+    );
+  }
+  if (artwork.y < 0 || artwork.y + artwork.height > target.h) {
+    errors.push(`Artwork box ${JSON.stringify(artwork)} exceeds canvas ${target.w}x${target.h}`);
+  }
+
+  const signature = placement.signatureBox;
+  if (signature) {
+    if (signature.width <= 0 || signature.height <= 0) {
+      errors.push(`Layout leaves no room for the signature on canvas ${target.w}x${target.h}`);
+    }
+    if (
+      signature.x < 0 ||
+      signature.y < 0 ||
+      signature.x + signature.width > target.w ||
+      signature.y + signature.height > target.h
+    ) {
+      errors.push(`Signature box ${JSON.stringify(signature)} exceeds canvas ${target.w}x${target.h}`);
+    }
+  }
+
+  return errors;
+}
+
 /**
  * Fail preparation when the artwork would be upscaled (contain scale > 1).
  * The artwork source must be at least as large as its box in the limiting dimension.
@@ -260,6 +304,48 @@ export interface PrepareConfig {
   signature?: SignatureConfig;
   /** Optional storefront gallery slots (operator `print-assets:gallery`). */
   gallery?: Record<string, GallerySlotConfig>;
+}
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Validate the untrusted JSON config before any filesystem, Supabase, or Sharp
+ * work. TypeScript's `PrepareConfig` type does not protect the operator CLI at
+ * runtime because the file is parsed from JSON.
+ */
+export function validatePrepareConfig(value: unknown, expectedProduct?: string): string[] {
+  if (!isRecord(value)) return ['Prepare config must be a JSON object'];
+
+  const errors: string[] = [];
+  if (typeof value.product !== 'string' || value.product.trim() === '') {
+    errors.push('Config field "product" must be a non-empty string');
+  } else if (expectedProduct && value.product !== expectedProduct) {
+    errors.push(`Config declares product "${value.product}", expected "${expectedProduct}"`);
+  }
+  if (typeof value.artwork !== 'string' || value.artwork.trim() === '') {
+    errors.push('Config field "artwork" must be a non-empty path');
+  }
+  if (typeof value.background !== 'string' || !HEX_COLOUR.test(value.background)) {
+    errors.push(`Config field "background" must be an exact #RRGGBB colour, got ${JSON.stringify(value.background)}`);
+  }
+  if (value.format !== 'jpg' && value.format !== 'png') {
+    errors.push(`Config field "format" must be "jpg" or "png", got ${JSON.stringify(value.format)}`);
+  }
+  if (!isRecord(value.layout)) {
+    errors.push('Config field "layout" must be an object');
+  } else {
+    errors.push(...validateLayoutFractions(value.layout as unknown as PrintLayout));
+  }
+  if (value.signature != null) {
+    if (!isRecord(value.signature) || typeof value.signature.svg !== 'string' || value.signature.svg.trim() === '') {
+      errors.push('Config field "signature.svg" must be a non-empty path when signature is configured');
+    }
+  }
+  return errors;
 }
 
 // ── Manifest ─────────────────────────────────────────────────────────────────
@@ -390,8 +476,47 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
 export function validateManifest(manifest: PrepareManifest, config: PrepareConfig): string[] {
   const errors: string[] = [];
 
+  if (manifest.product !== config.product) {
+    errors.push(`Manifest product "${manifest.product}" does not match config product "${config.product}"`);
+  }
+  if (manifest.layout.rendererVersion !== COMPOSE_RENDERER_VERSION) {
+    errors.push(
+      `Manifest rendererVersion "${manifest.layout.rendererVersion}" does not match "${COMPOSE_RENDERER_VERSION}"`,
+    );
+  }
+  if (manifest.layout.background !== config.background) {
+    errors.push(
+      `Manifest background "${manifest.layout.background}" does not match config background "${config.background}"`,
+    );
+  }
+  if (JSON.stringify(manifest.layout.layout) !== JSON.stringify(config.layout)) {
+    errors.push('Manifest layout does not match the tracked config layout');
+  }
+  if (manifest.layout.artworkSha256 !== manifest.sourceSha256) {
+    errors.push('Manifest artwork hash does not match sourceSha256');
+  }
+  if (manifest.layout.signatureSha256 !== manifest.signatureSha256) {
+    errors.push('Manifest signature hashes are inconsistent');
+  }
+  if ((manifest.signatureSha256 != null) !== (config.signature != null)) {
+    errors.push('Manifest signature presence does not match the tracked config');
+  }
+
+  const profileKeys = new Set<string>();
+
   for (const derivative of manifest.derivatives) {
-    const [expectedW, expectedH] = derivative.profileKey.split('x').map(Number);
+    if (profileKeys.has(derivative.profileKey)) {
+      errors.push(`Manifest contains duplicate derivative profile ${derivative.profileKey}`);
+    }
+    profileKeys.add(derivative.profileKey);
+
+    const profileMatch = /^(\d+)x(\d+)$/.exec(derivative.profileKey);
+    const expectedW = profileMatch ? Number(profileMatch[1]) : Number.NaN;
+    const expectedH = profileMatch ? Number(profileMatch[2]) : Number.NaN;
+    if (!profileMatch || expectedW <= 0 || expectedH <= 0) {
+      errors.push(`Derivative profileKey "${derivative.profileKey}" must be positive dimensions in WxH form`);
+      continue;
+    }
     if (derivative.width !== expectedW || derivative.height !== expectedH) {
       errors.push(
         `Derivative for profile ${derivative.profileKey} has dimensions ${derivative.width}x${derivative.height}, ` +
@@ -404,6 +529,22 @@ export function validateManifest(manifest: PrepareManifest, config: PrepareConfi
         `Derivative for profile ${derivative.profileKey} has contentType "${derivative.contentType}", ` +
           `expected "${expectedContentType}" for format ${derivative.format}`,
       );
+    }
+    if (derivative.format !== config.format) {
+      errors.push(
+        `Derivative for profile ${derivative.profileKey} uses format ${derivative.format}, expected ${config.format}`,
+      );
+    }
+    const expectedR2Key = buildR2Key(
+      manifest.product,
+      manifest.revision,
+      derivative.width,
+      derivative.height,
+      derivative.sha256,
+      derivative.format,
+    );
+    if (derivative.r2Key !== expectedR2Key) {
+      errors.push(`Derivative for profile ${derivative.profileKey} has an inconsistent r2Key`);
     }
     // Self-consistency: recompute the placement from the recorded layout + source dims.
     const recomputed = resolvePlacement(
@@ -422,6 +563,26 @@ export function validateManifest(manifest: PrepareManifest, config: PrepareConfi
         `Derivative for profile ${derivative.profileKey} has artworkBoxPx ` +
           `${JSON.stringify(derivative.artworkBoxPx)} that does not match recomputed ` +
           `${JSON.stringify(recomputed.artworkBox)} (layout/source drift)`,
+      );
+    }
+    if (JSON.stringify(recomputed.signatureBox) !== JSON.stringify(derivative.signatureBoxPx)) {
+      errors.push(
+        `Derivative for profile ${derivative.profileKey} has signatureBoxPx ` +
+          `${JSON.stringify(derivative.signatureBoxPx)} that does not match recomputed ` +
+          `${JSON.stringify(recomputed.signatureBox)} (layout/source drift)`,
+      );
+    }
+  }
+
+  const assignedVariants = new Set<string>();
+  for (const assignment of manifest.assignments) {
+    if (assignedVariants.has(assignment.variantKey)) {
+      errors.push(`Manifest contains duplicate assignment for variant ${assignment.variantKey}`);
+    }
+    assignedVariants.add(assignment.variantKey);
+    if (!profileKeys.has(assignment.profileKey)) {
+      errors.push(
+        `Assignment for variant ${assignment.variantKey} references missing profile ${assignment.profileKey}`,
       );
     }
   }

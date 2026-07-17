@@ -7,6 +7,8 @@ import {
   refuseOverwrite,
   resolvePlacement,
   validateLayoutFractions,
+  validatePlacementFit,
+  validatePrepareConfig,
   validateVerticalFit,
   validateNoUpscale,
   type PrepareConfig,
@@ -67,6 +69,32 @@ const CONFIG: PrepareConfig = {
   layout: LAYOUT_CONFIG,
   signature: { svg: 'design/print-assets/fap01/signature.svg' },
 };
+
+describe('validatePrepareConfig', () => {
+  it('accepts a complete composition config', () => {
+    expect(validatePrepareConfig(CONFIG, 'fap01')).toEqual([]);
+  });
+
+  it('rejects malformed backgrounds and unsupported formats', () => {
+    const invalid = { ...CONFIG, background: 'linen', format: 'webp' };
+    const errors = validatePrepareConfig(invalid, 'fap01');
+    expect(errors.some((error) => error.includes('#RRGGBB'))).toBe(true);
+    expect(errors.some((error) => error.includes('jpg') && error.includes('png'))).toBe(true);
+  });
+
+  it('rejects missing required fields and malformed signature config', () => {
+    const errors = validatePrepareConfig({ product: '', layout: {}, signature: {} }, 'fap01');
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('product'),
+        expect.stringContaining('artwork'),
+        expect.stringContaining('background'),
+        expect.stringContaining('format'),
+        expect.stringContaining('signature.svg'),
+      ]),
+    );
+  });
+});
 
 function makeManifestInputs() {
   const profiles = distinctProfiles([
@@ -163,6 +191,30 @@ describe('validateManifest', () => {
     const manifest = buildManifest(makeManifestInputs());
     manifest.derivatives.find((d) => d.profileKey === '1000x1000')!.artworkBoxPx.x = 0;
     expect(validateManifest(manifest, CONFIG).some((e) => /artworkBox|placement/i.test(e))).toBe(true);
+  });
+
+  it('fails when config or nested layer hashes drift from the manifest', () => {
+    const manifest = buildManifest(makeManifestInputs());
+    manifest.layout.background = '#ffffff';
+    manifest.layout.signatureSha256 = 'e'.repeat(64);
+    const errors = validateManifest(manifest, CONFIG);
+    expect(errors.some((error) => error.includes('background'))).toBe(true);
+    expect(errors.some((error) => error.includes('signature hashes'))).toBe(true);
+  });
+
+  it('fails when a recorded signatureBoxPx does not match a recomputed placement', () => {
+    const manifest = buildManifest(makeManifestInputs());
+    manifest.derivatives[0].signatureBoxPx!.x = 0;
+    expect(validateManifest(manifest, CONFIG).some((error) => error.includes('signatureBoxPx'))).toBe(true);
+  });
+
+  it('fails on duplicate profiles and assignments that reference missing profiles', () => {
+    const manifest = buildManifest(makeManifestInputs());
+    manifest.derivatives.push({ ...manifest.derivatives[0] });
+    manifest.assignments[0].profileKey = 'missing-profile';
+    const errors = validateManifest(manifest, CONFIG);
+    expect(errors.some((error) => error.includes('duplicate derivative profile'))).toBe(true);
+    expect(errors.some((error) => error.includes('references missing profile'))).toBe(true);
   });
 });
 
@@ -288,6 +340,22 @@ describe('validateVerticalFit', () => {
     // Would overflow only if gap+signature counted — they must not when false.
     const layout: PrintLayout = { ...VALID, gapAboveSignature: 0.9, signatureZoneHeight: 0.9 };
     expect(validateVerticalFit(layout, { w: 1000, h: 1000 }, false)).toEqual([]);
+  });
+});
+
+describe('validatePlacementFit', () => {
+  it('rejects layouts that leave zero or negative horizontal artwork space', () => {
+    const invalid: PrintLayout = { ...VALID, sideMargin: 0.5 };
+    expect(validatePlacementFit(invalid, { w: 1000, h: 1000 }, false)).toEqual([
+      expect.stringContaining('no horizontal room'),
+    ]);
+  });
+
+  it('rejects a configured signature with a zero-height zone', () => {
+    const invalid: PrintLayout = { ...VALID, signatureZoneHeight: 0 };
+    expect(validatePlacementFit(invalid, { w: 1000, h: 1000 }, true)).toEqual([
+      expect.stringContaining('no room for the signature'),
+    ]);
   });
 });
 

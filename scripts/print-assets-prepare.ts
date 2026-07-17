@@ -19,9 +19,9 @@
  * `product_variants` for the product.
  *
  * Usage:
- *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-16-r1
- *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-16-r1 --force
- *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-16-r1 --dry-run
+ *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
+ *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --force
+ *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --dry-run
  *   # --source overrides config.artwork (CLI parity); resolved from config if absent
  *
  * Output (gitignored): design/print-assets/{productId}/{revision}/
@@ -46,12 +46,13 @@ import {
   validateLayoutFractions,
   validateManifest,
   validateNoUpscale,
-  validateVerticalFit,
+  validatePlacementFit,
+  validatePrepareConfig,
   type DerivativeFormat,
   type Placement,
   type PrepareConfig,
 } from '../src/lib/print-assets-prepare';
-import { composeDerivative, prepareOutputDir, writeDerivative } from './lib/prepare-derivatives';
+import { composeDerivative, prepareOutputDir, validateSignatureSvg, writeDerivative } from './lib/prepare-derivatives';
 import { activeVariantDimensions } from './lib/db-variants';
 import { loadSupabaseClient } from './lib/script-env';
 import { getArg, hasFlag, revisionDir, ROOT } from './lib/print-assets-cli';
@@ -66,11 +67,12 @@ function loadConfig(productId: string): PrepareConfig {
         '(see docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md).',
     );
   }
-  const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8')) as PrepareConfig;
-  if (parsed.product !== productId) {
-    throw new Error(`Config ${configPath} declares product "${parsed.product}", expected "${productId}"`);
+  const parsed: unknown = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const errors = validatePrepareConfig(parsed, productId);
+  if (errors.length > 0) {
+    throw new Error(`Invalid prepare config ${configPath}:\n  - ${errors.join('\n  - ')}`);
   }
-  return parsed;
+  return parsed as PrepareConfig;
 }
 
 async function main(): Promise<void> {
@@ -81,7 +83,7 @@ async function main(): Promise<void> {
   const dryRun = hasFlag('dry-run');
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
-  if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-16-r1)');
+  if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-17-r1)');
 
   console.log(`print-assets:prepare — product=${productId} revision=${revision}`);
 
@@ -104,6 +106,8 @@ async function main(): Promise<void> {
   if (fractionErrors.length > 0) {
     throw new Error(`Invalid layout fractions:\n  - ${fractionErrors.join('\n  - ')}`);
   }
+
+  if (signaturePath) await validateSignatureSvg(signaturePath);
 
   // 2. Enumerate active variants → distinct dimension profiles.
   const supabase = loadSupabaseClient();
@@ -128,7 +132,7 @@ async function main(): Promise<void> {
   const layoutErrors: string[] = [];
   for (const profile of profiles) {
     layoutErrors.push(
-      ...validateVerticalFit(config.layout, { w: profile.w, h: profile.h }, hasSignature),
+      ...validatePlacementFit(config.layout, { w: profile.w, h: profile.h }, hasSignature),
       ...validateNoUpscale(config.layout, { w: profile.w, h: profile.h }, { w: sourceWidth, h: sourceHeight }, hasSignature),
     );
   }

@@ -3,20 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { composeDerivative } from './prepare-derivatives';
-import type { PrintLayout, Placement } from '../../src/lib/print-assets-prepare';
+import { composeDerivative, validateSignatureSvg } from './prepare-derivatives';
+import type { Placement } from '../../src/lib/print-assets-prepare';
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
 const ARTWORK = path.join(TMP, 'artwork.png');
 const SIG = path.join(TMP, 'sig.svg');
-
-const LAYOUT: PrintLayout = {
-  sideMargin: 0.1,
-  topMargin: 0.1,
-  bottomMargin: 0.1,
-  gapAboveSignature: 0.05,
-  signatureZoneHeight: 0.05,
-};
+const BAD_SIG = path.join(TMP, 'bad.svg');
 
 beforeAll(async () => {
   // A solid-red 200x200 artwork master.
@@ -28,6 +21,7 @@ beforeAll(async () => {
     SIG,
     '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><rect width="100" height="20" fill="#0000ff"/></svg>',
   );
+  fs.writeFileSync(BAD_SIG, '<svg><not-closed>');
 });
 
 afterAll(() => fs.rmSync(TMP, { recursive: true, force: true }));
@@ -135,6 +129,28 @@ describe('composeDerivative', () => {
     expect(a.sha256).toBe(b.sha256);
   });
 
+  it('embeds an sRGB ICC profile in the composed output', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 10, y: 10, width: 80, height: 70 },
+      signatureBox: null,
+      artworkOut: { width: 50, height: 50 },
+      artworkPos: { x: 25, y: 20 },
+      scale: 0.25,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: null,
+      background: '#ffffff',
+      placement,
+      target: { w: 100, h: 100 },
+      format: 'jpg',
+    });
+    const metadata = await sharp(result.buffer).metadata();
+    expect(metadata.space).toBe('srgb');
+    expect(metadata.hasProfile).toBe(true);
+    expect(metadata.icc?.byteLength).toBeGreaterThan(0);
+  });
+
   it('composes without a signature when signatureSvgPath is null', async () => {
     const placement: Placement = {
       artworkBox: { x: 100, y: 100, width: 800, height: 800 },
@@ -152,5 +168,15 @@ describe('composeDerivative', () => {
       format: 'jpg',
     });
     expect(result.byteSize).toBeGreaterThan(0);
+  });
+});
+
+describe('validateSignatureSvg', () => {
+  it('accepts a decodable SVG with non-zero dimensions', async () => {
+    await expect(validateSignatureSvg(SIG)).resolves.toBeUndefined();
+  });
+
+  it('rejects an invalid SVG before derivative generation', async () => {
+    await expect(validateSignatureSvg(BAD_SIG)).rejects.toThrow(/could not be decoded/i);
   });
 });

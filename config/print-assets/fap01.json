@@ -11,7 +11,7 @@
     "gapAboveSignature": 0.022,
     "signatureZoneHeight": 0.028,
     "artworkMaxWidth": 0.85,
-    "artworkMaxHeight": 0.76
+    "artworkMaxHeight": 0.707
   },
   "signature": {
     "svg": "design/print-assets/fap01/signature.svg"

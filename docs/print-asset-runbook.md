@@ -17,22 +17,38 @@ See `docs/plans/print-asset-pipeline.md` for the full design.
 
 ## New artwork (first publication)
 
+Place the approved, artwork-only master and signature at the canonical,
+gitignored paths referenced by the product config:
+
+```text
+design/print-assets/{productId}/artwork-master.png
+design/print-assets/{productId}/signature.svg
+```
+
+The artwork master must not contain a baked border or signature. Author one
+product-level proportional `layout` in `config/print-assets/{productId}.json`;
+the prepare script resolves it independently for every active Prodigi profile.
+
 ```bash
-# 1. Author crop config (one focal/crop per distinct aspect ratio)
+# 1. Author proportional composition config
 #    config/print-assets/fap01.json
 
 # 2. Prepare derivatives + manifest (review proof-*.jpg locally)
-npm run print-assets:prepare -- --product fap01 --revision 2026-07-12-r1 --source design/prints/fap01-master.tif
+npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --dry-run
+npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
+
+# STOP: review every proof-*.jpg with the studio before any upload.
+# Tune layout fractions and re-run with --force until approved.
 
 # 3. Upload to R2 + stage DB rows
-npm run print-assets:upload -- --product fap01 --revision 2026-07-12-r1
+npm run print-assets:upload -- --product fap01 --revision 2026-07-17-r1
 
 # 4. Verify remote bytes match manifest; promote to ready
-npm run print-assets:verify -- --product fap01 --revision 2026-07-12-r1
+npm run print-assets:verify -- --product fap01 --revision 2026-07-17-r1
 
 # 5. Atomic assignment to all active variants (requires explicit confirm)
 #    Optional --actor <email> records the operator in catalog_audit_log.
-npm run print-assets:publish -- --product fap01 --revision 2026-07-12-r1 --confirm 2026-07-12-r1
+npm run print-assets:publish -- --product fap01 --revision 2026-07-17-r1 --confirm 2026-07-17-r1
 
 # 5b. Generate storefront gallery WebPs from the published fulfilment master,
 #     upload to R2 `prints/{productId}/gallery/{slot}/`, mirror to public/uploads/.
@@ -45,13 +61,29 @@ npm run print-assets:gallery -- --product fap01
 
 **Gate:** `getPrintAssetReadiness(fap01).ready === true` before `draft/hidden → active`.
 
+### Tuning the proportional layout
+
+- `sideMargin`: left/right inset as a fraction of the canvas short side.
+- `topMargin` and `bottomMargin`: vertical edge spacing as fractions of canvas height.
+- `gapAboveSignature`: space between the artwork region and signature zone.
+- `signatureZoneHeight`: height available to contain-fit the SVG signature.
+- `artworkMaxWidth` and `artworkMaxHeight`: optional ceilings that create additional breathing room without cropping.
+
+Preparation fails before output when the config, SVG, source dimensions, or
+resolved geometry is invalid. The generated `proof-*.jpg` files show the full
+composition but are never included in the upload manifest. Output pixels are
+colour-managed into an embedded sRGB profile so the artwork and configured RGB
+background share a declared colour space.
+
 **Known limitation (Stage 4a):** readiness is checked in application code, then status is updated in a separate statement — a concurrent revoke or assignment change between the two could theoretically allow activation with stale coverage. Frequency is low; a DB-side RPC guard is deferred unless this surfaces in production.
 
 ## Revision replacement (corrected artwork)
 
-1. Run **prepare → upload → verify → publish** with a **new revision** string.
-2. The publish RPC swaps every assignment in one transaction; prior R2 objects remain for historical orders.
-3. New checkouts resolve the new assignment; paid orders keep their snapshotted `assetId`.
+1. Place the corrected artwork-only master/signature, then run **prepare** with a **new revision** string.
+2. Review every proportional-composition proof and obtain studio approval.
+3. Only after approval, run **upload → verify → publish** for that revision.
+4. The publish RPC swaps every assignment in one transaction; prior R2 objects remain for historical orders.
+5. New checkouts resolve the new assignment; paid orders keep their snapshotted `assetId`.
 
 **Rollback to prior assignment:** re-run `print-assets:publish` with the last known-good revision's manifest assignments (objects must still be `ready`). Never mutate or overwrite R2 keys.
 

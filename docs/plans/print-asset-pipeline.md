@@ -42,9 +42,18 @@ The pipeline is complete only when a newly published print cannot be purchased w
 
 Generate one approved JPG or PNG derivative for each **distinct required print-area dimension** used by a design's active variants. Variants with identical dimensions may share a derivative; variants with different dimensions must have separate derivatives.
 
+> **Update 2026-07-17:** the generation step based on cropping a flattened
+> master is superseded by proportional layer composition. See
+> `docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md`
+> and `docs/superpowers/plans/2026-07-16-proportional-print-composition.md`.
+> Exact derivatives, immutable R2 keys, atomic publication, checkout snapshots,
+> and fail-closed fulfilment remain unchanged. A product-level `layout` now
+> composes an artwork-only master, background, and optional SVG signature for
+> every profile instead of configuring a crop per profile.
+
 - Dimensions come from the verified `PRODIGI_SKU_MAP` and are persisted per `product_variants.variant_key`, not inferred from nominal centimetre labels or a SKU-only row.
 - Never enlarge a source. Fail preparation when the source cannot cover the target pixels.
-- Require an explicit crop/focal configuration for every distinct aspect ratio. Do not silently accept Sharp's or Prodigi's centre crop.
+- Require one explicit proportional composition layout per product. Do not silently accept Sharp's or Prodigi's centre crop.
 - Keep `sizing: 'fillPrintArea'` as defense in depth after the submitted derivative already matches the exact target dimensions.
 - Use JPG/PNG only for generated derivatives. Prodigi can resize those formats; PDFs are processed at the received size and are not useful for this derivative workflow.
 
@@ -162,20 +171,20 @@ Add tracked configuration under `config/print-assets/{productId}.json`; keep sou
 Add scripts and package commands:
 
 ```text
-npm run print-assets:prepare -- --product fap01 --revision 2026-07-10-r1 --source <path>
+npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
 npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1
 npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1
 npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1 --confirm 2026-07-10-r1
 ```
 
-- [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate source metadata, apply explicit crops, output exact-size JPG/PNG files, preserve/embed the approved colour profile, and emit a manifest containing hashes and assignments.
-- [x] `prepare`: fail on enlargement, unexpected alpha handling, unsupported format, duplicate/missing profile, dimension mismatch, or non-deterministic output.
+- [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate the artwork/SVG/config, compose proportional layers, output exact-size JPG/PNG files with an embedded sRGB profile, and emit a manifest containing hashes, resolved boxes, and assignments.
+- [x] `prepare`: fail on enlargement, malformed or degenerate layout, invalid SVG, unsupported format, duplicate/missing profile, dimension mismatch, manifest drift, or non-deterministic output.
 - [x] `prepare`: create small review proofs/contact sheets next to the local output; proofs never become fulfilment assets.
 - [x] `upload`: call the current Wrangler CLI form `wrangler r2 object put {bucket}/{key} --file ... --content-type ... --remote`; check before writing, reuse an existing object only after its full streamed hash matches, and abort on any mismatch.
 - [x] `upload`: stage the corresponding database rows only after every upload succeeds.
 - [x] `verify`: streamed authenticated `GET` compares size, decoded dimensions, and the full SHA-256 against the local manifest without loading the whole object into memory. (Content-type round-trip verification needs R2 `head`, which Wrangler 4.x lacks — deferred to the Phase 4 Worker `head` route; the content-addressed full-hash match already proves byte-identity of the object uploaded with an explicit `--content-type`.)
 - [x] `publish`: require explicit operator confirmation (`--confirm <revision>`), then call the atomic assignment RPC.
-- [x] Add unit tests using tiny fixtures for crop math, profile deduplication, determinism, manifest validation, and refusal to overwrite. (Phase 2b adds staged-row projection, upload reuse/abort decision, idempotent staging partition, remote-vs-manifest comparison, and publish-assignment resolution.)
+- [x] Add unit tests using tiny fixtures for proportional placement, profile deduplication, deterministic composition, config/manifest validation, SVG decoding, output colour metadata, and refusal to overwrite. (Phase 2b adds staged-row projection, upload reuse/abort decision, idempotent staging partition, remote-vs-manifest comparison, and publish-assignment resolution.)
 
 Gate: `fap01` can be prepared twice byte-for-byte, visually approved, uploaded, verified, and published without editing application code.
 
@@ -237,7 +246,7 @@ Gate: operator can publish artwork via scripts; admin blocks incomplete activati
 
 | Layer | Required proof |
 |---|---|
-| Preparation | exact dimensions, no enlargement, deterministic hashes, explicit crop coverage |
+| Preparation | exact dimensions, no enlargement, deterministic hashes, valid proportional placement, SVG decode, sRGB output profile |
 | R2 | immutable key, correct metadata, `head/get`, missing object, overwrite refusal |
 | Database | full active-variant coverage, atomic publish, historical revision retained |
 | Checkout | browser cannot choose asset, missing/revoked assignment blocks payment, JSON snapshot persisted |
@@ -265,7 +274,7 @@ Rollback the application to the prior release only while legacy objects still ex
 - Uploading print masters through an unauthenticated storefront route.
 - Reusing `product_media` as fulfilment storage metadata.
 - Automated generative upscaling or sharpening.
-- Automatic artwork approval; visual crop and colour review remain a studio decision.
+- Automatic artwork approval; visual composition and colour review remain a studio decision.
 - Deleting historical R2 assets as part of publication.
 
 ## Source Contracts
