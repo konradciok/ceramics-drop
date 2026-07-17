@@ -17,8 +17,8 @@ See `docs/plans/print-asset-pipeline.md` for the full design.
 
 ## New artwork (first publication)
 
-Place the approved, artwork-only master and signature at the canonical,
-gitignored paths referenced by the product config:
+Place the approved, artwork-only master and, when the product config includes a
+`signature`, its SVG at the canonical gitignored paths:
 
 ```text
 design/print-assets/{productId}/artwork-master.png
@@ -28,6 +28,12 @@ design/print-assets/{productId}/signature.svg
 The artwork master must not contain a baked border or signature. Author one
 product-level proportional `layout` in `config/print-assets/{productId}.json`;
 the prepare script resolves it independently for every active Prodigi profile.
+When configured, export the signature as a self-contained, path-only SVG:
+convert lettering to outlines and remove embedded images, scripts, foreign
+objects, external links, and external CSS resources. Font-backed `<text>` is
+rejected because it renders differently when an operator machine does not have
+the same font installed. Without a `signature` config, omit the SVG; prepare
+collapses the signature gap and zone automatically.
 
 ```bash
 # 1. Author proportional composition config
@@ -75,11 +81,16 @@ composition but are never included in the upload manifest. Output pixels are
 colour-managed into an embedded sRGB profile so the artwork and configured RGB
 background share a declared colour space.
 
-**Known limitation (Stage 4a):** readiness is checked in application code, then status is updated in a separate statement — a concurrent revoke or assignment change between the two could theoretically allow activation with stale coverage. Frequency is low; a DB-side RPC guard is deferred unless this surfaces in production.
+Activation uses the `update_product_status_guarded` RPC. It locks the product,
+active variants, assignments, and assigned asset rows, revalidates complete
+ready/dimension-matched coverage, then updates status and writes the audit row
+in the same transaction. Concurrent revision publication is serialized on the
+product lock; a concurrent asset revoke completes either before the check or
+after activation as a distinct emergency action.
 
 ## Revision replacement (corrected artwork)
 
-1. Place the corrected artwork-only master/signature, then run **prepare** with a **new revision** string.
+1. Place the corrected artwork-only master and, when configured, signature SVG; then run **prepare** with a **new revision** string.
 2. Review every proportional-composition proof and obtain studio approval.
 3. Only after approval, run **upload → verify → publish** for that revision.
 4. The publish RPC swaps every assignment in one transaction; prior R2 objects remain for historical orders.

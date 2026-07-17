@@ -43,6 +43,10 @@ The vertical stack is `topMargin + artwork box + gap + signatureZone + bottomMar
 ### `signature` — vector, never a JPG cut-out
 
 `signature.svg` is rendered from vector at full canvas resolution per variant.
+It must be self-contained and path-only: convert all lettering to outlines and
+do not use `<text>`, `<image>`, scripts, foreign objects, external links, or
+external CSS resources. This keeps rendering independent of locally installed
+fonts and other machine-specific files; prepare rejects those features.
 Absence is meaningful: no `signature` key ⇒ the gap and signature zone are
 zeroed and the artwork box grows into that space.
 
@@ -57,6 +61,6 @@ prepare step reads them off disk at run time.
 A published revision (e.g. `fap01` @ `2026-07-12-r1`) is immutable in R2 + the
 `print_fulfilment_assets` rows. **Editing this config does not affect any
 published asset** — it only governs the *next* prepare run. Cutting a new
-revision requires re-sourcing the artwork (clean master, no baked border) and a
-`signature.svg`, then running the unchanged
+revision requires re-sourcing the artwork (clean master, no baked border) and,
+when the config includes a `signature`, its `signature.svg`, then running the unchanged
 `print-assets:prepare` → `:upload` → `:verify` → `:publish` sequence.

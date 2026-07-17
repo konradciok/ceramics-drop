@@ -170,11 +170,12 @@ Add tracked configuration under `config/print-assets/{productId}.json`; keep sou
 
 Add scripts and package commands:
 
-```text
-npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
-npm run print-assets:upload  -- --product fap01 --revision 2026-07-10-r1
-npm run print-assets:verify  -- --product fap01 --revision 2026-07-10-r1
-npm run print-assets:publish -- --product fap01 --revision 2026-07-10-r1 --confirm 2026-07-10-r1
+```bash
+REVISION=2026-07-17-r1
+npm run print-assets:prepare -- --product fap01 --revision "$REVISION"
+npm run print-assets:upload  -- --product fap01 --revision "$REVISION"
+npm run print-assets:verify  -- --product fap01 --revision "$REVISION"
+npm run print-assets:publish -- --product fap01 --revision "$REVISION" --confirm "$REVISION"
 ```
 
 - [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate the artwork/SVG/config, compose proportional layers, output exact-size JPG/PNG files with an embedded sRGB profile, and emit a manifest containing hashes, resolved boxes, and assignments.

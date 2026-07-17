@@ -91,7 +91,7 @@ byte-deterministic output are not in conflict.
 
 ### Regions (top → bottom)
 
-```
+```text
 ┌─────────────────────────────────────┐  ▲
 │         top margin (mt)             │  │ mt = topMargin · H
 │   ┌───────────────────────────┐     │  │
@@ -114,7 +114,7 @@ robust generalisation). Vertical regions are fractions of `H`.
 
 ### Resolution math (per profile, deterministic, round-half-up)
 
-```
+```text
 S  = min(W, H)
 mx = round(sideMargin · S)
 mt = round(topMargin · H)
@@ -132,7 +132,7 @@ artworkBoxW       = min(round(artworkMaxWidth · W), availableW)           // ce
 
 The artwork is **contain-fit** into `(artworkBoxW, artworkBoxH)`:
 
-```
+```text
 scale = min(artworkBoxW / sw, artworkBoxH / sh)           // sw,sh = artwork source pixels
 outW  = round(sw · scale)
 outH  = round(sh · scale)

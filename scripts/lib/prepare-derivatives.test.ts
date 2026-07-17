@@ -10,6 +10,8 @@ const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
 const ARTWORK = path.join(TMP, 'artwork.png');
 const SIG = path.join(TMP, 'sig.svg');
 const BAD_SIG = path.join(TMP, 'bad.svg');
+const TEXT_SIG = path.join(TMP, 'text.svg');
+const EXTERNAL_SIG = path.join(TMP, 'external.svg');
 
 beforeAll(async () => {
   // A solid-red 200x200 artwork master.
@@ -22,6 +24,14 @@ beforeAll(async () => {
     '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><rect width="100" height="20" fill="#0000ff"/></svg>',
   );
   fs.writeFileSync(BAD_SIG, '<svg><not-closed>');
+  fs.writeFileSync(
+    TEXT_SIG,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><text font-family="Studio Font">Anna</text></svg>',
+  );
+  fs.writeFileSync(
+    EXTERNAL_SIG,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><image href="signature.png"/></svg>',
+  );
 });
 
 afterAll(() => fs.rmSync(TMP, { recursive: true, force: true }));
@@ -108,6 +118,27 @@ describe('composeDerivative', () => {
     expect([r, g, b]).toEqual([255, 0, 0]);
   });
 
+  it('produces a three-channel PNG with no alpha channel', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'png',
+    });
+    const metadata = await sharp(result.buffer).metadata();
+    expect(metadata.channels).toBe(3);
+    expect(metadata.hasAlpha).toBe(false);
+  });
+
   it('is byte-deterministic across two runs', async () => {
     const placement: Placement = {
       artworkBox: { x: 100, y: 100, width: 800, height: 700 },
@@ -177,6 +208,14 @@ describe('validateSignatureSvg', () => {
   });
 
   it('rejects an invalid SVG before derivative generation', async () => {
-    await expect(validateSignatureSvg(BAD_SIG)).rejects.toThrow(/could not be decoded/i);
+    await expect(validateSignatureSvg(BAD_SIG)).rejects.toThrow(/invalid/i);
+  });
+
+  it('rejects font-dependent text before derivative generation', async () => {
+    await expect(validateSignatureSvg(TEXT_SIG)).rejects.toThrow(/outlined paths/i);
+  });
+
+  it('rejects external or embedded image resources before derivative generation', async () => {
+    await expect(validateSignatureSvg(EXTERNAL_SIG)).rejects.toThrow(/path-only SVG/i);
   });
 });

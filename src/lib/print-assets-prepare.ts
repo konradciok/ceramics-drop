@@ -142,13 +142,14 @@ export function resolvePlacement(
       ? Math.min(artworkBoxDerived, round(layout.artworkMaxHeight * h))
       : artworkBoxDerived;
 
-  const artworkBox: Box = { x: mx, y: artworkBoxTop, width: artworkBoxW, height: artworkBoxH };
+  const artworkBoxX = mx + round((availableW - artworkBoxW) / 2);
+  const artworkBox: Box = { x: artworkBoxX, y: artworkBoxTop, width: artworkBoxW, height: artworkBoxH };
 
   // Contain-fit the artwork into the box (preserve aspect, no crop).
   const scale = Math.min(artworkBoxW / artwork.w, artworkBoxH / artwork.h);
   const artworkOut = { width: round(artwork.w * scale), height: round(artwork.h * scale) };
   const artworkPos = {
-    x: mx + round((availableW - artworkOut.width) / 2),
+    x: artworkBoxX + round((artworkBoxW - artworkOut.width) / 2),
     y: artworkBoxTop + round((artworkBoxH - artworkOut.height) / 2),
   };
 
@@ -365,7 +366,7 @@ export interface ManifestDerivative {
   sha256: string;
   byteSize: number;
   r2Key: string;
-  /** Resolved artwork box on this canvas (audit/repro). */
+  /** Actual rendered artwork rectangle on this canvas (audit/repro). */
   artworkBoxPx: Box;
   /** Resolved signature zone on this canvas, or null. */
   signatureBoxPx: Box | null;
@@ -439,7 +440,12 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
       sha256: meta.sha256,
       byteSize: meta.byteSize,
       r2Key: buildR2Key(input.product, input.revision, profile.w, profile.h, meta.sha256, meta.format),
-      artworkBoxPx: meta.placement.artworkBox,
+      artworkBoxPx: {
+        x: meta.placement.artworkPos.x,
+        y: meta.placement.artworkPos.y,
+        width: meta.placement.artworkOut.width,
+        height: meta.placement.artworkOut.height,
+      },
       signatureBoxPx: meta.placement.signatureBox,
     };
   });
@@ -553,16 +559,22 @@ export function validateManifest(manifest: PrepareManifest, config: PrepareConfi
       { w: manifest.sourceWidth, h: manifest.sourceHeight },
       manifest.signatureSha256 != null,
     );
+    const renderedArtworkBox: Box = {
+      x: recomputed.artworkPos.x,
+      y: recomputed.artworkPos.y,
+      width: recomputed.artworkOut.width,
+      height: recomputed.artworkOut.height,
+    };
     if (
-      recomputed.artworkBox.x !== derivative.artworkBoxPx.x ||
-      recomputed.artworkBox.y !== derivative.artworkBoxPx.y ||
-      recomputed.artworkBox.width !== derivative.artworkBoxPx.width ||
-      recomputed.artworkBox.height !== derivative.artworkBoxPx.height
+      renderedArtworkBox.x !== derivative.artworkBoxPx.x ||
+      renderedArtworkBox.y !== derivative.artworkBoxPx.y ||
+      renderedArtworkBox.width !== derivative.artworkBoxPx.width ||
+      renderedArtworkBox.height !== derivative.artworkBoxPx.height
     ) {
       errors.push(
         `Derivative for profile ${derivative.profileKey} has artworkBoxPx ` +
           `${JSON.stringify(derivative.artworkBoxPx)} that does not match recomputed ` +
-          `${JSON.stringify(recomputed.artworkBox)} (layout/source drift)`,
+          `${JSON.stringify(renderedArtworkBox)} (layout/source drift)`,
       );
     }
     if (JSON.stringify(recomputed.signatureBox) !== JSON.stringify(derivative.signatureBoxPx)) {

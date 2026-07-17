@@ -144,7 +144,12 @@ describe('buildManifest', () => {
       byteSize: 111,
       r2Key: 'prints/fap01/2026-07-16-r1/1000x1000-' + 'b'.repeat(64) + '.jpg',
     });
-    expect(byKey.get('1000x1000')?.artworkBoxPx).toMatchObject({ x: 100, width: 800 });
+    expect(byKey.get('1000x1000')?.artworkBoxPx).toEqual({
+      x: 150,
+      y: 100,
+      width: 700,
+      height: 700,
+    });
     expect(byKey.get('1000x1000')?.signatureBoxPx).toMatchObject({ y: 850, height: 50 });
   });
 
@@ -286,8 +291,20 @@ describe('resolvePlacement', () => {
     const p = resolvePlacement(layout, { w: 1000, h: 1000 }, { w: 800, h: 800 }, false);
     // availableW = 800, but artworkMaxWidth 0.5*1000 = 500 caps it
     expect(p.artworkBox.width).toBe(500);
+    expect(p.artworkBox.x).toBe(250);
     // derived height 800, but artworkMaxHeight 0.4*1000 = 400 caps it
     expect(p.artworkBox.height).toBe(400);
+  });
+
+  it('keeps a width-limited artwork inside the centred capped box', () => {
+    const layout: PrintLayout = { ...LAYOUT, artworkMaxWidth: 0.5 };
+    const p = resolvePlacement(layout, { w: 1000, h: 1000 }, { w: 1000, h: 100 }, false);
+
+    expect(p.artworkBox).toMatchObject({ x: 250, width: 500 });
+    expect(p.artworkPos.x).toBeGreaterThanOrEqual(p.artworkBox.x);
+    expect(p.artworkPos.x + p.artworkOut.width).toBeLessThanOrEqual(
+      p.artworkBox.x + p.artworkBox.width,
+    );
   });
 
   it('uses the short side for side margins so portrait vs landscape differ correctly', () => {

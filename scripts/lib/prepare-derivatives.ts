@@ -74,10 +74,13 @@ export async function composeDerivative(input: ComposeInput): Promise<Derivative
     overlays.push({ input: sigLayer, left: zone.x, top: zone.y });
   }
 
-  let pipeline = canvas.composite(overlays).withMetadata();
+  // Composite can promote an RGB canvas to RGBA when an overlay has alpha.
+  // Flatten once for both encoders so even PNG fulfilment assets are explicitly
+  // three-channel and cannot carry a latent alpha channel to Prodigi.
+  let pipeline = canvas.composite(overlays).flatten({ background }).removeAlpha().withMetadata();
 
   if (format === 'jpg') {
-    pipeline = pipeline.flatten({ background }).jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
+    pipeline = pipeline.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
   } else {
     pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: false });
   }
@@ -88,16 +91,36 @@ export async function composeDerivative(input: ComposeInput): Promise<Derivative
   return { sha256, byteSize: buffer.byteLength, format, buffer };
 }
 
-/** Decode the configured signature with Sharp and require a real, non-empty SVG. */
+/** Require a self-contained path-only SVG that Sharp can decode. */
 export async function validateSignatureSvg(signatureSvgPath: string): Promise<void> {
   try {
+    const source = fs.readFileSync(signatureSvgPath, 'utf8');
+    const unsafeFeature = [
+      { pattern: /<text\b/i, label: '<text> (convert lettering to outlined paths)' },
+      { pattern: /<image\b/i, label: '<image> (embedded or external raster content)' },
+      { pattern: /<foreignObject\b/i, label: '<foreignObject>' },
+      { pattern: /<script\b/i, label: '<script>' },
+      { pattern: /(?:href|xlink:href)\s*=\s*["'](?!#)[^"']+["']/i, label: 'an external href' },
+    ].find(({ pattern }) => pattern.test(source));
+    if (unsafeFeature) {
+      throw new Error(
+        `signature must be a self-contained path-only SVG; found ${unsafeFeature.label}`,
+      );
+    }
+    const externalCssUrl = [...source.matchAll(/url\(\s*(["']?)([^)'"]+)\1\s*\)/gi)].find(
+      ([, , value]) => !value.trim().startsWith('#'),
+    );
+    if (externalCssUrl) {
+      throw new Error('signature must be a self-contained path-only SVG; found an external CSS url()');
+    }
+
     const metadata = await sharp(signatureSvgPath).metadata();
     if (metadata.format !== 'svg' || !metadata.width || !metadata.height) {
       throw new Error(`expected SVG with non-zero dimensions, decoded ${metadata.format ?? 'unknown'}`);
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Signature SVG could not be decoded: ${signatureSvgPath} (${reason})`);
+    throw new Error(`Signature SVG is invalid: ${signatureSvgPath} (${reason})`);
   }
 }
 
