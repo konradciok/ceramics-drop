@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(8);
+select plan(11);
 
 insert into products (id, type, category_slug, num, status) values
   ('tap_status_ready', 'print', 'fine-art-prints', '91', 'draft'),
@@ -97,6 +97,21 @@ select is(
   update_product_status_guarded('tap_status_ceramic', 'active', null)->>'ok',
   'true',
   'guarded status: ceramics do not require print coverage'
+);
+
+select ok(
+  not has_function_privilege('anon', 'update_product_status_guarded(text,text,text)', 'execute'),
+  'guarded status: anon cannot execute the RPC'
+);
+
+select ok(
+  not has_function_privilege('authenticated', 'update_product_status_guarded(text,text,text)', 'execute'),
+  'guarded status: authenticated cannot execute the RPC'
+);
+
+select ok(
+  has_function_privilege('service_role', 'update_product_status_guarded(text,text,text)', 'execute'),
+  'guarded status: service_role can execute the RPC'
 );
 
 select * from finish();

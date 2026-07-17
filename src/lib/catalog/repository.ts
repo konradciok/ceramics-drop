@@ -141,7 +141,7 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
    Write path (Stage 4a) — admin product metadata + publish status.
    Metadata remains a discrete single-row update. Status transitions use the
    atomic update_product_status_guarded RPC so the print readiness gate, write,
-   and audit cannot drift. Every mutation records a catalog_audit_log row.
+   and audit cannot drift. Metadata audit remains a separate best-effort write.
    `updated_at` is set explicitly (there is no moddatetime trigger).
    ============================================================ */
 
