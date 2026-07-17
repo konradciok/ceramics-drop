@@ -7,7 +7,6 @@
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
-import { getPrintAssetReadiness } from '@/server/print-assets/repository';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import type { MediaSeedRow, ProductSeedRow, ProductStatus, VariantSeedRow } from './types';
@@ -140,10 +139,10 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
 
 /* ============================================================
    Write path (Stage 4a) — admin product metadata + publish status.
-   Discrete, non-transactional single-row updates (no partial-unique-index
-   swaps yet — those land with variants/media in 4b/5). Every mutation records
-   a catalog_audit_log row. `updated_at` is set explicitly (repo convention:
-   there is no moddatetime trigger).
+   Metadata remains a discrete single-row update. Status transitions use the
+   atomic update_product_status_guarded RPC so the print readiness gate, write,
+   and audit cannot drift. Metadata audit remains a separate best-effort write.
+   `updated_at` is set explicitly (there is no moddatetime trigger).
    ============================================================ */
 
 /** A single product row plus its variants + media, for the admin editor. */
@@ -239,7 +238,9 @@ export class PrintAssetsIncompleteError extends Error {
  * Transition a product's publish status. Archiving is a soft-archive (status
  * only — the row and its order history are never deleted). The first activation
  * stamps `published_at`. Print products cannot move to `active` unless every
- * active variant has a ready fulfilment asset. Throws `product_not_found` or
+ * active variant has a ready fulfilment asset. The guarded RPC locks the
+ * product and its coverage rows, revalidates readiness, updates status, and
+ * writes the audit entry in one transaction. Throws `product_not_found` or
  * `PrintAssetsIncompleteError`.
  */
 export async function updateProductStatus(
@@ -248,34 +249,29 @@ export async function updateProductStatus(
   status: ProductStatus,
   actorEmail: string | null,
 ): Promise<ProductSeedRow> {
-  const before = await supabase.from('products').select('*').eq('id', id).maybeSingle();
-  if (before.error) throw new Error(`load product: ${before.error.message}`);
-  if (!before.data) throw new Error('product_not_found');
-
-  if (
-    status === 'active' &&
-    before.data.type === 'print' &&
-    before.data.status !== 'active'
-  ) {
-    const readiness = await getPrintAssetReadiness(id);
-    if (!readiness.ready) {
-      throw new PrintAssetsIncompleteError(readiness.missing);
-    }
+  const { data, error } = await supabase.rpc('update_product_status_guarded', {
+    p_product_id: id,
+    p_status: status,
+    p_actor_email: actorEmail,
+  });
+  if (error) {
+    if (error.message.includes('product_not_found')) throw new Error('product_not_found');
+    throw new Error(`update status: ${error.message}`);
   }
 
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
-  if (status === 'active' && !before.data.published_at) patch.published_at = new Date().toISOString();
-
-  const res = await supabase.from('products').update(patch).eq('id', id).select('*').maybeSingle();
-  if (res.error) throw new Error(`update status: ${res.error.message}`);
-  if (!res.data) throw new Error('product_not_found');
-
-  await writeCatalogAudit(supabase, {
-    product_id: id,
-    actor_email: actorEmail,
-    action: `status:${status}`,
-    before: before.data,
-    after: res.data,
-  });
-  return res.data as ProductSeedRow;
+  const result = data as
+    | { ok: true; product: ProductSeedRow }
+    | { ok: false; error: string; missing?: unknown }
+    | null;
+  if (!result) throw new Error('update status: empty RPC response');
+  if (!result.ok) {
+    if (result.error === 'print_assets_incomplete') {
+      const missing = Array.isArray(result.missing)
+        ? result.missing.filter((key): key is string => typeof key === 'string')
+        : [];
+      throw new PrintAssetsIncompleteError(missing);
+    }
+    throw new Error(`update status: ${result.error}`);
+  }
+  return result.product;
 }

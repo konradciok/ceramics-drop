@@ -1,37 +1,66 @@
 # Print asset prepare configs
 
-One file per print product: `config/print-assets/{productId}.json`.
-Defines an explicit crop/focal region for every distinct print-area
-dimension (profile) the design's active variants require. Consumed by
-`scripts/print-assets-prepare.ts` (Phase 2a of
-`docs/plans/print-asset-pipeline.md`).
+One file per print product: `config/print-assets/{productId}.json`. Consumed by
+`scripts/print-assets-prepare.ts` (see
+`docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md`
+for the resolution math, and `docs/plans/print-asset-pipeline.md` for the
+operator prepare→upload→verify→publish sequence).
 
-## ⚠️ `fap01.json` currently has PLACEHOLDER crops
+## Schema
 
-Every profile in `fap01.json` is `{ "left": 0, "top": 0, "width": <target>,
-"height": <target> }` — i.e. it assumes the source master is already
-composed/cropped per profile ahead of time. That is **not realistic** for a
-single full-bleed photograph or scan.
+Each config describes one **proportional composition** that adapts to every
+Prodigi print-area aspect ratio — no per-profile `crop` map.
 
-These placeholder crops pass every automated check the pipeline runs (aspect
-match, no enlargement, within source bounds) — the pipeline has no way to
-tell "mathematically valid" apart from "the right part of the image, at the
-right focal point, approved by the studio." Nothing in `print-assets-prepare.ts`
-enforces studio sign-off; the only defense is a human looking at the
-`proof-*.jpg` files it generates next to each derivative.
+| Field        | Meaning                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `product`    | Product id (`fap01`, …).                                                                 |
+| `artwork`    | Path to the **artwork-only master** (painting, no baked border), under `design/`.        |
+| `background` | Hex colour the canvas is flooded with before the artwork + signature are laid down.      |
+| `format`     | Product-level output format (`jpg` or `png`).                                            |
+| `layout`     | Fractions of the canvas — see below.                                                     |
+| `signature?` | Optional SVG signature layer. Omit ⇒ the signature zone collapses (no gap, no zone).     |
+| `gallery?`   | Optional storefront gallery slots (`print-assets:gallery`), e.g. `hero.sourceProfile`.   |
 
-**Before running `print-assets:prepare` against a real `fap01` master**, an
-operator MUST:
+### `layout` — fractions, not pixels
 
-1. Open the master in an image editor next to `fap01.json`'s profile list.
-2. For each profile, pick real `left/top/width/height` values that frame the
-   artwork correctly for that print size/aspect (see
-   `docs/plans/print-asset-pipeline.md` Settled Architecture §1: "Require an
-   explicit crop/focal configuration for every distinct aspect ratio. Do not
-   silently accept Sharp's or Prodigi's centre crop.").
-3. Update `fap01.json` with the reviewed crops.
-4. Run `prepare`, then visually check every `proof-*.jpg` before proceeding to
-   upload/publish (Phase 2b).
+One layout composes every variant. Per-variant pixels are derived by
+`resolvePlacement` in `src/lib/print-assets-prepare.ts`.
 
-Do not treat the current `fap01.json` as approved artwork direction. It exists
-only to exercise the schema and the pipeline end-to-end.
+- **`sideMargin`** is a fraction of the **short side** `min(W, H)` — robust
+  across portrait/landscape. Applied to both left and right.
+- **Vertical regions** (`topMargin`, `bottomMargin`, `gapAboveSignature`,
+  `signatureZoneHeight`) are fractions of canvas **height**.
+- `gapAboveSignature` and `signatureZoneHeight` are ignored when `signature`
+  is absent.
+- `artworkMaxWidth` / `artworkMaxHeight` are **optional ceilings** (fraction of
+  `W` / `H`) that shrink the artwork box below what the margins leave; omit
+  them to let the artwork fill the available box.
+- Every fraction must be a finite number in `[0, 1]` (validated before Sharp
+  runs).
+
+The vertical stack is `topMargin + artwork box + gap + signatureZone + bottomMargin`; the artwork is contain-fit into its box (no crop, no upscale).
+
+### `signature` — vector, never a JPG cut-out
+
+`signature.svg` is rendered from vector at full canvas resolution per variant.
+It must be self-contained and path-only: convert all lettering to outlines and
+do not use `<text>`, `<image>`, scripts, foreign objects, external links, or
+external CSS resources. This keeps rendering independent of locally installed
+fonts and other machine-specific files; prepare rejects those features.
+Absence is meaningful: no `signature` key ⇒ the gap and signature zone are
+zeroed and the artwork box grows into that space.
+
+### Source assets live under `design/`
+
+`artwork` and `signature.svg` paths point into `design/print-assets/{id}/`,
+which is **gitignored** — the config is authored ahead of the assets; the
+prepare step reads them off disk at run time.
+
+## Already-published assets are immutable
+
+A published revision (e.g. `fap01` @ `2026-07-12-r1`) is immutable in R2 + the
+`print_fulfilment_assets` rows. **Editing this config does not affect any
+published asset** — it only governs the *next* prepare run. Cutting a new
+revision requires re-sourcing the artwork (clean master, no baked border) and,
+when the config includes a `signature`, its `signature.svg`, then running the unchanged
+`print-assets:prepare` → `:upload` → `:verify` → `:publish` sequence.

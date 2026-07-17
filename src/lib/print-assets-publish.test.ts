@@ -31,6 +31,8 @@ function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
       sha256: 'a'.repeat(64),
       byteSize: 1000,
       r2Key: 'prints/fap01/rev1/3600x4800-' + 'a'.repeat(64) + '.jpg',
+      artworkBoxPx: { x: 0, y: 0, width: 3600, height: 4800 },
+      signatureBoxPx: null,
     },
     {
       profileKey: '4800x7200',
@@ -41,6 +43,8 @@ function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
       sha256: 'b'.repeat(64),
       byteSize: 2000,
       r2Key: 'prints/fap01/rev1/4800x7200-' + 'b'.repeat(64) + '.png',
+      artworkBoxPx: { x: 0, y: 0, width: 4800, height: 7200 },
+      signatureBoxPx: null,
     },
   ];
   return {
@@ -49,6 +53,14 @@ function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
     sourceSha256: 'c'.repeat(64),
     sourceWidth: 9000,
     sourceHeight: 13000,
+    signatureSha256: null,
+    layout: {
+      rendererVersion: '2.0.0',
+      background: '#E8E0D7',
+      artworkSha256: 'c'.repeat(64),
+      signatureSha256: null,
+      layout: { sideMargin: 0.1, topMargin: 0.1, bottomMargin: 0.1, gapAboveSignature: 0.05, signatureZoneHeight: 0.05 },
+    },
     derivatives,
     assignments: [
       { variantKey: 'small-unframed', profileKey: '3600x4800' },

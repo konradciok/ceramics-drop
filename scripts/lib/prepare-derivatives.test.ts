@@ -3,132 +3,219 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { generateDerivative, prepareOutputDir } from './prepare-derivatives';
+import { composeDerivative, validateSignatureSvg } from './prepare-derivatives';
+import type { Placement } from '../../src/lib/print-assets-prepare';
 
-let tmpDir: string;
-let redPng: string; // 200x300, r=255 — big enough to downscale to any test target
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
+const ARTWORK = path.join(TMP, 'artwork.png');
+const SIG = path.join(TMP, 'sig.svg');
+const BAD_SIG = path.join(TMP, 'bad.svg');
+const TEXT_SIG = path.join(TMP, 'text.svg');
+const EXTERNAL_SIG = path.join(TMP, 'external.svg');
 
 beforeAll(async () => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-assets-prepare-'));
-  redPng = path.join(tmpDir, 'source.png');
-  await sharp({ create: { width: 200, height: 300, channels: 3, background: { r: 255, g: 0, b: 0 } } })
+  // A solid-red 200x200 artwork master.
+  await sharp({ create: { width: 200, height: 200, channels: 3, background: '#ff0000' } })
     .png()
-    .toFile(redPng);
+    .toFile(ARTWORK);
+  // A 100x20 solid-blue signature SVG.
+  fs.writeFileSync(
+    SIG,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><rect width="100" height="20" fill="#0000ff"/></svg>',
+  );
+  fs.writeFileSync(BAD_SIG, '<svg><not-closed>');
+  fs.writeFileSync(
+    TEXT_SIG,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><text font-family="Studio Font">Anna</text></svg>',
+  );
+  fs.writeFileSync(
+    EXTERNAL_SIG,
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20"><image href="signature.png"/></svg>',
+  );
 });
 
-afterAll(() => {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-});
+afterAll(() => fs.rmSync(TMP, { recursive: true, force: true }));
 
-describe('generateDerivative', () => {
-  it('produces a deterministic sha256 for the same crop/target/format', async () => {
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const a = await generateDerivative(redPng, crop, 100, 150, 'jpg');
-    const b = await generateDerivative(redPng, crop, 100, 150, 'jpg');
+// ponytail: auto-detect channels from the buffer. The verbatim helper assumed
+// channels=3, but compositing an RGBA signature onto an RGB canvas promotes the
+// PNG output to 4-channel RGBA — a fixed 3-stride reads misaligned bytes.
+async function pixel(buffer: Buffer, x: number, y: number, width: number) {
+  const meta = await sharp(buffer).metadata();
+  const channels = meta.channels ?? 3;
+  const { data } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+  const idx = (y * width + x) * channels;
+  return [data[idx], data[idx + 1], data[idx + 2]];
+}
+
+describe('composeDerivative', () => {
+  it('produces a canvas at exact target dimensions', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'jpg',
+    });
+    const meta = await sharp(result.buffer).metadata();
+    expect(meta.width).toBe(1000);
+    expect(meta.height).toBe(1000);
+    expect(result.format).toBe('jpg');
+  });
+
+  // ponytail: colour-geometry assertions use PNG (lossless). The brief's verbatim
+  // used 'jpg', but mozjpeg q92 — the locked pipeline setting — quantises pure
+  // primaries (255→254 on red/green), so exact-RGB assertions can't hold through
+  // the JPG path. PNG proves the composition math (background fill + artwork
+  // position) at full fidelity; JPG q92 stays exercised by the dimensions +
+  // determinism tests below.
+  it('fills the canvas background where no artwork or signature is drawn', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'png',
+    });
+    // Top-left corner is pure background (green).
+    const [r, g, b] = await pixel(result.buffer, 5, 5, 1000);
+    expect([r, g, b]).toEqual([0, 255, 0]);
+  });
+
+  it('composites the artwork at its resolved position', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'png',
+    });
+    // Centre of the 200x200 artwork placed at (400,350) → (500,450) is red.
+    const [r, g, b] = await pixel(result.buffer, 500, 450, 1000);
+    expect([r, g, b]).toEqual([255, 0, 0]);
+  });
+
+  it('produces a three-channel PNG with no alpha channel', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'png',
+    });
+    const metadata = await sharp(result.buffer).metadata();
+    expect(metadata.channels).toBe(3);
+    expect(metadata.hasAlpha).toBe(false);
+  });
+
+  it('is byte-deterministic across two runs', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 700 },
+      signatureBox: { x: 100, y: 850, width: 800, height: 50 },
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 350 },
+      scale: 1,
+    };
+    const input = {
+      artworkPath: ARTWORK,
+      signatureSvgPath: SIG,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'jpg' as const,
+    };
+    const a = await composeDerivative(input);
+    const b = await composeDerivative(input);
     expect(a.sha256).toBe(b.sha256);
-    expect(a.byteSize).toBe(b.byteSize);
   });
 
-  it('produces a different hash for a different target size', async () => {
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const a = await generateDerivative(redPng, crop, 100, 150, 'jpg');
-    const b = await generateDerivative(redPng, crop, 120, 180, 'jpg');
-    expect(a.sha256).not.toBe(b.sha256);
+  it('embeds an sRGB ICC profile in the composed output', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 10, y: 10, width: 80, height: 70 },
+      signatureBox: null,
+      artworkOut: { width: 50, height: 50 },
+      artworkPos: { x: 25, y: 20 },
+      scale: 0.25,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: null,
+      background: '#ffffff',
+      placement,
+      target: { w: 100, h: 100 },
+      format: 'jpg',
+    });
+    const metadata = await sharp(result.buffer).metadata();
+    expect(metadata.space).toBe('srgb');
+    expect(metadata.hasProfile).toBe(true);
+    expect(metadata.icc?.byteLength).toBeGreaterThan(0);
   });
 
-  it('honors the requested format', async () => {
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const jpg = await generateDerivative(redPng, crop, 100, 150, 'jpg');
-    const png = await generateDerivative(redPng, crop, 100, 150, 'png');
-    expect(jpg.format).toBe('jpg');
-    expect(png.format).toBe('png');
-    expect(jpg.sha256).not.toBe(png.sha256);
-  });
-
-  it('decodes to exactly the requested target dimensions', async () => {
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const result = await generateDerivative(redPng, crop, 100, 150, 'jpg');
-    const meta = await sharp(result.buffer).metadata();
-    expect(meta.width).toBe(100);
-    expect(meta.height).toBe(150);
-  });
-
-  it('rejects a crop region that extends past the source bounds', async () => {
-    // Source is 200x300; this crop starts past the right edge.
-    const crop = { left: 190, top: 0, width: 200, height: 300 };
-    await expect(generateDerivative(redPng, crop, 100, 150, 'jpg')).rejects.toThrow();
-  });
-
-  it('produces JPGs with no alpha channel even from an RGBA source', async () => {
-    const rgbaPng = path.join(tmpDir, 'rgba-source.png');
-    await sharp({ create: { width: 200, height: 300, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 0.5 } } })
-      .png()
-      .toFile(rgbaPng);
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const result = await generateDerivative(rgbaPng, crop, 100, 150, 'jpg');
-    const meta = await sharp(result.buffer).metadata();
-    expect(meta.hasAlpha).toBe(false);
-  });
-
-  it('rejects a PNG derivative from a source with an alpha channel', async () => {
-    const rgbaPng = path.join(tmpDir, 'rgba-source-2.png');
-    await sharp({ create: { width: 200, height: 300, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 0.5 } } })
-      .png()
-      .toFile(rgbaPng);
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    await expect(generateDerivative(rgbaPng, crop, 100, 150, 'png')).rejects.toThrow(/alpha/i);
-  });
-
-  it('produces PNGs fine from an opaque (no-alpha) source', async () => {
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const result = await generateDerivative(redPng, crop, 100, 150, 'png');
-    expect(result.format).toBe('png');
-  });
-
-  it('carries the source ICC colour profile through to the derivative', async () => {
-    const profiledPng = path.join(tmpDir, 'profiled-source.png');
-    await sharp({ create: { width: 200, height: 300, channels: 3, background: { r: 10, g: 20, b: 30 } } })
-      .withMetadata({ icc: 'srgb' })
-      .png()
-      .toFile(profiledPng);
-    const crop = { left: 0, top: 0, width: 200, height: 300 };
-    const result = await generateDerivative(profiledPng, crop, 100, 150, 'jpg');
-    const meta = await sharp(result.buffer).metadata();
-    expect(meta.icc).toBeDefined();
+  it('composes without a signature when signatureSvgPath is null', async () => {
+    const placement: Placement = {
+      artworkBox: { x: 100, y: 100, width: 800, height: 800 },
+      signatureBox: null,
+      artworkOut: { width: 200, height: 200 },
+      artworkPos: { x: 400, y: 400 },
+      scale: 1,
+    };
+    const result = await composeDerivative({
+      artworkPath: ARTWORK,
+      signatureSvgPath: null,
+      background: '#00ff00',
+      placement,
+      target: { w: 1000, h: 1000 },
+      format: 'jpg',
+    });
+    expect(result.byteSize).toBeGreaterThan(0);
   });
 });
 
-describe('prepareOutputDir', () => {
-  let dirTmp: string;
-
-  beforeAll(() => {
-    dirTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prepare-output-dir-'));
+describe('validateSignatureSvg', () => {
+  it('accepts a decodable SVG with non-zero dimensions', async () => {
+    await expect(validateSignatureSvg(SIG)).resolves.toBeUndefined();
   });
 
-  afterAll(() => {
-    fs.rmSync(dirTmp, { recursive: true, force: true });
+  it('rejects an invalid SVG before derivative generation', async () => {
+    await expect(validateSignatureSvg(BAD_SIG)).rejects.toThrow(/invalid/i);
   });
 
-  it('creates the output dir when it does not exist', () => {
-    const outDir = path.join(dirTmp, 'fresh');
-    prepareOutputDir(outDir, { force: false });
-    expect(fs.existsSync(outDir)).toBe(true);
+  it('rejects font-dependent text before derivative generation', async () => {
+    await expect(validateSignatureSvg(TEXT_SIG)).rejects.toThrow(/outlined paths/i);
   });
 
-  it('leaves existing files untouched when force is not set', () => {
-    const outDir = path.join(dirTmp, 'no-force');
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'kept.txt'), 'kept');
-    prepareOutputDir(outDir, { force: false });
-    expect(fs.existsSync(path.join(outDir, 'kept.txt'))).toBe(true);
-  });
-
-  it('removes stale files from a prior run when force is set', () => {
-    const outDir = path.join(dirTmp, 'forced');
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'stale-3600x4800-oldhash.jpg'), 'stale');
-    prepareOutputDir(outDir, { force: true });
-    expect(fs.existsSync(outDir)).toBe(true);
-    expect(fs.readdirSync(outDir)).toEqual([]);
+  it('rejects external or embedded image resources before derivative generation', async () => {
+    await expect(validateSignatureSvg(EXTERNAL_SIG)).rejects.toThrow(/path-only SVG/i);
   });
 });

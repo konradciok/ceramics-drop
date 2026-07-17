@@ -1,13 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-
-const mocks = vi.hoisted(() => ({
-  getPrintAssetReadiness: vi.fn(),
-}));
-vi.mock('@/server/print-assets/repository', () => ({
-  getPrintAssetReadiness: mocks.getPrintAssetReadiness,
-}));
-
 import { updateProductStatus } from './repository';
 
 const PRINT_DRAFT = {
@@ -18,51 +10,18 @@ const PRINT_DRAFT = {
   published_at: null,
 };
 
-const CERAMIC_DRAFT = {
-  id: 'k01',
-  type: 'ceramic',
-  category_slug: 'kubki',
-  status: 'draft',
-  published_at: null,
-};
-
-function supabaseForStatus(before: Record<string, unknown> | null) {
-  const auditInsert = vi.fn().mockResolvedValue({ error: null });
-  const from = vi.fn((table: string) => {
-    if (table === 'catalog_audit_log') return { insert: auditInsert };
-    return {
-      select: () => ({
-        eq: () => ({
-          maybeSingle: () => Promise.resolve({ data: before, error: null }),
-        }),
-      }),
-      update: (patch: Record<string, unknown>) => ({
-        eq: () => ({
-          select: () => ({
-            maybeSingle: () =>
-              Promise.resolve({
-                data: before ? { ...before, ...patch } : null,
-                error: null,
-              }),
-          }),
-        }),
-      }),
-    };
-  });
-  return { supabase: { from } as unknown as SupabaseClient, auditInsert };
+function supabaseForStatus(data: unknown, error: { message: string } | null = null) {
+  const rpc = vi.fn().mockResolvedValue({ data, error });
+  return { supabase: { rpc } as unknown as SupabaseClient, rpc };
 }
 
-describe('updateProductStatus publish guard', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it('blocks draft → active for a print when assets are incomplete', async () => {
-    mocks.getPrintAssetReadiness.mockResolvedValue({
-      productId: 'fap01',
-      ready: false,
-      totalActiveVariants: 2,
+describe('updateProductStatus guarded RPC', () => {
+  it('maps an incomplete print response to PrintAssetsIncompleteError', async () => {
+    const { supabase } = supabaseForStatus({
+      ok: false,
+      error: 'print_assets_incomplete',
       missing: ['50x70_unframed', '70x100_framed_black'],
     });
-    const { supabase } = supabaseForStatus(PRINT_DRAFT);
 
     await expect(
       updateProductStatus(supabase, 'fap01', 'active', 'ops@studio.pl'),
@@ -70,49 +29,51 @@ describe('updateProductStatus publish guard', () => {
       message: 'print_assets_incomplete',
       missing: ['50x70_unframed', '70x100_framed_black'],
     });
-    expect(mocks.getPrintAssetReadiness).toHaveBeenCalledWith('fap01');
   });
 
-  it('allows draft → active for a print when every active variant is covered', async () => {
-    mocks.getPrintAssetReadiness.mockResolvedValue({
-      productId: 'fap01',
-      ready: true,
-      totalActiveVariants: 21,
-      missing: [],
+  it('returns the atomically updated product and passes the actor', async () => {
+    const product = {
+      ...PRINT_DRAFT,
+      status: 'active',
+      published_at: '2026-07-17T12:00:00Z',
+    };
+    const { supabase, rpc } = supabaseForStatus({ ok: true, product });
+
+    await expect(updateProductStatus(supabase, 'fap01', 'active', 'ops@studio.pl')).resolves.toBe(
+      product,
+    );
+    expect(rpc).toHaveBeenCalledWith('update_product_status_guarded', {
+      p_product_id: 'fap01',
+      p_status: 'active',
+      p_actor_email: 'ops@studio.pl',
     });
-    const { supabase } = supabaseForStatus(PRINT_DRAFT);
-
-    const row = await updateProductStatus(supabase, 'fap01', 'active', null);
-    expect(row.status).toBe('active');
   });
 
-  it('does not check readiness when activating a ceramic product', async () => {
-    const { supabase } = supabaseForStatus(CERAMIC_DRAFT);
+  it('uses the same RPC for non-active and ceramic transitions', async () => {
+    const ceramic = { ...PRINT_DRAFT, id: 'k01', type: 'ceramic', status: 'hidden' };
+    const { supabase, rpc } = supabaseForStatus({ ok: true, product: ceramic });
 
-    const row = await updateProductStatus(supabase, 'k01', 'active', null);
-    expect(row.status).toBe('active');
-    expect(mocks.getPrintAssetReadiness).not.toHaveBeenCalled();
-  });
-
-  it('does not check readiness for print hidden → active when already active', async () => {
-    mocks.getPrintAssetReadiness.mockClear();
-    const { supabase } = supabaseForStatus({ ...PRINT_DRAFT, status: 'active', published_at: '2026-01-01' });
-
-    await updateProductStatus(supabase, 'fap01', 'hidden', null);
-    expect(mocks.getPrintAssetReadiness).not.toHaveBeenCalled();
-  });
-
-  it('checks readiness when hidden → active for a print', async () => {
-    mocks.getPrintAssetReadiness.mockResolvedValue({
-      productId: 'fap01',
-      ready: true,
-      totalActiveVariants: 1,
-      missing: [],
+    await updateProductStatus(supabase, 'k01', 'hidden', null);
+    expect(rpc).toHaveBeenCalledWith('update_product_status_guarded', {
+      p_product_id: 'k01',
+      p_status: 'hidden',
+      p_actor_email: null,
     });
-    const { supabase } = supabaseForStatus({ ...PRINT_DRAFT, status: 'hidden' });
+  });
 
-    const row = await updateProductStatus(supabase, 'fap01', 'active', null);
-    expect(row.status).toBe('active');
-    expect(mocks.getPrintAssetReadiness).toHaveBeenCalledWith('fap01');
+  it('normalises the RPC product-not-found error for the route mapper', async () => {
+    const { supabase } = supabaseForStatus(null, { message: 'product_not_found' });
+
+    await expect(updateProductStatus(supabase, 'missing', 'active', null)).rejects.toThrow(
+      'product_not_found',
+    );
+  });
+
+  it('fails closed on an empty RPC response', async () => {
+    const { supabase } = supabaseForStatus(null);
+
+    await expect(updateProductStatus(supabase, 'fap01', 'active', null)).rejects.toThrow(
+      'empty RPC response',
+    );
   });
 });
