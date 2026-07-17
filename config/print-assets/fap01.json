@@ -1,35 +1,20 @@
 {
-  "_comment": "Source: prodigi/master-files/print-nr-1/variants/70x100.jpg (8400×12000, 7:10). Each profile uses the largest inscribed crop matching its exact Prodigi aspect, then downscales — never a center window. 2:3 mounted: 8000×12000 (~200px/side). Review proof-*.jpg before publish.",
+  "_comment": "Proportional composition config (docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md). Artwork is a clean painting master (no baked border); background + margins + signature zone are composed per-variant so every Prodigi aspect ratio preserves the same visual proportions. Source masters/signatures live under gitignored design/.",
   "product": "fap01",
-  "profiles": {
-    "3600x4800": {
-      "format": "jpg",
-      "crop": { "left": 0, "top": 400, "width": 8400, "height": 11200 }
-    },
-    "3614x4795": {
-      "format": "jpg",
-      "crop": { "left": 586, "top": 1205, "width": 7228, "height": 9590 }
-    },
-    "2400x3600": {
-      "format": "jpg",
-      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
-    },
-    "6000x8400": {
-      "format": "jpg",
-      "crop": { "left": 0, "top": 120, "width": 8400, "height": 11760 }
-    },
-    "4800x7200": {
-      "format": "jpg",
-      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
-    },
-    "8400x12000": {
-      "format": "jpg",
-      "crop": { "left": 0, "top": 0, "width": 8400, "height": 12000 }
-    },
-    "7200x10800": {
-      "format": "jpg",
-      "crop": { "left": 200, "top": 0, "width": 8000, "height": 12000 }
-    }
+  "artwork": "design/print-assets/fap01/artwork-master.png",
+  "background": "#E8E0D7",
+  "format": "jpg",
+  "layout": {
+    "sideMargin": 0.06,
+    "topMargin": 0.06,
+    "bottomMargin": 0.05,
+    "gapAboveSignature": 0.022,
+    "signatureZoneHeight": 0.028,
+    "artworkMaxWidth": 0.85,
+    "artworkMaxHeight": 0.76
+  },
+  "signature": {
+    "svg": "design/print-assets/fap01/signature.svg"
   },
   "gallery": {
     "hero": { "sourceProfile": "8400x12000", "uploadStem": "fap-01" }
