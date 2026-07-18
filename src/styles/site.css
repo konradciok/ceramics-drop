@@ -115,6 +115,9 @@ ul { list-style:none; padding:0; margin:0; }
 .btn-primary[disabled]:hover { background:var(--c-espresso); }
 .btn-ghost { background:transparent; color:var(--c-espresso); border-color:var(--c-line); }
 .btn-ghost:hover { background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso); }
+/* Default size for any icon inside a button — Icon renders viewBox-only SVGs,
+   so an unclassed svg would otherwise expand to the button's full width. */
+.btn svg { width:14px; height:14px; flex:none; }
 .btn-arrow { width:14px; height:14px; transition:transform .25s ease; }
 .btn:hover .btn-arrow { transform:translateX(3px); }
 
