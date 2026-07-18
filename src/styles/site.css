@@ -94,8 +94,11 @@ ul { list-style:none; padding:0; margin:0; }
 .lang-switch button:hover { opacity:1; }
 .lang-switch button.active { background:var(--c-espresso); color:var(--c-paper); opacity:1; }
 .nav-right { gap:18px; }
+/* Language + currency pills live in the mobile drawer below the desktop
+   breakpoint: at 561-860px they collide with brand, hamburger and cart
+   (~310px of controls on non-PL locales). */
 .nav-right .lang-switch { display:none; }
-@media (min-width:561px) {
+@media (min-width:861px) {
   .nav-right .lang-switch { display:inline-flex; }
 }
 .nav-right .nav-link { display:none; }
@@ -451,12 +454,19 @@ ul { list-style:none; padding:0; margin:0; }
   font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
   white-space:nowrap; cursor:pointer; color:var(--c-espresso);
   padding:11px 18px; border:0; background:transparent;
+  min-height:44px; display:inline-flex; align-items:center; justify-content:center;
   border-left:1px solid var(--c-line-soft); transition:all .25s var(--ease);
 }
 .status-filter button:first-child { border-left:0; }
 .status-filter button:hover { background:var(--c-bone); }
 .status-filter button.on { background:var(--c-espresso); color:var(--c-paper); }
 .status-filter button:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-2px; }
+/* Phones: the three Polish labels total ~344px, wider than a 320-375px gutter
+   box — switch to full-width equal segments instead of overflowing the row. */
+@media (max-width:560px) {
+  .status-filter { display:flex; width:100%; }
+  .status-filter button { flex:1 1 0; padding:11px 6px; }
+}
 
 /* Rows that host both category pills (left) and the status filter (right).
    Used by /sklep's sticky nav (.shop-nav-track) and the collection switcher
@@ -563,6 +573,13 @@ ul { list-style:none; padding:0; margin:0; }
 .tile-add svg { width:15px; height:15px; stroke:currentColor; stroke-width:1.7; }
 .tile-add .tx { overflow:hidden; text-overflow:ellipsis; }
 @media (hover:none) { .tile-add { opacity:1; transform:none; min-height:44px; } }
+/* Narrow touch tiles (~134px in the 2-col grid at 320px): the always-visible
+   CTA covers the photo and truncates long labels (de "In den Warenkorb") —
+   collapse to the icon; the button keeps its aria-label. */
+@media (hover:none) and (max-width:560px) {
+  .tile-add { padding:8px; gap:0; min-width:44px; justify-content:center; }
+  .tile-add .tx { display:none; }
+}
 
 /* sprzedane */
 .tile.sold { cursor:default; }

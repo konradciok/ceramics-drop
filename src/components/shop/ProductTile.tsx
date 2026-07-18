@@ -132,6 +132,9 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
       <button
         className={`tile-add${selected ? ' in' : ''}`}
         data-testid="add-to-cart"
+        // The visible .tx label is display:none on narrow touch tiles, so the
+        // button carries its name explicitly.
+        aria-label={selected ? t('lightbox.in') : t('lightbox.add')}
         disabled={notForSale || addBlocked}
         aria-disabled={notForSale || addBlocked}
         onClick={(e) => {
