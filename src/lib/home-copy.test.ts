@@ -42,6 +42,6 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
   test('delivery notice is evergreen (no month-specific dates)', () => {
     const notice = Object.values(messages.deliveryNotice as Record<string, string>).join(' ');
     expect(notice).not.toMatch(/lipc|July|julio|\bJuli\b/i);
-    expect(notice).not.toMatch(/\b[5|10]\s?(lipca|July|de julio|\.?\s?Juli)/i);
+    expect(notice).not.toMatch(/\b(5|10)\.?\s?(lipca|July|de julio|Juli)/i);
   });
 });
