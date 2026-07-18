@@ -1225,6 +1225,7 @@ ul { list-style:none; padding:0; margin:0; }
 /* SEO-crawlable overlay anchor inside each tile */
 .tile { position:relative; }
 .tile-link { position:absolute; inset:0; z-index:0; }
+.tile-link:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-3px; }
 
 /* More from this collection */
 .pdp-more { padding:var(--section-y) var(--gut); background:var(--c-cream); }

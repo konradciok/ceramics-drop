@@ -44,6 +44,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
 
   const name = t(`product.${CATEGORIES[product.category].singularKey}`);
   const displayName = `${name} Nº ${product.num}`;
+  const price = fmt(priceOfCurrency(product, currency));
   const gallery = product.gallery ?? [];
   // Showroom pieces are not purchasable and never open the lightbox — they behave
   // like sold pieces on the tile (badge + PDP link), with a distinct badge that
@@ -100,12 +101,15 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
       data-sold={product.sold ? 'true' : undefined}
       data-showroom={showroom ? 'true' : undefined}
     >
-      {/* Crawlable href for search engines; JS click is intercepted by the div handler above */}
+      {/* Crawlable href for search engines and the tile's accessible entry point:
+          keyboard Enter fires a click that bubbles to the div handler above, so
+          purchasable tiles open the lightbox and sold/showroom tiles navigate
+          to their PDP. The label carries name, price and state — without it the
+          tile is an empty link (audit P1). */}
       <Link
         href={`/${product.category}/${product.id}`}
         className="tile-link"
-        tabIndex={notForSale ? 0 : -1}
-        aria-hidden={!notForSale}
+        aria-label={`${displayName} — ${price}${product.sold ? `, ${t('gallery.sold')}` : ''}${showroom ? `, ${t('gallery.showroom')}` : ''}`}
         // Purchasable: prevent navigation so the div's onClick opens the lightbox.
         // Sold/showroom: let the link through — the PDP is the natural destination.
         onClick={(e) => { if (!notForSale) e.preventDefault(); }}
@@ -157,7 +161,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
       </button>
       <div className="tile-meta">
         <span className="nm">{displayName}</span>
-        <span className="pr">{fmt(priceOfCurrency(product, currency))}</span>
+        <span className="pr">{price}</span>
       </div>
     </div>
   );

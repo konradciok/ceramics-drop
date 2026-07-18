@@ -55,6 +55,7 @@
   "aria": {
     "cart": "Carrito",
     "currency": "Moneda",
+    "language": "Idioma",
     "zoom": "Ver",
     "close": "Cerrar",
     "prev": "Anterior",

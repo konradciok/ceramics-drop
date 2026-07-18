@@ -558,7 +558,7 @@ export function CartView({
               const name = `${t('product.print')} Nº ${d.num}`;
               return (
                 <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
-                  <Link href={`/fine-art-prints/${d.id}`} className="thumb">
+                  <Link href={`/fine-art-prints/${d.id}`} className="thumb" aria-label={name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.image} srcSet={srcSet(d.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
                   </Link>
@@ -580,7 +580,7 @@ export function CartView({
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
               <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
-                <Link href={`/${p.category}`} className="thumb">
+                <Link href={`/${p.category}/${p.id}`} className="thumb" aria-label={`${name} Nº ${p.num}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
                 </Link>
@@ -806,7 +806,7 @@ export function CartView({
               const d = l.design;
               return (
                 <li key={l.id} className="sum-item">
-                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb">
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={`${t('product.print')} Nº ${d.num}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
                   </Link>
@@ -822,7 +822,7 @@ export function CartView({
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
             return (
               <li key={l.id} className="sum-item">
-                <Link href={`/${p.category}`} className="sum-item-thumb">
+                <Link href={`/${p.category}/${p.id}`} className="sum-item-thumb" aria-label={`${name} Nº ${p.num}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
                 </Link>
