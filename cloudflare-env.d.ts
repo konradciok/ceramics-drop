@@ -14,6 +14,8 @@ interface CloudflareEnv {
   WORKER_SELF_REFERENCE: Service<typeof import('./.open-next/worker').default>;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
+  /** Stripe Payment Method Configuration id; live and sandbox can differ. */
+  STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   // InPost ShipX (sole delivery provider). API base + Bearer token + organization

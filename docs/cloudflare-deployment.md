@@ -218,6 +218,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
 - `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables); `code` (the unset default) reads the static registry and is the local/test fallback. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
+- `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` — Stripe payment-method configuration (`pmc_…`, Dashboard → Settings → Payment methods; enables BLIK/P24/Bizum/cards). Mode-specific — test and live ids differ. Checkout **fails closed** (502 `stripe_failed`) without it, so set the secret **before** deploying this code (`wrangler secret put STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`).
 
 ### npm version (lockfile)
 

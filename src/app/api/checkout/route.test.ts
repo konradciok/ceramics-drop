@@ -108,7 +108,10 @@ const sendCheckoutStartedEvent = vi.fn(async () => {});
 vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
 
 vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ ctx: { waitUntil: (p: Promise<unknown>) => void p } }),
+  getCloudflareContext: () => ({
+    ctx: { waitUntil: (p: Promise<unknown>) => void p },
+    env: { STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_env' },
+  }),
 }));
 
 describe('POST /api/checkout', () => {
@@ -302,7 +305,7 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(200);
     expect(createPaymentIntent).toHaveBeenCalledWith(
       expect.objectContaining({
-        payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
+        payment_method_configuration: 'pmc_test_env',
       }),
       expect.anything(),
     );

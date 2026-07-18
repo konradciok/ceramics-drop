@@ -20,7 +20,6 @@ import type { MarketingContext } from '@/lib/marketing/context';
 export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
-const STRIPE_PMC_ID = 'pmc_1QiwdYJ0KFK9lrjHUV93dONs';
 const PG_UNIQUE_VIOLATION = '23505';
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
@@ -209,6 +208,12 @@ export async function POST(req: Request) {
   }
 
   const stripe = getStripe();
+  const stripePmcId = getCloudflareContext().env.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID;
+  if (!stripePmcId) {
+    console.error('checkout: STRIPE_PAYMENT_METHOD_CONFIGURATION_ID missing');
+    await releaseOwnHold();
+    return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+  }
   let paymentIntent;
   try {
     // No receipt_email here: the paid order is emailed a faktura via
@@ -218,7 +223,7 @@ export async function POST(req: Request) {
       {
         amount,
         currency: chargeCurrency,
-        payment_method_configuration: STRIPE_PMC_ID,
+        payment_method_configuration: stripePmcId,
         metadata: {
           order_id: orderId,
           product_ids: ids.join(','),
