@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers/checkout';
-import { PRINT_DELIVERY_DRAFT_KEY } from '../src/lib/print-delivery';
+import { PRINT_DELIVERY_DRAFT_KEY } from '../src/lib/print-delivery-key';
 
 /**
  * Print purchase (Finding 11).

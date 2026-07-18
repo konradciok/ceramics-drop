@@ -14,7 +14,7 @@ import {
   reportPurchaseGapOnce,
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
-import { PRINT_DELIVERY_DRAFT_KEY } from '@/lib/print-delivery';
+import { PRINT_DELIVERY_DRAFT_KEY } from '@/lib/print-delivery-key';
 
 const stripePromise = getStripe();
 type Status = 'loading' | 'ok' | 'processing' | 'fail';

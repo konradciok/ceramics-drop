@@ -23,7 +23,7 @@ export type PrintDeliverySelection = {
   address: PrintShippingAddress;
 };
 
-export const PRINT_DELIVERY_DRAFT_KEY = 'acc_print_delivery_v1';
+export { PRINT_DELIVERY_DRAFT_KEY } from './print-delivery-key';
 
 const requiredText = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) =>
