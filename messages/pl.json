@@ -294,7 +294,16 @@
     "lockerChosen": "Wybrany paczkomat:",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
     "country": "Kraj",
-    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce."
+    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce.",
+    "line1": "Ulica i numer budynku",
+    "line2": "Lokal, piętro itp. (opcjonalnie)",
+    "errors": {
+      "required": "To pole jest wymagane.",
+      "email": "Wpisz poprawny adres e-mail.",
+      "phone": "Wpisz poprawny numer telefonu dla wybranego kraju.",
+      "tooLong": "Wpisana wartość jest za długa.",
+      "invalid": "Sprawdź to pole."
+    }
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

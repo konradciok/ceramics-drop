@@ -35,6 +35,8 @@ import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print
 import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
+import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
+import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
 
 /**
  * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
@@ -125,7 +127,13 @@ function readOrCreateAttemptId(): string {
   return id;
 }
 
-export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken?: string | null } = {}) {
+export function CartView({
+  privateSaleToken: propSaleToken,
+  initialPrintCountry = 'PL',
+}: {
+  privateSaleToken?: string | null;
+  initialPrintCountry?: PrintCountry;
+} = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const ids = useCart((s) => s.ids);
@@ -156,16 +164,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
   // Destination country — print carts only (Prodigi ships EU + UK); ceramics are PL/InPost.
-  const [country, setCountry] = useState<PrintCountry>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('acc_country');
-      if (saved && (PRINT_COUNTRIES as readonly string[]).includes(saved)) return saved as PrintCountry;
-    }
-    return 'PL';
-  });
-  useEffect(() => {
-    sessionStorage.setItem('acc_country', country);
-  }, [country]);
+  const [country, setCountry] = useState<PrintCountry>(initialPrintCountry);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -297,9 +296,12 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
       address.building.trim() !== '' &&
       address.city.trim() !== '' &&
       address.postCode.trim() !== '');
-  const deliveryReady = contactReady && phoneReady && lockerReady && addressReady;
+  const deliveryReady = hasPrints || (contactReady && phoneReady && lockerReady && addressReady);
 
-  function deliveryBody() {
+  function deliveryBody(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
+    if (hasPrints && printDelivery) {
+      return { locale, delivery_method: 'kurier' as const, ...printDelivery };
+    }
     return {
       locale,
       delivery_method: ship,
@@ -325,7 +327,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     };
   }
 
-  async function handleCheckout() {
+  async function handleCheckout(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
@@ -333,7 +335,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
-    const emailNorm = contact.email.trim().toLowerCase();
+    const emailNorm = (printDelivery?.contact.email ?? contact.email).trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     // begin_checkout itemises the whole cart (ceramics + prints); print items are
     // resolved from their tokens with server-equal prices.
@@ -359,7 +361,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -631,11 +633,17 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
         {!clientSecret && (
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
+            {hasPrints ? (
+              <PrintDeliveryForm
+                initialCountry={initialPrintCountry}
+                countryOptions={countryOptions}
+                onCountryChange={setCountry}
+                onSubmit={handleCheckout}
+              />
+            ) : (
             <div className="delivery-fields">
-              {!hasPrints && (
-                // All ceramic delivery methods are Poland-only (InPost / Warsaw pickup).
-                <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
-              )}
+              {/* All ceramic delivery methods are Poland-only (InPost / Warsaw pickup). */}
+              <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
               <div className="field-row">
                 <label className="field">
                   <span>{t('delivery.firstName')}</span>
@@ -699,20 +707,6 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
 
               {ship === 'kurier' && (
                 <>
-                  {hasPrints && (
-                    <label className="field">
-                      <span>{t('delivery.country')}</span>
-                      <select
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value as PrintCountry)}
-                        data-testid="country-select"
-                      >
-                        {countryOptions.map(({ code, name }) => (
-                          <option key={code} value={code}>{name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
                   <div className="field-row">
                     <label className="field" style={{ flex: 2 }}>
                       <span>{t('delivery.street')}</span>
@@ -751,6 +745,7 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
                 </>
               )}
             </div>
+            )}
           </div>
         )}
 
@@ -776,7 +771,9 @@ export function CartView({ privateSaleToken: propSaleToken }: { privateSaleToken
               className="btn btn-primary"
               id="checkout"
               data-testid="checkout-button"
-              onClick={handleCheckout}
+              type={hasPrints ? 'submit' : 'button'}
+              form={hasPrints ? PRINT_DELIVERY_FORM_ID : undefined}
+              onClick={hasPrints ? undefined : () => void handleCheckout()}
               disabled={submitting || !deliveryReady || mixedCart || privateSalePrints}
             >
               {t('cart.checkout')} <Icon name="arrow" />

@@ -45,7 +45,47 @@ test.describe('print cart UI @ci', () => {
 
     // Country is choosable (EU+UK); the ceramic PL-only note must NOT show.
     await expect(page.getByTestId('country-select')).toBeVisible();
+    await expect(page.getByTestId('country-select')).toHaveValue('PL');
     await expect(page.getByTestId('pl-only-note')).toHaveCount(0);
+    await expect(page.locator('input[name="contact.first_name"]')).toHaveAttribute('autocomplete', 'section-print shipping given-name');
+    await expect(page.locator('input[name="address.line1"]')).toHaveAttribute('autocomplete', 'section-print shipping address-line1');
+    await expect(page.locator('input[name="address.line2"]')).toHaveAttribute('autocomplete', 'section-print shipping address-line2');
+  });
+
+  test('validates, restores a session draft, and reprices immediately when country changes', async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'CF-IPCountry': 'DE' });
+    await resetCart(page);
+    await page.goto('/fine-art-prints/fap01');
+    await page.getByTestId('opt-size-50x70').click();
+    await page.getByTestId('opt-framed-true').click();
+    await page.getByTestId('opt-colour-black').click();
+    await page.getByTestId('print-add').click();
+    await goToCart(page);
+
+    await expect(page.getByTestId('country-select')).toHaveValue('DE');
+    await page.locator(sel.checkoutButton).click();
+    const firstName = page.locator('input[name="contact.first_name"]');
+    await expect(firstName).toBeFocused();
+    await expect(page.getByText('To pole jest wymagane.').first()).toBeVisible();
+
+    await firstName.fill('Test');
+    await page.locator('input[name="contact.last_name"]').fill('Playwright');
+    await page.locator('input[name="contact.email"]').fill('print@example.com');
+    await page.locator('input[name="contact.phone"]').fill('030 123456');
+    await page.locator('input[name="address.line1"]').fill('Hauptstraße 1');
+    await page.locator('input[name="address.line2"]').fill('Hinterhaus');
+    await page.locator('input[name="address.post_code"]').fill('10115');
+    await page.locator('input[name="address.city"]').fill('Berlin');
+
+    const deliveryRow = page.locator('.summary .sum-row').filter({ hasText: 'Dostawa' });
+    const dePrice = await deliveryRow.textContent();
+    await page.getByTestId('country-select').selectOption('GB');
+    await expect(deliveryRow).not.toHaveText(dePrice ?? '');
+
+    await page.reload();
+    await expect(page.getByTestId('country-select')).toHaveValue('GB');
+    await expect(page.locator('input[name="address.line1"]')).toHaveValue('Hauptstraße 1');
+    await expect(page.locator('input[name="address.line2"]')).toHaveValue('Hinterhaus');
   });
 });
 
@@ -74,8 +114,7 @@ test.describe('print purchase @checkout-edge @destructive', () => {
     await goToCart(page);
     await page.getByTestId('country-select').selectOption('DE');
     await fillContact(page, BUYER_EMAIL);
-    await page.getByLabel('Ulica').fill('Hauptstraße');
-    await page.getByLabel('Nr', { exact: true }).fill('1');
+    await page.getByLabel('Ulica i numer budynku').fill('Hauptstraße 1');
     await page.getByLabel('Kod pocztowy').fill('10115');
     await page.getByLabel('Miasto').fill('Berlin');
 
