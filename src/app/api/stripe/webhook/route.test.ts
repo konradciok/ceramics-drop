@@ -42,8 +42,11 @@ import { sendPurchasedEvent } from '@/lib/resend-events';
 type Result = { data: unknown; error: unknown };
 
 /** A chainable query stub whose `.eq()`/`.in()` return itself and whose terminal method resolves `result`. */
-function chain(terminal: 'select' | 'maybeSingle', result: Result) {
-  const b: Record<string, unknown> = { eq: () => b, in: () => b };
+function chain(terminal: 'select' | 'maybeSingle', result: Result, onCall?: (method: string, args: unknown[]) => void) {
+  const b: Record<string, unknown> = {
+    eq: (...args: unknown[]) => { onCall?.('eq', args); return b; },
+    in: (...args: unknown[]) => { onCall?.('in', args); return b; },
+  };
   b[terminal] = async () => result;
   return b;
 }
@@ -54,12 +57,16 @@ function chain(terminal: 'select' | 'maybeSingle', result: Result) {
  * a single value repeats for every call. `ordersSelect` is the fallback fetch
  * (releaseHold's failed-order lookup / releaseSale's refunded-order lookup);
  * `pieceUpdate` is the piece_state release. Records the piece_state update
- * payload so tests can assert the release actually ran (and with the right
- * target status).
+ * payload and its `.eq()`/`.in()` filter calls so tests can assert the release
+ * actually ran (and with the right target status + scoping).
  */
 function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result }) {
   const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
-  const calls = { pieceUpdatePayload: undefined as unknown, pieceUpdated: false };
+  const calls = {
+    pieceUpdatePayload: undefined as unknown,
+    pieceUpdated: false,
+    pieceFilters: [] as Array<{ method: string; args: unknown[] }>,
+  };
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
@@ -74,7 +81,7 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
           update: (payload: unknown) => {
             calls.pieceUpdatePayload = payload;
             calls.pieceUpdated = true;
-            return chain('select', plan.pieceUpdate);
+            return chain('select', plan.pieceUpdate, (method, args) => calls.pieceFilters.push({ method, args }));
           },
         };
       }
@@ -318,6 +325,12 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
     // 'reserved' rows) — never 'available', which would relist publicly.
     expect(calls.pieceUpdated).toBe(true);
     expect(calls.pieceUpdatePayload).toEqual({ status: 'sold', reserved_until: null, order_id: null });
+    // The scoping IS the guard: widening to ['sold', 'reserved'] would stamp
+    // order_id: null onto already-sold rows on every replay (provenance loss).
+    expect(calls.pieceFilters).toEqual([
+      { method: 'eq', args: ['order_id', 'o1'] },
+      { method: 'in', args: ['status', ['reserved']] },
+    ]);
   });
 
   it('private-sale refund before succeeded: frees the reserved hold back to sold (never available)', async () => {
