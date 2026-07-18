@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.0](https://github.com/konradciok/ceramics-drop/compare/v0.8.0...v0.9.0) (2026-07-18)
+
+
+### Features
+
+* **checkout:** collapse the InPost map behind an explicit locker choice ([9f8798f](https://github.com/konradciok/ceramics-drop/commit/9f8798f5c3b05729d2491d044ee09938bb2af636))
+* **checkout:** collapse the InPost map behind an explicit locker choice ([5ae1714](https://github.com/konradciok/ceramics-drop/commit/5ae171412e79a3b1a90f5fd6ec454a6ede65f6f3))
+
+
+### Bug Fixes
+
+* **a11y:** name tile/cart links, open lightbox from keyboard, translate lang label ([5cbd185](https://github.com/konradciok/ceramics-drop/commit/5cbd1850c2449214da341f2df58fa30083b9e246))
+* **a11y:** name tile/cart links, open lightbox from keyboard, translate lang label ([f52de51](https://github.com/konradciok/ceramics-drop/commit/f52de51bcd8476cf030859f0b37fd64da88e1e8f))
+* **home:** derive card prices/counts from the registry, evergreen delivery notice ([1f51474](https://github.com/konradciok/ceramics-drop/commit/1f51474b30cadb162db8d024ffb7b482019a989c))
+* **responsive:** fit status filter on phones, uncrowd 561-860px header, icon-only tile CTA ([7aa9c0c](https://github.com/konradciok/ceramics-drop/commit/7aa9c0c732ba0574d5b910f4d9509170755abb67))
+* **responsive:** fit status filter on phones, uncrowd 561-860px header, icon-only tile CTA ([15c49e5](https://github.com/konradciok/ceramics-drop/commit/15c49e59484a7a91050e02a71135fe2aebab907b))
+* **storefront:** size button icons and gate cart UI on hydration ([5932d60](https://github.com/konradciok/ceramics-drop/commit/5932d60013089b1ced9ffff37ccbb41a44b38105))
+
 ## [0.8.0](https://github.com/konradciok/ceramics-drop/compare/v0.7.1...v0.8.0) (2026-07-18)
 
 
