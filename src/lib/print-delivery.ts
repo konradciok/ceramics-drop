@@ -1,4 +1,4 @@
-import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
+import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { z } from 'zod';
 import { PRINT_COUNTRIES, type PrintCountry } from './print-shipping';
 

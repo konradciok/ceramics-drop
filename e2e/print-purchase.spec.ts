@@ -21,6 +21,7 @@ import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers
 
 const SUCCESS_CARD = '4242424242424242';
 const BUYER_EMAIL = 'e2e+playwright-print@example.com';
+const PRINT_DELIVERY_DRAFT_KEY = 'acc_print_delivery_v1';
 
 test.describe('print cart UI @ci', () => {
   test('cart is courier-only for prints: no paczkomat, no odbiór, no Geowidget, country selectable', async ({ page }) => {
@@ -78,9 +79,18 @@ test.describe('print cart UI @ci', () => {
     await page.locator('input[name="address.city"]').fill('Berlin');
 
     const deliveryRow = page.locator('.summary .sum-row').filter({ hasText: 'Dostawa' });
-    const dePrice = await deliveryRow.textContent();
+    const dePrice = await deliveryRow.locator('.v').textContent();
     await page.getByTestId('country-select').selectOption('GB');
-    await expect(deliveryRow).not.toHaveText(dePrice ?? '');
+    await expect(deliveryRow.locator('.v')).not.toHaveText(dePrice ?? '');
+
+    const storedDraft = await page.evaluate((draftKey) => ({
+      localDraft: localStorage.getItem(draftKey),
+      localValues: Object.values(localStorage),
+      sessionDraft: sessionStorage.getItem(draftKey),
+    }), PRINT_DELIVERY_DRAFT_KEY);
+    expect(storedDraft.localDraft).toBeNull();
+    expect(storedDraft.localValues).not.toContainEqual(expect.stringContaining('Hauptstraße 1'));
+    expect(storedDraft.sessionDraft).toContain('Hauptstraße 1');
 
     await page.reload();
     await expect(page.getByTestId('country-select')).toHaveValue('GB');

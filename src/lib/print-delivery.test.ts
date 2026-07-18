@@ -37,6 +37,12 @@ describe('print delivery schema', () => {
     }).success).toBe(false);
   });
 
+  it('rejects a plausible-length phone with an invalid numbering pattern', () => {
+    expect(printDeliveryContactSchema('DE').safeParse({
+      first_name: 'Anna', last_name: 'Ciok', email: 'anna@example.com', phone: '+49 123 4567890',
+    }).success).toBe(false);
+  });
+
   it('accepts an optional line2 and a tolerant postal code', () => {
     expect(printShippingAddressSchema.parse({ ...address, line2: ' Apt 4 / floor 2 ' })).toEqual({
       line1: 'Hauptstraße 12',
