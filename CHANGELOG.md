@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/konradciok/ceramics-drop/compare/v0.9.0...v0.9.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **checkout:** report missing PMC secret to Sentry and cover the fail-closed branch ([c9790f9](https://github.com/konradciok/ceramics-drop/commit/c9790f915df5f80156fdb932b71548b53a97461a))
+
 ## [0.9.0](https://github.com/konradciok/ceramics-drop/compare/v0.8.0...v0.9.0) (2026-07-18)
 
 
