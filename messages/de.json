@@ -318,7 +318,7 @@
   "home": {
     "heroEyebrow": "Juni-2026-Drop — Nº 01",
     "heroTitle": "Ein Stück, ein Original, <em>eine Handspur.</em>",
-    "heroSub": "Hundert Keramikstücke aus Anna Cioks kleinem Studio: Tassen, kleine, mittlere und große Vasen, kleine Schälchen, große Teller, große Schüsseln und Schüsseln mit Wellenrand. Jedes Stück wird einzeln von Hand bemalt und glasiert, damit du genau das wählst, das auf dem Foto zu sehen ist.",
+    "heroSub": "{count} Keramikstücke aus Anna Cioks kleinem Studio: Tassen, kleine, mittlere und große Vasen, kleine Schälchen, große Teller, große Schüsseln und Schüsseln mit Wellenrand. Jedes Stück wird einzeln von Hand bemalt und glasiert, damit du genau das wählst, das auf dem Foto zu sehen ist.",
     "heroCta1": "Alle Stücke durchstöbern",
     "heroBeatCap": "Jedes Stück entsteht vollständig von Hand — von der Drehscheibe bis zum letzten Pinselstrich.",
     "heroBeatAlt": "Nahaufnahme der Glasur",
@@ -335,47 +335,47 @@
     "colLead": "Stöbere wie in einer Galerie, markiere die Stücke, die du liebst, und gehe zur Kasse, wenn deine Auswahl sich richtig anfühlt.",
     "card": {
       "mug": {
-        "num": "28 Stück · 25 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Tassen für den täglichen Kaffee und Tee. Palmen, Zitronen, Muscheln und Kakteen, in Glasur auf hellem Ton gemalt.",
         "cta": "Tasse wählen"
       },
       "vase": {
-        "num": "9 Stück · 58 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Bauchige Vasen für einen einzelnen Zweig, ein paar Tulpen oder einen Marktstrauß. Jede hat ihren eigenen Rhythmus aus Streifen und Zeichnungen.",
         "cta": "Vase wählen"
       },
       "midvase": {
-        "num": "5 Stück · 68 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Mittlere Vasen mit einem klaren Charakter — irgendwo zwischen dem kleinen und dem großen Format.",
         "cta": "Vase wählen"
       },
       "bigvase": {
-        "num": "4 Stück · 88 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Große Formen mit starker Präsenz: Palmen, Muscheln, Kakteen, ein Hummer und kleine Volksszenen auf warmem Weiß.",
         "cta": "Vase wählen"
       },
       "dish": {
-        "num": "14 Stück · 18 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Kleine Schälchen für Schmuck, Olivenöl, Salz oder die kleinen Dinge, die sich am Bett ansammeln. Klein, aber voller Charakter.",
         "cta": "Schälchen wählen"
       },
       "medplate": {
-        "num": "39 Stück · 28 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Snacken, Servieren oder Dekorieren — ⌀ 18 cm.",
         "cta": "Mittleren Teller wählen"
       },
       "plate": {
-        "num": "9 Stück · 38 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Große Teller zum Servieren, Sammeln oder Aufhängen an der Wand. Ein Esel, Palmen, Augen, Muscheln und bemalte Ränder.",
         "cta": "Teller wählen"
       },
       "largebowl": {
-        "num": "6 Stück · 88 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Großzügige Schüsseln für Obst, Salate und die Dinge, die gerne auf dem Tisch stehen. Innen: Kobaltgärten, Palmen und Blätter.",
         "cta": "Schüssel wählen"
       },
       "wavybowl": {
-        "num": "10 Stück · 48 € das Stück",
+        "num": "{count} Stück · {price} das Stück",
         "desc": "Schüsseln mit Wellenrand für Frühstück, Snacks und kleine alltägliche Rituale. Jede wellt sich ein bisschen anders.",
         "cta": "Schüssel wählen"
       }
@@ -817,10 +817,10 @@
     }
   },
   "deliveryNotice": {
-    "title": "Lieferinformationen für Juli",
+    "title": "Versandinformationen",
     "p1": "Alle Bestellungen in Polen werden per InPost-Kurier oder InPost-Paketfach verschickt.",
-    "p2": "Wir kommen am 5. Juli in Polen an. Alle früher aufgegebenen Bestellungen werden ab dem 10. Juli verschickt. Später aufgegebene Bestellungen werden innerhalb von 1–3 Tagen nach der Bestellung verschickt.",
-    "p3": "Der Versand findet im Juli statt, ab dem 10. Juli."
+    "p2": "Bestellungen werden innerhalb von 1–3 Werktagen nach dem Kauf versandt.",
+    "p3": "Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist."
   },
   "consent": {
     "title": "Cookies",

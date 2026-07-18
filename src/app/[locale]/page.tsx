@@ -5,9 +5,11 @@ import { Marquee } from '@/components/ui/Marquee';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
-import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
-import type { CategorySlug } from '@/lib/types';
-import { pln } from '@/lib/format';
+import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getPublicProducts } from '@/lib/products';
+import type { CategorySlug, Product } from '@/lib/types';
+import { currencyFormatter } from '@/lib/format';
+import { priceOfCurrency } from '@/lib/pricing';
+import { getCurrency } from '@/lib/currency.server';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
@@ -54,6 +56,20 @@ export default async function HomePage({ params }: Props) {
   const editorialImage = HOME_EDITORIAL_IMAGE;
   const storyImage = HOME_STORY_IMAGE;
 
+  // Counts and prices are derived, never copy — the audited home page showed
+  // stale hard-coded prices in every locale (and different counts in German).
+  // Counts are the archival drop size per category (sold/showroom included).
+  const currency = await getCurrency(locale);
+  const { fmt } = currencyFormatter(currency);
+  const products = await getPublicProducts();
+  const byCategory = new Map<CategorySlug, Product[]>();
+  for (const p of products) {
+    const list = byCategory.get(p.category) ?? [];
+    list.push(p);
+    byCategory.set(p.category, list);
+  }
+  const heroMug = byCategory.get('kubki')?.[0];
+
   return (
     <main>
       {/* ── HERO ─────────────────────────────────────────────────── */}
@@ -62,7 +78,7 @@ export default async function HomePage({ params }: Props) {
           <div className="hero-copy">
             <div className="eyebrow hero-eyebrow">{t('home.heroEyebrow')}</div>
             <h1 className="hero-title">{t.rich('home.heroTitle', richTags)}</h1>
-            <p className="hero-sub">{t('home.heroSub')}</p>
+            <p className="hero-sub">{t('home.heroSub', { count: products.length })}</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/sklep">
                 <span>{t('home.heroCta1')}</span> <Icon name="arrow" className="btn-arrow" />
@@ -78,7 +94,7 @@ export default async function HomePage({ params }: Props) {
                 <br />
                 <span>{t('home.heroMetaDesc')}</span>
               </span>
-              <span className="right">{pln(90)}</span>
+              {heroMug && <span className="right">{fmt(priceOfCurrency(heroMug, currency))}</span>}
             </div>
           </div>
         </div>
@@ -112,13 +128,20 @@ export default async function HomePage({ params }: Props) {
             {VISIBLE_CATEGORY_ORDER.map((slug) => {
               const cat = CATEGORIES[slug];
               const sk = cat.singularKey;
+              const pieces = byCategory.get(slug) ?? [];
+              if (pieces.length === 0) return null;
               return (
                 <Link key={slug} className="collection" href={`/${slug}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={COVER[slug]} srcSet={srcSet(COVER[slug])} sizes="(min-width:861px) 50vw, 100vw" alt="" />
                   <div className="shade"></div>
                   <div className="col-content">
-                    <div className="num">{t(`home.card.${sk}.num`)}</div>
+                    <div className="num">
+                      {t(`home.card.${sk}.num`, {
+                        count: pieces.length,
+                        price: fmt(priceOfCurrency(pieces[0], currency)),
+                      })}
+                    </div>
                     <h3>{t(cat.nameKey)}</h3>
                     <p>{t(`home.card.${sk}.desc`)}</p>
                     <span className="col-cta">

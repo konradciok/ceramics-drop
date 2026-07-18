@@ -318,7 +318,7 @@
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
     "heroTitle": "One piece, one original, <em>one trace of the hand.</em>",
-    "heroSub": "A hundred ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is hand-painted and glazed separately, so you choose the exact one shown in the photo.",
+    "heroSub": "{count} ceramic pieces from Anna Ciok's small studio: mugs, small, medium and large vases, small dishes, large plates, large bowls and wavy-rim bowls. Each piece is hand-painted and glazed separately, so you choose the exact one shown in the photo.",
     "heroCta1": "Browse all pieces",
     "heroBeatCap": "Every piece is made entirely by hand — from the wheel to the final brushstroke.",
     "heroBeatAlt": "Close detail of the glaze",
@@ -335,47 +335,47 @@
     "colLead": "Browse it like a gallery, mark the pieces you love, and head to checkout when your selection feels right.",
     "card": {
       "mug": {
-        "num": "29 pieces · 90 PLN each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Mugs for everyday coffee and tea. Palms, lemons, shells and cacti painted in glaze on pale clay.",
         "cta": "Choose a mug"
       },
       "vase": {
-        "num": "9 pieces · 210 zł each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Round-bellied vases for a single branch, a few tulips or a market bunch. Each one has its own rhythm of stripes and drawings.",
         "cta": "Choose a vase"
       },
       "midvase": {
-        "num": "5 pieces · 300 PLN each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Medium vases with a clear character — somewhere between the small and the large format.",
         "cta": "Choose a vase"
       },
       "bigvase": {
-        "num": "4 pieces · 395 PLN each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Large forms with a strong presence: palms, shells, cacti, a lobster and small folk scenes on warm white.",
         "cta": "Choose a vase"
       },
       "dish": {
-        "num": "14 pieces · 105 zł each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Small dishes for jewellery, olive oil, salt or the little things that gather by the bed. Small, but full of character.",
         "cta": "Choose a dish"
       },
       "medplate": {
-        "num": "39 pieces · 120 zł each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Medium plates, each hand-painted separately. For snacking, serving or displaying — ⌀ 18 cm.",
         "cta": "Choose a medium plate"
       },
       "plate": {
-        "num": "9 pieces · 270 zł each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Large plates for serving, collecting or hanging on the wall. A donkey, palms, eyes, shells and painted rims.",
         "cta": "Choose a plate"
       },
       "largebowl": {
-        "num": "6 pieces · 315 PLN each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Generous bowls for fruit, salads and the things that like to live on the table. Inside: cobalt gardens, palms and leaves.",
         "cta": "Choose a bowl"
       },
       "wavybowl": {
-        "num": "10 pieces · 155 zł each",
+        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
         "desc": "Wavy-rim bowls for breakfast, snacks and small everyday rituals. Each one waves a little differently.",
         "cta": "Choose a bowl"
       }
@@ -817,10 +817,10 @@
     }
   },
   "deliveryNotice": {
-    "title": "July delivery information",
+    "title": "Delivery information",
     "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
-    "p2": "We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.",
-    "p3": "Shipping will take place in July, from 10 July."
+    "p2": "Orders are dispatched within 1–3 business days of purchase.",
+    "p3": "You'll receive the InPost tracking number by email once the parcel is on its way."
   },
   "consent": {
     "title": "Cookies",
