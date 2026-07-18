@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/konradciok/ceramics-drop/compare/v0.9.1...v0.9.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* **checkout:** trim return-page bundle and announce print form errors ([a82397c](https://github.com/konradciok/ceramics-drop/commit/a82397c63cf1df8a9941e7bc9c0073a006494ea4))
+* **checkout:** trim return-page bundle and announce print form errors ([c5bee66](https://github.com/konradciok/ceramics-drop/commit/c5bee66b9d79d9aa4f501ba461b97d15c8d15dcd))
+
 ## [0.9.1](https://github.com/konradciok/ceramics-drop/compare/v0.9.0...v0.9.1) (2026-07-18)
 
 
