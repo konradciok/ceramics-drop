@@ -41,26 +41,31 @@ import { sendPurchasedEvent } from '@/lib/resend-events';
 
 type Result = { data: unknown; error: unknown };
 
-/** A chainable query stub whose `.eq()` returns itself and whose terminal method resolves `result`. */
+/** A chainable query stub whose `.eq()`/`.in()` return itself and whose terminal method resolves `result`. */
 function chain(terminal: 'select' | 'maybeSingle', result: Result) {
-  const b: Record<string, unknown> = { eq: () => b };
+  const b: Record<string, unknown> = { eq: () => b, in: () => b };
   b[terminal] = async () => result;
   return b;
 }
 
 /**
- * Supabase fake for releaseHold. `ordersUpdate` is the `pending→failed` transition
- * result; `ordersSelect` is the retry-path fallback fetch; `pieceUpdate` is the
- * piece_state release. Records the piece_state update payload so tests can assert
- * the release actually ran (and with the right target status).
+ * Supabase fake. `ordersUpdate` results are consumed per orders-UPDATE call
+ * (releaseSale runs the pending→refunded CAS before the paid→refunded CAS);
+ * a single value repeats for every call. `ordersSelect` is the fallback fetch
+ * (releaseHold's failed-order lookup / releaseSale's refunded-order lookup);
+ * `pieceUpdate` is the piece_state release. Records the piece_state update
+ * payload so tests can assert the release actually ran (and with the right
+ * target status).
  */
-function makeSupabase(plan: { ordersUpdate: Result; ordersSelect: Result; pieceUpdate: Result }) {
+function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result }) {
+  const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
   const calls = { pieceUpdatePayload: undefined as unknown, pieceUpdated: false };
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
         return {
-          update: () => chain('select', plan.ordersUpdate),
+          update: () =>
+            chain('select', ordersUpdates.length > 1 ? (ordersUpdates.shift() as Result) : ordersUpdates[0]),
           select: () => chain('maybeSingle', plan.ordersSelect),
         };
       }
@@ -178,7 +183,11 @@ describe('webhook releaseSale → cancelPrintFulfilment (Finding 1)', () => {
 
   const casFlipped = () =>
     makeSupabase({
-      ordersUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      // update #1 = pending→refunded CAS (miss), update #2 = paid→refunded CAS (flip)
+      ordersUpdate: [
+        { data: [], error: null },
+        { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      ],
       ordersSelect: { data: null, error: null },
       pieceUpdate: { data: [], error: null },
     });
@@ -233,6 +242,79 @@ describe('webhook releaseSale → cancelPrintFulfilment (Finding 1)', () => {
 
     expect(res.status).toBe(200);
     expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+});
+
+describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(cancelPrintFulfilment).mockClear();
+  });
+
+  it('refund delivered before succeeded (order still pending): parks the order refunded and frees the reserved hold', async () => {
+    const { supabase, calls } = makeSupabase({
+      // update #1 = pending→refunded CAS flips; the paid CAS is never consulted
+      ordersUpdate: [{ data: [{ id: 'o1', private_sale_id: null }], error: null }],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    // releaseReservedPieces freed the reserved hold and relisted it
+    expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
+    // fulfilment never enqueues for a never-paid order — nothing to cancel
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+
+  it('lost dispute before succeeded: same parking behaviour as a refund', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: [{ data: [{ id: 'o1', private_sale_id: null }], error: null }],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(disputeClosedEventRequest('lost'));
+
+    expect(res.status).toBe(200);
+    expect(calls.pieceUpdated).toBe(true);
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+
+  it('retry after a crash between the refunded-CAS and the relist: finishes the relist (no permanently stuck sold pieces)', async () => {
+    const { supabase, calls } = makeSupabase({
+      // both CAS attempts miss — the order is already refunded
+      ordersUpdate: { data: [], error: null },
+      // the refunded-order fallback fetch finds it
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    // Without the fallback, the retry would return false here and the pieces
+    // would stay 'sold' on a refunded order forever.
+    expect(calls.pieceUpdated).toBe(true);
+    expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
+  });
+
+  it('replayed event on a fully-released refunded private-sale order: leaves the pieces sold (regression guard)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: 'ps_1' }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.pieceUpdated).toBe(false);
   });
 });
 

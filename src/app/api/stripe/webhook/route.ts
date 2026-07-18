@@ -336,6 +336,38 @@ export async function POST(req: Request) {
       }
     },
     releaseSale: async (pi) => {
+      // Convergence: three CAS attempts, in this order:
+      //   1. pending→refunded — refund/lost dispute delivered BEFORE the
+      //      succeeded event (e.g. a Dashboard refund during a webhook delivery
+      //      delay). Park the order refunded so the late success can never
+      //      fulfil it (markPaid's fallback, createShipment, invoicing and
+      //      conversions all gate on status), and free the reserved hold.
+      //   2. paid→refunded — the normal path.
+      //   3. already-refunded — a prior attempt flipped the CAS but crashed
+      //      before the piece release stuck; finish it (mirrors releaseHold's
+      //      fallback — without this the Stripe retry hits an empty CAS and the
+      //      pieces stay 'sold' on a refunded order forever).
+      // Checking pending BEFORE paid closes the markPaid race: if markPaid
+      // flips pending→paid between our two CAS attempts, the order was pending
+      // at attempt 1 — but then attempt 1 would have flipped it first (both are
+      // CAS on the same row). A failed/expired order (markPaid's own
+      // under-fulfillment refund) matches none of the three and stays a no-op.
+      const { data: pendingData, error: pendingErr } = await supabase
+        .from('orders')
+        .update({ status: 'refunded' })
+        .eq('payment_intent_id', pi)
+        .eq('status', 'pending')
+        .select('id, private_sale_id');
+      if (pendingErr) throw new Error(`releaseSale pending update failed: ${pendingErr.message}`);
+      const pendingRows = pendingData as Array<{ id: string; private_sale_id: string | null }> | null;
+      if (pendingRows && pendingRows.length > 0) {
+        // No Prodigi cancel: fulfilment only enqueues for paid orders, and this
+        // order never reached paid. Throws on failure → 5xx → the retry resumes
+        // through the already-refunded fallback below.
+        const freed = await releaseReservedPieces(supabase, pendingRows[0]);
+        return freed.length > 0;
+      }
+
       const { data, error: ordersErr } = await supabase
         .from('orders')
         .update({ status: 'refunded' })
@@ -344,24 +376,48 @@ export async function POST(req: Request) {
         .select('id, private_sale_id');
       if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
-      if (!rows || rows.length === 0) return false;
-      // Print orders: stop the Prodigi side (cancel or alert). Runs only when
-      // the paid→refunded CAS actually flipped, so a replayed event can't
-      // re-enter. Best-effort — never throws.
-      await cancelPrintFulfilment(rows[0].id, env);
-      // Private-sale pieces were sold privately (already hidden from the shop) and must
-      // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
-      if (releaseTargetStatus(rows[0]) === 'sold') return true;
-      // Throw on a piece_state failure (don't return true): otherwise the caller
-      // would revalidate inventory and advertise a piece as available while it is
-      // still 'sold' in the DB. A 5xx makes Stripe retry until the relist sticks.
-      const { error: pieceErr } = await supabase
+      if (rows && rows.length > 0) {
+        // Print orders: stop the Prodigi side (cancel or alert). Runs only when
+        // the paid→refunded CAS actually flipped, so a replayed event can't
+        // re-enter. Best-effort — never throws.
+        await cancelPrintFulfilment(rows[0].id, env);
+        // Private-sale pieces were sold privately (already hidden from the shop) and must
+        // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
+        if (releaseTargetStatus(rows[0]) === 'sold') return true;
+        // Throw on a piece_state failure (don't return true): otherwise the caller
+        // would revalidate inventory and advertise a piece as available while it is
+        // still 'sold' in the DB. A 5xx makes Stripe retry, and the retry finishes
+        // the relist through the already-refunded fallback below.
+        const { error: pieceErr } = await supabase
+          .from('piece_state')
+          .update({ status: 'available', reserved_until: null, order_id: null })
+          .eq('order_id', rows[0].id)
+          .eq('status', 'sold');
+        if (pieceErr) throw new Error(`releaseSale piece_state update failed: ${pieceErr.message}`);
+        return true;
+      }
+
+      // Already refunded: finish any release a crashed prior attempt left
+      // behind — rows still 'sold' (paid-path crash) or 'reserved'
+      // (pending-path crash). Scoped by order_id, so pieces since re-sold to
+      // another order are never touched. Private-sale pieces stay 'sold'.
+      const { data: refunded, error: refundedErr } = await supabase
+        .from('orders')
+        .select('id, private_sale_id')
+        .eq('payment_intent_id', pi)
+        .eq('status', 'refunded')
+        .maybeSingle();
+      if (refundedErr) throw new Error(`releaseSale refunded lookup failed: ${refundedErr.message}`);
+      const refundedOrder = refunded as { id: string; private_sale_id: string | null } | null;
+      if (!refundedOrder || releaseTargetStatus(refundedOrder) === 'sold') return false;
+      const { data: freedRows, error: resumeErr } = await supabase
         .from('piece_state')
         .update({ status: 'available', reserved_until: null, order_id: null })
-        .eq('order_id', rows[0].id)
-        .eq('status', 'sold');
-      if (pieceErr) throw new Error(`releaseSale piece_state update failed: ${pieceErr.message}`);
-      return true;
+        .eq('order_id', refundedOrder.id)
+        .in('status', ['sold', 'reserved'])
+        .select('product_id');
+      if (resumeErr) throw new Error(`releaseSale resume release failed: ${resumeErr.message}`);
+      return ((freedRows as Array<{ product_id: string }> | null) ?? []).length > 0;
     },
     ensureInvoiced: async (pi) => {
       try {

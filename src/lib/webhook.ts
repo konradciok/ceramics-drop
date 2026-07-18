@@ -6,12 +6,16 @@ export type WebhookDeps = {
   /** Return reserved pieces to available for a failed/canceled intent. */
   releaseHold: (paymentIntentId: string) => Promise<void>;
   /**
-   * Return sold pieces to available for a paid order that was fully refunded or
-   * lost as a chargeback. Returns true if it actually relisted pieces, false if
-   * nothing to do (no paid order found). The implementation MUST guard on the
-   * order still being `paid`: the markPaid under-fulfillment path issues its own
-   * refund (and already sets the order `failed` + frees pieces), so the
-   * resulting charge.refunded event must find no paid order here and no-op.
+   * Converge a fully-refunded / lost-dispute payment to `refunded` and return
+   * its ceramic pieces to the shop, regardless of event delivery order: a paid
+   * order is relisted; a still-pending order (refund observed before
+   * `payment_intent.succeeded`) is parked `refunded` so the late success can
+   * never fulfil it; an already-`refunded` order re-checks that the release
+   * actually stuck and finishes it (crash-resume). Returns true if pieces were
+   * (re)listed, false if nothing to do. The implementation MUST no-op for
+   * `failed` orders: the markPaid under-fulfillment path issues its own refund
+   * (and already sets the order `failed` + frees pieces), so the resulting
+   * charge.refunded event must find nothing to do here.
    */
   releaseSale: (paymentIntentId: string) => Promise<boolean>;
   /** Attempt to invoice if not already invoiced; idempotent — safe to call on every succeeded event. */
