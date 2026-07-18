@@ -318,7 +318,7 @@
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",
     "heroTitle": "Una pieza, un ejemplar, <em>una huella de la mano.</em>",
-    "heroSub": "Cien piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se pinta a mano y se esmalta por separado, así que eliges exactamente el que ves en la foto.",
+    "heroSub": "{count} piezas de cerámica del pequeño estudio de Anna Ciok: tazas, jarrones pequeños, medianos y grandes, platitos, platos grandes, cuencos grandes y cuencos de borde ondulado. Cada ejemplar se pinta a mano y se esmalta por separado, así que eliges exactamente el que ves en la foto.",
     "heroCta1": "Ver todas las piezas",
     "heroBeatCap": "Cada pieza se hace enteramente a mano — desde el torno hasta la última pincelada.",
     "heroBeatAlt": "Detalle del esmalte de cerca",
@@ -335,47 +335,47 @@
     "colLead": "Recorre el drop como una galería, marca tus piezas favoritas y pasa por caja cuando tu selección esté lista.",
     "card": {
       "mug": {
-        "num": "29 piezas · 90 PLN c/u",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Tazas para el café y el té de todos los días. Palmeras, limones, conchas y cactus pintados con esmalte sobre arcilla clara.",
         "cta": "Elegir una taza"
       },
       "vase": {
-        "num": "9 piezas · 210 zł cada uno",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Jarrones panzudos para una rama, unos tulipanes o un ramo del mercado. Cada uno tiene su propio ritmo de rayas y dibujos.",
         "cta": "Elegir un jarrón"
       },
       "midvase": {
-        "num": "5 piezas · 300 PLN c/u",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Jarrones medianos con carácter — entre el formato pequeño y el grande.",
         "cta": "Elegir un jarrón"
       },
       "bigvase": {
-        "num": "4 piezas · 395 PLN c/u",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Formas grandes con carácter: palmeras, conchas, cactus, una langosta y pequeñas escenas folk sobre blanco cálido.",
         "cta": "Elegir un jarrón"
       },
       "dish": {
-        "num": "14 piezas · 105 zł cada uno",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Platitos para joyas, aceite de oliva, sal o pequeños objetos de la mesilla. Pequeños, pero con mucho carácter.",
         "cta": "Elegir un platito"
       },
       "medplate": {
-        "num": "39 piezas · 120 zł cada uno",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Platos medianos, cada uno pintado a mano por separado. Para aperitivos, servir o decorar — ⌀ 18 cm.",
         "cta": "Elegir un plato mediano"
       },
       "plate": {
-        "num": "9 piezas · 270 zł cada uno",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Platos grandes para servir, coleccionar o colgar en la pared. Un burrito, palmeras, ojos, conchas y bordes pintados.",
         "cta": "Elegir un plato"
       },
       "largebowl": {
-        "num": "6 piezas · 315 PLN c/u",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Cuencos amplios para fruta, ensaladas y cosas que quieren quedarse en la mesa. Dentro: jardines cobalto, palmeras y hojas.",
         "cta": "Elegir un cuenco"
       },
       "wavybowl": {
-        "num": "10 piezas · 155 zł cada uno",
+        "num": "{count, plural, one {# pieza} other {# piezas}} · {price} c/u",
         "desc": "Cuencos de borde ondulado para desayunos, aperitivos y pequeños rituales diarios. Cada uno ondula a su manera.",
         "cta": "Elegir un cuenco"
       }
@@ -817,10 +817,10 @@
     }
   },
   "deliveryNotice": {
-    "title": "Información sobre entregas en julio",
+    "title": "Información de envío",
     "p1": "Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.",
-    "p2": "Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.",
-    "p3": "Los envíos se realizarán en julio, a partir del 10 de julio."
+    "p2": "Enviamos los pedidos en un plazo de 1 a 3 días laborables desde la compra.",
+    "p3": "Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete."
   },
   "consent": {
     "title": "Cookies",

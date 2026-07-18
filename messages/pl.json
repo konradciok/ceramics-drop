@@ -318,7 +318,7 @@
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",
     "heroTitle": "Jedna praca, <em>jeden ślad ręki.</em>",
-    "heroSub": "Sto ceramicznych prac z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest ręcznie malowany i szkliwiony osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
+    "heroSub": "{count, plural, few {# ceramiczne prace} other {# ceramicznych prac}} z małej pracowni Anny Ciok: kubki, małe, średnie i duże wazony, talerzyki, duże talerze, duże misy i miski z falowanym brzegiem. Każdy egzemplarz jest ręcznie malowany i szkliwiony osobno, więc wybierasz dokładnie tę sztukę, którą widzisz na zdjęciu.",
     "heroCta1": "Przeglądaj wszystkie prace",
     "heroBeatCap": "Każda praca powstaje w całości ręcznie — od toczenia po ostatni pociągnięcie pędzla.",
     "heroBeatAlt": "Detal szkliwa z bliska",
@@ -335,47 +335,47 @@
     "colLead": "Przeglądaj jak galerię, zaznacz ulubione prace i przejdź do kasy, kiedy Twój wybór będzie gotowy.",
     "card": {
       "mug": {
-        "num": "29 prac · 90 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Kubki na codzienną kawę i herbatę. Palmy, cytryny, muszle i kaktusy malowane szkliwem na jasnej glinie.",
         "cta": "Wybierz swój kubek"
       },
       "vase": {
-        "num": "9 prac · 210 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Pękate wazony na pojedynczą gałązkę, kilka tulipanów albo bukiet z targu. Każdy ma własny rytm pasków i rysunków.",
         "cta": "Wybierz swój"
       },
       "midvase": {
-        "num": "5 prac · 300 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Średnie wazony o wyrazistym charakterze — coś pomiędzy kameralnym a dużym formatem.",
         "cta": "Wybierz średni wazon"
       },
       "bigvase": {
-        "num": "4 prace · 395 zł każdy",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} każdy",
         "desc": "Duże formy z mocnym charakterem: palmy, muszle, kaktusy, homar i małe folkowe sceny na ciepłej bieli.",
         "cta": "Wybierz duży wazon"
       },
       "dish": {
-        "num": "14 prac · 105 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Małe talerzyki na biżuterię, oliwę, sól albo drobiazgi przy łóżku. Niewielkie, ale z bardzo własnym temperamentem.",
         "cta": "Wybierz talerzyk"
       },
       "medplate": {
-        "num": "39 prac · 120 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja — ⌀ 18 cm.",
         "cta": "Wybierz talerz średni"
       },
       "plate": {
-        "num": "9 prac · 270 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Duże talerze do podania, do kolekcji albo na ścianę. Osiołek, palmy, oczy, muszle i malowane ranty.",
         "cta": "Wybierz swój talerz"
       },
       "largebowl": {
-        "num": "6 prac · 315 zł za sztukę",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} za sztukę",
         "desc": "Pojemne misy do owoców, sałat i rzeczy, które lubią stać na stole. W środku kobaltowe ogrody, palmy i liście.",
         "cta": "Wybierz misę"
       },
       "wavybowl": {
-        "num": "10 prac · 155 zł każda",
+        "num": "{count, plural, few {# prace} other {# prac}} · {price} każda",
         "desc": "Miski z falowanym brzegiem na śniadanie, przekąski i małe codzienne rytuały. Każda faluje trochę inaczej.",
         "cta": "Wybierz miskę"
       }
@@ -817,10 +817,10 @@
     }
   },
   "deliveryNotice": {
-    "title": "Informacja o dostawie w lipcu",
+    "title": "Informacja o dostawie",
     "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
-    "p2": "Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane od 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.",
-    "p3": "Wysyłki będą realizowane od 10 lipca."
+    "p2": "Zamówienia wysyłamy w ciągu 1–3 dni roboczych od złożenia zamówienia.",
+    "p3": "Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki."
   },
   "consent": {
     "title": "Pliki cookie",
