@@ -303,18 +303,36 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
     expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
   });
 
-  it('replayed event on a fully-released refunded private-sale order: leaves the pieces sold (regression guard)', async () => {
+  it('private-sale crash-resume/replay: converges stranded reserved pieces to sold, never relists publicly (leak guard)', async () => {
     const { supabase, calls } = makeSupabase({
       ordersUpdate: { data: [], error: null },
       ordersSelect: { data: { id: 'o1', private_sale_id: 'ps_1' }, error: null },
-      pieceUpdate: { data: [], error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
     });
     supabaseImpl = supabase;
 
     const res = await POST(refundedEventRequest());
 
     expect(res.status).toBe(200);
-    expect(calls.pieceUpdated).toBe(false);
+    // Private-sale resume may only ever write 'sold' (scoped to stranded
+    // 'reserved' rows) — never 'available', which would relist publicly.
+    expect(calls.pieceUpdated).toBe(true);
+    expect(calls.pieceUpdatePayload).toEqual({ status: 'sold', reserved_until: null, order_id: null });
+  });
+
+  it('private-sale refund before succeeded: frees the reserved hold back to sold (never available)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: [{ data: [{ id: 'o1', private_sale_id: 'ps_1' }], error: null }],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.pieceUpdatePayload).toEqual({ status: 'sold', reserved_until: null, order_id: null });
+    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 });
 

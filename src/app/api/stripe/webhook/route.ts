@@ -400,7 +400,7 @@ export async function POST(req: Request) {
       // Already refunded: finish any release a crashed prior attempt left
       // behind — rows still 'sold' (paid-path crash) or 'reserved'
       // (pending-path crash). Scoped by order_id, so pieces since re-sold to
-      // another order are never touched. Private-sale pieces stay 'sold'.
+      // another order are never touched.
       const { data: refunded, error: refundedErr } = await supabase
         .from('orders')
         .select('id, private_sale_id')
@@ -409,12 +409,20 @@ export async function POST(req: Request) {
         .maybeSingle();
       if (refundedErr) throw new Error(`releaseSale refunded lookup failed: ${refundedErr.message}`);
       const refundedOrder = refunded as { id: string; private_sale_id: string | null } | null;
-      if (!refundedOrder || releaseTargetStatus(refundedOrder) === 'sold') return false;
+      if (!refundedOrder) return false;
+      // Converge to the order's release target: normal orders relist rows to
+      // 'available'; private-sale orders converge only stranded 'reserved'
+      // rows to 'sold' — their already-'sold' rows are the correct terminal
+      // state and stay untouched, so a routine replay is a no-op. Without the
+      // reserved→sold convergence, a private-sale pending-path crash leaves
+      // rows 'reserved'; once reserved_until lapses, reserve_pieces() would
+      // hand a never-public piece to any public checkout.
+      const target = releaseTargetStatus(refundedOrder);
       const { data: freedRows, error: resumeErr } = await supabase
         .from('piece_state')
-        .update({ status: 'available', reserved_until: null, order_id: null })
+        .update({ status: target, reserved_until: null, order_id: null })
         .eq('order_id', refundedOrder.id)
-        .in('status', ['sold', 'reserved'])
+        .in('status', target === 'sold' ? ['reserved'] : ['sold', 'reserved'])
         .select('product_id');
       if (resumeErr) throw new Error(`releaseSale resume release failed: ${resumeErr.message}`);
       return ((freedRows as Array<{ product_id: string }> | null) ?? []).length > 0;
