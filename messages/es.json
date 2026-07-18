@@ -293,6 +293,8 @@
     "postCode": "Código postal",
     "city": "Ciudad",
     "lockerChosen": "Paczkomat elegido:",
+    "chooseLocker": "Elegir taquilla",
+    "changeLocker": "Cambiar",
     "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
     "country": "País",
     "plOnly": "La cerámica se envía únicamente a direcciones en Polonia.",

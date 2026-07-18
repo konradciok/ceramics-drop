@@ -293,6 +293,8 @@
     "postCode": "Post code",
     "city": "City",
     "lockerChosen": "Chosen locker:",
+    "chooseLocker": "Choose a locker",
+    "changeLocker": "Change",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
     "country": "Country",
     "plOnly": "Ceramics ship to addresses in Poland only.",

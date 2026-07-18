@@ -165,6 +165,10 @@ export function CartView({
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
+  // The InPost map is heavy (400px+ on phones) and used to sit between the
+  // fields and the pay CTA unconditionally. It now mounts only on explicit
+  // intent and collapses back to the chosen point after selection.
+  const [lockerMapOpen, setLockerMapOpen] = useState(false);
   // Destination country — print carts only (Prodigi ships EU + UK); ceramics are PL/InPost.
   const [country, setCountry] = useState<PrintCountry>(initialPrintCountry);
 
@@ -701,18 +705,30 @@ export function CartView({
                       {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
                     </p>
                   )}
-                  <GeowidgetPicker
-                    onSelect={(p) => {
-                      // Completion signal: the buyer got through InPost locker
-                      // selection (vs. merely picking the paczkomat method in A1).
-                      pushDataLayer(
-                        buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
-                      );
-                      setLocker(p);
-                    }}
-                    language={locale}
-                    unavailableLabel={t('delivery.lockerUnavailable')}
-                  />
+                  {lockerMapOpen ? (
+                    <GeowidgetPicker
+                      onSelect={(p) => {
+                        // Completion signal: the buyer got through InPost locker
+                        // selection (vs. merely picking the paczkomat method in A1).
+                        pushDataLayer(
+                          buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
+                        );
+                        setLocker(p);
+                        setLockerMapOpen(false);
+                      }}
+                      language={locale}
+                      unavailableLabel={t('delivery.lockerUnavailable')}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-ghost locker-toggle"
+                      data-testid={locker ? 'change-locker' : 'choose-locker'}
+                      onClick={() => setLockerMapOpen(true)}
+                    >
+                      {t(locker ? 'delivery.changeLocker' : 'delivery.chooseLocker')}
+                    </button>
+                  )}
                 </div>
               )}
 
