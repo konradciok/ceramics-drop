@@ -1148,7 +1148,7 @@ async function main() {
 ┌─ reconcile-orders ────────────────────────────────────────────────────────┐
 │ Supabase project  : ${supabaseRef}
 │ InPost host       : ${inpostHost}
-│ Actions           : ${[args.emails && '--emails', args.studio && '--studio', args.buy && '--buy', args.labels && '--labels'].filter(Boolean).join(' ') || '(none)'}
+│ Actions           : ${[args.emails && '--emails', args.studio && '--studio', args.buy && '--buy', args.labels && '--labels', args.invoices && '--invoices'].filter(Boolean).join(' ') || '(none)'}
 │ Dry run           : ${args.dryRun ? 'YES ✓' : 'NO — WRITES ENABLED'}
 │ Target            : ${isExpectedProd ? 'PRODUCTION ✓' : 'NON-PRODUCTION ⚠'}
 └───────────────────────────────────────────────────────────────────────────┘`);

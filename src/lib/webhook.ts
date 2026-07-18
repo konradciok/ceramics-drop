@@ -7,8 +7,10 @@ export type WebhookDeps = {
   releaseHold: (paymentIntentId: string) => Promise<void>;
   /**
    * Converge a fully-refunded / lost-dispute payment to `refunded` and return
-   * its ceramic pieces to the shop, regardless of event delivery order: a paid
-   * order is relisted; a still-pending order (refund observed before
+   * its ceramic pieces to the shop (private-sale orders converge their
+   * pieces to `sold` instead — never relisted publicly), regardless of
+   * event delivery order: a paid order is relisted; a still-pending
+   * order (refund observed before
    * `payment_intent.succeeded`) is parked `refunded` so the late success can
    * never fulfil it; an already-`refunded` order re-checks that the release
    * actually stuck and finishes it (crash-resume). Returns true if pieces were

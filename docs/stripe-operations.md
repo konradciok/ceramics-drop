@@ -11,8 +11,8 @@ durable order state and the commands below. Owner: studio operator
 Stripe PaymentIntent (`pi_…`) ↔ `orders.payment_intent_id` (one-to-one).
 
 ```bash
-npm run orders -- list --limit 20          # recent orders + status
-npm run orders -- show <order-id>          # full order: items, shipment, invoice, emails
+npm run orders -- order list --top 20          # recent orders + status
+npm run orders -- order get <order-id>          # full order: items, shipment, invoice, emails
 ```
 
 In Workbench, search the `pi_…` id to see every event and its delivery status.
@@ -40,19 +40,21 @@ a replay after full completion is a no-op.
 
 | Symptom                                     | Detect                                                       | Fix                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Customer confirmation email missing         | `node scripts/reconcile-orders.mjs` (preview)                | `--emails`, or `npm run orders -- resend-confirmation --confirm <id>`                         |
+| Customer confirmation email missing         | `node scripts/reconcile-orders.mjs` (preview)                | `--emails`, or `npm run orders -- order resend-confirmation <id> --confirm <id>`                         |
 | Invoice missing on a paid order             | `node scripts/reconcile-orders.mjs --dry-run --invoices`     | Workbench → resend that order's `payment_intent.succeeded`                                    |
-| InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- create-shipment --confirm <id>`                |
+| InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- order create-shipment <id> --confirm <id>`                |
 | Prodigi print job stuck                     | `npm run print-fulfilment:check-jobs`; Cloudflare Queue DLQ  | Workbench → resend the order's `payment_intent.succeeded` (re-enqueues the job idempotently); if it keeps failing, escalate to Prodigi support with the `prodigi_orders` id |
-| Order refunded but piece not back in shop   | `npm run orders -- show <id>` (pieces still `sold`)          | Workbench → resend the `charge.refunded` event (release resumes)                              |
+| Order refunded but piece not back in shop   | `npm run orders -- order get <id>` (pieces still `sold`)          | Workbench → resend the `charge.refunded` event (release resumes) — private-sale pieces stay `sold` by design (never relisted publicly)              |
 | Payment succeeded but order still `pending` | Workbench shows failed `payment_intent.succeeded` deliveries | fix the cause (check Sentry), then resend the event                                           |
 
 
 ## Refunds
 
-Issue refunds from the admin panel or `npm run orders -- refund --confirm <id>`
+Issue refunds from the admin panel or `npm run orders -- order refund <id> --confirm <id>`
 (full refunds only — a partial refund moves money without relisting). The
 `charge.refunded` webhook performs the relist; do not hand-edit `piece_state`.
+Private-sale orders are the exception: on refund their pieces converge to
+`sold`, never back to the public shop.
 
 ## Alerts — one-time setup checklist (operator, external)
 
