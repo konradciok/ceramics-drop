@@ -27,7 +27,7 @@
  *
  * Usage:
  *   node scripts/reconcile-orders.mjs [--dry-run] [--emails] [--studio]
- *     [--buy] [--labels] [--verbose] [--allow-nonprod] [--force-studio]
+ *     [--buy] [--labels] [--invoices] [--verbose] [--allow-nonprod] [--force-studio]
  *     [--env-file <path>] [order-id ...]
  *
  *   No action flag → dry-run preview of all discovered candidates + help.
@@ -405,6 +405,7 @@ function parseCliArgs(argv) {
         studio: { type: 'boolean' },
         buy: { type: 'boolean' },
         labels: { type: 'boolean' },
+        invoices: { type: 'boolean' },
         verbose: { type: 'boolean' },
         'allow-nonprod': { type: 'boolean' },
         'force-studio': { type: 'boolean' },
@@ -433,6 +434,7 @@ function parseCliArgs(argv) {
     studio: values.studio === true,
     buy: values.buy === true,
     labels: values.labels === true,
+    invoices: values.invoices === true,
     verbose: values.verbose === true,
     allowNonprod: values['allow-nonprod'] === true,
     forceStudio: values['force-studio'] === true,
@@ -453,13 +455,14 @@ function parseCliArgs(argv) {
   }
 
   // No action flags → implicit dry-run preview
-  const anyAction = args.emails || args.studio || args.buy || args.labels;
+  const anyAction = args.emails || args.studio || args.buy || args.labels || args.invoices;
   if (!anyAction) {
     args.dryRun = true;
     args.emails = true;
     args.studio = true;
     args.buy = true;
     args.labels = true;
+    args.invoices = true;
     args.previewOnly = true;
   }
 
@@ -931,6 +934,29 @@ async function runLabels(orders, { dryRun, env, supabase }) {
   }
 }
 
+/**
+ * --invoices: report paid orders missing a Stripe invoice (read-only, always).
+ * ensureInvoiced swallows failures after the webhook 200s, so a missed invoice
+ * has no automatic retry — recovery is a Workbench resend of the order's
+ * payment_intent.succeeded event (safe: every effect is idempotent/claimed).
+ * See docs/stripe-operations.md.
+ */
+async function runInvoices(orders, { verbose }) {
+  log(`\n── INVOICES (paid orders missing invoiced_at) ── ${orders.length} candidate(s)\n`);
+  if (orders.length === 0) {
+    ok('No paid orders missing an invoice.');
+    return;
+  }
+  for (const order of orders) {
+    const tag = `[${order.id.slice(0, 8)}]`;
+    warn(
+      `${tag} paid ${order.paid_at ?? '(no paid_at)'} · ${formatGrosze(order.total, order.currency)} · ` +
+        `${redactEmail(order.email, verbose)} — no invoice recorded. ` +
+        'Remedy: resend payment_intent.succeeded from Stripe Workbench (see docs/stripe-operations.md).',
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Auto-discovery
 // ─────────────────────────────────────────────────────────────────────────────
@@ -982,6 +1008,17 @@ async function discoverLabels(supabase) {
   return data ?? [];
 }
 
+async function discoverInvoices(supabase) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, email, total, currency, paid_at, invoiced_at')
+    .eq('status', 'paid')
+    .is('invoiced_at', null)
+    .not('email', 'is', null);
+  if (error) throw new Error(`discover --invoices: ${error.message}`);
+  return data ?? [];
+}
+
 /** Load full order data for explicitly given IDs, merged with what each action needs. */
 async function loadOrdersByIds(supabase, orderIds) {
   const { data, error } = await supabase
@@ -1026,6 +1063,7 @@ Options:
   --studio         Resend missed studio new-order notification emails.
   --buy            Buy the InPost shipment offer for stuck shipments.
   --labels         Fetch the A6 label PDF and email it to the studio.
+  --invoices       Report paid orders missing a Stripe invoice (read-only).
   --force-studio   Skip the idempotency gate for --studio (no studio_notified_at column).
   --verbose        Show unredacted email addresses.
   --allow-nonprod  Allow writes against a non-production Supabase/InPost target.
@@ -1141,7 +1179,7 @@ async function main() {
 
   // ── Discover or load orders ───────────────────────────────────────────────
   const explicitIds = args.orderIds.length > 0;
-  let emailOrders, studioOrders, buyOrders, labelOrders;
+  let emailOrders, studioOrders, buyOrders, labelOrders, invoiceOrders;
 
   if (explicitIds) {
     // Load all columns; each action will use what it needs
@@ -1156,11 +1194,13 @@ async function main() {
     studioOrders = args.studio ? paidOrders : [];
     buyOrders = args.buy ? paidOrders : [];
     labelOrders = args.labels ? paidOrders : [];
+    invoiceOrders = args.invoices ? paidOrders.filter((o) => !o.invoiced_at && o.email) : [];
   } else {
     emailOrders = args.emails ? await discoverEmails(supabase) : [];
     studioOrders = args.studio ? await discoverStudio(supabase) : [];
     buyOrders = args.buy ? await discoverBuy(supabase) : [];
     labelOrders = args.labels ? await discoverLabels(supabase) : [];
+    invoiceOrders = args.invoices ? await discoverInvoices(supabase) : [];
   }
 
   if (args.previewOnly) {
@@ -1169,6 +1209,7 @@ async function main() {
     log(`  --studio  : ${studioOrders.length} order(s) candidates for studio re-notify (since ${STUDIO_EMAIL_SINCE})`);
     log(`  --buy     : ${buyOrders.length} shipment(s) needing offer purchase`);
     log(`  --labels  : ${labelOrders.length} shipment(s) needing label email`);
+    log(`  --invoices: ${invoiceOrders.length} paid order(s) missing an invoice`);
     log('\nRerun with one or more action flags to proceed.');
     log('Example: node scripts/reconcile-orders.mjs --dry-run --emails --buy --labels\n');
     process.exit(0);
@@ -1193,6 +1234,10 @@ async function main() {
 
   if (args.labels) {
     await runLabels(labelOrders, ctx);
+  }
+
+  if (args.invoices) {
+    await runInvoices(invoiceOrders, ctx);
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────
