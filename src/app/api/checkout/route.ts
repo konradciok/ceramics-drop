@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
@@ -211,6 +212,7 @@ export async function POST(req: Request) {
   const stripePmcId = getCloudflareContext().env.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID;
   if (!stripePmcId) {
     console.error('checkout: STRIPE_PAYMENT_METHOD_CONFIGURATION_ID missing');
+    Sentry.captureMessage('checkout_missing_pmc_secret');
     await releaseOwnHold();
     return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
   }
