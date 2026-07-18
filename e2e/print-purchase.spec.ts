@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers/checkout';
+import { PRINT_DELIVERY_DRAFT_KEY } from '../src/lib/print-delivery';
 
 /**
  * Print purchase (Finding 11).
@@ -21,7 +22,6 @@ import { resetCart, goToCart, fillContact, fillStripeCard, sel } from './helpers
 
 const SUCCESS_CARD = '4242424242424242';
 const BUYER_EMAIL = 'e2e+playwright-print@example.com';
-const PRINT_DELIVERY_DRAFT_KEY = 'acc_print_delivery_v1';
 
 test.describe('print cart UI @ci', () => {
   test('cart is courier-only for prints: no paczkomat, no odbiór, no Geowidget, country selectable', async ({ page }) => {
@@ -80,8 +80,9 @@ test.describe('print cart UI @ci', () => {
 
     const deliveryRow = page.locator('.summary .sum-row').filter({ hasText: 'Dostawa' });
     const dePrice = await deliveryRow.locator('.v').textContent();
+    expect(dePrice).toBeTruthy();
     await page.getByTestId('country-select').selectOption('GB');
-    await expect(deliveryRow.locator('.v')).not.toHaveText(dePrice ?? '');
+    await expect(deliveryRow.locator('.v')).not.toHaveText(dePrice!);
 
     const storedDraft = await page.evaluate((draftKey) => ({
       localDraft: localStorage.getItem(draftKey),

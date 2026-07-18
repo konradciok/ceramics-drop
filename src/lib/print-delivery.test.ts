@@ -43,6 +43,12 @@ describe('print delivery schema', () => {
     }).success).toBe(false);
   });
 
+  it('accepts a valid international phone from outside the delivery country', () => {
+    expect(printDeliveryContactSchema('DE').parse({
+      first_name: 'Anna', last_name: 'Ciok', email: 'anna@example.com', phone: '+48 501 234 567',
+    }).phone).toBe('+48501234567');
+  });
+
   it('accepts an optional line2 and a tolerant postal code', () => {
     expect(printShippingAddressSchema.parse({ ...address, line2: ' Apt 4 / floor 2 ' })).toEqual({
       line1: 'Hauptstraße 12',
