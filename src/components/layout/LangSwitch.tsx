@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
@@ -9,11 +9,12 @@ import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
  *  Swaps locale while keeping the path. */
 export function LangSwitch() {
   const locale = useLocale();
+  const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
 
   return (
-    <div className="lang-switch" role="group" aria-label="Język">
+    <div className="lang-switch" role="group" aria-label={t('aria.language')}>
       {routing.locales.map((l) => (
         <button
           key={l}

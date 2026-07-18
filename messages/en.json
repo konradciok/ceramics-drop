@@ -55,6 +55,7 @@
   "aria": {
     "cart": "Cart",
     "currency": "Currency",
+    "language": "Language",
     "zoom": "View",
     "close": "Close",
     "prev": "Previous",
