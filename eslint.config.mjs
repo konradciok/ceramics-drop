@@ -13,6 +13,7 @@ const GENERATED_AND_EXTERNAL_PATHS = [
   '**/node_modules/**',
   '.claude/**',
   '.worktrees/**',
+  'pr-review/**',
 ];
 
 const eslintConfig = [

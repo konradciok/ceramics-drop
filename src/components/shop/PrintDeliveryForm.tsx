@@ -132,7 +132,7 @@ export function PrintDeliveryForm({
   }
 
   const fieldError = (field: FieldName) => errors[field]
-    ? <span className="field-error" id={`print-${field}-error`}>{errors[field]}</span>
+    ? <span className="field-error" role="alert" id={`print-${field}-error`}>{errors[field]}</span>
     : null;
   const aria = (field: FieldName) => ({
     'aria-invalid': errors[field] ? true as const : undefined,
