@@ -33,6 +33,7 @@ import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
+import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
@@ -136,6 +137,7 @@ export function CartView({
 } = {}) {
   const t = useTranslations();
   const locale = useLocale();
+  const mounted = useMounted();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
   const replace = useCart((s) => s.replace);
@@ -481,6 +483,15 @@ export function CartView({
     typeof window !== 'undefined'
       ? `${window.location.origin}${locale === 'pl' ? '' : `/${locale}`}/koszyk/return`
       : '/koszyk/return';
+
+  // ── Awaiting hydration ─────────────────────────────────────────────────────
+  // Server HTML has no localStorage cart, so rendering the real empty/filled
+  // state before hydration flashes "cart is empty" at every visitor with items
+  // (and trips a React hydration mismatch). Hold a neutral placeholder until
+  // the persisted store is live on the client.
+  if (!mounted) {
+    return <div className="cart-empty" aria-busy="true" />;
+  }
 
   // ── Seeding a private-sale bundle ──────────────────────────────────────────
   if (privateSale && privateSaleLoading) {
