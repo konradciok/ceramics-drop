@@ -293,6 +293,8 @@
     "postCode": "Postleitzahl",
     "city": "Stadt",
     "lockerChosen": "Gewähltes Paketfach:",
+    "chooseLocker": "Paketfach wählen",
+    "changeLocker": "Ändern",
     "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar.",
     "country": "Land",
     "plOnly": "Keramik wird nur an Adressen in Polen versandt.",

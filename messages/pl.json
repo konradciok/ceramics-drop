@@ -293,6 +293,8 @@
     "postCode": "Kod pocztowy",
     "city": "Miasto",
     "lockerChosen": "Wybrany paczkomat:",
+    "chooseLocker": "Wybierz Paczkomat",
+    "changeLocker": "Zmień",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
     "country": "Kraj",
     "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce.",

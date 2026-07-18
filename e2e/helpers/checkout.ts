@@ -65,6 +65,9 @@ export async function appendToCart(page: Page, productId: string): Promise<void>
 
 export async function selectPaczkomat(page: Page): Promise<void> {
   await page.locator(sel.shippingPaczkomat).click();
+  // The InPost map mounts only on explicit intent (collapse-behind-button UX);
+  // open it so mockLockerSelection / real-map driving find the widget.
+  await page.locator('[data-testid="choose-locker"]').click();
 }
 
 /**
