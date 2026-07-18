@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatShippingAddress, normalizeShippingAddress } from './shipping-address';
+import { formatShippingAddress, normalizeShippingAddress, shippingAddressCsvFields } from './shipping-address';
 
 describe('shipping address compatibility', () => {
   it('reads native print line1 and optional line2 without loss', () => {
@@ -23,5 +23,18 @@ describe('shipping address compatibility', () => {
   it('fails closed for incomplete or unknown data', () => {
     expect(normalizeShippingAddress(null)).toBeNull();
     expect(normalizeShippingAddress({ line1: 'X', city: 'Y' })).toBeNull();
+  });
+
+  it('keeps legacy CSV columns and appends native line2 data', () => {
+    expect(shippingAddressCsvFields({
+      line1: '221B Baker Street', line2: 'Flat B', city: 'London', post_code: 'NW1', country_code: 'GB',
+    })).toEqual({
+      address_street: '221B Baker Street',
+      address_building: '',
+      address_city: 'London',
+      address_postcode: 'NW1',
+      address_country: 'GB',
+      address_line2: 'Flat B',
+    });
   });
 });

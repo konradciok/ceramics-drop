@@ -7,7 +7,7 @@ import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256H
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, type Ga4Config, type Ga4PurchaseInput } from './ga4-mp';
 import type { MarketingContext } from './context';
-import type { DeliveryAddress } from '../shipx';
+import { normalizeShippingAddress } from '../shipping-address';
 
 export type ConversionOrder = {
   payment_intent_id: string;
@@ -20,7 +20,7 @@ export type ConversionOrder = {
   receiver_first_name: string | null;
   receiver_last_name: string | null;
   receiver_phone: string | null;
-  shipping_address: DeliveryAddress | null;
+  shipping_address: unknown;
   marketing: MarketingContext | null;
   items: Array<{
     product_id: string;
@@ -87,6 +87,7 @@ export async function sendPurchaseConversions(
   });
 
   const emailHash = await hashUserField(order.email, normalizeEmail);
+  const shippingAddress = normalizeShippingAddress(order.shipping_address);
 
   const metaInput: MetaPurchaseInput = {
     eventId: `purchase-${order.payment_intent_id}`,
@@ -97,9 +98,9 @@ export async function sendPurchaseConversions(
       ph: await hashUserField(order.receiver_phone, normalizePhonePl),
       fn: await hashUserField(order.receiver_first_name, (v) => normalizeText(v)),
       ln: await hashUserField(order.receiver_last_name, (v) => normalizeText(v)),
-      ct: await hashUserField(order.shipping_address?.city ?? null, (v) => normalizeText(v, { stripSpaces: true })),
-      zp: await hashUserField(order.shipping_address?.post_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
-      country: await hashUserField(order.shipping_address?.country_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
+      ct: await hashUserField(shippingAddress?.city ?? null, (v) => normalizeText(v, { stripSpaces: true })),
+      zp: await hashUserField(shippingAddress?.post_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
+      country: await hashUserField(shippingAddress?.country_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
       client_ip_address: m.ip,
       client_user_agent: m.user_agent,
       fbp: m.fbp,

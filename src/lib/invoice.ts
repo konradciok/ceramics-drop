@@ -9,6 +9,7 @@ import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
 import esMessages from '../../messages/es.json';
 import deMessages from '../../messages/de.json';
+import { normalizeShippingAddress } from './shipping-address';
 
 const MESSAGES = { pl: plMessages, en: enMessages, es: esMessages, de: deMessages } as const;
 
@@ -50,23 +51,17 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     .from('order_items').select('*').eq('order_id', order.id);
   if (!items || items.length === 0) return;
 
-  const addr = order.shipping_address as {
-    street?: string;
-    building_number?: string;
-    city?: string;
-    post_code?: string;
-    country_code?: string;
-  } | null;
-  const line1 = `${addr?.street ?? ''} ${addr?.building_number ?? ''}`.trim();
+  const addr = normalizeShippingAddress(order.shipping_address);
   const customerShipping =
-    addr && line1
+    addr
       ? {
           name:
             `${order.receiver_first_name ?? ''} ${order.receiver_last_name ?? ''}`.trim() ||
             (order.email as string),
           phone: order.receiver_phone ?? undefined,
           address: {
-            line1,
+            line1: addr.line1,
+            line2: addr.line2,
             city: addr.city,
             postal_code: addr.post_code,
             country: addr.country_code ?? 'PL',

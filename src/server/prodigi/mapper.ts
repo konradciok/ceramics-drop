@@ -1,5 +1,6 @@
 import { getWorkerOrigin } from '@/lib/site.server';
 import { buildProdigiAttributes } from '@/lib/print-prodigi-attributes';
+import { normalizeShippingAddress } from '@/lib/shipping-address';
 import type { ProdigiOrderItem, ProdigiOrderRequest, ProdigiRecipient } from './types';
 
 /**
@@ -14,13 +15,7 @@ export interface OrderRow {
   receiver_first_name: string | null;
   receiver_last_name: string | null;
   receiver_phone: string | null;
-  shipping_address: {
-    street: string;
-    building_number: string;
-    city: string;
-    post_code: string;
-    country_code: string;
-  } | null;
+  shipping_address: unknown;
   delivery_method: string;
 }
 
@@ -64,7 +59,7 @@ function majorAmount(minorUnits: number): string {
 }
 
 function buildRecipient(order: OrderRow): ProdigiRecipient {
-  const a = order.shipping_address;
+  const a = normalizeShippingAddress(order.shipping_address);
   if (!a) {
     throw new Error(
       `order ${order.id} has no shipping_address (delivery_method=${order.delivery_method}) — prints require a courier address`,
@@ -75,7 +70,8 @@ function buildRecipient(order: OrderRow): ProdigiRecipient {
     email: order.email,
     phoneNumber: order.receiver_phone ?? undefined,
     address: {
-      line1:            `${a.street} ${a.building_number}`.trim(),
+      line1:            a.line1,
+      ...(a.line2 ? { line2: a.line2 } : {}),
       postalOrZipCode:  a.post_code,
       countryCode:      a.country_code,
       townOrCity:       a.city,

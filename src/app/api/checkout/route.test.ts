@@ -592,11 +592,23 @@ describe('POST /api/checkout', () => {
     variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' },
   };
   const DE_ADDRESS = {
-    street: 'Hauptstr.',
-    building_number: '1',
+    line1: 'Hauptstr. 1',
+    line2: 'Hinterhaus',
     city: 'Berlin',
     post_code: '10115',
     country_code: 'DE',
+  };
+  const PRINT_CONTACT = {
+    email: ' ANNA@EXAMPLE.COM ',
+    first_name: ' Anna ',
+    last_name: ' Ciok ',
+    phone: '030 123456',
+  };
+  const PRINT_BODY = {
+    ids: [PRINT_ITEM.product_id],
+    delivery_method: 'kurier',
+    contact: PRINT_CONTACT,
+    address: DE_ADDRESS,
   };
   const kurierDelivery = (address: Record<string, unknown> | null) => ({
     ok: true as const,
@@ -680,14 +692,11 @@ describe('POST /api/checkout', () => {
         ok: true,
         items: [PRINT_ITEM],
       } as unknown as ReturnType<typeof validateCart>);
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-      );
       const { POST } = await import('./route');
       const res = await POST(
         new Request('http://localhost/api/checkout', {
           method: 'POST',
-          body: JSON.stringify(makeCheckoutBody({ ids: [PRINT_ITEM.product_id], delivery_method: 'kurier' })),
+          body: JSON.stringify(makeCheckoutBody(PRINT_BODY)),
         }),
       );
       expect(res.status).toBe(200);
@@ -713,7 +722,7 @@ describe('POST /api/checkout', () => {
       return POST(
         new Request('http://localhost/api/checkout', {
           method: 'POST',
-          body: JSON.stringify(makeCheckoutBody(body)),
+          body: JSON.stringify(makeCheckoutBody({ ...PRINT_BODY, ...body })),
           ...init,
         }),
       );
@@ -721,16 +730,7 @@ describe('POST /api/checkout', () => {
 
     it('print + paczkomat → 400 invalid_delivery (no PI, no insert)', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce({
-        ok: true,
-        delivery: {
-          method: 'paczkomat',
-          contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '600100200' },
-          target_point: 'WAW01A',
-          address: null,
-        },
-      } as unknown as ReturnType<typeof validateDelivery>);
-      const res = await post();
+      const res = await post({ delivery_method: 'paczkomat', target_point: 'WAW01A' });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: 'invalid_delivery' });
       expect(createPaymentIntent).not.toHaveBeenCalled();
@@ -739,41 +739,62 @@ describe('POST /api/checkout', () => {
 
     it('print + odbior → 400 invalid_delivery', async () => {
       printCart();
-      const res = await post(); // default delivery mock = odbior
+      const res = await post({ delivery_method: 'odbior' });
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: 'invalid_delivery' });
     });
 
     it('print + kurier without an address → 400 invalid_delivery', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>,
-      );
-      const res = await post();
+      const res = await post({ address: null });
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(await res.json()).toEqual({ error: 'invalid_address' });
     });
 
     it.each(['US', 'CH'])('print + kurier to %s (outside EU+UK) → 400', async (cc) => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery({ ...DE_ADDRESS, country_code: cc }) as unknown as ReturnType<typeof validateDelivery>,
-      );
-      const res = await post();
+      const res = await post({ address: { ...DE_ADDRESS, country_code: cc } });
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
+      expect(await res.json()).toEqual({ error: 'invalid_address' });
       expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid print contact data before creating a PI or order', async () => {
+      printCart();
+      const res = await post({ contact: { ...PRINT_CONTACT, phone: '123' } });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_contact' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
     });
 
     it('framed print + kurier DE → 200 with printShippingOf-based shipping (never the InPost rate)', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-      );
       const res = await post();
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'pln')) }),
+        expect.objectContaining({
+          shipping: toMinor(printShippingOf('DE', true, 'pln')),
+          email: 'anna@example.com',
+          receiver_phone: '+4930123456',
+          shipping_address: DE_ADDRESS,
+        }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shipping: {
+            name: 'Anna Ciok',
+            phone: '+4930123456',
+            address: {
+              line1: 'Hauptstr. 1',
+              line2: 'Hinterhaus',
+              city: 'Berlin',
+              postal_code: '10115',
+              country: 'DE',
+            },
+          },
+        }),
+        expect.anything(),
       );
       // The InPost ceramic price list must not be consulted for prints.
       expect(orderAmountGrosze).not.toHaveBeenCalled();
@@ -781,9 +802,6 @@ describe('POST /api/checkout', () => {
 
     it('loose print ships cheaper than framed (framed/loose rates differ)', async () => {
       loosePrintCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-      );
       const res = await post();
       expect(res.status).toBe(200);
       expect(insertOrders).toHaveBeenCalledWith(
@@ -793,9 +811,6 @@ describe('POST /api/checkout', () => {
 
     it('framed print + kurier DE charges EUR shipping when currency_pref=eur', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-      );
       const res = await post(
         { locale: 'en', delivery_method: 'kurier' },
         { headers: { Cookie: 'currency_pref=eur' } },
@@ -812,9 +827,6 @@ describe('POST /api/checkout', () => {
 
     it('framed print + kurier DE charges GBP shipping when currency_pref=gbp', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-      );
       const res = await post(
         { locale: 'en', delivery_method: 'kurier' },
         { headers: { Cookie: 'currency_pref=gbp' } },
@@ -831,10 +843,10 @@ describe('POST /api/checkout', () => {
 
     it('print + kurier PL → 200 (PL is a print country)', async () => {
       printCart();
-      validateDelivery.mockReturnValueOnce(
-        kurierDelivery({ ...DE_ADDRESS, country_code: 'PL' }) as unknown as ReturnType<typeof validateDelivery>,
-      );
-      const res = await post();
+      const res = await post({
+        contact: { ...PRINT_CONTACT, phone: '501 234 567' },
+        address: { ...DE_ADDRESS, country_code: 'PL' },
+      });
       expect(res.status).toBe(200);
     });
 
@@ -864,17 +876,13 @@ describe('POST /api/checkout', () => {
       ok: true,
       items: [PRINT_ITEM],
     } as unknown as ReturnType<typeof validateCart>);
-    validateDelivery.mockReturnValueOnce(
-      kurierDelivery(DE_ADDRESS) as unknown as ReturnType<typeof validateDelivery>,
-    );
     const { POST } = await import('./route');
     const res = await POST(
       new Request('http://localhost/api/checkout', {
         method: 'POST',
         body: JSON.stringify(
           makeCheckoutBody({
-            ids: [PRINT_ITEM.product_id],
-            delivery_method: 'kurier',
+            ...PRINT_BODY,
             private_sale_token: 'tok_secret_123',
           }),
         ),

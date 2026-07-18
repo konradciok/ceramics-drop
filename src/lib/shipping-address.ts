@@ -67,3 +67,22 @@ export function formatShippingAddress(raw: unknown): string | null {
   ].filter(Boolean).join(', ');
 }
 
+export function shippingAddressCsvFields(raw: unknown): Record<string, string> {
+  const address = normalizeShippingAddress(raw);
+  if (!address) {
+    return {
+      address_street: '', address_building: '', address_city: '',
+      address_postcode: '', address_country: '', address_line2: '',
+    };
+  }
+  return {
+    // Keep the historical columns stable: native print line1 goes in street,
+    // while only legacy ceramic addresses have a separate building number.
+    address_street: address.street ?? address.line1,
+    address_building: address.building_number ?? '',
+    address_city: address.city,
+    address_postcode: address.post_code,
+    address_country: address.country_code,
+    address_line2: address.line2 ?? '',
+  };
+}
