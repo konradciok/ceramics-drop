@@ -2,6 +2,8 @@
 
 `npm run orders` inspects order/inventory/fulfilment state and, once confirmed, performs the same mutations the [`/admin`](../src/app/admin) UI exposes (refund, release-reservation, create-shipment, resend-confirmation) — so agents/operators don't need raw SQL or the Cloudflare-Access-gated admin UI for routine order debugging. It reuses the same extracted functions the four `/api/admin/*` routes call (`src/lib/admin/actions.ts`), so behavior never drifts between the UI and the CLI.
 
+Operational recovery flows (webhook replay, invoice/email backfill, alerts): see [stripe-operations.md](./stripe-operations.md).
+
 ## Usage
 
 ```bash

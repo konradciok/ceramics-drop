@@ -70,7 +70,7 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
    - Derives **currency from the `currency_pref` cookie** (via `getCurrency` in `src/lib/currency.server.ts`): `pl → PLN`; other locales use the cookie clamped to a switchable currency (EUR default, GBP), falling back to EUR
    - Validates cart items (`validateCart` in `src/lib/checkout.ts`, currency-aware) and delivery details (`validateDelivery` in `src/lib/shipx.ts`)
    - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict. An optional **private-sale token** (`src/lib/private-sale.ts`) instead reserves already-sold pieces via `reserve_private_sale_pieces()`
-   - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration: STRIPE_PMC_ID` (`pmc_…`, hardcoded constant) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
+   - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration` from the `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` runtime secret (mode-specific; checkout fails closed with `502 stripe_failed` if unset) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
    - Captures marketing context (cookies, IP, UA, consent) into `orders.marketing` for server-side conversions
    - Persists `orders` + `order_items` rows
    - Returns `client_secret` to client (or `502` with `{ error: 'stripe_failed' }` if PI creation fails)
@@ -160,7 +160,7 @@ Multi-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `
 - `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` / `NEXT_PUBLIC_INPOST_GEOWIDGET_ENV` — locker picker
 
 **Runtime secrets** (set with `wrangler secret put` in prod, `.dev.vars` locally):
-- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` / `INPOST_API_URL` / `INPOST_WEBHOOK_TOKEN`
 - `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`

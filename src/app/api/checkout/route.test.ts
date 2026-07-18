@@ -107,14 +107,23 @@ vi.mock('@/lib/pricing', () => ({
 const sendCheckoutStartedEvent = vi.fn(async () => {});
 vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
 
+const sentryCaptureMessage = vi.fn();
+vi.mock('@sentry/nextjs', () => ({ captureMessage: sentryCaptureMessage, captureException: vi.fn() }));
+
+// Mutable so a test can drop the PMC secret; reset in beforeEach.
+let cfEnv: Record<string, string | undefined> = { STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_env' };
 vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ ctx: { waitUntil: (p: Promise<unknown>) => void p } }),
+  getCloudflareContext: () => ({
+    ctx: { waitUntil: (p: Promise<unknown>) => void p },
+    env: cfEnv,
+  }),
 }));
 
 describe('POST /api/checkout', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    cfEnv = { STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_env' };
   });
 
   it('returns 429 after the per-IP checkout budget is exhausted', async () => {
@@ -302,7 +311,7 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(200);
     expect(createPaymentIntent).toHaveBeenCalledWith(
       expect.objectContaining({
-        payment_method_configuration: 'pmc_1QiwdYJ0KFK9lrjHUV93dONs',
+        payment_method_configuration: 'pmc_test_env',
       }),
       expect.anything(),
     );
@@ -444,6 +453,22 @@ describe('POST /api/checkout', () => {
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: 'stripe_failed' });
     expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+  });
+
+  it('releases the hold, reports to Sentry, and responds 502 when STRIPE_PAYMENT_METHOD_CONFIGURATION_ID is missing — without calling Stripe', async () => {
+    cfEnv = {};
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'stripe_failed' });
+    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+    expect(sentryCaptureMessage).toHaveBeenCalledWith('checkout_missing_pmc_secret');
   });
 
   it('idempotency_key_in_use → 409 checkout_in_progress, hold NOT released (a concurrent same-attempt POST owns it)', async () => {
