@@ -43,7 +43,7 @@ a replay after full completion is a no-op.
 | Customer confirmation email missing         | `node scripts/reconcile-orders.mjs` (preview)                | `--emails`, or `npm run orders -- resend-confirmation --confirm <id>`                         |
 | Invoice missing on a paid order             | `node scripts/reconcile-orders.mjs --dry-run --invoices`     | Workbench → resend that order's `payment_intent.succeeded`                                    |
 | InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- create-shipment --confirm <id>`                |
-| Prodigi print job stuck                     | `npm run print-fulfilment:check-jobs`; Cloudflare Queue DLQ  | re-run job per `docs/orders-cli.md`; escalate to Prodigi support with the `prodigi_orders` id |
+| Prodigi print job stuck                     | `npm run print-fulfilment:check-jobs`; Cloudflare Queue DLQ  | Workbench → resend the order's `payment_intent.succeeded` (re-enqueues the job idempotently); if it keeps failing, escalate to Prodigi support with the `prodigi_orders` id |
 | Order refunded but piece not back in shop   | `npm run orders -- show <id>` (pieces still `sold`)          | Workbench → resend the `charge.refunded` event (release resumes)                              |
 | Payment succeeded but order still `pending` | Workbench shows failed `payment_intent.succeeded` deliveries | fix the cause (check Sentry), then resend the event                                           |
 
