@@ -805,6 +805,8 @@ ul { list-style:none; padding:0; margin:0; }
   .delivery-fields .field-row { flex-direction:row; gap:14px; }
 }
 .delivery-fields .field { flex:1; }
+.delivery-fields .field-error { color:var(--c-terracotta); font-size:13px; line-height:1.4; }
+.delivery-fields [aria-invalid="true"] { border-color:var(--c-terracotta); }
 .locker-pick { display:flex; flex-direction:column; gap:10px; }
 .locker-chosen { font-family:var(--f-cond); font-size:12px; letter-spacing:.04em; text-transform:uppercase; opacity:.8; margin:0; }
 .locker-chosen strong { color:var(--c-terracotta); }

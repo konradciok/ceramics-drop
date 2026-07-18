@@ -7,6 +7,7 @@ import { formatMoney } from '@/lib/admin/money';
 import { PackingPanel } from '../../packing-ui';
 import { formatDateTime, StatusPill, deliveryLabel, shortId, PhoneLink } from '../../ui';
 import { OrderActions } from './OrderActions';
+import { formatShippingAddress } from '@/lib/shipping-address';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,9 +56,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const payment = await loadPayment(order.payment_intent_id);
   const fullyRefunded = payment.ok ? payment.info.refundedMinor >= order.total : order.status === 'refunded';
-  const addr = order.shipping_address as
-    | { street?: string; building_number?: string; city?: string; post_code?: string; country_code?: string }
-    | null;
+  const addressLabel = formatShippingAddress(order.shipping_address);
 
   const timeline: { label: string; at: string | null }[] = [
     { label: 'Utworzone', at: order.created_at },
@@ -172,7 +171,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dl className="adm-dl">
               <dt>Metoda</dt><dd>{deliveryLabel(order.delivery_method)}</dd>
               {order.inpost_target_point ? <><dt>Paczkomat</dt><dd className="adm-mono">{order.inpost_target_point}</dd></> : null}
-              {addr ? <><dt>Adres</dt><dd>{[addr.street, addr.building_number].filter(Boolean).join(' ')}, {addr.post_code} {addr.city} {addr.country_code}</dd></> : null}
+              {addressLabel ? <><dt>Adres</dt><dd>{addressLabel}</dd></> : null}
               <dt>Status InPost</dt><dd>{order.delivery_status ?? '—'}</dd>
               <dt>Nr przesyłki</dt><dd className="adm-mono">{order.inpost_shipment_id ?? '—'}</dd>
               <dt>Tracking</dt><dd className="adm-mono">{order.inpost_tracking_number ?? '—'}</dd>

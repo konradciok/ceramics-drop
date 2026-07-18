@@ -218,6 +218,24 @@ describe('createOrderInvoice', () => {
     expect(stripeMock.customers.create).not.toHaveBeenCalled();
   });
 
+  it('passes native print address lines to Stripe customer shipping', async () => {
+    orderRow = {
+      ...ORDER,
+      shipping_address: {
+        line1: '221B Baker Street', line2: 'Flat B', city: 'London', post_code: 'NW1', country_code: 'GB',
+      },
+    };
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.customers.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shipping: expect.objectContaining({
+          address: expect.objectContaining({ line1: '221B Baker Street', line2: 'Flat B', city: 'London' }),
+        }),
+      }),
+      expect.anything(),
+    );
+  });
+
   it('uses English product labels and shipping description for en locale', async () => {
     orderRow = { ...ORDER, locale: 'en', currency: 'eur' };
     await createOrderInvoice('pi_1');

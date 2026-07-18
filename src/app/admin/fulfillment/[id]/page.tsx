@@ -11,6 +11,7 @@ import { formatDateTime, PhoneLink, shortId, deliveryLabel } from '../../ui';
 import { FulfillmentActions } from '../FulfillmentActions';
 import { FulfillmentNavKeys } from './FulfillmentNavKeys';
 import { PackingPanel } from '../../packing-ui';
+import { formatShippingAddress } from '@/lib/shipping-address';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,13 +36,7 @@ function customerName(order: FulfillmentOrder): string {
 function deliveryLine(order: FulfillmentOrder): string {
   if (order.delivery_method === 'paczkomat') return order.inpost_target_point ?? '—';
   if (order.delivery_method === 'odbior') return 'Studio / odbiór osobisty';
-  const addr = order.shipping_address as
-    | { street?: string; building_number?: string; city?: string; post_code?: string; country_code?: string }
-    | null;
-  if (!addr) return '—';
-  return [[addr.street, addr.building_number].filter(Boolean).join(' '), `${addr.post_code ?? ''} ${addr.city ?? ''}`.trim(), addr.country_code]
-    .filter(Boolean)
-    .join(', ');
+  return formatShippingAddress(order.shipping_address) ?? '—';
 }
 
 function stageState(orderStage: FulfillmentStage, step: FulfillmentStage): 'done' | 'current' | 'pending-step' {

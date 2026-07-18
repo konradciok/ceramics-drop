@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { CartView } from '@/components/shop/CartView';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { headers } from 'next/headers';
+import { isPrintCountry } from '@/lib/print-shipping';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -21,15 +23,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params, searchParams }: Props) {
-  const { locale } = await params;
+  const [{ locale }, requestHeaders] = await Promise.all([params, headers()]);
   setRequestLocale(locale);
   // A repeated ?sale=a&sale=b query yields string[]; collapse to a single token.
   const { sale } = await searchParams;
   const saleToken = Array.isArray(sale) ? (sale[0] ?? null) : (sale ?? null);
+  const cfCountry = requestHeaders.get('CF-IPCountry')?.toUpperCase() ?? '';
+  const initialPrintCountry = isPrintCountry(cfCountry) ? cfCountry : 'PL';
 
   return (
     <main id="cart-root">
-      <CartView privateSaleToken={saleToken} />
+      <CartView privateSaleToken={saleToken} initialPrintCountry={initialPrintCountry} />
     </main>
   );
 }

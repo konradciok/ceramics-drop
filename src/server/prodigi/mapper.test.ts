@@ -10,7 +10,7 @@ const mockEnv = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
-// Order row exactly as /api/checkout persists it (ShipX-shaped address).
+// Legacy ceramic-shaped address retained to prove old JSONB rows remain readable.
 const order = {
   id: 'order-123',
   currency: 'eur' as const,
@@ -88,6 +88,30 @@ describe('buildProdigiPayload', () => {
         postalOrZipCode: '00-001',
         countryCode: 'PL',
         townOrCity: 'Warszawa',
+      },
+    });
+  });
+
+  it('maps native print line1 and line2 to Prodigi without loss', () => {
+    const payload = buildProdigiPayload({
+      ...order,
+      receiver_phone: '+442079460958',
+      shipping_address: {
+        line1: '221B Baker Street',
+        line2: 'Flat B',
+        city: 'London',
+        post_code: 'NW1',
+        country_code: 'GB',
+      },
+    }, [printItem], assetUrls, mockEnv);
+    expect(payload.recipient).toMatchObject({
+      phoneNumber: '+442079460958',
+      address: {
+        line1: '221B Baker Street',
+        line2: 'Flat B',
+        postalOrZipCode: 'NW1',
+        countryCode: 'GB',
+        townOrCity: 'London',
       },
     });
   });

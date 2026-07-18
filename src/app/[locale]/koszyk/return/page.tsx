@@ -14,6 +14,7 @@ import {
   reportPurchaseGapOnce,
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import { PRINT_DELIVERY_DRAFT_KEY } from '@/lib/print-delivery';
 
 const stripePromise = getStripe();
 type Status = 'loading' | 'ok' | 'processing' | 'fail';
@@ -58,6 +59,7 @@ export default function ReturnPage() {
               }
             }
             clear();
+            sessionStorage.removeItem(PRINT_DELIVERY_DRAFT_KEY);
             setStatus('ok');
             break;
           }

@@ -7,8 +7,10 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
+import { validatePrintDelivery, type PrintShippingAddress } from '@/lib/print-delivery';
+import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
 import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toMinor } from '@/lib/pricing';
-import { isPrintCountry, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import { printShippingOf } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -70,41 +72,47 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: valid.reason }, { status });
   }
 
-  // Delivery details (method, receiver contact, locker/address) are collected
-  // pre-payment so InPost has everything it needs once the order is paid.
-  const delivery = validateDelivery(body);
-  if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
-  const { method, contact, target_point, address } = delivery.delivery;
-
   const ids = valid.items.map((i) => i.product_id);
   // Only ceramics carry a piece_state row to reserve; prints are open-edition.
   // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
   const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
+  // Delivery details are collected before payment. Prints use their own native
+  // international-address schema; the ceramic/InPost contract stays unchanged.
+  let method: 'paczkomat' | 'kurier' | 'odbior';
+  let contact: DeliveryContact;
+  let target_point: string | undefined;
+  let address: DeliveryAddress | PrintShippingAddress | undefined;
+  let printAddress: PrintShippingAddress | undefined;
+  if (hasPrints) {
+    const delivery = validatePrintDelivery(body);
+    if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
+    ({ method, contact, address: printAddress } = delivery.delivery);
+    address = printAddress;
+  } else {
+    const delivery = validateDelivery(body);
+    if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
+    ({ method, contact, target_point, address } = delivery.delivery);
+  }
   const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
 
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // leaves shipping_address NULL and the Prodigi order could never be built.
-  if (hasPrints && (method !== 'kurier' || !address)) {
+  // Print country allowlisting is part of validatePrintDelivery. InPost courier
+  // remains domestic and must never inherit the print country list.
+  if (!hasPrints && address && address.country_code !== 'PL') {
     return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
-  }
-  // Prodigi ships prints to the EU + UK; InPost kurier (ceramics) is domestic.
-  if (address) {
-    const countryOk = hasPrints
-      ? isPrintCountry(address.country_code)
-      : address.country_code === 'PL';
-    if (!countryOk) return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
   }
 
   const unitPrices = valid.items.map((i) => i.unit_price);
   const subtotalMinor = unitPrices.reduce((s, v) => s + v, 0);
   let amount: number;
-  if (hasPrints && address) {
+  if (hasPrints && printAddress) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
-    const shipMajor = printShippingOf(address.country_code as PrintCountry, hasFramed, chargeCurrency);
+    const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency);
     const shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
@@ -117,7 +125,7 @@ export async function POST(req: Request) {
         charge_currency: chargeCurrency,
         shipping_minor: shipMinor,
         has_framed: hasFramed,
-        country: address.country_code,
+        country: printAddress.country_code,
       }));
     }
     amount = subtotalMinor + shipMinor;
@@ -227,6 +235,21 @@ export async function POST(req: Request) {
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
         },
+        ...(hasPrints && printAddress
+          ? {
+              shipping: {
+                name: `${contact.first_name} ${contact.last_name}`,
+                phone: contact.phone,
+                address: {
+                  line1: printAddress.line1,
+                  ...(printAddress.line2 ? { line2: printAddress.line2 } : {}),
+                  city: printAddress.city,
+                  postal_code: printAddress.post_code,
+                  country: printAddress.country_code,
+                },
+              },
+            }
+          : {}),
       },
       // Same key + same params → Stripe returns the SAME PaymentIntent instead
       // of creating a new one, so a retried POST replays onto the original PI.

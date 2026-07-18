@@ -10,6 +10,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { listOrders, type AdminOrder } from '../src/lib/admin/data';
 import { adminSupabaseFromEnv } from '../src/lib/admin/clients';
+import { shippingAddressCsvFields } from '../src/lib/shipping-address';
 import { parseEnvText } from './orders-cli';
 
 async function optionalEnvFile(path: string): Promise<Record<string, string>> {
@@ -44,17 +45,7 @@ function minorToMajor(minor: number, currency: string): string {
 }
 
 function addressOf(order: AdminOrder): Record<string, string> {
-  const a = order.shipping_address as
-    | { street?: string; building_number?: string; city?: string; post_code?: string; country_code?: string }
-    | null;
-  if (!a) return { address_street: '', address_building: '', address_city: '', address_postcode: '', address_country: '' };
-  return {
-    address_street: a.street ?? '',
-    address_building: a.building_number ?? '',
-    address_city: a.city ?? '',
-    address_postcode: a.post_code ?? '',
-    address_country: a.country_code ?? '',
-  };
+  return shippingAddressCsvFields(order.shipping_address);
 }
 
 const ORDER_COLUMNS = [
@@ -88,6 +79,7 @@ const ORDER_COLUMNS = [
   'customer_notified_at',
   'return_requested_at',
   'payment_intent_id',
+  'address_line2',
 ];
 
 const ITEM_COLUMNS = ['order_id', 'order_created_at', 'order_status', 'product_id', 'unit_price_display', 'currency', 'kind', 'variant'];

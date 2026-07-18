@@ -294,7 +294,16 @@
     "lockerChosen": "Chosen locker:",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
     "country": "Country",
-    "plOnly": "Ceramics ship to addresses in Poland only."
+    "plOnly": "Ceramics ship to addresses in Poland only.",
+    "line1": "Street and house number",
+    "line2": "Apartment, floor, etc. (optional)",
+    "errors": {
+      "required": "This field is required.",
+      "email": "Enter a valid email address.",
+      "phone": "Enter a valid phone number for the selected country.",
+      "tooLong": "This value is too long.",
+      "invalid": "Check this field."
+    }
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",

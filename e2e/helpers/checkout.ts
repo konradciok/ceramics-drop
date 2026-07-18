@@ -73,10 +73,10 @@ export async function selectPaczkomat(page: Page): Promise<void> {
  * Targets the app's autoComplete attributes — stable and app-owned.
  */
 export async function fillContact(page: Page, email = 'e2e+playwright@example.com'): Promise<void> {
-  await page.locator('input[autocomplete="given-name"]').fill('Test');
-  await page.locator('input[autocomplete="family-name"]').fill('Playwright');
-  await page.locator('input[autocomplete="email"]').fill(email);
-  const phone = page.locator('input[autocomplete="tel"]');
+  await page.locator('input[autocomplete="given-name"], input[autocomplete$=" given-name"]').fill('Test');
+  await page.locator('input[autocomplete="family-name"], input[autocomplete$=" family-name"]').fill('Playwright');
+  await page.locator('input[autocomplete="email"], input[autocomplete$=" email"]').fill(email);
+  const phone = page.locator('input[autocomplete="tel"], input[autocomplete$=" tel"]');
   if (await phone.isVisible()) await phone.fill('600100200');
 }
 
