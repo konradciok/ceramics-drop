@@ -51,7 +51,11 @@ export async function PrintProductScreen({
   // shadow tables), which doesn't carry `mockups` — WebP existence is
   // code-bundle truth, not DB truth. Merge the flag from the code registry so
   // the live-mockup hero is visible in production, not just in `code` mode.
-  const mockups = registryPrintById(design.id)?.mockups;
+  // Guarded on the image staying in sync: mock files derive from the REGISTRY
+  // image stem, so if the DB media row ever drifts from it, degrade to the
+  // static hero (the designed dormant mode) instead of 404ing mockupSrc.
+  const registryDesign = registryPrintById(design.id);
+  const mockups = registryDesign?.image === design.image ? registryDesign?.mockups : undefined;
 
   return (
     <article className="pdp">

@@ -60,16 +60,36 @@ test.describe('fine-art print configurator @ci', () => {
 
     await page.getByTestId('opt-framed-false').click();
     await expect(hero).toHaveAttribute('src', '/uploads/fap-01.webp');
+
+    // syncKey snap-back: from another slide, a visual-state change must return
+    // the gallery to slide 0 (exercisable once fap01 ships a gallery slide).
+    if (design?.gallery?.length) {
+      await page.getByTestId('opt-framed-true').click();
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-black.webp');
+      await page.locator('.pdp-img-dot').nth(1).click();
+      await expect(hero).toHaveAttribute('src', design.gallery[0]);
+      await page.getByTestId('opt-colour-brown').click();
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-brown.webp');
+    }
   });
 
   test('design without mockups keeps a static hero', async ({ page }) => {
-    const design = PRINT_DESIGNS.find((d) => d.published && !d.mockups && d.frameColours.length > 0);
-    test.skip(!design, 'every published design already has mockups');
+    const design = PRINT_DESIGNS.find(
+      (d) => d.published && !d.mockups && d.frameColours.length > 0 && (d.gallery?.length ?? 0) > 0,
+    );
+    test.skip(!design, 'no published mockup-less design with a gallery slide');
 
     await page.goto(`/fine-art-prints/${design!.id}`);
     const hero = page.locator('.pdp-img-main img');
     await expect(hero).toHaveAttribute('src', design!.image);
     await page.getByTestId('opt-framed-true').click();
     await expect(hero).toHaveAttribute('src', design!.image);
+
+    // syncKey no-op half (live today): with a static hero the visual state
+    // never changes, so browsing to another slide must survive option clicks.
+    await page.locator('.pdp-img-dot').nth(1).click();
+    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
+    await page.getByTestId('opt-colour-natural').click();
+    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
   });
 });
