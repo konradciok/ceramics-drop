@@ -51,7 +51,7 @@ describe('activeVariantDimensions', () => {
   });
 
   it('excludes a variant that is deactivated in the DB even if still in the code registry', async () => {
-    // src/lib/prints.ts fap01 declares '30x40:true:false:white' too, but the
+    // src/lib/prints.ts fap01 declares '30x40:true:false:brown' too, but the
     // DB query only returns rows with active=true — a deactivated variant
     // simply never appears here, so it never gets a derivative prepared.
     const supabase = makeSupabase({
@@ -62,7 +62,7 @@ describe('activeVariantDimensions', () => {
     });
     const result = await activeVariantDimensions(supabase, 'fap01');
     expect(result.map((v) => v.variantKey)).toEqual(['30x40:false:false:none']);
-    expect(result.some((v) => v.variantKey === '30x40:true:false:white')).toBe(false);
+    expect(result.some((v) => v.variantKey === '30x40:true:false:brown')).toBe(false);
   });
 
   it('falls back to PRODIGI_SKU_MAP when DB print-area pixels are not yet seeded', async () => {

@@ -33,6 +33,16 @@ export async function composeMockup(opts: {
   const outWidth = opts.outWidth ?? 2000;
   const background = opts.background ?? MOCKUP_DEFAULT_BACKGROUND;
   const win = opts.window;
+  if (
+    !Number.isFinite(win.left) ||
+    !Number.isFinite(win.top) ||
+    !Number.isFinite(win.width) ||
+    !Number.isFinite(win.height) ||
+    win.width <= 0 ||
+    win.height <= 0
+  ) {
+    throw new Error(`window has non-finite or non-positive dimensions: ${JSON.stringify(win)}`);
+  }
   if (win.left < 0 || win.top < 0 || win.left + win.width > 1 || win.top + win.height > 1) {
     throw new Error(`window exceeds the master canvas: ${JSON.stringify(win)}`);
   }

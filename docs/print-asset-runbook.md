@@ -292,13 +292,13 @@ Pre-rendered hero states for the PDP live-mockup feature (spec
 Prerequisites: the design's fulfilment revision is published (`ready`);
 `config/print-assets/frames.json` exists (copy `frames.example.json`) and its
 `file` entries point at the six frame masters under gitignored
-`design/print-assets/frames_blanks/` — opaque mockup blanks (baked background
-+ shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one framed + one
-mount blank per colour (black / natural / brown). Mount blanks follow the
-recipe: window filled white, centred aperture at 85.7% × 90% of the window
-(ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge + subtle inner
-shadow. The `window` values in frames.json are fractions of each master's own
-canvas; the sheet is composited over that rect.
+`design/print-assets/frames_blanks/` — opaque mockup blanks (baked
+background + shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one
+framed + one mount blank per colour (black / natural / brown). Mount blanks
+follow the recipe: window filled white, centred aperture at 85.7% × 90% of
+the window (ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge +
+subtle inner shadow. The `window` values in frames.json are fractions of
+each master's own canvas; the sheet is composited over that rect.
 
     npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
     npm run print-assets:mockups -- --product fap01             # compose + upload + mirror

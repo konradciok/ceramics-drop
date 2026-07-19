@@ -82,6 +82,25 @@ describe('composeMockup', () => {
     const meta = await sharp(out).metadata();
     expect(meta.width).toBe(700);
     expect(meta.height).toBe(1000);
+
+    // Window-anchored crop (cropTop=7) maps output (350, 800) to master
+    // y≈693 — inside the pasted red sheet. A canvas-centre anchor
+    // (cropTop=72, i.e. ignoring the window) would instead land on master
+    // y≈758, outside the window (grey background) — this probe discriminates
+    // the two anchoring strategies where test 1's window/canvas centres coincide.
+    const probe = await px(out, 350, 800);
+    expect(probe.r).toBeGreaterThan(180);
+    expect(probe.g).toBeLessThan(80);
+  });
+
+  it('throws when the window has a non-finite or non-positive dimension', async () => {
+    await expect(
+      composeMockup({
+        master: await syntheticMaster(),
+        sheet: await syntheticSheet(),
+        window: { left: 0.3, top: 0.15, width: 0.4, height: 0 },
+      }),
+    ).rejects.toThrow(/non-finite or non-positive/);
   });
 
   it('throws when the window ratio does not match the sheet ratio', async () => {

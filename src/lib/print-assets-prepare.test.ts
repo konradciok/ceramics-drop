@@ -31,7 +31,7 @@ describe('distinctProfiles', () => {
   it('deduplicates variants sharing the same dimensions into one profile', () => {
     const variants = [
       { variantKey: '30x40:true:false:black', w: 3614, h: 4795 },
-      { variantKey: '30x40:true:false:white', w: 3614, h: 4795 },
+      { variantKey: '30x40:true:false:black', w: 3614, h: 4795 },
       { variantKey: '30x40:true:false:natural', w: 3600, h: 4800 },
     ];
     const profiles = distinctProfiles(variants);

@@ -10,7 +10,7 @@ import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { getPrintDesigns } from '@/lib/prints';
+import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
 import { PrintPdpPurchase } from './PrintPdpPurchase';
@@ -47,6 +47,12 @@ export async function PrintProductScreen({
     .filter((d) => d.id !== design.id)
     .slice(0, 4);
 
+  // Under CATALOG_SOURCE=db, `design` comes from mapPrintDesigns() (catalog
+  // shadow tables), which doesn't carry `mockups` — WebP existence is
+  // code-bundle truth, not DB truth. Merge the flag from the code registry so
+  // the live-mockup hero is visible in production, not just in `code` mode.
+  const mockups = registryPrintById(design.id)?.mockups;
+
   return (
     <article className="pdp">
       <div className="pdp-inner">
@@ -60,7 +66,7 @@ export async function PrintProductScreen({
 
         <div className="pdp-layout">
           <PrintPdpPurchase
-            design={design}
+            design={mockups ? { ...design, mockups } : design}
             images={images}
             alt={displayName}
             usableVariantKeys={usableVariantKeys}
