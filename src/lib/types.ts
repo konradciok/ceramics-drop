@@ -85,7 +85,7 @@ export interface Category {
 export type PrintSize = '30x40' | '50x70' | '70x100';
 
 /** Frame colour offered in the store (3 of 8 Prodigi colours). */
-export type PrintFrameColour = 'black' | 'white' | 'natural';
+export type PrintFrameColour = 'black' | 'natural' | 'brown';
 
 /** A single resolved variant choice. mount is only meaningful when framed=true. */
 export interface PrintVariantSelection {

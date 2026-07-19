@@ -11,7 +11,7 @@
 | `size` | `30x40` · `50x70` · `70x100` | Display labels (cm) |
 | `framed` | `true` · `false` | `false` = loose fine art print (`GLOBAL-FAP`) |
 | `mount` | `true` · `false` | Passe-partout; **only when `framed=true`** |
-| `frame_colour` | `black` · `white` · `natural` | **Only when `framed=true`**; maps to Prodigi `attributes.color` |
+| `frame_colour` | `black` · `natural` · `brown` | **Only when `framed=true`**; maps to Prodigi `attributes.color` |
 
 **Combinatorics:** 3 unframed + 3 sizes × 3 colours × 2 mount states = **21 fulfilment variants** per artwork.
 
@@ -71,17 +71,17 @@ Print areas are **authoritative from API** (`variants[].printAreaSizes.default` 
 |---|---|---|---|---|---|
 | no | — | — | `GLOBAL-FAP-12X16` | 3600×4800 | 30×41 sheet |
 | yes | no | black | `GLOBAL-CFP-12X16` | 3614×4795 | 30×40 |
-| yes | no | white | `GLOBAL-CFP-12X16` | 3614×4795 | 30×40 |
+| yes | no | brown | `GLOBAL-CFP-12X16` | 3600×4800 | 30×40 |
 | yes | no | natural | `GLOBAL-CFP-12X16` | 3600×4800 | 30×40 |
 | yes | yes | black | `GLOBAL-CFPM-12X16` | 2400×3600 | 30×40 |
-| yes | yes | white | `GLOBAL-CFPM-12X16` | 2400×3600 | 30×40 |
+| yes | yes | brown | `GLOBAL-CFPM-12X16` | 2400×3600 | 30×40 |
 | yes | yes | natural | `GLOBAL-CFPM-12X16` | 2400×3600 | 30×40 |
 
 Passe-partout window ≈ 20×30 cm (5 cm border per Prodigi FAQ for frames ≥30×40).
 
 > **Re-verified 2026-07-03** against the sandbox API: the per-colour print-area
-> difference on `GLOBAL-CFP-12X16` is **real** — `black`/`white` report
-> 3614×4795 px while `natural` (and all other colours) report 3600×4800 px.
+> difference on `GLOBAL-CFP-12X16` is **real** — `black` reports
+> 3614×4795 px while `natural`/`brown` (and all other colours) report 3600×4800 px.
 > All other SKUs share one print area across colours. `PRODIGI_SKU_MAP` in
 > `src/lib/print-cart.ts` matches the API exactly.
 
@@ -90,8 +90,8 @@ Passe-partout window ≈ 20×30 cm (5 cm border per Prodigi FAQ for frames ≥30
 | framed | mount | frame_colour | Prodigi SKU | Print area (px) | Glaze (cm) |
 |---|---|---|---|---|---|
 | no | — | — | `GLOBAL-FAP-20X28` | 6000×8400 | 51×71 sheet |
-| yes | no | black / white / natural | `GLOBAL-CFP-20X28` | 6000×8400 | 51×71 |
-| yes | yes | black / white / natural | `GLOBAL-CFPM-20X28` | 4800×7200 | 51×71 |
+| yes | no | black / natural / brown | `GLOBAL-CFP-20X28` | 6000×8400 | 51×71 |
+| yes | yes | black / natural / brown | `GLOBAL-CFPM-20X28` | 4800×7200 | 51×71 |
 
 Passe-partout window ≈ 41×61 cm.
 
@@ -100,8 +100,8 @@ Passe-partout window ≈ 41×61 cm.
 | framed | mount | frame_colour | Prodigi SKU | Print area (px) | Glaze (cm) |
 |---|---|---|---|---|---|
 | no | — | — | `GLOBAL-FAP-28X40` | 8400×12000 | 71×102 sheet |
-| yes | no | black / white / natural | `GLOBAL-CFP-28X40` | 8400×12000 | 71×102 |
-| yes | yes | black / white / natural | `GLOBAL-CFPM-28X40` | 7200×10800 | 71×102 |
+| yes | no | black / natural / brown | `GLOBAL-CFP-28X40` | 8400×12000 | 71×102 |
+| yes | yes | black / natural / brown | `GLOBAL-CFPM-28X40` | 7200×10800 | 71×102 |
 
 Passe-partout window ≈ 61×91 cm.
 
@@ -113,13 +113,13 @@ From `GET /products/GLOBAL-CFP-12X16` (representative):
 
 | Attribute | CFP (no mount) | CFPM (mount) |
 |---|---|---|
-| `color` | black, white, natural (+ 5 others not offered in store) | same |
+| `color` | black, natural, brown (+ 5 others not offered in store) | same |
 | `mount` | `No mount / Mat` | `2.4mm` |
 | `mountColor` | — | `Snow white` only |
 | `paperType` | `EMA` | `EMA` |
 | `glaze` | `Acrylic / Perspex` | `Acrylic / Perspex` |
 
-Store offers **3 of 8** frame colours. Remaining API colours (brown, gold, silver, dark grey, light grey) are out of scope for MVP.
+Store offers **3 of 8** frame colours. Remaining API colours (white, gold, silver, dark grey, light grey) are out of scope for MVP.
 
 ---
 

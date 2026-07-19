@@ -1,7 +1,7 @@
 import type { PrintFrameColour, PrintSize, PrintVariantSelection } from './types';
 
 export const PRINT_SIZES: readonly PrintSize[] = ['30x40', '50x70', '70x100'];
-export const PRINT_FRAME_COLOURS: readonly PrintFrameColour[] = ['black', 'white', 'natural'];
+export const PRINT_FRAME_COLOURS: readonly PrintFrameColour[] = ['black', 'natural', 'brown'];
 
 const TOKEN_PREFIX = 'print';
 
@@ -125,11 +125,11 @@ const UNFRAMED_LABEL: Record<string, string> = {
 };
 
 const COLOUR_LABEL: Record<string, Record<PrintFrameColour, string>> = {
-  pl: { black: 'czarna', white: 'biała', natural: 'naturalna' },
-  en: { black: 'black', white: 'white', natural: 'natural' },
-  es: { black: 'negro', white: 'blanco', natural: 'natural' },
-  de: { black: 'schwarz', white: 'weiß', natural: 'natur' },
-  gb: { black: 'black', white: 'white', natural: 'natural' },
+  pl: { black: 'czarna', natural: 'jasny brąz', brown: 'ciemny brąz' },
+  en: { black: 'black', natural: 'light brown', brown: 'dark brown' },
+  es: { black: 'negro', natural: 'marrón claro', brown: 'marrón oscuro' },
+  de: { black: 'schwarz', natural: 'hellbraun', brown: 'dunkelbraun' },
+  gb: { black: 'black', natural: 'light brown', brown: 'dark brown' },
 };
 
 const MOUNT_LABEL: Record<string, string> = {
@@ -161,23 +161,23 @@ export function variantLabel(sel: PrintVariantSelection, locale: string): string
 export const PRODIGI_SKU_MAP: Record<string, { sku: string; printAreaPx: { w: number; h: number } }> = {
   '30x40:false:false:none':    { sku: 'GLOBAL-FAP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
   '30x40:true:false:black':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3614, h: 4795 } },
-  '30x40:true:false:white':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3614, h: 4795 } },
   '30x40:true:false:natural':  { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
+  '30x40:true:false:brown':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
   '30x40:true:true:black':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
-  '30x40:true:true:white':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
   '30x40:true:true:natural':   { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
+  '30x40:true:true:brown':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
   '50x70:false:false:none':    { sku: 'GLOBAL-FAP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
   '50x70:true:false:black':    { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
-  '50x70:true:false:white':    { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
   '50x70:true:false:natural':  { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
+  '50x70:true:false:brown':    { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
   '50x70:true:true:black':     { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
-  '50x70:true:true:white':     { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
   '50x70:true:true:natural':   { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
+  '50x70:true:true:brown':     { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
   '70x100:false:false:none':   { sku: 'GLOBAL-FAP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
   '70x100:true:false:black':   { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
-  '70x100:true:false:white':   { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
   '70x100:true:false:natural': { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
+  '70x100:true:false:brown':   { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
   '70x100:true:true:black':    { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
-  '70x100:true:true:white':    { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
   '70x100:true:true:natural':  { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
+  '70x100:true:true:brown':    { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
 };

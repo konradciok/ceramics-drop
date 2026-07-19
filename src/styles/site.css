@@ -1219,9 +1219,9 @@ ul { list-style:none; padding:0; margin:0; }
   content:''; width:13px; height:13px; border-radius:50%;
   border:1px solid rgba(58,40,24,.2); background:var(--c-bone);
 }
-.print-opt-colour[data-colour="black"]::before { background:var(--c-espresso); border-color:rgba(250,246,236,.35); }
-.print-opt-colour[data-colour="white"]::before { background:var(--c-paper); }
+.print-opt-colour[data-colour="black"]::before { background:#141414; border-color:rgba(250,246,236,.35); }
 .print-opt-colour[data-colour="natural"]::before { background:var(--c-sand); }
+.print-opt-colour[data-colour="brown"]::before { background:var(--c-espresso); }
 .print-opt-colour.active::before,
 .print-opt-colour[aria-checked="true"]::before { border-color:rgba(250,246,236,.7); }
 .print-price {
