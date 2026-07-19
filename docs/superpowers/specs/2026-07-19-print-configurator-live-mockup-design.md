@@ -67,8 +67,8 @@ state images + client-side swap.
    `buildProdigiAttributes` passes the colour verbatim, so the internal keys
    ARE the Prodigi values. This axis swap is a **prerequisite change with its
    own PR** (plan Task 0) because colour keys appear in cart tokens,
-   `PRODIGI_SKU_MAP` (brown at 30×40 CFP has print area 3600×4800 — the
-   black/white-only 3614×4795 exception per `prodigi/sku-catalog.md:84`),
+   `PRODIGI_SKU_MAP` (brown at 30×40 CFP has print area 3600×4800 — after the
+   swap the 3614×4795 exception per `prodigi/sku-catalog.md:84` is black-only),
    i18n labels, CSS swatches, and the seeded `product_variants` /
    `print_variant_asset_assignments` rows in production.
 6. **Masters are opaque mockup blanks; the sheet is composited OVER the
@@ -137,7 +137,8 @@ New pipeline step `npm run print-assets:mockups` (sibling of
     forever. Masters are **opaque** mockup renders (baked background +
     shadow); the framed blanks for black (`black_framed.png`) and natural
     (`light_brown_framed.png`, 2500×2500, window ratio ≈0.708) already
-    exist. See Open items for the remaining three.
+    exist. See Open items for the remaining four deliverables (three mount
+    blanks + the `brown_framed` re-export).
 - **Composition (sharp):** the sheet is composited **over** the master's
   window rect (fractions of the master canvas, configured per master in
   `config/print-assets/frames.json`), then the canvas is centre-cropped
@@ -150,8 +151,9 @@ New pipeline step `npm run print-assets:mockups` (sibling of
 - The step reads the design's axes from the registry: fap02
   (`frameColours: [black, natural]`, `mountAvailable: false`) automatically
   gets only 2 mockups.
-- **Availability flag:** `mockups?: true` on `PrintDesign` in
-  `src/lib/prints.ts`, set in the same PR that commits the generated files
+- **Availability flag:** `mockups?: true` on the `PrintDesign` interface
+  (`src/lib/types.ts`), set per design in `src/lib/prints.ts` in the same PR
+  that commits the generated files
   (same convention as `gallery`).
 - **Revisions:** mockups derive from the published fulfilment revision; a new
   revision requires re-running the mockup step. Add the step to
