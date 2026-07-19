@@ -111,4 +111,8 @@ export interface PrintDesign {
   /** Per-size price overrides (major units) for premium designs; sizes not
       listed fall back to the shared SIZE_BASE in print-pricing.ts. */
   prices?: Partial<Record<PrintSize, { pln: number; eur: number; gbp: number }>>;
+  /** Set when pre-rendered configurator mockups exist in public/uploads
+      (<image-stem>-mock-{framed|mount}-{colour}.webp). Ship the flag in the
+      same PR as the generated files (print-assets:mockups). */
+  mockups?: true;
 }
