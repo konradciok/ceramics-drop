@@ -7,12 +7,24 @@ import { useTranslations } from 'next-intl';
 type Props = {
   images: string[];
   alt: string;
+  /** When this changes, the gallery snaps back to slide 0 (the configurator
+      hero) so a variant change is visible from any slide. */
+  syncKey?: string;
 };
 
 /** Image gallery for the product detail page with dot navigation. */
-export function ProductPageGallery({ images, alt }: Props) {
+export function ProductPageGallery({ images, alt, syncKey }: Props) {
   const t = useTranslations();
   const [index, setIndex] = useState(0);
+  // Reset to slide 0 when syncKey changes, adjusting state during render
+  // (React's prescribed pattern) instead of useEffect — avoids the extra
+  // commit an effect-based reset would cost and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
+    setIndex(0);
+  }
   const current = images[index] ?? images[0];
 
   return (
