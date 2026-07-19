@@ -1,6 +1,8 @@
 # Print PDP live mockup — configurator-driven hero visualization
 
-Status: Design approved 2026-07-19 (R&D phase — no implementation plan yet).
+Status: Design approved 2026-07-19; amended same day after operator review —
+colour axis swap to black/natural/brown (decision 5) and opaque-blank
+composition model (decision 6) settled against the real frame blanks.
 Benchmark: The Poster Club PDP behaviour (add-on selection swaps the hero
 mockup). Related research: `docs/research/the-poster-club/03-pdp-anatomy.md`,
 variant/SKU audit in `docs/research/ourshop/2026-07-19-product-mapping.md`.
@@ -57,6 +59,24 @@ state images + client-side swap.
    not a white border around the full sheet), layer alignment is fragile
    across breakpoints, and zoom/lightbox/OG would need the composition
    repeated.
+5. **Frame colour set changes to `black | natural | brown`** (settled
+   2026-07-19): labels czarny / jasny brąz / ciemny brąz; `white` is dropped
+   from the offer. fap02 offers `black + natural`. Verified against the
+   Prodigi API (`npm run prodigi -- product get GLOBAL-CFP-20X28`):
+   `attributes.color` accepts `black`, `brown`, `natural` (among others), and
+   `buildProdigiAttributes` passes the colour verbatim, so the internal keys
+   ARE the Prodigi values. This axis swap is a **prerequisite change with its
+   own PR** (plan Task 0) because colour keys appear in cart tokens,
+   `PRODIGI_SKU_MAP` (brown at 30×40 CFP has print area 3600×4800 — the
+   black/white-only 3614×4795 exception per `prodigi/sku-catalog.md:84`),
+   i18n labels, CSS swatches, and the seeded `product_variants` /
+   `print_variant_asset_assignments` rows in production.
+6. **Masters are opaque mockup blanks; the sheet is composited OVER the
+   window** (settled after inspecting `design/print-assets/frames_blanks/`).
+   No transparency requirement: the blanks keep their baked background and
+   shadow, the pipeline pastes the sheet onto the window rect and then
+   centre-crops the canvas to the canonical 7:10. JPG masters are tolerated
+   (PNG preferred).
 
 ## Visual state model
 
@@ -65,8 +85,8 @@ Seven states per full-axis design (fewer when the design's axes are narrower):
 | state key | selection | hero source |
 |---|---|---|
 | `plain` | `framed=false` | existing `fap-XX.webp` (no new asset) |
-| `framed-black` / `framed-white` / `framed-natural` | `framed, !mount` | new mockup WebP |
-| `mount-black` / `mount-white` / `mount-natural` | `framed + mount` | new mockup WebP |
+| `framed-black` / `framed-natural` / `framed-brown` | `framed, !mount` | new mockup WebP |
+| `mount-black` / `mount-natural` / `mount-brown` | `framed + mount` | new mockup WebP |
 
 A pure function maps selection → state; a second builds the asset path:
 
@@ -111,17 +131,25 @@ New pipeline step `npm run print-assets:mockups` (sibling of
   - the published `7200x10800` CFPM derivative for `mount-*` states — so the
     passe-partout aperture and visible crop are physically identical to what
     Prodigi will produce;
-  - **3 shared frame masters** (black / white / natural — see Open items),
-    used for every design, forever.
-- **Composition (sharp):** sheet (or mount + aperture crop) into the frame
-  master, shadow baked, canonical 7:10 canvas.
+  - **6 shared frame masters** under gitignored
+    `design/print-assets/frames_blanks/` (per colour black / natural /
+    brown: one framed blank + one mount blank), used for every design,
+    forever. Masters are **opaque** mockup renders (baked background +
+    shadow); the framed blanks for black (`black_framed.png`) and natural
+    (`light_brown_framed.png`, 2500×2500, window ratio ≈0.708) already
+    exist. See Open items for the remaining three.
+- **Composition (sharp):** the sheet is composited **over** the master's
+  window rect (fractions of the master canvas, configured per master in
+  `config/print-assets/frames.json`), then the canvas is centre-cropped
+  around the window to the canonical 7:10. Window/sheet ratio mismatch >2%
+  fails closed (no distorted sheets can ship). No alpha channel required.
 - **Outputs:** `public/uploads/fap-XX-mock-framed-{colour}.webp` and
   `fap-XX-mock-mount-{colour}.webp` + srcset variants (400/800/1600w),
   committed like existing gallery assets. Max 6 new WebPs (×4 files with
   srcset) per full-axis design.
 - The step reads the design's axes from the registry: fap02
-  (`frameColours: [black, white]`, `mountAvailable: false`) automatically gets
-  only 2 mockups.
+  (`frameColours: [black, natural]`, `mountAvailable: false`) automatically
+  gets only 2 mockups.
 - **Availability flag:** `mockups?: true` on `PrintDesign` in
   `src/lib/prints.ts`, set in the same PR that commits the generated files
   (same convention as `gallery`).
@@ -164,13 +192,22 @@ New pipeline step `npm run print-assets:mockups` (sibling of
 
 ## Open items
 
-1. **Frame masters** — the only asset that must be produced by a human, once:
-   photorealistic renders/photographs of the Prodigi Classic Frame in black,
-   white and natural, either as corner+edge slices (9-slice scaling in sharp)
-   or full frames at 7:10. Requirements: alpha channel, resolution sufficient
-   for the 1600w hero (≥ ~2000 px on the long edge), consistent light
-   direction so the baked shadow matches across colours.
-2. Exact wrapper/component naming and whether `PrintConfigurator`'s `useState`
+1. **Three mount masters** (`black_mount`, `light_brown_mount`,
+   `brown_mount`) — copies of the framed blanks with the passe-partout drawn
+   inside the window: fill the whole window white (`#FCFBF8`-ish), draw the
+   centred aperture at **85.7% of the window width × 90% of the window
+   height** (the physical Prodigi geometry: 28×40″ frame, 24×36″ aperture,
+   ratio 0.667 = CFPM sheet), leave the aperture white (the pipeline pastes
+   the CFPM sheet there), and fake the bevel with a 2–4 px light-grey inner
+   edge plus a subtle inner shadow at the top edge (black 8–12% opacity,
+   3–5 px blur). Export at the blank's own canvas size; PNG preferred.
+2. **Brown framed blank re-export** — the current `brown_framed.jpg`
+   (2000×2000) comes from a different mockup source: window ratio **0.746**
+   vs 0.708 in the black/natural blanks (and vs the 0.70 sheet). The 2%
+   fail-closed guard rejects it by design. Re-export the brown frame with the
+   same geometry as the other two blanks (ideally the same 2500×2500 canvas
+   and window rect, ratio ≈0.70).
+3. Exact wrapper/component naming and whether `PrintConfigurator`'s `useState`
    moves or is wrapped — implementation detail for the plan phase.
 
 ## Non-goals / deferred

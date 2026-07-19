@@ -18,12 +18,16 @@
 - No new i18n strings (`variantLabel` from `src/lib/print-cart.ts` is reused for alt text); if copy is ever added it must land in all of `messages/{pl,en,es,de}.json`.
 - Designs without `mockups: true` must render byte-identical to today (feature is purely additive).
 - Canonical mockup ratio is 7:10 (`width/height = 0.7`); framed states composite the `8400x12000` FAP profile, mount states the `7200x10800` CFPM profile.
+- Frame colour axis after Task 0 is `black | natural | brown` (labels: czarny / jasny brąz / ciemny brąz; `white` dropped; fap02 = black + natural). Internal keys ARE Prodigi `attributes.color` values — verified against the live enum (`black`, `brown`, `natural` all valid).
+- Per-colour print-area exception (prodigi/sku-catalog.md:84): at 30×40 the CFP print area is 3614×4795 **only for black** after the swap; brown and natural are 3600×4800. All other sizes and all CFPM entries are colour-uniform.
+- Frame masters are opaque blanks in gitignored `design/print-assets/frames_blanks/`; the sheet is composited OVER the window rect, then centre-cropped to 7:10. No alpha channel required; JPG tolerated, PNG preferred.
 - Monetary rules, analytics event contract, and locale routing are out of scope and must not change.
 
 ## File Map
 
 | File | Role |
 |---|---|
+| **Task 0 (own PR):** `src/lib/types.ts`, `src/lib/print-cart.ts`, `src/lib/prints.ts`, `src/styles/site.css`, `messages/{pl,en,es,de}.json`, `prodigi/sku-catalog.md`, tests | Frame-colour axis swap white→brown |
 | `src/lib/print-mockups.ts` (create) | Pure state model: `MockupState`, `mockupState`, `mockupSrc`, `mockupHeroSrc`, `designMockupStates` |
 | `src/lib/print-mockups.test.ts` (create) | Truth-table tests for the above |
 | `src/lib/types.ts` (modify) | `mockups?: true` on `PrintDesign` |
@@ -42,7 +46,172 @@
 | `AGENTS.md` (modify) | Command list mention |
 | `e2e/print-configurator.spec.ts` (modify) | Hero-swap E2E (skip-guarded) + static-hero regression |
 
-Execution branch: continue on `docs/print-configurator-live-mockup-spec` or a fresh `feat/print-live-mockup` branched from it. Do not touch the pre-existing dirty files `config/print-assets/fap0*.json` — they belong to a parallel revision effort.
+Execution branches (stacked, per-domain PRs): **PR 1** = Task 0 (`feat/print-frame-colour-swap`), **PR 2** = Tasks 1–5 (`feat/print-live-mockup`, stacked on PR 1), **PR 3** = Task 6 activation (later, when masters exist). Do not touch the pre-existing dirty files `config/print-assets/fap0*.json` — they belong to a parallel revision effort.
+
+---
+
+### Task 0: Frame-colour axis swap (white → brown; natural relabelled "jasny brąz")
+
+**Files:**
+- Modify: `src/lib/types.ts` (the `PrintFrameColour` union)
+- Modify: `src/lib/print-cart.ts` (`PRINT_FRAME_COLOURS`, `COLOUR_LABEL`, `PRODIGI_SKU_MAP`)
+- Modify: `src/lib/prints.ts` (`frameColours` on all four designs)
+- Modify: `src/styles/site.css:1222-1224` (colour swatches)
+- Modify: `messages/pl.json`, `messages/en.json`, `messages/es.json`, `messages/de.json` (`print.colour_*` keys, ~line 851-853 in each)
+- Modify: `prodigi/sku-catalog.md` (colour rows/notes: lines 72-84 and 116)
+- Modify: `src/lib/print-prodigi-attributes.test.ts`, `src/lib/print-pricing.test.ts` (replace `'white'` selection fixtures with `'brown'`; do NOT touch the `'Snow white'` mountColor literal)
+- Test: `src/lib/print-cart.test.ts` (new assertions)
+
+**Interfaces:**
+- Consumes: nothing from other tasks (this is the prerequisite PR).
+- Produces: `PrintFrameColour = 'black' | 'natural' | 'brown'` — every later task's `MockupState` union, tests, and frames.json colours build on this. Prodigi mapping needs no code change: `buildProdigiAttributes` passes `sel.frameColour` verbatim and `black`/`natural`/`brown` are valid `attributes.color` values (verified via `npm run prodigi -- product get GLOBAL-CFP-20X28`).
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `src/lib/print-cart.test.ts`:
+
+```ts
+describe('PRODIGI_SKU_MAP — brown replaces white (2026-07-19 colour swap)', () => {
+  it('maps brown with per-colour print areas (30x40 CFP exception is black-only)', () => {
+    expect(PRODIGI_SKU_MAP['30x40:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-12X16',
+      printAreaPx: { w: 3600, h: 4800 },
+    });
+    expect(PRODIGI_SKU_MAP['30x40:true:true:brown']).toEqual({
+      sku: 'GLOBAL-CFPM-12X16',
+      printAreaPx: { w: 2400, h: 3600 },
+    });
+    expect(PRODIGI_SKU_MAP['50x70:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-20X28',
+      printAreaPx: { w: 6000, h: 8400 },
+    });
+    expect(PRODIGI_SKU_MAP['70x100:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-28X40',
+      printAreaPx: { w: 8400, h: 12000 },
+    });
+  });
+
+  it('has no white keys and still exactly 21 entries', () => {
+    expect(Object.keys(PRODIGI_SKU_MAP).some((k) => k.endsWith(':white'))).toBe(false);
+    expect(Object.keys(PRODIGI_SKU_MAP)).toHaveLength(21);
+  });
+});
+```
+
+(`PRODIGI_SKU_MAP` is already imported in this test file; if not, add it to the existing import from `./print-cart`.)
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run src/lib/print-cart.test.ts`
+Expected: FAIL — `PRODIGI_SKU_MAP['30x40:true:false:brown']` is undefined.
+
+- [ ] **Step 3: Swap the axis across the five source files**
+
+`src/lib/types.ts` — replace the union:
+
+```ts
+export type PrintFrameColour = 'black' | 'natural' | 'brown';
+```
+
+`src/lib/print-cart.ts`:
+
+```ts
+export const PRINT_FRAME_COLOURS: readonly PrintFrameColour[] = ['black', 'natural', 'brown'];
+```
+
+```ts
+const COLOUR_LABEL: Record<string, Record<PrintFrameColour, string>> = {
+  pl: { black: 'czarna', natural: 'jasny brąz', brown: 'ciemny brąz' },
+  en: { black: 'black', natural: 'light brown', brown: 'dark brown' },
+  es: { black: 'negro', natural: 'marrón claro', brown: 'marrón oscuro' },
+  de: { black: 'schwarz', natural: 'hellbraun', brown: 'dunkelbraun' },
+  gb: { black: 'black', natural: 'light brown', brown: 'dark brown' },
+};
+```
+
+`PRODIGI_SKU_MAP` — full replacement (21 entries; brown takes the 3600×4800 areas everywhere the sheet is 30×40, per `prodigi/sku-catalog.md:84`):
+
+```ts
+export const PRODIGI_SKU_MAP: Record<string, { sku: string; printAreaPx: { w: number; h: number } }> = {
+  '30x40:false:false:none':    { sku: 'GLOBAL-FAP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
+  '30x40:true:false:black':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3614, h: 4795 } },
+  '30x40:true:false:natural':  { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
+  '30x40:true:false:brown':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
+  '30x40:true:true:black':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
+  '30x40:true:true:natural':   { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
+  '30x40:true:true:brown':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },
+  '50x70:false:false:none':    { sku: 'GLOBAL-FAP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
+  '50x70:true:false:black':    { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
+  '50x70:true:false:natural':  { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
+  '50x70:true:false:brown':    { sku: 'GLOBAL-CFP-20X28',  printAreaPx: { w: 6000, h: 8400 } },
+  '50x70:true:true:black':     { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
+  '50x70:true:true:natural':   { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
+  '50x70:true:true:brown':     { sku: 'GLOBAL-CFPM-20X28', printAreaPx: { w: 4800, h: 7200 } },
+  '70x100:false:false:none':   { sku: 'GLOBAL-FAP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
+  '70x100:true:false:black':   { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
+  '70x100:true:false:natural': { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
+  '70x100:true:false:brown':   { sku: 'GLOBAL-CFP-28X40',  printAreaPx: { w: 8400, h: 12000 } },
+  '70x100:true:true:black':    { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
+  '70x100:true:true:natural':  { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
+  '70x100:true:true:brown':    { sku: 'GLOBAL-CFPM-28X40', printAreaPx: { w: 7200, h: 10800 } },
+};
+```
+
+`src/lib/prints.ts` — `frameColours` per design: fap01 `['black', 'natural', 'brown']`, fap02 `['black', 'natural']`, fap03 `['black', 'natural', 'brown']`, fap04 `['black', 'natural', 'brown']`. (Order = configurator button order; `frameColours[0]` = default colour when framing is toggled on, so black stays the default.)
+
+`src/styles/site.css:1222-1224` — replace the three swatch rules:
+
+```css
+.print-opt-colour[data-colour="black"]::before { background:#141414; border-color:rgba(250,246,236,.35); }
+.print-opt-colour[data-colour="natural"]::before { background:var(--c-sand); }
+.print-opt-colour[data-colour="brown"]::before { background:var(--c-espresso); }
+```
+
+(`--c-espresso` `#3A2818` is a dark brown — it was previously mis-doubling as the "black" swatch; black gets a true near-black literal.)
+
+`messages/{pl,en,es,de}.json` — in each file's `print` block replace the `colour_white` key and relabel `colour_natural`:
+
+| key | pl | en | es | de |
+|---|---|---|---|---|
+| `colour_black` | `Czarna` | `Black` | `Negro` | `Schwarz` |
+| `colour_natural` | `Jasny brąz` | `Light brown` | `Marrón claro` | `Hellbraun` |
+| `colour_brown` (replaces `colour_white`) | `Ciemny brąz` | `Dark brown` | `Marrón oscuro` | `Dunkelbraun` |
+
+`prodigi/sku-catalog.md` — update the 30×40 colour table rows (lines 72-78: `white` row becomes `brown` with print area 3600×4800), the line-84 note (the 3614×4795 exception is now black-only), the 50×70/70×100 row labels (`black / white / natural` → `black / natural / brown`), and the line-116 offered-colours note.
+
+- [ ] **Step 4: Fix the two test fixtures that used white**
+
+In `src/lib/print-prodigi-attributes.test.ts` and `src/lib/print-pricing.test.ts`, replace `frameColour: 'white'` (and any `'white'` variant-key literals) with `'brown'`. Leave `mountColor: 'Snow white'` expectations untouched — that is a Prodigi attribute value, not our axis.
+
+- [ ] **Step 5: Run the full gate**
+
+Run: `npx vitest run && npm run typecheck && npm run lint`
+Expected: PASS. The compiler is the safety net — any missed `'white'` literal in print modules is a type error now.
+
+Run: `grep -rn "'white'\|:white" src e2e scripts --include='*.ts' --include='*.tsx' | grep -v 'Snow white'`
+Expected: no hits in print-related modules (ceramic/unrelated hits are fine — inspect anything that mentions prints).
+
+Run: `npx playwright test e2e/print-configurator.spec.ts`
+Expected: PASS (the spec clicks `opt-colour-natural` / `opt-colour-black`, both still exist).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/lib/types.ts src/lib/print-cart.ts src/lib/prints.ts src/styles/site.css messages/pl.json messages/en.json messages/es.json messages/de.json prodigi/sku-catalog.md src/lib/print-cart.test.ts src/lib/print-prodigi-attributes.test.ts src/lib/print-pricing.test.ts
+git commit -m "feat(prints): swap white frame for brown; relabel natural as light brown"
+```
+
+- [ ] **Step 7: Post-merge operator steps (production data)**
+
+After PR 1 merges (nothing has ever been sold via Prodigi — `prodigi_orders` is empty — so this is a safe rename):
+
+1. `npm run catalog:backfill` — reseeds `products` / `product_variants` from the registry (idempotent). Verify no active white rows remain:
+   `select count(*) from product_variants where product_id like 'fap%' and variant_key like '%:white' and active;` → expect `0` (if the backfill only upserts and does not deactivate stale keys, deactivate them with an UPDATE and note it in the PR).
+2. Re-assign fap01's published assets to the new active variant set:
+   `npm run print-assets:publish -- --product fap01 --revision 2026-07-12-r1 --confirm 2026-07-12-r1`
+   (publish assigns the revision to every active variant; the brown 30×40 rows pick the 3600×4800 derivative — the same one natural uses). Verify: the PDP coverage query returns `usable` for all 21 fap01 variants.
+3. Optional sanity: `npm run sync-prodigi-skus` (SKUs are colour-agnostic, so `pod_variants` should be unchanged) and `npm run i18n:push` to sync the new `print.colour_*` strings to Notion.
+4. Old cart tokens containing `:white:` in visitors' localStorage now fail `decodePrintToken` and are silently dropped from carts — acceptable (no paid print orders exist).
 
 ---
 
@@ -83,7 +252,7 @@ const design: PrintDesign = {
   image: '/uploads/fap-01.webp',
   noteIndex: 0,
   sizes: ['30x40', '50x70', '70x100'],
-  frameColours: ['black', 'white', 'natural'],
+  frameColours: ['black', 'natural', 'brown'],
   mountAvailable: true,
   published: true,
 };
@@ -98,11 +267,11 @@ describe('mockupState', () => {
   it('maps the full 7-state truth table', () => {
     expect(mockupState(sel({}))).toBe('plain');
     expect(mockupState(sel({ framed: true, frameColour: 'black' }))).toBe('framed-black');
-    expect(mockupState(sel({ framed: true, frameColour: 'white' }))).toBe('framed-white');
     expect(mockupState(sel({ framed: true, frameColour: 'natural' }))).toBe('framed-natural');
+    expect(mockupState(sel({ framed: true, frameColour: 'brown' }))).toBe('framed-brown');
     expect(mockupState(sel({ framed: true, mount: true, frameColour: 'black' }))).toBe('mount-black');
-    expect(mockupState(sel({ framed: true, mount: true, frameColour: 'white' }))).toBe('mount-white');
     expect(mockupState(sel({ framed: true, mount: true, frameColour: 'natural' }))).toBe('mount-natural');
+    expect(mockupState(sel({ framed: true, mount: true, frameColour: 'brown' }))).toBe('mount-brown');
   });
 
   it('is size-independent', () => {
@@ -129,11 +298,11 @@ describe('mockupSrc', () => {
 
 describe('mockupHeroSrc', () => {
   it('returns the mockup for flagged designs and the base image otherwise', () => {
-    expect(mockupHeroSrc(flagged, sel({ framed: true, frameColour: 'white' }))).toBe(
-      '/uploads/fap-01-mock-framed-white.webp',
+    expect(mockupHeroSrc(flagged, sel({ framed: true, frameColour: 'brown' }))).toBe(
+      '/uploads/fap-01-mock-framed-brown.webp',
     );
     expect(mockupHeroSrc(flagged, sel({}))).toBe('/uploads/fap-01.webp');
-    expect(mockupHeroSrc(design, sel({ framed: true, frameColour: 'white' }))).toBe('/uploads/fap-01.webp');
+    expect(mockupHeroSrc(design, sel({ framed: true, frameColour: 'brown' }))).toBe('/uploads/fap-01.webp');
   });
 });
 
@@ -141,14 +310,14 @@ describe('designMockupStates', () => {
   it('enumerates framed+mount states for full-axis designs (no plain)', () => {
     expect(designMockupStates(design)).toEqual([
       'framed-black', 'mount-black',
-      'framed-white', 'mount-white',
       'framed-natural', 'mount-natural',
+      'framed-brown', 'mount-brown',
     ]);
   });
 
   it('respects narrower axes (fap02 shape: 2 colours, no mount)', () => {
-    const narrow: PrintDesign = { ...design, frameColours: ['black', 'white'], mountAvailable: false };
-    expect(designMockupStates(narrow)).toEqual(['framed-black', 'framed-white']);
+    const narrow: PrintDesign = { ...design, frameColours: ['black', 'natural'], mountAvailable: false };
+    expect(designMockupStates(narrow)).toEqual(['framed-black', 'framed-natural']);
   });
 });
 ```
@@ -501,11 +670,11 @@ git commit -m "feat(prints): configurator-driven hero via PrintPdpPurchase clien
 **Interfaces:**
 - Consumes: nothing project-specific (sharp + Buffers).
 - Produces:
-  - `interface MockupWindow { left: number; top: number; width: number; height: number }` (fractions of the frame canvas)
-  - `composeMockup(opts: { sheet: Buffer; frame: Buffer; window: MockupWindow; outWidth?: number; background?: string }): Promise<Buffer>` — PNG buffer at `outWidth × round(outWidth/0.7)`; throws on frame-canvas or window/sheet ratio mismatch.
+  - `interface MockupWindow { left: number; top: number; width: number; height: number }` (fractions of the MASTER canvas)
+  - `composeMockup(opts: { master: Buffer; sheet: Buffer; window: MockupWindow; outWidth?: number; background?: string }): Promise<Buffer>` — pastes the sheet OVER the opaque master's window rect, centre-crops to 7:10 anchored on the window centre, returns a PNG at `outWidth × round(outWidth/0.7)`; throws on window/sheet ratio mismatch or a window outside the canvas.
   - `const MOCKUP_RATIO = 0.7`, `const MOCKUP_RATIO_TOLERANCE = 0.02`, `const MOCKUP_DEFAULT_BACKGROUND = '#F1EFEA'`
 
-This module lives in `src/lib/` (not `scripts/`) so Vitest covers it the same way it covers `print-assets-prepare.ts`.
+Masters are opaque blanks (baked background + shadow, any canvas ratio — the real ones are square); no transparency is required, which is why the sheet goes ON TOP of the window instead of behind a punched-out hole. This module lives in `src/lib/` (not `scripts/`) so Vitest covers it the same way it covers `print-assets-prepare.ts`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -514,44 +683,35 @@ Create `src/lib/print-mockups-compose.test.ts`:
 ```ts
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { composeMockup, MOCKUP_DEFAULT_BACKGROUND } from './print-mockups-compose';
+import { composeMockup } from './print-mockups-compose';
 
-const WINDOW = { left: 0.15, top: 0.15, width: 0.7, height: 0.7 };
+// Window on a square 1000×1000 master: 400×571 px → ratio 0.7005 (sheet 0.7).
+const WINDOW = { left: 0.3, top: 0.15, width: 0.4, height: 0.571 };
 
-/** Opaque dark 700×1000 frame with a transparent window punched out. */
-async function syntheticFrame(): Promise<Buffer> {
-  const hole = await sharp({
-    create: {
-      width: Math.round(700 * WINDOW.width),
-      height: Math.round(1000 * WINDOW.height),
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 1 },
-    },
-  })
-    .png()
-    .toBuffer();
+/** Opaque square blank like the real ones: grey bg, dark moulding, white window. */
+async function syntheticMaster(): Promise<Buffer> {
+  const moulding = await sharp({
+    create: { width: 480, height: 651, channels: 3, background: { r: 25, g: 25, b: 25 } },
+  }).png().toBuffer();
+  const window = await sharp({
+    create: { width: 400, height: 571, channels: 3, background: { r: 255, g: 255, b: 255 } },
+  }).png().toBuffer();
   return sharp({
-    create: { width: 700, height: 1000, channels: 4, background: { r: 20, g: 20, b: 20, alpha: 1 } },
+    create: { width: 1000, height: 1000, channels: 3, background: { r: 240, g: 240, b: 240 } },
   })
     .composite([
-      {
-        input: hole,
-        left: Math.round(700 * WINDOW.left),
-        top: Math.round(1000 * WINDOW.top),
-        blend: 'dest-out',
-      },
+      { input: moulding, left: 260, top: 110 },
+      { input: window, left: 300, top: 150 },
     ])
     .png()
     .toBuffer();
 }
 
-/** Solid red sheet at the FAP 7:10 ratio (matches the window ratio 490/700 = 0.7). */
+/** Solid red sheet at the FAP 7:10 ratio. */
 async function syntheticSheet(): Promise<Buffer> {
   return sharp({
     create: { width: 350, height: 500, channels: 3, background: { r: 220, g: 30, b: 30 } },
-  })
-    .jpeg()
-    .toBuffer();
+  }).jpeg().toBuffer();
 }
 
 async function px(buf: Buffer, x: number, y: number) {
@@ -561,10 +721,10 @@ async function px(buf: Buffer, x: number, y: number) {
 }
 
 describe('composeMockup', () => {
-  it('produces a 7:10 canvas with sheet visible through the window and frame on top', async () => {
+  it('pastes the sheet over the window and centre-crops the square master to 7:10', async () => {
     const out = await composeMockup({
+      master: await syntheticMaster(),
       sheet: await syntheticSheet(),
-      frame: await syntheticFrame(),
       window: WINDOW,
       outWidth: 700,
     });
@@ -572,60 +732,59 @@ describe('composeMockup', () => {
     expect(meta.width).toBe(700);
     expect(meta.height).toBe(1000);
 
-    const centre = await px(out, 350, 500); // inside the window → red sheet
+    // Square master (1000×1000) → crop is 700 wide, anchored on the window
+    // centre x=500 → cropLeft = 150. Master (x,y) maps to crop (x-150, y).
+    const centre = await px(out, 350, 435); // window centre (500, 435) → red sheet
     expect(centre.r).toBeGreaterThan(180);
     expect(centre.g).toBeLessThan(80);
 
-    const border = await px(out, 30, 500); // on the frame moulding → dark
-    expect(border.r).toBeLessThan(60);
+    const moulding = await px(out, 120, 435); // master (270, 435) → dark moulding
+    expect(moulding.r).toBeLessThan(60);
 
-    const outside = await px(out, 2, 2); // outside nothing here (frame fills canvas) → dark too
-    expect(outside.r).toBeLessThan(60);
+    const air = await px(out, 10, 50); // master (160, 50) → grey blank background
+    expect(air.r).toBeGreaterThan(225);
   });
 
-  it('flattens transparency onto the background colour', async () => {
-    // Frame that covers only the middle 80% horizontally → margins show background.
-    const inner = await syntheticFrame();
-    const airFrame = await sharp({
-      create: { width: 875, height: 1250, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  it('crops a narrow master vertically and still outputs outWidth × outWidth/0.7', async () => {
+    // 600×1000 grey master, window 400×571 centred: W/H = 0.6 < 0.7 → vertical crop.
+    const window = await sharp({
+      create: { width: 400, height: 571, channels: 3, background: { r: 255, g: 255, b: 255 } },
+    }).png().toBuffer();
+    const master = await sharp({
+      create: { width: 600, height: 1000, channels: 3, background: { r: 240, g: 240, b: 240 } },
     })
-      .composite([{ input: await sharp(inner).resize(700, 1000).png().toBuffer(), left: 87, top: 125 }])
+      .composite([{ input: window, left: 100, top: 150 }])
       .png()
       .toBuffer();
     const out = await composeMockup({
+      master,
       sheet: await syntheticSheet(),
-      frame: airFrame,
-      // window fractions relative to the 875×1250 canvas: same 0.7 ratio
-      window: { left: 0.22, top: 0.22, width: 0.56, height: 0.56 },
-      outWidth: 875,
+      window: { left: 100 / 600, top: 0.15, width: 400 / 600, height: 0.571 },
+      outWidth: 700,
     });
-    const margin = await px(out, 5, 625); // in the transparent air → background
-    // MOCKUP_DEFAULT_BACKGROUND '#F1EFEA' → r/g/b all > 220
-    expect(margin.r).toBeGreaterThan(220);
-    expect(margin.g).toBeGreaterThan(220);
-    expect(margin.b).toBeGreaterThan(220);
-    expect(MOCKUP_DEFAULT_BACKGROUND).toBe('#F1EFEA');
+    const meta = await sharp(out).metadata();
+    expect(meta.width).toBe(700);
+    expect(meta.height).toBe(1000);
   });
 
   it('throws when the window ratio does not match the sheet ratio', async () => {
     await expect(
       composeMockup({
+        master: await syntheticMaster(),
         sheet: await syntheticSheet(), // 0.7
-        frame: await syntheticFrame(),
-        window: { left: 0.15, top: 0.15, width: 0.7, height: 0.5 }, // 490/500 = 0.98
+        window: { left: 0.3, top: 0.15, width: 0.4, height: 0.4 }, // ratio 1.0
       }),
     ).rejects.toThrow(/window ratio/);
   });
 
-  it('throws when the frame canvas is not 7:10', async () => {
-    const square = await sharp({
-      create: { width: 500, height: 500, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 1 } },
-    })
-      .png()
-      .toBuffer();
+  it('throws when the window exceeds the master canvas', async () => {
     await expect(
-      composeMockup({ sheet: await syntheticSheet(), frame: square, window: WINDOW }),
-    ).rejects.toThrow(/frame canvas/);
+      composeMockup({
+        master: await syntheticMaster(),
+        sheet: await syntheticSheet(),
+        window: { left: 0.8, top: 0.15, width: 0.4, height: 0.571 },
+      }),
+    ).rejects.toThrow(/exceeds/);
   });
 });
 ```
@@ -644,11 +803,14 @@ import sharp from 'sharp';
 
 /* ------------------------------------------------------------------
    Mockup composition core for the print-assets:mockups pipeline step.
-   Frame masters are full 7:10 canvases (air + baked shadow + moulding)
-   with a transparent window where the sheet shows through; the window
-   rect is configured as fractions of the canvas in
-   config/print-assets/frames.json. Fail-closed on ratio mismatches so a
-   misconfigured window can never ship a distorted sheet.
+   Frame masters are OPAQUE mockup blanks (design/print-assets/
+   frames_blanks/): baked background + shadow + moulding, any canvas
+   ratio (the real ones are square). The sheet is composited OVER the
+   master's window rect (fractions of the master canvas, configured per
+   master in config/print-assets/frames.json), then the canvas is
+   centre-cropped to the canonical 7:10 anchored on the window centre.
+   Fail-closed on ratio mismatches so a misconfigured window can never
+   ship a distorted sheet.
    ------------------------------------------------------------------ */
 
 export interface MockupWindow {
@@ -658,55 +820,69 @@ export interface MockupWindow {
   height: number;
 }
 
-export const MOCKUP_RATIO = 0.7; // canonical 7:10 canvas (width / height)
+export const MOCKUP_RATIO = 0.7; // canonical 7:10 output (width / height)
 export const MOCKUP_RATIO_TOLERANCE = 0.02;
 export const MOCKUP_DEFAULT_BACKGROUND = '#F1EFEA';
 
 export async function composeMockup(opts: {
+  master: Buffer;
   sheet: Buffer;
-  frame: Buffer;
   window: MockupWindow;
   outWidth?: number;
   background?: string;
 }): Promise<Buffer> {
   const outWidth = opts.outWidth ?? 2000;
   const background = opts.background ?? MOCKUP_DEFAULT_BACKGROUND;
-  const outHeight = Math.round(outWidth / MOCKUP_RATIO);
-
-  const frameMeta = await sharp(opts.frame).metadata();
-  if (!frameMeta.width || !frameMeta.height) throw new Error('frame master has no dimensions');
-  const frameRatio = frameMeta.width / frameMeta.height;
-  if (Math.abs(frameRatio - MOCKUP_RATIO) / MOCKUP_RATIO > MOCKUP_RATIO_TOLERANCE) {
-    throw new Error(
-      `frame canvas ratio ${frameRatio.toFixed(4)} is not the canonical ${MOCKUP_RATIO} (7:10)`,
-    );
+  const win = opts.window;
+  if (win.left < 0 || win.top < 0 || win.left + win.width > 1 || win.top + win.height > 1) {
+    throw new Error(`window exceeds the master canvas: ${JSON.stringify(win)}`);
   }
 
-  const winW = Math.round(outWidth * opts.window.width);
-  const winH = Math.round(outHeight * opts.window.height);
+  const masterMeta = await sharp(opts.master).metadata();
+  if (!masterMeta.width || !masterMeta.height) throw new Error('master has no dimensions');
+  const W = masterMeta.width;
+  const H = masterMeta.height;
+
+  const wx = Math.round(W * win.left);
+  const wy = Math.round(H * win.top);
+  const ww = Math.round(W * win.width);
+  const wh = Math.round(H * win.height);
+
   const sheetMeta = await sharp(opts.sheet).metadata();
-  if (!sheetMeta.width || !sheetMeta.height) throw new Error('sheet source has no dimensions');
+  if (!sheetMeta.width || !sheetMeta.height) throw new Error('sheet has no dimensions');
   const sheetRatio = sheetMeta.width / sheetMeta.height;
-  const windowRatio = winW / winH;
+  const windowRatio = ww / wh;
   if (Math.abs(sheetRatio - windowRatio) / windowRatio > MOCKUP_RATIO_TOLERANCE) {
     throw new Error(
       `window ratio ${windowRatio.toFixed(4)} does not match sheet ratio ${sheetRatio.toFixed(4)} — fix the window in frames.json`,
     );
   }
 
-  const [frameResized, sheetResized] = await Promise.all([
-    sharp(opts.frame).resize(outWidth, outHeight, { fit: 'fill' }).png().toBuffer(),
-    sharp(opts.sheet).resize(winW, winH, { fit: 'fill' }).png().toBuffer(),
-  ]);
+  const sheetResized = await sharp(opts.sheet).resize(ww, wh, { fit: 'fill' }).png().toBuffer();
+  const composed = await sharp(opts.master)
+    .composite([{ input: sheetResized, left: wx, top: wy }])
+    .flatten({ background }) // no-op for opaque masters; safety for alpha PNGs
+    .png()
+    .toBuffer();
 
-  return sharp({
-    create: { width: outWidth, height: outHeight, channels: 4, background },
-  })
-    .composite([
-      { input: sheetResized, left: Math.round(outWidth * opts.window.left), top: Math.round(outHeight * opts.window.top) },
-      { input: frameResized, left: 0, top: 0 },
-    ])
-    .flatten({ background })
+  // Centre-crop to the canonical 7:10, anchored on the window centre (clamped).
+  let cropLeft = 0;
+  let cropTop = 0;
+  let cropW = W;
+  let cropH = H;
+  if (W / H > MOCKUP_RATIO) {
+    cropW = Math.round(H * MOCKUP_RATIO);
+    const cx = wx + ww / 2;
+    cropLeft = Math.min(Math.max(Math.round(cx - cropW / 2), 0), W - cropW);
+  } else if (W / H < MOCKUP_RATIO) {
+    cropH = Math.round(W / MOCKUP_RATIO);
+    const cy = wy + wh / 2;
+    cropTop = Math.min(Math.max(Math.round(cy - cropH / 2), 0), H - cropH);
+  }
+
+  return sharp(composed)
+    .extract({ left: cropLeft, top: cropTop, width: cropW, height: cropH })
+    .resize(outWidth, Math.round(outWidth / MOCKUP_RATIO), { fit: 'fill' })
     .png()
     .toBuffer();
 }
@@ -866,26 +1042,26 @@ Create `config/print-assets/frames.example.json`:
 
 ```json
 {
-  "_comment": "Frame-master registry for print-assets:mockups. Copy to frames.json once the masters exist under gitignored design/print-assets/frames/. Each master is a full 7:10 RGBA PNG (>= 2000 px wide): air + baked shadow + moulding (+ bevelled mat for mount variants), with a transparent window where the sheet shows through. window = fractions of the canvas; framed windows must match the FAP sheet ratio 0.70 (8400x12000), mount windows the CFPM aperture ratio 0.667 (7200x10800), within 2% tolerance (composeMockup fail-closes otherwise).",
+  "_comment": "Frame-master registry for print-assets:mockups. Copy to frames.json once all six masters exist under gitignored design/print-assets/frames_blanks/. Masters are OPAQUE blanks (baked background + shadow, any canvas ratio); window = the sheet rect as fractions of the master canvas — the sheet is composited OVER it, then centre-cropped to 7:10. Framed windows must match the FAP sheet ratio 0.70, mount windows the CFPM aperture ratio 0.667, within 2% (composeMockup fail-closes otherwise). Framed windows below are MEASURED from the real blanks (2026-07-19); mount windows are derived starting points assuming the mount masters follow the runbook recipe (aperture 85.7% x 90% of the framed window, centred) — re-measure after drawing them. brown_framed: the current .jpg has window ratio 0.746 (different mockup source) and MUST be re-exported to match the black/natural geometry before use.",
   "background": "#F1EFEA",
   "frames": {
     "black": {
-      "framed": { "file": "design/print-assets/frames/black-framed.png", "window": { "left": 0.14, "top": 0.14, "width": 0.72, "height": 0.72 } },
-      "mount": { "file": "design/print-assets/frames/black-mount.png", "window": { "left": 0.2, "top": 0.185, "width": 0.6, "height": 0.63 } }
-    },
-    "white": {
-      "framed": { "file": "design/print-assets/frames/white-framed.png", "window": { "left": 0.14, "top": 0.14, "width": 0.72, "height": 0.72 } },
-      "mount": { "file": "design/print-assets/frames/white-mount.png", "window": { "left": 0.2, "top": 0.185, "width": 0.6, "height": 0.63 } }
+      "framed": { "file": "design/print-assets/frames_blanks/black_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5488, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/black_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4703, "height": 0.698 } }
     },
     "natural": {
-      "framed": { "file": "design/print-assets/frames/natural-framed.png", "window": { "left": 0.14, "top": 0.14, "width": 0.72, "height": 0.72 } },
-      "mount": { "file": "design/print-assets/frames/natural-mount.png", "window": { "left": 0.2, "top": 0.185, "width": 0.6, "height": 0.63 } }
+      "framed": { "file": "design/print-assets/frames_blanks/light_brown_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5492, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/light_brown_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4707, "height": 0.698 } }
+    },
+    "brown": {
+      "framed": { "file": "design/print-assets/frames_blanks/brown_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5488, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/brown_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4703, "height": 0.698 } }
     }
   }
 }
 ```
 
-(The window values are documented starting points; the activation task calibrates them against the real masters — the ratio guard in `composeMockup` catches any window that would distort the sheet.)
+(Framed windows for black/natural are real measurements — window ratio ≈0.708 vs sheet 0.70 = 1.1% mismatch, inside the 2% tolerance. The activation task re-measures the three new/re-exported masters; the ratio guard catches any window that would distort the sheet.)
 
 - [ ] **Step 4: Create the CLI script**
 
@@ -995,8 +1171,8 @@ async function main(): Promise<void> {
       const kind = state.split('-')[0] as 'framed' | 'mount';
       const layer = frameLayer(framesConfig, state);
       const png = await composeMockup({
+        master: fs.readFileSync(layer.file),
         sheet: sheets.get(kind)!,
-        frame: fs.readFileSync(layer.file),
         window: layer.window,
         outWidth: OUT_WIDTH,
         background: framesConfig.background,
@@ -1051,9 +1227,14 @@ Pre-rendered hero states for the PDP live-mockup feature (spec
 
 Prerequisites: the design's fulfilment revision is published (`ready`);
 `config/print-assets/frames.json` exists (copy `frames.example.json`) and its
-`file` entries point at the frame masters under gitignored
-`design/print-assets/frames/` (full 7:10 RGBA PNGs ≥ 2000 px wide, transparent
-window, baked shadow; mount masters include the bevelled mat).
+`file` entries point at the six frame masters under gitignored
+`design/print-assets/frames_blanks/` — opaque mockup blanks (baked background
++ shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one framed + one
+mount blank per colour (black / natural / brown). Mount blanks follow the
+recipe: window filled white, centred aperture at 85.7% × 90% of the window
+(ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge + subtle inner
+shadow. The `window` values in frames.json are fractions of each master's own
+canvas; the sheet is composited over that rect.
 
     npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
     npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
@@ -1160,22 +1341,27 @@ git commit -m "test(e2e): hero mockup swap + static-hero regression coverage"
 
 ---
 
-### Task 6: Activation (deferred — blocked on frame masters)
+### Task 6: Activation (deferred — blocked on remaining masters)
 
-No code. Operator checklist, runnable only once the three photorealistic frame masters exist (spec Open item 1: Prodigi Classic Frame in black/white/natural, full 7:10 RGBA PNGs ≥ 2000 px wide with transparent window + baked shadow; mount variants with bevelled mat — 6 files total under `design/print-assets/frames/`).
+No code. Operator checklist. Already in hand (2026-07-19): `black_framed.png` and `light_brown_framed.png` (= natural), both 2500×2500 opaque blanks with measured windows. Still needed under `design/print-assets/frames_blanks/`:
 
-- [ ] Copy `config/print-assets/frames.example.json` → `config/print-assets/frames.json`; set each `file`; calibrate each `window` (measure the transparent rect in the master: `left = x/canvasW`, etc.). `composeMockup` throws on any window whose ratio drifts >2% from its sheet (0.70 framed / 0.667 mount) — iterate until clean.
+1. **`brown_framed` re-export** — the current `brown_framed.jpg` (2000×2000) is from a different mockup source: window ratio 0.746 vs the 0.70 sheet, which the 2% guard rejects by design. Re-export with the same geometry as the black/natural blanks (ideally identical 2500×2500 canvas + window rect).
+2. **Three mount blanks** (`black_mount`, `light_brown_mount`, `brown_mount`) — copies of the framed blanks with the passe-partout drawn in the window: fill the window white (`#FCFBF8`-ish), centred aperture at **85.7% of window width × 90% of window height** (physical Prodigi geometry, ratio 0.667 = CFPM sheet), aperture left empty (pipeline pastes the CFPM sheet there), bevel = 2–4 px light-grey inner edge + subtle top inner shadow (black 8–12%, 3–5 px blur).
+
+Then:
+
+- [ ] Copy `config/print-assets/frames.example.json` → `config/print-assets/frames.json`; re-measure each new master's `window` (fractions of its own canvas; the black/natural framed values are already measured). `composeMockup` throws on any window whose ratio drifts >2% from its sheet (0.70 framed / 0.667 mount) — iterate until clean.
 - [ ] Run `npm run print-assets:mockups -- --product fap01 --dry-run`, review the plan, then run without `--dry-run` (needs `SUPABASE_*` + wrangler auth, same as `print-assets:gallery`).
-- [ ] Visually inspect `public/uploads/fap-01-mock-*.webp` (6 states) — sheet not distorted, shadow direction consistent across colours, background `#F1EFEA` matches the PDP.
+- [ ] Visually inspect `public/uploads/fap-01-mock-*.webp` (6 states) — sheet not distorted, shadow/backdrop consistent across colours (the backdrop comes from the blanks themselves), aperture crop correct on mount states.
 - [ ] Set `mockups: true` on `fap01` in `src/lib/prints.ts` (`PRINT_DESIGNS[0]`).
 - [ ] Run `npx playwright test e2e/print-configurator.spec.ts` — the swap test now RUNS and must PASS; run `npm run test && npm run typecheck && npm run lint && npm run build`.
 - [ ] Commit the WebPs + flag together: `git add public/uploads/fap-01-mock-*.webp src/lib/prints.ts config/print-assets/frames.json && git commit -m "feat(prints): enable live mockups for fap01"`.
-- [ ] After fap02/fap03 fulfilment assets are published (separate ongoing effort), repeat for each (`fap02` produces only `framed-black`/`framed-white`).
+- [ ] After fap02/fap03 fulfilment assets are published (separate ongoing effort), repeat for each (`fap02` produces only `framed-black`/`framed-natural`).
 
 ---
 
 ## Execution notes
 
-- Task order is strict: 1 → 2 → (3, 4 in either order; 4 needs 3) → 5. Task 6 is deferred until masters are delivered.
-- Tasks 1-5 ship a user-invisible feature (flag off everywhere) — safe to merge to `main` behind the normal PR flow before any masters exist.
-- PR title should be `feat:`-prefixed so release-please cuts a version.
+- Task order is strict: 0 → 1 → 2 → (3, 4 in either order; 4 needs 3) → 5. Task 6 is deferred until the remaining masters are delivered (brown re-export + 3 mount blanks).
+- Stacked per-domain PRs: **PR 1** = Task 0 (colour axis swap — its own reviewable domain, plus the post-merge operator steps in Task 0 Step 7), **PR 2** = Tasks 1–5 (mockup feature, flag off everywhere — user-invisible and safe to merge before any masters exist), **PR 3** = Task 6 activation.
+- PR titles should be `feat:`-prefixed so release-please cuts versions.
