@@ -283,3 +283,32 @@ Per-profile orders: storefront checkout, `npm run print-assets:sandbox-matrix`, 
 ### Live rollout approval
 
 **Status:** _sandbox matrix passed 2026-07-13_ (`ord_1162949`–`ord_1162955`, run `2026-07-13-1017`) — assets confirmed in Prodigi sandbox dashboard. **Remaining before `PRODIGI_ENV=live`:** studio visual sign-off on `design/print-assets/fap01/2026-07-12-r1/proof-*.jpg` + explicit operator PR sign-off. Keep Bot Fight Mode **off** on Free (or upgrade to Pro + Super Bot Fight Mode with per-path WAF skip if bot protection must stay on).
+
+## Configurator mockups (`print-assets:mockups`)
+
+Pre-rendered hero states for the PDP live-mockup feature (spec
+`docs/superpowers/specs/2026-07-19-print-configurator-live-mockup-design.md`).
+
+Prerequisites: the design's fulfilment revision is published (`ready`);
+`config/print-assets/frames.json` exists (copy `frames.example.json`) and its
+`file` entries point at the six frame masters under gitignored
+`design/print-assets/frames_blanks/` — opaque mockup blanks (baked background
++ shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one framed + one
+mount blank per colour (black / natural / brown). Mount blanks follow the
+recipe: window filled white, centred aperture at 85.7% × 90% of the window
+(ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge + subtle inner
+shadow. The `window` values in frames.json are fractions of each master's own
+canvas; the sheet is composited over that rect.
+
+    npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
+    npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
+
+The step composes the `8400x12000` FAP derivative (framed states) and the
+`7200x10800` CFPM derivative (mount states) into the colour's frame master,
+then emits `public/uploads/<stem>-mock-<state>.webp` + 400/800/1600w srcset
+variants and mirrors them to R2 (`prints/{product}/gallery/mock-<state>/`).
+
+Ship in ONE PR: the generated `public/uploads/*-mock-*.webp` files **and**
+`mockups: true` on the design in `src/lib/prints.ts` (the PDP only swaps the
+hero when the flag is set). Re-run after every new fulfilment revision, like
+`print-assets:gallery`.

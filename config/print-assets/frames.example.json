@@ -1,0 +1,18 @@
+{
+  "_comment": "Frame-master registry for print-assets:mockups. Copy to frames.json once all six masters exist under gitignored design/print-assets/frames_blanks/. Masters are OPAQUE blanks (baked background + shadow, any canvas ratio); window = the sheet rect as fractions of the master canvas — the sheet is composited OVER it, then centre-cropped to 7:10. Framed windows must match the FAP sheet ratio 0.70, mount windows the CFPM aperture ratio 0.667, within 2% (composeMockup fail-closes otherwise). Framed windows below are MEASURED from the real blanks (2026-07-19); mount windows are derived starting points assuming the mount masters follow the runbook recipe (aperture 85.7% x 90% of the framed window, centred) — re-measure after drawing them. brown_framed: the current .jpg has window ratio 0.746 (different mockup source) and MUST be re-exported to match the black/natural geometry before use.",
+  "background": "#F1EFEA",
+  "frames": {
+    "black": {
+      "framed": { "file": "design/print-assets/frames_blanks/black_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5488, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/black_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4703, "height": 0.698 } }
+    },
+    "natural": {
+      "framed": { "file": "design/print-assets/frames_blanks/light_brown_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5492, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/light_brown_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4707, "height": 0.698 } }
+    },
+    "brown": {
+      "framed": { "file": "design/print-assets/frames_blanks/brown_framed.png", "window": { "left": 0.2256, "top": 0.112, "width": 0.5488, "height": 0.7756 } },
+      "mount": { "file": "design/print-assets/frames_blanks/brown_mount.png", "window": { "left": 0.2648, "top": 0.1508, "width": 0.4703, "height": 0.698 } }
+    }
+  }
+}

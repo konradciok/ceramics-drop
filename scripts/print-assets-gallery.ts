@@ -14,21 +14,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import sharp from 'sharp';
 import type { PrepareConfig } from '../src/lib/print-assets-prepare';
-import { IMG_WIDTHS } from '../src/lib/images';
-import { getArg, hasFlag, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
-import { hashFile } from './lib/image-facts';
-import {
-  galleryR2Key,
-  resolveLatestReadyAsset,
-  type ReadyAssetDetail,
-} from './lib/print-assets-resolve';
-import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
+import { getArg, hasFlag, ROOT } from './lib/print-assets-cli';
+import { galleryR2Key, resolveLatestReadyAsset } from './lib/print-assets-resolve';
+import { generateWebpSet, resolveSourcePath } from './lib/print-assets-storefront';
+import { printAssetsBucket, r2Put } from './lib/r2';
 
-const CANONICAL_MAX_WIDTH = 1600;
 const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
-const WEBP_QUALITY = 80;
 
 function loadConfig(productId: string): PrepareConfig {
   const configPath = path.join(ROOT, 'config', 'print-assets', `${productId}.json`);
@@ -40,94 +32,6 @@ function loadConfig(productId: string): PrepareConfig {
     throw new Error(`Config declares product "${parsed.product}", expected "${productId}"`);
   }
   return parsed;
-}
-
-/**
- * Resolve a local JPG/PNG derivative path when the prepare output tree exists;
- * otherwise download the immutable R2 fulfilment object to a scratch file.
- */
-async function resolveSourcePath(
-  productId: string,
-  asset: ReadyAssetDetail,
-  scratchDir: string,
-  bucket: string,
-): Promise<{ path: string; cleanup: boolean }> {
-  const manifestPath = path.join(revisionDir(productId, asset.revision), 'manifest.json');
-  if (fs.existsSync(manifestPath)) {
-    const manifest = loadManifest(productId, asset.revision);
-    const derivative = manifest.derivatives.find((d) => d.profileKey === asset.profile_key);
-    if (derivative) {
-      const localPath = localDerivativePath(
-        productId,
-        asset.revision,
-        derivative.profileKey,
-        derivative.sha256,
-        derivative.format,
-      );
-      if (fs.existsSync(localPath)) {
-        return { path: localPath, cleanup: false };
-      }
-    }
-  }
-
-  const ext = path.extname(asset.r2_key) || '.jpg';
-  const dest = path.join(scratchDir, `source-${asset.profile_key}${ext}`);
-  const got = r2GetToFile(bucket, asset.r2_key, dest);
-  if (!got.ok) {
-    throw new Error(`Failed to download fulfilment source ${asset.r2_key}: ${got.error}`);
-  }
-  const downloadedSha = await hashFile(dest);
-  if (downloadedSha !== asset.sha256) {
-    throw new Error(
-      `Integrity mismatch for ${asset.r2_key}: expected sha256 ${asset.sha256}, got ${downloadedSha}`,
-    );
-  }
-  return { path: dest, cleanup: true };
-}
-
-interface WebpOutput {
-  filename: string;
-  localPath: string;
-  r2Key: string;
-  publicPath: string;
-}
-
-async function generateWebpSet(
-  sourcePath: string,
-  stem: string,
-  scratchDir: string,
-): Promise<WebpOutput[]> {
-  const outputs: WebpOutput[] = [];
-
-  const canonicalName = `${stem}.webp`;
-  const canonicalPath = path.join(scratchDir, canonicalName);
-  await sharp(sourcePath)
-    .resize({ width: CANONICAL_MAX_WIDTH, withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
-    .toFile(canonicalPath);
-  outputs.push({
-    filename: canonicalName,
-    localPath: canonicalPath,
-    r2Key: '',
-    publicPath: `/uploads/${canonicalName}`,
-  });
-
-  for (const w of IMG_WIDTHS) {
-    const variantName = `${stem}-${w}w.webp`;
-    const variantPath = path.join(scratchDir, variantName);
-    await sharp(sourcePath)
-      .resize({ width: w, withoutEnlargement: true })
-      .webp({ quality: WEBP_QUALITY })
-      .toFile(variantPath);
-    outputs.push({
-      filename: variantName,
-      localPath: variantPath,
-      r2Key: '',
-      publicPath: `/uploads/${variantName}`,
-    });
-  }
-
-  return outputs;
 }
 
 async function main(): Promise<void> {
