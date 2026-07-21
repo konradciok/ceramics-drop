@@ -29,14 +29,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { compareRemoteToManifest } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
-import { getArg, hasFlag, loadManifest } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest } from './lib/print-assets-cli';
 import { printAssetsBucket, r2GetToFile } from './lib/r2';
 import { readObjectFacts } from './lib/image-facts';
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const revision = getArg('revision');
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.verify);
+  const productId = args.product;
+  const revision = args.revision;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-11-r1)');

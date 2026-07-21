@@ -36,7 +36,7 @@ import {
   type RemoteProbe,
 } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
-import { getArg, hasFlag, loadManifest, localDerivativePath, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest, localDerivativePath, ROOT } from './lib/print-assets-cli';
 import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
 import { hashFile } from './lib/image-facts';
 
@@ -62,9 +62,10 @@ async function probeRemote(bucket: string, key: string, scratchDir: string): Pro
 }
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const revision = getArg('revision');
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.upload);
+  const productId = args.product;
+  const revision = args.revision;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-11-r1)');
