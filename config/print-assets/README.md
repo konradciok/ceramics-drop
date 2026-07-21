@@ -64,3 +64,16 @@ published asset** — it only governs the *next* prepare run. Cutting a new
 revision requires re-sourcing the artwork (clean master, no baked border) and,
 when the config includes a `signature`, its `signature.svg`, then running the unchanged
 `print-assets:prepare` → `:upload` → `:verify` → `:publish` sequence.
+
+## Thin-border ceiling fields
+
+For fap01–fap03, `artworkMaxWidth: 0.93` and `artworkMaxHeight: 0.87`
+are semantically redundant with the configured margins for the current profile
+set, but independent integer rounding makes them observable: removing the width
+ceiling changes the 3614×4795 artwork box by one pixel. Keep both fields for the
+published 2026-07-19-r2 composition. Remove them only when intentionally cutting
+a new revision, followed by prepare, visual approval, upload, verify, and publish.
+
+fap04 is a draft config with zero active variants. It is tracked so its source
+and layout contract can be reviewed before activation; it is not evidence of a
+published fulfilment revision.
