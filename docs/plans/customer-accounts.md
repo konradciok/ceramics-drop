@@ -81,7 +81,7 @@ Use **Supabase Auth** (the auth service of the Supabase project the store alread
 - **TTLs:** access token 3600 s (Supabase default; matches `config.toml`), refresh-token rotation on with the 10 s reuse interval (also defaults). Users stay signed in indefinitely until sign-out/revocation — appropriate for a shop.
 - **Read tiers:**
   - *Account pages (RSC):* `getSessionUser()` — reassemble cookie → `jose.jwtVerify` against the cached JWKS (`iss = <SUPABASE_URL>/auth/v1`, `aud = 'authenticated'`) → `{ id, email, name? }`. Local, fail-closed (any error ⇒ signed-out, never 500). RSCs cannot write cookies, which is why…
-  - *Middleware (only `/konto*` paths, only when an `sb-*` cookie exists):* fast local verify; if expired (or < 60 s left) → `createServerClient` bound to request/response → `getUser()` → rotated cookies written to the response, response marked `private, no-store`. Anonymous visitors skip in two cheap guards (path regex, cookie presence).
+  - *Middleware (only `/konto*` paths, only when an `sb-*` cookie exists):* fast local verify; if expired (or < 60 s left) → `createServerClient` bound to request/response → `getUser()` → rotated cookies written to the response, response stamped with the full anti-cache header set (§7). Anonymous visitors skip in two cheap guards (path regex, cookie presence).
   - *`POST /api/checkout` and `/api/auth/*` (route handlers — can write cookies):* same fast path; inline refresh on expiry; on any failure checkout proceeds anonymously.
 - **Failure modes:** double-refresh races are absorbed by the 10 s reuse interval (both requests end with the same rotated session); JWKS fetch failure or a Supabase Auth outage degrades to signed-out rendering and anonymous checkout — the storefront and payments never depend on auth availability.
 
@@ -95,23 +95,31 @@ Two additive, zero-downtime migrations (timestamp-prefix convention, `supabase/m
 
 ```sql
 -- Customer accounts: link orders to Supabase Auth users.
--- ON DELETE SET NULL: account deletion (GDPR) anonymizes the link but keeps the
--- order row for accounting — the row simply becomes guest-like again.
+-- ON DELETE SET NULL is a safety backstop only — account deletion runs through
+-- a runbook procedure (unlink + stamp user_unlinked_at, THEN delete the auth
+-- user) so order rows survive as guest-like rows for accounting/legal retention.
 -- RLS stance unchanged: orders stays enabled/deny-all with zero policies; all
 -- reads continue through the service-role client, filtered server-side by the
 -- JWT-verified user id.
 alter table orders
-  add column if not exists user_id uuid references auth.users(id) on delete set null;
+  add column if not exists user_id uuid references auth.users(id) on delete set null,
+  -- Stamped by the account-deletion procedure; excludes these rows from
+  -- backfill-on-login forever, so deleted-account history can never be
+  -- silently re-claimed by a later login with the same email address.
+  add column if not exists user_unlinked_at timestamptz;
 
 create index if not exists orders_user_id_idx
   on orders(user_id) where user_id is not null;
 
--- Backfill-on-login runs: WHERE user_id IS NULL AND lower(email) = lower($1)
+-- Backfill-on-login runs:
+--   WHERE user_id IS NULL AND user_unlinked_at IS NULL AND lower(email) = lower($1)
 create index if not exists orders_unclaimed_email_idx
   on orders(lower(email)) where user_id is null and email is not null;
 ```
 
-FK to `auth.users` is the officially documented Supabase pattern; migrations run as `postgres` so permissions are fine, and local `supabase db reset` has the auth schema (auth is enabled in `config.toml`). `SET NULL` (never CASCADE) gives the exact GDPR deletion semantics we want for free.
+FK to `auth.users` is the officially documented Supabase pattern; migrations run as `postgres` so permissions are fine, and local `supabase db reset` has the auth schema (auth is enabled in `config.toml`). Use `SET NULL` (never CASCADE) so order rows always survive user deletion.
+
+**What account deletion does — and does not — do.** Deletion is an **unlink, not an erasure.** The runbook procedure is: `update orders set user_id = null, user_unlinked_at = now() where user_id = :uid;` then delete the `auth.users` row (the FK action is only a backstop if the first step is skipped). `orders.email`, receiver names, and shipping addresses remain on the rows under the store's accounting/legal retention duties — exactly as for guest orders — and erasure requests for that data follow the existing order-PII process, unchanged by this feature. The `user_unlinked_at` stamp is permanently excluded from backfill-on-login (§4.3), so a later verified login with the same address — whether the returning person or a future owner of a recycled mailbox — can never silently re-claim a deleted account's order history.
 
 ### Migration 2 — `prodigi_orders` tracking columns (+ backfill)
 
@@ -175,11 +183,15 @@ Two mechanisms, in priority order:
 
 1. **At creation** (§4.2) — authoritative; survives email mismatches.
 2. **Backfill-on-login** — in `/api/auth/callback`, after `exchangeCodeForSession` succeeds (try/caught, never blocks the redirect):
+
    ```sql
    update orders set user_id = :uid
-   where user_id is null and lower(email) = lower(:verified_email);
+   where user_id is null
+     and user_unlinked_at is null
+     and lower(email) = lower(:verified_email);
    ```
-   Runs on **every** login (cheap via the partial index), so guest purchases made *between* logins are swept up too. Only provider-verified emails reach this point (Google and Apple both verify; Supabase discards unverified identity emails).
+
+   Runs on **every** login (cheap via the partial index), so guest purchases made *between* logins are swept up too. Only provider-verified emails reach this point (Google and Apple both verify; Supabase discards unverified identity emails), and orders unlinked by an account deletion are permanently excluded (§3).
 
 Webhooks, `markPaid`, refunds, the cron — none of them touch `user_id`. Association is decided at insert or by backfill, nowhere else.
 
@@ -193,10 +205,11 @@ Webhooks, `markPaid`, refunds, the cron — none of them touch `user_id`. Associ
 | `orders.email IS NULL` (legacy rows) | Skipped by the backfill predicate; unlinkable by definition. |
 | **Apple private relay** (`…@privaterelay.appleid.com`) | Relay ≠ typed checkout email ⇒ backfill can't match past guest orders. Mitigated by checkout-time association (incl. the expired-token refresh). Residual: relay users' *pre-account* guest orders stay unlinked — documented limitation. |
 | Buyer pays with a different email than the account | Session `user_id` wins; `orders.email` keeps the typed address (emails/invoices unchanged). Deliberate: the account that made the purchase owns it. |
-| Same verified email via Google *and* Apple | Supabase automatic identity linking ⇒ one user, one history. |
+| Same verified email via Google *and* Apple | Supabase automatic identity linking ⇒ one user, one history. Not taken on faith: the cross-provider same-email round-trip is an explicit item in the Phase-4 preview runbook checklist (§10 rollout step 4). |
 | Two accounts could claim the same guest email (e.g. Google user vs Apple-relay user who typed it at checkout) | First login claims (`user_id IS NULL` guard); deterministic, no flapping. |
 | Recycled/mistyped email claimed by its current verified owner | Same exposure class as the existing order-confirmation email itself; accepted, documented (only provider-verified emails backfill). |
-| Account deletion (GDPR) | `auth.users` delete → FK `SET NULL`; orders persist as guest-like rows for accounting. `orders.email` erasure remains the existing separate PII process. |
+| Account deletion | Runbook: unlink + stamp `user_unlinked_at`, then delete the auth user (FK `SET NULL` is only a backstop). Orders persist as guest-like rows for accounting/legal retention; deletion is an unlink, not an erasure — `orders.email` erasure remains the existing separate PII process (§3). |
+| Same email logs in again *after* a deletion | The `user_unlinked_at IS NULL` guard excludes unlinked rows from backfill ⇒ deleted history is never re-claimed, by the returning person or by a future owner of a recycled address. |
 | Refund / dispute / expiry | Untouched paths; the account page simply renders the resulting status. |
 
 ---
@@ -213,11 +226,20 @@ The internal order UUID is already Prodigi's `merchantReference` **and** `metada
 
 ```ts
 { order_id, prodigi_order_id, prodigi_status_stage, prodigi_raw_json, updated_at,
-  carrier, tracking_number, tracking_url,
-  shipped_at /* dispatchDate ?? now() when stage === 'Complete' */ }
+  carrier, tracking_number,
+  tracking_url, // persisted only when it passes https-validation (below)
+  shipped_at    // dispatchDate ?? null — NEVER now(): a replayed/late callback
+                // must not shift the ship date to callback-processing time.
+                // Derived purely from Prodigi data, so replays converge; absent
+                // dispatchDate stays NULL and the UI shows status without a date.
+}
 ```
 
 The email path then reuses the picked shipment. This lands inside an already-deduped (webhook_events lease), already-retried (Prodigi redelivers on our 500s) pipeline — no new failure modes, no changes to dedup/claim logic. Because the handler *re-fetches* the full order on every event, late-arriving tracking numbers upgrade the columns on any subsequent callback automatically.
+
+**`tracking_url` is untrusted external data.** It is persisted and later rendered as an `href` in the account. Validate twice: at persistence (accept only absolute `https://` URLs — anything else stores `NULL` while keeping carrier/number) and again at render (the shared tracking helper emits a link only for `https:` values; otherwise the page shows the bare tracking number as text). This closes off `javascript:`/`data:`-scheme injection from a buggy or compromised upstream payload.
+
+**V1 scope — one primary tracking per order (explicit).** The persisted columns describe the *primary* shipment — first with a tracking number, else first in array order, exactly the shipment today's shipping email cites — while the complete `shipments[]` array remains losslessly in `prodigi_raw_json` (nothing is discarded). Split shipments have never occurred for this catalogue (single-print boutique orders); if they become real, the upgrade path is a child `prodigi_shipments` table plus a shipments list on the detail page, backfillable from the raw JSON at that point. Building that now would be speculative.
 
 ### 5.3 Status update flow (customer-facing)
 
@@ -244,13 +266,15 @@ Minimal surface: **two pages** under one new route folder `src/app/[locale]/kont
    - Signed in: account header (name/email from the JWT + sign-out form) and **order history**: `paid`/`refunded` orders (newest first, capped at 50), each row showing date, item summary (names via the existing product registry / print-token resolvers), total (existing money formatters), and the unified status chip.
 2. **`/konto/zamowienia/[id]`** (order detail + tracking) — signed-out → locale-aware `redirect('/konto')`; lookup `WHERE id = :id AND user_id = :uid`, else `notFound()` (matches the `/api/returns` anti-enumeration posture). Sections: items (with print variant details from `order_items.variant`), amounts, delivery method + formatted address (`normalizeShippingAddress` — already handles both JSONB shapes), and the **tracking block** per §5.3. Ceramic paid orders also link to the existing `/zwrot?order=<id>` returns flow — reusing it rather than rebuilding returns inside the account.
 
-**Account management:** deliberately minimal for v1 — identity comes from Google/Apple (nothing to edit), so "management" is sign-out plus a mailto for deletion requests (owner deletes in the Supabase dashboard; the FK anonymizes orders). A self-serve delete button is listed as an open decision (§13). No address book, no saved payment methods (Stripe PaymentElement + browser autofill already cover this at the friction level the store wants).
+**Account management:** deliberately minimal for v1 — identity comes from Google/Apple (nothing to edit), so "management" is sign-out plus a mailto for deletion requests (owner runs the unlink runbook from §3, then deletes the user in the Supabase dashboard). A self-serve delete button is listed as an open decision (§13). No address book, no saved payment methods (Stripe PaymentElement + browser autofill already cover this at the friction level the store wants).
 
 ---
 
 ## 7. Backend changes
 
-### New endpoints (all under `/api/auth/*` — outside the middleware matcher, never cache-intercepted, all responses `no-store`)
+### New endpoints (all under `/api/auth/*` — outside the middleware matcher, never cache-intercepted)
+
+Any response that writes auth cookies — these routes, the middleware refresh, and a checkout response that performed an inline refresh — carries the **full anti-cache header set** per Supabase SSR guidance, not just the house `private, no-store`: `Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0`, `Pragma: no-cache`, `Expires: 0` (plus the already-global `Vary: Cookie`). Asserted in unit tests for the route handlers and the middleware block.
 
 | Route | Method | Behavior |
 |---|---|---|
@@ -263,7 +287,7 @@ Minimal surface: **two pages** under one new route folder `src/app/[locale]/kont
 
 ### Modified
 
-- **`src/middleware.ts`** — one guarded block (~35 lines) before `handleI18n`: `/konto` path regex + `sb-*` cookie presence → local verify → refresh only when expired → copy rotated cookies onto the response + `private, no-store`. Everything else (matcher, i18n, currency, headers, the `middleware.ts` filename) untouched. Keep the supabase-server import lazy inside the guarded branch to limit edge-bundle parse cost.
+- **`src/middleware.ts`** — one guarded block (~35 lines) before `handleI18n`: `/konto` path regex + `sb-*` cookie presence → local verify → refresh only when expired → copy rotated cookies onto the response + the full anti-cache header set (§7). Everything else (matcher, i18n, currency, headers, the `middleware.ts` filename) untouched. Keep the supabase-server import lazy inside the guarded branch to limit edge-bundle parse cost.
 - **`src/app/api/checkout/route.ts`** — §4.2 (session resolve + `user_id` in the insert).
 - **`src/server/prodigi/callbacks.ts`** — §5.2 (tracking columns in the existing upsert).
 - **`src/app/admin/fulfillment/[id]/page.tsx`** *(optional, ~5 lines)* — display the new Prodigi tracking columns; closes today's admin gap.
@@ -298,7 +322,7 @@ Minimal surface: **two pages** under one new route folder `src/app/[locale]/kont
 - **OAuth:** PKCE code flow end-to-end; provider secrets live only in Supabase's dashboard (never in our env/bundle); Apple form_post terminates at Supabase; our callback validates via `exchangeCodeForSession` (code + verifier bound); `next` redirect targets are validated relative-only (open-redirect proof); login endpoint is rate-limited and POST-only (login-CSRF resistant); provider `?error` responses never mint cookies.
 - **Session management:** httpOnly + Secure + SameSite=Lax cookies (tokens are **never** readable by JS — stricter than the Supabase default browser setup, and it makes the Report-Only CSP a non-blocker); refresh-token rotation with 10 s reuse window; sign-out revokes server-side (`scope: 'local'`); JWT verification checks signature (asymmetric JWKS), `iss`, `aud`, `exp` — mirroring `src/lib/admin/access.ts`; sessions die cleanly if the secret is removed (kill switch).
 - **Authorization:** service-role stays server-only (unchanged); every account read is ownership-filtered server-side; order detail 404s on non-ownership (anti-enumeration, house pattern); RLS posture (deny-all, no policies) unchanged; no privilege path from customer session to admin surfaces.
-- **Sensitive data:** the dashboard exposes only the owner's own orders (address, items, tracking — data they entered); no payment data beyond totals (PANs never touch this system); `marketing` jsonb is never rendered; backfill links only provider-**verified** emails; account deletion = `SET NULL` (orders keep serving accounting/tax duties as guest rows); one privacy-policy paragraph documents account processing + historical-order linking (RODO). Auth events are loggable via existing Sentry wiring without token contents.
+- **Sensitive data:** the dashboard exposes only the owner's own orders (address, items, tracking — data they entered); no payment data beyond totals (PANs never touch this system); `marketing` jsonb is never rendered; backfill links only provider-**verified** emails and never rows stamped `user_unlinked_at`; account deletion = the unlink runbook (§3 — an unlink, not an erasure; orders keep serving accounting/tax duties as guest-like rows); externally-sourced `tracking_url` values are https-validated at persistence *and* at render (§5.2); one privacy-policy paragraph documents account processing + historical-order linking (RODO). Auth events are loggable via existing Sentry wiring without token contents.
 - **Fail-closed everywhere:** missing `SUPABASE_PUBLISHABLE_KEY` ⇒ auth routes 404, `/konto` renders "unavailable", middleware no-ops, checkout skips resolution — the pattern `FULFILMENT_DEBUG_TOKEN` and the admin gate already established.
 
 ---
@@ -346,7 +370,8 @@ Requires an active **Apple Developer Program membership** ($99/yr — open quest
 | Risk | Assessment / mitigation |
 |---|---|
 | **Layout/caching regression** (session read in layout or Header flips the prerenderable `pl` tree dynamic) | The one real architectural trap — designed out via the static header link; PR checklist line: "no `cookies()`/`headers()` added to `[locale]/layout.tsx` or `Header.tsx`". |
-| **Set-Cookie meets cache interception** | Auth cookies are written only on `/api/*` (outside interception) and `/konto*` (force-dynamic); every such response is `private, no-store` (existing house rule); `Vary: Cookie` is already global. |
+| **Set-Cookie meets cache interception** | Auth cookies are written only on `/api/*` (outside interception) and `/konto*` (force-dynamic); every such response carries the full anti-cache header set (§7); `Vary: Cookie` is already global. |
+| **Split (multi-parcel) Prodigi shipment** | V1 explicitly tracks the primary shipment only (§5.2); the full `shipments[]` array stays in `prodigi_raw_json`, so nothing is lost and a child-table upgrade remains backfillable. |
 | **Middleware bloat / edge compat** (`middleware.ts` must stay edge; OpenNext rejects Node `proxy.ts`) | supabase-js already runs in this Worker; the refresh path sits behind two cheap guards and a lazy import; verify `next build --webpack` + `opennextjs-cloudflare build` in Phase-2 CI. |
 | **@supabase/ssr cookie-format drift** on upgrade (our jose fast path parses its cookies) | Unit fixture is generated *via the library itself* — drift fails the test loudly, not production silently. |
 | **Double-refresh races** (parallel expired requests) | Absorbed by the 10 s refresh-reuse interval; refresh surface deliberately tiny (konto + checkout). Residual: very stale multi-tab sessions may force a re-login — acceptable. |
@@ -373,7 +398,7 @@ Phases are independently shippable, each behind the fail-closed gate; convention
 | **4 — Entry points, tests, docs** | Header/mobile `Konto` link; return-page link; `e2e/konto.spec.ts` (@ci: unavailable-state, redirect, nav link, 404 gate); optional `test-session` debug route + `@account-edge` seeded-session spec; `docs/customer-accounts-runbook.md` | `feat(account): navigation entry, e2e coverage, runbook` |
 | **5 — Optional polish** (each independent) | Cart contact prefill from session; non-httpOnly display-hint cookie for a signed-in header label; `/admin/customers` grouping by `user_id`; `prodigi-cli sync-tracking` | separate small PRs |
 
-**Testing summary:** unit — status mapper (exhaustive table), session cookie reassembly/verify (fixtures minted via `@supabase/ssr` itself + locally-signed ES256 JWTs), existing messages-parity test; E2E `@ci` — hermetic, auth-disabled deterministic states; E2E `@account-edge` (new opt-in tier alongside `@checkout-edge`) — seeded session via the debug route against a real staging Supabase: list/detail/sign-out and a checkout-association assertion; real-provider OAuth round-trips are a manual runbook checklist per environment (the honest cost of OAuth E2E everywhere). Regression gate: the untouched checkout E2E suite stays green.
+**Testing summary:** unit — status mapper (exhaustive table), session cookie reassembly/verify (fixtures minted via `@supabase/ssr` itself + locally-signed ES256 JWTs), the `tracking_url` https-validator, anti-cache headers on every cookie-writing auth response, existing messages-parity test; E2E `@ci` — hermetic, auth-disabled deterministic states; E2E `@account-edge` (new opt-in tier alongside `@checkout-edge`) — seeded session via the debug route against a real staging Supabase: list/detail/sign-out and a checkout-association assertion; real-provider OAuth round-trips are a manual runbook checklist per environment (the honest cost of OAuth E2E everywhere). Regression gate: the untouched checkout E2E suite stays green.
 
 ---
 
