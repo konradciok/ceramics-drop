@@ -5,48 +5,20 @@
  *
  *   npm run print-assets:sandbox-matrix -- --product fap01 [--dry-run] [--run-id 2026-07-13-r2]
  */
-import { parseArgs as nodeParseArgs } from 'node:util';
 import { signPrintAssetUrl } from '../src/lib/print-assets';
 import { getWorkerOrigin } from '../src/lib/site.server';
 import { buildSandboxMatrix, resolveLatestReadyByProfile } from './lib/print-assets-resolve';
 import { loadLocalEnv } from './lib/script-env';
+import { parseSandboxArgs, defaultRunId, postSandboxOrder } from './lib/print-assets-sandbox-matrix';
 
-const PRODIGI_FETCH_TIMEOUT_MS = 15_000;
-
-function parseArgs(): { product: string; dryRun: boolean; runId?: string } {
-  // strict + no positionals: a typo'd --dryrun aborts instead of silently
-  // placing real sandbox orders (dryRun would stay false). 'env-file' is
-  // declared so it doesn't trip the strict gate — loadLocalEnv() consumes it.
-  const { values } = nodeParseArgs({
-    options: {
-      product: { type: 'string' },
-      'run-id': { type: 'string' },
-      'dry-run': { type: 'boolean' },
-      'env-file': { type: 'string' },
-      help: { type: 'boolean', short: 'h' },
-    },
-  });
-  if (values.help) {
+async function main(): Promise<void> {
+  const { product, dryRun, runId: runIdArg, help } = parseSandboxArgs(process.argv.slice(2));
+  if (help) {
     console.log(
       'Usage: npm run print-assets:sandbox-matrix -- [--product fap01] [--run-id <suffix>] [--dry-run]',
     );
     process.exit(0);
   }
-  return {
-    product: typeof values.product === 'string' ? values.product : 'fap01',
-    dryRun: values['dry-run'] === true,
-    runId: typeof values['run-id'] === 'string' ? values['run-id'] : undefined,
-  };
-}
-
-/** UTC date + minute — unique per run unless --run-id overrides. */
-function defaultRunId(): string {
-  const iso = new Date().toISOString();
-  return `${iso.slice(0, 10)}-${iso.slice(11, 16).replace(':', '')}`;
-}
-
-async function main(): Promise<void> {
-  const { product, dryRun, runId: runIdArg } = parseArgs();
   const env = loadLocalEnv();
   const apiKey = env.PRODIGI_API_KEY_SANDBOX;
   const secret = env.PRINT_ASSET_TOKEN_SECRET;
@@ -55,7 +27,7 @@ async function main(): Promise<void> {
 
   const byProfile = await resolveLatestReadyByProfile(product);
   const matrix = buildSandboxMatrix();
-  const origin = getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN }).replace(/\/$/, '');
+  const origin = getWorkerOrigin({ WORKER_ORIGIN: env.WORKER_ORIGIN });
   const runId = runIdArg ?? defaultRunId();
   const results: Array<Record<string, unknown>> = [];
   let failures = 0;
@@ -111,42 +83,35 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), PRODIGI_FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch('https://api.sandbox.prodigi.com/v4.0/orders', {
-        method: 'POST',
-        headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        failures++;
-        const err = `Prodigi order failed (${res.status}): ${JSON.stringify(body)}`;
+      const { summary, classification } = await postSandboxOrder({ apiKey, payload });
+      if (classification === 'success') {
         results.push({
           profileKey: row.profileKey,
           variantKey: row.variantKey,
           sku: row.sku,
           assetId: asset.id,
           idempotencyKey,
-          error: err,
+          prodigiOrderId: summary.orderId,
+          status: summary.stage,
         });
-        console.error(`✗ ${row.profileKey} — ${err}`);
-        continue;
+        console.log(`✓ ${row.profileKey} → ${summary.orderId ?? '(no id)'}`);
+      } else {
+        // Duplicate (alreadyExists) or failure (createdWithIssues): keep the
+        // row's own context; the response-derived part is only the sanitized
+        // summary — never the raw response, which can echo the signed asset
+        // URL back — and skip the success marker.
+        failures++;
+        results.push({
+          profileKey: row.profileKey,
+          variantKey: row.variantKey,
+          sku: row.sku,
+          assetId: asset.id,
+          idempotencyKey,
+          ...summary,
+        });
+        console.error(`✗ ${row.profileKey} — ${classification}: ${JSON.stringify(summary)}`);
       }
-      const ordId = (body as { order?: { id?: string; status?: { stage?: string } } })?.order?.id ?? null;
-      const stage = (body as { order?: { status?: { stage?: string } } })?.order?.status?.stage ?? null;
-      results.push({
-        profileKey: row.profileKey,
-        variantKey: row.variantKey,
-        sku: row.sku,
-        assetId: asset.id,
-        idempotencyKey,
-        prodigiOrderId: ordId,
-        status: stage,
-      });
-      console.log(`✓ ${row.profileKey} → ${ordId ?? '(no id)'}`);
     } catch (err) {
       failures++;
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -159,8 +124,6 @@ async function main(): Promise<void> {
         error: errMsg,
       });
       console.error(`✗ ${row.profileKey} — ${errMsg}`);
-    } finally {
-      clearTimeout(timeout);
     }
   }
 
