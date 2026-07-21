@@ -31,6 +31,7 @@ import { derivativeR2Key, profileKeyFromPx } from '../src/lib/print-assets-prepa
 import { loadSupabaseClient } from './lib/script-env';
 import { parseScriptArgs, PRINT_ASSET_ARG_SPECS } from './lib/print-assets-cli';
 import { preflightPreparedRevision } from './lib/print-assets-preflight';
+import { promoteVerifiedAssets } from './lib/print-assets-promotion';
 import { printAssetsBucket, r2GetToFile } from './lib/r2';
 import { readObjectFacts } from './lib/image-facts';
 
@@ -119,21 +120,23 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (toPromote.length > 0) {
-      const verifiedAt = new Date().toISOString();
-      const promoted = await supabase
-        .from('print_fulfilment_assets')
-        .update({ status: 'ready', verified_at: verifiedAt })
-        .eq('product_id', productId)
-        .eq('revision', revision)
-        .eq('status', 'staged')
-        .in('r2_key', toPromote);
-      if (promoted.error) throw new Error(`Failed to promote assets to ready: ${promoted.error.message}`);
-    }
+    // Promote transactionally: ONE RPC over EVERY manifest key, under a
+    // product-level lock. Passing the full key set (not just the staged ones)
+    // lets the RPC re-check every requested row is still staged-or-ready and
+    // flip only the staged rows in a single transaction — so a revoke racing
+    // this call aborts the whole promotion (promotion_state_changed) instead of
+    // leaving the revision half-promoted, the race the client-side UPDATE had.
+    const allKeys = manifest.derivatives.map((d) => derivativeR2Key(manifest, d));
+    const { promotedCount } = await promoteVerifiedAssets({
+      client: { rpc: async (name, rpcArgs) => supabase.rpc(name, rpcArgs) },
+      productId,
+      revision,
+      r2Keys: allKeys,
+    });
 
     console.log(
-      `\nDone. Verified ${manifest.derivatives.length} derivative(s); promoted ${toPromote.length} → ready ` +
-        `(${alreadyReady} already ready).`,
+      `\nDone. Verified ${manifest.derivatives.length} derivative(s); promoted ${promotedCount} → ready ` +
+        `(${manifest.derivatives.length - promotedCount} already ready).`,
     );
     console.log('Next: npm run print-assets:publish to assign this revision to every active variant.');
   } finally {
