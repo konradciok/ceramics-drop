@@ -9,10 +9,6 @@ import { SITE_URL } from './site';
 
 export const PRINT_ASSET_TTL_SECS = 60 * 60 * 24 * 7; // 7 days — Prodigi downloads well within this
 
-export function printAssetKey(productId: string): string {
-  return `${productId}/master.jpg`;
-}
-
 const enc = new TextEncoder();
 
 function importHmacKey(secret: string, usage: 'sign' | 'verify'): Promise<CryptoKey> {

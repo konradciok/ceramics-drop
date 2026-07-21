@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   signPrintAssetUrl,
   verifyPrintAssetSig,
-  printAssetKey,
   PRINT_ASSET_TTL_SECS,
 } from './print-assets';
 import { SITE_URL } from './site';
@@ -21,12 +20,6 @@ async function signTriple(assetId = ASSET_ID, secret = SECRET, nowMs: number = N
   const params = new URL(url).searchParams;
   return { exp: Number(params.get('exp')), sig: params.get('sig')! };
 }
-
-describe('printAssetKey', () => {
-  it('appends /master.jpg to the bare productId', () => {
-    expect(printAssetKey('fap01')).toBe('fap01/master.jpg');
-  });
-});
 
 describe('signPrintAssetUrl — URL shape', () => {
   it('produces ${origin}/api/print-assets/{encAssetId}?exp={exp}&sig={lowercase-hex}', async () => {
