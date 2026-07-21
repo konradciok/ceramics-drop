@@ -60,6 +60,7 @@
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/supabase-js": "^2.107.0",
     "@swc/helpers": "^0.5.23",
+    "aws4fetch": "1.0.20",
     "jose": "^6.2.3",
     "libphonenumber-js": "^1.13.9",
     "next": "^16.2.7",

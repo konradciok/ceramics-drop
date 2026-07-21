@@ -24,7 +24,7 @@ import {
   resolveLatestReadyAsset,
   type ReadyAssetDetail,
 } from './lib/print-assets-resolve';
-import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
+import { printAssetsBucket, r2GetToFile, r2PutMutable } from './lib/r2';
 
 const CANONICAL_MAX_WIDTH = 1600;
 const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
@@ -174,7 +174,7 @@ async function main(): Promise<void> {
         continue;
       }
 
-      const put = r2Put(bucket, file.r2Key, file.localPath, 'image/webp');
+      const put = r2PutMutable(bucket, file.r2Key, file.localPath, 'image/webp');
       if (!put.ok) throw new Error(`R2 upload failed for ${file.r2Key}: ${put.error}`);
 
       fs.mkdirSync(UPLOADS_DIR, { recursive: true });

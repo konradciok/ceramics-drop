@@ -95,6 +95,71 @@ export function decideUploadAction(
   return 'skip';
 }
 
+/** How a single fulfilment derivative was reconciled against R2. */
+export type FulfilmentUploadOutcome =
+  /** A byte-identical object already occupied the key — reused, no write. */
+  | 'present'
+  /** Created here via the conditional PUT and verified by read-back. */
+  | 'created'
+  /** A concurrent writer created it first (412) — verified by read-back. */
+  | 'reused'
+  /** Dry-run: absent, would have created, but no write was performed. */
+  | 'dry-run';
+
+/**
+ * The injected R2 side-effects `uploadFulfilmentDerivative` orchestrates. Each
+ * probe/read-back returns the object's streamed hash or `null` when definitively
+ * absent, and MUST throw on any unresolved fault (auth/network) so a transient
+ * error can never be mistaken for "absent". `create` is the conditional
+ * `If-None-Match: *` PUT (`r2PutIfAbsent`).
+ */
+export interface FulfilmentUploadEffects {
+  probe: () => Promise<RemoteProbe | null>;
+  create: () => Promise<'created' | 'exists'>;
+  readBack: () => Promise<RemoteProbe | null>;
+}
+
+/**
+ * Reconcile one fulfilment derivative into its immutable content-addressed R2
+ * key, create-only and race-safe (plan §2 "Never overwrite a key"):
+ *   1. Probe the key. A byte-identical object → reuse (`present`); a different
+ *      object → abort (`decideUploadAction` throws).
+ *   2. Absent + dry-run → `dry-run`, performing NO write.
+ *   3. Absent → conditional create. Whether it reports `created` or loses the
+ *      race (`exists`/412), download + hash the resulting object and abort
+ *      unless it matches this derivative's bytes exactly. Only a verified object
+ *      lets the caller stage its DB row.
+ * Every abort throws before any row is staged.
+ */
+export async function uploadFulfilmentDerivative(
+  derivative: { sha256: string; r2Key: string },
+  effects: FulfilmentUploadEffects,
+  options: { dryRun: boolean },
+): Promise<FulfilmentUploadOutcome> {
+  const existing = await effects.probe();
+  if (decideUploadAction(derivative, existing) === 'skip') return 'present';
+
+  // Absent under an immutable key. A dry-run reads but never writes.
+  if (options.dryRun) return 'dry-run';
+
+  const created = await effects.create();
+  const readBack = await effects.readBack();
+  if (readBack === null) {
+    throw new Error(
+      `Read-back failed for ${derivative.r2Key}: the object is absent immediately after a "${created}" ` +
+        'response. Refusing to stage — resolve the R2 access issue and re-run.',
+    );
+  }
+  if (readBack.sha256 !== derivative.sha256) {
+    throw new Error(
+      `Read-back mismatch for ${derivative.r2Key}: the stored object hashes ${readBack.sha256.slice(0, 12)}… but the ` +
+        `local derivative is ${derivative.sha256.slice(0, 12)}…. A concurrent writer stored different bytes under ` +
+        'this content-addressed key — refusing to stage.',
+    );
+  }
+  return created === 'created' ? 'created' : 'reused';
+}
+
 // ── Staging reconciliation — idempotent re-runs ───────────────────────────────
 
 export interface StagedRowPartition {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildStagedRows,
   decideUploadAction,
@@ -6,7 +6,10 @@ import {
   compareRemoteToManifest,
   buildPublishAssignments,
   diffVariantCoverage,
+  uploadFulfilmentDerivative,
   type StagedAssetRow,
+  type RemoteProbe,
+  type FulfilmentUploadEffects,
 } from './print-assets-publish';
 import { buildR2Key, type ManifestDerivative, type PrepareManifest, type PublishManifest } from './print-assets-prepare';
 
@@ -17,6 +20,8 @@ const BYTE_SIZE_MISMATCH_RE = /byte size mismatch/;
 const DIMENSION_MISMATCH_RE = /dimension mismatch/;
 const NO_READY_ROW_RE = /No ready print_fulfilment_assets row/;
 const NO_DERIVATIVE_RE = /no\s+derivative for that profile/;
+const READBACK_MISMATCH_RE = /Read-back mismatch/;
+const READBACK_ABSENT_RE = /absent immediately after/;
 
 /** A minimal two-profile schema-v2 manifest: two derivatives, three variants (one shared). */
 function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
@@ -116,6 +121,70 @@ describe('decideUploadAction', () => {
 
   it('aborts when a different object already occupies the immutable key', () => {
     expect(() => decideUploadAction(derivative, { sha256: 'f'.repeat(64) })).toThrow(REFUSING_OVERWRITE_RE);
+  });
+});
+
+describe('uploadFulfilmentDerivative', () => {
+  const derivative = { sha256: 'a'.repeat(64), r2Key: R2_SMALL };
+  const match: RemoteProbe = { sha256: 'a'.repeat(64) };
+  const differ: RemoteProbe = { sha256: 'f'.repeat(64) };
+
+  /** Fully-mocked effects; each test overrides only the leg it exercises. */
+  function effects(over: Partial<FulfilmentUploadEffects> = {}): FulfilmentUploadEffects {
+    return {
+      probe: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue('created'),
+      readBack: vi.fn().mockResolvedValue(match),
+      ...over,
+    };
+  }
+
+  it('skips an existing byte-identical object without creating or reading back', async () => {
+    const e = effects({ probe: vi.fn().mockResolvedValue(match) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('present');
+    expect(e.create).not.toHaveBeenCalled();
+    expect(e.readBack).not.toHaveBeenCalled();
+  });
+
+  it('aborts when a different object already occupies the immutable key', async () => {
+    const e = effects({ probe: vi.fn().mockResolvedValue(differ) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(REFUSING_OVERWRITE_RE);
+    expect(e.create).not.toHaveBeenCalled();
+  });
+
+  it('creates then stages when absent and the read-back matches', async () => {
+    const e = effects();
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('created');
+    expect(e.create).toHaveBeenCalledOnce();
+    expect(e.readBack).toHaveBeenCalledOnce();
+  });
+
+  it('reuses a concurrently-created object when the 412 read-back matches', async () => {
+    const e = effects({
+      create: vi.fn().mockResolvedValue('exists'),
+      readBack: vi.fn().mockResolvedValue(match),
+    });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('reused');
+  });
+
+  it('aborts when a concurrent create left different bytes (412 read-back differs)', async () => {
+    const e = effects({
+      create: vi.fn().mockResolvedValue('exists'),
+      readBack: vi.fn().mockResolvedValue(differ),
+    });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(READBACK_MISMATCH_RE);
+  });
+
+  it('aborts when the just-put object is unreadable on read-back', async () => {
+    const e = effects({ readBack: vi.fn().mockResolvedValue(null) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(READBACK_ABSENT_RE);
+  });
+
+  it('performs no conditional PUT in dry-run', async () => {
+    const e = effects();
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: true })).resolves.toBe('dry-run');
+    expect(e.create).not.toHaveBeenCalled();
+    expect(e.readBack).not.toHaveBeenCalled();
   });
 });
 

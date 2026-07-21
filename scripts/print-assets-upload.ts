@@ -9,11 +9,14 @@
  *   - probes the content-addressed R2 key; if an object already exists there,
  *     reuses it ONLY when its full streamed SHA-256 matches (a mismatch under
  *     an immutable key aborts — plan §2 "Never overwrite a key");
- *   - otherwise `wrangler r2 object put`s the local derivative with its exact
- *     content-type.
- * Only after EVERY upload succeeds does it stage the DB rows (status='staged').
- * Re-running after a partial failure is idempotent: already-staged keys with
- * matching bytes are skipped; a same-key/different-hash row aborts.
+ *   - otherwise creates it with an atomic `If-None-Match: *` conditional PUT
+ *     (create-only: a racing second upload gets a 412, never a silent
+ *     overwrite), then downloads and hashes the resulting object and aborts
+ *     unless it matches the local derivative byte-for-byte.
+ * Only after EVERY object passes read-back does it stage the DB rows
+ * (status='staged'). Re-running after a partial failure is idempotent:
+ * already-staged keys with matching bytes are skipped; a same-key/different-hash
+ * row aborts.
  *
  * Nothing here promotes assets to `ready` or assigns them — that is
  * print-assets:verify and print-assets:publish. No fulfilment path reads
@@ -32,22 +35,29 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   buildStagedRows,
-  decideUploadAction,
   partitionStagedRows,
+  uploadFulfilmentDerivative,
   type RemoteProbe,
 } from '../src/lib/print-assets-publish';
 import { contentTypeForFormat, derivativeR2Key, profileKeyFromPx } from '../src/lib/print-assets-prepare';
-import { loadSupabaseClient } from './lib/script-env';
+import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
 import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, localDerivativePath } from './lib/print-assets-cli';
 import { preflightPreparedRevision } from './lib/print-assets-preflight';
-import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
+import {
+  printAssetsBucket,
+  r2GetToFile,
+  r2PutIfAbsent,
+  resolveR2ConditionalCredentials,
+  type R2ConditionalCredentials,
+} from './lib/r2';
 import { hashFile } from './lib/image-facts';
 
 /**
  * Probe an R2 key: download it to a scratch file and hash it, `null` when the
  * object is definitively absent, or THROW when the get failed for any other
  * reason (auth, throttling, network). A transient fault must never be mistaken
- * for "absent" and fall through to an overwriting `r2Put` — fail closed.
+ * for "absent" and drive a spurious create attempt — fail closed. Reused for
+ * the post-create read-back that verifies the stored bytes before staging.
  */
 async function probeRemote(bucket: string, key: string, scratchDir: string): Promise<RemoteProbe | null> {
   const dest = path.join(scratchDir, `probe-${key.replace(/[^a-zA-Z0-9]/g, '_')}`);
@@ -83,33 +93,58 @@ async function main(): Promise<void> {
 
   const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-assets-upload-'));
   try {
-    // 1. Upload (or reuse) every derivative before touching the database. A
+    // Resolve the conditional-PUT S3 credentials lazily — only if (and
+    // immediately before) the first real create, so dry-runs and fully-reused
+    // revisions never require them. Memoized so it resolves at most once.
+    let s3Credentials: R2ConditionalCredentials | null = null;
+    const credentials = (): R2ConditionalCredentials =>
+      (s3Credentials ??= resolveR2ConditionalCredentials(loadLocalEnv()));
+
+    // 1. Create (or reuse) every derivative before touching the database. A
     //    partial upload must not leave staged rows pointing at absent objects.
+    //    Fulfilment keys are content-addressed and immutable: create-only via a
+    //    conditional PUT, then read back and verify before staging.
     for (const d of manifest.derivatives) {
       const profileKey = profileKeyFromPx(d.width, d.height);
       const r2Key = derivativeR2Key(manifest, d);
       const contentType = contentTypeForFormat(d.format);
       const localPath = localDerivativePath(productId, revision, profileKey, d.sha256, d.format);
 
-      // Probe even in --dry-run: it's read-only, and skipping it would report
-      // "would upload" for objects that already exist byte-identically.
+      // Probe runs even in --dry-run (read-only); the conditional PUT + read-back
+      // never do — dry-runs perform no external writes.
       process.stdout.write(`  ${profileKey}  ${r2Key}  … `);
-      const remote = await probeRemote(bucket, r2Key, scratchDir);
-      const action = decideUploadAction({ sha256: d.sha256, r2Key }, remote);
+      const outcome = await uploadFulfilmentDerivative(
+        { sha256: d.sha256, r2Key },
+        {
+          probe: () => probeRemote(bucket, r2Key, scratchDir),
+          create: () =>
+            r2PutIfAbsent({
+              ...credentials(),
+              bucket,
+              key: r2Key,
+              filePath: localPath,
+              contentType,
+              sha256: d.sha256,
+            }),
+          readBack: () => probeRemote(bucket, r2Key, scratchDir),
+        },
+        { dryRun },
+      );
 
-      if (action === 'skip') {
-        console.log('already present (hash match) — reuse');
-        continue;
+      switch (outcome) {
+        case 'present':
+          console.log('already present (hash match) — reuse');
+          break;
+        case 'dry-run':
+          console.log('would upload');
+          break;
+        case 'created':
+          console.log(`uploaded + verified (${(d.byteSize / 1024).toFixed(0)} KB, ${contentType})`);
+          break;
+        case 'reused':
+          console.log(`created concurrently — reused after read-back (${contentType})`);
+          break;
       }
-      if (dryRun) {
-        console.log('would upload');
-        continue;
-      }
-      const put = r2Put(bucket, r2Key, localPath, contentType);
-      if (!put.ok) {
-        throw new Error(`Upload failed for ${r2Key}: ${put.error}`);
-      }
-      console.log(`uploaded (${(d.byteSize / 1024).toFixed(0)} KB, ${contentType})`);
     }
 
     // 2. Stage DB rows only after all uploads succeeded.
