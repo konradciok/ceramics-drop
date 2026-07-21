@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { composeDerivative, validateSignatureSvg } from './prepare-derivatives';
+import { composeDerivative, validateSignatureSvg, signatureDensity, rasterizeSignature } from './prepare-derivatives';
 import type { Placement } from '../../src/lib/print-assets-prepare';
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
@@ -12,6 +12,9 @@ const SIG = path.join(TMP, 'sig.svg');
 const BAD_SIG = path.join(TMP, 'bad.svg');
 const TEXT_SIG = path.join(TMP, 'text.svg');
 const EXTERNAL_SIG = path.join(TMP, 'external.svg');
+// Real, checked-in fixture (not tmp-generated): viewBox-only, no explicit
+// width/height — exercises the intrinsic-size-from-viewBox decode path.
+const SIGNATURE_VIEWBOX = path.join(__dirname, 'fixtures', 'signature-viewbox.svg');
 
 beforeAll(async () => {
   // A solid-red 200x200 artwork master.
@@ -217,5 +220,44 @@ describe('validateSignatureSvg', () => {
 
   it('rejects external or embedded image resources before derivative generation', async () => {
     await expect(validateSignatureSvg(EXTERNAL_SIG)).rejects.toThrow(/path-only SVG/i);
+  });
+});
+
+describe('signatureDensity', () => {
+  it('computes the DPI that exactly contains the intrinsic size into the zone', () => {
+    expect(signatureDensity({ width: 500, height: 100 }, { width: 1000, height: 200 })).toBe(72);
+    expect(signatureDensity({ width: 7812, height: 204 }, { width: 1000, height: 200 })).toBe(74);
+  });
+
+  it('throws when the resolved density or raster size exceeds the safe budget', () => {
+    expect(() => signatureDensity({ width: 8000, height: 8000 }, { width: 10, height: 10 })).toThrow(
+      /safe density budget/,
+    );
+  });
+
+  it('throws on invalid intrinsic dimensions', () => {
+    expect(() => signatureDensity({ width: 100, height: 100 }, { width: 0, height: 10 })).toThrow(
+      /intrinsic dimensions/,
+    );
+  });
+
+  it('throws on an invalid signature zone', () => {
+    expect(() => signatureDensity({ width: 0, height: 100 }, { width: 10, height: 10 })).toThrow(
+      /signature zone/,
+    );
+  });
+});
+
+describe('rasterizeSignature', () => {
+  it('rasterises a viewBox-only SVG into the exact zone dimensions within the raster budget', async () => {
+    // Fixture is 260x25 (viewBox, no width/height) contained into a large
+    // 7812x204 zone — the same shape as a production signature placed on a
+    // big-format print, but with no upstream density cap this would blow way
+    // past a sane pixel budget or come out from a blurry 72dpi upscale.
+    const zone = { width: 7812, height: 204 };
+    const buffer = await rasterizeSignature(SIGNATURE_VIEWBOX, zone);
+    const meta = await sharp(buffer).metadata();
+    expect(meta.width).toBe(zone.width);
+    expect(meta.height).toBe(zone.height);
   });
 });

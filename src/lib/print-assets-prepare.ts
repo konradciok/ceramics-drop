@@ -400,7 +400,7 @@ export interface PrepareManifest {
 }
 
 /** Bump when the Sharp compose pipeline changes in any way that affects output bytes. */
-export const COMPOSE_RENDERER_VERSION = '2.0.0';
+export const COMPOSE_RENDERER_VERSION = '2.1.0';
 
 export interface BuildManifestInput {
   product: string;

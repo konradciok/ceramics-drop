@@ -32,6 +32,82 @@ export interface DerivativeResult {
   buffer: Buffer;
 }
 
+// Baseline DPI Sharp/librsvg use to resolve an SVG's unitless intrinsic size.
+const BASE_SVG_DPI = 72;
+// Hard ceiling on the density we'll ever ask librsvg to rasterise at.
+const MAX_SVG_DENSITY = 2400;
+// Hard ceiling on the resulting raster pixel count (decode-time memory).
+const MAX_SIGNATURE_RASTER_PIXELS = 50_000_000;
+
+/**
+ * DPI that contain-scales a signature SVG's intrinsic size up to its target
+ * zone — never below the 72dpi baseline (no downscaling below source
+ * resolution), and never past a fixed density/pixel budget. Decoding a small
+ * signature at 72dpi and letting `.resize()` upscale the raster afterwards
+ * produces a blurry result on large canvases; deriving the density up front
+ * and asking librsvg to rasterise at that density directly keeps edges crisp
+ * without an unbounded (memory-blowing) decode on a huge zone.
+ */
+export function signatureDensity(
+  zone: { width: number; height: number },
+  intrinsic: { width: number; height: number },
+): number {
+  if (
+    !Number.isFinite(zone.width) ||
+    !Number.isFinite(zone.height) ||
+    zone.width <= 0 ||
+    zone.height <= 0
+  ) {
+    throw new Error(`Invalid signature zone ${zone.width}x${zone.height}`);
+  }
+  if (
+    !Number.isFinite(intrinsic.width) ||
+    !Number.isFinite(intrinsic.height) ||
+    intrinsic.width <= 0 ||
+    intrinsic.height <= 0
+  ) {
+    throw new Error(`Signature SVG has invalid intrinsic dimensions ${intrinsic.width}x${intrinsic.height}`);
+  }
+  const containScale = Math.max(
+    1,
+    Math.min(zone.width / intrinsic.width, zone.height / intrinsic.height),
+  );
+  const density = Math.ceil(BASE_SVG_DPI * containScale);
+  const rasterWidth = Math.ceil((intrinsic.width * density) / BASE_SVG_DPI);
+  const rasterHeight = Math.ceil((intrinsic.height * density) / BASE_SVG_DPI);
+  if (density > MAX_SVG_DENSITY || rasterWidth * rasterHeight > MAX_SIGNATURE_RASTER_PIXELS) {
+    throw new Error(
+      `Signature SVG exceeds the safe density budget: ${density}dpi, ${rasterWidth}x${rasterHeight}px`,
+    );
+  }
+  return density;
+}
+
+/**
+ * Rasterise a signature SVG at a bounded contain-scale density, then resize
+ * (letterboxed, transparent background) into the exact target zone.
+ */
+export async function rasterizeSignature(
+  signatureSvgPath: string,
+  zone: { width: number; height: number },
+): Promise<Buffer> {
+  const metadata = await sharp(signatureSvgPath, { density: BASE_SVG_DPI }).metadata();
+  if (!metadata.width || !metadata.height) {
+    throw new Error(`Signature SVG has no resolvable intrinsic pixel dimensions: ${signatureSvgPath}`);
+  }
+  const density = signatureDensity(zone, { width: metadata.width, height: metadata.height });
+  return sharp(signatureSvgPath, {
+    density,
+    limitInputPixels: MAX_SIGNATURE_RASTER_PIXELS,
+    unlimited: false,
+  })
+    .resize(zone.width, zone.height, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .toBuffer();
+}
+
 /**
  * Compose one exact-pixel Prodigi derivative by layering the artwork master and
  * (optionally) an SVG signature onto a solid background canvas, using a resolved
@@ -65,12 +141,11 @@ export async function composeDerivative(input: ComposeInput): Promise<Derivative
     { input: artworkLayer, left: placement.artworkPos.x, top: placement.artworkPos.y },
   ];
 
-  // 3. Signature: rasterise the SVG contained into its zone, place centred in the zone.
+  // 3. Signature: rasterise the SVG at a bounded contain-scale density into its
+  // zone (never blurry-upscaled, never an unbounded decode), place centred in the zone.
   if (signatureSvgPath && placement.signatureBox) {
     const zone = placement.signatureBox;
-    const sigLayer = await sharp(signatureSvgPath)
-      .resize(zone.width, zone.height, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .toBuffer();
+    const sigLayer = await rasterizeSignature(signatureSvgPath, zone);
     overlays.push({ input: sigLayer, left: zone.x, top: zone.y });
   }
 
