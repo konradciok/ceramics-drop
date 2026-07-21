@@ -1,0 +1,165 @@
+{
+  "product": "fap01",
+  "revision": "2026-07-12-r1",
+  "sourceSha256": "6d5f0b93fdb6a38b92c1899d136acb49c090f855b6a6d737e46b349dccd64ccc",
+  "sourceWidth": 8400,
+  "sourceHeight": 12000,
+  "derivatives": [
+    {
+      "profileKey": "2400x3600",
+      "width": 2400,
+      "height": 3600,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "ff284e60a23f36e4f023b0bba6822ae4f05d39e0e236797f062cc8071970cc2d",
+      "byteSize": 1722414,
+      "r2Key": "prints/fap01/2026-07-12-r1/2400x3600-ff284e60a23f36e4f023b0bba6822ae4f05d39e0e236797f062cc8071970cc2d.jpg"
+    },
+    {
+      "profileKey": "3600x4800",
+      "width": 3600,
+      "height": 4800,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "a73114e7aa1d3169baf52efcc0c7d3038134de06942dffae5fc3cd83d54b4873",
+      "byteSize": 3374292,
+      "r2Key": "prints/fap01/2026-07-12-r1/3600x4800-a73114e7aa1d3169baf52efcc0c7d3038134de06942dffae5fc3cd83d54b4873.jpg"
+    },
+    {
+      "profileKey": "3614x4795",
+      "width": 3614,
+      "height": 4795,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "0041902adf0ce7910c677cede766c1b9b8994c55aa15b04cc6794570aaf8422e",
+      "byteSize": 4260566,
+      "r2Key": "prints/fap01/2026-07-12-r1/3614x4795-0041902adf0ce7910c677cede766c1b9b8994c55aa15b04cc6794570aaf8422e.jpg"
+    },
+    {
+      "profileKey": "4800x7200",
+      "width": 4800,
+      "height": 7200,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "ecd27b26017cf58df8298096dac7ad8c40cc24e08c2824eb7353a8bce8dd35ef",
+      "byteSize": 5771915,
+      "r2Key": "prints/fap01/2026-07-12-r1/4800x7200-ecd27b26017cf58df8298096dac7ad8c40cc24e08c2824eb7353a8bce8dd35ef.jpg"
+    },
+    {
+      "profileKey": "6000x8400",
+      "width": 6000,
+      "height": 8400,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "83d3574b613ac734e8bbcb3066bfbe11a254f5f72a0624a439fba36fc2b96586",
+      "byteSize": 7417624,
+      "r2Key": "prints/fap01/2026-07-12-r1/6000x8400-83d3574b613ac734e8bbcb3066bfbe11a254f5f72a0624a439fba36fc2b96586.jpg"
+    },
+    {
+      "profileKey": "7200x10800",
+      "width": 7200,
+      "height": 10800,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "d797d009997ab89dc0f37c9757848dc89af07ad9d2ba83f02854d6ca56e9d415",
+      "byteSize": 10191443,
+      "r2Key": "prints/fap01/2026-07-12-r1/7200x10800-d797d009997ab89dc0f37c9757848dc89af07ad9d2ba83f02854d6ca56e9d415.jpg"
+    },
+    {
+      "profileKey": "8400x12000",
+      "width": 8400,
+      "height": 12000,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "17df538cf2fe1684911a62453779e597b08faceff5172ee565f0ccc5bb6ad12d",
+      "byteSize": 11309361,
+      "r2Key": "prints/fap01/2026-07-12-r1/8400x12000-17df538cf2fe1684911a62453779e597b08faceff5172ee565f0ccc5bb6ad12d.jpg"
+    }
+  ],
+  "assignments": [
+    {
+      "variantKey": "30x40:true:true:black",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:true:true:white",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:true:true:natural",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:false:false:none",
+      "profileKey": "3600x4800"
+    },
+    {
+      "variantKey": "30x40:true:false:natural",
+      "profileKey": "3600x4800"
+    },
+    {
+      "variantKey": "30x40:true:false:black",
+      "profileKey": "3614x4795"
+    },
+    {
+      "variantKey": "30x40:true:false:white",
+      "profileKey": "3614x4795"
+    },
+    {
+      "variantKey": "50x70:true:true:black",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:true:true:white",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:true:true:natural",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:false:false:none",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:black",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:white",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:natural",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "70x100:true:true:black",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:true:true:white",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:true:true:natural",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:false:false:none",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:black",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:white",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:natural",
+      "profileKey": "8400x12000"
+    }
+  ]
+}

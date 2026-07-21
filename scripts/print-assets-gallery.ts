@@ -15,9 +15,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import type { PrepareConfig } from '../src/lib/print-assets-prepare';
+import { profileKeyFromPx, type PrepareConfig } from '../src/lib/print-assets-prepare';
 import { IMG_WIDTHS } from '../src/lib/images';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, localDerivativePath, tryLoadManifestV2, ROOT } from './lib/print-assets-cli';
 import { hashFile } from './lib/image-facts';
 import {
   galleryR2Key,
@@ -52,15 +52,17 @@ async function resolveSourcePath(
   scratchDir: string,
   bucket: string,
 ): Promise<{ path: string; cleanup: boolean }> {
-  const manifestPath = path.join(revisionDir(productId, asset.revision), 'manifest.json');
-  if (fs.existsSync(manifestPath)) {
-    const manifest = loadManifest(productId, asset.revision);
-    const derivative = manifest.derivatives.find((d) => d.profileKey === asset.profile_key);
+  // A valid local schema-v2 manifest lets us reuse the exact prepared derivative.
+  // A missing or recognized-legacy local manifest returns null (→ verified R2
+  // fallback below); a malformed/unknown local manifest THROWS before any R2 access.
+  const manifest = tryLoadManifestV2(productId, asset.revision);
+  if (manifest) {
+    const derivative = manifest.derivatives.find((d) => profileKeyFromPx(d.width, d.height) === asset.profile_key);
     if (derivative) {
       const localPath = localDerivativePath(
         productId,
         asset.revision,
-        derivative.profileKey,
+        asset.profile_key,
         derivative.sha256,
         derivative.format,
       );

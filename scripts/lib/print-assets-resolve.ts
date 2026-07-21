@@ -3,7 +3,12 @@
  */
 import { PRODIGI_SKU_MAP, parseVariantKey } from '../../src/lib/print-cart';
 import { buildProdigiAttributes } from '../../src/lib/print-prodigi-attributes';
+import { profileKeyFromPx } from '../../src/lib/print-assets-prepare';
 import { loadSupabaseClient } from './script-env';
+
+// Re-export the canonical profile-key helper so callers already importing it
+// from this module keep working (one source of truth in print-assets-prepare).
+export { profileKeyFromPx };
 
 export interface ReadyAssetRow {
   id: string;
@@ -22,11 +27,6 @@ export interface SandboxMatrixRow {
   variantKey: string;
   sku: string;
   attributes: Record<string, string>;
-}
-
-/** Matches DB `profile_key` / prepare manifest profile keys. */
-export function profileKeyFromPx(w: number, h: number): string {
-  return `${w}x${h}`;
 }
 
 export function galleryR2Key(productId: string, slot: string, filename: string): string {

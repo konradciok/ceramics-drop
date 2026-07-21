@@ -1,12 +1,23 @@
 /**
- * Shared CLI plumbing for the Phase 2b print-asset operator scripts
- * (upload / verify / publish): arg parsing and loading the `manifest.json`
- * that Phase 2a's `prepare` wrote.
+ * Shared CLI plumbing for the print-asset operator scripts: arg parsing,
+ * loading the tracked config, and loading the `manifest.json` that `prepare`
+ * wrote. Every runtime-JSON read (config, manifest) is validated before any
+ * nested field, derived path, or R2/Supabase access.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { parseArgs } from 'node:util';
-import type { PrepareManifest } from '../../src/lib/print-assets-prepare';
+import {
+  COMPOSE_RENDERER_VERSION,
+  isRecognizedLegacyManifest,
+  parsePrepareManifest,
+  parsePublishManifest,
+  validatePrepareConfig,
+  type PrepareConfig,
+  type PrepareManifest,
+  type PublishManifest,
+} from '../../src/lib/print-assets-prepare';
 
 export const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -97,6 +108,10 @@ export function parseScriptArgs<const S extends string, const B extends string>(
 /** A single path segment safe to interpolate under `design/print-assets/`. */
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Reject a productId/revision that isn't a plain path segment — no separators,
  * no `..` — so operator-supplied args can't traverse out of the print-assets
@@ -109,42 +124,18 @@ function assertSafeSegment(kind: string, value: string): string {
   return value;
 }
 
-/** Absolute path to a revision's local output directory (gitignored `design/` tree). */
-export function revisionDir(productId: string, revision: string): string {
+/**
+ * Absolute path to a revision's local output directory (gitignored `design/`
+ * tree). `root` defaults to the repo root; tests pass a temp root.
+ */
+export function revisionDir(productId: string, revision: string, root: string = ROOT): string {
   return path.join(
-    ROOT,
+    root,
     'design',
     'print-assets',
     assertSafeSegment('product', productId),
     assertSafeSegment('revision', revision),
   );
-}
-
-/**
- * Load + validate the manifest `prepare` wrote for (product, revision). Fails
- * loudly when it is missing (prepare not run) or its embedded product/revision
- * disagree with the requested ones — the manifest is the contract every later
- * phase reads, so a mismatch must never be papered over.
- */
-export function loadManifest(productId: string, revision: string): PrepareManifest {
-  const manifestPath = path.join(revisionDir(productId, revision), 'manifest.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error(
-      `No manifest at ${path.relative(ROOT, manifestPath)}. Run print-assets:prepare for ` +
-        `${productId} @ ${revision} first.`,
-    );
-  }
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as PrepareManifest;
-  if (manifest.product !== productId || manifest.revision !== revision) {
-    throw new Error(
-      `Manifest at ${path.relative(ROOT, manifestPath)} declares ${manifest.product}@${manifest.revision}, ` +
-        `expected ${productId}@${revision}.`,
-    );
-  }
-  if (!Array.isArray(manifest.derivatives) || manifest.derivatives.length === 0) {
-    throw new Error(`Manifest for ${productId}@${revision} has no derivatives.`);
-  }
-  return manifest;
 }
 
 /** Absolute path to a derivative's local file (as `prepare` named it). */
@@ -154,6 +145,169 @@ export function localDerivativePath(
   profileKey: string,
   sha256: string,
   format: string,
+  root: string = ROOT,
 ): string {
-  return path.join(revisionDir(productId, revision), `${profileKey}-${sha256}.${format}`);
+  return path.join(revisionDir(productId, revision, root), `${profileKey}-${sha256}.${format}`);
+}
+
+// ── Tracked config ────────────────────────────────────────────────────────────
+
+/**
+ * A validated tracked config plus its provenance. `sha256` is over the raw
+ * config bytes (recorded in the manifest); `manifestPath` fields are the
+ * normalized repository-relative POSIX paths; `absolutePath` fields are for
+ * local I/O only and are never serialized.
+ */
+export interface LoadedPrepareConfig {
+  value: PrepareConfig;
+  configPath: string;
+  sha256: string;
+  artwork: { manifestPath: string; absolutePath: string };
+  signature: { manifestPath: string; absolutePath: string } | null;
+}
+
+/** Resolve a config path under `design/print-assets/{productId}`, rejecting any escape. */
+function resolveUnderProduct(root: string, productId: string, manifestPath: string, label: string): string {
+  const productDir = path.join(root, 'design', 'print-assets', productId);
+  const absolute = path.resolve(root, manifestPath);
+  const relative = path.relative(productDir, absolute);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(
+      `Config ${label} path "${manifestPath}" resolves outside design/print-assets/${productId} — refusing.`,
+    );
+  }
+  return absolute;
+}
+
+/**
+ * Load + validate `config/print-assets/{productId}.json`, hash its raw bytes,
+ * and resolve its artwork/signature paths under the product's design directory.
+ * Fails loudly on a missing, unparseable, structurally invalid, or path-escaping
+ * config before any Sharp/Supabase/R2 work.
+ */
+export function loadPrepareConfig(productId: string, root: string = ROOT): LoadedPrepareConfig {
+  assertSafeSegment('product', productId);
+  const configPath = path.join(root, 'config', 'print-assets', `${productId}.json`);
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`No tracked config for product "${productId}" — expected ${path.relative(root, configPath)}.`);
+  }
+  const raw = fs.readFileSync(configPath);
+  const sha256 = crypto.createHash('sha256').update(raw).digest('hex');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw.toString('utf8'));
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in config ${path.relative(root, configPath)}: ${error instanceof Error ? error.message : error}`,
+    );
+  }
+  const errors = validatePrepareConfig(parsed, productId);
+  if (errors.length > 0) {
+    throw new Error(`Invalid prepare config ${path.relative(root, configPath)}:\n  - ${errors.join('\n  - ')}`);
+  }
+  const value = parsed as PrepareConfig;
+
+  const artwork = {
+    manifestPath: value.artwork,
+    absolutePath: resolveUnderProduct(root, productId, value.artwork, 'artwork'),
+  };
+  const signature = value.signature
+    ? {
+        manifestPath: value.signature.svg,
+        absolutePath: resolveUnderProduct(root, productId, value.signature.svg, 'signature.svg'),
+      }
+    : null;
+
+  return { value, configPath, sha256, artwork, signature };
+}
+
+// ── Manifest loading ──────────────────────────────────────────────────────────
+
+/**
+ * Read + JSON-parse a manifest file. Returns `undefined` value when the file is
+ * absent; throws on invalid JSON, always naming the manifest path.
+ */
+function readManifestFile(
+  productId: string,
+  revision: string,
+  root: string,
+): { rel: string; value: unknown | undefined } {
+  const file = path.join(revisionDir(productId, revision, root), 'manifest.json');
+  const rel = path.relative(root, file);
+  if (!fs.existsSync(file)) return { rel, value: undefined };
+  const rawText = fs.readFileSync(file, 'utf8');
+  try {
+    return { rel, value: JSON.parse(rawText) };
+  } catch (error) {
+    throw new Error(`Invalid JSON in manifest ${rel}: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+function assertManifestIdentity(
+  rel: string,
+  product: string,
+  revision: string,
+  expectedProduct: string,
+  expectedRevision: string,
+): void {
+  if (product !== expectedProduct || revision !== expectedRevision) {
+    throw new Error(
+      `Manifest at ${rel} declares ${product}@${revision}, expected ${expectedProduct}@${expectedRevision}.`,
+    );
+  }
+}
+
+/**
+ * Load + validate the current-renderer schema-v2 manifest (the upload/verify
+ * contract). Rejects a missing manifest, any structural/semantic invalidity, an
+ * identity mismatch, or a manifest written by a different renderer version.
+ */
+export function loadManifestV2(productId: string, revision: string, root: string = ROOT): PrepareManifest {
+  const { rel, value } = readManifestFile(productId, revision, root);
+  if (value === undefined) {
+    throw new Error(`No manifest at ${rel}. Run print-assets:prepare for ${productId} @ ${revision} first.`);
+  }
+  const manifest = parsePrepareManifest(value);
+  assertManifestIdentity(rel, manifest.product, manifest.revision, productId, revision);
+  if (manifest.rendererVersion !== COMPOSE_RENDERER_VERSION) {
+    throw new Error(
+      `Manifest ${rel} was written by renderer ${manifest.rendererVersion}, but this pipeline requires ` +
+        `${COMPOSE_RENDERER_VERSION}. Re-run print-assets:prepare.`,
+    );
+  }
+  return manifest;
+}
+
+/**
+ * Load a manifest for publish: schema-v2 directly, or a validated legacy
+ * projection (rollback path). Does not require the current renderer.
+ */
+export function loadPublishManifest(productId: string, revision: string, root: string = ROOT): PublishManifest {
+  const { rel, value } = readManifestFile(productId, revision, root);
+  if (value === undefined) {
+    throw new Error(`No manifest at ${rel}. Run print-assets:prepare for ${productId} @ ${revision} first.`);
+  }
+  const manifest = parsePublishManifest(value);
+  assertManifestIdentity(rel, manifest.product, manifest.revision, productId, revision);
+  return manifest;
+}
+
+/**
+ * Best-effort v2 load for gallery. Returns the parsed manifest for a valid v2
+ * manifest, `null` for a missing or structurally recognized legacy manifest
+ * (→ verified R2 fallback), and THROWS for invalid JSON, an unknown schema
+ * version, or malformed schema-v2 data — local corruption is never hidden
+ * behind the R2 branch.
+ */
+export function tryLoadManifestV2(productId: string, revision: string, root: string = ROOT): PrepareManifest | null {
+  const { rel, value } = readManifestFile(productId, revision, root);
+  if (value === undefined) return null;
+  if (!isRecord(value)) throw new Error(`Malformed manifest at ${rel}: expected a JSON object`);
+  const schemaVersion = value.schemaVersion;
+  if (schemaVersion === 2) return parsePrepareManifest(value);
+  if (schemaVersion !== undefined) {
+    throw new Error(`Unsupported manifest schemaVersion ${JSON.stringify(schemaVersion)} at ${rel}`);
+  }
+  if (isRecognizedLegacyManifest(value)) return null;
+  throw new Error(`Malformed legacy manifest at ${rel}: not a recognized print-asset manifest shape`);
 }

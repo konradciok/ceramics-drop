@@ -3,7 +3,8 @@
  * `print_fulfilment_assets` rows (Phase 2b of the print-asset pipeline —
  * docs/plans/print-asset-pipeline.md → Phase 2 `upload` bullets).
  *
- * Reads the `manifest.json` that print-assets:prepare wrote, then for each
+ * First runs the local preflight (config ⇄ manifest ⇄ on-disk source/derivative
+ * byte-identity) — a rejected preflight makes NO external call. Then for each
  * distinct derivative:
  *   - probes the content-addressed R2 key; if an object already exists there,
  *     reuses it ONLY when its full streamed SHA-256 matches (a mismatch under
@@ -35,8 +36,10 @@ import {
   partitionStagedRows,
   type RemoteProbe,
 } from '../src/lib/print-assets-publish';
+import { contentTypeForFormat, derivativeR2Key, profileKeyFromPx } from '../src/lib/print-assets-prepare';
 import { loadSupabaseClient } from './lib/script-env';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest, localDerivativePath, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, localDerivativePath } from './lib/print-assets-cli';
+import { preflightPreparedRevision } from './lib/print-assets-preflight';
 import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
 import { hashFile } from './lib/image-facts';
 
@@ -70,7 +73,10 @@ async function main(): Promise<void> {
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-11-r1)');
 
-  const manifest = loadManifest(productId, revision);
+  // Validate config + schema-v2 manifest + every local derivative BEFORE resolving
+  // the bucket or loading Supabase (module boundary: no external calls on failure).
+  const { manifest } = await preflightPreparedRevision({ productId, revision, requireLocalDerivatives: true });
+
   const bucket = printAssetsBucket();
   console.log(`print-assets:upload — product=${productId} revision=${revision} bucket=${bucket}`);
   console.log(`  ${manifest.derivatives.length} derivative(s)${dryRun ? '  [DRY RUN]' : ''}`);
@@ -80,19 +86,16 @@ async function main(): Promise<void> {
     // 1. Upload (or reuse) every derivative before touching the database. A
     //    partial upload must not leave staged rows pointing at absent objects.
     for (const d of manifest.derivatives) {
-      const localPath = localDerivativePath(productId, revision, d.profileKey, d.sha256, d.format);
-      if (!fs.existsSync(localPath)) {
-        throw new Error(
-          `Local derivative missing: ${path.relative(ROOT, localPath)}. Re-run print-assets:prepare — the manifest ` +
-            'and its output files must come from the same run.',
-        );
-      }
+      const profileKey = profileKeyFromPx(d.width, d.height);
+      const r2Key = derivativeR2Key(manifest, d);
+      const contentType = contentTypeForFormat(d.format);
+      const localPath = localDerivativePath(productId, revision, profileKey, d.sha256, d.format);
 
       // Probe even in --dry-run: it's read-only, and skipping it would report
       // "would upload" for objects that already exist byte-identically.
-      process.stdout.write(`  ${d.profileKey}  ${d.r2Key}  … `);
-      const remote = await probeRemote(bucket, d.r2Key, scratchDir);
-      const action = decideUploadAction(d, remote);
+      process.stdout.write(`  ${profileKey}  ${r2Key}  … `);
+      const remote = await probeRemote(bucket, r2Key, scratchDir);
+      const action = decideUploadAction({ sha256: d.sha256, r2Key }, remote);
 
       if (action === 'skip') {
         console.log('already present (hash match) — reuse');
@@ -102,11 +105,11 @@ async function main(): Promise<void> {
         console.log('would upload');
         continue;
       }
-      const put = r2Put(bucket, d.r2Key, localPath, d.contentType);
+      const put = r2Put(bucket, r2Key, localPath, contentType);
       if (!put.ok) {
-        throw new Error(`Upload failed for ${d.r2Key}: ${put.error}`);
+        throw new Error(`Upload failed for ${r2Key}: ${put.error}`);
       }
-      console.log(`uploaded (${(d.byteSize / 1024).toFixed(0)} KB, ${d.contentType})`);
+      console.log(`uploaded (${(d.byteSize / 1024).toFixed(0)} KB, ${contentType})`);
     }
 
     // 2. Stage DB rows only after all uploads succeeded.

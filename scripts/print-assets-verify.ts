@@ -3,14 +3,13 @@
  * their staged rows to `ready` (Phase 2b of the print-asset pipeline —
  * docs/plans/print-asset-pipeline.md → Phase 2 `verify` bullets).
  *
- * For every manifest derivative: re-download the R2 object, hash it (streamed —
- * never held whole in memory), decode its dimensions, and compare the full
- * SHA-256, byte size, and dimensions against the manifest. A full-hash match is
- * the strong guarantee the remote bytes are exactly what `prepare` produced;
- * size + dimensions localise any mismatch. Content-type round-trip verification
- * needs R2 `head`, which Wrangler 4.x lacks, so it is deferred to the Phase 4
- * Worker `head` route — the content-addressed hash already proves byte-identity
- * of the object we uploaded with an explicit `--content-type`.
+ * First runs the local preflight (config ⇄ schema-v2 manifest agreement) — but
+ * NOT the local-derivative check: verify inspects the remote R2 objects, which
+ * may be verified from a different machine than the one that prepared them. Then
+ * for every manifest derivative it re-downloads the R2 object, hashes it
+ * (streamed), decodes its dimensions, and compares the full SHA-256, byte size,
+ * and dimensions against the manifest. A full-hash match is the strong guarantee
+ * the remote bytes are exactly what `prepare` produced.
  *
  * Only if every derivative verifies does it flip the corresponding
  * `print_fulfilment_assets` rows staged → ready (setting `verified_at`). Any
@@ -28,8 +27,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { compareRemoteToManifest } from '../src/lib/print-assets-publish';
+import { derivativeR2Key, profileKeyFromPx } from '../src/lib/print-assets-prepare';
 import { loadSupabaseClient } from './lib/script-env';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS } from './lib/print-assets-cli';
+import { preflightPreparedRevision } from './lib/print-assets-preflight';
 import { printAssetsBucket, r2GetToFile } from './lib/r2';
 import { readObjectFacts } from './lib/image-facts';
 
@@ -42,7 +43,10 @@ async function main(): Promise<void> {
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-11-r1)');
 
-  const manifest = loadManifest(productId, revision);
+  // Validate config + schema-v2 manifest BEFORE resolving the bucket or loading
+  // Supabase. Verify does not require local derivatives (it checks R2).
+  const { manifest } = await preflightPreparedRevision({ productId, revision, requireLocalDerivatives: false });
+
   const bucket = printAssetsBucket();
   console.log(`print-assets:verify — product=${productId} revision=${revision} bucket=${bucket}`);
   if (dryRun) console.log('  [DRY RUN] downloads + verifies every object; skips the staged → ready promotion.');
@@ -52,12 +56,14 @@ async function main(): Promise<void> {
   try {
     // 1. Content verification: every remote object must match the manifest.
     for (const d of manifest.derivatives) {
-      process.stdout.write(`  ${d.profileKey}  ${d.r2Key}  … `);
-      const dest = path.join(scratchDir, `${d.profileKey}-${d.sha256}.${d.format}`);
-      const got = r2GetToFile(bucket, d.r2Key, dest);
+      const profileKey = profileKeyFromPx(d.width, d.height);
+      const r2Key = derivativeR2Key(manifest, d);
+      process.stdout.write(`  ${profileKey}  ${r2Key}  … `);
+      const dest = path.join(scratchDir, `${profileKey}-${d.sha256}.${d.format}`);
+      const got = r2GetToFile(bucket, r2Key, dest);
       if (!got.ok) {
         console.log('MISSING');
-        problems.push(`${d.r2Key}: not downloadable (${got.error})`);
+        problems.push(`${r2Key}: not downloadable (${got.error})`);
         continue;
       }
       const facts = await readObjectFacts(dest);
@@ -65,7 +71,7 @@ async function main(): Promise<void> {
       const errors = compareRemoteToManifest(d, facts);
       if (errors.length > 0) {
         console.log('MISMATCH');
-        problems.push(...errors.map((e) => `${d.r2Key}: ${e}`));
+        problems.push(...errors.map((e) => `${r2Key}: ${e}`));
       } else {
         console.log('ok');
       }
@@ -86,15 +92,16 @@ async function main(): Promise<void> {
     const toPromote: string[] = [];
     let alreadyReady = 0;
     for (const d of manifest.derivatives) {
-      const status = statusByKey.get(d.r2Key);
+      const r2Key = derivativeR2Key(manifest, d);
+      const status = statusByKey.get(r2Key);
       if (status === undefined) {
-        problems.push(`${d.r2Key}: no print_fulfilment_assets row — run print-assets:upload first`);
+        problems.push(`${r2Key}: no print_fulfilment_assets row — run print-assets:upload first`);
       } else if (status === 'ready') {
         alreadyReady += 1;
       } else if (status === 'staged') {
-        toPromote.push(d.r2Key);
+        toPromote.push(r2Key);
       } else {
-        problems.push(`${d.r2Key}: asset is "${status}" — cannot verify a retired/revoked asset`);
+        problems.push(`${r2Key}: asset is "${status}" — cannot verify a retired/revoked asset`);
       }
     }
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { composeDerivative, validateSignatureSvg, signatureDensity, rasterizeSignature } from './prepare-derivatives';
+import { composeDerivative, validateSignatureSvg, signatureDensity, rasterizeSignature, prepareOutputDir } from './prepare-derivatives';
 import type { Placement } from '../../src/lib/print-assets-prepare';
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
@@ -259,5 +259,31 @@ describe('rasterizeSignature', () => {
     const meta = await sharp(buffer).metadata();
     expect(meta.width).toBe(zone.width);
     expect(meta.height).toBe(zone.height);
+  });
+});
+
+describe('prepareOutputDir', () => {
+  it('creates a fresh output directory when none exists', () => {
+    const dir = path.join(TMP, 'out-fresh');
+    expect(() => prepareOutputDir(dir, { force: false })).not.toThrow();
+    expect(fs.existsSync(dir)).toBe(true);
+  });
+
+  it('refuses to overwrite an existing directory without --force', () => {
+    const dir = path.join(TMP, 'out-existing');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'stale.jpg'), 'stale');
+    expect(() => prepareOutputDir(dir, { force: false })).toThrow(/already exists.*--force/i);
+    // The refusal must not have touched the existing contents.
+    expect(fs.existsSync(path.join(dir, 'stale.jpg'))).toBe(true);
+  });
+
+  it('clears and recreates an existing directory with --force', () => {
+    const dir = path.join(TMP, 'out-force');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'stale.jpg'), 'stale');
+    prepareOutputDir(dir, { force: true });
+    expect(fs.existsSync(dir)).toBe(true);
+    expect(fs.existsSync(path.join(dir, 'stale.jpg'))).toBe(false);
   });
 });

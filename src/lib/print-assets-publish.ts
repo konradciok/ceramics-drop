@@ -9,7 +9,14 @@
  * unit tests without a live bucket or database. The scripts own the side
  * effects; this module owns the fail-closed decisions.
  */
-import type { ManifestDerivative, PrepareManifest } from './print-assets-prepare';
+import {
+  contentTypeForFormat,
+  derivativeR2Key,
+  profileKeyFromPx,
+  type ManifestDerivative,
+  type PrepareManifest,
+  type PublishManifest,
+} from './print-assets-prepare';
 
 // ── Staging rows — print_fulfilment_assets ───────────────────────────────────
 
@@ -34,31 +41,21 @@ export interface StagedAssetRow {
   status: 'staged';
 }
 
-function assertContentType(value: string, r2Key: string): AssetContentType {
-  if (value !== 'image/jpeg' && value !== 'image/png') {
-    throw new Error(
-      `Derivative ${r2Key} has content-type "${value}", which print_fulfilment_assets.content_type does not accept ` +
-        '(only image/jpeg | image/png).',
-    );
-  }
-  return value;
-}
-
 /**
- * One staged `print_fulfilment_assets` row per manifest derivative. The
- * derivative already carries the content-addressed `r2Key`, the hash, and the
- * decoded dimensions the migration's columns require — this is a straight
- * projection, not a re-derivation, so `verify`/`publish` compare against the
- * same bytes `prepare` produced.
+ * One staged `print_fulfilment_assets` row per manifest derivative. The v2
+ * derivative stores each fact once — the content-addressed `r2_key`, the
+ * `profile_key`, and the `content_type` the migration's columns require are all
+ * derived here from the canonical dimensions/format/hash, so `verify`/`publish`
+ * compare against exactly what `prepare` produced.
  */
 export function buildStagedRows(manifest: PrepareManifest): StagedAssetRow[] {
   return manifest.derivatives.map((d) => ({
     product_id: manifest.product,
     revision: manifest.revision,
-    profile_key: d.profileKey,
-    r2_key: d.r2Key,
+    profile_key: profileKeyFromPx(d.width, d.height),
+    r2_key: derivativeR2Key(manifest, d),
     sha256: d.sha256,
-    content_type: assertContentType(d.contentType, d.r2Key),
+    content_type: contentTypeForFormat(d.format),
     width_px: d.width,
     height_px: d.height,
     byte_size: d.byteSize,
@@ -84,7 +81,7 @@ export interface RemoteProbe {
  * abort loudly rather than overwrite (plan §2 "Never overwrite a key").
  */
 export function decideUploadAction(
-  derivative: Pick<ManifestDerivative, 'sha256' | 'r2Key'>,
+  derivative: { sha256: string; r2Key: string },
   remote: RemoteProbe | null,
 ): UploadAction {
   if (remote === null) return 'put';
@@ -222,10 +219,12 @@ export interface PublishAssignment {
  * anyway, but surfacing the missing key here gives a precise operator error.
  */
 export function buildPublishAssignments(
-  manifest: PrepareManifest,
+  manifest: PublishManifest,
   assetIdByR2Key: Map<string, string>,
 ): PublishAssignment[] {
-  const r2KeyByProfile = new Map(manifest.derivatives.map((d) => [d.profileKey, d.r2Key]));
+  const r2KeyByProfile = new Map(
+    manifest.derivatives.map((d) => [profileKeyFromPx(d.width, d.height), derivativeR2Key(manifest, d)]),
+  );
 
   return manifest.assignments.map((assignment) => {
     const r2Key = r2KeyByProfile.get(assignment.profileKey);
