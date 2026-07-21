@@ -81,7 +81,7 @@ Use **Supabase Auth** (the auth service of the Supabase project the store alread
 - **TTLs:** access token 3600 s (Supabase default; matches `config.toml`), refresh-token rotation on with the 10 s reuse interval (also defaults). Users stay signed in indefinitely until sign-out/revocation — appropriate for a shop.
 - **Read tiers:**
   - *Account pages (RSC):* `getSessionUser()` — reassemble cookie → `jose.jwtVerify` against the cached JWKS (`iss = <SUPABASE_URL>/auth/v1`, `aud = 'authenticated'`) → `{ id, email, name? }`. Local, fail-closed (any error ⇒ signed-out, never 500). RSCs cannot write cookies, which is why…
-  - *Middleware (only `/konto*` paths, only when an `sb-*` cookie exists):* fast local verify; if expired (or < 60 s left) → `createServerClient` bound to request/response → `getUser()` → rotated cookies written to the response, response stamped with the full anti-cache header set (§7). Anonymous visitors skip in two cheap guards (path regex, cookie presence).
+  - *Middleware (account paths only — the locale-aware matcher defined in §7 — and only when an `sb-*` cookie exists):* fast local verify; if expired (or < 60 s left) → `createServerClient` bound to request/response → `getUser()` → rotated cookies written to the response, response stamped with the full anti-cache header set (§7). Anonymous visitors skip in two cheap guards (path regex, cookie presence).
   - *`POST /api/checkout` and `/api/auth/*` (route handlers — can write cookies):* same fast path; inline refresh on expiry; on any failure checkout proceeds anonymously.
 - **Failure modes:** double-refresh races are absorbed by the 10 s reuse interval (both requests end with the same rotated session); JWKS fetch failure or a Supabase Auth outage degrades to signed-out rendering and anonymous checkout — the storefront and payments never depend on auth availability.
 
@@ -287,7 +287,13 @@ Any response that writes auth cookies — these routes, the middleware refresh, 
 
 ### Modified
 
-- **`src/middleware.ts`** — one guarded block (~35 lines) before `handleI18n`: `/konto` path regex + `sb-*` cookie presence → local verify → refresh only when expired → copy rotated cookies onto the response + the full anti-cache header set (§7). Everything else (matcher, i18n, currency, headers, the `middleware.ts` filename) untouched. Keep the supabase-server import lazy inside the guarded branch to limit edge-bundle parse cost.
+- **`src/middleware.ts`** — one guarded block (~35 lines) before `handleI18n`. The account-path matcher must be **locale-aware** (the pages live under `src/app/[locale]/konto/`, so `/en/konto`, `/es/konto/zamowienia/<id>` etc. are real request paths) and must not swallow `/kontakt` — build it from `routing.locales` with an explicit boundary:
+
+  ```ts
+  const KONTO_RE = new RegExp(`^/(?:(?:${routing.locales.join('|')})/)?konto(?:/|$)`);
+  ```
+
+  Matches `/konto`, `/konto/zamowienia/<id>`, `/en/konto`, `/de/konto/zamowienia/<id>` (and, harmlessly, `/pl/konto` before next-intl's as-needed redirect strips the prefix); never matches `/kontakt` or any other storefront path thanks to the `(?:/|$)` boundary, and never goes stale when a locale is added because it derives from `routing.locales`. Guarded flow: `KONTO_RE` + `sb-*` cookie presence → local verify → refresh only when expired → copy rotated cookies onto the response + the full anti-cache header set (§7). Unit-tested next to the existing `src/middleware.test.ts` cases: base path, nested detail path, every locale prefix, and the `/kontakt` non-match. Everything else (matcher config, i18n, currency, headers, the `middleware.ts` filename) untouched. Keep the supabase-server import lazy inside the guarded branch to limit edge-bundle parse cost.
 - **`src/app/api/checkout/route.ts`** — §4.2 (session resolve + `user_id` in the insert).
 - **`src/server/prodigi/callbacks.ts`** — §5.2 (tracking columns in the existing upsert).
 - **`src/app/admin/fulfillment/[id]/page.tsx`** *(optional, ~5 lines)* — display the new Prodigi tracking columns; closes today's admin gap.
