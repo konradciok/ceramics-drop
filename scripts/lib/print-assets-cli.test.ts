@@ -41,6 +41,12 @@ describe('parseScriptArgs', () => {
     expect(() => parseScriptArgs(prepareSpec, ['--env-file='])).toThrow(/non-empty/i);
   });
 
+  it('rejects a bare --env-file with no value (parses as boolean true, not a TypeError)', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--product', 'fap01', '--env-file'])).toThrow(
+      /requires a value/i,
+    );
+  });
+
   it('rejects --env-file supplied more than once', () => {
     expect(() => parseScriptArgs(prepareSpec, ['--env-file', 'a', '--env-file', 'b'])).toThrow(/once/i);
   });

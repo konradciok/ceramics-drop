@@ -43,14 +43,16 @@ export function parseEnvFileOption(argv: string[] = process.argv.slice(2)): stri
     allowPositionals: true,
   });
   // `strict: false` widens @types/node's inferred value type to `string | boolean`
-  // for every option (unknown flags can parse as booleans), even though this call
-  // only ever declares `env-file` as `type: 'string'`. Cast back to what the
-  // runtime actually produces for a declared string option.
-  const raw = values['env-file'] as string | string[] | undefined;
+  // for every option — and that widening is real at runtime: even a declared
+  // `type: 'string'` option parses as boolean `true` when its value is missing
+  // (bare `--env-file` as the last token), so normalise before validating.
+  const raw = values['env-file'] as string | boolean | Array<string | boolean> | undefined;
   const valuesList = raw == null ? [] : Array.isArray(raw) ? raw : [raw];
   if (valuesList.length > 1) throw new Error('--env-file may be supplied only once');
   const value = valuesList[0];
-  if (value !== undefined && value.trim() === '') throw new Error('--env-file must be non-empty');
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') throw new Error('--env-file requires a value');
+  if (value.trim() === '') throw new Error('--env-file must be non-empty');
   return value;
 }
 
