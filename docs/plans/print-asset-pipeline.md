@@ -181,7 +181,7 @@ npm run print-assets:publish -- --product fap01 --revision "$REVISION" --confirm
 - [x] `prepare`: enumerate active variants, deduplicate exact dimensions, validate the artwork/SVG/config, compose proportional layers, output exact-size JPG/PNG files with an embedded sRGB profile, and emit a manifest containing hashes, resolved boxes, and assignments.
 - [x] `prepare`: fail on enlargement, malformed or degenerate layout, invalid SVG, unsupported format, duplicate/missing profile, dimension mismatch, manifest drift, or non-deterministic output.
 - [x] `prepare`: create small review proofs/contact sheets next to the local output; proofs never become fulfilment assets.
-- [x] `upload`: call the current Wrangler CLI form `wrangler r2 object put {bucket}/{key} --file ... --content-type ... --remote`; check before writing, reuse an existing object only after its full streamed hash matches, and abort on any mismatch.
+- [x] `upload`: check before writing (probe the content-addressed key; reuse an existing object only after its full streamed hash matches, abort on any mismatch), then create it with a conditional S3 `PUT` (`If-None-Match: *`) and verify the result with a read-back hash before staging. _(2026-07-21: superseded the plain Wrangler CLI `wrangler r2 object put --remote` write for fulfilment derivatives — that form remains in use only for gallery's intentionally mutable keys; see `docs/print-asset-runbook.md` § Source and object integrity.)_
 - [x] `upload`: stage the corresponding database rows only after every upload succeeds.
 - [x] `verify`: streamed authenticated `GET` compares size, decoded dimensions, and the full SHA-256 against the local manifest without loading the whole object into memory. (Content-type round-trip verification needs R2 `head`, which Wrangler 4.x lacks — deferred to the Phase 4 Worker `head` route; the content-addressed full-hash match already proves byte-identity of the object uploaded with an explicit `--content-type`.)
 - [x] `publish`: require explicit operator confirmation (`--confirm <revision>`), then call the atomic assignment RPC.
@@ -256,6 +256,23 @@ Gate: operator can publish artwork via scripts; admin blocks incomplete activati
 | Prodigi | exact URL in payload, `fillPrintArea`, asset download complete, callback progression |
 | Environment | staging URL/bucket/token isolation and production URL/bucket/token isolation |
 
+## Traceability
+
+Every invariant this pipeline depends on maps to one concrete implementation:
+
+| Invariant | Implementation |
+| --- | --- |
+| Runtime JSON is structurally safe | v2 Zod parser before consumers |
+| Tracked source identity | config/artwork/signature preflight |
+| Local derivative identity | upload preflight facts |
+| R2 create-only | S3 `If-None-Match: *` |
+| Remote byte identity | upload read-back + verify full SHA |
+| All-or-none promotion | `promote_print_assets_ready` RPC |
+| Atomic live assignment | existing `publish_print_asset_revision` RPC |
+| Explicit cutover | `--confirm <revision>` |
+| Legacy rollback | validated publish-only projection |
+| Operator typo safety | strict shared `parseArgs` |
+
 ## Rollout and Rollback
 
 1. Ship schema and read-only tooling first.
@@ -268,6 +285,8 @@ Gate: operator can publish artwork via scripts; admin blocks incomplete activati
 Rollback the application to the prior release only while legacy objects still exist. After the snapshot format is live, forward compatibility is required: the old route must not be redeployed if it cannot serve `assetId` snapshots. Database assignment rollback is an atomic republish of the last known-good revision; never overwrite or mutate the bad R2 object.
 
 **Queue safety during rollback:** pause or drain the `prodigi-fulfilment` queue before rolling back application code. A rolled-back `process-job.ts` must not consume jobs whose `order_items.variant` already carries an `assetId` snapshot — those orders require the Phase 3+ consumer. Either (a) leave snapshot orders on the new release until their jobs complete, or (b) re-queue them only after verifying the target release understands `assetId`. Never roll back into a build that would silently substitute legacy `{productId}/master.jpg` or the public WebP for a snapshotted order.
+
+**Hardening-initiative code rollback:** the manifest v2 / conditional-R2 / transactional-promotion hardening (this Traceability table) shipped as four stacked PRs in dependency order — A (tracked config provenance) → B (strict CLI parsing + bounded signature rasterisation) → C (manifest schema v2, conditional R2 creation, gallery byte-exactness, transactional promotion) → D (sandbox outcome classification, legacy-inventory cleanup, this documentation). Revert in the reverse order only, D → C → B → A, never partially — code predating C cannot parse a v2 local `manifest.json`. Already-published DB assignments and R2 objects are unaffected by an application code rollback and remain servable throughout. Full operator procedure: `docs/print-asset-runbook.md` § Recovery procedures.
 
 ## Explicit Non-Goals
 
