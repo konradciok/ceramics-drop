@@ -15,16 +15,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { profileKeyFromPx, type PrepareConfig } from '../src/lib/print-assets-prepare';
+import type { PrepareConfig } from '../src/lib/print-assets-prepare';
 import { IMG_WIDTHS } from '../src/lib/images';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, localDerivativePath, tryLoadManifestV2, ROOT } from './lib/print-assets-cli';
-import { hashFile } from './lib/image-facts';
-import {
-  galleryR2Key,
-  resolveLatestReadyAsset,
-  type ReadyAssetDetail,
-} from './lib/print-assets-resolve';
-import { printAssetsBucket, r2GetToFile, r2PutMutable } from './lib/r2';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, ROOT } from './lib/print-assets-cli';
+import { resolveGallerySource } from './lib/print-assets-gallery';
+import { galleryR2Key, resolveLatestReadyAsset } from './lib/print-assets-resolve';
+import { printAssetsBucket, r2PutMutable } from './lib/r2';
 
 const CANONICAL_MAX_WIDTH = 1600;
 const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
@@ -40,51 +36,6 @@ function loadConfig(productId: string): PrepareConfig {
     throw new Error(`Config declares product "${parsed.product}", expected "${productId}"`);
   }
   return parsed;
-}
-
-/**
- * Resolve a local JPG/PNG derivative path when the prepare output tree exists;
- * otherwise download the immutable R2 fulfilment object to a scratch file.
- */
-async function resolveSourcePath(
-  productId: string,
-  asset: ReadyAssetDetail,
-  scratchDir: string,
-  bucket: string,
-): Promise<{ path: string; cleanup: boolean }> {
-  // A valid local schema-v2 manifest lets us reuse the exact prepared derivative.
-  // A missing or recognized-legacy local manifest returns null (→ verified R2
-  // fallback below); a malformed/unknown local manifest THROWS before any R2 access.
-  const manifest = tryLoadManifestV2(productId, asset.revision);
-  if (manifest) {
-    const derivative = manifest.derivatives.find((d) => profileKeyFromPx(d.width, d.height) === asset.profile_key);
-    if (derivative) {
-      const localPath = localDerivativePath(
-        productId,
-        asset.revision,
-        asset.profile_key,
-        derivative.sha256,
-        derivative.format,
-      );
-      if (fs.existsSync(localPath)) {
-        return { path: localPath, cleanup: false };
-      }
-    }
-  }
-
-  const ext = path.extname(asset.r2_key) || '.jpg';
-  const dest = path.join(scratchDir, `source-${asset.profile_key}${ext}`);
-  const got = r2GetToFile(bucket, asset.r2_key, dest);
-  if (!got.ok) {
-    throw new Error(`Failed to download fulfilment source ${asset.r2_key}: ${got.error}`);
-  }
-  const downloadedSha = await hashFile(dest);
-  if (downloadedSha !== asset.sha256) {
-    throw new Error(
-      `Integrity mismatch for ${asset.r2_key}: expected sha256 ${asset.sha256}, got ${downloadedSha}`,
-    );
-  }
-  return { path: dest, cleanup: true };
 }
 
 interface WebpOutput {
@@ -162,7 +113,7 @@ async function main(): Promise<void> {
 
   const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-assets-gallery-'));
   try {
-    const { path: sourcePath } = await resolveSourcePath(productId, asset, scratchDir, bucket);
+    const sourcePath = await resolveGallerySource(productId, asset, scratchDir, bucket);
     const webps = await generateWebpSet(sourcePath, stem, scratchDir);
 
     for (const file of webps) {
