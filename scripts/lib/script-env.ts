@@ -8,6 +8,7 @@
  */
 import fs from 'node:fs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { parseEnvFileOption } from './print-assets-cli';
 
 const NEWLINE = /\r?\n/;
 
@@ -30,19 +31,9 @@ export function parseEnvFile(filePath: string): Record<string, string> {
   return parsed;
 }
 
-/** `--env-file <path>` / `--env-file=<path>` from argv, if present. */
-function envFileArg(): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--env-file') return argv[i + 1];
-    if (argv[i].startsWith('--env-file=')) return argv[i].slice('--env-file='.length);
-  }
-  return undefined;
-}
-
 /** `.env.local` < `.dev.vars` < `--env-file` < process.env (later wins). */
 export function loadLocalEnv(): Record<string, string | undefined> {
-  const envFile = envFileArg();
+  const envFile = parseEnvFileOption();
   return {
     ...parseEnvFile('.env.local'),
     ...parseEnvFile('.dev.vars'),

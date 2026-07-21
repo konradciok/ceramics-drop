@@ -1,62 +1,58 @@
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { getArg, hasFlag, revisionDir, ROOT } from './print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, revisionDir, ROOT } from './print-assets-cli';
 
-const ORIGINAL_ARGV = process.argv;
+describe('parseScriptArgs', () => {
+  const prepareSpec = PRINT_ASSET_ARG_SPECS.prepare;
 
-/** Run `fn` with `process.argv` set to `[node, script, ...args]`, always restoring the original argv after. */
-function withArgv<T>(args: string[], fn: () => T): T {
-  process.argv = [ORIGINAL_ARGV[0], ORIGINAL_ARGV[1], ...args];
-  try {
-    return fn();
-  } finally {
-    process.argv = ORIGINAL_ARGV;
-  }
-}
-
-describe('getArg', () => {
-  it('reads the `--flag value` form', () => {
-    withArgv(['--product', 'fap01'], () => {
-      expect(getArg('product')).toBe('fap01');
+  it('parses --flag value and --flag=value strings plus boolean flags', () => {
+    expect(parseScriptArgs(prepareSpec, ['--product', 'fap01', '--revision=r1', '--dry-run'])).toMatchObject({
+      product: 'fap01',
+      revision: 'r1',
+      'dry-run': true,
     });
   });
 
-  it('reads the `--flag=value` form, including a value that itself starts with --', () => {
-    withArgv(['--product=--fap01'], () => {
-      expect(getArg('product')).toBe('--fap01');
-    });
+  it('rejects the removed --source override as an unknown option', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--source', '/tmp/master.jpg'])).toThrow(/Unknown option.*source/i);
   });
 
-  it('returns undefined when the flag is absent', () => {
-    withArgv(['--revision', 'r1'], () => {
-      expect(getArg('product')).toBeUndefined();
-    });
+  it('rejects an unrecognised flag (typo)', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--dryrun'])).toThrow(/Unknown option/i);
   });
 
-  it('throws when the flag has no following token', () => {
-    withArgv(['--product'], () => {
-      expect(() => getArg('product')).toThrow(/Missing value for --product/);
-    });
+  it('rejects a bare positional argument', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['fap01'])).toThrow();
   });
 
-  it("throws rather than swallow the next flag as this one's value", () => {
-    withArgv(['--product', '--revision', 'r1'], () => {
-      expect(() => getArg('product')).toThrow(/Missing value for --product/);
-    });
-  });
-});
-
-describe('hasFlag', () => {
-  it('detects a bare flag', () => {
-    withArgv(['--dry-run'], () => {
-      expect(hasFlag('dry-run')).toBe(true);
-    });
+  it('rejects a string option with no value', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--product'])).toThrow();
   });
 
-  it('is false when the flag is absent', () => {
-    withArgv(['--product', 'fap01'], () => {
-      expect(hasFlag('dry-run')).toBe(false);
-    });
+  it('rejects =value on a boolean option', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--dry-run=false'])).toThrow();
+  });
+
+  it('rejects the negated --no-dry-run form', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--no-dry-run'])).toThrow();
+  });
+
+  it('rejects an empty --env-file value', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--env-file='])).toThrow(/non-empty/i);
+  });
+
+  it('rejects --env-file supplied more than once', () => {
+    expect(() => parseScriptArgs(prepareSpec, ['--env-file', 'a', '--env-file', 'b'])).toThrow(/once/i);
+  });
+
+  it('rejects a spec that declares the same name as both string and boolean', () => {
+    expect(() =>
+      parseScriptArgs({ strings: ['product', 'force'], booleans: ['force'] }, []),
+    ).toThrow(/both string and boolean/i);
+  });
+
+  it('rejects a spec that redeclares the reserved env-file option', () => {
+    expect(() => parseScriptArgs({ booleans: ['env-file'] }, [])).toThrow(/reserved/i);
   });
 });
 

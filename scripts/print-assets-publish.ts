@@ -20,14 +20,15 @@
  */
 import { buildPublishAssignments, diffVariantCoverage } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
-import { getArg, hasFlag, loadManifest } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest } from './lib/print-assets-cli';
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const revision = getArg('revision');
-  const confirm = getArg('confirm');
-  const actor = getArg('actor')?.trim() || undefined;
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.publish);
+  const productId = args.product;
+  const revision = args.revision;
+  const confirm = args.confirm;
+  const actor = args.actor?.trim() || undefined;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-11-r1)');

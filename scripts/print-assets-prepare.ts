@@ -22,7 +22,6 @@
  *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
  *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --force
  *   npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --dry-run
- *   # --source overrides config.artwork (CLI parity); resolved from config if absent
  *
  * Output (gitignored): design/print-assets/{productId}/{revision}/
  *   - {profileKey}-{sha256}.{jpg|png} per distinct profile
@@ -55,7 +54,7 @@ import {
 import { composeDerivative, prepareOutputDir, validateSignatureSvg, writeDerivative } from './lib/prepare-derivatives';
 import { activeVariantDimensions } from './lib/db-variants';
 import { loadSupabaseClient } from './lib/script-env';
-import { getArg, hasFlag, revisionDir, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, revisionDir, ROOT } from './lib/print-assets-cli';
 
 /** Load config/print-assets/{productId}.json. Fails loudly if missing/malformed. */
 function loadConfig(productId: string): PrepareConfig {
@@ -76,11 +75,11 @@ function loadConfig(productId: string): PrepareConfig {
 }
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const revision = getArg('revision');
-  const sourcePath = getArg('source'); // accepted for CLI parity; resolved from config.artwork if absent
-  const force = hasFlag('force');
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.prepare);
+  const productId = args.product;
+  const revision = args.revision;
+  const force = args.force === true;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   if (!revision) throw new Error('Missing --revision (e.g. --revision 2026-07-17-r1)');
@@ -89,7 +88,7 @@ async function main(): Promise<void> {
 
   const config = loadConfig(productId);
 
-  const artworkPath = sourcePath ? path.resolve(sourcePath) : path.resolve(ROOT, config.artwork);
+  const artworkPath = path.resolve(ROOT, config.artwork);
   if (!fs.existsSync(artworkPath)) {
     throw new Error(`Artwork master not found: ${artworkPath} (config.artwork = ${config.artwork})`);
   }

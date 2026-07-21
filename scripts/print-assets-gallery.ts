@@ -17,7 +17,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import type { PrepareConfig } from '../src/lib/print-assets-prepare';
 import { IMG_WIDTHS } from '../src/lib/images';
-import { getArg, hasFlag, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
 import { hashFile } from './lib/image-facts';
 import {
   galleryR2Key,
@@ -131,10 +131,11 @@ async function generateWebpSet(
 }
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const slot = getArg('slot') ?? 'hero';
-  const revisionArg = getArg('revision');
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.gallery);
+  const productId = args.product;
+  const slot = args.slot ?? 'hero';
+  const revisionArg = args.revision;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
 

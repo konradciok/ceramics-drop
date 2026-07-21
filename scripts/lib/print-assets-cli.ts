@@ -5,34 +5,91 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseArgs } from 'node:util';
 import type { PrepareManifest } from '../../src/lib/print-assets-prepare';
 
 export const ROOT = path.resolve(__dirname, '..', '..');
 
-/**
- * `--flag value` or `--flag=value`; mirrors print-assets-prepare.ts. The
- * separate-value form rejects a missing value or one that looks like the next
- * flag (`--product --revision r1` must not read `--revision` as the product);
- * the explicit `--flag=--value` form stays allowed for the rare literal case.
- */
-export function getArg(name: string): string | undefined {
-  const argv = process.argv.slice(2);
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === `--${name}`) {
-      const value = argv[i + 1];
-      if (value === undefined || value.startsWith('--')) {
-        throw new Error(`Missing value for --${name}`);
-      }
-      return value;
-    }
-    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
-  }
-  return undefined;
+export interface ScriptArgSpec<S extends string = string, B extends string = string> {
+  strings?: readonly S[];
+  booleans?: readonly B[];
 }
 
-export function hasFlag(name: string): boolean {
-  return process.argv.slice(2).includes(`--${name}`);
+export type ParsedScriptArgs<S extends string, B extends string> =
+  Record<S, string | undefined> &
+  Record<B, boolean | undefined> &
+  { 'env-file': string | undefined };
+
+export const PRINT_ASSET_ARG_SPECS = {
+  prepare: { strings: ['product', 'revision'], booleans: ['force', 'dry-run'] },
+  upload: { strings: ['product', 'revision'], booleans: ['dry-run'] },
+  verify: { strings: ['product', 'revision'], booleans: ['dry-run'] },
+  publish: { strings: ['product', 'revision', 'confirm', 'actor'], booleans: ['dry-run'] },
+  gallery: { strings: ['product', 'slot', 'revision'], booleans: ['dry-run'] },
+} as const;
+
+/**
+ * `--env-file <path>` / `--env-file=<path>`, tolerant of any other flags in
+ * `argv` (non-strict, positionals allowed) so both `parseScriptArgs` and
+ * `script-env.ts`'s `loadLocalEnv` can pull the same value regardless of a
+ * given script's own spec. Supplied more than once, or with an empty value,
+ * is rejected rather than silently taking the last one.
+ */
+export function parseEnvFileOption(argv: string[] = process.argv.slice(2)): string | undefined {
+  const { values } = parseArgs({
+    args: argv,
+    options: { 'env-file': { type: 'string', multiple: true } },
+    strict: false,
+    allowPositionals: true,
+  });
+  // `strict: false` widens @types/node's inferred value type to `string | boolean`
+  // for every option (unknown flags can parse as booleans), even though this call
+  // only ever declares `env-file` as `type: 'string'`. Cast back to what the
+  // runtime actually produces for a declared string option.
+  const raw = values['env-file'] as string | string[] | undefined;
+  const valuesList = raw == null ? [] : Array.isArray(raw) ? raw : [raw];
+  if (valuesList.length > 1) throw new Error('--env-file may be supplied only once');
+  const value = valuesList[0];
+  if (value !== undefined && value.trim() === '') throw new Error('--env-file must be non-empty');
+  return value;
+}
+
+/**
+ * Strict typed CLI parsing shared by every print-asset operator script — one
+ * parser instead of each script scanning `process.argv` by hand. Backed by
+ * `node:util`'s `parseArgs` in `strict` mode: an unknown flag, a bare
+ * positional, a missing string value, or a `--no-x`/`--x=value` negation of a
+ * boolean all throw instead of being silently accepted or misparsed.
+ * `--env-file` is always recognised (see `parseEnvFileOption`) and reserved —
+ * no spec may redeclare it.
+ */
+export function parseScriptArgs<const S extends string, const B extends string>(
+  spec: ScriptArgSpec<S, B>,
+  argv: string[] = process.argv.slice(2),
+): ParsedScriptArgs<S, B> {
+  const strings = spec.strings ?? [];
+  const booleans = spec.booleans ?? [];
+  const stringSet = new Set<string>(strings);
+  for (const name of booleans) {
+    if (stringSet.has(name)) throw new Error(`Option --${name} cannot be both string and boolean`);
+  }
+  if (stringSet.has('env-file') || booleans.includes('env-file' as B)) {
+    throw new Error('--env-file is reserved as a string option');
+  }
+  const envFile = parseEnvFileOption(argv);
+  const options: Record<string, { type: 'string' | 'boolean' }> = {
+    'env-file': { type: 'string' },
+  };
+  for (const name of strings) options[name] = { type: 'string' };
+  for (const name of booleans) options[name] = { type: 'boolean' };
+  const { values } = parseArgs({
+    args: argv,
+    options,
+    strict: true,
+    allowPositionals: false,
+    allowNegative: false,
+  });
+  return { ...values, 'env-file': envFile } as ParsedScriptArgs<S, B>;
 }
 
 /** A single path segment safe to interpolate under `design/print-assets/`. */
