@@ -1,5 +1,5 @@
 {
-  "_comment": "Proportional composition config (docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md). Same collection layout as fap01. Source master/signature live under gitignored design/. NOTE: fap04 is draft with zero active variants in prod — prepare refuses it until the product is activated (scripts/lib/db-variants.ts gate).",
+  "_comment": "Proportional composition config (docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md). Retains the original wide-border collection layout (fap01's pre-2026-07-19 values); not yet restyled to the thin-border layout fap01–fap03 now use — revisit before activation. Source master/signature live under gitignored design/. NOTE: fap04 is draft with zero active variants in prod — prepare refuses it until the product is activated (scripts/lib/db-variants.ts gate).",
   "product": "fap04",
   "artwork": "design/print-assets/fap04/artwork-master.jpg",
   "background": "#E6E0D3",
