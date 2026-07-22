@@ -70,7 +70,7 @@ export function classifyCreateOutcome(body: unknown): 'success' | 'duplicate' | 
  * output or the evidence JSON attached to a PR.
  */
 function redactSignedUrls(value: unknown): unknown {
-  if (typeof value === 'string') return value.replace(/([?&]sig=)[0-9a-f]+/gi, '$1[redacted]');
+  if (typeof value === 'string') return value.replace(/([?&]sig=)[^&#\s"'<>]*/gi, '$1[redacted]');
   if (Array.isArray(value)) return value.map(redactSignedUrls);
   if (typeof value === 'object' && value !== null) {
     const out: Record<string, unknown> = {};

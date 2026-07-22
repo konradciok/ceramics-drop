@@ -134,13 +134,14 @@ describe('summarizeCreateResponse', () => {
               description:
                 'Asset could not be downloaded from https://anna-ciok.studio/api/print-assets/abc?exp=1753000000&sig=deadbeefcafe1234',
               nested: { url: 'https://anna-ciok.studio/api/print-assets/abc?sig=DEADBEEF' },
+              nonHex: { url: 'https://anna-ciok.studio/api/print-assets/abc?sig=QmFzZTY0-_url~safe' },
             },
           ],
         },
       },
     };
     const serialized = JSON.stringify(summarizeCreateResponse(body));
-    expect(serialized).not.toMatch(/sig=deadbeefcafe1234|sig=DEADBEEF/);
+    expect(serialized).not.toMatch(/sig=deadbeefcafe1234|sig=DEADBEEF|sig=QmFzZTY0/);
     expect(serialized).toContain('sig=[redacted]');
     expect(serialized).toContain('items.assets.NotDownloaded');
   });
