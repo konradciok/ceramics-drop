@@ -23,11 +23,13 @@
  */
 import { spawnSync } from 'node:child_process';
 import { getPrintDesigns } from '../src/lib/prints';
-import { printAssetKey } from '../src/lib/print-assets';
 
 // Bucket name default matches wrangler.jsonc → r2_buckets[0].bucket_name.
 // Override via PRINT_ASSETS_BUCKET for non-prod buckets.
 const BUCKET = process.env.PRINT_ASSETS_BUCKET ?? 'anna-ciok-print-assets';
+
+/** Legacy pre-pipeline master-object key used only by the read-only inventory probe. */
+const printAssetKey = (productId: string): string => `${productId}/master.jpg`;
 
 const dryRun = process.argv.includes('--dry-run');
 const jsonOut = process.argv.includes('--json');

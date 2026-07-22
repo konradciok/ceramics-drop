@@ -1,8 +1,20 @@
 # Proportional print-asset composition (prepare-step rewrite)
 
-Status: Implemented on `feat/print-composition` (2026-07-17); real-asset proof
-pending studio review. Operator-confirmed scope: separate SVG signature layer +
-clean artwork-only masters.
+Status: Implemented on `feat/print-composition` (2026-07-17). Production
+state: `fap01` has a published fulfilment revision (`2026-07-12-r1` — see
+`docs/print-asset-runbook.md` § Cutover evidence); `fap02`/`fap03` have
+tracked configs and locally prepared derivatives (`2026-07-19-r2`) but no
+published revision yet (no ready assets or assignments in production);
+`fap04` is a draft config with zero active variants. Operator-confirmed
+scope: separate SVG signature layer + clean artwork-only masters.
+
+**2026-07-21 update:** a later manifest-hardening pass extended and reshaped
+the manifest this composition step writes — see "Manifest extension" below
+for the schema as actually shipped (schema v2, with a `schemaVersion`
+discriminator, tracked-config provenance, and a `rendererVersion` bumped
+independently of the JSON shape). Every other section of this spec (Layout
+model, resolution math, validation rules) is unchanged and still describes
+the shipped behaviour.
 
 Supersedes the per-profile crop model in
 `docs/plans/print-asset-pipeline.md` § Settled Architecture 1 ("Require an
@@ -218,48 +230,69 @@ export interface PrepareConfig {
 }
 ```
 
-### Manifest extension
+### Manifest extension (as shipped — schema v2)
 
 `PrepareManifest` gains a `layout` snapshot for reproducibility/audit (mirrors
-the operator's "save the layout result as a manifest" requirement). Source
-identity moves from a single `sourceSha256` to per-layer hashes:
+the operator's "save the layout result as a manifest" requirement), plus a
+tracked-config provenance hash and an explicit schema discriminator added by
+the later manifest-hardening pass. As shipped, the shape is flatter than
+originally sketched here: `rendererVersion`, `background`, and `configSha256`
+are top-level `PrepareManifest` fields (not nested inside `layout`), and
+`layout` itself is exactly the configured `PrintLayout` fractions — nothing
+else. `artwork` and `signature` are each a small object carrying that file's
+repo-relative `path` alongside its hash (and, for `artwork`, its decoded
+dimensions) — the `upload`/`verify` preflight needs `path` to confirm the
+tracked config and the manifest still agree on which files were used:
 
 ```ts
-export interface ManifestLayout {
-  rendererVersion: string;           // semver of the compose pipeline; bump on any Sharp-logic change
-  background: string;                // hex, as configured
-  // Resolved per-profile pixel boxes are already capturable per-derivative;
-  // the global layout fractions + layer hashes live here.
-  artworkSha256: string;
-  signatureSha256: string | null;    // null when no signature configured
-  layout: PrintLayout;               // the fractions, as configured
-}
+export const COMPOSE_RENDERER_VERSION = '2.1.0'; // bump on any Sharp-logic change
 
 export interface PrepareManifest {
+  schemaVersion: 2;                  // the JSON shape — bump only when the shape itself changes
   product: string;
   revision: string;
-  artworkSha256: string;             // was: sourceSha256
-  artworkWidth: number;              // was: sourceWidth
-  artworkHeight: number;             // was: sourceHeight
-  signatureSha256: string | null;    // new
-  layout: ManifestLayout;            // new
+  rendererVersion: string;           // the compose pipeline's output-byte logic — independent of schemaVersion
+  configSha256: string;              // raw bytes of config/print-assets/{productId}.json
+  background: string;                // hex, as configured
+  layout: PrintLayout;               // the fractions, as configured — no wrapper object
+  artwork: { path: string; sha256: string; width: number; height: number };
+  signature: { path: string; sha256: string } | null; // null when no signature configured
   derivatives: ManifestDerivative[]; // each gains resolved artworkBoxPx + signatureBoxPx (see below)
   assignments: ManifestAssignment[]; // unchanged
 }
 ```
 
+`schemaVersion` and `rendererVersion` answer different questions and must not
+be conflated: `schemaVersion` (currently `2`) is the JSON shape a parser
+checks structurally; `rendererVersion` (currently `2.1.0`) is the Sharp
+compose pipeline's output-byte logic — it bumped from `2.0.0` when the
+signature-rasterisation density bound changed (a byte-affecting fix, no
+shape change at all). `upload`/`verify` pin to the current `rendererVersion`
+exactly (a stale renderer throws with re-prepare guidance); `publish` alone
+also accepts a validated pre-v2 **legacy** manifest for rollback, with no
+`schemaVersion` or `rendererVersion` requirement — see
+`docs/print-asset-runbook.md` § Manifest compatibility and § Recovery
+procedures.
+
 Each `ManifestDerivative` records its resolved placement so a derivative is
 self-describing and re-generatable from the manifest + the two layer files:
 
 ```ts
-// added to ManifestDerivative
+// on ManifestDerivative
 artworkBoxPx:   { x: number; y: number; width: number; height: number };  // placement on this canvas
 signatureBoxPx: { x: number; y: number; width: number; height: number } | null;
 ```
 
-The existing `r2Key` / `sha256` / `byteSize` / `contentType` fields are
-unchanged — Phase 2b (upload/verify/publish) consumes the manifest exactly as
-before.
+Schema v2 stores each derivative fact exactly once and derives the rest:
+`width` / `height` / `format` / `sha256` / `byteSize` are stored;
+`profileKey`, `contentType`, and `r2Key` are never stored redundantly — every
+consumer recomputes them on demand (`profileKeyFromPx`, `contentTypeForFormat`,
+`derivativeR2Key` in `src/lib/print-assets-prepare.ts`). This is a further
+divergence from the sketch above (which assumed `r2Key` / `contentType`
+remained stored fields): only the **legacy** (pre-v2) manifest shape still
+carries them stored, which is exactly why publish's legacy projection
+recomputes and cross-checks each one against the legacy manifest's own
+dimensions/format/hash before trusting it.
 
 ## Contracts preserved (explicitly unchanged)
 
@@ -369,4 +402,7 @@ opaque background.
 - Whether to land the new shape alongside the old (e.g. a `compose` vs `crop`
   discriminator) during transition, or cut over cleanly given no published
   design blocks it.
-- `rendererVersion` initial value and bump policy.
+- `rendererVersion` initial value and bump policy. _(Resolved: shipped at
+  `2.0.0`; bump on any Sharp-logic change that can affect output bytes. First
+  bump was `2.0.0` → `2.1.0` for the bounded signature-rasterisation density
+  fix — see `COMPOSE_RENDERER_VERSION` in `src/lib/print-assets-prepare.ts`.)_
