@@ -120,6 +120,30 @@ describe('summarizeCreateResponse', () => {
     expect(Object.keys(summary)).toEqual(['outcome', 'orderId', 'stage', 'issues']);
     expect(JSON.stringify(summary)).not.toMatch(/assets|signed\.example|sig=/i);
   });
+
+  it('redacts sig values inside issue strings (asset-download issues echo the failing signed URL)', () => {
+    const body = {
+      outcome: 'createdWithIssues',
+      order: {
+        id: 'ord_3',
+        status: {
+          stage: 'InProgress',
+          issues: [
+            {
+              errorCode: 'items.assets.NotDownloaded',
+              description:
+                'Asset could not be downloaded from https://anna-ciok.studio/api/print-assets/abc?exp=1753000000&sig=deadbeefcafe1234',
+              nested: { url: 'https://anna-ciok.studio/api/print-assets/abc?sig=DEADBEEF' },
+            },
+          ],
+        },
+      },
+    };
+    const serialized = JSON.stringify(summarizeCreateResponse(body));
+    expect(serialized).not.toMatch(/sig=deadbeefcafe1234|sig=DEADBEEF/);
+    expect(serialized).toContain('sig=[redacted]');
+    expect(serialized).toContain('items.assets.NotDownloaded');
+  });
 });
 
 describe('postSandboxOrder', () => {

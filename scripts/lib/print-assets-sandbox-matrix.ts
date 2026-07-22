@@ -62,6 +62,24 @@ export function classifyCreateOutcome(body: unknown): 'success' | 'duplicate' | 
   throw new Error(`Unexpected Prodigi outcome: ${JSON.stringify(outcome)}`);
 }
 
+/**
+ * Redact the `sig` query value in any string, recursively. Prodigi's
+ * asset-download issues (`items.assets.NotDownloaded` — the exact failure this
+ * matrix exists to surface) echo the failing asset URL back in the issue
+ * description, and a still-valid 7-day signed URL must never land in operator
+ * output or the evidence JSON attached to a PR.
+ */
+function redactSignedUrls(value: unknown): unknown {
+  if (typeof value === 'string') return value.replace(/([?&]sig=)[0-9a-f]+/gi, '$1[redacted]');
+  if (Array.isArray(value)) return value.map(redactSignedUrls);
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) out[key] = redactSignedUrls(child);
+    return out;
+  }
+  return value;
+}
+
 export function summarizeCreateResponse(body: unknown): {
   outcome: string | null;
   orderId: string | null;
@@ -79,7 +97,7 @@ export function summarizeCreateResponse(body: unknown): {
     outcome: typeof root.outcome === 'string' ? root.outcome : null,
     orderId: typeof order.id === 'string' ? order.id : null,
     stage: typeof status.stage === 'string' ? status.stage : null,
-    issues: Array.isArray(status.issues) ? status.issues : [],
+    issues: Array.isArray(status.issues) ? (redactSignedUrls(status.issues) as unknown[]) : [],
   };
 }
 
