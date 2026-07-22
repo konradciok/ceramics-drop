@@ -7,6 +7,7 @@
  * generation lives in the script; this module holds the deterministic math
  * and R2-key/manifest shape the rest of the pipeline depends on.
  */
+import { z } from 'zod';
 
 // ── R2 key ───────────────────────────────────────────────────────────────────
 
@@ -189,71 +190,35 @@ export function validateLayoutFractions(layout: PrintLayout): string[] {
 }
 
 /**
- * The vertical stack (topMargin + artwork box + gap + signatureZone + bottomMargin)
- * must fit the canvas height for every active profile. Returns error strings.
+ * Validate a resolved placement against its target canvas: positive integer
+ * canvas dimensions, positive artwork/signature boxes, and every box fully
+ * inside the canvas. Returns error strings (empty = valid).
+ *
+ * Consolidates the old validateVerticalFit + validatePlacementFit split — the
+ * resolved boxes already carry the geometry those two used to recompute, so
+ * both the prepare script (per profile) and the manifest parser (per recomputed
+ * derivative) share one bounds check.
  */
-export function validateVerticalFit(
-  layout: PrintLayout,
-  target: { w: number; h: number },
-  hasSignature: boolean,
-): string[] {
-  const placement = resolvePlacement(layout, target, { w: 1, h: 1 }, hasSignature);
-  const errors: string[] = [];
-  // artworkBox.y + height must not run past the signature zone top (or bottom margin).
-  const limit = placement.signatureBox ? placement.signatureBox.y : target.h;
-  if (placement.artworkBox.y + placement.artworkBox.height > limit) {
-    errors.push(
-      `Layout overflows canvas ${target.w}x${target.h}: artwork box bottom ` +
-        `${placement.artworkBox.y + placement.artworkBox.height} exceeds limit ${limit}`,
-    );
-  }
-  if (placement.artworkBox.height <= 0) {
-    errors.push(`Layout leaves no room for artwork on canvas ${target.w}x${target.h}`);
-  }
-  return errors;
-}
-
-/** Ensure the resolved artwork and optional signature boxes are usable and remain inside the canvas. */
-export function validatePlacementFit(
-  layout: PrintLayout,
-  target: { w: number; h: number },
-  hasSignature: boolean,
-): string[] {
+export function validatePlacement(placement: Placement, target: { w: number; h: number }): string[] {
   if (!Number.isInteger(target.w) || !Number.isInteger(target.h) || target.w <= 0 || target.h <= 0) {
     return [`Target canvas must have positive integer dimensions, got ${target.w}x${target.h}`];
   }
 
-  const placement = resolvePlacement(layout, target, { w: 1, h: 1 }, hasSignature);
-  const errors = validateVerticalFit(layout, target, hasSignature);
-  const artwork = placement.artworkBox;
-
-  if (artwork.width <= 0) {
-    errors.push(`Layout leaves no horizontal room for artwork on canvas ${target.w}x${target.h}`);
-  }
-  if (artwork.x < 0 || artwork.x + artwork.width > target.w) {
-    errors.push(
-      `Artwork box ${JSON.stringify(artwork)} exceeds horizontal bounds of canvas ${target.w}x${target.h}`,
-    );
-  }
-  if (artwork.y < 0 || artwork.y + artwork.height > target.h) {
-    errors.push(`Artwork box ${JSON.stringify(artwork)} exceeds canvas ${target.w}x${target.h}`);
-  }
-
-  const signature = placement.signatureBox;
-  if (signature) {
-    if (signature.width <= 0 || signature.height <= 0) {
-      errors.push(`Layout leaves no room for the signature on canvas ${target.w}x${target.h}`);
+  const errors: string[] = [];
+  const check = (label: string, box: Box): void => {
+    if (box.width <= 0 || box.height <= 0) {
+      errors.push(
+        `${label} box ${JSON.stringify(box)} must have positive dimensions on canvas ${target.w}x${target.h}`,
+      );
+      return;
     }
-    if (
-      signature.x < 0 ||
-      signature.y < 0 ||
-      signature.x + signature.width > target.w ||
-      signature.y + signature.height > target.h
-    ) {
-      errors.push(`Signature box ${JSON.stringify(signature)} exceeds canvas ${target.w}x${target.h}`);
+    if (box.x < 0 || box.y < 0 || box.x + box.width > target.w || box.y + box.height > target.h) {
+      errors.push(`${label} box ${JSON.stringify(box)} exceeds the canvas bounds ${target.w}x${target.h}`);
     }
-  }
+  };
 
+  check('Artwork', placement.artworkBox);
+  if (placement.signatureBox) check('Signature', placement.signatureBox);
   return errors;
 }
 
@@ -349,69 +314,346 @@ export function validatePrepareConfig(value: unknown, expectedProduct?: string):
   return errors;
 }
 
-// ── Manifest ─────────────────────────────────────────────────────────────────
-
-/** `format` → MIME, the exact values `print_fulfilment_assets.content_type` accepts. */
-const CONTENT_TYPE_BY_FORMAT: Record<DerivativeFormat, string> = {
-  jpg: 'image/jpeg',
-  png: 'image/png',
-};
-
-export interface ManifestDerivative {
-  profileKey: string;
-  width: number;
-  height: number;
-  format: DerivativeFormat;
-  contentType: string;
-  sha256: string;
-  byteSize: number;
-  r2Key: string;
-  /** Actual rendered artwork rectangle on this canvas (audit/repro). */
-  artworkBoxPx: Box;
-  /** Resolved signature zone on this canvas, or null. */
-  signatureBoxPx: Box | null;
-}
-
-export interface ManifestAssignment {
-  variantKey: string;
-  profileKey: string;
-}
-
-/** Layout snapshot for reproducibility/audit (the operator's "layout manifest"). */
-export interface ManifestLayout {
-  /** Bumped on any change to the compose pipeline; gates reproducibility claims. */
-  rendererVersion: string;
-  background: string; // hex, as configured
-  artworkSha256: string;
-  signatureSha256: string | null;
-  layout: PrintLayout; // the fractions, as configured
-}
-
-export interface PrepareManifest {
-  product: string;
-  revision: string;
-  sourceSha256: string; // artwork master file hash
-  sourceWidth: number; // artwork master width
-  sourceHeight: number; // artwork master height
-  signatureSha256: string | null; // signature.svg file hash, or null
-  layout: ManifestLayout;
-  derivatives: ManifestDerivative[];
-  assignments: ManifestAssignment[];
-}
+// ── Manifest schema v2 ─────────────────────────────────────────────────────
 
 /** Bump when the Sharp compose pipeline changes in any way that affects output bytes. */
 export const COMPOSE_RENDERER_VERSION = '2.1.0';
 
+const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
+const safeSegmentSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+const repoRelativePathSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (value) =>
+      !value.startsWith('/') &&
+      !value.includes('\\') &&
+      value.split('/').every((segment) => safeSegmentSchema.safeParse(segment).success),
+    'Expected a normalized repository-relative POSIX path',
+  );
+const formatSchema = z.enum(['jpg', 'png']);
+const boxSchema = z
+  .object({
+    x: z.number().int().nonnegative(),
+    y: z.number().int().nonnegative(),
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+  })
+  .strict();
+const layoutSchema = z
+  .object({
+    sideMargin: z.number().finite().min(0).max(1),
+    topMargin: z.number().finite().min(0).max(1),
+    bottomMargin: z.number().finite().min(0).max(1),
+    gapAboveSignature: z.number().finite().min(0).max(1),
+    signatureZoneHeight: z.number().finite().min(0).max(1),
+    artworkMaxWidth: z.number().finite().min(0).max(1).optional(),
+    artworkMaxHeight: z.number().finite().min(0).max(1).optional(),
+  })
+  .strict();
+const derivativeSchema = z
+  .object({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    format: formatSchema,
+    sha256: sha256Schema,
+    byteSize: z.number().int().positive(),
+    artworkBoxPx: boxSchema,
+    signatureBoxPx: boxSchema.nullable(),
+  })
+  .strict();
+const assignmentSchema = z
+  .object({
+    variantKey: z.string().min(1),
+    profileKey: z.string().regex(/^[1-9]\d*x[1-9]\d*$/),
+  })
+  .strict();
+
+/**
+ * Strict schema-v2 manifest. Every fact is stored exactly once: the derived
+ * `profileKey` / `contentType` / `r2Key` a derivative used to carry are recomputed
+ * from dimensions, format, hash, product, and revision by the consumers.
+ */
+export const prepareManifestSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    product: safeSegmentSchema,
+    revision: safeSegmentSchema,
+    rendererVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    configSha256: sha256Schema,
+    background: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    layout: layoutSchema,
+    artwork: z
+      .object({
+        path: repoRelativePathSchema,
+        sha256: sha256Schema,
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .strict(),
+    signature: z.object({ path: repoRelativePathSchema, sha256: sha256Schema }).strict().nullable(),
+    derivatives: z.array(derivativeSchema).min(1),
+    assignments: z.array(assignmentSchema).min(1),
+  })
+  .strict();
+
+export type PrepareManifest = z.infer<typeof prepareManifestSchema>;
+export type ManifestDerivative = PrepareManifest['derivatives'][number];
+export type ManifestAssignment = PrepareManifest['assignments'][number];
+
+/** Matches DB `profile_key` and legacy manifest profile keys. */
+export function profileKeyFromPx(width: number, height: number): string {
+  return `${width}x${height}`;
+}
+
+/** `format` → MIME, the exact values `print_fulfilment_assets.content_type` accepts. */
+export function contentTypeForFormat(format: DerivativeFormat): 'image/jpeg' | 'image/png' {
+  return format === 'jpg' ? 'image/jpeg' : 'image/png';
+}
+
+/** Content-addressed R2 key for a v2 derivative, derived from its immutable facts. */
+export function derivativeR2Key(
+  manifest: Pick<PrepareManifest, 'product' | 'revision'>,
+  derivative: Pick<ManifestDerivative, 'width' | 'height' | 'sha256' | 'format'>,
+): string {
+  return buildR2Key(
+    manifest.product,
+    manifest.revision,
+    derivative.width,
+    derivative.height,
+    derivative.sha256,
+    derivative.format,
+  );
+}
+
+function boxesEqual(a: Box | null, b: Box | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+/**
+ * Shared coverage invariant: no duplicate variant assignments, every assignment
+ * points at an existing derivative profile, and every derivative profile is
+ * assigned (exact/bijective coverage). Throws on the first violation.
+ */
+function assertAssignmentCoverage(
+  profiles: Set<string>,
+  assignments: readonly { variantKey: string; profileKey: string }[],
+): void {
+  const seen = new Set<string>();
+  for (const assignment of assignments) {
+    if (seen.has(assignment.variantKey)) {
+      throw new Error(`Manifest contains a duplicate assignment for variant ${assignment.variantKey}`);
+    }
+    seen.add(assignment.variantKey);
+    if (!profiles.has(assignment.profileKey)) {
+      throw new Error(`Assignment for variant ${assignment.variantKey} references missing profile ${assignment.profileKey}`);
+    }
+  }
+  for (const profile of profiles) {
+    if (!assignments.some((assignment) => assignment.profileKey === profile)) {
+      throw new Error(`Derivative profile ${profile} has no variant assignment (incomplete coverage)`);
+    }
+  }
+}
+
+/**
+ * Structurally parse a schema-v2 manifest, then enforce mode-neutral invariants:
+ * unique derived profiles, signature-box consistency, renderer-2.1 placement
+ * recomputation with canvas-bounds, and exact assignment coverage. Does not read
+ * files or config; `loadManifestV2` adds the current-renderer requirement and
+ * preflight adds config equality + source-byte checks.
+ */
+export function parsePrepareManifest(value: unknown): PrepareManifest {
+  if (isRecord(value) && value.schemaVersion !== 2) {
+    throw new Error(`Manifest schemaVersion must be 2, got ${JSON.stringify(value.schemaVersion)}`);
+  }
+  const parsed = prepareManifestSchema.safeParse(value);
+  if (!parsed.success) throw new Error(`Invalid manifest schema v2: ${z.prettifyError(parsed.error)}`);
+  const manifest = parsed.data;
+
+  const hasSignature = manifest.signature != null;
+  const profiles = new Set<string>();
+  for (const derivative of manifest.derivatives) {
+    const profileKey = profileKeyFromPx(derivative.width, derivative.height);
+    if (profiles.has(profileKey)) throw new Error(`Manifest contains a duplicate derivative profile ${profileKey}`);
+    profiles.add(profileKey);
+
+    if ((derivative.signatureBoxPx != null) !== hasSignature) {
+      throw new Error(`Derivative ${profileKey} signatureBoxPx presence does not match the manifest signature layer`);
+    }
+
+    const placement = resolvePlacement(
+      manifest.layout,
+      { w: derivative.width, h: derivative.height },
+      { w: manifest.artwork.width, h: manifest.artwork.height },
+      hasSignature,
+    );
+    const boundErrors = validatePlacement(placement, { w: derivative.width, h: derivative.height });
+    if (boundErrors.length > 0) {
+      throw new Error(`Derivative ${profileKey} placement is out of bounds: ${boundErrors.join('; ')}`);
+    }
+
+    const recomputedArtwork: Box = {
+      x: placement.artworkPos.x,
+      y: placement.artworkPos.y,
+      width: placement.artworkOut.width,
+      height: placement.artworkOut.height,
+    };
+    if (!boxesEqual(recomputedArtwork, derivative.artworkBoxPx)) {
+      throw new Error(
+        `Derivative ${profileKey} artworkBoxPx ${JSON.stringify(derivative.artworkBoxPx)} does not match the ` +
+          `renderer-${COMPOSE_RENDERER_VERSION} placement ${JSON.stringify(recomputedArtwork)} (layout/source drift)`,
+      );
+    }
+    if (!boxesEqual(placement.signatureBox, derivative.signatureBoxPx)) {
+      throw new Error(
+        `Derivative ${profileKey} signatureBoxPx ${JSON.stringify(derivative.signatureBoxPx)} does not match the ` +
+          `recomputed signature zone ${JSON.stringify(placement.signatureBox)} (layout/source drift)`,
+      );
+    }
+  }
+
+  assertAssignmentCoverage(profiles, manifest.assignments);
+  return manifest;
+}
+
+// ── Validated legacy publish projection ──────────────────────────────────────
+
+/**
+ * The normalized publish input both manifest formats project into. Only the
+ * immutable key-bearing facts survive; publish re-derives profile/MIME/R2 key
+ * and the RPC revalidates live coverage, ownership, dimensions, and readiness.
+ */
+export interface PublishManifest {
+  product: string;
+  revision: string;
+  derivatives: Array<{
+    width: number;
+    height: number;
+    format: DerivativeFormat;
+    sha256: string;
+  }>;
+  assignments: Array<{ variantKey: string; profileKey: string }>;
+}
+
+// Permissive-on-extra, strict-on-required legacy derivative. Both known legacy
+// shapes (2026-07-12-r1 flat, 2026-07-19-r2 with layout snapshot) carry these
+// stored derived facts; extra fields (artworkBoxPx, …) are ignored.
+const legacyDerivativeSchema = z.object({
+  profileKey: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  format: formatSchema,
+  contentType: z.string(),
+  sha256: sha256Schema,
+  byteSize: z.number().int().positive(),
+  r2Key: z.string(),
+});
+const legacyManifestSchema = z.object({
+  product: safeSegmentSchema,
+  revision: safeSegmentSchema,
+  derivatives: z.array(legacyDerivativeSchema).min(1),
+  assignments: z.array(assignmentSchema).min(1),
+});
+
+/** True when `value` is a structurally recognized pre-v2 (legacy) manifest. */
+export function isRecognizedLegacyManifest(value: unknown): boolean {
+  return isRecord(value) && value.schemaVersion === undefined && legacyManifestSchema.safeParse(value).success;
+}
+
+/**
+ * Parse a manifest for publish: schema-v2 directly, or a validated legacy
+ * projection (recompute + compare stored profileKey/contentType/r2Key, reject
+ * duplicates and inconsistent coverage). Intentionally does NOT require the
+ * current renderer or tracked config — rollback must survive rendering/config
+ * changes; only the immutable key-bearing facts and exact coverage are checked.
+ */
+export function parsePublishManifest(value: unknown): PublishManifest {
+  if (isRecord(value) && value.schemaVersion !== undefined) {
+    if (value.schemaVersion === 2) {
+      const v2 = parsePrepareManifest(value);
+      return projectPublishManifest(v2.product, v2.revision, v2.derivatives, v2.assignments);
+    }
+    throw new Error(
+      `Unsupported manifest schemaVersion ${JSON.stringify(value.schemaVersion)} (expected 2 or a recognized legacy manifest)`,
+    );
+  }
+
+  const parsed = legacyManifestSchema.safeParse(value);
+  if (!parsed.success) throw new Error(`Invalid legacy manifest: ${z.prettifyError(parsed.error)}`);
+  const manifest = parsed.data;
+
+  const profiles = new Set<string>();
+  for (const derivative of manifest.derivatives) {
+    const expectedProfile = profileKeyFromPx(derivative.width, derivative.height);
+    if (derivative.profileKey !== expectedProfile) {
+      throw new Error(
+        `Legacy derivative profileKey "${derivative.profileKey}" does not match its ${expectedProfile} dimensions`,
+      );
+    }
+    if (profiles.has(expectedProfile)) {
+      throw new Error(`Legacy manifest contains a duplicate derivative profile ${expectedProfile}`);
+    }
+    profiles.add(expectedProfile);
+
+    const expectedContentType = contentTypeForFormat(derivative.format);
+    if (derivative.contentType !== expectedContentType) {
+      throw new Error(
+        `Legacy derivative contentType "${derivative.contentType}" does not match format ${derivative.format} ` +
+          `(expected ${expectedContentType})`,
+      );
+    }
+    const expectedR2Key = buildR2Key(
+      manifest.product,
+      manifest.revision,
+      derivative.width,
+      derivative.height,
+      derivative.sha256,
+      derivative.format,
+    );
+    if (derivative.r2Key !== expectedR2Key) {
+      throw new Error(
+        `Legacy derivative r2Key "${derivative.r2Key}" is inconsistent with its content-addressed key ${expectedR2Key}`,
+      );
+    }
+  }
+
+  assertAssignmentCoverage(profiles, manifest.assignments);
+  return projectPublishManifest(manifest.product, manifest.revision, manifest.derivatives, manifest.assignments);
+}
+
+function projectPublishManifest(
+  product: string,
+  revision: string,
+  derivatives: readonly { width: number; height: number; format: DerivativeFormat; sha256: string }[],
+  assignments: readonly { variantKey: string; profileKey: string }[],
+): PublishManifest {
+  return {
+    product,
+    revision,
+    derivatives: derivatives.map((d) => ({ width: d.width, height: d.height, format: d.format, sha256: d.sha256 })),
+    assignments: assignments.map((a) => ({ variantKey: a.variantKey, profileKey: a.profileKey })),
+  };
+}
+
+// ── Build manifest v2 ─────────────────────────────────────────────────────────
+
 export interface BuildManifestInput {
   product: string;
   revision: string;
-  sourceSha256: string;
-  sourceWidth: number;
-  sourceHeight: number;
-  signatureSha256: string | null;
-  layout: PrintLayout;
+  /** SHA-256 of the tracked config's raw bytes (provenance). */
+  configSha256: string;
   background: string;
-  hasSignature: boolean;
+  layout: PrintLayout;
+  /** Repository-relative normalized POSIX path — never an absolute path. */
+  artworkManifestPath: string;
+  artworkSha256: string;
+  artworkWidth: number;
+  artworkHeight: number;
+  /** Repository-relative normalized POSIX path, or null when there is no signature. */
+  signatureManifestPath: string | null;
+  signatureSha256: string | null;
   profiles: DerivativeProfile[];
   /** Per-profile compose output + its resolved placement. */
   derivativeMeta: Record<
@@ -425,21 +667,21 @@ export interface BuildManifestInput {
   >;
 }
 
+/**
+ * Build a schema-v2 manifest, storing each fact once. Derivative entries carry
+ * only dimensions, format, hash, byte size, and the resolved boxes — consumers
+ * derive profileKey / contentType / r2Key from those canonical fields.
+ */
 export function buildManifest(input: BuildManifestInput): PrepareManifest {
   const derivatives: ManifestDerivative[] = input.profiles.map((profile) => {
     const meta = input.derivativeMeta[profile.profileKey];
-    if (!meta) {
-      throw new Error(`Missing derivative output for profile ${profile.profileKey}`);
-    }
+    if (!meta) throw new Error(`Missing derivative output for profile ${profile.profileKey}`);
     return {
-      profileKey: profile.profileKey,
       width: profile.w,
       height: profile.h,
       format: meta.format,
-      contentType: CONTENT_TYPE_BY_FORMAT[meta.format],
       sha256: meta.sha256,
       byteSize: meta.byteSize,
-      r2Key: buildR2Key(input.product, input.revision, profile.w, profile.h, meta.sha256, meta.format),
       artworkBoxPx: {
         x: meta.placement.artworkPos.x,
         y: meta.placement.artworkPos.y,
@@ -455,168 +697,24 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
   );
 
   return {
+    schemaVersion: 2,
     product: input.product,
     revision: input.revision,
-    sourceSha256: input.sourceSha256,
-    sourceWidth: input.sourceWidth,
-    sourceHeight: input.sourceHeight,
-    signatureSha256: input.signatureSha256,
-    layout: {
-      rendererVersion: COMPOSE_RENDERER_VERSION,
-      background: input.background,
-      artworkSha256: input.sourceSha256,
-      signatureSha256: input.signatureSha256,
-      layout: input.layout,
+    rendererVersion: COMPOSE_RENDERER_VERSION,
+    configSha256: input.configSha256,
+    background: input.background,
+    layout: input.layout,
+    artwork: {
+      path: input.artworkManifestPath,
+      sha256: input.artworkSha256,
+      width: input.artworkWidth,
+      height: input.artworkHeight,
     },
+    signature:
+      input.signatureManifestPath && input.signatureSha256
+        ? { path: input.signatureManifestPath, sha256: input.signatureSha256 }
+        : null,
     derivatives,
     assignments,
   };
-}
-
-/**
- * Validate a manifest against its tracked config + its own internal consistency:
- * every configured profile has exactly one derivative, derivative dims match the
- * profile key, and each derivative's recorded artworkBoxPx equals a placement
- * recomputed from the manifest's layout + source dims. Returns error strings.
- */
-export function validateManifest(manifest: PrepareManifest, config: PrepareConfig): string[] {
-  const errors: string[] = [];
-
-  if (manifest.product !== config.product) {
-    errors.push(`Manifest product "${manifest.product}" does not match config product "${config.product}"`);
-  }
-  if (manifest.layout.rendererVersion !== COMPOSE_RENDERER_VERSION) {
-    errors.push(
-      `Manifest rendererVersion "${manifest.layout.rendererVersion}" does not match "${COMPOSE_RENDERER_VERSION}"`,
-    );
-  }
-  if (manifest.layout.background !== config.background) {
-    errors.push(
-      `Manifest background "${manifest.layout.background}" does not match config background "${config.background}"`,
-    );
-  }
-  if (JSON.stringify(manifest.layout.layout) !== JSON.stringify(config.layout)) {
-    errors.push('Manifest layout does not match the tracked config layout');
-  }
-  if (manifest.layout.artworkSha256 !== manifest.sourceSha256) {
-    errors.push('Manifest artwork hash does not match sourceSha256');
-  }
-  if (manifest.layout.signatureSha256 !== manifest.signatureSha256) {
-    errors.push('Manifest signature hashes are inconsistent');
-  }
-  if ((manifest.signatureSha256 != null) !== (config.signature != null)) {
-    errors.push('Manifest signature presence does not match the tracked config');
-  }
-
-  const profileKeys = new Set<string>();
-
-  for (const derivative of manifest.derivatives) {
-    if (profileKeys.has(derivative.profileKey)) {
-      errors.push(`Manifest contains duplicate derivative profile ${derivative.profileKey}`);
-    }
-    profileKeys.add(derivative.profileKey);
-
-    const profileMatch = /^(\d+)x(\d+)$/.exec(derivative.profileKey);
-    const expectedW = profileMatch ? Number(profileMatch[1]) : Number.NaN;
-    const expectedH = profileMatch ? Number(profileMatch[2]) : Number.NaN;
-    if (!profileMatch || expectedW <= 0 || expectedH <= 0) {
-      errors.push(`Derivative profileKey "${derivative.profileKey}" must be positive dimensions in WxH form`);
-      continue;
-    }
-    if (derivative.width !== expectedW || derivative.height !== expectedH) {
-      errors.push(
-        `Derivative for profile ${derivative.profileKey} has dimensions ${derivative.width}x${derivative.height}, ` +
-          `expected ${expectedW}x${expectedH}`,
-      );
-    }
-    const expectedContentType = CONTENT_TYPE_BY_FORMAT[derivative.format];
-    if (derivative.contentType !== expectedContentType) {
-      errors.push(
-        `Derivative for profile ${derivative.profileKey} has contentType "${derivative.contentType}", ` +
-          `expected "${expectedContentType}" for format ${derivative.format}`,
-      );
-    }
-    if (derivative.format !== config.format) {
-      errors.push(
-        `Derivative for profile ${derivative.profileKey} uses format ${derivative.format}, expected ${config.format}`,
-      );
-    }
-    const expectedR2Key = buildR2Key(
-      manifest.product,
-      manifest.revision,
-      derivative.width,
-      derivative.height,
-      derivative.sha256,
-      derivative.format,
-    );
-    if (derivative.r2Key !== expectedR2Key) {
-      errors.push(`Derivative for profile ${derivative.profileKey} has an inconsistent r2Key`);
-    }
-    // Self-consistency: recompute the placement from the recorded layout + source dims.
-    const recomputed = resolvePlacement(
-      manifest.layout.layout,
-      { w: derivative.width, h: derivative.height },
-      { w: manifest.sourceWidth, h: manifest.sourceHeight },
-      manifest.signatureSha256 != null,
-    );
-    const renderedArtworkBox: Box = {
-      x: recomputed.artworkPos.x,
-      y: recomputed.artworkPos.y,
-      width: recomputed.artworkOut.width,
-      height: recomputed.artworkOut.height,
-    };
-    if (
-      renderedArtworkBox.x !== derivative.artworkBoxPx.x ||
-      renderedArtworkBox.y !== derivative.artworkBoxPx.y ||
-      renderedArtworkBox.width !== derivative.artworkBoxPx.width ||
-      renderedArtworkBox.height !== derivative.artworkBoxPx.height
-    ) {
-      errors.push(
-        `Derivative for profile ${derivative.profileKey} has artworkBoxPx ` +
-          `${JSON.stringify(derivative.artworkBoxPx)} that does not match recomputed ` +
-          `${JSON.stringify(renderedArtworkBox)} (layout/source drift)`,
-      );
-    }
-    if (JSON.stringify(recomputed.signatureBox) !== JSON.stringify(derivative.signatureBoxPx)) {
-      errors.push(
-        `Derivative for profile ${derivative.profileKey} has signatureBoxPx ` +
-          `${JSON.stringify(derivative.signatureBoxPx)} that does not match recomputed ` +
-          `${JSON.stringify(recomputed.signatureBox)} (layout/source drift)`,
-      );
-    }
-  }
-
-  const assignedVariants = new Set<string>();
-  for (const assignment of manifest.assignments) {
-    if (assignedVariants.has(assignment.variantKey)) {
-      errors.push(`Manifest contains duplicate assignment for variant ${assignment.variantKey}`);
-    }
-    assignedVariants.add(assignment.variantKey);
-    if (!profileKeys.has(assignment.profileKey)) {
-      errors.push(
-        `Assignment for variant ${assignment.variantKey} references missing profile ${assignment.profileKey}`,
-      );
-    }
-  }
-
-  return errors;
-}
-
-// ── Refusal to overwrite ─────────────────────────────────────────────────────
-
-export interface OverwriteCheck {
-  exists: () => boolean;
-  force?: boolean;
-}
-
-/**
- * Fail closed when the revision output directory already exists, unless the
- * operator explicitly passed --force. Avoids mixing derivatives from two
- * prepare runs under the same revision label.
- */
-export function refuseOverwrite(outputDir: string, check: OverwriteCheck): void {
-  if (check.force) return;
-  if (check.exists()) {
-    throw new Error(`Output directory already exists: ${outputDir} (pass --force to overwrite)`);
-  }
 }

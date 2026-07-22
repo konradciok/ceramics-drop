@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildStagedRows,
   decideUploadAction,
@@ -6,61 +6,55 @@ import {
   compareRemoteToManifest,
   buildPublishAssignments,
   diffVariantCoverage,
+  uploadFulfilmentDerivative,
   type StagedAssetRow,
+  type RemoteProbe,
+  type FulfilmentUploadEffects,
 } from './print-assets-publish';
-import type { ManifestDerivative, PrepareManifest } from './print-assets-prepare';
+import { buildR2Key, type ManifestDerivative, type PrepareManifest, type PublishManifest } from './print-assets-prepare';
 
 // Module-scope regexes (avoid re-compiling inside each assertion).
-const CONTENT_TYPE_REJECTED_RE = /content_type does not accept/;
 const REFUSING_OVERWRITE_RE = /Refusing to overwrite/;
 const SHA256_MISMATCH_RE = /sha256 mismatch/;
 const BYTE_SIZE_MISMATCH_RE = /byte size mismatch/;
 const DIMENSION_MISMATCH_RE = /dimension mismatch/;
 const NO_READY_ROW_RE = /No ready print_fulfilment_assets row/;
 const NO_DERIVATIVE_RE = /no\s+derivative for that profile/;
+const READBACK_MISMATCH_RE = /Read-back mismatch/;
+const READBACK_ABSENT_RE = /absent immediately after/;
 
-/** A minimal two-profile manifest: two derivatives, three variants (one shared). */
+/** A minimal two-profile schema-v2 manifest: two derivatives, three variants (one shared). */
 function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
   const derivatives: ManifestDerivative[] = [
     {
-      profileKey: '3600x4800',
       width: 3600,
       height: 4800,
       format: 'jpg',
-      contentType: 'image/jpeg',
       sha256: 'a'.repeat(64),
       byteSize: 1000,
-      r2Key: 'prints/fap01/rev1/3600x4800-' + 'a'.repeat(64) + '.jpg',
       artworkBoxPx: { x: 0, y: 0, width: 3600, height: 4800 },
       signatureBoxPx: null,
     },
     {
-      profileKey: '4800x7200',
       width: 4800,
       height: 7200,
       format: 'png',
-      contentType: 'image/png',
       sha256: 'b'.repeat(64),
       byteSize: 2000,
-      r2Key: 'prints/fap01/rev1/4800x7200-' + 'b'.repeat(64) + '.png',
       artworkBoxPx: { x: 0, y: 0, width: 4800, height: 7200 },
       signatureBoxPx: null,
     },
   ];
   return {
+    schemaVersion: 2,
     product: 'fap01',
     revision: 'rev1',
-    sourceSha256: 'c'.repeat(64),
-    sourceWidth: 9000,
-    sourceHeight: 13000,
-    signatureSha256: null,
-    layout: {
-      rendererVersion: '2.0.0',
-      background: '#E8E0D7',
-      artworkSha256: 'c'.repeat(64),
-      signatureSha256: null,
-      layout: { sideMargin: 0.1, topMargin: 0.1, bottomMargin: 0.1, gapAboveSignature: 0.05, signatureZoneHeight: 0.05 },
-    },
+    rendererVersion: '2.1.0',
+    configSha256: 'c'.repeat(64),
+    background: '#E8E0D7',
+    layout: { sideMargin: 0.1, topMargin: 0.1, bottomMargin: 0.1, gapAboveSignature: 0.05, signatureZoneHeight: 0.05 },
+    artwork: { path: 'design/print-assets/fap01/artwork.png', sha256: 'c'.repeat(64), width: 9000, height: 13000 },
+    signature: null,
     derivatives,
     assignments: [
       { variantKey: 'small-unframed', profileKey: '3600x4800' },
@@ -71,15 +65,36 @@ function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
   };
 }
 
+/** The normalized publish projection (what loadPublishManifest returns). */
+function publishManifest(overrides: Partial<PublishManifest> = {}): PublishManifest {
+  return {
+    product: 'fap01',
+    revision: 'rev1',
+    derivatives: [
+      { width: 3600, height: 4800, format: 'jpg', sha256: 'a'.repeat(64) },
+      { width: 4800, height: 7200, format: 'png', sha256: 'b'.repeat(64) },
+    ],
+    assignments: [
+      { variantKey: 'small-unframed', profileKey: '3600x4800' },
+      { variantKey: 'small-framed', profileKey: '3600x4800' },
+      { variantKey: 'large-unframed', profileKey: '4800x7200' },
+    ],
+    ...overrides,
+  };
+}
+
+const R2_SMALL = buildR2Key('fap01', 'rev1', 3600, 4800, 'a'.repeat(64), 'jpg');
+const R2_LARGE = buildR2Key('fap01', 'rev1', 4800, 7200, 'b'.repeat(64), 'png');
+
 describe('buildStagedRows', () => {
-  it('projects one staged row per derivative with matching content columns', () => {
+  it('projects one staged row per derivative, deriving key/profile/content-type', () => {
     const rows = buildStagedRows(manifest());
     expect(rows).toHaveLength(2);
     expect(rows[0]).toEqual<StagedAssetRow>({
       product_id: 'fap01',
       revision: 'rev1',
       profile_key: '3600x4800',
-      r2_key: 'prints/fap01/rev1/3600x4800-' + 'a'.repeat(64) + '.jpg',
+      r2_key: R2_SMALL,
       sha256: 'a'.repeat(64),
       content_type: 'image/jpeg',
       width_px: 3600,
@@ -88,18 +103,13 @@ describe('buildStagedRows', () => {
       status: 'staged',
     });
     expect(rows[1].content_type).toBe('image/png');
+    expect(rows[1].r2_key).toBe(R2_LARGE);
     expect(rows.every((r) => r.status === 'staged')).toBe(true);
-  });
-
-  it('rejects a derivative with a content-type the DB check constraint forbids', () => {
-    const m = manifest();
-    (m.derivatives[0] as ManifestDerivative).contentType = 'image/webp';
-    expect(() => buildStagedRows(m)).toThrow(CONTENT_TYPE_REJECTED_RE);
   });
 });
 
 describe('decideUploadAction', () => {
-  const derivative = { sha256: 'a'.repeat(64), r2Key: 'prints/fap01/rev1/3600x4800-x.jpg' };
+  const derivative = { sha256: 'a'.repeat(64), r2Key: R2_SMALL };
 
   it('uploads when nothing exists at the key', () => {
     expect(decideUploadAction(derivative, null)).toBe('put');
@@ -111,6 +121,70 @@ describe('decideUploadAction', () => {
 
   it('aborts when a different object already occupies the immutable key', () => {
     expect(() => decideUploadAction(derivative, { sha256: 'f'.repeat(64) })).toThrow(REFUSING_OVERWRITE_RE);
+  });
+});
+
+describe('uploadFulfilmentDerivative', () => {
+  const derivative = { sha256: 'a'.repeat(64), r2Key: R2_SMALL };
+  const match: RemoteProbe = { sha256: 'a'.repeat(64) };
+  const differ: RemoteProbe = { sha256: 'f'.repeat(64) };
+
+  /** Fully-mocked effects; each test overrides only the leg it exercises. */
+  function effects(over: Partial<FulfilmentUploadEffects> = {}): FulfilmentUploadEffects {
+    return {
+      probe: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue('created'),
+      readBack: vi.fn().mockResolvedValue(match),
+      ...over,
+    };
+  }
+
+  it('skips an existing byte-identical object without creating or reading back', async () => {
+    const e = effects({ probe: vi.fn().mockResolvedValue(match) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('present');
+    expect(e.create).not.toHaveBeenCalled();
+    expect(e.readBack).not.toHaveBeenCalled();
+  });
+
+  it('aborts when a different object already occupies the immutable key', async () => {
+    const e = effects({ probe: vi.fn().mockResolvedValue(differ) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(REFUSING_OVERWRITE_RE);
+    expect(e.create).not.toHaveBeenCalled();
+  });
+
+  it('creates then stages when absent and the read-back matches', async () => {
+    const e = effects();
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('created');
+    expect(e.create).toHaveBeenCalledOnce();
+    expect(e.readBack).toHaveBeenCalledOnce();
+  });
+
+  it('reuses a concurrently-created object when the 412 read-back matches', async () => {
+    const e = effects({
+      create: vi.fn().mockResolvedValue('exists'),
+      readBack: vi.fn().mockResolvedValue(match),
+    });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).resolves.toBe('reused');
+  });
+
+  it('aborts when a concurrent create left different bytes (412 read-back differs)', async () => {
+    const e = effects({
+      create: vi.fn().mockResolvedValue('exists'),
+      readBack: vi.fn().mockResolvedValue(differ),
+    });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(READBACK_MISMATCH_RE);
+  });
+
+  it('aborts when the just-put object is unreadable on read-back', async () => {
+    const e = effects({ readBack: vi.fn().mockResolvedValue(null) });
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(READBACK_ABSENT_RE);
+  });
+
+  it('performs no conditional PUT in dry-run', async () => {
+    const e = effects();
+    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: true })).resolves.toBe('dry-run');
+    expect(e.create).not.toHaveBeenCalled();
+    expect(e.readBack).not.toHaveBeenCalled();
   });
 });
 
@@ -155,12 +229,7 @@ describe('compareRemoteToManifest', () => {
   });
 
   it('reports sha256, byte-size and dimension mismatches distinctly', () => {
-    const errors = compareRemoteToManifest(derivative, {
-      sha256: 'f'.repeat(64),
-      byteSize: 999,
-      width: 100,
-      height: 200,
-    });
+    const errors = compareRemoteToManifest(derivative, { sha256: 'f'.repeat(64), byteSize: 999, width: 100, height: 200 });
     expect(errors).toHaveLength(3);
     expect(errors[0]).toMatch(SHA256_MISMATCH_RE);
     expect(errors[1]).toMatch(BYTE_SIZE_MISMATCH_RE);
@@ -169,14 +238,13 @@ describe('compareRemoteToManifest', () => {
 });
 
 describe('buildPublishAssignments', () => {
-  const m = manifest();
   const assetIdByR2Key = new Map([
-    [m.derivatives[0].r2Key, '11111111-1111-1111-1111-111111111111'],
-    [m.derivatives[1].r2Key, '22222222-2222-2222-2222-222222222222'],
+    [R2_SMALL, '11111111-1111-1111-1111-111111111111'],
+    [R2_LARGE, '22222222-2222-2222-2222-222222222222'],
   ]);
 
   it('maps every variant to its profile derivative asset id', () => {
-    const assignments = buildPublishAssignments(m, assetIdByR2Key);
+    const assignments = buildPublishAssignments(publishManifest(), assetIdByR2Key);
     expect(assignments).toEqual([
       { variant_key: 'small-unframed', asset_id: '11111111-1111-1111-1111-111111111111' },
       { variant_key: 'small-framed', asset_id: '11111111-1111-1111-1111-111111111111' },
@@ -185,31 +253,26 @@ describe('buildPublishAssignments', () => {
   });
 
   it('fails closed when a profile derivative has no ready DB row', () => {
-    const partial = new Map([[m.derivatives[0].r2Key, '11111111-1111-1111-1111-111111111111']]);
-    expect(() => buildPublishAssignments(m, partial)).toThrow(NO_READY_ROW_RE);
+    const partial = new Map([[R2_SMALL, '11111111-1111-1111-1111-111111111111']]);
+    expect(() => buildPublishAssignments(publishManifest(), partial)).toThrow(NO_READY_ROW_RE);
   });
 
   it('fails closed when an assignment references a profile with no derivative', () => {
-    const broken = manifest({
-      assignments: [{ variantKey: 'ghost', profileKey: '9999x9999' }],
-    });
+    const broken = publishManifest({ assignments: [{ variantKey: 'ghost', profileKey: '9999x9999' }] });
     expect(() => buildPublishAssignments(broken, assetIdByR2Key)).toThrow(NO_DERIVATIVE_RE);
   });
 });
 
 describe('diffVariantCoverage', () => {
   it('reports no drift when active variants match the manifest exactly', () => {
-    const diff = diffVariantCoverage(['a', 'b'], ['b', 'a']);
-    expect(diff).toEqual({ missing: [], extra: [] });
+    expect(diffVariantCoverage(['a', 'b'], ['b', 'a'])).toEqual({ missing: [], extra: [] });
   });
 
   it('flags an active variant added since prepare as missing', () => {
-    const diff = diffVariantCoverage(['a', 'b', 'c'], ['a', 'b']);
-    expect(diff).toEqual({ missing: ['c'], extra: [] });
+    expect(diffVariantCoverage(['a', 'b', 'c'], ['a', 'b'])).toEqual({ missing: ['c'], extra: [] });
   });
 
   it('flags a manifest variant no longer active as extra', () => {
-    const diff = diffVariantCoverage(['a'], ['a', 'b']);
-    expect(diff).toEqual({ missing: [], extra: ['b'] });
+    expect(diffVariantCoverage(['a'], ['a', 'b'])).toEqual({ missing: [], extra: ['b'] });
   });
 });

@@ -20,7 +20,7 @@
  */
 import { buildPublishAssignments, diffVariantCoverage } from '../src/lib/print-assets-publish';
 import { loadSupabaseClient } from './lib/script-env';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadManifest } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, loadPublishManifest } from './lib/print-assets-cli';
 
 async function main(): Promise<void> {
   const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.publish);
@@ -39,7 +39,9 @@ async function main(): Promise<void> {
     );
   }
 
-  const manifest = loadManifest(productId, revision);
+  // Publish is the only legacy-compatible command: it accepts schema-v2 or a
+  // validated legacy projection so an older revision can still be rolled back.
+  const manifest = loadPublishManifest(productId, revision);
   const supabase = loadSupabaseClient();
   console.log(`print-assets:publish — product=${productId} revision=${revision}${dryRun ? '  [DRY RUN]' : ''}`);
 

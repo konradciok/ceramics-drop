@@ -206,14 +206,16 @@ export function writeDerivative(outputPath: string, buffer: Buffer): void {
 }
 
 /**
- * Prepare a clean revision output directory. When `force` is set and the
- * directory already exists (a re-run of the same revision), remove it first
- * — otherwise a re-run with a different layout config can leave stale
+ * Prepare a clean revision output directory, failing closed on an existing one.
+ * Without `--force` an existing directory throws (never mix derivatives from two
+ * prepare runs under the same revision label); with `--force` it is removed
+ * first — otherwise a re-run with a different layout config can leave stale
  * `{profile}-{oldSha256}.{ext}` files beside a `manifest.json` that no longer
  * references them, which is confusing for Phase 2b's upload/verify step.
  */
-export function prepareOutputDir(outputDir: string, opts: { force: boolean }): void {
-  if (opts.force && fs.existsSync(outputDir)) {
+export function prepareOutputDir(outputDir: string, options: { force: boolean }): void {
+  if (fs.existsSync(outputDir)) {
+    if (!options.force) throw new Error(`Output directory already exists: ${outputDir} (pass --force to overwrite)`);
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
   fs.mkdirSync(outputDir, { recursive: true });

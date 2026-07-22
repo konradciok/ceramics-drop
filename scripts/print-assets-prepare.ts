@@ -8,11 +8,10 @@
  * — the same source of truth `publish_print_asset_revision` and
  * `getPrintAssetReadiness` check, not the code registry), deduplicates them
  * into distinct print-area dimension profiles, validates the tracked
- * proportional layout config (fractions, vertical fit, no upscale) against
+ * proportional layout config (fractions, placement fit, no upscale) against
  * every profile, resolves a placement per profile via the lib math, composes
- * exact-size derivatives via Sharp, and writes a manifest that Phase 2b
- * (upload/verify/publish — scripts/print-assets-{upload,verify,publish}.ts)
- * consumes.
+ * exact-size derivatives via Sharp, and writes a schema-v2 manifest that Phase
+ * 2b (upload/verify/publish) consumes.
  *
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (.env.local / .dev.vars /
  * env) and that `npm run catalog:backfill` has seeded `products` /
@@ -27,8 +26,7 @@
  *   - {profileKey}-{sha256}.{jpg|png} per distinct profile
  *   - manifest.json (the Phase 2b contract — see src/lib/print-assets-prepare.ts)
  *   - proof-{profileKey}.jpg — small (600px-wide) contact-sheet-style review proof
- *     per profile; visual review only, NEVER uploaded to R2 (2b reads
- *     manifest.json's `derivatives`, which never lists proof files).
+ *     per profile; visual review only, NEVER uploaded to R2.
  *
  * Read-only on R2 (upload is 2b's job). No DB writes (publish is a separate
  * script + the atomic RPC).
@@ -40,39 +38,18 @@ import sharp from 'sharp';
 import {
   buildManifest,
   distinctProfiles,
-  refuseOverwrite,
+  parsePrepareManifest,
   resolvePlacement,
   validateLayoutFractions,
-  validateManifest,
   validateNoUpscale,
-  validatePlacementFit,
-  validatePrepareConfig,
+  validatePlacement,
   type DerivativeFormat,
   type Placement,
-  type PrepareConfig,
 } from '../src/lib/print-assets-prepare';
 import { composeDerivative, prepareOutputDir, validateSignatureSvg, writeDerivative } from './lib/prepare-derivatives';
 import { activeVariantDimensions } from './lib/db-variants';
 import { loadSupabaseClient } from './lib/script-env';
-import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, revisionDir, ROOT } from './lib/print-assets-cli';
-
-/** Load config/print-assets/{productId}.json. Fails loudly if missing/malformed. */
-function loadConfig(productId: string): PrepareConfig {
-  const configPath = path.join(ROOT, 'config', 'print-assets', `${productId}.json`);
-  if (!fs.existsSync(configPath)) {
-    throw new Error(
-      `No tracked config for product "${productId}" — expected ${path.relative(ROOT, configPath)}. ` +
-        'Author it first: artwork path, background, format, and a proportional layout ' +
-        '(see docs/superpowers/specs/2026-07-16-proportional-print-composition-design.md).',
-    );
-  }
-  const parsed: unknown = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  const errors = validatePrepareConfig(parsed, productId);
-  if (errors.length > 0) {
-    throw new Error(`Invalid prepare config ${configPath}:\n  - ${errors.join('\n  - ')}`);
-  }
-  return parsed as PrepareConfig;
-}
+import { loadPrepareConfig, parseScriptArgs, PRINT_ASSET_ARG_SPECS, revisionDir, ROOT } from './lib/print-assets-cli';
 
 async function main(): Promise<void> {
   const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.prepare);
@@ -86,62 +63,72 @@ async function main(): Promise<void> {
 
   console.log(`print-assets:prepare — product=${productId} revision=${revision}`);
 
-  const config = loadConfig(productId);
+  // Validated, hashed config with resolved (traversal-checked) source paths.
+  const config = loadPrepareConfig(productId);
+  const { value: composition, sha256: configSha256, artwork, signature } = config;
 
-  const artworkPath = path.resolve(ROOT, config.artwork);
-  if (!fs.existsSync(artworkPath)) {
-    throw new Error(`Artwork master not found: ${artworkPath} (config.artwork = ${config.artwork})`);
+  if (!fs.existsSync(artwork.absolutePath)) {
+    throw new Error(`Artwork master not found: ${artwork.absolutePath} (config.artwork = ${artwork.manifestPath})`);
   }
-  const signaturePath = config.signature ? path.resolve(ROOT, config.signature.svg) : null;
-  if (signaturePath && !fs.existsSync(signaturePath)) {
-    throw new Error(`Signature SVG not found: ${signaturePath} (config.signature.svg = ${config.signature!.svg})`);
+  if (signature && !fs.existsSync(signature.absolutePath)) {
+    throw new Error(`Signature SVG not found: ${signature.absolutePath} (config.signature.svg = ${signature.manifestPath})`);
   }
-  const hasSignature = signaturePath !== null;
-  console.log(`  artwork: ${artworkPath}`);
-  console.log(`  signature: ${signaturePath ?? '(none)'}`);
+  const hasSignature = signature !== null;
+  console.log(`  artwork: ${artwork.absolutePath}`);
+  console.log(`  signature: ${signature?.absolutePath ?? '(none)'}`);
 
   // 1. Validate layout fractions before any per-profile work.
-  const fractionErrors = validateLayoutFractions(config.layout);
+  const fractionErrors = validateLayoutFractions(composition.layout);
   if (fractionErrors.length > 0) {
     throw new Error(`Invalid layout fractions:\n  - ${fractionErrors.join('\n  - ')}`);
   }
 
-  if (signaturePath) await validateSignatureSvg(signaturePath);
+  if (signature) await validateSignatureSvg(signature.absolutePath);
 
   // 2. Enumerate active variants → distinct dimension profiles.
   const supabase = loadSupabaseClient();
   const variantDims = await activeVariantDimensions(supabase, productId);
   const profiles = distinctProfiles(variantDims);
-  console.log(`  ${variantDims.length} active variant(s) → ${profiles.length} distinct profile(s): ${profiles.map((p) => p.profileKey).join(', ')}`);
+  console.log(
+    `  ${variantDims.length} active variant(s) → ${profiles.length} distinct profile(s): ` +
+      `${profiles.map((p) => p.profileKey).join(', ')}`,
+  );
 
   // 3. Read the artwork master's dimensions + sha256.
-  const sourceMeta = await sharp(artworkPath).metadata();
+  const sourceMeta = await sharp(artwork.absolutePath).metadata();
   const sourceWidth = sourceMeta.width ?? 0;
   const sourceHeight = sourceMeta.height ?? 0;
   if (sourceWidth === 0 || sourceHeight === 0) {
-    throw new Error(`Could not decode artwork master dimensions: ${artworkPath}`);
+    throw new Error(`Could not decode artwork master dimensions: ${artwork.absolutePath}`);
   }
-  const sourceSha256 = crypto.createHash('sha256').update(fs.readFileSync(artworkPath)).digest('hex');
-  const signatureSha256 = signaturePath
-    ? crypto.createHash('sha256').update(fs.readFileSync(signaturePath)).digest('hex')
+  const sourceSha256 = crypto.createHash('sha256').update(fs.readFileSync(artwork.absolutePath)).digest('hex');
+  const signatureSha256 = signature
+    ? crypto.createHash('sha256').update(fs.readFileSync(signature.absolutePath)).digest('hex')
     : null;
   console.log(`  artwork dimensions: ${sourceWidth}x${sourceHeight}  sha256: ${sourceSha256.slice(0, 12)}…`);
 
-  // 4. Validate vertical fit + no-upscale for EVERY profile before composing.
+  // 4. Resolve + validate a placement (fit + no upscale) for EVERY profile before composing.
+  const placements = new Map<string, Placement>();
   const layoutErrors: string[] = [];
   for (const profile of profiles) {
+    const placement = resolvePlacement(
+      composition.layout,
+      { w: profile.w, h: profile.h },
+      { w: sourceWidth, h: sourceHeight },
+      hasSignature,
+    );
+    placements.set(profile.profileKey, placement);
     layoutErrors.push(
-      ...validatePlacementFit(config.layout, { w: profile.w, h: profile.h }, hasSignature),
-      ...validateNoUpscale(config.layout, { w: profile.w, h: profile.h }, { w: sourceWidth, h: sourceHeight }, hasSignature),
+      ...validatePlacement(placement, { w: profile.w, h: profile.h }),
+      ...validateNoUpscale(composition.layout, { w: profile.w, h: profile.h }, { w: sourceWidth, h: sourceHeight }, hasSignature),
     );
   }
   if (layoutErrors.length > 0) {
     throw new Error(`Layout does not fit every profile:\n  - ${layoutErrors.join('\n  - ')}`);
   }
-  console.log('  layout validated (vertical fit + no upscale across all profiles)');
+  console.log('  layout validated (placement fit + no upscale across all profiles)');
 
   const outputDir = revisionDir(productId, revision);
-  refuseOverwrite(outputDir, { exists: () => fs.existsSync(outputDir), force });
 
   if (dryRun) {
     console.log('\nDRY RUN — no derivatives generated, no files written.');
@@ -149,22 +136,22 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 5. Compose one derivative per distinct profile.
+  // 5. Compose one derivative per distinct profile (fails closed on an existing dir without --force).
   const derivativeMeta: Record<string, { sha256: string; byteSize: number; format: DerivativeFormat; placement: Placement }> = {};
   prepareOutputDir(outputDir, { force });
 
   for (const profile of profiles) {
-    const placement = resolvePlacement(config.layout, { w: profile.w, h: profile.h }, { w: sourceWidth, h: sourceHeight }, hasSignature);
-    process.stdout.write(`  composing ${profile.profileKey}.${config.format} … `);
+    const placement = placements.get(profile.profileKey)!;
+    process.stdout.write(`  composing ${profile.profileKey}.${composition.format} … `);
     const result = await composeDerivative({
-      artworkPath,
-      signatureSvgPath: signaturePath,
-      background: config.background,
+      artworkPath: artwork.absolutePath,
+      signatureSvgPath: signature?.absolutePath ?? null,
+      background: composition.background,
       placement,
       target: { w: profile.w, h: profile.h },
-      format: config.format,
+      format: composition.format,
     });
-    const filename = `${profile.profileKey}-${result.sha256}.${config.format}`;
+    const filename = `${profile.profileKey}-${result.sha256}.${composition.format}`;
     writeDerivative(path.join(outputDir, filename), result.buffer);
     derivativeMeta[profile.profileKey] = {
       sha256: result.sha256,
@@ -179,23 +166,29 @@ async function main(): Promise<void> {
     await sharp(result.buffer).resize({ width: 600 }).jpeg({ quality: 70 }).toFile(proofPath);
   }
 
-  // 6. Build + validate the manifest, then write it.
+  // 6. Build + self-validate the schema-v2 manifest, then write it.
   const manifest = buildManifest({
     product: productId,
     revision,
-    sourceSha256,
-    sourceWidth,
-    sourceHeight,
+    configSha256,
+    background: composition.background,
+    layout: composition.layout,
+    artworkManifestPath: artwork.manifestPath,
+    artworkSha256: sourceSha256,
+    artworkWidth: sourceWidth,
+    artworkHeight: sourceHeight,
+    signatureManifestPath: signature?.manifestPath ?? null,
     signatureSha256,
-    layout: config.layout,
-    background: config.background,
-    hasSignature,
     profiles,
     derivativeMeta,
   });
-  const manifestErrors = validateManifest(manifest, config);
-  if (manifestErrors.length > 0) {
-    throw new Error(`Manifest failed validation (this indicates a bug in prepare, not a config problem):\n  - ${manifestErrors.join('\n  - ')}`);
+  try {
+    parsePrepareManifest(manifest);
+  } catch (error) {
+    throw new Error(
+      `Manifest failed self-validation (this indicates a bug in prepare, not a config problem): ` +
+        `${error instanceof Error ? error.message : error}`,
+    );
   }
   fs.writeFileSync(path.join(outputDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 

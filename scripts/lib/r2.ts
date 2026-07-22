@@ -1,5 +1,5 @@
 /**
- * Wrangler R2 helpers for the Phase 2b print-asset operator scripts.
+ * R2 helpers for the Phase 2b print-asset operator scripts.
  *
  * Bound `R2Bucket` objects (get/put/head) only exist inside the Workers
  * runtime; these operator scripts run in Node, so they shell out to the
@@ -7,10 +7,19 @@
  * has no `r2 object head`, so existence + content verification both go through
  * `r2 object get --file` (streamed to disk, never held whole in a JS Buffer).
  *
- * The only write path is `r2Put` (`r2 object put`). `r2GetToFile` and the
- * bucket-name resolution are read-only.
+ * Two write paths, deliberately different:
+ *   - `r2PutIfAbsent` — the ONLY fulfilment write. A conditional S3 PUT
+ *     (`If-None-Match: *`) against the R2 S3 API so a concurrent second upload
+ *     never silently overwrites an immutable content-addressed key (returns
+ *     `exists` on the 412). Needs the three CLI-only S3 credentials.
+ *   - `r2PutMutable` — Wrangler `r2 object put`, used ONLY by gallery
+ *     generation, whose public slot keys are intentionally replaceable.
+ * `r2GetToFile` and the bucket-name resolution are read-only.
  */
+import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { Readable } from 'node:stream';
+import { AwsClient } from 'aws4fetch';
 import { loadLocalEnv } from './script-env';
 
 /** Abort a hung Wrangler invocation (e.g. blocked on interactive login) rather than block the operator forever. */
@@ -84,11 +93,14 @@ export function r2GetToFile(bucket: string, key: string, destPath: string): R2Ge
 
 /**
  * Upload `filePath` to `{bucket}/{key}` with an explicit `--content-type`
- * (`wrangler r2 object put` does not infer it from the key, so the manifest's
- * contentType is the contract). Content-addressed keys are never overwritten —
- * the caller checks existence first.
+ * (`wrangler r2 object put` does not infer it from the key, so the caller's
+ * contentType is the contract). This is a MUTABLE, last-writer-wins put — it
+ * overwrites whatever occupies the key. Reserved for gallery generation, whose
+ * `prints/{productId}/gallery/{slot}/` keys are intentionally replaceable.
+ * Fulfilment derivatives must use `r2PutIfAbsent` instead (never overwrite an
+ * immutable content-addressed key).
  */
-export function r2Put(
+export function r2PutMutable(
   bucket: string,
   key: string,
   filePath: string,
@@ -111,4 +123,96 @@ export function r2Put(
     { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS },
   );
   return res.status === 0 ? { ok: true } : { ok: false, error: describeFailure(res) };
+}
+
+// ── Conditional fulfilment write — S3 If-None-Match: * ────────────────────────
+
+/** The three CLI-only S3 credential values `r2PutIfAbsent` needs (never logged). */
+export interface R2ConditionalCredentials {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+/** The exact env var names for the conditional-put S3 credentials. */
+const R2_S3_CREDENTIAL_VARS = [
+  'R2_S3_ACCOUNT_ID',
+  'R2_S3_ACCESS_KEY_ID',
+  'R2_S3_SECRET_ACCESS_KEY',
+] as const;
+
+/**
+ * Read + trim the three CLI-only S3 credentials for the conditional fulfilment
+ * PUT from the merged env stack (`loadLocalEnv()`). Throws a single error naming
+ * ONLY the missing/blank variable names — never any credential value — so the
+ * secrets can never reach a log line or stack trace. Resolved lazily by the
+ * upload script immediately before the first create attempt, so dry-runs and
+ * fully-reused revisions never require these to be set.
+ */
+export function resolveR2ConditionalCredentials(
+  env: Record<string, string | undefined>,
+): R2ConditionalCredentials {
+  const trimmed = R2_S3_CREDENTIAL_VARS.map((name) => (env[name] ?? '').trim());
+  const missing = R2_S3_CREDENTIAL_VARS.filter((_, i) => trimmed[i] === '');
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing R2 S3 credential(s): ${missing.join(', ')}. Set them in .dev.vars / .env.local / --env-file ` +
+        'to perform conditional fulfilment uploads.',
+    );
+  }
+  const [accountId, accessKeyId, secretAccessKey] = trimmed;
+  return { accountId, accessKeyId, secretAccessKey };
+}
+
+interface ConditionalPutInput {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
+  key: string;
+  filePath: string;
+  contentType: string;
+  sha256: string;
+}
+
+/**
+ * Create `{bucket}/{key}` via a conditional S3 PUT (`If-None-Match: *`) against
+ * the R2 S3 API, streaming the file from disk (never buffered whole). The
+ * conditional header makes the write CREATE-ONLY: R2 returns 412 when an object
+ * already exists at the key, so a racing second upload gets `exists` instead of
+ * silently overwriting an immutable content-addressed derivative. The provided
+ * `sha256` is sent as `X-Amz-Content-Sha256`, so aws4fetch signs without reading
+ * the stream. Any non-412, non-2xx status throws (the operator re-runs).
+ */
+export async function r2PutIfAbsent(
+  input: ConditionalPutInput,
+  client: Pick<AwsClient, 'fetch'> = new AwsClient({
+    accessKeyId: input.accessKeyId,
+    secretAccessKey: input.secretAccessKey,
+    service: 's3',
+    region: 'auto',
+    // Keep retries at 0: a consumed file stream cannot be replayed safely, so
+    // aws4fetch must not retry. The operator reruns the idempotent upload
+    // command after a transient failure.
+    retries: 0,
+  }),
+): Promise<'created' | 'exists'> {
+  const encodedKey = input.key.split('/').map(encodeURIComponent).join('/');
+  const url = `https://${input.accountId}.r2.cloudflarestorage.com/${encodeURIComponent(input.bucket)}/${encodedKey}`;
+  const stream = Readable.toWeb(fs.createReadStream(input.filePath));
+  const response = await client.fetch(url, {
+    method: 'PUT',
+    headers: {
+      'content-type': input.contentType,
+      'if-none-match': '*',
+      'x-amz-content-sha256': input.sha256,
+    },
+    body: stream as BodyInit,
+  });
+  if (response.status === 412) return 'exists';
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    throw new Error(`R2 conditional PUT failed (${response.status}): ${detail}`);
+  }
+  return 'created';
 }

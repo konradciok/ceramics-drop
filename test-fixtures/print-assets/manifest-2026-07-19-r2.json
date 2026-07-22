@@ -1,0 +1,265 @@
+{
+  "product": "fap01",
+  "revision": "2026-07-19-r2",
+  "sourceSha256": "ed22f09c31b0af13ff1bc4c4f13cfe42d131db736507ba19c1479b61c375de48",
+  "sourceWidth": 8000,
+  "sourceHeight": 11313,
+  "signatureSha256": "f54eb5228e9d8f4a5f72625bc698e75e1bd56d80b837a7e9b67944ae2a0576a7",
+  "layout": {
+    "rendererVersion": "2.0.0",
+    "background": "#E6E0D3",
+    "artworkSha256": "ed22f09c31b0af13ff1bc4c4f13cfe42d131db736507ba19c1479b61c375de48",
+    "signatureSha256": "f54eb5228e9d8f4a5f72625bc698e75e1bd56d80b837a7e9b67944ae2a0576a7",
+    "layout": {
+      "sideMargin": 0.035,
+      "topMargin": 0.025,
+      "bottomMargin": 0.058,
+      "gapAboveSignature": 0.03,
+      "signatureZoneHeight": 0.017,
+      "artworkMaxWidth": 0.93,
+      "artworkMaxHeight": 0.87
+    }
+  },
+  "derivatives": [
+    {
+      "profileKey": "2400x3600",
+      "width": 2400,
+      "height": 3600,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "10f19a1fc91bb5bc8d1a4c3de721c57a5ce770259116304d2a9b06fcaa60c4d6",
+      "byteSize": 1568197,
+      "r2Key": "prints/fap01/2026-07-19-r2/2400x3600-10f19a1fc91bb5bc8d1a4c3de721c57a5ce770259116304d2a9b06fcaa60c4d6.jpg",
+      "artworkBoxPx": {
+        "x": 93,
+        "y": 90,
+        "width": 2215,
+        "height": 3132
+      },
+      "signatureBoxPx": {
+        "x": 84,
+        "y": 3330,
+        "width": 2232,
+        "height": 61
+      }
+    },
+    {
+      "profileKey": "3600x4800",
+      "width": 3600,
+      "height": 4800,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "e4c6c220596899c4095af6b79ca76e5fc7e385a4cb6d92d45a7ad4dbc177a4b0",
+      "byteSize": 2669295,
+      "r2Key": "prints/fap01/2026-07-19-r2/3600x4800-e4c6c220596899c4095af6b79ca76e5fc7e385a4cb6d92d45a7ad4dbc177a4b0.jpg",
+      "artworkBoxPx": {
+        "x": 324,
+        "y": 120,
+        "width": 2953,
+        "height": 4176
+      },
+      "signatureBoxPx": {
+        "x": 126,
+        "y": 4440,
+        "width": 3348,
+        "height": 82
+      }
+    },
+    {
+      "profileKey": "3614x4795",
+      "width": 3614,
+      "height": 4795,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "e4313c6f8286624448557954f3d3571bf652ed1797f1d286622a2ede44514ac2",
+      "byteSize": 2670296,
+      "r2Key": "prints/fap01/2026-07-19-r2/3614x4795-e4313c6f8286624448557954f3d3571bf652ed1797f1d286622a2ede44514ac2.jpg",
+      "artworkBoxPx": {
+        "x": 333,
+        "y": 120,
+        "width": 2950,
+        "height": 4171
+      },
+      "signatureBoxPx": {
+        "x": 126,
+        "y": 4435,
+        "width": 3362,
+        "height": 82
+      }
+    },
+    {
+      "profileKey": "4800x7200",
+      "width": 4800,
+      "height": 7200,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "bbdd3bba30ead11dc306462b46dd38eac92d1f34edf5e9dc409eb13f6e237bee",
+      "byteSize": 5277195,
+      "r2Key": "prints/fap01/2026-07-19-r2/4800x7200-bbdd3bba30ead11dc306462b46dd38eac92d1f34edf5e9dc409eb13f6e237bee.jpg",
+      "artworkBoxPx": {
+        "x": 185,
+        "y": 180,
+        "width": 4430,
+        "height": 6264
+      },
+      "signatureBoxPx": {
+        "x": 168,
+        "y": 6660,
+        "width": 4464,
+        "height": 122
+      }
+    },
+    {
+      "profileKey": "6000x8400",
+      "width": 6000,
+      "height": 8400,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "3e18c174185ffcf0ead4fc888480aef80869eead4eea5e09860811925bc9e471",
+      "byteSize": 6575862,
+      "r2Key": "prints/fap01/2026-07-19-r2/6000x8400-3e18c174185ffcf0ead4fc888480aef80869eead4eea5e09860811925bc9e471.jpg",
+      "artworkBoxPx": {
+        "x": 416,
+        "y": 210,
+        "width": 5168,
+        "height": 7308
+      },
+      "signatureBoxPx": {
+        "x": 210,
+        "y": 7770,
+        "width": 5580,
+        "height": 143
+      }
+    },
+    {
+      "profileKey": "7200x10800",
+      "width": 7200,
+      "height": 10800,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "76f8065c8f58fdefc92ea5d414061d8a500113c1166f95af463154073447dfb1",
+      "byteSize": 10229936,
+      "r2Key": "prints/fap01/2026-07-19-r2/7200x10800-76f8065c8f58fdefc92ea5d414061d8a500113c1166f95af463154073447dfb1.jpg",
+      "artworkBoxPx": {
+        "x": 278,
+        "y": 270,
+        "width": 6644,
+        "height": 9396
+      },
+      "signatureBoxPx": {
+        "x": 252,
+        "y": 9990,
+        "width": 6696,
+        "height": 184
+      }
+    },
+    {
+      "profileKey": "8400x12000",
+      "width": 8400,
+      "height": 12000,
+      "format": "jpg",
+      "contentType": "image/jpeg",
+      "sha256": "97692ac4ba004be25204e5f65cc02a85ac832ac0cae5529a0292edbd8f9c2fc4",
+      "byteSize": 12186678,
+      "r2Key": "prints/fap01/2026-07-19-r2/8400x12000-97692ac4ba004be25204e5f65cc02a85ac832ac0cae5529a0292edbd8f9c2fc4.jpg",
+      "artworkBoxPx": {
+        "x": 509,
+        "y": 300,
+        "width": 7383,
+        "height": 10440
+      },
+      "signatureBoxPx": {
+        "x": 294,
+        "y": 11100,
+        "width": 7812,
+        "height": 204
+      }
+    }
+  ],
+  "assignments": [
+    {
+      "variantKey": "30x40:true:true:black",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:true:true:white",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:true:true:natural",
+      "profileKey": "2400x3600"
+    },
+    {
+      "variantKey": "30x40:false:false:none",
+      "profileKey": "3600x4800"
+    },
+    {
+      "variantKey": "30x40:true:false:natural",
+      "profileKey": "3600x4800"
+    },
+    {
+      "variantKey": "30x40:true:false:black",
+      "profileKey": "3614x4795"
+    },
+    {
+      "variantKey": "30x40:true:false:white",
+      "profileKey": "3614x4795"
+    },
+    {
+      "variantKey": "50x70:true:true:black",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:true:true:white",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:true:true:natural",
+      "profileKey": "4800x7200"
+    },
+    {
+      "variantKey": "50x70:false:false:none",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:black",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:white",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "50x70:true:false:natural",
+      "profileKey": "6000x8400"
+    },
+    {
+      "variantKey": "70x100:true:true:black",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:true:true:white",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:true:true:natural",
+      "profileKey": "7200x10800"
+    },
+    {
+      "variantKey": "70x100:false:false:none",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:black",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:white",
+      "profileKey": "8400x12000"
+    },
+    {
+      "variantKey": "70x100:true:false:natural",
+      "profileKey": "8400x12000"
+    }
+  ]
+}

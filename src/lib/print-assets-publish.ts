@@ -9,7 +9,14 @@
  * unit tests without a live bucket or database. The scripts own the side
  * effects; this module owns the fail-closed decisions.
  */
-import type { ManifestDerivative, PrepareManifest } from './print-assets-prepare';
+import {
+  contentTypeForFormat,
+  derivativeR2Key,
+  profileKeyFromPx,
+  type ManifestDerivative,
+  type PrepareManifest,
+  type PublishManifest,
+} from './print-assets-prepare';
 
 // ── Staging rows — print_fulfilment_assets ───────────────────────────────────
 
@@ -34,31 +41,21 @@ export interface StagedAssetRow {
   status: 'staged';
 }
 
-function assertContentType(value: string, r2Key: string): AssetContentType {
-  if (value !== 'image/jpeg' && value !== 'image/png') {
-    throw new Error(
-      `Derivative ${r2Key} has content-type "${value}", which print_fulfilment_assets.content_type does not accept ` +
-        '(only image/jpeg | image/png).',
-    );
-  }
-  return value;
-}
-
 /**
- * One staged `print_fulfilment_assets` row per manifest derivative. The
- * derivative already carries the content-addressed `r2Key`, the hash, and the
- * decoded dimensions the migration's columns require — this is a straight
- * projection, not a re-derivation, so `verify`/`publish` compare against the
- * same bytes `prepare` produced.
+ * One staged `print_fulfilment_assets` row per manifest derivative. The v2
+ * derivative stores each fact once — the content-addressed `r2_key`, the
+ * `profile_key`, and the `content_type` the migration's columns require are all
+ * derived here from the canonical dimensions/format/hash, so `verify`/`publish`
+ * compare against exactly what `prepare` produced.
  */
 export function buildStagedRows(manifest: PrepareManifest): StagedAssetRow[] {
   return manifest.derivatives.map((d) => ({
     product_id: manifest.product,
     revision: manifest.revision,
-    profile_key: d.profileKey,
-    r2_key: d.r2Key,
+    profile_key: profileKeyFromPx(d.width, d.height),
+    r2_key: derivativeR2Key(manifest, d),
     sha256: d.sha256,
-    content_type: assertContentType(d.contentType, d.r2Key),
+    content_type: contentTypeForFormat(d.format),
     width_px: d.width,
     height_px: d.height,
     byte_size: d.byteSize,
@@ -84,7 +81,7 @@ export interface RemoteProbe {
  * abort loudly rather than overwrite (plan §2 "Never overwrite a key").
  */
 export function decideUploadAction(
-  derivative: Pick<ManifestDerivative, 'sha256' | 'r2Key'>,
+  derivative: { sha256: string; r2Key: string },
   remote: RemoteProbe | null,
 ): UploadAction {
   if (remote === null) return 'put';
@@ -96,6 +93,71 @@ export function decideUploadAction(
     );
   }
   return 'skip';
+}
+
+/** How a single fulfilment derivative was reconciled against R2. */
+export type FulfilmentUploadOutcome =
+  /** A byte-identical object already occupied the key — reused, no write. */
+  | 'present'
+  /** Created here via the conditional PUT and verified by read-back. */
+  | 'created'
+  /** A concurrent writer created it first (412) — verified by read-back. */
+  | 'reused'
+  /** Dry-run: absent, would have created, but no write was performed. */
+  | 'dry-run';
+
+/**
+ * The injected R2 side-effects `uploadFulfilmentDerivative` orchestrates. Each
+ * probe/read-back returns the object's streamed hash or `null` when definitively
+ * absent, and MUST throw on any unresolved fault (auth/network) so a transient
+ * error can never be mistaken for "absent". `create` is the conditional
+ * `If-None-Match: *` PUT (`r2PutIfAbsent`).
+ */
+export interface FulfilmentUploadEffects {
+  probe: () => Promise<RemoteProbe | null>;
+  create: () => Promise<'created' | 'exists'>;
+  readBack: () => Promise<RemoteProbe | null>;
+}
+
+/**
+ * Reconcile one fulfilment derivative into its immutable content-addressed R2
+ * key, create-only and race-safe (plan §2 "Never overwrite a key"):
+ *   1. Probe the key. A byte-identical object → reuse (`present`); a different
+ *      object → abort (`decideUploadAction` throws).
+ *   2. Absent + dry-run → `dry-run`, performing NO write.
+ *   3. Absent → conditional create. Whether it reports `created` or loses the
+ *      race (`exists`/412), download + hash the resulting object and abort
+ *      unless it matches this derivative's bytes exactly. Only a verified object
+ *      lets the caller stage its DB row.
+ * Every abort throws before any row is staged.
+ */
+export async function uploadFulfilmentDerivative(
+  derivative: { sha256: string; r2Key: string },
+  effects: FulfilmentUploadEffects,
+  options: { dryRun: boolean },
+): Promise<FulfilmentUploadOutcome> {
+  const existing = await effects.probe();
+  if (decideUploadAction(derivative, existing) === 'skip') return 'present';
+
+  // Absent under an immutable key. A dry-run reads but never writes.
+  if (options.dryRun) return 'dry-run';
+
+  const created = await effects.create();
+  const readBack = await effects.readBack();
+  if (readBack === null) {
+    throw new Error(
+      `Read-back failed for ${derivative.r2Key}: the object is absent immediately after a "${created}" ` +
+        'response. Refusing to stage — resolve the R2 access issue and re-run.',
+    );
+  }
+  if (readBack.sha256 !== derivative.sha256) {
+    throw new Error(
+      `Read-back mismatch for ${derivative.r2Key}: the stored object hashes ${readBack.sha256.slice(0, 12)}… but the ` +
+        `local derivative is ${derivative.sha256.slice(0, 12)}…. A concurrent writer stored different bytes under ` +
+        'this content-addressed key — refusing to stage.',
+    );
+  }
+  return created === 'created' ? 'created' : 'reused';
 }
 
 // ── Staging reconciliation — idempotent re-runs ───────────────────────────────
@@ -222,10 +284,12 @@ export interface PublishAssignment {
  * anyway, but surfacing the missing key here gives a precise operator error.
  */
 export function buildPublishAssignments(
-  manifest: PrepareManifest,
+  manifest: PublishManifest,
   assetIdByR2Key: Map<string, string>,
 ): PublishAssignment[] {
-  const r2KeyByProfile = new Map(manifest.derivatives.map((d) => [d.profileKey, d.r2Key]));
+  const r2KeyByProfile = new Map(
+    manifest.derivatives.map((d) => [profileKeyFromPx(d.width, d.height), derivativeR2Key(manifest, d)]),
+  );
 
   return manifest.assignments.map((assignment) => {
     const r2Key = r2KeyByProfile.get(assignment.profileKey);

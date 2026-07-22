@@ -12,7 +12,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(35);
+select plan(50);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 -- Every print product has active variants seeded with print-area pixels (the
@@ -77,6 +77,35 @@ insert into print_fulfilment_assets (id, product_id, revision, r2_key, sha256, c
 -- tap_pc: a ceramic product for the product_not_found (type guard) check.
 insert into products (id, type, category_slug, num) values ('tap_pc', 'ceramic', 'kubki', '99');
 insert into product_variants (product_id, variant_key) values ('tap_pc', 'default');
+
+-- tap_pm1..tap_pm6: promote_print_assets_ready (transactional staged → ready).
+-- The promote RPC only locks products (type='print') and print_fulfilment_assets,
+-- so these scenarios need no variants. Assets are staged unless a row deliberately
+-- seeds a prior state (an already-ready row carries an explicit old verified_at).
+insert into products (id, type, category_slug, num) values
+  ('tap_pm1', 'print', 'fine-art-prints', '11'),
+  ('tap_pm2', 'print', 'fine-art-prints', '12'),
+  ('tap_pm3', 'print', 'fine-art-prints', '13'),
+  ('tap_pm4', 'print', 'fine-art-prints', '14'),
+  ('tap_pm5', 'print', 'fine-art-prints', '15'),
+  ('tap_pm6', 'print', 'fine-art-prints', '16');
+insert into print_fulfilment_assets (product_id, revision, r2_key, sha256, content_type, width_px, height_px, byte_size, status, verified_at) values
+  -- tap_pm1: exact staged set (both promote).
+  ('tap_pm1', 'r1', 'prints/tap_pm1/r1/3600x4800-a.jpg', 'sha_pm1a', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  ('tap_pm1', 'r1', 'prints/tap_pm1/r1/3600x4800-b.jpg', 'sha_pm1b', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  -- tap_pm2: mixed — one staged, one already-ready (with a prior verified_at).
+  ('tap_pm2', 'r1', 'prints/tap_pm2/r1/3600x4800-a.jpg', 'sha_pm2a', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  ('tap_pm2', 'r1', 'prints/tap_pm2/r1/3600x4800-b.jpg', 'sha_pm2b', 'image/jpeg', 3600, 4800, 123456, 'ready', '2026-07-01T00:00:00Z'),
+  -- tap_pm3: one staged + one revoked (revoked requested → promotion_state_changed).
+  ('tap_pm3', 'r1', 'prints/tap_pm3/r1/3600x4800-a.jpg', 'sha_pm3a', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  ('tap_pm3', 'r1', 'prints/tap_pm3/r1/3600x4800-b.jpg', 'sha_pm3b', 'image/jpeg', 3600, 4800, 123456, 'revoked', null),
+  -- tap_pm4: two staged (missing / duplicate requested-key cases).
+  ('tap_pm4', 'r1', 'prints/tap_pm4/r1/3600x4800-a.jpg', 'sha_pm4a', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  ('tap_pm4', 'r1', 'prints/tap_pm4/r1/3600x4800-b.jpg', 'sha_pm4b', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  -- tap_pm5: one staged (empty-array no-op).
+  ('tap_pm5', 'r1', 'prints/tap_pm5/r1/3600x4800-a.jpg', 'sha_pm5a', 'image/jpeg', 3600, 4800, 123456, 'staged', null),
+  -- tap_pm6: one staged (null verified_at).
+  ('tap_pm6', 'r1', 'prints/tap_pm6/r1/3600x4800-a.jpg', 'sha_pm6a', 'image/jpeg', 3600, 4800, 123456, 'staged', null);
 
 -- ── Tests ───────────────────────────────────────────────────────────────────
 
@@ -374,6 +403,133 @@ select throws_ok(
   $$ update print_fulfilment_assets set status = 'staged' where id = 'f0000000-0000-0000-0000-000000000002' $$,
   'invalid_status_transition',
   'trigger: ready -> staged raises invalid_status_transition'
+);
+
+-- ── promote_print_assets_ready (transactional staged → ready promotion) ───────
+-- Each success case calls the RPC once (inside the assertion), then a follow-up
+-- assertion reads the resulting row state; each failure case asserts the RPC
+-- raises AND that the requested staged rows are left unchanged (no partial
+-- promotion). '2026-07-21T12:00:00Z' is the supplied verified_at throughout.
+
+-- Scenario P1 (exact staged set): every requested key promotes; all promoted=true.
+select results_eq(
+  $$ select r2_key, promoted
+       from promote_print_assets_ready(
+         'tap_pm1', 'r1',
+         array['prints/tap_pm1/r1/3600x4800-a.jpg', 'prints/tap_pm1/r1/3600x4800-b.jpg'],
+         '2026-07-21T12:00:00Z'::timestamptz)
+      order by r2_key $$,
+  $$ values ('prints/tap_pm1/r1/3600x4800-a.jpg', true),
+            ('prints/tap_pm1/r1/3600x4800-b.jpg', true) $$,
+  'promote: exact staged set returns every key with promoted = true'
+);
+
+select is(
+  (select count(*)::int from print_fulfilment_assets
+     where product_id = 'tap_pm1' and revision = 'r1'
+       and status = 'ready' and verified_at = '2026-07-21T12:00:00Z'::timestamptz),
+  2,
+  'promote: exact staged set flips every requested row to ready with the supplied verified_at'
+);
+
+-- Scenario P2 (mixed staged/ready): every key returns, only the staged row promotes.
+select results_eq(
+  $$ select r2_key, promoted
+       from promote_print_assets_ready(
+         'tap_pm2', 'r1',
+         array['prints/tap_pm2/r1/3600x4800-a.jpg', 'prints/tap_pm2/r1/3600x4800-b.jpg'],
+         '2026-07-21T12:00:00Z'::timestamptz)
+      order by r2_key $$,
+  $$ values ('prints/tap_pm2/r1/3600x4800-a.jpg', true),
+            ('prints/tap_pm2/r1/3600x4800-b.jpg', false) $$,
+  'promote: a mixed staged/ready set returns every key, promoted only for the staged row'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm2/r1/3600x4800-a.jpg'),
+  'ready',
+  'promote: mixed set — the staged row is promoted to ready'
+);
+
+select is(
+  (select verified_at from print_fulfilment_assets where r2_key = 'prints/tap_pm2/r1/3600x4800-b.jpg'),
+  '2026-07-01T00:00:00Z'::timestamptz,
+  'promote: mixed set — the already-ready row keeps its original verified_at (untouched)'
+);
+
+-- Scenario P3 (revoked requested): a revoked requested row aborts with no promotion.
+select throws_ok(
+  $$ select promote_print_assets_ready(
+       'tap_pm3', 'r1',
+       array['prints/tap_pm3/r1/3600x4800-a.jpg', 'prints/tap_pm3/r1/3600x4800-b.jpg'],
+       '2026-07-21T12:00:00Z'::timestamptz) $$,
+  'promotion_state_changed',
+  'promote: a revoked requested row raises promotion_state_changed'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm3/r1/3600x4800-a.jpg'),
+  'staged',
+  'promote: promotion_state_changed leaves the staged requested row unchanged'
+);
+
+-- Scenario P4a (missing key): a requested key with no row aborts with no promotion.
+select throws_ok(
+  $$ select promote_print_assets_ready(
+       'tap_pm4', 'r1',
+       array['prints/tap_pm4/r1/3600x4800-a.jpg', 'prints/tap_pm4/r1/missing.jpg'],
+       '2026-07-21T12:00:00Z'::timestamptz) $$,
+  'promotion_state_changed',
+  'promote: a missing requested key raises promotion_state_changed'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm4/r1/3600x4800-a.jpg'),
+  'staged',
+  'promote: a missing requested key promotes nothing'
+);
+
+-- Scenario P4b (duplicate key): a duplicated request aborts before any promotion.
+select throws_ok(
+  $$ select promote_print_assets_ready(
+       'tap_pm4', 'r1',
+       array['prints/tap_pm4/r1/3600x4800-a.jpg', 'prints/tap_pm4/r1/3600x4800-a.jpg'],
+       '2026-07-21T12:00:00Z'::timestamptz) $$,
+  'duplicate_r2_key',
+  'promote: a duplicate requested key raises duplicate_r2_key'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm4/r1/3600x4800-a.jpg'),
+  'staged',
+  'promote: a duplicate requested key promotes nothing'
+);
+
+-- Scenario P5 (empty array): no keys → zero rows returned, nothing mutated.
+select is_empty(
+  $$ select r2_key, promoted from promote_print_assets_ready(
+       'tap_pm5', 'r1', array[]::text[], '2026-07-21T12:00:00Z'::timestamptz) $$,
+  'promote: an empty key array returns zero rows'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm5/r1/3600x4800-a.jpg'),
+  'staged',
+  'promote: an empty key array mutates nothing'
+);
+
+-- Scenario P6 (null verified_at): a null timestamp aborts and leaves rows staged.
+select throws_ok(
+  $$ select promote_print_assets_ready(
+       'tap_pm6', 'r1', array['prints/tap_pm6/r1/3600x4800-a.jpg'], null::timestamptz) $$,
+  'verified_at_required',
+  'promote: a null verified_at raises verified_at_required'
+);
+
+select is(
+  (select status from print_fulfilment_assets where r2_key = 'prints/tap_pm6/r1/3600x4800-a.jpg'),
+  'staged',
+  'promote: a null verified_at leaves the row staged'
 );
 
 select * from finish();
