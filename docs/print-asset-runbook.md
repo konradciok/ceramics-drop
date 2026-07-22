@@ -321,6 +321,19 @@ p_actor_email text DEFAULT NULL::text
 
 **Operator impact:** `npm run print-assets:publish -- … --actor you@studio` now records `catalog_audit_log.actor_email` on production. No app redeploy required for this DDL change.
 
+### Production migration sync (`promote_print_assets_ready`)
+
+**When verified:** 2026-07-22 (morning, after PR #176 merged). **Project:** `ceramics` (`wnlysejenowymjdxlnaq`).
+
+Audited via Supabase MCP (`list_migrations` + `execute_sql` on `pg_proc`). The migration `20260721120000_promote_print_assets_ready` was **already applied** — recorded remotely under its exact repo prefix (i.e. via `supabase db push`, not MCP `apply_migration`). Verified before trusting it:
+
+- `pg_get_functiondef` on production is semantically identical to the merged migration file (same guards `verified_at_required` / `duplicate_r2_key` / `product_not_found` / `promotion_state_changed`, same product + row `FOR UPDATE` locks, same CTE update/return).
+- Posture: `prosecdef = false` (NOT security definer), `search_path = public, pg_temp` pinned, execute granted to `service_role` only — `anon`/`authenticated`/`public` have no execute.
+- Security advisors after the DDL: only the pre-existing INFO-level `rls_enabled_no_policy` notices (intended deny-all posture); nothing new.
+- Behaviour evidence: pgTAP `supabase test db` 80/80 (15 promotion scenarios) against this exact SQL pre-merge.
+
+**History reconciliation (supersedes the skew table above):** as of this audit, remote `schema_migrations` matches the 40 local files under `supabase/migrations/` **exactly, prefix-for-prefix** — the 2026-07-12 skew entries and the prod-only `schema_hardening` version no longer appear. The timestamp-skew policy above is retained for historical context; new applies should keep using `supabase db push` so prefixes stay in sync.
+
 ### Legacy R2 inventory (`{productId}/master.jpg`)
 
 Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudflare API token).
