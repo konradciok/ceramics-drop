@@ -18,6 +18,7 @@ import {
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { SITE_URL } from '@/lib/site';
+import { inpostTrackingUrl } from '@/lib/tracking';
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -465,9 +466,7 @@ export function buildShippingConfirmation(params: {
   const greeting = t.greeting(firstName);
 
   const tracking = order.inpost_tracking_number;
-  const trackingUrl = tracking
-    ? `https://inpost.pl/sledzenie-przesylek?number=${encodeURIComponent(tracking)}`
-    : null;
+  const trackingUrl = tracking ? inpostTrackingUrl(tracking) : null;
 
   const parts: string[] = [
     emailParagraph(`${greeting},`),

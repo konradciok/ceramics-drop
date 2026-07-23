@@ -124,6 +124,34 @@ export async function listInventory(opts?: { supabase?: SupabaseClient }): Promi
   }));
 }
 
+// ── Prodigi tracking ──────────────────────────────────────────────────────────
+/** Persisted primary-shipment tracking for a print order (prodigi_orders columns). */
+export type ProdigiTracking = {
+  prodigi_order_id: string | null;
+  prodigi_status_stage: string | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  shipped_at: string | null;
+};
+
+export async function getProdigiTracking(
+  orderId: string,
+  opts?: { supabase?: SupabaseClient },
+): Promise<ProdigiTracking | null> {
+  if (!isUuid(orderId)) return null;
+  const supabase = opts?.supabase ?? adminSupabase();
+  const { data, error } = await supabase
+    .from('prodigi_orders')
+    .select('prodigi_order_id, prodigi_status_stage, carrier, tracking_number, tracking_url, shipped_at')
+    .eq('order_id', orderId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as ProdigiTracking | null) ?? null;
+}
+
 // ── Drops ─────────────────────────────────────────────────────────────────────
 export type DropStatus = 'active' | 'ended';
 export type Drop = {
