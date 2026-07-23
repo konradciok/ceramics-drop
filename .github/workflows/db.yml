@@ -1,0 +1,41 @@
+name: DB
+
+# pgTAP against a local Supabase stack. Split out of ci.yml so it only runs
+# when the database layer actually changes — `supabase db start` pulls Docker
+# images and was burning ~4 min of Actions quota on every push/PR sync.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-test:
+    name: pgTAP (Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: latest
+
+      - name: Start local database and run pgTAP
+        run: supabase db start && supabase test db
