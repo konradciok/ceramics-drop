@@ -100,6 +100,11 @@ export default function ReturnPage() {
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/" className="btn btn-primary">{t('back')} <Icon name="arrow" /></Link>
           <Link href="/koszyk" className="btn btn-ghost">{t('cart')}</Link>
+          {/* Rendered unconditionally (no session awareness in this client
+              component) — /konto itself handles signed-in/out/unavailable. */}
+          {status === 'ok' && (
+            <Link href="/konto" className="btn btn-ghost" data-testid="return-konto-link">{t('account')}</Link>
+          )}
         </div>
       </div>
     </main>

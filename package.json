@@ -21,6 +21,7 @@
     "optimize-images": "node scripts/optimize-images.mjs",
     "notes:generate": "node scripts/generate-product-notes.mjs",
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
+    "apple:client-secret": "tsx scripts/gen-apple-secret.ts",
     "drop:create": "tsx scripts/create-drop.ts",
     "prodigi": "tsx scripts/prodigi-cli.ts",
     "prodigi:contract-smoke": "tsx scripts/prodigi-contract-smoke.ts",

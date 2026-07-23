@@ -12,7 +12,8 @@ export type IconName =
   | 'close'
   | 'chevron-left'
   | 'chevron-right'
-  | 'trash';
+  | 'trash'
+  | 'user';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   cart: (
@@ -28,6 +29,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
   'chevron-left': <path d="M15 5l-7 7 7 7" />,
   'chevron-right': <path d="M9 5l7 7-7 7" />,
   trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />,
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.6" />
+      <path d="M4.5 20.5c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6" />
+    </>
+  ),
 };
 
 type Props = SVGProps<SVGSVGElement> & { name: IconName };

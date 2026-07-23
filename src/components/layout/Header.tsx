@@ -19,6 +19,7 @@ export async function Header() {
     { href: '/gallery', label: t('nav.gallery') },
     { href: '/o-studiu', label: t('nav.studio') },
     { href: '/kontakt', label: t('nav.kontakt') },
+    { href: '/konto', label: t('nav.konto') },
   ];
 
   const mobileAria = {
@@ -52,6 +53,12 @@ export async function Header() {
             <Link className="nav-link" href="/kontakt">{t('nav.kontakt')}</Link>
             <LangSwitch />
             <CurrencySwitcher />
+            {/* Deliberately static (not session-aware): reading cookies here
+                would flip the prerenderable Polish tree dynamic. /konto itself
+                shows the right signed-in/out state. */}
+            <Link className="icon-btn" href="/konto" aria-label={t('nav.konto')} data-testid="nav-konto">
+              <Icon name="user" />
+            </Link>
             <Link className="icon-btn" href="/koszyk" aria-label={t('aria.cart')}>
               <Icon name="cart" />
               <CartCount />
