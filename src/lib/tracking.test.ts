@@ -13,7 +13,6 @@ describe('httpsUrlOrNull', () => {
   it.each([
     ['http (not https)', 'http://track.dhl.com/x'],
     ['javascript scheme', 'javascript:alert(1)'],
-    // eslint-disable-next-line no-script-url
     ['javascript scheme with slashes', 'javascript://x%0aalert(1)'],
     ['data scheme', 'data:text/html,<script>alert(1)</script>'],
     ['protocol-relative', '//evil.example/x'],

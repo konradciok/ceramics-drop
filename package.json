@@ -58,6 +58,7 @@
     "@sentry/nextjs": "^10.56.0",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.7.0",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.107.0",
     "@swc/helpers": "^0.5.23",
     "aws4fetch": "1.0.20",

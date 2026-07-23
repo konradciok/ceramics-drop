@@ -16,6 +16,46 @@ import {
 
 const handleI18n = createMiddleware(routing);
 
+// Customer-account paths: `/konto` and `/konto/zamowienia/<id>`, with or
+// without a locale prefix (the pages live under `src/app/[locale]/konto/`).
+// Derived from routing.locales so a new locale can never go stale; the
+// `(?:/|$)` boundary keeps `/kontakt` (and any future `/konto-*`) out.
+const KONTO_RE = new RegExp(`^/(?:(?:${routing.locales.join('|')})/)?konto(?:/|$)`);
+// Supabase session cookie (or one of its chunked `.0`, `.1`, … parts).
+const SB_AUTH_COOKIE_RE = /^sb-.+-auth-token(?:\.\d+)?$/;
+
+/** Exported for unit tests — see middleware.test.ts. */
+export function isKontoPath(pathname: string): boolean {
+  return KONTO_RE.test(pathname);
+}
+
+/**
+ * Refresh an expiring customer session for `/konto` pages (RSCs cannot write
+ * cookies, so the middleware owns the rotation). Reached only behind two cheap
+ * guards (path regex + sb-* cookie presence) and imports the auth stack
+ * lazily, so anonymous storefront traffic never parses it in the edge bundle.
+ * Fail-open to signed-out rendering: an auth outage must never break a page.
+ */
+async function refreshKontoSession(
+  request: NextRequest,
+  response: ReturnType<typeof handleI18n>,
+): Promise<ReturnType<typeof handleI18n>> {
+  try {
+    const { resolveSessionWithRefresh, applyAuthAntiCacheHeaders } = await import('./lib/auth/session');
+    const { setCookies } = await resolveSessionWithRefresh(request.headers.get('cookie'));
+    if (setCookies.length > 0) {
+      for (const cookie of setCookies) {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
+      // Rotated tokens ride this response — it must never be cached (§7).
+      applyAuthAntiCacheHeaders(response.headers);
+    }
+  } catch (err) {
+    console.error('konto session refresh failed', err);
+  }
+  return response;
+}
+
 const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
   'X-Frame-Options': 'SAMEORIGIN',
@@ -98,6 +138,16 @@ export default function middleware(request: NextRequest) {
   response.headers.append('Vary', 'Cookie');
 
   applySecurityHeaders(response);
+
+  // Customer session refresh — account paths only, and only when a Supabase
+  // auth cookie exists (anonymous visitors skip in these two cheap guards).
+  if (
+    isKontoPath(pathname) &&
+    request.cookies.getAll().some((cookie) => SB_AUTH_COOKIE_RE.test(cookie.name))
+  ) {
+    return refreshKontoSession(request, response);
+  }
+
   return response;
 }
 
