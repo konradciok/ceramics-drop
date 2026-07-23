@@ -55,9 +55,10 @@ Prodigi API contract round-trip).
   ~4 min of quota on every app-only push.
 - Added a Playwright browser cache to `e2e.yml` keyed on the installed
   Playwright version (~150 MB download and ~1–2 min saved per warm run).
-- Added `paths-ignore: docs/**, **.md` to `ci.yml` and `e2e.yml` — docs-only
-  pushes no longer trigger builds. `release-please.yml` deliberately still
-  sees every push (it must).
+- ~~Added `paths-ignore: docs/**, **.md` to `ci.yml` and `e2e.yml`~~ —
+  reverted same day: the repo went public (minutes became unlimited) and CI +
+  E2E became **required checks** on `main`, which must run on every PR or
+  docs-only PRs hang on "Expected". pgTAP stays paths-gated and advisory.
 - Added `.github/dependabot.yml` (monthly, grouped `github-actions` updates)
   so the SHA pins stop rotting.
 - Removed an invalid `branches: [main]` key under `workflow_dispatch` in
