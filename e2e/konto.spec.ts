@@ -21,7 +21,9 @@ test.describe('customer accounts (dark) @ci', () => {
   test('locale-prefixed /en/konto serves the same state', async ({ page }) => {
     await page.goto('/en/konto');
     await expect(page.getByTestId('konto-unavailable')).toBeVisible();
-    await expect(page.getByTestId('konto-unavailable')).toContainText('available');
+    // Assert the negated wording — a bare "available" substring would also
+    // match copy that wrongly claimed accounts ARE available.
+    await expect(page.getByTestId('konto-unavailable')).toContainText("aren't available");
   });
 
   test('order detail never renders for anonymous visitors — redirects to /konto', async ({ page }) => {

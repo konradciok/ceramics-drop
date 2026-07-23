@@ -82,10 +82,12 @@ export default async function KontoOrderPage({ params }: Props) {
         <div className="account-panel">
           <h2>{t('account.itemsH')}</h2>
           <ul className="account-items">
-            {order.items.map((item) => {
+            {order.items.map((item, index) => {
               const label = accountItemLabel(item, t, locale);
               return (
-                <li key={label.key}>
+                // Index-suffixed: two identical print line items in one order
+                // would otherwise collide on the variant-derived key.
+                <li key={`${label.key}-${index}`}>
                   <span className="item-name">
                     {label.name}
                     {label.detail && <span className="item-detail">{label.detail}</span>}

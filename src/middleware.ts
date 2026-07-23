@@ -22,7 +22,10 @@ const handleI18n = createMiddleware(routing);
 // `(?:/|$)` boundary keeps `/kontakt` (and any future `/konto-*`) out.
 const KONTO_RE = new RegExp(`^/(?:(?:${routing.locales.join('|')})/)?konto(?:/|$)`);
 // Supabase session cookie (or one of its chunked `.0`, `.1`, … parts).
-const SB_AUTH_COOKIE_RE = /^sb-.+-auth-token(?:\.\d+)?$/;
+// Deliberately re-declared instead of imported from src/lib/auth/session.ts so
+// anonymous storefront traffic never parses the auth stack in the edge bundle;
+// a parity test in middleware.test.ts guards against the two drifting apart.
+export const SB_AUTH_COOKIE_RE = /^sb-.+-auth-token(?:\.\d+)?$/;
 
 /** Exported for unit tests — see middleware.test.ts. */
 export function isKontoPath(pathname: string): boolean {

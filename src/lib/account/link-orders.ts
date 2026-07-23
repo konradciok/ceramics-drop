@@ -10,18 +10,20 @@ export type BackfillUser = {
 
 /**
  * Backfill-on-login (plan §4.3): claim unclaimed guest orders whose email
- * matches this user's provider-VERIFIED address —
+ * matches this user's provider-VERIFIED address, via the
+ * `link_orders_to_user()` RPC —
  *
  *   UPDATE orders SET user_id = :uid
  *   WHERE user_id IS NULL AND user_unlinked_at IS NULL
  *     AND lower(email) = lower(:verified_email)
  *
- * Runs on every login (cheap via the orders_unclaimed_email_idx partial
- * index), so guest purchases made between logins are swept up too. The
- * `user_id IS NULL` guard makes claims one-shot (first login wins, no
- * flapping); `user_unlinked_at IS NULL` permanently excludes orders released
- * by an account deletion. Orders created while signed-in are linked at insert
- * (checkout) — this only repairs history.
+ * The predicate lives in SQL so it is exactly the expression
+ * orders_unclaimed_email_idx indexes (a PostgREST ILIKE cannot use that
+ * partial index). Runs on every login, so guest purchases made between logins
+ * are swept up too. The `user_id IS NULL` guard makes claims one-shot (first
+ * login wins, no flapping); `user_unlinked_at IS NULL` permanently excludes
+ * orders released by an account deletion. Orders created while signed-in are
+ * linked at insert (checkout) — this only repairs history.
  */
 export async function linkOrdersToUser(user: BackfillUser): Promise<void> {
   const email = user.email?.trim();
@@ -32,13 +34,9 @@ export async function linkOrdersToUser(user: BackfillUser): Promise<void> {
   if (!user.email_confirmed_at && !user.confirmed_at) return;
 
   const supabase = getSupabaseAdmin();
-  // ilike with wildcards escaped ⇒ case-insensitive equality (lower() match).
-  const escaped = email.replace(/([\\%_])/g, '\\$1');
-  const { error } = await supabase
-    .from('orders')
-    .update({ user_id: user.id })
-    .is('user_id', null)
-    .is('user_unlinked_at', null)
-    .ilike('email', escaped);
+  const { error } = await supabase.rpc('link_orders_to_user', {
+    p_user_id: user.id,
+    p_email: email,
+  });
   if (error) throw error;
 }

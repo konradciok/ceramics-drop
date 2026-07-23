@@ -2,7 +2,7 @@
 
 Operational procedures for the customer-accounts feature (Google/Apple sign-in, order history, tracking). Design and rationale live in [`docs/plans/customer-accounts.md`](./plans/customer-accounts.md); this file is the *how-to* for the studio + developer.
 
-**Feature flag / kill switch:** the presence of the `SUPABASE_PUBLISHABLE_KEY` runtime secret. Unset ⇒ `/api/auth/*` return 404, `/konto` renders "accounts unavailable", middleware and checkout skip all session work, existing sessions degrade to signed-out. Checkout and the storefront never depend on auth availability.
+**Feature flag / kill switch:** the presence of the `SUPABASE_PUBLISHABLE_KEY` runtime secret. (Strictly, the gate requires `SUPABASE_URL` **and** the publishable key — but `SUPABASE_URL` is a standing prerequisite the store cannot run without, so the publishable key is the only lever you ever operate.) Unset ⇒ `/api/auth/*` return 404, `/konto` renders "accounts unavailable", middleware and checkout skip all session work, existing sessions degrade to signed-out. Checkout and the storefront never depend on auth availability.
 
 ```bash
 # enable (prod)
@@ -63,7 +63,7 @@ The Apple client secret **expires after at most 6 months**; when it lapses, *onl
 1. **Phase 0**: provider consoles + Supabase config above; resolve the plan's §13 open decisions.
 2. Ship the migrations (dark — the columns are unused until auth goes live).
 3. Ship the code **with the secret unset**: `/api/auth/*` 404, `/konto` renders "unavailable" (the `@ci` E2E suite pins this contract), storefront provably unaffected.
-4. Set `SUPABASE_PUBLISHABLE_KEY` on a **preview/staging** deployment and walk the manual round-trip checklist (§3 below) for Google **and** Apple.
+4. Set `SUPABASE_PUBLISHABLE_KEY` on a **preview/staging** deployment (its `SUPABASE_URL` must point at a project with the providers configured) and walk the manual round-trip checklist (§3 below) for Google **and** Apple.
 5. `wrangler secret put SUPABASE_PUBLISHABLE_KEY` in production → feature live but unadvertised → smoke-test with a real account.
 6. The header/nav `Konto` entry + return-page link are the public launch.
 7. Kill switch at every step: delete the secret (sessions degrade to signed-out; checkout unaffected).

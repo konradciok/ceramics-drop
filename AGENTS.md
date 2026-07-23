@@ -165,7 +165,7 @@ Multi-currency, defined in `src/lib/pricing.ts`. `PRICE_PLN`, `PRICE_EUR`, and `
 **Runtime secrets** (set with `wrangler secret put` in prod, `.dev.vars` locally):
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_PUBLISHABLE_KEY` — customer accounts (Supabase Auth), server-side only, never `NEXT_PUBLIC_*`; its presence is the feature flag / kill switch (see `docs/customer-accounts-runbook.md`)
+- `SUPABASE_PUBLISHABLE_KEY` — customer accounts (Supabase Auth), server-side only, never `NEXT_PUBLIC_*`; its presence (alongside the always-required `SUPABASE_URL`) is the feature flag / kill switch (see `docs/customer-accounts-runbook.md`)
 - `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` / `INPOST_API_URL` / `INPOST_WEBHOOK_TOKEN`
 - `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`
 - `META_CAPI_ACCESS_TOKEN` / `GA4_API_SECRET` (+ optional `META_TEST_EVENT_CODE`) — server-side conversions

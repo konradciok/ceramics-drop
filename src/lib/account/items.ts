@@ -19,6 +19,7 @@ export type AccountItemLabel = {
 type Translate = (key: string) => string;
 
 const PRINT_SIZES = new Set(['30x40', '50x70', '70x100']);
+const FRAME_COLOURS = new Set(['black', 'white', 'natural']);
 
 function printDetail(variant: unknown, locale: string): string | null {
   if (typeof variant !== 'object' || variant === null) return null;
@@ -26,13 +27,18 @@ function printDetail(variant: unknown, locale: string): string | null {
   if (typeof v.size !== 'string' || !PRINT_SIZES.has(v.size) || typeof v.framed !== 'boolean') {
     return null;
   }
+  // A legacy/corrupt persisted colour must never reach variantLabel (it would
+  // render as "frame undefined"): unframed is always 'none', and a framed
+  // variant with an unknown colour degrades to the colour-less frame label.
+  const frameColour: PrintVariantSelection['frameColour'] =
+    v.framed && typeof v.frameColour === 'string' && FRAME_COLOURS.has(v.frameColour)
+      ? (v.frameColour as PrintVariantSelection['frameColour'])
+      : 'none';
   const sel: PrintVariantSelection = {
     size: v.size as PrintVariantSelection['size'],
     framed: v.framed,
-    mount: v.mount === true,
-    frameColour: (typeof v.frameColour === 'string'
-      ? v.frameColour
-      : 'none') as PrintVariantSelection['frameColour'],
+    mount: v.framed && v.mount === true,
+    frameColour,
   };
   return variantLabel(sel, locale);
 }

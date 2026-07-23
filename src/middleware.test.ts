@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import middleware, { isKontoPath } from './middleware';
+import middleware, { isKontoPath, SB_AUTH_COOKIE_RE } from './middleware';
+import { SB_AUTH_COOKIE_RE as SESSION_SB_AUTH_COOKIE_RE } from './lib/auth/session';
 import { NextRequest } from 'next/server';
 
 describe('middleware security headers', () => {
@@ -42,6 +43,13 @@ describe('isKontoPath (customer-account matcher)', () => {
 });
 
 describe('middleware konto session guard', () => {
+  it('keeps the local sb-cookie pattern in sync with the session module', () => {
+    // The regex is duplicated on purpose (edge-bundle parse cost); this pins
+    // the two declarations together so an edit to one fails loudly.
+    expect(SB_AUTH_COOKIE_RE.source).toBe(SESSION_SB_AUTH_COOKIE_RE.source);
+    expect(SB_AUTH_COOKIE_RE.flags).toBe(SESSION_SB_AUTH_COOKIE_RE.flags);
+  });
+
   it('leaves /konto untouched for anonymous visitors (no sb-* cookie)', async () => {
     const res = await middleware(new NextRequest('https://anna-ciok.studio/konto'));
     // Normal storefront response path: security headers, no auth cookies, and
