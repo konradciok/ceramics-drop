@@ -1,0 +1,11 @@
+# Keeps the SHA-pinned actions in .github/workflows/ current (the pins are
+# security policy — see PR #37); without this they rot into deprecated runtimes.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
