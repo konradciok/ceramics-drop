@@ -115,6 +115,28 @@
     "submit": "Enviar",
     "submitting": "Enviando…"
   },
+  "newsletter": {
+    "heading": "Boletín",
+    "blurb": "Novedades sobre nuevas piezas y drops — sin spam.",
+    "emailLabel": "Correo electrónico",
+    "placeholder": "Tu correo electrónico",
+    "submit": "Suscribirme",
+    "submitting": "Enviando…",
+    "done": "Revisa tu bandeja — te hemos enviado un enlace de confirmación.",
+    "error": "Algo salió mal. Inténtalo de nuevo.",
+    "privacyNote": "Confirmarás con un enlace que te enviaremos. Consulta la <link>política de privacidad</link>.",
+    "eyebrow": "Boletín",
+    "landingTitle": "Suscripción al boletín",
+    "confirmedTitle": "Suscripción confirmada",
+    "confirmedBody": "¡Gracias! Te avisaremos sobre nuevas piezas y drops.",
+    "expiredTitle": "Enlace caducado",
+    "expiredBody": "Este enlace de confirmación ha caducado. Vuelve a suscribirte desde el pie de página.",
+    "invalidTitle": "Enlace no válido",
+    "invalidBody": "Este enlace está incompleto o no es válido. Vuelve a suscribirte desde el pie de página.",
+    "errorTitle": "Algo salió mal",
+    "errorBody": "No pudimos confirmar tu suscripción. Haz clic en el enlace del correo de nuevo en un momento.",
+    "backToShop": "Volver a la tienda"
+  },
   "galleryPage": {
     "eyebrow": "Galería editorial",
     "title": "Nuevos encuadres, <em>la misma huella de la mano.</em>",

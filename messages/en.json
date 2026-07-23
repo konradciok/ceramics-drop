@@ -115,6 +115,28 @@
     "submit": "Send",
     "submitting": "Sending…"
   },
+  "newsletter": {
+    "heading": "Newsletter",
+    "blurb": "News about new pieces and drops — no spam.",
+    "emailLabel": "Email",
+    "placeholder": "Your email address",
+    "submit": "Sign up",
+    "submitting": "Sending…",
+    "done": "Check your inbox — we've sent you a confirmation link.",
+    "error": "Something went wrong. Please try again.",
+    "privacyNote": "You'll confirm via a link we email you. See our <link>privacy policy</link>.",
+    "eyebrow": "Newsletter",
+    "landingTitle": "Newsletter signup",
+    "confirmedTitle": "Subscription confirmed",
+    "confirmedBody": "Thank you! We'll let you know about new pieces and drops.",
+    "expiredTitle": "Link expired",
+    "expiredBody": "This confirmation link has expired. Please sign up again using the form in the footer.",
+    "invalidTitle": "Invalid link",
+    "invalidBody": "This link is incomplete or invalid. Please sign up again using the form in the footer.",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We couldn't confirm your signup. Please click the link in your email again in a moment.",
+    "backToShop": "Back to the shop"
+  },
   "galleryPage": {
     "eyebrow": "Editorial gallery",
     "title": "New frames, <em>the same trace of the hand.</em>",

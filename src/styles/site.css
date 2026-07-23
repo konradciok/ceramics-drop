@@ -392,6 +392,35 @@ ul { list-style:none; padding:0; margin:0; }
 .footer-bot .pay { display:flex; gap:10px; align-items:center; }
 .footer-bot .pay span { padding:4px 8px; border:1px solid rgba(244,237,224,.3); border-radius:3px; font-size:10px; letter-spacing:.1em; }
 
+/* footer newsletter — compact double-opt-in signup in the brand column.
+   Dark-surface variants on purpose: the footer is espresso, so the light
+   .field/.btn-primary styles would be invisible here. Paragraph rules are
+   element-qualified to out-cascade `.footer-brand p` above. */
+.footer-newsletter { margin-top:24px; display:flex; flex-direction:column; gap:10px; max-width:340px; }
+.footer-newsletter h5 { font-family:var(--f-cond); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0; color:var(--c-butter); }
+.footer-newsletter p { margin:0; max-width:none; }
+.footer-newsletter p.footer-newsletter-blurb { font-size:13px; line-height:1.5; opacity:.7; }
+.footer-newsletter-row { display:flex; gap:8px; }
+.footer-newsletter input[type="email"] {
+  flex:1; min-width:0; font:inherit; font-size:14px; padding:10px 12px;
+  background:rgba(244,237,224,.07); border:1px solid rgba(244,237,224,.28);
+  border-radius:var(--r-sharp); color:var(--c-paper);
+}
+.footer-newsletter input::placeholder { color:var(--c-paper); opacity:.45; }
+.footer-newsletter input:focus-visible { outline:0; border-color:var(--c-butter); }
+.footer-newsletter-btn {
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  padding:10px 18px; border:1px solid transparent; border-radius:var(--r-sharp);
+  background:var(--c-butter); color:var(--c-espresso); cursor:pointer;
+  transition:background .25s var(--ease); flex:none;
+}
+.footer-newsletter-btn:hover { background:var(--c-paper); }
+.footer-newsletter-btn[disabled] { opacity:.4; cursor:not-allowed; }
+.footer-newsletter p.footer-newsletter-privacy { font-size:11px; line-height:1.5; opacity:.55; }
+.footer-newsletter-privacy .inline { color:inherit; text-decoration:underline; }
+.footer-newsletter p.footer-newsletter-thanks { font-size:13px; line-height:1.5; opacity:.85; }
+.footer-newsletter p.footer-newsletter-err { font-size:13px; line-height:1.5; color:var(--c-butter); opacity:1; }
+
 /* footer: 5 kolumn gdy są strony informacyjne */
 .footer-top.cols-5 { grid-template-columns:1fr; }
 @media (min-width:561px) {

@@ -115,6 +115,28 @@
     "submit": "Senden",
     "submitting": "Senden…"
   },
+  "newsletter": {
+    "heading": "Newsletter",
+    "blurb": "Neuigkeiten zu neuen Stücken und Drops — kein Spam.",
+    "emailLabel": "E-Mail",
+    "placeholder": "Deine E-Mail-Adresse",
+    "submit": "Anmelden",
+    "submitting": "Senden…",
+    "done": "Sieh in dein Postfach — wir haben dir einen Bestätigungslink geschickt.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "privacyNote": "Du bestätigst per Link in der E-Mail. Siehe <link>Datenschutzerklärung</link>.",
+    "eyebrow": "Newsletter",
+    "landingTitle": "Newsletter-Anmeldung",
+    "confirmedTitle": "Anmeldung bestätigt",
+    "confirmedBody": "Danke! Wir melden uns bei neuen Stücken und Drops.",
+    "expiredTitle": "Link abgelaufen",
+    "expiredBody": "Dieser Bestätigungslink ist abgelaufen. Melde dich bitte über das Formular im Seitenfuß erneut an.",
+    "invalidTitle": "Ungültiger Link",
+    "invalidBody": "Dieser Link ist unvollständig oder ungültig. Melde dich bitte über das Formular im Seitenfuß erneut an.",
+    "errorTitle": "Etwas ist schiefgelaufen",
+    "errorBody": "Wir konnten deine Anmeldung nicht bestätigen. Klicke den Link in der E-Mail gleich noch einmal.",
+    "backToShop": "Zurück zum Shop"
+  },
   "galleryPage": {
     "eyebrow": "Redaktionelle Galerie",
     "title": "Neue Bilder, <em>dieselbe Handspur.</em>",
