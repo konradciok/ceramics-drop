@@ -1,16 +1,13 @@
 name: CI
 
+# No paths-ignore here: this workflow is a REQUIRED check on main — filtering
+# paths would leave docs-only PRs stuck on "Expected" forever. Minutes are
+# unlimited on a public repo, so running on every PR costs nothing.
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
 
 permissions:
   contents: read
