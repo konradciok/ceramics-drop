@@ -1,12 +1,21 @@
 # Changelog
 
-## [0.9.2](https://github.com/konradciok/ceramics-drop/compare/v0.9.1...v0.9.2) (2026-07-18)
+## [0.9.2](https://github.com/konradciok/ceramics-drop/compare/v0.9.1...v0.9.2) (2026-07-23)
 
 
 ### Bug Fixes
 
-* **checkout:** trim return-page bundle and announce print form errors ([a82397c](https://github.com/konradciok/ceramics-drop/commit/a82397c63cf1df8a9941e7bc9c0073a006494ea4))
 * **checkout:** trim return-page bundle and announce print form errors ([c5bee66](https://github.com/konradciok/ceramics-drop/commit/c5bee66b9d79d9aa4f501ba461b97d15c8d15dcd))
+* **print-assets:** enforce strict operator arguments and tracked source ([75dc316](https://github.com/konradciok/ceramics-drop/commit/75dc316ba26678b1e221798f8f04a58843358ec8))
+* **print-assets:** rasterise signatures at bounded contain scale ([8d73f27](https://github.com/konradciok/ceramics-drop/commit/8d73f2707e94ded916bc6007fbbe2f385b276fdd))
+* **print-assets:** reject bare --env-file with a clean error ([59a6d61](https://github.com/konradciok/ceramics-drop/commit/59a6d6121a0f5463970418377e409770d9a6c78e))
+* **print-assets:** validate manifest v2 before external access ([ed9034b](https://github.com/konradciok/ceramics-drop/commit/ed9034b2b13c3a1f41abeb16d6fe2878b55b9dd9))
+* **print-assets:** create fulfilment objects with conditional R2 puts ([4a67c57](https://github.com/konradciok/ceramics-drop/commit/4a67c576a01c2a83e64a34a9e0907e515fa12f7a))
+* **print-assets:** classify sandbox outcomes and use unique run ids ([6078f03](https://github.com/konradciok/ceramics-drop/commit/6078f0319b49092cec053cb8f6abbff4e5d98428))
+* **print-assets:** verify gallery source bytes and null ordering ([6f94981](https://github.com/konradciok/ceramics-drop/commit/6f94981c9a4fde612c3be09fee6cdfa89459e1df))
+* **print-assets:** promote verified assets transactionally ([1a10e56](https://github.com/konradciok/ceramics-drop/commit/1a10e56af196a4166df85b51e5d7f52cd3715e8b))
+* **print-assets:** redact signed-URL sig values in sandbox issue output ([cf340a6](https://github.com/konradciok/ceramics-drop/commit/cf340a680c3abd7a578826ffcc5884d58b05f847))
+* **print-assets:** redact any sig value shape and scope the rollback guarantee ([47943e6](https://github.com/konradciok/ceramics-drop/commit/47943e62a1d0131915be51ceae8afcb304d665a7))
 
 ## [0.9.1](https://github.com/konradciok/ceramics-drop/compare/v0.9.0...v0.9.1) (2026-07-18)
 
