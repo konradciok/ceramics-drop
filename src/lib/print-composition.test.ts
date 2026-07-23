@@ -100,6 +100,21 @@ describe('composeLayout', () => {
       composeLayout({ width: 10, height: 10 }, { aspect: 0.7 }, { aspect: 3 }, config),
     ).toThrow(/no room/i);
   });
+
+  it('emits integer pixel dimensions for every rect field', () => {
+    for (const canvas of [
+      { width: 3600, height: 4800 },
+      { width: 8400, height: 12000 },
+      { width: 1500, height: 2100 },
+    ]) {
+      const g = composeLayout(canvas, { aspect: 0.7 }, { aspect: 3 }, config);
+      for (const r of [g.artwork, g.signature]) {
+        for (const v of [r.left, r.top, r.width, r.height]) {
+          expect(Number.isInteger(v)).toBe(true);
+        }
+      }
+    }
+  });
 });
 
 describe('pxToMm', () => {

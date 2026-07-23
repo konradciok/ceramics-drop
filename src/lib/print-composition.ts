@@ -120,10 +120,13 @@ export function composeLayout(
     mmToPx(L.minMarginMm, L.dpi),
     mmToPx(L.maxMarginMm, L.dpi),
   );
-  const sigH = clampPx(
-    h * L.signatureHeightFrac,
-    mmToPx(L.minSignatureMm, L.dpi),
-    mmToPx(L.maxSignatureMm, L.dpi),
+  // Rounded because it is emitted verbatim as signature.height — Sharp rejects fractional px.
+  const sigH = Math.round(
+    clampPx(
+      h * L.signatureHeightFrac,
+      mmToPx(L.minSignatureMm, L.dpi),
+      mmToPx(L.maxSignatureMm, L.dpi),
+    ),
   );
   const sigGap = clampPx(
     h * L.signatureGapFrac,
