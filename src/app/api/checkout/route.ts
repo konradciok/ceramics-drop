@@ -15,6 +15,8 @@ import { printShippingOf } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
+import { applyAuthAntiCacheHeaders, resolveSessionWithRefresh } from '@/lib/auth/session';
+import type { AuthCookie } from '@/lib/auth/supabase-server';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
@@ -305,6 +307,34 @@ export async function POST(req: Request) {
   }
 
   const cookieHeader = req.headers.get('cookie') ?? '';
+
+  // Customer accounts (§4.2): best-effort session resolve so a signed-in
+  // buyer's order carries user_id. Fast local JWT verify; if expired, ONE
+  // refresh attempt — this matters for Apple private-relay users, whose past
+  // guest orders can never be email-backfilled, so checkout-time association
+  // is their only link. Rotated cookies (if any) must ride whichever response
+  // goes out below (attachAuthCookies on every later return). On any failure
+  // the order is simply anonymous — auth never blocks payment.
+  let sessionUserId: string | null = null;
+  let authCookies: AuthCookie[] = [];
+  try {
+    const session = await resolveSessionWithRefresh(cookieHeader);
+    sessionUserId = session.user?.id ?? null;
+    authCookies = session.setCookies;
+  } catch {
+    sessionUserId = null;
+    authCookies = [];
+  }
+  const attachAuthCookies = (response: NextResponse): NextResponse => {
+    if (authCookies.length > 0) {
+      for (const cookie of authCookies) {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
+      applyAuthAntiCacheHeaders(response.headers);
+    }
+    return response;
+  };
+
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
   const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
   const str2 = (v: unknown, max = 256) => {
@@ -350,6 +380,9 @@ export async function POST(req: Request) {
     locale,
     marketing,
     private_sale_id: privateSaleId,
+    // Nullable account link (§4.2): the session decides at insert; the
+    // contact/email fields above stay exactly as the buyer typed them.
+    user_id: sessionUserId,
   });
   // A retried POST with the same attemptId hits this insert a second time and
   // gets a primary-key conflict on the row the first POST already created.
@@ -363,7 +396,7 @@ export async function POST(req: Request) {
     // on a failed lookup canceling or releasing could kill a payment mid-flight.
     const { status, lookupFailed } = await readAttemptStatus('on duplicate insert');
     if (lookupFailed) {
-      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+      return attachAuthCookies(NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 }));
     }
     if (status === 'pending') {
       replay = true;
@@ -390,7 +423,7 @@ export async function POST(req: Request) {
           cancelErr,
         );
       }
-      return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+      return attachAuthCookies(NextResponse.json({ error: 'order_conflict' }, { status: 409 }));
     }
   }
   let itemsErr = null;
@@ -422,7 +455,7 @@ export async function POST(req: Request) {
       await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
     }
     await releaseOwnHold();
-    return NextResponse.json({ error: 'order_persist_failed' }, { status: 500 });
+    return attachAuthCookies(NextResponse.json({ error: 'order_persist_failed' }, { status: 500 }));
   }
 
   // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
@@ -449,5 +482,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ client_secret: paymentIntent.client_secret });
+  return attachAuthCookies(NextResponse.json({ client_secret: paymentIntent.client_secret }));
 }

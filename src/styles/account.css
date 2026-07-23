@@ -1,0 +1,79 @@
+/* ============================================================
+   Account (/konto) — sign-in panel, order history, order detail.
+   Token-driven; follows the cart / prose sections' visual language.
+   ============================================================ */
+.account-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 56px) var(--gut) var(--section-y, 96px);
+  display: grid;
+  gap: 24px;
+}
+
+.account-panel {
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sharp, 2px);
+  background: #fff;
+  padding: clamp(20px, 3vw, 32px);
+}
+.account-panel h2 { margin: 0 0 10px; font-size: 22px; }
+.account-note { margin: 0 0 18px; line-height: 1.6; opacity: .85; max-width: 56ch; }
+.account-privacy { margin: 18px 0 0; font-size: 13px; line-height: 1.55; opacity: .7; max-width: 60ch; }
+.account-error {
+  margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--c-terracotta);
+  border-radius: var(--r-sharp, 2px); color: var(--c-terracotta); font-size: 14px;
+}
+
+.account-providers { display: flex; flex-wrap: wrap; gap: 12px; }
+.account-provider-btn { display: inline-flex; align-items: center; gap: 10px; }
+
+.account-header {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+}
+.account-header .who { display: grid; gap: 2px; }
+.account-header .who strong { font-size: 16px; }
+.account-header .who span { font-size: 13px; opacity: .7; }
+
+.account-orders { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.account-order-row {
+  display: grid; gap: 6px; border: 1px solid var(--c-line);
+  border-radius: var(--r-sharp, 2px); background: #fff; padding: 16px 18px;
+}
+.account-order-row .row-top {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; justify-content: space-between;
+}
+.account-order-row .row-top time { font-size: 13px; opacity: .7; }
+.account-order-row .row-items { font-size: 14.5px; line-height: 1.5; opacity: .9; }
+.account-order-row .row-bottom {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between;
+}
+.account-order-row .row-total { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.status-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 12.5px; letter-spacing: .02em; border: 1px solid var(--c-line);
+  background: var(--c-cream); color: var(--c-espresso);
+  white-space: nowrap;
+}
+.status-chip.status-shipped,
+.status-chip.status-delivered { background: var(--c-success, #e8f2e2); border-color: var(--c-success-border, #b9d3ac); }
+.status-chip.status-refunded,
+.status-chip.status-cancelled { opacity: .65; }
+
+.account-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 0; }
+.account-dl dt { opacity: .6; font-size: 14px; }
+.account-dl dd { margin: 0; font-size: 14.5px; }
+.account-dl dd.mono { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.account-items { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.account-items li { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
+.account-items .item-name { line-height: 1.4; }
+.account-items .item-detail { display: block; font-size: 13px; opacity: .65; }
+.account-items .item-price { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.account-totals { border-top: 1px solid var(--c-line); margin-top: 14px; padding-top: 12px; display: grid; gap: 6px; }
+.account-totals .line { display: flex; justify-content: space-between; font-size: 14.5px; }
+.account-totals .line.total { font-weight: 600; font-size: 16px; }
+
+.account-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+.account-back { display: inline-block; margin-bottom: 4px; font-size: 14px; }

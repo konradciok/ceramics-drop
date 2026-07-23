@@ -12,6 +12,53 @@
     "error": "Something went wrong. Please try again shortly.",
     "moreInfo": "More about shipping & returns"
   },
+  "account": {
+    "eyebrow": "Account",
+    "heading": "Your account",
+    "unavailableH": "Customer accounts aren't available yet",
+    "unavailableP": "Sign-in hasn't been switched on in this shop yet. Check back soon or write to hej@ciok.art.",
+    "signInH": "Sign in",
+    "signInP": "See your order history and track shipments. An account is created automatically the first time you sign in.",
+    "continueGoogle": "Continue with Google",
+    "continueApple": "Continue with Apple",
+    "privacyNote": "Signing in creates an account linked to your email address — earlier orders placed with the same verified address are matched to it automatically. Details in the privacy policy.",
+    "authError": "Sign-in didn't work. Please try again.",
+    "signOut": "Sign out",
+    "ordersH": "Your orders",
+    "empty": "No orders are linked to this account yet.",
+    "emptyCta": "Browse the works",
+    "orderLabel": "Order",
+    "viewOrder": "Details",
+    "backToAccount": "Back to account",
+    "itemsH": "Items",
+    "subtotal": "Subtotal",
+    "shippingLabel": "Shipping",
+    "total": "Total",
+    "deliveryH": "Delivery",
+    "methodLabel": "Method",
+    "methodPaczkomat": "InPost parcel locker",
+    "methodKurier": "Courier",
+    "methodOdbior": "Studio pickup",
+    "paczkomatLabel": "Parcel locker",
+    "addressLabel": "Address",
+    "trackingH": "Shipment tracking",
+    "carrier": "Carrier",
+    "trackingNumber": "Tracking number",
+    "shippedAt": "Shipped",
+    "track": "Track shipment",
+    "noTracking": "The tracking number will appear here once the parcel ships.",
+    "requestReturn": "Request a return",
+    "status": {
+      "processing": "Being prepared",
+      "inProduction": "In production",
+      "shipped": "Shipped",
+      "readyForPickup": "Waiting at the locker",
+      "delivered": "Delivered",
+      "awaitingPickup": "Ready for studio pickup",
+      "refunded": "Refunded",
+      "cancelled": "Cancelled"
+    }
+  },
   "announce": "June 2026 drop — 125 pieces, each one of a kind",
   "title": {
     "home": "Anna Ciok Ceramics — June 2026 drop",
@@ -25,6 +72,7 @@
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "koszyk": "Cart",
+    "konto": "Account",
     "studio": "Studio",
     "kontakt": "Contact",
     "dostawa": "Shipping & returns",
@@ -50,7 +98,8 @@
     "miskiFalowane": "Wavy-rim bowls",
     "fineArtPrints": "Fine Art Prints",
     "studio": "Studio",
-    "kontakt": "Contact"
+    "kontakt": "Contact",
+    "konto": "Account"
   },
   "aria": {
     "cart": "Cart",
@@ -316,7 +365,8 @@
     "failH": "Payment failed",
     "failP": "No funds were taken. Go back to the cart and try again — the selected pieces are still waiting for you.",
     "back": "Back to home",
-    "cart": "Back to cart"
+    "cart": "Back to cart",
+    "account": "Track this order in your account"
   },
   "home": {
     "heroEyebrow": "June 2026 drop — Nº 01",
