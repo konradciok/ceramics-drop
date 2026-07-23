@@ -1,0 +1,18 @@
+{
+  "_comment": "Frame-master registry for print-assets:mockups. Copy to frames.json once the six masters exist under gitignored design/print-assets/frames_blanks/. Masters are OPAQUE blanks (baked background + shadow, any canvas ratio); window = the sheet rect as fractions of the master canvas — the sheet is composited OVER it, then centre-cropped to 7:10. Framed windows must match the FAP sheet ratio 0.70, mount windows the CFPM aperture ratio 0.667, within 2% (composeMockup fail-closes otherwise). All six masters exist as of 2026-07-20 (1254x1254): framed = black_wood/natural_wood/dark_wood blanks (window ratios 0.696-0.698, MEASURED; dark_wood_frame replaces the rejected 0.746 brown blank), mount = *_wood_mount blanks generated from them per the runbook recipe (mat #FCFBF8, aperture 85.7% x 90% centred, 3px bevel ring outside the aperture, soft top shadow). Mount windows are DECLARED inset from the drawn aperture (top 6px, sides/bottom 2px) so the bevel ring and top shadow stay visible around the pasted sheet — do not re-measure them back out to the bare aperture.",
+  "background": "#F1EFEA",
+  "frames": {
+    "black": {
+      "framed": { "file": "design/print-assets/frames_blanks/black_wood_frame.png", "window": { "left": 0.2352, "top": 0.1252, "width": 0.5327, "height": 0.7648 } },
+      "mount": { "file": "design/print-assets/frames_blanks/black_wood_mount.png", "window": { "left": 0.2751, "top": 0.1683, "width": 0.453, "height": 0.6818 } }
+    },
+    "natural": {
+      "framed": { "file": "design/print-assets/frames_blanks/natural_wood_frame.png", "window": { "left": 0.2368, "top": 0.1244, "width": 0.5335, "height": 0.7648 } },
+      "mount": { "file": "design/print-assets/frames_blanks/natural_wood_mount.png", "window": { "left": 0.2767, "top": 0.1675, "width": 0.4537, "height": 0.6818 } }
+    },
+    "brown": {
+      "framed": { "file": "design/print-assets/frames_blanks/dark_wood_frame.png", "window": { "left": 0.2384, "top": 0.126, "width": 0.5303, "height": 0.7624 } },
+      "mount": { "file": "design/print-assets/frames_blanks/dark_wood_mount.png", "window": { "left": 0.2783, "top": 0.1691, "width": 0.4514, "height": 0.6794 } }
+    }
+  }
+}
