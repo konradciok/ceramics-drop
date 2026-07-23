@@ -27,3 +27,11 @@ as $$
   )
   select count(*)::integer from claimed;
 $$;
+
+-- Encode the server-side boundary explicitly: Postgres grants EXECUTE to
+-- PUBLIC on new functions by default, which would also surface this via
+-- PostgREST /rpc for anon/authenticated. Invoker rights + orders' deny-all RLS
+-- already make such calls claim nothing, but the auth callback (service role)
+-- is the only intended caller — say so in the ACL.
+revoke execute on function link_orders_to_user(uuid, text) from public, anon, authenticated;
+grant execute on function link_orders_to_user(uuid, text) to service_role;
