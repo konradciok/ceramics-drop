@@ -84,7 +84,7 @@ describe('composeLayout', () => {
     expect(again).toEqual(geo);
   });
 
-  it('applies the optical offset to the artwork only', () => {
+  it('applies the X optical offset to the artwork only', () => {
     const shifted = composeLayout(
       { width: 3600, height: 4800 },
       { aspect: 0.7 },
@@ -92,7 +92,21 @@ describe('composeLayout', () => {
       { ...config, opticalOffset: { x: -0.02, y: 0 } },
     );
     expect(shifted.artwork.left).toBeLessThan(geo.artwork.left);
-    expect(shifted.signature).toEqual(geo.signature); // signature stays canvas-centred
+    expect(shifted.signature).toEqual(geo.signature); // signature stays horizontally canvas-centred
+  });
+
+  it('keeps the signature one gap below the artwork under a positive Y offset', () => {
+    const shifted = composeLayout(
+      { width: 3600, height: 4800 },
+      { aspect: 0.7 },
+      { aspect: 3 },
+      { ...config, opticalOffset: { x: 0, y: 0.1 } }, // 480px nudge — far beyond the gap
+    );
+    const gap = geo.signature.top - (geo.artwork.top + geo.artwork.height);
+    const shiftedGap = shifted.signature.top - (shifted.artwork.top + shifted.artwork.height);
+    expect(shifted.artwork.top).toBeGreaterThan(geo.artwork.top);
+    expect(shiftedGap).toBe(gap); // signature tracks the artwork — never overlapped
+    expect(shifted.signature.top + shifted.signature.height).toBeLessThanOrEqual(4800);
   });
 
   it('throws when margins leave no room for the artwork', () => {
@@ -189,5 +203,37 @@ describe('parseCompositionConfig', () => {
     const cfg = parseCompositionConfig({ ...minimal, layout: { artworkMaxWidthFrac: 0.8 } }, 'fap01');
     expect(cfg.layout.artworkMaxWidthFrac).toBe(0.8);
     expect(cfg.layout.marginShortSideFrac).toBe(DEFAULT_LAYOUT.marginShortSideFrac);
+  });
+
+  it('rejects a non-object layout', () => {
+    expect(() => parseCompositionConfig({ ...minimal, layout: 'oops' }, 'fap01')).toThrow(/layout/i);
+    expect(() => parseCompositionConfig({ ...minimal, layout: [0.1] }, 'fap01')).toThrow(/layout/i);
+  });
+
+  it('rejects non-finite layout values', () => {
+    expect(() => parseCompositionConfig({ ...minimal, layout: { dpi: 'oops' } }, 'fap01')).toThrow(/dpi/i);
+    expect(() => parseCompositionConfig({ ...minimal, layout: { marginShortSideFrac: NaN } }, 'fap01')).toThrow(/marginShortSideFrac/i);
+  });
+
+  it('rejects an unknown layout field (operator typo)', () => {
+    expect(() => parseCompositionConfig({ ...minimal, layout: { marginShortSideFrca: 0.1 } }, 'fap01')).toThrow(/marginShortSideFrca/i);
+  });
+
+  it('rejects a non-positive dpi', () => {
+    expect(() => parseCompositionConfig({ ...minimal, layout: { dpi: 0 } }, 'fap01')).toThrow(/dpi/i);
+  });
+
+  it('rejects an inverted clamp range', () => {
+    expect(() => parseCompositionConfig({ ...minimal, layout: { minMarginMm: 60 } }, 'fap01')).toThrow(/minMarginMm/i);
+  });
+
+  it('rejects a malformed opticalOffset', () => {
+    expect(() => parseCompositionConfig({ ...minimal, opticalOffset: 5 }, 'fap01')).toThrow(/opticalOffset/i);
+    expect(() => parseCompositionConfig({ ...minimal, opticalOffset: { x: 'oops', y: 0 } }, 'fap01')).toThrow(/opticalOffset/i);
+  });
+
+  it('rejects a negative or non-numeric bleedMm', () => {
+    expect(() => parseCompositionConfig({ ...minimal, bleedMm: -1 }, 'fap01')).toThrow(/bleedMm/i);
+    expect(() => parseCompositionConfig({ ...minimal, bleedMm: '5' }, 'fap01')).toThrow(/bleedMm/i);
   });
 });

@@ -1089,7 +1089,7 @@ shared `signature.svg`. Consumed by `npm run print-assets:compose`
 |-------|----------|---------|-------|
 | `product` | yes | — | Must match the `--product` id. |
 | `artwork` | yes | — | Path to the artwork master (gitignored `design/` tree), repo-relative. |
-| `signature` | yes | — | Shared signature SVG path, repo-relative. Defaults to `config/print-composition/signature.svg`. |
+| `signature` | yes | — | Shared signature SVG path, repo-relative (by convention `config/print-composition/signature.svg`). |
 | `background` | no | `#ded9c3` | `#rrggbb` canvas fill. |
 | `layout` | no | see `DEFAULT_LAYOUT` | Override any subset of the fractions / mm clamps / dpi. |
 | `opticalOffset` | no | `{x:0,y:0}` | Per-artwork centering nudge, fractions of canvas. |

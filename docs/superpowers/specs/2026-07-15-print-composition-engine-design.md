@@ -18,8 +18,9 @@ each design needs careful, per-artwork layer-based control. Today that control h
 manual flatten step that is slow to iterate on and hard to keep deterministic across the 3 print sizes.
 
 **Goal:** move the composition (artwork + background/border + signature as independent layers) into the
-codebase as a parametric, deterministic step that produces a composed master feeding the *existing*
-pipeline — no rebuild of the downstream R2/DB/publish/SKU machinery.
+codebase as a parametric, deterministic step that renders each print-area profile directly — a sibling
+to `prepare` whose output flows straight into the *existing* upload/verify/publish machinery, never
+re-cropped — no rebuild of the downstream R2/DB/publish/SKU machinery.
 
 **Non-goals (YAGNI for a few designs):**
 - Layout "families" auto-selected by aspect ratio (one tuned config per design is enough).
@@ -52,8 +53,9 @@ The proposal's flow is ~70% implemented as CLI scripts; only the composition ste
 
 ## Design — Phase 1 (MVP): parametric composer
 
-A deterministic sharp-based composition step, configured per product by a JSON file, that emits a
-composed master + preview proof and hands off to the unchanged pipeline.
+A deterministic sharp-based composition step, configured per product by a JSON file, that renders each
+distinct print-area profile at exact Prodigi pixels (+ preview proofs) and hands off to the unchanged
+upload/verify/publish pipeline.
 
 ### Layer model
 
@@ -81,13 +83,17 @@ validators in `src/lib/print-assets-prepare.ts`.
 
 ### Config schema — `config/print-composition/{productId}.json`
 
-Beside the existing `config/print-assets/{id}.json`. A sketch (finalize types in implementation):
+Beside the existing `config/print-assets/{id}.json`. Matches `parseCompositionConfig` in
+`src/lib/print-composition.ts` — `product`, `artwork`, `signature` required, the rest defaults.
+`signature` is a plain repo-relative path (no `align` knob — the signature is always horizontally
+centred):
 
 ```jsonc
 {
+  "product": "fap01",
   "artwork": "design/prints/fap01-artwork.tif",
   "background": "#ded9c3",
-  "signature": { "src": "config/print-composition/signature.svg", "align": "center" },
+  "signature": "config/print-composition/signature.svg",
   "layout": {
     "marginShortSideFrac": 0.065,
     "artworkMaxWidthFrac": 0.85,
@@ -136,7 +142,7 @@ at a fraction of the access/auth cost.
 |-------|------|------|-----------|-------|
 | A | Composition/layout engine (pure math + sharp composite/extend/resize) | M | 2–4 | 1 |
 | B | Layer/config schema + per-product `config/print-composition/{id}.json` + types | S | 0.5–1 | 1 |
-| C | Wire composer into the existing pipeline (composed master → `prepare` crops) | S | 1 | 1 |
+| C | Wire composer into the existing pipeline (per-profile derivatives + prepare-compatible manifest → upload/verify/publish) | S | 1 | 1 |
 | D | Preview proof of the composed result (reuse `proof-{profile}.jpg` pattern) | S | 0.5 | 1 |
 | E | Interactive admin UI (canvas preview + sliders + upload + R2-write route + approve) | L | 5–8 | 2 |
 
@@ -167,8 +173,8 @@ iteration-with-the-artist time dominates, not code — budget ~1 extra day per a
 - **Unit (Vitest):** pure layout math in `src/lib/print-composition.ts` — `contain` scale, margin
   clamp bounds, signature-zone sizing/position, optical-offset application. Style mirrors existing
   `print-assets-prepare.ts` validator tests.
-- **End-to-end on one design:** `npm run print-assets:compose --product fap01` → inspect composed
-  master + `proof-*.jpg` → existing `prepare/upload/verify/publish` →
+- **End-to-end on one design:** `npm run print-assets:compose --product fap01` → inspect the
+  per-profile derivatives + `proof-*.jpg` → existing `upload/verify/publish` →
   `npm run print-assets:sandbox-matrix --product fap01` for a real Prodigi sandbox order per profile
   (the physical fidelity gate).
 - **Repo gates:** `npm run typecheck`, `npm run test`, `npm run lint`.
@@ -180,5 +186,5 @@ iteration-with-the-artist time dominates, not code — budget ~1 extra day per a
   `scripts/lib/prepare-derivatives.ts`).
 - New `scripts/print-assets-compose.ts` + `print-assets:compose` in `package.json`.
 - New `config/print-composition/{productId}.json` — layer/layout config.
-- Possibly adjust `config/print-assets/{id}.json` crop config if the composed canvas changes per-profile
-  crop geometry (expected minimal).
+- `config/print-assets/{id}.json` — per-profile `crop` entries go unused for composed products; the
+  `gallery` section still applies.

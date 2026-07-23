@@ -103,7 +103,10 @@ export function containDimensions(
  * Resolve the artwork + signature rectangles for one print-area canvas. The artwork
  * is `contain`-fit (always fully visible, never cropped), horizontally centred, with
  * the [artwork + gap + signature] block vertically centred inside the margin'd region.
- * `opticalOffset` nudges the artwork only — the signature stays canvas-centred.
+ * `opticalOffset.x` nudges the artwork only (the signature stays horizontally
+ * canvas-centred); `opticalOffset.y` moves the whole block — the signature keeps
+ * exactly the clamped gap below the artwork, so a vertical nudge can never
+ * collide the two.
  */
 export function composeLayout(
   canvas: { width: number; height: number },
@@ -149,20 +152,23 @@ export function composeLayout(
 
   const sigW = Math.round(sigH * signature.aspect);
 
-  // Optical offset nudges the artwork; clamp so it never leaves the canvas.
+  // Optical offset nudges the artwork; the signature tracks it vertically at exactly
+  // sigGap, so clamp artTop to keep the whole [artwork + gap + signature] block on canvas.
   const artW = Math.max(1, Math.min(contained.width, w));
   const artH = Math.max(1, Math.min(contained.height, h));
   const artLeft = Math.round(
     clampPx((w - artW) / 2 + config.opticalOffset.x * w, 0, w - artW),
   );
-  const artTop = Math.round(clampPx(blockTop + config.opticalOffset.y * h, 0, h - artH));
+  const artTop = Math.round(
+    clampPx(blockTop + config.opticalOffset.y * h, 0, Math.floor(h - artH - sigGap - sigH)),
+  );
 
   return {
     canvas: { width: w, height: h },
     artwork: { left: artLeft, top: artTop, width: artW, height: artH },
     signature: {
       left: Math.round((w - sigW) / 2),
-      top: Math.round(blockTop + artH + sigGap),
+      top: Math.round(artTop + artH + sigGap),
       width: sigW,
       height: sigH,
     },
@@ -227,35 +233,68 @@ function fail(message: string): never {
   throw new Error(`Invalid print-composition config: ${message}`);
 }
 
+function finiteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+const LAYOUT_CLAMP_PAIRS = [
+  ['minMarginMm', 'maxMarginMm'],
+  ['minSignatureMm', 'maxSignatureMm'],
+  ['minSignatureGapMm', 'maxSignatureGapMm'],
+] as const;
+
 /**
  * Validate + normalise a raw config/print-composition/{productId}.json object.
  * `layout` and `background` are optional — they default to DEFAULT_LAYOUT /
  * #ded9c3 — so a per-product config can be as small as { product, artwork, signature }.
  *
- * Committed JSON loaded once per run: fail fast on the likely operator mistakes
- * (product mismatch, missing paths, bad hex) and trust the types for layout /
- * opticalOffset — a bad fraction surfaces in the geometry pass, not here.
+ * Committed JSON loaded once per run: fail fast, field-by-field, on operator
+ * mistakes (product mismatch, missing paths, bad hex, unknown/non-finite layout
+ * keys, min>max clamp ranges, malformed opticalOffset/bleedMm) — a bad value
+ * would otherwise surface as a cryptic NaN/Sharp error deep in the render pass.
  */
 export function parseCompositionConfig(
   raw: unknown,
   productId: string,
 ): PrintCompositionConfig {
-  const r = (raw ?? {}) as Partial<PrintCompositionConfig>;
+  const r = (raw ?? {}) as Record<string, unknown>;
   if (r.product !== productId) fail(`product must equal "${productId}"`);
   if (typeof r.artwork !== 'string' || !r.artwork) fail('artwork must be a non-empty path');
   if (typeof r.signature !== 'string' || !r.signature) fail('signature must be a non-empty path');
 
   const background = r.background ?? BACKGROUND_DEFAULT;
-  if (!/^#?[0-9a-f]{6}$/i.test(background)) fail(`background "${background}" must be #rrggbb`);
-  const bleedMm = typeof r.bleedMm === 'number' && r.bleedMm >= 0 ? r.bleedMm : 0;
+  if (typeof background !== 'string' || !/^#?[0-9a-f]{6}$/i.test(background)) {
+    fail(`background "${String(background)}" must be #rrggbb`);
+  }
+
+  if (r.bleedMm !== undefined && (!finiteNumber(r.bleedMm) || r.bleedMm < 0)) {
+    fail('bleedMm must be a number >= 0');
+  }
+
+  const rawLayout = r.layout ?? {};
+  if (typeof rawLayout !== 'object' || Array.isArray(rawLayout)) fail('layout must be an object');
+  for (const [key, value] of Object.entries(rawLayout)) {
+    if (!(key in DEFAULT_LAYOUT)) fail(`layout.${key} is not a layout field`);
+    if (!finiteNumber(value)) fail(`layout.${key} must be a finite number`);
+  }
+  const layout: CompositionLayout = { ...DEFAULT_LAYOUT, ...(rawLayout as Partial<CompositionLayout>) };
+  if (layout.dpi <= 0) fail('layout.dpi must be > 0');
+  for (const [min, max] of LAYOUT_CLAMP_PAIRS) {
+    if (layout[min] > layout[max]) fail(`layout.${min} must be <= layout.${max}`);
+  }
+
+  const rawOffset = r.opticalOffset ?? {};
+  if (typeof rawOffset !== 'object' || Array.isArray(rawOffset)) fail('opticalOffset must be an object');
+  const { x = 0, y = 0 } = rawOffset as { x?: unknown; y?: unknown };
+  if (!finiteNumber(x) || !finiteNumber(y)) fail('opticalOffset.x and .y must be finite numbers');
 
   return {
-    product: r.product,
+    product: productId,
     artwork: r.artwork,
     signature: r.signature,
     background: background.startsWith('#') ? background : `#${background}`,
-    layout: { ...DEFAULT_LAYOUT, ...r.layout },
-    opticalOffset: r.opticalOffset ?? { x: 0, y: 0 },
-    bleedMm,
+    layout,
+    opticalOffset: { x, y },
+    bleedMm: finiteNumber(r.bleedMm) ? r.bleedMm : 0,
   };
 }

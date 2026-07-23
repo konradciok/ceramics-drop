@@ -71,6 +71,9 @@ describe('composeDerivative', () => {
     const png = await composeDerivative(artworkPng, signatureSvg, { width: 3600, height: 4800 }, 'png', config);
     expect(jpg.format).toBe('jpg');
     expect(png.format).toBe('png');
+    // result.format merely echoes the argument — assert the actual encoding too.
+    expect((await sharp(jpg.buffer).metadata()).format).toBe('jpeg');
+    expect((await sharp(png.buffer).metadata()).format).toBe('png');
   });
 
   it('embeds an sRGB ICC profile', async () => {
