@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair, type JWTVerifyGetKey } from 'jose';
 import { createChunks, stringToBase64URL } from '@supabase/ssr';
 import {
   AUTH_ANTI_CACHE_HEADERS,
+  CHECKOUT_AUTH_REFRESH_TIMEOUT_MS,
   SB_AUTH_COOKIE_RE,
   applyAuthAntiCacheHeaders,
   authCookieName,
   readSessionFromCookieHeader,
+  resolveSessionWithRefresh,
   type AuthEnv,
 } from './session';
 
@@ -56,11 +58,18 @@ function cookieHeaderFor(session: Record<string, unknown>, opts?: { chunkSize?: 
   return chunks.map((c) => `${c.name}=${encodeURIComponent(c.value)}`).join('; ');
 }
 
-function sessionFor(accessToken: string, refreshToken: string | null = 'rt_test'): Record<string, unknown> {
+function sessionFor(
+  accessToken: string,
+  refreshToken: string | null = 'rt_test',
+  expiresAtSecs?: number,
+): Record<string, unknown> {
   return {
     access_token: accessToken,
     token_type: 'bearer',
     expires_in: 3600,
+    // supabase-js validates the stored session shape (expires_at included)
+    // before using it — the real @supabase/ssr cookie always carries it.
+    expires_at: expiresAtSecs ?? Math.floor(Date.now() / 1000) + 3600,
     refresh_token: refreshToken ?? undefined,
     user: { id: USER_ID },
   };
@@ -194,5 +203,62 @@ describe('readSessionFromCookieHeader', () => {
       needsRefresh: false,
     });
     expect((await readSessionFromCookieHeader(null, AUTH_ENV, { jwks })).hasAuthCookie).toBe(false);
+  });
+});
+
+describe('resolveSessionWithRefresh — refresh deadline (checkout must never stall)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  function enableAuthEnv() {
+    // resolveAuthEnv falls back to process.env outside a Workers context.
+    vi.stubEnv('SUPABASE_URL', SUPABASE_URL);
+    vi.stubEnv('SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_test');
+  }
+
+  it('keeps the checkout deadline tight enough to never be felt as an outage', () => {
+    expect(CHECKOUT_AUTH_REFRESH_TIMEOUT_MS).toBeGreaterThan(0);
+    expect(CHECKOUT_AUTH_REFRESH_TIMEOUT_MS).toBeLessThanOrEqual(3000);
+  });
+
+  it('a never-resolving refresh degrades an expired session to anonymous within the deadline', async () => {
+    enableAuthEnv();
+    // Supabase Auth "stalls": fetch hangs forever (rejection is the easy case —
+    // try/catch covers it; a hang is what the deadline exists for).
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<never>(() => {})));
+
+    const nowSecs = Math.floor(Date.now() / 1000);
+    const header = cookieHeaderFor(
+      sessionFor(await signToken({}, { expiresInSeconds: -120 }), 'rt_test', nowSecs - 120),
+    );
+    const started = Date.now();
+    const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
+    expect(Date.now() - started).toBeLessThan(1500);
+    expect(result).toEqual({ user: null, setCookies: [] });
+  });
+
+  it('a stalled refresh still returns the locally-verified user for an expiring token', async () => {
+    enableAuthEnv();
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<never>(() => {})));
+
+    const nowSecs = Math.floor(Date.now() / 1000);
+    const header = cookieHeaderFor(
+      sessionFor(await signToken({}, { expiresInSeconds: 30 }), 'rt_test', nowSecs + 30),
+    );
+    const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
+    expect(result.user?.id).toBe(USER_ID);
+    expect(result.setCookies).toEqual([]);
+  });
+
+  it('skips all network work for anonymous visitors (hanging fetch never consulted)', async () => {
+    enableAuthEnv();
+    const hangingFetch = vi.fn(() => new Promise<never>(() => {}));
+    vi.stubGlobal('fetch', hangingFetch);
+
+    const result = await resolveSessionWithRefresh('currency_pref=eur', { jwks, refreshTimeoutMs: 50 });
+    expect(result).toEqual({ user: null, setCookies: [] });
+    expect(hangingFetch).not.toHaveBeenCalled();
   });
 });

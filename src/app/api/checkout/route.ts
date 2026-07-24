@@ -15,7 +15,11 @@ import { printShippingOf } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
-import { applyAuthAntiCacheHeaders, resolveSessionWithRefresh } from '@/lib/auth/session';
+import {
+  applyAuthAntiCacheHeaders,
+  CHECKOUT_AUTH_REFRESH_TIMEOUT_MS,
+  resolveSessionWithRefresh,
+} from '@/lib/auth/session';
 import type { AuthCookie } from '@/lib/auth/supabase-server';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
@@ -58,12 +62,44 @@ export async function POST(req: Request) {
     typeof body.locale === 'string' && (VALID_LOCALES as readonly string[]).includes(body.locale)
       ? body.locale
       : 'pl';
+  const cookieHeader = req.headers.get('cookie') ?? '';
   // Currency is a per-request concern driven by the `currency_pref` cookie, not
   // the locale. Clamp to the launched, sellable currencies (pln/eur/gbp);
   // anything else maps to EUR.
-  const chargeCurrency = toChargeableCurrency(
-    currencyFromCookieHeader(locale, req.headers.get('cookie')),
-  );
+  const chargeCurrency = toChargeableCurrency(currencyFromCookieHeader(locale, cookieHeader));
+
+  // Customer accounts (§4.2): best-effort session resolve so a signed-in
+  // buyer's order carries user_id. Runs BEFORE any stateful work (reservation /
+  // PaymentIntent) and is bounded by a hard deadline, so Supabase Auth latency
+  // or an outage can never block payment — worst case this order is anonymous.
+  // Anonymous visitors skip on a cookie-presence check (no I/O); a fresh token
+  // verifies locally; an expired one gets ONE bounded refresh attempt — this
+  // matters for Apple private-relay users, whose past guest orders can never
+  // be email-backfilled, so checkout-time association is their only link.
+  // Rotated cookies (if any) must ride whichever response goes out below
+  // (every later return goes through `respond`).
+  let sessionUserId: string | null = null;
+  let authCookies: AuthCookie[] = [];
+  try {
+    const session = await resolveSessionWithRefresh(cookieHeader, {
+      refreshTimeoutMs: CHECKOUT_AUTH_REFRESH_TIMEOUT_MS,
+    });
+    sessionUserId = session.user?.id ?? null;
+    authCookies = session.setCookies;
+  } catch {
+    sessionUserId = null;
+    authCookies = [];
+  }
+  const respond = (payload: unknown, init?: ResponseInit): NextResponse => {
+    const response = NextResponse.json(payload, init);
+    if (authCookies.length > 0) {
+      for (const cookie of authCookies) {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
+      applyAuthAntiCacheHeaders(response.headers);
+    }
+    return response;
+  };
 
   const valid = await validateCart(body.ids, chargeCurrency);
   if (!valid.ok) {
@@ -71,7 +107,7 @@ export async function POST(req: Request) {
       valid.reason === 'print_asset_unavailable' ? 409 :
       valid.reason === 'print_asset_error' ? 503 :
       400;
-    return NextResponse.json({ error: valid.reason }, { status });
+    return respond({ error: valid.reason }, { status });
   }
 
   const ids = valid.items.map((i) => i.product_id);
@@ -88,12 +124,12 @@ export async function POST(req: Request) {
   let printAddress: PrintShippingAddress | undefined;
   if (hasPrints) {
     const delivery = validatePrintDelivery(body);
-    if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
+    if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
     ({ method, contact, address: printAddress } = delivery.delivery);
     address = printAddress;
   } else {
     const delivery = validateDelivery(body);
-    if (!delivery.ok) return NextResponse.json({ error: delivery.reason }, { status: 400 });
+    if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
     ({ method, contact, target_point, address } = delivery.delivery);
   }
   const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
@@ -103,7 +139,7 @@ export async function POST(req: Request) {
   // Print country allowlisting is part of validatePrintDelivery. InPost courier
   // remains domestic and must never inherit the print country list.
   if (!hasPrints && address && address.country_code !== 'PL') {
-    return NextResponse.json({ error: 'invalid_delivery' }, { status: 400 });
+    return respond({ error: 'invalid_delivery' }, { status: 400 });
   }
 
   const unitPrices = valid.items.map((i) => i.unit_price);
@@ -158,7 +194,7 @@ export async function POST(req: Request) {
   // docs/plans/ceramics-prints-separation/00-master.md #4). Reject before any
   // reservation is attempted.
   if (privateSaleToken && hasPrints) {
-    return NextResponse.json({ error: 'private_sale_prints_unsupported' }, { status: 400 });
+    return respond({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
 
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
@@ -190,7 +226,7 @@ export async function POST(req: Request) {
   // Reserve atomically BEFORE creating the PaymentIntent.
   if (privateSaleToken) {
     const sale = await loadActivePrivateSale(supabase, privateSaleToken);
-    if (!sale) return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+    if (!sale) return respond({ error: 'private_sale_invalid' }, { status: 410 });
     privateSaleId = sale.id;
     const { data: psConflicts, error: psErr } = await supabase.rpc('reserve_private_sale_pieces', {
       p_token: privateSaleToken,
@@ -198,13 +234,13 @@ export async function POST(req: Request) {
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
-    if (psErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (psErr) return respond({ error: 'reserve_failed' }, { status: 500 });
     const conflictArr = Array.isArray(psConflicts) ? (psConflicts as string[]) : [];
     if (conflictArr.includes(INVALID_TOKEN_SENTINEL)) {
-      return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+      return respond({ error: 'private_sale_invalid' }, { status: 410 });
     }
     if (conflictArr.length > 0) {
-      return NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 });
+      return respond({ error: 'unavailable', sold: conflictArr }, { status: 409 });
     }
   } else if (ceramicIds.length > 0) {
     const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
@@ -212,9 +248,9 @@ export async function POST(req: Request) {
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
-    if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (reserveErr) return respond({ error: 'reserve_failed' }, { status: 500 });
     if (Array.isArray(conflicts) && conflicts.length > 0) {
-      return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+      return respond({ error: 'unavailable', sold: conflicts }, { status: 409 });
     }
   }
 
@@ -224,7 +260,7 @@ export async function POST(req: Request) {
     console.error('checkout: STRIPE_PAYMENT_METHOD_CONFIGURATION_ID missing');
     Sentry.captureMessage('checkout_missing_pmc_secret');
     await releaseOwnHold();
-    return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    return respond({ error: 'stripe_failed' }, { status: 502 });
   }
   let paymentIntent;
   try {
@@ -275,7 +311,7 @@ export async function POST(req: Request) {
       // double-sell window. Report in-progress (409) so the client KEEPS its
       // attemptId; a retry click then replays onto the winner's order/PI
       // instead of starting a fresh attempt that 409s against its own hold.
-      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+      return respond({ error: 'checkout_in_progress' }, { status: 409 });
     }
     const stripeErrType =
       (err as { type?: string } | null)?.type ??
@@ -288,52 +324,23 @@ export async function POST(req: Request) {
       // deciding.
       const { status, lookupFailed } = await readAttemptStatus('after idempotency_error');
       if (lookupFailed) {
-        return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
       }
       if (status === 'pending') {
         // A live checkout for this attemptId already owns the hold (and
         // possibly a client_secret in flight) — releasing would double-sell.
         // Ask the client to reset its attemptId instead.
-        return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+        return respond({ error: 'order_conflict' }, { status: 409 });
       }
       // No live order for this attemptId — a prior attempt died before the
       // orders insert. Safe to release exactly like the generic case below.
       await releaseOwnHold();
-      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+      return respond({ error: 'stripe_failed' }, { status: 502 });
     }
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
     await releaseOwnHold();
-    return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    return respond({ error: 'stripe_failed' }, { status: 502 });
   }
-
-  const cookieHeader = req.headers.get('cookie') ?? '';
-
-  // Customer accounts (§4.2): best-effort session resolve so a signed-in
-  // buyer's order carries user_id. Fast local JWT verify; if expired, ONE
-  // refresh attempt — this matters for Apple private-relay users, whose past
-  // guest orders can never be email-backfilled, so checkout-time association
-  // is their only link. Rotated cookies (if any) must ride whichever response
-  // goes out below (attachAuthCookies on every later return). On any failure
-  // the order is simply anonymous — auth never blocks payment.
-  let sessionUserId: string | null = null;
-  let authCookies: AuthCookie[] = [];
-  try {
-    const session = await resolveSessionWithRefresh(cookieHeader);
-    sessionUserId = session.user?.id ?? null;
-    authCookies = session.setCookies;
-  } catch {
-    sessionUserId = null;
-    authCookies = [];
-  }
-  const attachAuthCookies = (response: NextResponse): NextResponse => {
-    if (authCookies.length > 0) {
-      for (const cookie of authCookies) {
-        response.cookies.set(cookie.name, cookie.value, cookie.options);
-      }
-      applyAuthAntiCacheHeaders(response.headers);
-    }
-    return response;
-  };
 
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
   const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
@@ -396,7 +403,7 @@ export async function POST(req: Request) {
     // on a failed lookup canceling or releasing could kill a payment mid-flight.
     const { status, lookupFailed } = await readAttemptStatus('on duplicate insert');
     if (lookupFailed) {
-      return attachAuthCookies(NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 }));
+      return respond({ error: 'checkout_in_progress' }, { status: 409 });
     }
     if (status === 'pending') {
       replay = true;
@@ -423,7 +430,7 @@ export async function POST(req: Request) {
           cancelErr,
         );
       }
-      return attachAuthCookies(NextResponse.json({ error: 'order_conflict' }, { status: 409 }));
+      return respond({ error: 'order_conflict' }, { status: 409 });
     }
   }
   let itemsErr = null;
@@ -455,7 +462,7 @@ export async function POST(req: Request) {
       await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
     }
     await releaseOwnHold();
-    return attachAuthCookies(NextResponse.json({ error: 'order_persist_failed' }, { status: 500 }));
+    return respond({ error: 'order_persist_failed' }, { status: 500 });
   }
 
   // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
@@ -482,5 +489,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return attachAuthCookies(NextResponse.json({ client_secret: paymentIntent.client_secret }));
+  return respond({ client_secret: paymentIntent.client_secret });
 }

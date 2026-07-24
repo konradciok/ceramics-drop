@@ -108,18 +108,26 @@ export async function handleProdigiCallback(
 
   // 4. Resolve the local order. If the prodigi_orders mapping is missing (callback
   // raced processJob's persist step), fall back to merchantReference — we set it
-  // to the internal order id at submission.
-  const { data: existingPO, error: poErr } = await supabase
+  // to the internal order id at submission. The persisted tracking columns ride
+  // along for the monotonic merge below.
+  const { data: existingData, error: poErr } = await supabase
     .from('prodigi_orders')
-    .select('order_id')
+    .select('order_id, carrier, tracking_number, tracking_url, shipped_at')
     .eq('prodigi_order_id', prodigiOrderId)
     .maybeSingle();
   if (poErr) {
     await releaseClaim();
     return { status: 500, message: 'DB error on prodigi_orders lookup' };
   }
+  const existingPO = existingData as {
+    order_id: string | null;
+    carrier: string | null;
+    tracking_number: string | null;
+    tracking_url: string | null;
+    shipped_at: string | null;
+  } | null;
 
-  let orderId = existingPO?.order_id as string | undefined;
+  let orderId = existingPO?.order_id ?? undefined;
   if (!orderId && prodigiOrder.merchantReference) {
     const { data: orderRow } = await supabase
       .from('orders')
@@ -149,14 +157,18 @@ export async function handleProdigiCallback(
       prodigi_status_stage: newStage,
       prodigi_raw_json: prodigiOrder,
       updated_at: now,
-      carrier: shipment?.carrier?.name ?? null,
-      tracking_number: shipment?.tracking?.number ?? null,
-      // Untrusted external URL — persist only absolute https:// values.
-      tracking_url: httpsUrlOrNull(shipment?.tracking?.url),
+      // Monotonic per-field merge: a later callback whose re-fetched order is
+      // sparse (no shipments, or a shipment missing a field) must never erase
+      // previously persisted tracking — fresh data wins only where present.
+      carrier: shipment?.carrier?.name ?? existingPO?.carrier ?? null,
+      tracking_number: shipment?.tracking?.number ?? existingPO?.tracking_number ?? null,
+      // Untrusted external URL — persist only absolute https:// values (the
+      // stored fallback was validated at its own write; re-gated for safety).
+      tracking_url: httpsUrlOrNull(shipment?.tracking?.url) ?? httpsUrlOrNull(existingPO?.tracking_url),
       // Purely Prodigi's dispatchDate — NEVER now(): a replayed/late callback
       // must not shift the ship date to callback-processing time. An absent or
-      // unparsable date stays NULL (the UI shows status without a date).
-      shipped_at: parseShippedAt(shipment?.dispatchDate),
+      // unparsable date keeps the stored value, else stays NULL.
+      shipped_at: parseShippedAt(shipment?.dispatchDate) ?? existingPO?.shipped_at ?? null,
     },
     { onConflict: 'prodigi_order_id' },
   );

@@ -62,11 +62,10 @@ The Apple client secret **expires after at most 6 months**; when it lapses, *onl
 
 1. **Phase 0**: provider consoles + Supabase config above; resolve the plan's §13 open decisions.
 2. Ship the migrations (dark — the columns are unused until auth goes live).
-3. Ship the code **with the secret unset**: `/api/auth/*` 404, `/konto` renders "unavailable" (the `@ci` E2E suite pins this contract), storefront provably unaffected.
-4. Set `SUPABASE_PUBLISHABLE_KEY` on a **preview/staging** deployment (its `SUPABASE_URL` must point at a project with the providers configured) and walk the manual round-trip checklist (§3 below) for Google **and** Apple.
-5. `wrangler secret put SUPABASE_PUBLISHABLE_KEY` in production → feature live but unadvertised → smoke-test with a real account.
-6. The header/nav `Konto` entry + return-page link are the public launch.
-7. Kill switch at every step: delete the secret (sessions degrade to signed-out; checkout unaffected).
+3. Ship the code **with the secret unset**: `/api/auth/*` 404, `/konto` renders "unavailable" (the `@ci` E2E suite pins this contract), storefront provably unaffected. Note: the header/nav `Konto` entry ships with the code and is visible while dark — it points at the calm "unavailable" notice (accepted trade-off; the alternative, an env-conditional header, would break the prerendered Polish tree).
+4. Set `SUPABASE_PUBLISHABLE_KEY` on a **preview/staging** deployment (its `SUPABASE_URL` must point at a project with the providers configured) and walk the manual round-trip checklist (§3 below) for Google **and** Apple. All "unadvertised" verification happens here — production has no quiet stage.
+5. `wrangler secret put SUPABASE_PUBLISHABLE_KEY` in production → **this is the public launch**: the nav entry is already live, so the moment the secret is set the sign-in flow is publicly discoverable. Enable only after the preview checklist is fully green, then immediately smoke-test production with a real account.
+6. Kill switch at every step: delete the secret (sessions degrade to signed-out; checkout unaffected; the nav entry reverts to the "unavailable" notice).
 
 ## 3. Manual OAuth round-trip checklist (per environment)
 

@@ -12,8 +12,12 @@ vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext: () => ({ env: E
 
 import { POST } from './route';
 
-function signoutRequest(headers: Record<string, string> = {}) {
-  return new Request('https://anna-ciok.studio/api/auth/signout', { method: 'POST', headers });
+function signoutRequest(headers: Record<string, string> = {}, fields?: Record<string, string>) {
+  return new Request('https://anna-ciok.studio/api/auth/signout', {
+    method: 'POST',
+    headers,
+    body: fields ? new URLSearchParams(fields) : undefined,
+  });
 }
 
 describe('POST /api/auth/signout', () => {
@@ -39,6 +43,25 @@ describe('POST /api/auth/signout', () => {
     expect(res.headers.get('location')).toBe('https://anna-ciok.studio/');
     for (const [key, value] of Object.entries(AUTH_ANTI_CACHE_HEADERS)) {
       expect(res.headers.get(key)).toBe(value);
+    }
+  });
+
+  it.each([
+    ['pl', '/konto'],
+    ['en', '/en/konto'],
+    ['es', '/es/konto'],
+    ['de', '/de/konto'],
+  ])('preserves the %s storefront locale via the sanitized next field', async (_locale, next) => {
+    const res = await POST(signoutRequest({ origin: 'https://anna-ciok.studio' }, { next }));
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe(`https://anna-ciok.studio${next}`);
+  });
+
+  it('falls back to / for an unsafe or external next value', async () => {
+    for (const next of ['https://evil.example/x', '//evil.example', '/\\evil.example', 'javascript:alert(1)']) {
+      const res = await POST(signoutRequest({ origin: 'https://anna-ciok.studio' }, { next }));
+      expect(res.status, `next=${next}`).toBe(303);
+      expect(res.headers.get('location'), `next=${next}`).toBe('https://anna-ciok.studio/');
     }
   });
 });

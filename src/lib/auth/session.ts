@@ -245,16 +245,31 @@ export type SessionResolution = {
 };
 
 /**
+ * Hard deadline for the checkout inline refresh. Checkout must resolve the
+ * session BEFORE any stateful work and can afford at most a brief wait for
+ * Supabase Auth — a stalled request degrades the order to anonymous instead
+ * of blocking payment (auth must never block payment).
+ */
+export const CHECKOUT_AUTH_REFRESH_TIMEOUT_MS = 2000;
+
+/**
  * Resolve the session from a request cookie header, refreshing via Supabase
  * when the fast local verify can't produce a user (expired / expiring / key
  * rotation). Callers MUST forward `setCookies` onto their response (plus the
  * anti-cache headers) or the rotated refresh token is lost and the browser's
  * copy turns stale. On any failure the result degrades to signed-out — auth
  * must never block payment or a page render.
+ *
+ * `refreshTimeoutMs` bounds the network refresh: `try/catch` absorbs a
+ * rejected request but not a STALLED one, so latency-sensitive callers
+ * (checkout) pass a deadline. On timeout the local fast-path result stands —
+ * a valid-but-expiring token still yields its verified user, an expired one
+ * reads anonymous — and any cookies a late completion rotates are dropped
+ * (absorbed by the refresh-token reuse interval; worst case is a re-login).
  */
 export async function resolveSessionWithRefresh(
   cookieHeader: string | null,
-  opts?: { jwks?: JWTVerifyGetKey; now?: number },
+  opts?: { jwks?: JWTVerifyGetKey; now?: number; refreshTimeoutMs?: number },
 ): Promise<SessionResolution> {
   const none: SessionResolution = { user: null, setCookies: [] };
   try {
@@ -266,28 +281,49 @@ export async function resolveSessionWithRefresh(
     if (!read.needsRefresh) return none;
 
     // One network refresh; rotated cookies are buffered for the caller.
-    const { createAuthServerClient } = await import('./supabase-server');
-    const setCookies: SessionResolution['setCookies'] = [];
-    const supabase = createAuthServerClient(authEnv, {
-      cookieHeader,
-      onSetCookies: (cookies) => setCookies.push(...cookies),
-    });
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user?.id) return { user: null, setCookies };
-    const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
-    return {
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? null,
-        name:
-          typeof metadata.full_name === 'string' && metadata.full_name
-            ? metadata.full_name
-            : typeof metadata.name === 'string' && metadata.name
-              ? metadata.name
-              : null,
-      },
-      setCookies,
+    const refresh = async (): Promise<SessionResolution> => {
+      const { createAuthServerClient } = await import('./supabase-server');
+      const setCookies: SessionResolution['setCookies'] = [];
+      const supabase = createAuthServerClient(authEnv, {
+        cookieHeader,
+        onSetCookies: (cookies) => setCookies.push(...cookies),
+      });
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data?.user?.id) return { user: null, setCookies };
+      const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+      return {
+        user: {
+          id: data.user.id,
+          email: data.user.email ?? null,
+          name:
+            typeof metadata.full_name === 'string' && metadata.full_name
+              ? metadata.full_name
+              : typeof metadata.name === 'string' && metadata.name
+                ? metadata.name
+                : null,
+        },
+        setCookies,
+      };
     };
+
+    if (opts?.refreshTimeoutMs === undefined) return await refresh();
+
+    const refreshPromise = refresh();
+    // The losing branch of the race must never surface as an unhandled rejection.
+    refreshPromise.catch(() => {});
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const raced = await Promise.race([
+        refreshPromise,
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), opts.refreshTimeoutMs);
+        }),
+      ]);
+      // Deadline hit → fall back to the local fast-path result, no cookies.
+      return raced ?? { user: read.user, setCookies: [] };
+    } finally {
+      clearTimeout(timer);
+    }
   } catch {
     return none;
   }
