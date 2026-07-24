@@ -54,9 +54,12 @@ export default async function KontoPage({ params, searchParams }: Props) {
 
   const user = await getSessionUser();
 
+  // Locale-aware account path — post-login destination for the sign-in forms
+  // AND post-signout destination (both routes re-sanitize it server-side).
+  const kontoPath = locale === 'pl' ? '/konto' : `/${locale}/konto`;
+
   if (!user) {
     const { auth_error } = await searchParams;
-    const nextPath = locale === 'pl' ? '/konto' : `/${locale}/konto`;
     return (
       <main>
         <section className="page-head">
@@ -68,7 +71,7 @@ export default async function KontoPage({ params, searchParams }: Props) {
           </div>
         </section>
         <div className="account-wrap">
-          <SignInPanel next={nextPath} showError={Boolean(auth_error)} />
+          <SignInPanel next={kontoPath} showError={Boolean(auth_error)} />
         </div>
       </main>
     );
@@ -92,7 +95,7 @@ export default async function KontoPage({ params, searchParams }: Props) {
             <strong>{user.name ?? user.email ?? t('account.heading')}</strong>
             {user.email && <span>{user.email}</span>}
           </div>
-          <SignOutButton />
+          <SignOutButton next={kontoPath} />
         </div>
 
         <div className="account-panel">

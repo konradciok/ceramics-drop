@@ -64,9 +64,8 @@ The Apple client secret **expires after at most 6 months**; when it lapses, *onl
 2. Ship the migrations (dark — the columns are unused until auth goes live).
 3. Ship the code **with the secret unset**: `/api/auth/*` 404, `/konto` renders "unavailable" (the `@ci` E2E suite pins this contract), storefront provably unaffected.
 4. Set `SUPABASE_PUBLISHABLE_KEY` on a **preview/staging** deployment (its `SUPABASE_URL` must point at a project with the providers configured) and walk the manual round-trip checklist (§3 below) for Google **and** Apple.
-5. `wrangler secret put SUPABASE_PUBLISHABLE_KEY` in production → feature live but unadvertised → smoke-test with a real account.
-6. The header/nav `Konto` entry + return-page link are the public launch.
-7. Kill switch at every step: delete the secret (sessions degrade to signed-out; checkout unaffected).
+5. `wrangler secret put SUPABASE_PUBLISHABLE_KEY` in production — **this IS the public launch.** The header `Konto` entry and the return-page link are static (deliberately not session/env-aware, to keep the prerendered tree static) and ship with the code: before the key is set they lead to the calm "unavailable" panel; the moment it is set, accounts are publicly discoverable. There is no "live but unadvertised" stage — which is why step 4's full preview walk-through of both providers comes first. Smoke-test with a real account immediately after setting the secret.
+6. Kill switch at every step: delete the secret (sessions degrade to signed-out; checkout unaffected; the entry points fall back to the "unavailable" panel).
 
 ## 3. Manual OAuth round-trip checklist (per environment)
 

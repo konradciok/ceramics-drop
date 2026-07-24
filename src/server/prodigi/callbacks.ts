@@ -142,6 +142,21 @@ export async function handleProdigiCallback(
   const shipments = prodigiOrder.shipments ?? [];
   const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
 
+  // Tracking persistence is MONOTONIC: a later callback whose re-fetched order
+  // is sparse (no shipments yet, or a shipment missing a field) must not erase
+  // values an earlier callback persisted. Absent/unusable fields are OMITTED
+  // from the upsert payload — PostgREST only updates the columns present — so
+  // the stored value survives; a present value still overwrites (late tracking
+  // upgrades, corrected URLs propagate).
+  const carrier = shipment?.carrier?.name ?? null;
+  const trackingNumber = shipment?.tracking?.number ?? null;
+  // Untrusted external URL — persist only absolute https:// values.
+  const trackingUrl = httpsUrlOrNull(shipment?.tracking?.url);
+  // Purely Prodigi's dispatchDate — NEVER now(): a replayed/late callback
+  // must not shift the ship date to callback-processing time. An absent or
+  // unparsable date stays NULL (the UI shows status without a date).
+  const shippedAt = parseShippedAt(shipment?.dispatchDate);
+
   const { error: upErr } = await supabase.from('prodigi_orders').upsert(
     {
       order_id: orderId,
@@ -149,14 +164,10 @@ export async function handleProdigiCallback(
       prodigi_status_stage: newStage,
       prodigi_raw_json: prodigiOrder,
       updated_at: now,
-      carrier: shipment?.carrier?.name ?? null,
-      tracking_number: shipment?.tracking?.number ?? null,
-      // Untrusted external URL — persist only absolute https:// values.
-      tracking_url: httpsUrlOrNull(shipment?.tracking?.url),
-      // Purely Prodigi's dispatchDate — NEVER now(): a replayed/late callback
-      // must not shift the ship date to callback-processing time. An absent or
-      // unparsable date stays NULL (the UI shows status without a date).
-      shipped_at: parseShippedAt(shipment?.dispatchDate),
+      ...(carrier ? { carrier } : {}),
+      ...(trackingNumber ? { tracking_number: trackingNumber } : {}),
+      ...(trackingUrl ? { tracking_url: trackingUrl } : {}),
+      ...(shippedAt ? { shipped_at: shippedAt } : {}),
     },
     { onConflict: 'prodigi_order_id' },
   );

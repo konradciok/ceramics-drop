@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair, type JWTVerifyGetKey } from 'jose';
 import { createChunks, stringToBase64URL } from '@supabase/ssr';
 import {
@@ -7,8 +7,16 @@ import {
   applyAuthAntiCacheHeaders,
   authCookieName,
   readSessionFromCookieHeader,
+  resolveSessionWithRefresh,
   type AuthEnv,
 } from './session';
+
+// resolveSessionWithRefresh imports the Supabase client factory lazily —
+// intercept it so the refresh path is controllable (hang / succeed) offline.
+const { createAuthServerClientMock } = vi.hoisted(() => ({
+  createAuthServerClientMock: vi.fn(),
+}));
+vi.mock('./supabase-server', () => ({ createAuthServerClient: createAuthServerClientMock }));
 
 const SUPABASE_URL = 'https://testref.supabase.co';
 const AUTH_ENV: AuthEnv = { supabaseUrl: SUPABASE_URL, publishableKey: 'sb_publishable_test', workerOrigin: null };
@@ -194,5 +202,59 @@ describe('readSessionFromCookieHeader', () => {
       needsRefresh: false,
     });
     expect((await readSessionFromCookieHeader(null, AUTH_ENV, { jwks })).hasAuthCookie).toBe(false);
+  });
+});
+
+describe('resolveSessionWithRefresh — hard deadline (checkout P1)', () => {
+  // No Workers ALS in vitest → resolveAuthEnv falls back to process.env.
+  beforeEach(() => {
+    vi.stubEnv('SUPABASE_URL', SUPABASE_URL);
+    vi.stubEnv('SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_test');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    createAuthServerClientMock.mockReset();
+  });
+
+  it('degrades a never-resolving refresh to signed-out at the deadline', async () => {
+    createAuthServerClientMock.mockReturnValue({
+      auth: { getUser: () => new Promise(() => {}) }, // stalled Supabase Auth
+    });
+    const header = cookieHeaderFor(sessionFor(await signToken({}, { expiresInSeconds: -120 })));
+    const started = Date.now();
+    const res = await resolveSessionWithRefresh(header, { jwks, timeoutMs: 50 });
+    expect(res).toEqual({ user: null, setCookies: [] });
+    // Bounded: resolves at ~the deadline, not the (infinite) refresh.
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(createAuthServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refresh that finishes inside the deadline still returns the user + rotated cookies', async () => {
+    const rotated = { name: COOKIE_NAME, value: 'rotated', options: { path: '/' } };
+    createAuthServerClientMock.mockImplementation(
+      (_env: AuthEnv, io: { onSetCookies: (c: unknown[]) => void }) => {
+        io.onSetCookies([rotated]);
+        return {
+          auth: {
+            getUser: async () => ({
+              data: { user: { id: USER_ID, email: 'buyer@example.com', user_metadata: { full_name: 'Test Buyer' } } },
+              error: null,
+            }),
+          },
+        };
+      },
+    );
+    const header = cookieHeaderFor(sessionFor(await signToken({}, { expiresInSeconds: -120 })));
+    const res = await resolveSessionWithRefresh(header, { jwks, timeoutMs: 1_000 });
+    expect(res.user).toEqual({ id: USER_ID, email: 'buyer@example.com', name: 'Test Buyer' });
+    expect(res.setCookies).toEqual([rotated]);
+  });
+
+  it('a locally-valid session never touches the network refresh path', async () => {
+    const header = cookieHeaderFor(sessionFor(await signToken()));
+    const res = await resolveSessionWithRefresh(header, { jwks, timeoutMs: 50 });
+    expect(res.user?.id).toBe(USER_ID);
+    expect(res.setCookies).toEqual([]);
+    expect(createAuthServerClientMock).not.toHaveBeenCalled();
   });
 });

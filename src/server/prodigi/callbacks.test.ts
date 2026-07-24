@@ -70,6 +70,7 @@ function setup(opts: {
     shippingClaims: [] as Record<string, unknown>[],
     jobUpdates: [] as Record<string, unknown>[],
     eventUpdates: [] as Record<string, unknown>[],
+    upserts: [] as Record<string, unknown>[],
   };
   mockFrom.mockImplementation((table: string) => {
     if (table === 'webhook_events') {
@@ -86,7 +87,10 @@ function setup(opts: {
       return {
         select: () =>
           makeChain({ data: opts.poRow !== undefined ? opts.poRow : { order_id: 'o1' }, error: null }),
-        upsert: () => makeChain({ error: null }),
+        upsert: (p: Record<string, unknown>) => {
+          calls.upserts.push(p);
+          return makeChain({ error: null });
+        },
         update: (p: Record<string, unknown>) => {
           calls.shippingClaims.push(p);
           if (p.shipping_email_sent_at === null) return makeChain({ data: [], error: null }); // claim release
@@ -288,5 +292,88 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     expect(res.status).toBe(500);
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockShipEmail.mockResolvedValue(undefined);
+  });
+
+  it('a sparse later callback cannot erase previously persisted tracking', async () => {
+    const calls = setup();
+
+    // Callback 1: the re-fetched order carries full tracking.
+    mockGetOrder.mockResolvedValueOnce(prodigiOrder('Complete'));
+    expect((await handleProdigiCallback(callbackBody(), ENV)).status).toBe(200);
+
+    // Callback 2 (new event id): the re-fetched order has no shipments at all.
+    mockGetOrder.mockResolvedValueOnce({
+      order: { ...prodigiOrder('Complete').order, shipments: [] },
+    });
+    expect((await handleProdigiCallback({ ...callbackBody(), id: 'evt-2' }, ENV)).status).toBe(200);
+
+    expect(calls.upserts).toHaveLength(2);
+    expect(calls.upserts[0]).toMatchObject({
+      carrier: 'dpd',
+      tracking_number: 'TRK123',
+      tracking_url: 'https://track.example.com/TRK123',
+    });
+    // The sparse payload OMITS every tracking column — PostgREST only updates
+    // columns present in the payload, so the values from callback 1 survive.
+    for (const column of ['carrier', 'tracking_number', 'tracking_url', 'shipped_at']) {
+      expect(calls.upserts[1]).not.toHaveProperty(column);
+    }
+    // Status/raw snapshot still refresh on every callback.
+    expect(calls.upserts[1]).toMatchObject({ prodigi_status_stage: 'Complete', order_id: 'o1' });
+  });
+
+  it('omits (never nulls) a non-https tracking URL while keeping the number', async () => {
+    const calls = setup();
+    mockGetOrder.mockResolvedValueOnce({
+      order: {
+        id: 'pr_1',
+        merchantReference: 'o1',
+        status: { stage: 'Complete' },
+        items: [],
+        shipments: [
+          {
+            id: 'shp_1',
+            status: 'Shipped',
+            carrier: { name: 'dpd', service: 'Standard' },
+            tracking: { number: 'TRK123', url: 'http://insecure.example.com/TRK123' },
+          },
+        ],
+      },
+    });
+
+    expect((await handleProdigiCallback(callbackBody(), ENV)).status).toBe(200);
+    expect(calls.upserts[0]).toMatchObject({ tracking_number: 'TRK123' });
+    expect(calls.upserts[0]).not.toHaveProperty('tracking_url');
+  });
+
+  it('persists shipped_at from a parseable Prodigi dispatchDate (and only then)', async () => {
+    const calls = setup();
+    mockGetOrder.mockResolvedValueOnce({
+      order: {
+        id: 'pr_1',
+        merchantReference: 'o1',
+        status: { stage: 'Complete' },
+        items: [],
+        shipments: [
+          {
+            id: 'shp_1',
+            status: 'Shipped',
+            carrier: { name: 'dpd', service: 'Standard' },
+            tracking: { number: 'TRK123', url: 'https://track.example.com/TRK123' },
+            dispatchDate: '2026-07-20T10:00:00.000Z',
+          },
+        ],
+      },
+    });
+
+    expect((await handleProdigiCallback(callbackBody(), ENV)).status).toBe(200);
+    expect(calls.upserts[0]).toMatchObject({ shipped_at: '2026-07-20T10:00:00.000Z' });
   });
 });

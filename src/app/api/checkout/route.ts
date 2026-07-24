@@ -26,6 +26,10 @@ export const dynamic = 'force-dynamic';
 
 const RESERVE_TTL_SECS = 900; // 15-minute hold
 const PG_UNIQUE_VIOLATION = '23505';
+// Hard deadline for the best-effort session resolve (§4.2). Generous against
+// a normal Supabase Auth round-trip yet strict enough that an auth outage
+// adds bounded latency and an anonymous order — never a stalled checkout.
+const CHECKOUT_AUTH_TIMEOUT_MS = 2_000;
 const checkoutRateLimiter = createCheckoutRateLimiter();
 // x-forwarded-for is spoofable off-Cloudflare, so only trust it outside production.
 const TRUST_FORWARDED_IP = process.env.NODE_ENV !== 'production';
@@ -161,6 +165,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
 
+  const cookieHeader = req.headers.get('cookie') ?? '';
+
+  // Customer accounts (§4.2): best-effort session resolve so a signed-in
+  // buyer's order carries user_id. Fast local JWT verify; if expired, ONE
+  // refresh attempt — this matters for Apple private-relay users, whose past
+  // guest orders can never be email-backfilled, so checkout-time association
+  // is their only link. Deliberately placed BEFORE any reservation or
+  // PaymentIntent and bounded by a hard deadline: auth work must never sit
+  // between money state and the response, and a Supabase Auth stall degrades
+  // this order to anonymous instead of blocking payment. Rotated cookies (if
+  // any) must ride whichever response goes out below (attachAuthCookies on
+  // every later return); a timed-out refresh forfeits its rotation instead
+  // (the browser keeps its previous refresh token).
+  let sessionUserId: string | null = null;
+  let authCookies: AuthCookie[] = [];
+  try {
+    const session = await resolveSessionWithRefresh(cookieHeader, {
+      timeoutMs: CHECKOUT_AUTH_TIMEOUT_MS,
+    });
+    sessionUserId = session.user?.id ?? null;
+    authCookies = session.setCookies;
+  } catch {
+    sessionUserId = null;
+    authCookies = [];
+  }
+  const attachAuthCookies = (response: NextResponse): NextResponse => {
+    if (authCookies.length > 0) {
+      for (const cookie of authCookies) {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
+      applyAuthAntiCacheHeaders(response.headers);
+    }
+    return response;
+  };
+
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
   // is status-scoped (only rows still `reserved` for this order id), so rows a
   // paid order already flipped to `sold` are never touched; private-sale holds
@@ -190,7 +229,7 @@ export async function POST(req: Request) {
   // Reserve atomically BEFORE creating the PaymentIntent.
   if (privateSaleToken) {
     const sale = await loadActivePrivateSale(supabase, privateSaleToken);
-    if (!sale) return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+    if (!sale) return attachAuthCookies(NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 }));
     privateSaleId = sale.id;
     const { data: psConflicts, error: psErr } = await supabase.rpc('reserve_private_sale_pieces', {
       p_token: privateSaleToken,
@@ -198,13 +237,13 @@ export async function POST(req: Request) {
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
-    if (psErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (psErr) return attachAuthCookies(NextResponse.json({ error: 'reserve_failed' }, { status: 500 }));
     const conflictArr = Array.isArray(psConflicts) ? (psConflicts as string[]) : [];
     if (conflictArr.includes(INVALID_TOKEN_SENTINEL)) {
-      return NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 });
+      return attachAuthCookies(NextResponse.json({ error: 'private_sale_invalid' }, { status: 410 }));
     }
     if (conflictArr.length > 0) {
-      return NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 });
+      return attachAuthCookies(NextResponse.json({ error: 'unavailable', sold: conflictArr }, { status: 409 }));
     }
   } else if (ceramicIds.length > 0) {
     const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
@@ -212,9 +251,9 @@ export async function POST(req: Request) {
       p_order_id: orderId,
       p_ttl_secs: RESERVE_TTL_SECS,
     });
-    if (reserveErr) return NextResponse.json({ error: 'reserve_failed' }, { status: 500 });
+    if (reserveErr) return attachAuthCookies(NextResponse.json({ error: 'reserve_failed' }, { status: 500 }));
     if (Array.isArray(conflicts) && conflicts.length > 0) {
-      return NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 });
+      return attachAuthCookies(NextResponse.json({ error: 'unavailable', sold: conflicts }, { status: 409 }));
     }
   }
 
@@ -224,7 +263,7 @@ export async function POST(req: Request) {
     console.error('checkout: STRIPE_PAYMENT_METHOD_CONFIGURATION_ID missing');
     Sentry.captureMessage('checkout_missing_pmc_secret');
     await releaseOwnHold();
-    return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    return attachAuthCookies(NextResponse.json({ error: 'stripe_failed' }, { status: 502 }));
   }
   let paymentIntent;
   try {
@@ -275,7 +314,7 @@ export async function POST(req: Request) {
       // double-sell window. Report in-progress (409) so the client KEEPS its
       // attemptId; a retry click then replays onto the winner's order/PI
       // instead of starting a fresh attempt that 409s against its own hold.
-      return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+      return attachAuthCookies(NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 }));
     }
     const stripeErrType =
       (err as { type?: string } | null)?.type ??
@@ -288,52 +327,23 @@ export async function POST(req: Request) {
       // deciding.
       const { status, lookupFailed } = await readAttemptStatus('after idempotency_error');
       if (lookupFailed) {
-        return NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 });
+        return attachAuthCookies(NextResponse.json({ error: 'checkout_in_progress' }, { status: 409 }));
       }
       if (status === 'pending') {
         // A live checkout for this attemptId already owns the hold (and
         // possibly a client_secret in flight) — releasing would double-sell.
         // Ask the client to reset its attemptId instead.
-        return NextResponse.json({ error: 'order_conflict' }, { status: 409 });
+        return attachAuthCookies(NextResponse.json({ error: 'order_conflict' }, { status: 409 }));
       }
       // No live order for this attemptId — a prior attempt died before the
       // orders insert. Safe to release exactly like the generic case below.
       await releaseOwnHold();
-      return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+      return attachAuthCookies(NextResponse.json({ error: 'stripe_failed' }, { status: 502 }));
     }
     // Release the hold if Stripe failed, so pieces don't get stuck reserved.
     await releaseOwnHold();
-    return NextResponse.json({ error: 'stripe_failed' }, { status: 502 });
+    return attachAuthCookies(NextResponse.json({ error: 'stripe_failed' }, { status: 502 }));
   }
-
-  const cookieHeader = req.headers.get('cookie') ?? '';
-
-  // Customer accounts (§4.2): best-effort session resolve so a signed-in
-  // buyer's order carries user_id. Fast local JWT verify; if expired, ONE
-  // refresh attempt — this matters for Apple private-relay users, whose past
-  // guest orders can never be email-backfilled, so checkout-time association
-  // is their only link. Rotated cookies (if any) must ride whichever response
-  // goes out below (attachAuthCookies on every later return). On any failure
-  // the order is simply anonymous — auth never blocks payment.
-  let sessionUserId: string | null = null;
-  let authCookies: AuthCookie[] = [];
-  try {
-    const session = await resolveSessionWithRefresh(cookieHeader);
-    sessionUserId = session.user?.id ?? null;
-    authCookies = session.setCookies;
-  } catch {
-    sessionUserId = null;
-    authCookies = [];
-  }
-  const attachAuthCookies = (response: NextResponse): NextResponse => {
-    if (authCookies.length > 0) {
-      for (const cookie of authCookies) {
-        response.cookies.set(cookie.name, cookie.value, cookie.options);
-      }
-      applyAuthAntiCacheHeaders(response.headers);
-    }
-    return response;
-  };
 
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
   const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;

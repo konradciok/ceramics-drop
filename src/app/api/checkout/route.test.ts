@@ -110,6 +110,12 @@ vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
 const sentryCaptureMessage = vi.fn();
 vi.mock('@sentry/nextjs', () => ({ captureMessage: sentryCaptureMessage, captureException: vi.fn() }));
 
+// Customer-account session (P1): intercept the Supabase client factory that
+// src/lib/auth/session.ts lazily imports on its network-refresh path. Only
+// tests that opt into the auth env (SUPABASE_* in cfEnv) ever reach it.
+const createAuthServerClientMock = vi.fn();
+vi.mock('@/lib/auth/supabase-server', () => ({ createAuthServerClient: createAuthServerClientMock }));
+
 // Mutable so a test can drop the PMC secret; reset in beforeEach.
 let cfEnv: Record<string, string | undefined> = { STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_env' };
 vi.mock('@opennextjs/cloudflare', () => ({
@@ -966,6 +972,98 @@ describe('POST /api/checkout', () => {
     const res2 = await POST(makeReq());
     expect(res2.status).toBe(409);
     expect(await res2.json()).toEqual({ error: 'order_conflict' });
+  });
+
+  describe('customer-account session (P1: auth can never block payment)', () => {
+    // An sb- session cookie whose access token fails local verification but
+    // carries a refresh token — exactly the state that triggers the ONE
+    // network refresh inside resolveSessionWithRefresh.
+    const EXPIRED_SESSION_COOKIE = `sb-testref-auth-token=${encodeURIComponent(
+      JSON.stringify({ access_token: 'not-a-jwt', refresh_token: 'rt_1' }),
+    )}`;
+    const withAuthEnv = () => {
+      cfEnv = {
+        ...cfEnv,
+        SUPABASE_URL: 'https://testref.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+      };
+    };
+    const postWithSessionCookie = async () => {
+      const { POST } = await import('./route');
+      return POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          headers: { cookie: EXPIRED_SESSION_COOKIE },
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+    };
+    const rotatedCookieRefresh = (userId: string) => {
+      createAuthServerClientMock.mockImplementationOnce((_env, io) => {
+        io.onSetCookies([
+          { name: 'sb-testref-auth-token', value: 'rotated-token', options: { path: '/', httpOnly: true } },
+        ]);
+        return {
+          auth: {
+            getUser: async () => ({
+              data: { user: { id: userId, email: 'buyer@example.com', user_metadata: {} } },
+              error: null,
+            }),
+          },
+        };
+      });
+    };
+
+    it('a never-resolving auth refresh degrades to an anonymous order at the deadline — checkout still completes', async () => {
+      withAuthEnv();
+      // Supabase Auth outage: the refresh call stalls forever.
+      createAuthServerClientMock.mockReturnValueOnce({
+        auth: { getUser: () => new Promise(() => {}) },
+      });
+      vi.useFakeTimers();
+      try {
+        const resPromise = postWithSessionCookie();
+        // Fire the route's hard deadline; everything else is mock microtasks.
+        await vi.advanceTimersByTimeAsync(2_500);
+        const res = await resPromise;
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+        // The normal reservation → PI → persistence path ran, just anonymously.
+        expect(reserveRpc).toHaveBeenCalled();
+        expect(createPaymentIntent).toHaveBeenCalled();
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('stamps user_id and forwards rotated cookies when the bounded refresh succeeds', async () => {
+      withAuthEnv();
+      rotatedCookieRefresh('user-acc-1');
+      const res = await postWithSessionCookie();
+      expect(res.status).toBe(200);
+      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user-acc-1' }));
+      expect(res.headers.get('set-cookie')).toContain('sb-testref-auth-token=rotated-token');
+      expect(res.headers.get('Cache-Control')).toBe('private, no-cache, no-store, must-revalidate, max-age=0');
+    });
+
+    it('rotated cookies ride an early 409 unavailable exit too (session resolve precedes the reserve)', async () => {
+      withAuthEnv();
+      rotatedCookieRefresh('user-acc-1');
+      reserveRpc.mockResolvedValueOnce({ data: ['k01'], error: null });
+      const res = await postWithSessionCookie();
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'unavailable', sold: ['k01'] });
+      expect(res.headers.get('set-cookie')).toContain('sb-testref-auth-token=rotated-token');
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('does no auth work at all while the feature gate is off (no SUPABASE_PUBLISHABLE_KEY)', async () => {
+      const res = await postWithSessionCookie();
+      expect(res.status).toBe(200);
+      expect(createAuthServerClientMock).not.toHaveBeenCalled();
+      expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
+    });
   });
 
   it('logs (does not throw) when the rollback PI cancel itself fails', async () => {

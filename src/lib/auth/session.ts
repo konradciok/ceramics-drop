@@ -251,44 +251,66 @@ export type SessionResolution = {
  * anti-cache headers) or the rotated refresh token is lost and the browser's
  * copy turns stale. On any failure the result degrades to signed-out — auth
  * must never block payment or a page render.
+ *
+ * With `timeoutMs` set, the WHOLE resolution (JWKS fetch, cookie parse,
+ * network refresh) races a hard deadline and degrades to signed-out when it
+ * fires — checkout uses this so a Supabase Auth stall can never block payment.
+ * A refresh that completes after the deadline forfeits its rotated cookies:
+ * the browser keeps its previous refresh token (tolerated by Supabase's
+ * rotation reuse window); worst case that session signs in again later.
  */
 export async function resolveSessionWithRefresh(
   cookieHeader: string | null,
-  opts?: { jwks?: JWTVerifyGetKey; now?: number },
+  opts?: { jwks?: JWTVerifyGetKey; now?: number; timeoutMs?: number },
 ): Promise<SessionResolution> {
   const none: SessionResolution = { user: null, setCookies: [] };
+  const work = (async (): Promise<SessionResolution> => {
+    try {
+      const authEnv = resolveAuthEnv();
+      if (!authEnv) return none;
+
+      const read = await readSessionFromCookieHeader(cookieHeader, authEnv, opts);
+      if (read.user && !read.needsRefresh) return { user: read.user, setCookies: [] };
+      if (!read.needsRefresh) return none;
+
+      // One network refresh; rotated cookies are buffered for the caller.
+      const { createAuthServerClient } = await import('./supabase-server');
+      const setCookies: SessionResolution['setCookies'] = [];
+      const supabase = createAuthServerClient(authEnv, {
+        cookieHeader,
+        onSetCookies: (cookies) => setCookies.push(...cookies),
+      });
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data?.user?.id) return { user: null, setCookies };
+      const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+      return {
+        user: {
+          id: data.user.id,
+          email: data.user.email ?? null,
+          name:
+            typeof metadata.full_name === 'string' && metadata.full_name
+              ? metadata.full_name
+              : typeof metadata.name === 'string' && metadata.name
+                ? metadata.name
+                : null,
+        },
+        setCookies,
+      };
+    } catch {
+      return none;
+    }
+  })();
+
+  const timeoutMs = opts?.timeoutMs;
+  if (timeoutMs === undefined) return work;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<SessionResolution>((resolve) => {
+    timer = setTimeout(() => resolve(none), timeoutMs);
+  });
   try {
-    const authEnv = resolveAuthEnv();
-    if (!authEnv) return none;
-
-    const read = await readSessionFromCookieHeader(cookieHeader, authEnv, opts);
-    if (read.user && !read.needsRefresh) return { user: read.user, setCookies: [] };
-    if (!read.needsRefresh) return none;
-
-    // One network refresh; rotated cookies are buffered for the caller.
-    const { createAuthServerClient } = await import('./supabase-server');
-    const setCookies: SessionResolution['setCookies'] = [];
-    const supabase = createAuthServerClient(authEnv, {
-      cookieHeader,
-      onSetCookies: (cookies) => setCookies.push(...cookies),
-    });
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user?.id) return { user: null, setCookies };
-    const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
-    return {
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? null,
-        name:
-          typeof metadata.full_name === 'string' && metadata.full_name
-            ? metadata.full_name
-            : typeof metadata.name === 'string' && metadata.name
-              ? metadata.name
-              : null,
-      },
-      setCookies,
-    };
-  } catch {
-    return none;
+    // `work` never rejects (fail-closed above), so the race can only resolve.
+    return await Promise.race([work, deadline]);
+  } finally {
+    clearTimeout(timer);
   }
 }
