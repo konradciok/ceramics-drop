@@ -227,7 +227,8 @@ describe('resolveSessionWithRefresh — refresh deadline (checkout must never st
     enableAuthEnv();
     // Supabase Auth "stalls": fetch hangs forever (rejection is the easy case —
     // try/catch covers it; a hang is what the deadline exists for).
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<never>(() => {})));
+    const hangingFetch = vi.fn(() => new Promise<never>(() => {}));
+    vi.stubGlobal('fetch', hangingFetch);
 
     const nowSecs = Math.floor(Date.now() / 1000);
     const header = cookieHeaderFor(
@@ -237,11 +238,15 @@ describe('resolveSessionWithRefresh — refresh deadline (checkout must never st
     const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
     expect(Date.now() - started).toBeLessThan(1500);
     expect(result).toEqual({ user: null, setCookies: [] });
+    // The refresh must actually have been attempted (and stalled) — otherwise
+    // this test would pass on a short-circuit that never exercised the deadline.
+    expect(hangingFetch).toHaveBeenCalled();
   });
 
   it('a stalled refresh still returns the locally-verified user for an expiring token', async () => {
     enableAuthEnv();
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<never>(() => {})));
+    const hangingFetch = vi.fn(() => new Promise<never>(() => {}));
+    vi.stubGlobal('fetch', hangingFetch);
 
     const nowSecs = Math.floor(Date.now() / 1000);
     const header = cookieHeaderFor(
@@ -250,6 +255,7 @@ describe('resolveSessionWithRefresh — refresh deadline (checkout must never st
     const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
     expect(result.user?.id).toBe(USER_ID);
     expect(result.setCookies).toEqual([]);
+    expect(hangingFetch).toHaveBeenCalled();
   });
 
   it('skips all network work for anonymous visitors (hanging fetch never consulted)', async () => {
