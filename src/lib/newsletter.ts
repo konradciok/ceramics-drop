@@ -99,7 +99,15 @@ export async function verifyConfirmToken(
   if (!body || !signature || !BASE64URL_RE.test(body) || !BASE64URL_RE.test(signature)) return invalid;
 
   const key = await importHmacKey(secret, 'verify');
-  const ok = await crypto.subtle.verify('HMAC', key, arrayBuffer(fromBase64Url(signature)), enc.encode(body));
+  let ok: boolean;
+  try {
+    // fromBase64Url throws on charset-valid but length-invalid segments
+    // (stripped length ≡ 1 mod 4 makes atob reject) — such a token is a
+    // forgery and must collapse into `invalid`, never bubble up as a 500.
+    ok = await crypto.subtle.verify('HMAC', key, arrayBuffer(fromBase64Url(signature)), enc.encode(body));
+  } catch {
+    return invalid;
+  }
   if (!ok) return invalid;
 
   let payload: ConfirmPayload;
@@ -125,16 +133,13 @@ export function newsletterConfirmUrl(token: string, origin: string): string {
   return `${origin}/api/newsletter/confirm?token=${encodeURIComponent(token)}`;
 }
 
-/** Locale-aware landing path (pl unprefixed) the confirm route redirects to. */
-export function newsletterLandingPath(locale: string, status: NewsletterConfirmStatus): string {
-  const safe: Locale = (routing.locales as readonly string[]).includes(locale)
-    ? (locale as Locale)
-    : routing.defaultLocale;
-  return `${localePath(safe, '/newsletter')}?status=${status}`;
-}
-
 function resolveLocale(locale: string): Locale {
   return (routing.locales as readonly string[]).includes(locale) ? (locale as Locale) : routing.defaultLocale;
+}
+
+/** Locale-aware landing path (pl unprefixed) the confirm route redirects to. */
+export function newsletterLandingPath(locale: string, status: NewsletterConfirmStatus): string {
+  return `${localePath(resolveLocale(locale), '/newsletter')}?status=${status}`;
 }
 
 /** Confirmation-email copy — carried in code like I18N_ABANDONED (emails render

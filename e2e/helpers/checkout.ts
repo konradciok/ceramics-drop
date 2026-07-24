@@ -73,13 +73,17 @@ export async function selectPaczkomat(page: Page): Promise<void> {
 /**
  * Fill the receiver contact fields (CartView gates the checkout button on
  * firstName + lastName + valid email + phone for paczkomat/kurier).
- * Targets the app's autoComplete attributes — stable and app-owned.
+ * Targets the app's autoComplete attributes — stable and app-owned — scoped to
+ * the checkout container: the footer newsletter form (FooterNewsletterForm)
+ * renders an autocomplete="email" input on every page, so page-wide
+ * autocomplete selectors are no longer unique on /koszyk.
  */
 export async function fillContact(page: Page, email = 'e2e+playwright@example.com'): Promise<void> {
-  await page.locator('input[autocomplete="given-name"], input[autocomplete$=" given-name"]').fill('Test');
-  await page.locator('input[autocomplete="family-name"], input[autocomplete$=" family-name"]').fill('Playwright');
-  await page.locator('input[autocomplete="email"], input[autocomplete$=" email"]').fill(email);
-  const phone = page.locator('input[autocomplete="tel"], input[autocomplete$=" tel"]');
+  const checkout = page.locator('#cart-root');
+  await checkout.locator('input[autocomplete="given-name"], input[autocomplete$=" given-name"]').fill('Test');
+  await checkout.locator('input[autocomplete="family-name"], input[autocomplete$=" family-name"]').fill('Playwright');
+  await checkout.locator('input[autocomplete="email"], input[autocomplete$=" email"]').fill(email);
+  const phone = checkout.locator('input[autocomplete="tel"], input[autocomplete$=" tel"]');
   if (await phone.isVisible()) await phone.fill('600100200');
 }
 

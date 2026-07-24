@@ -5,7 +5,7 @@ vi.mock('@/lib/client-ip', () => ({ getClientIp }));
 
 // Only the sender is mocked — token minting and the email builder stay real so
 // the test pins the actual confirm-URL/subject wiring end to end.
-const sendNewsletterConfirmEmail = vi.fn(async (_params: unknown) => {});
+const sendNewsletterConfirmEmail = vi.fn<(params: unknown) => Promise<void>>(async () => {});
 vi.mock('@/lib/newsletter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/newsletter')>();
   return { ...actual, sendNewsletterConfirmEmail };

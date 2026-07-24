@@ -6,7 +6,7 @@ import { mintConfirmToken, NEWSLETTER_CONFIRM_TTL_SECS } from '@/lib/newsletter'
 // vi.hoisted: the top-level import above triggers the mock factory before
 // ordinary consts initialise, so the spy must be hoisted alongside vi.mock.
 const { subscribeNewsletterContact } = vi.hoisted(() => ({
-  subscribeNewsletterContact: vi.fn(async (_params: unknown) => {}),
+  subscribeNewsletterContact: vi.fn<(params: unknown) => Promise<void>>(async () => {}),
 }));
 vi.mock('@/lib/newsletter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/newsletter')>();

@@ -49,7 +49,7 @@ export function FooterNewsletterForm() {
       {/* Heading stays in the done state so the brand column keeps its height. */}
       <h5>{t('newsletter.heading')}</h5>
       {status === 'done' ? (
-        <p className="footer-newsletter-thanks" data-testid="newsletter-thanks">
+        <p className="footer-newsletter-thanks" data-testid="newsletter-thanks" role="status">
           {t('newsletter.done')}
         </p>
       ) : (

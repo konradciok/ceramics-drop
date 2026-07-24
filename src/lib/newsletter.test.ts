@@ -47,6 +47,14 @@ describe('confirm token — mint/verify', () => {
     }
   });
 
+  it('rejects a charset-valid signature with an invalid base64 length instead of throwing', async () => {
+    // 5 chars strip-pads to a length atob() rejects — must be invalid, never a 500.
+    await expect(verifyConfirmToken('AAAAA.BBBBB', SECRET, NOW)).resolves.toEqual({
+      ok: false,
+      reason: 'invalid',
+    });
+  });
+
   it('accepts a token right at the 7-day TTL boundary', async () => {
     const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'de', secret: SECRET, nowMs: NOW });
     const atBoundary = NOW + NEWSLETTER_CONFIRM_TTL_SECS * 1000;
