@@ -35,6 +35,8 @@ function deps(over = {}) {
     ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
     sendMeta: vi.fn().mockResolvedValue({ ok: true, status: 200 }),
     sendGa4: vi.fn().mockResolvedValue({ ok: true, status: 204 }),
+    appVersion: '0.10.0',
+    appGitSha: '8ae90a5',
     ...over,
   };
 }
@@ -72,6 +74,8 @@ describe('sendPurchaseConversions', () => {
     expect(ga4Input.transactionId).toBe('pi_1');
     expect(ga4Input.value).toBe(300);            // subtotal grosze → PLN
     expect(ga4Input.shipping).toBe(18);
+    expect(ga4Input.appVersion).toBe('0.10.0');
+    expect(ga4Input.appGitSha).toBe('8ae90a5');
   });
 
   it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {

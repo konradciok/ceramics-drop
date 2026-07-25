@@ -16,6 +16,8 @@ export type Ga4PurchaseInput = {
   currency: string;
   items: Ga4Item[];
   userData?: { sha256_email_address?: string };
+  appVersion?: string;
+  appGitSha?: string;
 };
 
 export type Ga4Config = { measurementId: string; apiSecret: string };
@@ -34,6 +36,8 @@ export function buildGa4PurchasePayload(input: Ga4PurchaseInput) {
           shipping: input.shipping,
           items: input.items,
           ...(input.sessionId ? { session_id: input.sessionId } : {}),
+          ...(input.appVersion ? { app_version: input.appVersion } : {}),
+          ...(input.appGitSha ? { app_git_sha: input.appGitSha } : {}),
           engagement_time_msec: 1,
         },
       },

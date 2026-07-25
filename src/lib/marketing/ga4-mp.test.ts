@@ -10,6 +10,8 @@ const input = (over: Partial<Ga4PurchaseInput> = {}): Ga4PurchaseInput => ({
   currency: 'PLN',
   items: [{ item_id: 'k01', item_name: 'Kubek Nº 1', price: 90, quantity: 1, item_category: 'kubki', item_brand: 'Anna Ciok Ceramics' }],
   userData: { sha256_email_address: 'HASH_EM' },
+  appVersion: '0.10.0',
+  appGitSha: '8ae90a5',
   ...over,
 });
 
@@ -20,6 +22,7 @@ describe('buildGa4PurchasePayload', () => {
     expect(p.events[0].name).toBe('purchase');
     expect(p.events[0].params).toMatchObject({
       transaction_id: 'pi_1', value: 300, shipping: 18, currency: 'PLN', session_id: '999',
+      app_version: '0.10.0', app_git_sha: '8ae90a5',
     });
     expect(p.user_data).toEqual({ sha256_email_address: 'HASH_EM' });
   });
