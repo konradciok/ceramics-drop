@@ -1,6 +1,6 @@
 {
   "name": "ceramics-drop",
-  "version": "0.9.2",
+  "version": "0.10.0",
   "private": true,
   "packageManager": "npm@10.9.2",
   "description": "Anna Ciok Ceramics — storefront (Next.js)",
