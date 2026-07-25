@@ -20,6 +20,7 @@ const product = (id: string) => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('redactSensitiveUrl', () => {
@@ -282,6 +283,8 @@ describe('buildPageViewEvent', () => {
 
 describe('pushDataLayer', () => {
   it('pushes to dataLayer and mirrors localhost events to the QA debug buffer', () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_VERSION', '0.10.0');
+    vi.stubEnv('NEXT_PUBLIC_GIT_SHA', '8ae90a5');
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
       dataLayer: [],
@@ -300,7 +303,9 @@ describe('pushDataLayer', () => {
     const event = buildEngagementEvent('language_change', { to_locale: 'en' });
     pushDataLayer(event);
 
-    expect(window.dataLayer).toEqual([event]);
+    expect(window.dataLayer).toEqual([
+      { ...event, app_version: '0.10.0', app_git_sha: '8ae90a5' },
+    ]);
     expect(JSON.parse(storage.get('acc_analytics_debug') ?? '[]')).toEqual([
       {
         event: 'site_engagement',

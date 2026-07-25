@@ -35,6 +35,8 @@ export type ConversionsDeps = {
   ga4Config?: Ga4Config;
   sendMeta?: typeof sendMetaPurchase;
   sendGa4?: typeof sendGa4Purchase;
+  appVersion?: string;
+  appGitSha?: string;
 };
 
 export async function sendPurchaseConversions(
@@ -123,6 +125,8 @@ export async function sendPurchaseConversions(
     currency: order.currency.toUpperCase(),
     items: ga4Items,
     ...(emailHash ? { userData: { sha256_email_address: emailHash[0] } } : {}),
+    ...(deps.appVersion ? { appVersion: deps.appVersion } : {}),
+    ...(deps.appGitSha ? { appGitSha: deps.appGitSha } : {}),
   };
 
   const sendMeta = deps.sendMeta ?? sendMetaPurchase;

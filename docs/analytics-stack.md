@@ -61,6 +61,8 @@ GA4 ecommerce payloads use:
 
 Meta payloads use standard event names where available and include `event_id` for future browser/server deduplication.
 
+Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param; register them as GA4 custom dimensions to use them in Explore/reports (see the `engagement_type` note above).
+
 ## Google Cloud and GTM API Auth
 
 The GTM scripts authenticate with the **bloomy-tale** deploy service account:
@@ -155,6 +157,7 @@ The Stripe webhook fires `Purchase` (Meta CAPI) and `purchase` (GA4 Measurement 
 - **GA4 transaction_id**: `<payment_intent_id>` — same value used in the browser `purchase` event.
 - **Consent gate**: both calls are skipped when `orders.marketing.consent !== 'granted'` (captured from the buyer's cookie state at checkout time).
 - **PII hashing**: email, phone, name, address fields are SHA-256 hashed per Meta spec before transmission.
+- **App version**: the GA4 MP `purchase` event also includes `app_version`/`app_git_sha`, threaded through `ConversionsDeps` from the same `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` build-time constants as the client-side events.
 
 New runtime secrets required:
 

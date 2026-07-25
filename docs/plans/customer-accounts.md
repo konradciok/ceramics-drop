@@ -412,11 +412,11 @@ Phases are independently shippable, each behind the fail-closed gate; convention
 
 Explicitly *not* assumed — these change setup or scope:
 
-1. **Apple Developer Program**: is a paid membership ($99/yr) active, and who owns the account? Sign in with Apple is impossible without it (its absence blocks only the Apple half — Google could ship first).
-2. **Google Cloud project**: reuse the existing analytics GCP project for the OAuth consent screen, or create a dedicated one? Who administers it?
-3. **Consent-screen branding tolerance**: Google's screen will show `<project-ref>.supabase.co`. Accept, or purchase the Supabase custom-domain add-on (~$10/mo; changes the redirect URLs configured at both providers)?
+1. **Apple Developer Program**: is a paid membership ($99/yr) active, and who owns the account? Sign in with Apple is impossible without it — **still open**. Google shipped independently 2026-07-25 (confirmed this doesn't block on Apple).
+2. ~~**Google Cloud project**~~ — ✅ resolved 2026-07-25: reused the existing analytics project `anna-ciok-studio-analytics`.
+3. ~~**Consent-screen branding tolerance**~~ — ✅ resolved 2026-07-25: shipped with the default `<project-ref>.supabase.co` branding; no custom-domain add-on purchased.
 4. **Backfill-by-email policy**: confirm that auto-linking historical guest orders on first verified-email login is desired, and that the privacy policy gets the corresponding RODO paragraph.
 5. **Scope confirmations** (assumed yes): ceramics orders are in scope ("every order"), and the account list shows `paid`/`refunded` orders only (hiding `pending/failed/expired`).
 6. **Account deletion**: v1 = owner-handled via the Supabase dashboard on request (recommended), or is a self-serve delete button a launch requirement?
-7. **Supabase project state**: is the hosted project still on the legacy symmetric JWT secret (determines whether the signing-keys migration in Phase 0 is a click or already done)? Does the staging plan imply a second Supabase project needing its own provider config?
+7. ~~**Supabase project state**~~ — ✅ resolved 2026-07-25: already on asymmetric ECC (P-256) signing keys, no migration needed. There is no second (staging) Supabase project — one project (`ceramics` / `wnlysejenowymjdxlnaq`) serves both, so Auth config changes always land directly on the same project prod uses.
 8. **Apple secret rotation ownership**: who receives the 5-month reminder (studio vs developer)?

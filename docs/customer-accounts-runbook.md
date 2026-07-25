@@ -2,6 +2,8 @@
 
 Operational procedures for the customer-accounts feature (Google/Apple sign-in, order history, tracking). Design and rationale live in [`docs/plans/customer-accounts.md`](./plans/customer-accounts.md); this file is the *how-to* for the studio + developer.
 
+**Status (2026-07-25):** Google sign-in is live and verified end-to-end in production. JWT signing keys were already migrated to asymmetric (ECC P-256) prior to this pass. Apple sign-in is not yet configured — pending the Apple Developer Program membership decision (§1.3).
+
 **Feature flag / kill switch:** the presence of the `SUPABASE_PUBLISHABLE_KEY` runtime secret. (Strictly, the gate requires `SUPABASE_URL` **and** the publishable key — but `SUPABASE_URL` is a standing prerequisite the store cannot run without, so the publishable key is the only lever you ever operate.) Unset ⇒ `/api/auth/*` return 404, `/konto` renders "accounts unavailable", middleware and checkout skip all session work, existing sessions degrade to signed-out. Checkout and the storefront never depend on auth availability.
 
 ```bash
@@ -19,13 +21,16 @@ Locally: set `SUPABASE_PUBLISHABLE_KEY=` in `.dev.vars`.
 
 ### 1.1 Supabase dashboard
 
-1. **Asymmetric JWT signing keys** — Dashboard → Project Settings → JWT Keys → migrate to asymmetric signing keys (zero-downtime dashboard action). This exposes `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`, which the app verifies tokens against locally (`src/lib/auth/session.ts`). *If the project is still on the legacy symmetric secret, local verification fails and every visitor reads as signed-out — this step is mandatory.*
+1. **Asymmetric JWT signing keys** — Dashboard → Project Settings → JWT Keys → migrate to asymmetric signing keys (zero-downtime dashboard action). This exposes `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`, which the app verifies tokens against locally (`src/lib/auth/session.ts`). *If the project is still on the legacy symmetric secret, local verification fails and every visitor reads as signed-out — this step is mandatory.* ✅ Done (confirmed already on asymmetric ECC (P-256) as of 2026-07-25).
 2. **URL configuration** — Auth → URL Configuration:
    - Site URL: `https://anna-ciok.studio`
    - Redirect allowlist: `https://anna-ciok.studio/api/auth/callback`, `http://localhost:3000/api/auth/callback` (+ any staging origin's `/api/auth/callback`).
-3. **Providers** — enable Google and Apple with the credentials below. Leave the email provider un-surfaced (the UI is OAuth-only).
+   ✅ Done 2026-07-25 (pushed via `supabase config push --project-ref wnlysejenowymjdxlnaq`, which also carries `[auth.external.*]` — see §1.2/§1.3 for how provider secrets are wired into the same push).
+3. **Providers** — enable Google and Apple with the credentials below. Leave the email provider un-surfaced (the UI is OAuth-only). ✅ Google done and verified in production 2026-07-25. Apple still pending.
 
-### 1.2 Google OAuth client
+### 1.2 Google OAuth client ✅ done 2026-07-25
+
+Uses GCP project `anna-ciok-studio-analytics` (the existing analytics project, per plan §13.2 — no dedicated project was created). `supabase/config.toml`'s `[auth.external.google]` references the client id/secret via `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)` / `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)` — these were exported in-shell for the initial `config push` but are **not yet persisted** to a gitignored `.env`. Before the next `supabase config push` for any reason (e.g. wiring up Apple), re-export both or add them to the repo-root `.env` first, or the push will fail to resolve them and can silently disable the provider.
 
 Google Cloud Console (decide which GCP project owns this — §13.2 of the plan):
 

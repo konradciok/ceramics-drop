@@ -561,6 +561,8 @@ export async function POST(req: Request) {
         const ga4Secret = env.GA4_API_SECRET;
         const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
         const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+        const appVersion = process.env.NEXT_PUBLIC_APP_VERSION;
+        const appGitSha = process.env.NEXT_PUBLIC_GIT_SHA;
 
         const metaConfig = (metaToken && pixelId)
           ? { pixelId, accessToken: metaToken, ...(env.META_TEST_EVENT_CODE ? { testEventCode: env.META_TEST_EVENT_CODE } : {}) }
@@ -594,6 +596,8 @@ export async function POST(req: Request) {
           },
           metaConfig,
           ga4Config,
+          appVersion,
+          appGitSha,
         });
       } catch (err) {
         console.error('trackPurchase failed for', pi, err);

@@ -53,6 +53,8 @@ export type DataLayerEvent = {
   event_id?: string;
   ecommerce?: EcommercePayload;
   meta?: MetaPayload;
+  app_version?: string;
+  app_git_sha?: string;
   [key: string]: unknown;
 };
 
@@ -418,8 +420,16 @@ export function pushDataLayer(event: DataLayerEvent): void {
   if (event.ecommerce) {
     window.dataLayer.push({ ecommerce: null });
   }
-  window.dataLayer.push(event);
-  mirrorDebugEvent(event);
+  // Stamped on every event so GA4 rows are attributable to the deploy that sent
+  // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
+  // admin badge already use (next.config.ts).
+  const payload: DataLayerEvent = {
+    ...event,
+    app_version: process.env.NEXT_PUBLIC_APP_VERSION,
+    app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,
+  };
+  window.dataLayer.push(payload);
+  mirrorDebugEvent(payload);
 }
 
 function mirrorDebugEvent(event: DataLayerEvent): void {
