@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { EMAIL } from '@/lib/email-addresses';
+import { FooterNewsletterForm } from './FooterNewsletterForm';
 
 export async function Footer() {
   const t = await getTranslations();
@@ -19,6 +20,7 @@ export async function Footer() {
             <img className="flogo" src="/logotype.png" alt="" width={64} height={64} />
             <h4>{t('footer.tagline')}</h4>
             <p>{t('footer.blurb')}</p>
+            <FooterNewsletterForm />
           </div>
 
           {/* Shop column */}

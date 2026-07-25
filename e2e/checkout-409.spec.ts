@@ -29,7 +29,15 @@ test.describe('@checkout-edge @ci checkout 409', () => {
       if (picks.length === 2) break;
       await page.goto(`/${category}`);
       const tile = page.locator('[data-testid="product-tile"]:not([data-sold="true"])').first();
-      if (!(await tile.isVisible().catch(() => false))) continue;
+      // Collection pages stream behind a Suspense fallback (loading.tsx), so an
+      // instant isVisible() sample right after goto() can miss a grid that is
+      // still rendering on a slow CI runner and skip a fully-stocked category.
+      // Wait briefly instead; a timeout means the category truly has no unsold tile.
+      const visible = await tile.waitFor({ state: 'visible', timeout: 5_000 }).then(
+        () => true,
+        () => false,
+      );
+      if (!visible) continue;
       picks.push(await addFirstUnsoldFromCategory(page, category));
     }
     expect(picks.length, 'need two categories with unsold stock').toBe(2);

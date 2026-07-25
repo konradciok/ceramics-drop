@@ -164,6 +164,28 @@
     "submit": "Wyślij",
     "submitting": "Wysyłam…"
   },
+  "newsletter": {
+    "heading": "Newsletter",
+    "blurb": "Wieści o nowych pracach i dropach — bez spamu.",
+    "emailLabel": "E-mail",
+    "placeholder": "Twój adres e-mail",
+    "submit": "Zapisz się",
+    "submitting": "Wysyłam…",
+    "done": "Sprawdź skrzynkę — wysłaliśmy link potwierdzający zapis.",
+    "error": "Coś poszło nie tak. Spróbuj ponownie.",
+    "privacyNote": "Zapis potwierdzisz linkiem z e-maila. Zobacz <link>politykę prywatności</link>.",
+    "eyebrow": "Newsletter",
+    "landingTitle": "Zapis do newslettera",
+    "confirmedTitle": "Zapis potwierdzony",
+    "confirmedBody": "Dziękujemy! Będziemy dawać znać o nowych pracach i dropach.",
+    "expiredTitle": "Link wygasł",
+    "expiredBody": "Ten link potwierdzający stracił ważność. Zapisz się ponownie w stopce strony.",
+    "invalidTitle": "Nieprawidłowy link",
+    "invalidBody": "Ten link jest niepełny lub nieprawidłowy. Zapisz się ponownie w stopce strony.",
+    "errorTitle": "Coś poszło nie tak",
+    "errorBody": "Nie udało się potwierdzić zapisu. Kliknij link z e-maila jeszcze raz za chwilę.",
+    "backToShop": "Wróć do sklepu"
+  },
   "galleryPage": {
     "eyebrow": "Galeria editorialowa",
     "title": "Nowe ujęcia, <em>ten sam ślad ręki.</em>",

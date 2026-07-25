@@ -66,6 +66,12 @@ interface CloudflareEnv {
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
   // CMS preview-token HMAC secret (admin draft preview links). Dedicated, fail-closed.
   CMS_PREVIEW_SECRET: string;
+  // Newsletter double-opt-in HMAC secret (confirm-link tokens). Dedicated, fail-closed:
+  // POST /api/newsletter and GET /api/newsletter/confirm return 503 when unset.
+  NEWSLETTER_CONFIRM_SECRET: string;
+  /** Optional legacy Resend Audience id — when set, confirmed contacts POST to
+   *  /audiences/{id}/contacts instead of the global /contacts endpoint. */
+  RESEND_NEWSLETTER_AUDIENCE_ID?: string;
   // Fail-closed debug read for the destructive print-purchase E2E (audit H-2):
   // GET /api/debug/fulfilment-status returns 404 unless this is set. Preview-only.
   FULFILMENT_DEBUG_TOKEN?: string;
