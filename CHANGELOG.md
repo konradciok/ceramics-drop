@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.10.0](https://github.com/konradciok/ceramics-drop/compare/v0.9.2...v0.10.0) (2026-07-25)
+
+
+### Features
+
+* **account:** customer accounts — Google/Apple sign-in, order history, tracking (executes PR [#178](https://github.com/konradciok/ceramics-drop/issues/178) plan) ([35ef0f6](https://github.com/konradciok/ceramics-drop/commit/35ef0f6222eac2d6032cab721121e97e7a512f60))
+* **account:** navigation entry, e2e coverage, runbook ([52e9f8e](https://github.com/konradciok/ceramics-drop/commit/52e9f8e5638ba40e78e74e44182a45fe2d7a4183))
+* **account:** order history and tracking pages ([212bfc4](https://github.com/konradciok/ceramics-drop/commit/212bfc49da57f5284f41320e5d8f6f454454df15))
+* **auth:** supabase auth core behind fail-closed env gate ([e69bcd9](https://github.com/konradciok/ceramics-drop/commit/e69bcd9378382d9e3719bdf27e1dfcf5ee852cc9))
+* **db:** link orders to auth users and persist prodigi tracking ([c7936dc](https://github.com/konradciok/ceramics-drop/commit/c7936dccab8ded98e54f3aac1771c6f2f4054c21))
+* newsletter signup with Resend double opt-in ([ffd399c](https://github.com/konradciok/ceramics-drop/commit/ffd399c2ce7f6e0a060b6bb88a89e2724d44687f))
+* newsletter signup with Resend double opt-in ([bfaa4b0](https://github.com/konradciok/ceramics-drop/commit/bfaa4b0efa52505feaaeffc527f9057b0b61af25))
+* **prints:** print composition engine — geometry, config parser, sharp compose-master ([bf82b27](https://github.com/konradciok/ceramics-drop/commit/bf82b27220757b3ba1c4fb54bb4707de4004655e))
+* **prints:** sharp compose-master module; integer-px contract in composeLayout ([18c4e16](https://github.com/konradciok/ceramics-drop/commit/18c4e16192b939443b58c53363902edd4c5e54e9))
+
+
+### Bug Fixes
+
+* **account:** address PR [#186](https://github.com/konradciok/ceramics-drop/issues/186) review — indexable backfill, safe migration casts, variant guards ([ea57ea5](https://github.com/konradciok/ceramics-drop/commit/ea57ea5e66c2d73e0416296738fa30a7ca5bf026))
+* **account:** owner review — bounded pre-reservation auth resolve, monotonic tracking, locale-aware sign-out ([4fbcb39](https://github.com/konradciok/ceramics-drop/commit/4fbcb3931a9b2e5217b64d22364ae8f456ab5b8d))
+* **db:** restrict link_orders_to_user execute to service_role ([8bf1df5](https://github.com/konradciok/ceramics-drop/commit/8bf1df5655fdd6378a45739c85b856c5cc4533cc))
+* **e2e:** wait for streamed collection grid in checkout-409 stock probe ([4c0d8f1](https://github.com/konradciok/ceramics-drop/commit/4c0d8f13cb11c6af5edd314941d70cedc5970a24))
+* **prints:** address PR [#182](https://github.com/konradciok/ceramics-drop/issues/182) review — signature tracks Y offset, validated config, doc sync ([b934f00](https://github.com/konradciok/ceramics-drop/commit/b934f006b56df148bb880d69f77aab6668dfe07e))
+* scope e2e contact fill to checkout root; guard newsletter token decode ([78b4327](https://github.com/konradciok/ceramics-drop/commit/78b432786239324c981bb491eef247bb48ca2d0b))
+
 ## [0.9.2](https://github.com/konradciok/ceramics-drop/compare/v0.9.1...v0.9.2) (2026-07-23)
 
 
