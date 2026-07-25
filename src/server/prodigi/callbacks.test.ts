@@ -62,14 +62,15 @@ function setup(opts: {
   /** Rows returned by the shipping_email_sent_at claim UPDATE (empty = already claimed). */
   claimRows?: unknown[];
   orderRow?: Record<string, unknown> | null;
-  /** prodigi_orders lookup row; explicit null = unknown Prodigi order. */
-  poRow?: { order_id: string } | null;
+  /** prodigi_orders lookup row (may carry persisted tracking columns); explicit null = unknown Prodigi order. */
+  poRow?: Record<string, unknown> | null;
   jobRow?: { id: string; status: string } | null;
 } = {}) {
   const calls = {
     shippingClaims: [] as Record<string, unknown>[],
     jobUpdates: [] as Record<string, unknown>[],
     eventUpdates: [] as Record<string, unknown>[],
+    poUpserts: [] as Record<string, unknown>[],
   };
   mockFrom.mockImplementation((table: string) => {
     if (table === 'webhook_events') {
@@ -86,7 +87,10 @@ function setup(opts: {
       return {
         select: () =>
           makeChain({ data: opts.poRow !== undefined ? opts.poRow : { order_id: 'o1' }, error: null }),
-        upsert: () => makeChain({ error: null }),
+        upsert: (p: Record<string, unknown>) => {
+          calls.poUpserts.push(p);
+          return makeChain({ error: null });
+        },
         update: (p: Record<string, unknown>) => {
           calls.shippingClaims.push(p);
           if (p.shipping_email_sent_at === null) return makeChain({ data: [], error: null }); // claim release
@@ -200,6 +204,89 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     expect(res.status).toBe(200);
     expect(calls.shippingClaims).toHaveLength(0);
     expect(mockShipEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)', () => {
+  const STORED = {
+    order_id: 'o1',
+    carrier: 'dpd',
+    tracking_number: 'TRK123',
+    tracking_url: 'https://track.example.com/TRK123',
+    shipped_at: '2026-07-20T10:00:00.000Z',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockShipEmail.mockResolvedValue(undefined);
+  });
+
+  it('persists the primary shipment tracking columns on a tracked callback', async () => {
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    const calls = setup();
+
+    const res = await handleProdigiCallback(callbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.poUpserts).toHaveLength(1);
+    expect(calls.poUpserts[0]).toMatchObject({
+      carrier: 'dpd',
+      tracking_number: 'TRK123',
+      tracking_url: 'https://track.example.com/TRK123',
+    });
+  });
+
+  it('a later sparse callback (no shipments) preserves previously persisted tracking', async () => {
+    mockGetOrder.mockResolvedValue({
+      order: { ...prodigiOrder('Complete').order, shipments: [] },
+    });
+    const calls = setup({ poRow: STORED, claimRows: [] });
+
+    const res = await handleProdigiCallback({ ...callbackBody(), id: 'evt-sparse' }, ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.poUpserts).toHaveLength(1);
+    expect(calls.poUpserts[0]).toMatchObject({
+      carrier: 'dpd',
+      tracking_number: 'TRK123',
+      tracking_url: 'https://track.example.com/TRK123',
+      shipped_at: '2026-07-20T10:00:00.000Z',
+    });
+  });
+
+  it('a shipment missing individual fields keeps the stored values for those fields only', async () => {
+    mockGetOrder.mockResolvedValue({
+      order: {
+        ...prodigiOrder('Complete').order,
+        shipments: [
+          { id: 'shp_2', status: 'Shipped', carrier: { name: 'dhl' }, tracking: { number: 'TRK999' } },
+        ],
+      },
+    });
+    const calls = setup({ poRow: STORED, claimRows: [] });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-partial' }, ENV);
+
+    expect(calls.poUpserts[0]).toMatchObject({
+      carrier: 'dhl', // fresh value wins…
+      tracking_number: 'TRK999',
+      tracking_url: 'https://track.example.com/TRK123', // …absent fields keep the stored values
+      shipped_at: '2026-07-20T10:00:00.000Z',
+    });
+  });
+
+  it('never re-persists a non-https stored tracking_url, even as the fallback', async () => {
+    mockGetOrder.mockResolvedValue({
+      order: { ...prodigiOrder('Complete').order, shipments: [] },
+    });
+    const calls = setup({
+      poRow: { ...STORED, tracking_url: 'javascript:alert(1)' },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-bad-url' }, ENV);
+
+    expect(calls.poUpserts[0]).toMatchObject({ tracking_url: null });
   });
 });
 

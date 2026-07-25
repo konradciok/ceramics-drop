@@ -12,6 +12,53 @@
     "error": "Coś poszło nie tak. Spróbuj za chwilę albo napisz na hej@ciok.art.",
     "moreInfo": "Więcej o dostawie i zwrotach"
   },
+  "account": {
+    "eyebrow": "Konto",
+    "heading": "Twoje konto",
+    "unavailableH": "Konta klientów są jeszcze niedostępne",
+    "unavailableP": "Logowanie nie zostało jeszcze włączone w tym sklepie. Zajrzyj wkrótce albo napisz na hej@ciok.art.",
+    "signInH": "Zaloguj się",
+    "signInP": "Zobacz historię zamówień i śledź przesyłki. Konto utworzy się automatycznie przy pierwszym logowaniu.",
+    "continueGoogle": "Kontynuuj przez Google",
+    "continueApple": "Kontynuuj przez Apple",
+    "privacyNote": "Logując się, tworzysz konto powiązane z Twoim adresem e-mail — wcześniejsze zamówienia złożone na ten sam zweryfikowany adres zostaną automatycznie przypisane do konta. Szczegóły w polityce prywatności.",
+    "authError": "Logowanie się nie powiodło. Spróbuj ponownie.",
+    "signOut": "Wyloguj się",
+    "ordersH": "Twoje zamówienia",
+    "empty": "Nie masz jeszcze zamówień powiązanych z tym kontem.",
+    "emptyCta": "Zobacz prace",
+    "orderLabel": "Zamówienie",
+    "viewOrder": "Szczegóły",
+    "backToAccount": "Wróć do konta",
+    "itemsH": "Prace",
+    "subtotal": "Wartość prac",
+    "shippingLabel": "Dostawa",
+    "total": "Razem",
+    "deliveryH": "Dostawa",
+    "methodLabel": "Metoda",
+    "methodPaczkomat": "Paczkomat InPost",
+    "methodKurier": "Kurier",
+    "methodOdbior": "Odbiór osobisty w pracowni",
+    "paczkomatLabel": "Paczkomat",
+    "addressLabel": "Adres",
+    "trackingH": "Śledzenie przesyłki",
+    "carrier": "Przewoźnik",
+    "trackingNumber": "Numer przesyłki",
+    "shippedAt": "Wysłano",
+    "track": "Śledź przesyłkę",
+    "noTracking": "Numer przesyłki pojawi się tutaj po nadaniu paczki.",
+    "requestReturn": "Zgłoś zwrot",
+    "status": {
+      "processing": "W przygotowaniu",
+      "inProduction": "W druku",
+      "shipped": "Wysłane",
+      "readyForPickup": "Czeka w Paczkomacie",
+      "delivered": "Dostarczone",
+      "awaitingPickup": "Do odbioru w pracowni",
+      "refunded": "Zwrot środków",
+      "cancelled": "Anulowane"
+    }
+  },
   "announce": "Czerwcowy drop 2026: 125 ręcznie malowanych prac, każda unikalna",
   "title": {
     "home": "Anna Ciok Ceramics — czerwcowy drop 2026",
@@ -25,6 +72,7 @@
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "koszyk": "Koszyk",
+    "konto": "Konto",
     "studio": "O studiu",
     "kontakt": "Kontakt",
     "dostawa": "Dostawa i zwroty",
@@ -50,7 +98,8 @@
     "miskiFalowane": "Miski z falowanym brzegiem",
     "fineArtPrints": "Odbitki Fine Art",
     "studio": "O studiu",
-    "kontakt": "Kontakt"
+    "kontakt": "Kontakt",
+    "konto": "Konto"
   },
   "aria": {
     "cart": "Koszyk",
@@ -316,7 +365,8 @@
     "failH": "Płatność nie przeszła",
     "failP": "Nic nie zostało pobrane z Twojego konta. Wróć do koszyka i spróbuj jeszcze raz — wybrane prace nadal na Ciebie czekają.",
     "back": "Wróć na stronę główną",
-    "cart": "Wróć do koszyka"
+    "cart": "Wróć do koszyka",
+    "account": "Śledź zamówienie na koncie"
   },
   "home": {
     "heroEyebrow": "Czerwcowy drop 2026 — Nº 01",

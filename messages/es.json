@@ -12,6 +12,53 @@
     "error": "Algo salió mal. Inténtalo de nuevo en un momento.",
     "moreInfo": "Más sobre envíos y devoluciones"
   },
+  "account": {
+    "eyebrow": "Cuenta",
+    "heading": "Tu cuenta",
+    "unavailableH": "Las cuentas de cliente aún no están disponibles",
+    "unavailableP": "El inicio de sesión todavía no está activado en esta tienda. Vuelve pronto o escribe a hej@ciok.art.",
+    "signInH": "Inicia sesión",
+    "signInP": "Consulta tu historial de pedidos y sigue tus envíos. La cuenta se crea automáticamente la primera vez que inicias sesión.",
+    "continueGoogle": "Continuar con Google",
+    "continueApple": "Continuar con Apple",
+    "privacyNote": "Al iniciar sesión se crea una cuenta vinculada a tu correo electrónico: los pedidos anteriores realizados con la misma dirección verificada se asociarán automáticamente. Más información en la política de privacidad.",
+    "authError": "No se pudo iniciar sesión. Inténtalo de nuevo.",
+    "signOut": "Cerrar sesión",
+    "ordersH": "Tus pedidos",
+    "empty": "Todavía no hay pedidos vinculados a esta cuenta.",
+    "emptyCta": "Ver las piezas",
+    "orderLabel": "Pedido",
+    "viewOrder": "Detalles",
+    "backToAccount": "Volver a la cuenta",
+    "itemsH": "Piezas",
+    "subtotal": "Subtotal",
+    "shippingLabel": "Envío",
+    "total": "Total",
+    "deliveryH": "Entrega",
+    "methodLabel": "Método",
+    "methodPaczkomat": "Taquilla InPost",
+    "methodKurier": "Mensajería",
+    "methodOdbior": "Recogida en el estudio",
+    "paczkomatLabel": "Taquilla",
+    "addressLabel": "Dirección",
+    "trackingH": "Seguimiento del envío",
+    "carrier": "Transportista",
+    "trackingNumber": "Número de seguimiento",
+    "shippedAt": "Enviado",
+    "track": "Seguir el envío",
+    "noTracking": "El número de seguimiento aparecerá aquí cuando el paquete se envíe.",
+    "requestReturn": "Solicitar una devolución",
+    "status": {
+      "processing": "En preparación",
+      "inProduction": "En producción",
+      "shipped": "Enviado",
+      "readyForPickup": "Esperando en la taquilla",
+      "delivered": "Entregado",
+      "awaitingPickup": "Listo para recoger en el estudio",
+      "refunded": "Reembolsado",
+      "cancelled": "Cancelado"
+    }
+  },
   "announce": "Drop de junio 2026 — 125 piezas, cada una única",
   "title": {
     "home": "Anna Ciok Ceramics — Drop de junio 2026",
@@ -25,6 +72,7 @@
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "koszyk": "Carrito",
+    "konto": "Cuenta",
     "studio": "Estudio",
     "kontakt": "Contacto",
     "dostawa": "Envíos y devoluciones",
@@ -50,7 +98,8 @@
     "miskiFalowane": "Cuencos de borde ondulado",
     "fineArtPrints": "Impresiones Fine Art",
     "studio": "Estudio",
-    "kontakt": "Contacto"
+    "kontakt": "Contacto",
+    "konto": "Cuenta"
   },
   "aria": {
     "cart": "Carrito",
@@ -316,7 +365,8 @@
     "failH": "El pago ha fallado",
     "failP": "No se ha cobrado ningún importe. Vuelve al carrito e inténtalo de nuevo — las piezas elegidas siguen esperándote.",
     "back": "Volver al inicio",
-    "cart": "Volver al carrito"
+    "cart": "Volver al carrito",
+    "account": "Sigue este pedido en tu cuenta"
   },
   "home": {
     "heroEyebrow": "Drop de junio 2026 — Nº 01",

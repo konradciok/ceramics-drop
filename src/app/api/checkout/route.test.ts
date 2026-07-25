@@ -119,6 +119,14 @@ vi.mock('@opennextjs/cloudflare', () => ({
   }),
 }));
 
+// Real auth-session module with only the checkout refresh deadline shrunk, so
+// the stalled-auth regression test completes in milliseconds instead of the
+// production 2 s.
+vi.mock('@/lib/auth/session', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth/session')>();
+  return { ...actual, CHECKOUT_AUTH_REFRESH_TIMEOUT_MS: 100 };
+});
+
 describe('POST /api/checkout', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -988,6 +996,54 @@ describe('POST /api/checkout', () => {
       );
     } finally {
       errSpy.mockRestore();
+    }
+  });
+
+  it('a stalled Supabase Auth refresh can never block checkout (bounded, degrades to anonymous)', async () => {
+    // Auth configured + a session cookie whose expired/garbage token demands a
+    // network refresh — while Supabase Auth "stalls": fetch hangs forever.
+    // Rejections are the easy case (try/catch); the hang is what the checkout
+    // refresh deadline exists for (PR #186 P1).
+    cfEnv = {
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_env',
+      SUPABASE_URL: 'https://testref.supabase.co',
+      SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+    };
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<never>(() => {})));
+    try {
+      const { POST } = await import('./route');
+      // Structurally valid stored session (supabase-js validates the shape,
+      // expires_at included) whose expiry forces the network refresh path.
+      const staleSession = {
+        access_token: 'not.a.jwt',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) - 120,
+        refresh_token: 'rt_test',
+        user: { id: 'u1' },
+      };
+      const cookieValue = `base64-${Buffer.from(JSON.stringify(staleSession)).toString('base64url')}`;
+
+      const started = Date.now();
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          headers: { cookie: `sb-testref-auth-token=${cookieValue}` },
+          body: JSON.stringify(makeCheckoutBody()),
+        }),
+      );
+
+      // Normal persistence/response path reached, within the (shrunk) deadline
+      // rather than hanging on the stalled auth call.
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+      expect(Date.now() - started).toBeLessThan(1500);
+      // Session degraded to anonymous — the order is a guest order.
+      expect(insertOrders).toHaveBeenCalledTimes(1);
+      const inserted = (insertOrders.mock.calls[0] as unknown as [Record<string, unknown>])[0];
+      expect(inserted).toMatchObject({ user_id: null });
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 });

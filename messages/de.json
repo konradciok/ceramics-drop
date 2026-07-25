@@ -12,6 +12,53 @@
     "error": "Etwas ist schiefgelaufen. Bitte versuche es in Kürze erneut.",
     "moreInfo": "Mehr über Versand & Rücksendungen"
   },
+  "account": {
+    "eyebrow": "Konto",
+    "heading": "Dein Konto",
+    "unavailableH": "Kundenkonten sind noch nicht verfügbar",
+    "unavailableP": "Die Anmeldung ist in diesem Shop noch nicht freigeschaltet. Schau bald wieder vorbei oder schreib an hej@ciok.art.",
+    "signInH": "Anmelden",
+    "signInP": "Sieh deine Bestellhistorie ein und verfolge deine Sendungen. Beim ersten Anmelden wird automatisch ein Konto angelegt.",
+    "continueGoogle": "Weiter mit Google",
+    "continueApple": "Weiter mit Apple",
+    "privacyNote": "Mit der Anmeldung wird ein Konto erstellt, das mit deiner E-Mail-Adresse verknüpft ist — frühere Bestellungen mit derselben verifizierten Adresse werden ihm automatisch zugeordnet. Details in der Datenschutzerklärung.",
+    "authError": "Die Anmeldung hat nicht geklappt. Bitte versuch es erneut.",
+    "signOut": "Abmelden",
+    "ordersH": "Deine Bestellungen",
+    "empty": "Mit diesem Konto sind noch keine Bestellungen verknüpft.",
+    "emptyCta": "Arbeiten ansehen",
+    "orderLabel": "Bestellung",
+    "viewOrder": "Details",
+    "backToAccount": "Zurück zum Konto",
+    "itemsH": "Arbeiten",
+    "subtotal": "Zwischensumme",
+    "shippingLabel": "Versand",
+    "total": "Gesamt",
+    "deliveryH": "Lieferung",
+    "methodLabel": "Methode",
+    "methodPaczkomat": "InPost-Paketstation",
+    "methodKurier": "Kurier",
+    "methodOdbior": "Abholung im Studio",
+    "paczkomatLabel": "Paketstation",
+    "addressLabel": "Adresse",
+    "trackingH": "Sendungsverfolgung",
+    "carrier": "Versanddienst",
+    "trackingNumber": "Sendungsnummer",
+    "shippedAt": "Versendet",
+    "track": "Sendung verfolgen",
+    "noTracking": "Die Sendungsnummer erscheint hier, sobald das Paket unterwegs ist.",
+    "requestReturn": "Rücksendung anmelden",
+    "status": {
+      "processing": "In Vorbereitung",
+      "inProduction": "Im Druck",
+      "shipped": "Versendet",
+      "readyForPickup": "Wartet in der Paketstation",
+      "delivered": "Zugestellt",
+      "awaitingPickup": "Zur Abholung im Studio bereit",
+      "refunded": "Erstattet",
+      "cancelled": "Storniert"
+    }
+  },
   "announce": "Juni-2026-Drop — 125 Stücke, jedes ein Unikat",
   "title": {
     "home": "Anna Ciok Ceramics — Juni-2026-Drop",
@@ -25,6 +72,7 @@
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "koszyk": "Warenkorb",
+    "konto": "Konto",
     "studio": "Studio",
     "kontakt": "Kontakt",
     "dostawa": "Versand & Rücksendungen",
@@ -50,7 +98,8 @@
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "fineArtPrints": "Fine Art Drucke",
     "studio": "Studio",
-    "kontakt": "Kontakt"
+    "kontakt": "Kontakt",
+    "konto": "Konto"
   },
   "aria": {
     "cart": "Warenkorb",
@@ -316,7 +365,8 @@
     "failH": "Zahlung fehlgeschlagen",
     "failP": "Es wurden keine Mittel abgebucht. Gehe zurück zum Warenkorb und versuche es erneut — die ausgewählten Stücke warten noch auf dich.",
     "back": "Zurück zur Startseite",
-    "cart": "Zurück zum Warenkorb"
+    "cart": "Zurück zum Warenkorb",
+    "account": "Bestellung im Konto verfolgen"
   },
   "home": {
     "heroEyebrow": "Juni-2026-Drop — Nº 01",

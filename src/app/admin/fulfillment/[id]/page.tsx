@@ -12,6 +12,8 @@ import { FulfillmentActions } from '../FulfillmentActions';
 import { FulfillmentNavKeys } from './FulfillmentNavKeys';
 import { PackingPanel } from '../../packing-ui';
 import { formatShippingAddress } from '@/lib/shipping-address';
+import { getProdigiTracking } from '@/lib/admin/data';
+import { httpsUrlOrNull } from '@/lib/tracking';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,10 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
   const { id } = await params;
   const [order, queue] = await Promise.all([getFulfillmentOrder(id), listFulfillmentQueue()]);
   if (!order) notFound();
+
+  const prodigiTracking = order.stage === 'prodigi' ? await getProdigiTracking(order.id) : null;
+  // Render-side https gate for the externally-sourced URL (defense in depth).
+  const prodigiTrackingUrl = httpsUrlOrNull(prodigiTracking?.tracking_url);
 
   const position = fulfillmentQueueIndex(queue, order.id);
   const prevHref = position.prevId ? `/admin/fulfillment/${position.prevId}` : null;
@@ -98,7 +104,20 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
               <dt>Metoda</dt><dd>{deliveryLabel(order.delivery_method)}</dd>
               <dt>Adres / punkt</dt><dd>{deliveryLine(order)}</dd>
               {order.stage === 'prodigi' ? (
-                <><dt>Realizacja</dt><dd>Prodigi (druk na zamówienie)</dd></>
+                <>
+                  <dt>Realizacja</dt><dd>Prodigi (druk na zamówienie)</dd>
+                  <dt>Status Prodigi</dt><dd>{prodigiTracking?.prodigi_status_stage ?? '—'}</dd>
+                  <dt>Przewoźnik</dt><dd>{prodigiTracking?.carrier ?? '—'}</dd>
+                  <dt>Tracking</dt>
+                  <dd className="adm-mono">
+                    {prodigiTracking?.tracking_number
+                      ? prodigiTrackingUrl
+                        ? <a href={prodigiTrackingUrl} target="_blank" rel="noreferrer">{prodigiTracking.tracking_number}</a>
+                        : prodigiTracking.tracking_number
+                      : '—'}
+                  </dd>
+                  <dt>Wysłano</dt><dd>{prodigiTracking?.shipped_at ? formatDateTime(prodigiTracking.shipped_at) : '—'}</dd>
+                </>
               ) : (
                 <>
                   <dt>Status InPost</dt><dd>{order.delivery_status ?? '—'}</dd>

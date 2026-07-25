@@ -1,9 +1,10 @@
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { emailPrintShippingConfirmationToCustomer } from '@/lib/email';
+import { httpsUrlOrNull } from '@/lib/tracking';
 import { prodigiClient } from './client';
 import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
-import type { ProdigiOrderResponse } from './types';
+import type { ProdigiShipment } from './types';
 
 export const LEASE_MINUTES = 5;
 const PG_UNIQUE_VIOLATION = '23505';
@@ -107,18 +108,26 @@ export async function handleProdigiCallback(
 
   // 4. Resolve the local order. If the prodigi_orders mapping is missing (callback
   // raced processJob's persist step), fall back to merchantReference — we set it
-  // to the internal order id at submission.
-  const { data: existingPO, error: poErr } = await supabase
+  // to the internal order id at submission. The persisted tracking columns ride
+  // along for the monotonic merge below.
+  const { data: existingData, error: poErr } = await supabase
     .from('prodigi_orders')
-    .select('order_id')
+    .select('order_id, carrier, tracking_number, tracking_url, shipped_at')
     .eq('prodigi_order_id', prodigiOrderId)
     .maybeSingle();
   if (poErr) {
     await releaseClaim();
     return { status: 500, message: 'DB error on prodigi_orders lookup' };
   }
+  const existingPO = existingData as {
+    order_id: string | null;
+    carrier: string | null;
+    tracking_number: string | null;
+    tracking_url: string | null;
+    shipped_at: string | null;
+  } | null;
 
-  let orderId = existingPO?.order_id as string | undefined;
+  let orderId = existingPO?.order_id ?? undefined;
   if (!orderId && prodigiOrder.merchantReference) {
     const { data: orderRow } = await supabase
       .from('orders')
@@ -133,8 +142,34 @@ export async function handleProdigiCallback(
     return { status: 500, message: `No local order for Prodigi order ${prodigiOrderId}` };
   }
 
+  // Primary shipment (v1: one persisted tracking per order): first with a
+  // tracking number, else first in array order — the same shipment the shipping
+  // email cites. The complete shipments[] array stays losslessly in
+  // prodigi_raw_json. Because the order state is re-fetched on every callback,
+  // late-arriving tracking numbers upgrade these columns automatically.
+  const shipments = prodigiOrder.shipments ?? [];
+  const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
+
   const { error: upErr } = await supabase.from('prodigi_orders').upsert(
-    { order_id: orderId, prodigi_order_id: prodigiOrderId, prodigi_status_stage: newStage, prodigi_raw_json: prodigiOrder, updated_at: now },
+    {
+      order_id: orderId,
+      prodigi_order_id: prodigiOrderId,
+      prodigi_status_stage: newStage,
+      prodigi_raw_json: prodigiOrder,
+      updated_at: now,
+      // Monotonic per-field merge: a later callback whose re-fetched order is
+      // sparse (no shipments, or a shipment missing a field) must never erase
+      // previously persisted tracking — fresh data wins only where present.
+      carrier: shipment?.carrier?.name ?? existingPO?.carrier ?? null,
+      tracking_number: shipment?.tracking?.number ?? existingPO?.tracking_number ?? null,
+      // Untrusted external URL — persist only absolute https:// values (the
+      // stored fallback was validated at its own write; re-gated for safety).
+      tracking_url: httpsUrlOrNull(shipment?.tracking?.url) ?? httpsUrlOrNull(existingPO?.tracking_url),
+      // Purely Prodigi's dispatchDate — NEVER now(): a replayed/late callback
+      // must not shift the ship date to callback-processing time. An absent or
+      // unparsable date keeps the stored value, else stays NULL.
+      shipped_at: parseShippedAt(shipment?.dispatchDate) ?? existingPO?.shipped_at ?? null,
+    },
     { onConflict: 'prodigi_order_id' },
   );
   if (upErr) {
@@ -162,9 +197,10 @@ export async function handleProdigiCallback(
     }
   }
 
-  // 5b. Shipped → email the customer their tracking, exactly once.
+  // 5b. Shipped → email the customer their tracking, exactly once (reusing the
+  // same primary shipment the columns above persisted).
   if (localStatus === 'shipped') {
-    await sendPrintShippingEmailOnce(supabase, prodigiOrderId, orderId, prodigiOrder);
+    await sendPrintShippingEmailOnce(supabase, prodigiOrderId, orderId, shipment);
   }
 
   // 6. Mark event done.
@@ -174,6 +210,13 @@ export async function handleProdigiCallback(
     .eq('provider_event_id', event.id);
 
   return { status: 200, message: 'OK' };
+}
+
+/** Prodigi dispatchDate → ISO timestamp, or null when absent/unparsable. */
+function parseShippedAt(dispatchDate: string | undefined): string | null {
+  if (!dispatchDate) return null;
+  const t = Date.parse(dispatchDate);
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
 }
 
 /**
@@ -187,7 +230,7 @@ async function sendPrintShippingEmailOnce(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   prodigiOrderId: string,
   orderId: string,
-  prodigiOrder: ProdigiOrderResponse['order'],
+  shipment: ProdigiShipment | undefined,
 ): Promise<void> {
   const { data: order } = await supabase
     .from('orders')
@@ -212,13 +255,12 @@ async function sendPrintShippingEmailOnce(
   }
   if (!claimed || claimed.length === 0) return; // already sent (or in flight)
 
-  const shipments = prodigiOrder.shipments ?? [];
-  const shipment = shipments.find((s) => s?.tracking?.number) ?? shipments[0];
   const sendParams = {
     order: orderRow,
     tracking: {
       number: shipment?.tracking?.number ?? null,
-      url: shipment?.tracking?.url ?? null,
+      // Same https-only rule as persistence — the URL lands in an email href.
+      url: httpsUrlOrNull(shipment?.tracking?.url),
       carrier: shipment?.carrier?.name ?? null,
     },
     locale: orderRow.locale ?? 'pl',
