@@ -7,6 +7,21 @@
 
 ---
 
+## Streszczenie dla zarządu
+
+**Ten PR nie zmienia żadnego kodu aplikacji — dostarcza mapę ryzyka i plan działania dla całego systemu analityki, płatności i wysyłki danych do zewnętrznych dostawców (Google, Meta, Stripe, Resend, InPost, Prodigi i inni).**
+
+**Jaką wartość to wnosi:**
+- **Zidentyfikowano lukę bezpośrednio dotyczącą pieniędzy klientów** (nie tylko danych): scenariusz, w którym nieudana płatność, po której klient skutecznie ponawia próbę, może zakończyć się pobraniem środków bez utworzenia zamówienia, wysłania e-maila czy uruchomienia realizacji. To najważniejsze ustalenie audytu i pierwsza rzecz do naprawienia.
+- **Ujawniono ryzyko zgodności z RODO/prywatnością**, którego nie dało się wcześniej ocenić: nie ma pewności, czy aktualna, „na żywo" konfiguracja Google Tag Managera respektuje zgody użytkowników na śledzenie przez Meta Pixel. Audyt wskazuje dokładnie, co i jak zweryfikować, aby to potwierdzić lub naprawić.
+- **Wykryto wyciek poufnych linków**: tokeny umożliwiające dostęp do prywatnej sprzedaży mogły trafiać do raportów analitycznych (Google/Meta) i być tam widoczne dla większej liczby osób niż powinno. Poprawka jest prosta i tania.
+- **Potwierdzono, że dane o sprzedaży są wiarygodne**: mechanizm liczenia zakupów jest zaprojektowany poprawnie (podwójne zabezpieczenie przed utratą i podwójnym zliczeniem), więc raporty przychodowe z Google Analytics i Meta można traktować jako wiarygodne źródło do podejmowania decyzji biznesowych — z jednym zastrzeżeniem: dziś nie są korygowane o zwroty.
+- **Uniknięto niepotrzebnego wydatku**: audyt jawnie rekomenduje, aby przy obecnej skali sklepu NIE inwestować w płatną infrastrukturę „server-side Google Tag Manager" — koszt utrzymania przewyższałby korzyści. To konkretna oszczędność, a nie tylko brak rekomendacji.
+- **Dostarczono gotowy, priorytetyzowany plan naprawczy** (co zrobić od razu, co ma wysoki zwrot z inwestycji, a co jest kosmetyczne) — zespół techniczny może działać bez dalszej analizy wstępnej.
+- **Zero ryzyka wdrożeniowego dzisiaj**: to wyłącznie dokument, żaden system produkcyjny nie został dotknięty, więc audyt można było scalić natychmiast.
+
+---
+
 ## A. Executive summary
 
 **Ocena ogólna: system jest zaskakująco dojrzały jak na sklep tej skali — z jedną architektoniczną decyzją wysokiego ryzyka (własnoręczne „bridge'e" w GTM) i kilkoma konkretnymi dziurami.**
