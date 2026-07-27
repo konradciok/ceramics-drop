@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { defaultConsentSnippet, COOKIE_NAME, readConsent } from './consent-mode';
+import { describe, it, expect, vi } from 'vitest';
+import { defaultConsentSnippet, COOKIE_NAME, readConsent, setConsent } from './consent-mode';
 
 describe('consent mode', () => {
   it('default snippet denies analytics/ad storage', () => {
@@ -18,5 +18,58 @@ describe('consent mode', () => {
     expect(readConsent(`foo=1; ${COOKIE_NAME}=granted`)).toBe('granted');
     expect(readConsent(`foo=1;${COOKIE_NAME}=denied`)).toBe('denied'); // no space after ';'
     expect(readConsent('')).toBe(null);
+  });
+});
+
+describe('setConsent', () => {
+  function stubWindowAndDocument() {
+    const gtagCalls: unknown[][] = [];
+    const cookieStore = { cookie: '' };
+    vi.stubGlobal('document', cookieStore);
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      gtag: (...args: unknown[]) => { gtagCalls.push(args); },
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+    return { gtagCalls, cookieStore };
+  }
+
+  it('granted: writes the cookie, updates gtag consent, and pushes consent_update', () => {
+    const { gtagCalls, cookieStore } = stubWindowAndDocument();
+
+    setConsent('granted');
+
+    expect(cookieStore.cookie).toContain(`${COOKIE_NAME}=granted`);
+    expect(gtagCalls).toEqual([
+      ['consent', 'update', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted',
+      }],
+    ]);
+    expect(window.dataLayer).toEqual([
+      expect.objectContaining({ event: 'consent_update', consent_state: 'granted' }),
+    ]);
+  });
+
+  it('denied: writes the cookie, updates gtag consent, and pushes consent_update', () => {
+    const { gtagCalls, cookieStore } = stubWindowAndDocument();
+
+    setConsent('denied');
+
+    expect(cookieStore.cookie).toContain(`${COOKIE_NAME}=denied`);
+    expect(gtagCalls).toEqual([
+      ['consent', 'update', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+      }],
+    ]);
+    expect(window.dataLayer).toEqual([
+      expect.objectContaining({ event: 'consent_update', consent_state: 'denied' }),
+    ]);
   });
 });

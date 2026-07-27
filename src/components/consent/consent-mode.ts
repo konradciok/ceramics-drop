@@ -1,3 +1,5 @@
+import { pushDataLayer } from '@/lib/analytics';
+
 export const COOKIE_NAME = 'ciok_consent';
 export type ConsentValue = 'granted' | 'denied';
 
@@ -49,4 +51,9 @@ export function setConsent(value: ConsentValue): void {
   window.gtag?.('consent', 'update', {
     ad_storage: state, ad_user_data: state, ad_personalization: state, analytics_storage: state,
   });
+  // GTM's Additional Consent Checks only gate a tag at the moment its own
+  // trigger fires — they don't re-fire a previously-blocked tag when consent
+  // updates later. This gives GTM's `ACC - Consent Update` trigger a fresh
+  // moment to re-evaluate the base tags now that consent has changed.
+  pushDataLayer({ event: 'consent_update', consent_state: state });
 }
