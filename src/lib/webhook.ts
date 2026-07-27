@@ -3,7 +3,7 @@ import type Stripe from 'stripe';
 export type WebhookDeps = {
   /** Flip order pending→paid and claim pieces still reserved to this order. Returns false if already processed (idempotent no-op). */
   markPaid: (paymentIntentId: string) => Promise<boolean>;
-  /** Return reserved pieces to available for a failed/canceled intent. */
+  /** Return reserved pieces to available for a canceled PaymentIntent. */
   releaseHold: (paymentIntentId: string) => Promise<void>;
   /**
    * Converge a fully-refunded / lost-dispute payment to `refunded` and return
@@ -50,13 +50,22 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       await deps.createShipment(pi.id);
       return;
     }
-    case 'payment_intent.payment_failed':
     case 'payment_intent.canceled': {
       const pi = event.data.object as Stripe.PaymentIntent;
       await deps.releaseHold(pi.id);
       deps.revalidate('inventory');
       return;
     }
+    case 'payment_intent.payment_failed':
+      // Per-attempt, not terminal: Stripe fires this on every declined
+      // confirmation while the PaymentIntent stays open for retry with a
+      // different payment method (typical: a second card, same PI id).
+      // Releasing the hold here let a same-PI retry that later succeeds land
+      // on an already-`failed` order and silently do nothing (markPaid's
+      // `existing.status !== 'paid'` branch) — money taken, no order. The
+      // 15-minute reservation TTL (and the cron sweep after 1h) already
+      // reclaims an abandoned hold, so no action is needed on this event.
+      return;
     case 'charge.refunded': {
       const charge = event.data.object as Stripe.Charge;
       // Only act on a full refund — partial refunds (e.g. shipping only) must NOT relist.

@@ -71,10 +71,18 @@ describe('handleStripeEvent', () => {
     ).rejects.toThrow('shipx down');
   });
 
-  it('on failure: releases the hold', async () => {
+  it('on a failed attempt: does not release the hold (per-attempt event, not terminal)', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'payment_intent.payment_failed', data: { object: pi('pi_2') } } as unknown as Stripe.Event, d);
-    expect(d.releaseHold).toHaveBeenCalledWith('pi_2');
+    expect(d.releaseHold).not.toHaveBeenCalled();
+    expect(d.revalidate).not.toHaveBeenCalled();
+  });
+
+  it('on cancellation: releases the hold', async () => {
+    const d = deps();
+    await handleStripeEvent({ type: 'payment_intent.canceled', data: { object: pi('pi_3') } } as unknown as Stripe.Event, d);
+    expect(d.releaseHold).toHaveBeenCalledWith('pi_3');
+    expect(d.revalidate).toHaveBeenCalledWith('inventory');
   });
 
   it('ignores unrelated event types', async () => {

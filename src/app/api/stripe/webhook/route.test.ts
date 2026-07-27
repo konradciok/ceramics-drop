@@ -103,6 +103,18 @@ function failedEventRequest() {
   });
 }
 
+function canceledEventRequest() {
+  constructEventAsync.mockResolvedValue({
+    type: 'payment_intent.canceled',
+    data: { object: { id: 'pi_1' } },
+  });
+  return new Request('http://localhost/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': 'sig_test' },
+    body: '{}',
+  });
+}
+
 describe('webhook releaseHold', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
@@ -116,7 +128,7 @@ describe('webhook releaseHold', () => {
     });
     supabaseImpl = supabase;
 
-    const res = await POST(failedEventRequest());
+    const res = await POST(canceledEventRequest());
 
     expect(res.status).toBe(200);
     expect(calls.pieceUpdated).toBe(true);
@@ -133,11 +145,31 @@ describe('webhook releaseHold', () => {
     });
     supabaseImpl = supabase;
 
-    const res = await POST(failedEventRequest());
+    const res = await POST(canceledEventRequest());
 
     expect(res.status).toBe(200);
     // Without the retry-safe fallback the release would be skipped and pieces stay reserved.
     expect(calls.pieceUpdated).toBe(true);
+  });
+});
+
+describe('webhook payment_intent.payment_failed', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+  });
+
+  it('is a no-op: a failed attempt does not release the hold (per-attempt event, not terminal)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(failedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.pieceUpdated).toBe(false);
   });
 });
 
