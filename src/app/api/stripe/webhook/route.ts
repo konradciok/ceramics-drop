@@ -587,6 +587,28 @@ export async function POST(req: Request) {
 
         if (!metaConfig && !ga4Config) return;
 
+        // Claim before sending: at-least-once webhook delivery means Stripe can
+        // redeliver payment_intent.succeeded (e.g. a later step in this same
+        // handler throws) well past Meta's ~48h event_id dedup window, which
+        // would double-count the conversion. One order = one attempt — deliberately
+        // no release-on-failure branch, unlike the email claims above:
+        // sendPurchaseConversions never throws (Meta/GA4 failures are its own
+        // logged/Sentried best-effort concern), so a release-on-failure branch here
+        // would never actually trigger. If a genuine crash between the claim and the
+        // send ever strands an order, the recovery is a manual column reset:
+        // `UPDATE orders SET conversions_sent_at = NULL WHERE id = '<order-id>'`.
+        const { data: claimed, error: claimErr } = await supabase
+          .from('orders')
+          .update({ conversions_sent_at: new Date().toISOString() })
+          .eq('payment_intent_id', pi)
+          .is('conversions_sent_at', null)
+          .select('id');
+        if (claimErr) {
+          console.error('conversions_sent_at claim failed for', pi, claimErr);
+          return;
+        }
+        if (!claimed || claimed.length === 0) return;
+
         await sendPurchaseConversions(pi, {
           loadOrder: async (paymentIntentId) => {
             const { data, error } = await supabase

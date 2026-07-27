@@ -58,7 +58,7 @@ describe('handleStripeEvent', () => {
     expect(d.trackPurchase).toHaveBeenCalledWith('pi_1');
   });
 
-  it('already processed (not a new sale): still fires trackPurchase (conversions dedup via event_id)', async () => {
+  it('already processed (not a new sale): still calls trackPurchase — the redelivery-dedup claim lives inside the trackPurchase implementation (route.ts), not at this dispatch level', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.trackPurchase).toHaveBeenCalledWith('pi_1');

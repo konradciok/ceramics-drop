@@ -469,6 +469,12 @@ function makeSucceededSupabase(opts: {
   confirmClaim?: QueryResult;
   /** The conversions `loadOrder` select (`id, payment_intent_id, status, subtotal, ...`). */
   conversionsOrderSelect?: QueryResult;
+  /**
+   * Result of the atomic `conversions_sent_at IS NULL` claim UPDATE. Defaults to
+   * "claim won" so tests that only care about downstream conversions behaviour
+   * don't each have to opt in; the redelivery case sets an empty array explicitly.
+   */
+  conversionsClaim?: QueryResult;
 }) {
   const failedUpdateEqArgs: unknown[][] = [];
   // Claim UPDATEs recorded for assertion: the payload value written to the
@@ -502,6 +508,9 @@ function makeSucceededSupabase(opts: {
                 payload.confirmation_email_sent_at === null ? { data: [], error: null } : opts.confirmClaim ?? { data: [], error: null },
                 (method, args) => write.filters.push([method, args]),
               );
+            }
+            if ('conversions_sent_at' in payload) {
+              return proxyChain(opts.conversionsClaim ?? { data: [{ id: 'o1' }], error: null });
             }
             throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
           },
@@ -614,6 +623,7 @@ describe('webhook trackPurchase loadOrder failure alert (F-06)', () => {
       casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
       shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
       variantRows: { data: [], error: null },
+      conversionsClaim: { data: [{ id: 'o1' }], error: null },
       conversionsOrderSelect: { data: null, error: { code: '500', message: 'connection reset' } },
     });
     supabaseImpl = supabase;
@@ -625,6 +635,67 @@ describe('webhook trackPurchase loadOrder failure alert (F-06)', () => {
       level: 'warning',
       extra: { payment_intent_id: 'pi_1', error: 'connection reset' },
     });
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook trackPurchase conversions claim (F-05)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(sendPurchaseConversions).mockClear();
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+  });
+  afterEach(() => {
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+    delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+  });
+
+  it('first delivery: claims conversions_sent_at and sends', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      variantRows: { data: [], error: null },
+      conversionsClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendPurchaseConversions).toHaveBeenCalledTimes(1);
+  });
+
+  it('redelivery after conversions already claimed: does not send again', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      variantRows: { data: [], error: null },
+      conversionsClaim: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendPurchaseConversions).not.toHaveBeenCalled();
+  });
+
+  it('a failed claim UPDATE does not send (and does not throw the webhook off its 200)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      variantRows: { data: [], error: null },
+      conversionsClaim: { data: null, error: { message: 'db down' } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendPurchaseConversions).not.toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
   });
 });
