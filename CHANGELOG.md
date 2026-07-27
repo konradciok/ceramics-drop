@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.11.0](https://github.com/konradciok/ceramics-drop/compare/v0.10.0...v0.11.0) (2026-07-27)
+
+
+### Features
+
+* **analytics:** stamp app_version/app_git_sha on GA4 events ([4afef79](https://github.com/konradciok/ceramics-drop/commit/4afef7996e896b69896c2b7d8d46fc5e66ff3d98))
+* **analytics:** stamp app_version/app_git_sha on GA4 events ([1fe1b62](https://github.com/konradciok/ceramics-drop/commit/1fe1b621d0fa816d31859800894ac3095d0ec83b))
+* **auth:** update customer accounts runbook and implementation plan with Google sign-in status; configure Supabase for production ([881819d](https://github.com/konradciok/ceramics-drop/commit/881819dc6a647976dfb9be262dbd304e0548f145))
+* **gtm:** add ACC - Consent Update trigger to the two base tags ([009f4bf](https://github.com/konradciok/ceramics-drop/commit/009f4bfd042dfab083d87e14b3e5a9f6d89b9ef5))
+* **marketing:** fire a GA4 refund event to correct revenue on a full refund ([4ef2d3f](https://github.com/konradciok/ceramics-drop/commit/4ef2d3f84ea61322fc8ff5d2f87f2ff5b9eb6e59))
+
+
+### Bug Fixes
+
+* **analytics:** re-fire GA4/Meta/Clarity when consent is granted mid-session ([b6ab006](https://github.com/konradciok/ceramics-drop/commit/b6ab00615dcb3c9a21f6adec05a74534c4eafcab))
+* **analytics:** redact private-sale and CMS preview tokens from dataLayer URLs ([be09db4](https://github.com/konradciok/ceramics-drop/commit/be09db4550aee40cada022588c0d3144813cae0a))
+* **checkout:** stop persisting ad identifiers in orders.marketing when consent is denied ([d0d7b64](https://github.com/konradciok/ceramics-drop/commit/d0d7b64312bcc9cf74f37d9b7594ed3bdf6c03e0))
+* **consent:** push consent_update directly, drop the analytics.ts coupling ([2e699f2](https://github.com/konradciok/ceramics-drop/commit/2e699f2ed847cda4d123f744153bbd16302becd1))
+* **consent:** push consent_update event so GTM can re-fire blocked tags ([c8344b6](https://github.com/konradciok/ceramics-drop/commit/c8344b6b734aa602ef385e2f726bb4f5aa89dd07))
+* **marketing:** bound Meta CAPI and GA4 MP requests with an 8s timeout ([bad7a95](https://github.com/konradciok/ceramics-drop/commit/bad7a9595eb517526870e6734d1012d442825287))
+* **marketing:** server-side conversions reliability (F-05, F-06, F-08) ([6b37289](https://github.com/konradciok/ceramics-drop/commit/6b37289356a6d19178d63ad2f93435c8057df31d))
+* **privacy:** consent &amp; PII hygiene — redact capability tokens, drop ad ids on denied consent (F-24, F-10) ([04a83f4](https://github.com/konradciok/ceramics-drop/commit/04a83f4899159cf12416a975c7641b11245339c8))
+* **test:** complete the pricing mock in checkout route.test.ts ([2a0dbd7](https://github.com/konradciok/ceramics-drop/commit/2a0dbd7e67136eaa00d244fe12e9707a36d156fd))
+* **webhook:** alert via Sentry when a succeeded payment lands on a dead order ([7b98a09](https://github.com/konradciok/ceramics-drop/commit/7b98a096e4f311c34e5bd24551b1a7d692860c61))
+* **webhook:** alert via Sentry when the conversions order lookup fails ([64cd17a](https://github.com/konradciok/ceramics-drop/commit/64cd17a46b385112bb792ff304aa3fbe6a4af843))
+* **webhook:** claim conversions_sent_at so a redelivery can't double-send a purchase conversion ([167256d](https://github.com/konradciok/ceramics-drop/commit/167256d353c5ae62757dea1b8ca67c4f7ee29ed2))
+* **webhook:** payment_intent.payment_failed no longer releases the reservation hold ([603370c](https://github.com/konradciok/ceramics-drop/commit/603370cef03ee98e378edc7b89a972c4c4749938))
+
+
+### Performance Improvements
+
+* **webhook:** defer the conversion sends to ctx.waitUntil ([5d9bd1d](https://github.com/konradciok/ceramics-drop/commit/5d9bd1dffe83d9c029052681aa1c62b080f67904))
+
 ## [0.10.0](https://github.com/konradciok/ceramics-drop/compare/v0.9.2...v0.10.0) (2026-07-25)
 
 
