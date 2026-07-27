@@ -463,9 +463,13 @@ with:
         // Claim before sending: at-least-once webhook delivery means Stripe can
         // redeliver payment_intent.succeeded (e.g. a later step in this same
         // handler throws) well past Meta's ~48h event_id dedup window, which
-        // would double-count the conversion. One order = one attempt; if the
-        // send itself fails after this point, recovery is a manual column reset
-        // (same trade-off already accepted for the email claim columns below).
+        // would double-count the conversion. One order = one attempt — deliberately
+        // no release-on-failure branch, unlike the email claims below: sendPurchaseConversions
+        // never throws (Meta/GA4 failures are its own logged/Sentried best-effort concern), so
+        // a release-on-failure branch here would never actually trigger. If a genuine crash
+        // between the claim and the send ever strands an order, the recovery is a manual
+        // column reset: `UPDATE orders SET conversions_sent_at = NULL WHERE id = '<order-id>'`,
+        // same accepted trade-off the audit itself documents for this exact pattern (F-05).
         const { data: claimed, error: claimErr } = await supabase
           .from('orders')
           .update({ conversions_sent_at: new Date().toISOString() })
@@ -696,6 +700,19 @@ describe('sendRefundConversion', () => {
     await sendRefundConversion(baseRefundOrder(), { sendGa4Refund: sendGa4RefundMock });
     expect(sendGa4RefundMock).not.toHaveBeenCalled();
   });
+
+  it('never throws, even on malformed persisted order data (best-effort boundary)', async () => {
+    const sendGa4RefundMock = vi.fn();
+    // Runtime-only malformation the type system can't rule out (a DB row with
+    // a null currency, say) — must be caught, not propagate to releaseSale.
+    const malformed = { ...baseRefundOrder(), currency: null } as unknown as RefundOrder;
+
+    await expect(
+      sendRefundConversion(malformed, { ga4Config: { measurementId: 'G-X', apiSecret: 'S' }, sendGa4Refund: sendGa4RefundMock }),
+    ).resolves.toBeUndefined();
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalled();
+  });
 });
 ```
 
@@ -748,17 +765,21 @@ export async function sendRefundConversion(
   if (!order.marketing || order.marketing.consent !== 'granted') return;
   if (!deps.ga4Config) return;
 
-  const send = deps.sendGa4Refund ?? sendGa4Refund;
-  const refundInput: Ga4RefundInput = {
-    clientId: order.marketing.ga_client_id,
-    sessionId: order.marketing.ga_session_id,
-    transactionId: order.payment_intent_id,
-    value: order.subtotal / 100,
-    shipping: order.shipping / 100,
-    currency: order.currency.toUpperCase(),
-  };
-
+  // Input construction (order.currency.toUpperCase() etc.) is inside the try,
+  // not before it — releaseSale awaits this function, so a throw here on
+  // malformed persisted data (e.g. a null currency) must not escape and block
+  // the piece-relist/webhook-response path this function is meant to be
+  // best-effort against.
   try {
+    const send = deps.sendGa4Refund ?? sendGa4Refund;
+    const refundInput: Ga4RefundInput = {
+      clientId: order.marketing.ga_client_id,
+      sessionId: order.marketing.ga_session_id,
+      transactionId: order.payment_intent_id,
+      value: order.subtotal / 100,
+      shipping: order.shipping / 100,
+      currency: order.currency.toUpperCase(),
+    };
     const result = await send(deps.ga4Config, refundInput);
     if (result.skipped) {
       console.warn('ga4 mp refund skipped (consent granted, no clientId) for', order.payment_intent_id);

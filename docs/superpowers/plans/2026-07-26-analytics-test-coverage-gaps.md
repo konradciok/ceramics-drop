@@ -209,7 +209,31 @@ describe('setConsent', () => {
     expect(cookieValue).toContain(`${COOKIE_NAME}=granted`);
   });
 
-  it('calls gtag consent update with the denied state, and never throws when gtag is not yet defined', () => {
+  it('calls gtag consent update with the denied state for all four signals, and persists the cookie', () => {
+    const gtagMock = vi.fn();
+    let cookieValue = '';
+    vi.stubGlobal('window', { gtag: gtagMock });
+    vi.stubGlobal('document', {
+      get cookie() {
+        return cookieValue;
+      },
+      set cookie(v: string) {
+        cookieValue = v;
+      },
+    });
+
+    setConsent('denied');
+
+    expect(gtagMock).toHaveBeenCalledWith('consent', 'update', {
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      analytics_storage: 'denied',
+    });
+    expect(cookieValue).toContain(`${COOKIE_NAME}=denied`);
+  });
+
+  it('never throws when gtag is not yet defined (window.gtag?.(...) guard)', () => {
     let cookieValue = '';
     vi.stubGlobal('window', {}); // gtag not injected yet
     vi.stubGlobal('document', {
@@ -253,7 +277,7 @@ git commit -m "test(consent): cover setConsent's gtag update call"
 - Create: `e2e/analytics-smoke.spec.ts`
 
 **Interfaces:**
-- Produces: `readAnalyticsDebug(page: Page): Promise<{ events: unknown[]; attr: string }>` in `e2e/helpers/checkout.ts`, reading the exact QA hook implemented in `src/lib/analytics.ts:435-461` (`sessionStorage['acc_analytics_debug']` — a JSON array of `{event, engagement_type, ecommerce, meta}` summaries capped at 50 — and `document.documentElement.dataset.accAnalyticsDebug` — a pipe-joined `event:engagement_type` string capped at the last 20).
+- Produces: `readAnalyticsDebug(page: Page): Promise<{ events: unknown[]; attr: string; dataLayer: Array<{ event?: string }> }>` in `e2e/helpers/checkout.ts`. Reads three things: the real `window.dataLayer` (what GTM actually consumes — asserted on directly so a regression in the real push, not just the debug mirror, is caught), and the QA mirror implemented in `src/lib/analytics.ts:435-461` (`sessionStorage['acc_analytics_debug']` — a JSON array of `{event, engagement_type, ecommerce, meta}` summaries capped at 50 — and `document.documentElement.dataset.accAnalyticsDebug` — a pipe-joined `event:engagement_type` string capped at the last 20). `pushDataLayer` writes both the real array and the mirror unconditionally in the same call, so asserting on both close two failure modes: the push itself breaking, and the mirror silently drifting from it.
 - Consumes: `resetCart`, `addFirstUnsoldFromCategory`, `goToCart` (existing helpers in the same file).
 
 - [ ] **Step 1: Add the `readAnalyticsDebug` helper**
@@ -261,11 +285,14 @@ git commit -m "test(consent): cover setConsent's gtag update call"
 In `e2e/helpers/checkout.ts`, add after `goToCart`:
 
 ```ts
-/** Reads the acc_analytics_debug QA hook (src/lib/analytics.ts) — never asserts on real GTM/GA4. */
-export async function readAnalyticsDebug(page: Page): Promise<{ events: unknown[]; attr: string }> {
+/** Reads window.dataLayer plus the acc_analytics_debug QA mirror (src/lib/analytics.ts) — never asserts on real GTM/GA4 network calls. */
+export async function readAnalyticsDebug(
+  page: Page,
+): Promise<{ events: unknown[]; attr: string; dataLayer: Array<{ event?: string }> }> {
   return page.evaluate(() => ({
     events: JSON.parse(sessionStorage.getItem('acc_analytics_debug') ?? '[]'),
     attr: document.documentElement.dataset.accAnalyticsDebug ?? '',
+    dataLayer: (window.dataLayer ?? []) as Array<{ event?: string }>,
   }));
 }
 ```
@@ -278,22 +305,27 @@ import { test, expect } from '@playwright/test';
 import { resetCart, addFirstUnsoldFromCategory, goToCart, readAnalyticsDebug } from './helpers/checkout';
 
 /**
- * Smoke-tests that the dataLayer/GA4 event pipeline actually fires in a real
- * browser, using the acc_analytics_debug QA hook (src/lib/analytics.ts)
- * rather than asserting on GTM/GA4 directly — no real events are sent.
+ * Smoke-tests that the real window.dataLayer (and its acc_analytics_debug QA
+ * mirror) actually receive events in a real browser — no GTM/GA4/Meta network
+ * calls are made or asserted on.
  * @ci-safe — cart state only; /api/checkout is never called.
  */
 test.describe('analytics dataLayer smoke @ci', () => {
-  test('view_item_list, add_to_cart, and view_cart appear in the analytics debug trail', async ({ page }) => {
+  test('view_item_list, add_to_cart, and view_cart appear in window.dataLayer and the debug mirror', async ({ page }) => {
     await resetCart(page);
     await addFirstUnsoldFromCategory(page, 'kubki');
 
     let debug = await readAnalyticsDebug(page);
+    let eventNames = debug.dataLayer.map((e) => e.event).filter(Boolean);
+    expect(eventNames).toContain('view_item_list');
+    expect(eventNames).toContain('add_to_cart');
     expect(debug.attr).toContain('view_item_list');
     expect(debug.attr).toContain('add_to_cart');
 
     await goToCart(page);
     debug = await readAnalyticsDebug(page);
+    eventNames = debug.dataLayer.map((e) => e.event).filter(Boolean);
+    expect(eventNames).toContain('view_cart');
     expect(debug.attr).toContain('view_cart');
   });
 });

@@ -38,7 +38,12 @@
 -- sent, so a later delivered/bounced/complained webhook (matched by this id)
 -- can be correlated back to the order it belongs to. Closes F-13: today a
 -- bounce is only visible as a bare, uncorrelated email_id in Workers logs.
+-- The partial unique index keeps the webhook's equality lookup (Task 2) fast
+-- and guarantees a resend id never ambiguously matches more than one order.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmation_email_resend_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS orders_confirmation_email_resend_id_idx
+  ON orders (confirmation_email_resend_id)
+  WHERE confirmation_email_resend_id IS NOT NULL;
 ```
 
 - [ ] **Step 2: Write the failing test**
@@ -82,7 +87,7 @@ import {
 } from './email';
 ```
 
-Also change the `vitest` import to add `vi`/`afterEach`:
+Also change the `vitest` import to add `vi`/`afterEach`, and add a Sentry mock (this file doesn't currently import `@sentry/nextjs` — Step 5 adds that import to `email.ts`, so the test file needs the same mock convention used elsewhere in this repo, e.g. `src/app/api/stripe/webhook/route.test.ts`):
 
 Replace:
 
@@ -94,6 +99,9 @@ with:
 
 ```ts
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
+
+vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 ```
 
 Add a new describe block:
@@ -102,6 +110,7 @@ Add a new describe block:
 describe('emailOrderConfirmationToCustomer — Resend email id', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.mocked(Sentry.captureMessage).mockClear();
   });
 
   const order: OrderConfirmationOrder = {
@@ -120,9 +129,10 @@ describe('emailOrderConfirmationToCustomer — Resend email id', () => {
     });
 
     expect(result).toEqual({ resendId: 'em_abc123' });
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('returns an undefined resendId when the Resend response has no id', async () => {
+  it('returns an undefined resendId and alerts via Sentry when the Resend response has no id', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
 
     const result = await emailOrderConfirmationToCustomer({
@@ -132,6 +142,10 @@ describe('emailOrderConfirmationToCustomer — Resend email id', () => {
     });
 
     expect(result).toEqual({ resendId: undefined });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('resend_confirmation_missing_id', {
+      level: 'warning',
+      extra: { order_id: 'ord-1' },
+    });
   });
 });
 ```
@@ -235,7 +249,22 @@ async function sendResendTemplate(params: {
 }
 ```
 
-- [ ] **Step 5: Make `emailOrderConfirmationToCustomer` return the id**
+- [ ] **Step 5: Make `emailOrderConfirmationToCustomer` return the id, and alert if Resend omits it**
+
+Add the Sentry import to `src/lib/email.ts` (not previously imported in this file):
+
+Replace:
+
+```ts
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+```
+
+with:
+
+```ts
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import * as Sentry from '@sentry/nextjs';
+```
 
 Replace:
 
@@ -305,6 +334,18 @@ export async function emailOrderConfirmationToCustomer(params: {
       variables: { MAIN_CONTENT: mainContent },
       signal: controller.signal,
     });
+    if (!id) {
+      // The send succeeded (res.ok was true) but Resend's response didn't
+      // include an id — unexpected per its API contract. The email itself
+      // was still sent, so this must not throw/retry (that would double-send
+      // the customer); alert instead, since a later bounce for this order
+      // can no longer be correlated (Task 2).
+      console.error('emailOrderConfirmationToCustomer: Resend response had no id for order', order.id);
+      Sentry.captureMessage('resend_confirmation_missing_id', {
+        level: 'warning',
+        extra: { order_id: order.id },
+      });
+    }
     return { resendId: id };
   } finally {
     clearTimeout(timer);
@@ -415,7 +456,16 @@ async function sendEmailOnceWithClaim(
       .update({ confirmation_email_resend_id: resendId })
       .eq('id', orderId);
     if (idErr) {
+      // The email was already sent — retrying would double-send, so this is
+      // alert-and-recover, not retry. Recovery is a manual column backfill
+      // (`UPDATE orders SET confirmation_email_resend_id = '<resendId>' WHERE
+      // id = '<orderId>'`), same manual-reset shape already accepted for a
+      // stuck claim release failure below.
       console.error('confirmation_email_resend_id write failed for', orderId, idErr);
+      Sentry.captureMessage('confirmation_email_resend_id_write_failed', {
+        level: 'warning',
+        extra: { order_id: orderId, resend_id: resendId },
+      });
     }
   }
   if (!sent) {
@@ -459,28 +509,33 @@ git commit -m "feat(email): capture and persist the Resend email id for order co
 
 - [ ] **Step 1: Write the failing tests (new file)**
 
-Create `src/app/api/resend/webhook/route.test.ts`:
+Create `src/app/api/resend/webhook/route.test.ts`. All state a `vi.mock(...)` factory closes over is created inside a single `vi.hoisted(...)` block — `vi.mock` factories are hoisted above ordinary top-level `const`/`let` declarations by Vitest's transform, so a factory referencing a plain module-scope variable declared with `const`/`let` risks a temporal-dead-zone error; `vi.hoisted()` is the documented, unambiguous way to share mutable mock state with a factory:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 
-const verifyResendSignature = vi.fn();
-const parseResendEvent = vi.fn();
-vi.mock('@/lib/resend-webhook', () => ({ verifyResendSignature, parseResendEvent }));
-
-let cfEnv: Record<string, string | undefined> = { RESEND_WEBHOOK_SECRET: 'whsec_test' };
-vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ env: cfEnv }),
+const hoisted = vi.hoisted(() => ({
+  verifyResendSignature: vi.fn(),
+  parseResendEvent: vi.fn(),
+  cfEnv: { RESEND_WEBHOOK_SECRET: 'whsec_test' } as Record<string, string | undefined>,
+  ordersSelectResult: { data: null as unknown, error: null as unknown },
 }));
 
-let ordersSelectResult: { data: unknown; error: unknown } = { data: null, error: null };
-const maybeSingle = vi.fn(async () => ordersSelectResult);
+vi.mock('@/lib/resend-webhook', () => ({
+  verifyResendSignature: hoisted.verifyResendSignature,
+  parseResendEvent: hoisted.parseResendEvent,
+}));
+
+vi.mock('@opennextjs/cloudflare', () => ({
+  getCloudflareContext: () => ({ env: hoisted.cfEnv }),
+}));
+
 vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: () => ({
     from: (table: string) => {
       if (table === 'orders') {
-        return { select: () => ({ eq: () => ({ maybeSingle }) }) };
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => hoisted.ordersSelectResult }) }) };
       }
       throw new Error(`unexpected table: ${table}`);
     },
@@ -507,14 +562,14 @@ function makeRequest(body: unknown, headers: Record<string, string> = {}) {
 describe('POST /api/resend/webhook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    cfEnv = { RESEND_WEBHOOK_SECRET: 'whsec_test' };
-    verifyResendSignature.mockResolvedValue(true);
-    ordersSelectResult = { data: null, error: null };
+    hoisted.cfEnv = { RESEND_WEBHOOK_SECRET: 'whsec_test' };
+    hoisted.verifyResendSignature.mockResolvedValue(true);
+    hoisted.ordersSelectResult = { data: null, error: null };
   });
 
   it('alerts and correlates the order id when a confirmation email bounces', async () => {
-    parseResendEvent.mockReturnValue({ type: 'email.bounced', data: { email_id: 'em_123' } });
-    ordersSelectResult = { data: { id: 'order-1' }, error: null };
+    hoisted.parseResendEvent.mockReturnValue({ type: 'email.bounced', data: { email_id: 'em_123' } });
+    hoisted.ordersSelectResult = { data: { id: 'order-1' }, error: null };
 
     const res = await POST(makeRequest({ type: 'email.bounced', data: { email_id: 'em_123' } }));
 
@@ -526,8 +581,8 @@ describe('POST /api/resend/webhook', () => {
   });
 
   it('alerts with a null order_id when the bounced email is not a tracked confirmation', async () => {
-    parseResendEvent.mockReturnValue({ type: 'email.complained', data: { email_id: 'em_999' } });
-    ordersSelectResult = { data: null, error: null };
+    hoisted.parseResendEvent.mockReturnValue({ type: 'email.complained', data: { email_id: 'em_999' } });
+    hoisted.ordersSelectResult = { data: null, error: null };
 
     const res = await POST(makeRequest({ type: 'email.complained', data: { email_id: 'em_999' } }));
 
@@ -539,7 +594,7 @@ describe('POST /api/resend/webhook', () => {
   });
 
   it('does not alert on a delivered event', async () => {
-    parseResendEvent.mockReturnValue({ type: 'email.delivered', data: { email_id: 'em_555' } });
+    hoisted.parseResendEvent.mockReturnValue({ type: 'email.delivered', data: { email_id: 'em_555' } });
 
     const res = await POST(makeRequest({ type: 'email.delivered', data: { email_id: 'em_555' } }));
 
@@ -548,7 +603,7 @@ describe('POST /api/resend/webhook', () => {
   });
 
   it('fails closed (500) when RESEND_WEBHOOK_SECRET is not configured', async () => {
-    cfEnv = {};
+    hoisted.cfEnv = {};
 
     const res = await POST(makeRequest({ type: 'email.bounced', data: { email_id: 'em_1' } }));
 
@@ -566,8 +621,8 @@ describe('POST /api/resend/webhook', () => {
   });
 
   it('rejects when the signature is invalid', async () => {
-    verifyResendSignature.mockResolvedValue(false);
-    parseResendEvent.mockReturnValue({ type: 'email.bounced', data: { email_id: 'em_1' } });
+    hoisted.verifyResendSignature.mockResolvedValue(false);
+    hoisted.parseResendEvent.mockReturnValue({ type: 'email.bounced', data: { email_id: 'em_1' } });
 
     const res = await POST(makeRequest({ type: 'email.bounced', data: { email_id: 'em_1' } }));
 
