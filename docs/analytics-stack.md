@@ -61,7 +61,7 @@ GA4 ecommerce payloads use:
 
 Meta payloads use standard event names where available and include `event_id` for future browser/server deduplication.
 
-Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param; register them as GA4 custom dimensions to use them in Explore/reports (see the `engagement_type` note above).
+Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now.
 
 ## Google Cloud and GTM API Auth
 
