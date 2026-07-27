@@ -582,6 +582,71 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
   });
 });
 
+describe('webhook markPaid succeeded-on-dead-order alert (F-01)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(createOrderShipment).mockClear();
+  });
+
+  it('succeeded lands on an already-failed order: alerts via Sentry, does not fulfil, does not throw', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: succeeded on a dead order', 'pi_1', 'o1', 'failed');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', {
+      level: 'error',
+      extra: { payment_intent_id: 'pi_1', order_id: 'o1', order_status: 'failed' },
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('succeeded lands on an already-expired order: alerts via Sentry', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'expired', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'expired' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', {
+      level: 'error',
+      extra: { payment_intent_id: 'pi_1', order_id: 'o1', order_status: 'expired' },
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("succeeded lands on an already-refunded order: no alert (releaseSale's documented race)", async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'refunded', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'refunded' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', expect.anything());
+  });
+});
+
 describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
