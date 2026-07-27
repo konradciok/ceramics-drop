@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 
 // --- Stripe: constructEventAsync (all paths) + refunds.create (under-fulfillment) ---
@@ -8,9 +8,12 @@ vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({ webhooks: { constructEventAsync }, refunds: { create: refundsCreate } }),
 }));
 
-// --- Cloudflare env (webhook secret + no conversion creds so trackPurchase no-ops) ---
+// --- Cloudflare env: mutable per-test so specific describe blocks can opt into
+// conversion credentials (GA4/Meta) without affecting the rest of the suite,
+// which relies on trackPurchase no-op'ing with no creds configured. ---
+let cfEnv: Record<string, string | undefined> = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
 vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ env: { STRIPE_WEBHOOK_SECRET: 'whsec_test' } }),
+  getCloudflareContext: () => ({ env: cfEnv }),
 }));
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
@@ -38,6 +41,7 @@ import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
+import { sendPurchaseConversions } from '@/lib/marketing/conversions';
 
 type Result = { data: unknown; error: unknown };
 
@@ -463,6 +467,8 @@ function makeSucceededSupabase(opts: {
   studioClaim?: QueryResult;
   /** Result of the atomic `confirmation_email_sent_at IS NULL` claim UPDATE. */
   confirmClaim?: QueryResult;
+  /** The conversions `loadOrder` select (`id, payment_intent_id, status, subtotal, ...`). */
+  conversionsOrderSelect?: QueryResult;
 }) {
   const failedUpdateEqArgs: unknown[][] = [];
   // Claim UPDATEs recorded for assertion: the payload value written to the
@@ -503,6 +509,7 @@ function makeSucceededSupabase(opts: {
             if (columns === 'id, status, private_sale_id') return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
             if (columns === 'id, status') return proxyChain(opts.shipmentLookup);
             if (columns.startsWith('id, email')) return proxyChain(opts.emailOrderSelect ?? { data: null, error: null });
+            if (columns.startsWith('id, payment_intent_id')) return proxyChain(opts.conversionsOrderSelect ?? { data: null, error: null });
             throw new Error(`unexpected orders.select columns: ${columns}`);
           },
         };
@@ -578,6 +585,46 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: order lookup failed for payment_intent', 'pi_1', dbError);
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_order_lookup_failed');
     expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook trackPurchase loadOrder failure alert (F-06)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(sendPurchaseConversions).mockClear();
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+  });
+  afterEach(() => {
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+    delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+  });
+
+  it('a transient error loading the order for conversions is alerted, not silently dropped', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Exercise the real loadOrder closure route.ts builds and passes as a dep,
+    // without needing the real sendPurchaseConversions (and its Meta/GA4 HTTP
+    // calls) — mirrors how ConversionsDeps.loadOrder is designed to be injected.
+    vi.mocked(sendPurchaseConversions).mockImplementationOnce(async (pi, deps) => {
+      await deps.loadOrder(pi);
+    });
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      variantRows: { data: [], error: null },
+      conversionsOrderSelect: { data: null, error: { code: '500', message: 'connection reset' } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('conversions_load_order_failed', {
+      level: 'warning',
+      extra: { payment_intent_id: 'pi_1', error: 'connection reset' },
+    });
     consoleErrorSpy.mockRestore();
   });
 });

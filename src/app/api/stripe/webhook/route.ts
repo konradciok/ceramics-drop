@@ -589,7 +589,7 @@ export async function POST(req: Request) {
 
         await sendPurchaseConversions(pi, {
           loadOrder: async (paymentIntentId) => {
-            const { data } = await supabase
+            const { data, error } = await supabase
               .from('orders')
               .select(
                 'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
@@ -597,7 +597,18 @@ export async function POST(req: Request) {
               )
               .eq('payment_intent_id', paymentIntentId)
               .single();
-            if (!data) return null;
+            if (error || !data) {
+              // markPaid already ran by this point (trackPurchase fires right after
+              // it — see webhook.ts), so the order must exist; any miss here is a
+              // transient DB hiccup, not a genuine unknown PI. The old code silently
+              // returned null, dropping the server-side conversion with zero trace.
+              console.error('conversions loadOrder failed for', paymentIntentId, error);
+              Sentry.captureMessage('conversions_load_order_failed', {
+                level: 'warning',
+                extra: { payment_intent_id: paymentIntentId, error: error?.message ?? null },
+              });
+              return null;
+            }
             const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
             const { data: itemRows } = await supabase
               .from('order_items')
