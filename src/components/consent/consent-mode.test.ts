@@ -29,8 +29,6 @@ describe('setConsent', () => {
     vi.stubGlobal('window', {
       dataLayer: [],
       gtag: (...args: unknown[]) => { gtagCalls.push(args); },
-      document: { documentElement: { dataset: {} } },
-      location: { hostname: 'example.com' },
     });
     return { gtagCalls, cookieStore };
   }
@@ -50,7 +48,7 @@ describe('setConsent', () => {
       }],
     ]);
     expect(window.dataLayer).toEqual([
-      expect.objectContaining({ event: 'consent_update', consent_state: 'granted' }),
+      { event: 'consent_update', consent_state: 'granted' },
     ]);
   });
 
@@ -69,7 +67,7 @@ describe('setConsent', () => {
       }],
     ]);
     expect(window.dataLayer).toEqual([
-      expect.objectContaining({ event: 'consent_update', consent_state: 'denied' }),
+      { event: 'consent_update', consent_state: 'denied' },
     ]);
   });
 });

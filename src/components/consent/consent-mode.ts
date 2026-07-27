@@ -1,5 +1,3 @@
-import { pushDataLayer } from '@/lib/analytics';
-
 export const COOKIE_NAME = 'ciok_consent';
 export type ConsentValue = 'granted' | 'denied';
 
@@ -54,6 +52,11 @@ export function setConsent(value: ConsentValue): void {
   // GTM's Additional Consent Checks only gate a tag at the moment its own
   // trigger fires — they don't re-fire a previously-blocked tag when consent
   // updates later. This gives GTM's `ACC - Consent Update` trigger a fresh
-  // moment to re-evaluate the base tags now that consent has changed.
-  pushDataLayer({ event: 'consent_update', consent_state: state });
+  // moment to re-evaluate the base tags now that consent has changed. Pushed
+  // directly (not via analytics.ts's pushDataLayer) since this event is a
+  // GTM-internal signal that never reaches GA4/Meta — importing analytics.ts
+  // here would drag the whole product catalog into every importer of this
+  // file, including server-side readConsent callers like the checkout route.
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push({ event: 'consent_update', consent_state: state });
 }

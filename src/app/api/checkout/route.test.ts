@@ -102,21 +102,6 @@ vi.mock('@/lib/pricing', () => ({
   orderAmountEuroCents,
   orderAmountGBPPence,
   toMinor,
-  // consent-mode.ts (imported by this route for readConsent) also imports
-  // pushDataLayer from analytics.ts, which imports products.ts, which needs
-  // this real export — same PRICE_PLN as src/lib/pricing.ts.
-  PRICE_PLN: {
-    kubki: 95,
-    wazony: 239,
-    'wazony-srednie': 289,
-    'wazony-duze': 379,
-    talerzyki: 69,
-    'talerze-srednie': 119,
-    'talerze-duze': 160,
-    'duze-michy': 345,
-    'miski-falowane': 195,
-    'fine-art-prints': 0,
-  },
 }));
 
 const sendCheckoutStartedEvent = vi.fn(async () => {});
