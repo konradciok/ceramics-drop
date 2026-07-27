@@ -128,15 +128,10 @@ Whenever the GTM container (`GTM-NPHLG9NR`) tags/triggers change — via `npm ru
 
 1. In GTM UI → Admin → Container → Export Container, export the newly published version.
 2. Save it as `docs/GTM-NPHLG9NR_v<N>.json` (N = the published version number) and remove the previous export file.
-3. Confirm all 4 Custom HTML tags (`ACC - GA4 base`, `ACC - Meta Pixel base`, `ACC - GA4 dataLayer bridge`, `ACC - Meta dataLayer bridge`) still show `consentSettings.consentStatus: "needed"` in the export, gated on `analytics_storage` (GA4 tags) or `ad_storage` (Meta tags) — these come from `consentTypes` in `scripts/gtm-api.mjs`.
+3. Confirm every consent-relevant tag still shows `consentSettings.consentStatus: "needed"` in the export, gated on `analytics_storage` or `ad_storage` as appropriate. This covers the 4 `ACC - *` Custom HTML tags (`ACC - GA4 base`, `ACC - Meta Pixel base`, `ACC - GA4 dataLayer bridge`, `ACC - Meta dataLayer bridge` — gated via `consentTypes` in `scripts/gtm-api.mjs`) **and any tag added directly in the GTM UI** (e.g. `Microsoft Clarity - Official`, on `analytics_storage`) — those aren't managed by `gtm-api.mjs` and default to ungated, so a UI-added tag needs its consent status set by hand.
 4. Commit the new export in the same change as the container edit — a stale export is worse than no export.
 
-> **The committed export is currently stale.** `docs/GTM-NPHLG9NR_v3.json` predates both the
-> consent-gating config in `scripts/gtm-api.mjs` and the v6 dedupe-guard hotfix
-> (`docs/gtm-hotfix.md`), and shows `consentSettings: NOT_SET` on all 4 tags. **Do not read it as
-> evidence that the live container is ungated** — and equally, do not assume it is gated until the
-> live container has been checked in the GTM UI. Verifying the live version and replacing this
-> export is the open remainder of event-system-audit finding F-02.
+**F-02 verified 2026-07-27** (event-system-audit): live version was 10, all 4 `ACC - *` tags correctly gated. One gap found in the process: `Microsoft Clarity - Official` — added directly in the GTM UI at some point after the `v3.json` export, outside `gtm-api.mjs` — was live with `consentStatus: notSet`, firing for every visitor regardless of consent choice. Gated it to `analytics_storage` (matching GA4's treatment) and republished as version 12; current export is `docs/GTM-NPHLG9NR_v12.json`.
 
 ## Current storefront status
 
