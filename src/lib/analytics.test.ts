@@ -39,6 +39,20 @@ describe('redactSensitiveUrl', () => {
       '/pl/koszyk/return?payment_intent=redacted&payment_intent_client_secret=redacted&redirect_status=succeeded',
     );
   });
+  it('redacts the private-sale token from absolute and relative urls', () => {
+    expect(redactSensitiveUrl('https://anna-ciok.studio/koszyk?sale=abc-123')).toBe(
+      'https://anna-ciok.studio/koszyk?sale=redacted',
+    );
+    expect(redactSensitiveUrl('/koszyk?sale=abc-123')).toBe('/koszyk?sale=redacted');
+  });
+  it('redacts the CMS draft-preview token from absolute and relative urls', () => {
+    expect(
+      redactSensitiveUrl('https://anna-ciok.studio/kubki/k01?preview=eyJhbGciOiJIUzI1NiJ9'),
+    ).toBe('https://anna-ciok.studio/kubki/k01?preview=redacted');
+    expect(redactSensitiveUrl('/kubki/k01?preview=eyJhbGciOiJIUzI1NiJ9')).toBe(
+      '/kubki/k01?preview=redacted',
+    );
+  });
   it('leaves non-sensitive urls unchanged', () => {
     expect(redactSensitiveUrl('/pl/koszyk')).toBe('/pl/koszyk');
     expect(redactSensitiveUrl('https://anna-ciok.studio/pl')).toBe('https://anna-ciok.studio/pl');
@@ -53,6 +67,16 @@ describe('buildPageViewEvent redaction', () => {
     });
     expect(e.page_location).toBe('https://anna-ciok.studio/zwrot?order=redacted');
     expect(e.page_path).toBe('/zwrot?order=redacted');
+    expect(JSON.stringify(e)).not.toContain('abc-123');
+  });
+
+  it('strips the sale token from page_location and page_path', () => {
+    const e = buildPageViewEvent({
+      pageLocation: 'https://anna-ciok.studio/koszyk?sale=abc-123',
+      pagePath: '/koszyk?sale=abc-123',
+    });
+    expect(e.page_location).toBe('https://anna-ciok.studio/koszyk?sale=redacted');
+    expect(e.page_path).toBe('/koszyk?sale=redacted');
     expect(JSON.stringify(e)).not.toContain('abc-123');
   });
 });

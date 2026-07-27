@@ -368,6 +368,77 @@ describe('POST /api/checkout', () => {
     );
   });
 
+  it('captures full marketing context (including ad identifiers) when consent is granted', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=granted' },
+      body: JSON.stringify(
+        makeCheckoutBody({
+          attemptId: VALID_ATTEMPT_ID,
+          marketing_cookies: {
+            fbp: 'fb.1.111.222',
+            fbc: 'fb.1.111.333',
+            ga_client_id: 'GA1.1.111.222',
+            ga_session_id: '999',
+          },
+        }),
+      ),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({
+          consent: 'granted',
+          fbp: 'fb.1.111.222',
+          fbc: 'fb.1.111.333',
+          ga_client_id: 'GA1.1.111.222',
+          ga_session_id: '999',
+          ip: '203.0.113.50',
+        }),
+      }),
+    );
+  });
+
+  it('drops ad identifiers from marketing context when consent is denied', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=denied' },
+      body: JSON.stringify(
+        makeCheckoutBody({
+          attemptId: VALID_ATTEMPT_ID,
+          marketing_cookies: {
+            fbp: 'fb.1.111.222',
+            fbc: 'fb.1.111.333',
+            ga_client_id: 'GA1.1.111.222',
+            ga_session_id: '999',
+          },
+        }),
+      ),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: {
+          consent: 'denied',
+          fbp: null,
+          fbc: null,
+          ga_client_id: null,
+          ga_session_id: null,
+          ip: null,
+          user_agent: null,
+          event_source_url: null,
+          captured_at: expect.any(String),
+        },
+      }),
+    );
+  });
+
   it('falls back to a server-generated order id when attemptId is absent or malformed (no 400)', async () => {
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {

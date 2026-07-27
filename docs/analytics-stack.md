@@ -122,6 +122,22 @@ npm run gtm:setup -- --publish
 10. Check GA4 DebugView for the GA4 event names.
 11. Check Meta Events Manager Test Events for `PageView`, `ViewContent`, `AddToCart`, `InitiateCheckout`, and `Purchase`.
 
+## Container Change Checklist
+
+Whenever the GTM container (`GTM-NPHLG9NR`) tags/triggers change — via `npm run gtm:setup -- --publish` or a manual edit in the GTM UI:
+
+1. In GTM UI → Admin → Container → Export Container, export the newly published version.
+2. Save it as `docs/GTM-NPHLG9NR_v<N>.json` (N = the published version number) and remove the previous export file.
+3. Confirm all 4 Custom HTML tags (`ACC - GA4 base`, `ACC - Meta Pixel base`, `ACC - GA4 dataLayer bridge`, `ACC - Meta dataLayer bridge`) still show `consentSettings.consentStatus: "needed"` in the export, gated on `analytics_storage` (GA4 tags) or `ad_storage` (Meta tags) — these come from `consentTypes` in `scripts/gtm-api.mjs`.
+4. Commit the new export in the same change as the container edit — a stale export is worse than no export.
+
+> **The committed export is currently stale.** `docs/GTM-NPHLG9NR_v3.json` predates both the
+> consent-gating config in `scripts/gtm-api.mjs` and the v6 dedupe-guard hotfix
+> (`docs/gtm-hotfix.md`), and shows `consentSettings: NOT_SET` on all 4 tags. **Do not read it as
+> evidence that the live container is ungated** — and equally, do not assume it is gated until the
+> live container has been checked in the GTM UI. Verifying the live version and replacing this
+> export is the open remainder of event-system-audit finding F-02.
+
 ## Current storefront status
 
 The storefront now uses the live Stripe checkout flow.

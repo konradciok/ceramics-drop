@@ -371,8 +371,16 @@ export function buildEngagementEvent(
  *  dataLayer (and thus GA4 / Meta). `order` is the return capability token used by
  *  /zwrot?order=<uuid> → POST /api/returns. `payment_intent` /
  *  `payment_intent_client_secret` are appended by Stripe to the /koszyk/return URL
- *  and must not be logged or exposed to third parties. */
-const SENSITIVE_QUERY_PARAMS = ['order', 'payment_intent', 'payment_intent_client_secret'];
+ *  and must not be logged or exposed to third parties. `sale` is the single-use
+ *  private-sale re-offer token (/koszyk?sale=<token>). `preview` is the admin
+ *  CMS draft-preview token minted for unpublished product notes. */
+const SENSITIVE_QUERY_PARAMS = [
+  'order',
+  'payment_intent',
+  'payment_intent_client_secret',
+  'sale',
+  'preview',
+];
 
 /** Redact sensitive query params from an absolute or path-only URL before it is
  *  pushed to analytics. Returns the input unchanged if it has no sensitive param
