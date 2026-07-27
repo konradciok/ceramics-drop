@@ -393,7 +393,7 @@ ${dedupeBridgeSendSnippet('meta')}
 </script>`;
 }
 
-/** Prefer the bloomy-tale deploy service account key, then ADC. */
+/** Prefer the gtm-api-deploy service account key, then ADC. */
 async function createAuthClient() {
   const keyFile = resolveCredentialsPath();
   if (keyFile) {

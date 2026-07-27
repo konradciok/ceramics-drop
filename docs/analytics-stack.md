@@ -65,21 +65,21 @@ Every event also carries `app_version` (semver from `package.json`) and `app_git
 
 ## Google Cloud and GTM API Auth
 
-The GTM scripts authenticate with the **bloomy-tale** deploy service account:
+The GTM and GA4 scripts authenticate with the `gtm-api-deploy` service account:
 
-- Project: `bloomy-tale-477216`
-- Service account: `gtm-api-deploy@bloomy-tale-477216.iam.gserviceaccount.com`
+- Project: `anna-ciok-studio-analytics`
+- Service account: `gtm-api-deploy@anna-ciok-studio-analytics.iam.gserviceaccount.com`
 - Local key file: `.secrets/gtm-api-deploy.json` (gitignored)
 
 One-time setup:
 
 ```bash
-gcloud config set project bloomy-tale-477216
-gcloud services enable tagmanager.googleapis.com --project bloomy-tale-477216
+gcloud config set project anna-ciok-studio-analytics
+gcloud services enable tagmanager.googleapis.com --project anna-ciok-studio-analytics
 npm run gtm:key
 ```
 
-The service account must have access to the GTM container. Grant that in GCP / Google Marketing Platform for the bloomy-tale project, or via an admin who can attach the service account to the GTM account programmatically. The GTM **User management** UI only accepts human Google accounts, not `@iam.gserviceaccount.com` emails.
+The service account must have access to the GTM container. Grant that in GCP / Google Marketing Platform for the `anna-ciok-studio-analytics` project, or via an admin who can attach the service account to the GTM account programmatically. The GTM **User management** UI only accepts human Google accounts, not `@iam.gserviceaccount.com` emails. It also has GA4 property access (Data API read + Admin API read/write, e.g. custom dimensions) — see `npm run ga4:report` and `docs/analytics-stack.md`'s custom-dimensions notes above.
 
 Then list accessible GTM accounts and containers:
 
