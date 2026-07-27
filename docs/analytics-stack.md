@@ -54,7 +54,7 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 
 GA4 ecommerce payloads use:
 
-- `currency: "PLN"`
+- `currency`: the buyer's display currency (`PLN`/`EUR`/`GBP`) — derived client-side from `useCurrency()` (`src/components/currency/CurrencyProvider.tsx`, seeded from the `currency_pref` cookie) via `currencyFormatter()` in `src/lib/format.ts`; server-side conversions (`src/lib/marketing/conversions.ts`) use the persisted `orders.currency` column instead. `ANALYTICS_CURRENCY` (`'PLN'`) in `src/lib/analytics.ts` is only a fallback default for callers that omit `currency` explicitly.
 - `ecommerce.value`: item subtotal
 - `ecommerce.shipping`: shipping cost on purchase
 - `order_total`: subtotal plus shipping as a custom parameter
@@ -64,6 +64,16 @@ GA4 ecommerce payloads use:
 Meta payloads use standard event names where available and include `event_id` for future browser/server deduplication.
 
 Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now.
+
+## GA4 Property Configuration
+
+`properties/539909256` (`ceramics`, under the `Shopify` GA4 account — the real production property) audited and corrected 2026-07-27 via the GA4 Admin API:
+
+- **Key events**: only `purchase` (`keyEvents/14989935437`). Removed `close_convert_lead`/`qualify_lead` (generic lead-gen template defaults, irrelevant to this store) and `view_item`/`add_to_cart`/`begin_checkout` (funnel-diagnostic events, not conversions — view them via Explorations/funnel reports instead; marking them as key events dilutes conversion-rate metrics).
+- **Data retention**: `eventDataRetention` and `userDataRetention` both at the 14-month max (event retention was previously stuck at GA4's 2-month default — only affects Explore/funnel/cohort analysis, not standard reports or the Data API, and isn't retroactive).
+- **Google Signals**: enabled, for cross-device reporting and demographics/interest breakdowns. Privacy exposure is governed by the existing Consent Mode v2 setup (`src/components/consent/`), not this toggle — a June 2026 GA4 platform change made the `ad_storage` consent signal the real gate for data reaching any linked Google Ads account (none is currently linked here).
+- **Reporting currency**: `PLN` (previously EUR) — matches `pl`, this store's default/home-market locale. This is the property-level fallback/aggregate-reporting currency only; every ecommerce event already sends its own correct per-transaction `currency` (see the Event Contract section above).
+- **BigQuery export**: not yet linked. `scripts/bq-query.mjs`'s prerequisite step (GA4 Admin → Property → Product Links → BigQuery Links) is still outstanding — `npm run bq:query` will fail its own dataset-existence check until this is done.
 
 ## Google Cloud and GTM API Auth
 

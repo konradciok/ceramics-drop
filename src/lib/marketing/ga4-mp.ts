@@ -11,8 +11,8 @@ export type Ga4PurchaseInput = {
   clientId: string | null;
   sessionId?: string | null;
   transactionId: string;
-  value: number;     // major units (PLN), item subtotal
-  shipping: number;  // major units (PLN)
+  value: number;     // major units, item subtotal
+  shipping: number;  // major units
   currency: string;
   items: Ga4Item[];
   userData?: { sha256_email_address?: string };
@@ -81,8 +81,8 @@ export type Ga4RefundInput = {
   clientId: string | null;
   sessionId?: string | null;
   transactionId: string;
-  value: number;     // major units (PLN), item subtotal — mirrors Ga4PurchaseInput.value
-  shipping: number;  // major units (PLN) — mirrors Ga4PurchaseInput.shipping
+  value: number;     // major units, item subtotal — mirrors Ga4PurchaseInput.value
+  shipping: number;  // major units — mirrors Ga4PurchaseInput.shipping
   currency: string;
 };
 
