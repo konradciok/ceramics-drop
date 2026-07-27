@@ -353,17 +353,33 @@ export async function POST(req: Request) {
   const origin = req.headers.get('origin') ?? '';
   const localePrefix = locale !== 'pl' ? `/${locale}` : '';
   const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
-  const marketing: MarketingContext = {
-    consent,
-    fbp: str2(mc.fbp),
-    fbc: str2(mc.fbc),
-    ga_client_id: str2(mc.ga_client_id),
-    ga_session_id: str2(mc.ga_session_id),
-    ip: clientIp,
-    user_agent: req.headers.get('user-agent'),
-    event_source_url: eventSourceUrl,
-    captured_at: new Date().toISOString(),
-  };
+  // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
+  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
+  // declined tracking, so they're dropped rather than merely flagged.
+  const marketing: MarketingContext =
+    consent === 'granted'
+      ? {
+          consent,
+          fbp: str2(mc.fbp),
+          fbc: str2(mc.fbc),
+          ga_client_id: str2(mc.ga_client_id),
+          ga_session_id: str2(mc.ga_session_id),
+          ip: clientIp,
+          user_agent: req.headers.get('user-agent'),
+          event_source_url: eventSourceUrl,
+          captured_at: new Date().toISOString(),
+        }
+      : {
+          consent,
+          fbp: null,
+          fbc: null,
+          ga_client_id: null,
+          ga_session_id: null,
+          ip: null,
+          user_agent: null,
+          event_source_url: null,
+          captured_at: new Date().toISOString(),
+        };
 
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId,
