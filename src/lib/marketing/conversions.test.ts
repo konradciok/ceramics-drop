@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
-import { sendPurchaseConversions, type ConversionOrder } from './conversions';
+import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
 
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
@@ -255,5 +255,60 @@ describe('sendPurchaseConversions', () => {
     await sendPurchaseConversions('pi_1', d);
     expect(d.sendMeta).toHaveBeenCalled();
     expect(d.sendGa4).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendRefundConversion', () => {
+  const baseRefundOrder = (over: Partial<RefundOrder> = {}): RefundOrder => ({
+    payment_intent_id: 'pi_1',
+    subtotal: 30000,
+    shipping: 1800,
+    currency: 'pln',
+    marketing: {
+      consent: 'granted', fbp: null, fbc: null, ga_client_id: '111.222', ga_session_id: '999',
+      ip: null, user_agent: null, event_source_url: null, captured_at: '2026-06-09T00:00:00Z',
+    },
+    ...over,
+  });
+
+  it('sends a GA4 refund event mirroring the purchase value/shipping', async () => {
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).toHaveBeenCalledWith(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', sessionId: '999', transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+    );
+  });
+
+  it('does nothing when consent is not granted', async () => {
+    const sendGa4RefundMock = vi.fn();
+    const denied = baseRefundOrder();
+    await sendRefundConversion({ ...denied, marketing: { ...denied.marketing!, consent: 'denied' } }, {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when GA4 is not configured', async () => {
+    const sendGa4RefundMock = vi.fn();
+    await sendRefundConversion(baseRefundOrder(), { sendGa4Refund: sendGa4RefundMock });
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+  });
+
+  it('never throws, even on malformed persisted order data (best-effort boundary)', async () => {
+    const sendGa4RefundMock = vi.fn();
+    // Runtime-only malformation the type system can't rule out (a DB row with
+    // a null currency, say) — must be caught, not propagate to releaseSale.
+    const malformed = { ...baseRefundOrder(), currency: null } as unknown as RefundOrder;
+
+    await expect(
+      sendRefundConversion(malformed, { ga4Config: { measurementId: 'G-X', apiSecret: 'S' }, sendGa4Refund: sendGa4RefundMock }),
+    ).resolves.toBeUndefined();
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalled();
   });
 });

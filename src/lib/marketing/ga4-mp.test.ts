@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildGa4PurchasePayload, sendGa4Purchase, type Ga4PurchaseInput } from './ga4-mp';
+import {
+  buildGa4PurchasePayload,
+  buildGa4RefundPayload,
+  sendGa4Purchase,
+  sendGa4Refund,
+  type Ga4PurchaseInput,
+} from './ga4-mp';
 
 const input = (over: Partial<Ga4PurchaseInput> = {}): Ga4PurchaseInput => ({
   clientId: '111.222',
@@ -57,6 +63,61 @@ describe('sendGa4Purchase', () => {
   it('captures the response body on a non-ok response', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => '{"error":"forbidden"}' });
     const res = await sendGa4Purchase({ measurementId: 'G-X', apiSecret: 'S' }, input(), fetchImpl);
+    expect(res).toEqual({ ok: false, status: 403, errorBody: '{"error":"forbidden"}' });
+  });
+});
+
+describe('buildGa4RefundPayload', () => {
+  it('builds a refund event keyed by transaction_id, mirroring purchase value/shipping', () => {
+    const p = buildGa4RefundPayload({
+      clientId: '111.222',
+      sessionId: '999',
+      transactionId: 'pi_1',
+      value: 300,
+      shipping: 18,
+      currency: 'PLN',
+    });
+    expect(p.client_id).toBe('111.222');
+    expect(p.events[0].name).toBe('refund');
+    expect(p.events[0].params).toMatchObject({
+      transaction_id: 'pi_1', value: 300, shipping: 18, currency: 'PLN', session_id: '999',
+    });
+  });
+});
+
+describe('sendGa4Refund', () => {
+  it('skips (returns skipped) when clientId is missing', async () => {
+    const fetchImpl = vi.fn();
+    const res = await sendGa4Refund(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: null, transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+      fetchImpl,
+    );
+    expect(res).toEqual({ ok: false, skipped: true });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('POSTs to /mp/collect with a refund event', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 204, text: async () => '' });
+    const res = await sendGa4Refund(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+      fetchImpl,
+    );
+    expect(res.ok).toBe(true);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toContain('https://www.google-analytics.com/mp/collect');
+    expect(JSON.parse(init.body).events[0].name).toBe('refund');
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('captures the response body on a non-ok response', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => '{"error":"forbidden"}' });
+    const res = await sendGa4Refund(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+      fetchImpl,
+    );
     expect(res).toEqual({ ok: false, status: 403, errorBody: '{"error":"forbidden"}' });
   });
 });

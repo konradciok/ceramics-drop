@@ -12,7 +12,8 @@ import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/e
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
-import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
+import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
+import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
 import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
@@ -387,14 +388,38 @@ export async function POST(req: Request) {
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
-        .select('id, private_sale_id');
+        .select('id, private_sale_id, subtotal, shipping, currency, marketing');
       if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
-      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
+      const rows = data as Array<{
+        id: string;
+        private_sale_id: string | null;
+        subtotal: number;
+        shipping: number;
+        currency: string;
+        marketing: MarketingContext | null;
+      }> | null;
       if (rows && rows.length > 0) {
         // Print orders: stop the Prodigi side (cancel or alert). Runs only when
         // the paid→refunded CAS actually flipped, so a replayed event can't
         // re-enter. Best-effort — never throws.
         await cancelPrintFulfilment(rows[0].id, env);
+        // GA4 revenue correction: this order WAS recorded as purchase revenue
+        // (it was 'paid'), so a full refund must reverse it. Same real-transition
+        // scoping as cancelPrintFulfilment above — never fires on the
+        // pending→refunded or already-refunded branches, since no purchase was
+        // ever recorded there.
+        const ga4Secret = env.GA4_API_SECRET;
+        const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+        await sendRefundConversion(
+          {
+            payment_intent_id: pi,
+            subtotal: rows[0].subtotal,
+            shipping: rows[0].shipping,
+            currency: rows[0].currency,
+            marketing: rows[0].marketing,
+          },
+          { ga4Config: ga4Secret && measurementId ? { measurementId, apiSecret: ga4Secret } : undefined },
+        );
         // Private-sale pieces were sold privately (already hidden from the shop) and must
         // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
         if (releaseTargetStatus(rows[0]) === 'sold') return true;

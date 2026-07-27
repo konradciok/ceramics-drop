@@ -30,7 +30,7 @@ vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
 vi.mock('@/lib/email', () => ({ emailNewOrderToStudio: vi.fn(), emailOrderConfirmationToCustomer: vi.fn() }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
-vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn() }));
+vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn(), sendRefundConversion: vi.fn() }));
 vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: vi.fn() }));
 vi.mock('@/server/fulfilment/enqueue', () => ({ enqueueProdigi: vi.fn() }));
 
@@ -41,7 +41,7 @@ import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
-import { sendPurchaseConversions } from '@/lib/marketing/conversions';
+import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
 type Result = { data: unknown; error: unknown };
 
@@ -285,6 +285,82 @@ describe('webhook releaseSale → cancelPrintFulfilment (Finding 1)', () => {
 
     expect(res.status).toBe(200);
     expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+  });
+});
+
+describe('webhook releaseSale GA4 refund conversion (F-08)', () => {
+  const marketing = {
+    consent: 'granted', ga_client_id: '111.222', ga_session_id: '999',
+    fbp: null, fbc: null, ip: null, user_agent: null, event_source_url: null,
+    captured_at: '2026-06-09T00:00:00Z',
+  };
+
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(sendRefundConversion).mockClear();
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+  });
+  afterEach(() => {
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+    delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+  });
+
+  it('paid→refunded transition: sends a GA4 refund event when consent was granted', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: [
+        { data: [], error: null }, // pending→refunded CAS: no match (order was paid)
+        {
+          data: [{
+            id: 'o1',
+            private_sale_id: null,
+            subtotal: 30000,
+            shipping: 1800,
+            currency: 'pln',
+            marketing,
+          }], error: null,
+        }, // paid→refunded CAS: matches
+      ],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendRefundConversion).toHaveBeenCalledWith(
+      { payment_intent_id: 'pi_1', subtotal: 30000, shipping: 1800, currency: 'pln', marketing },
+      { ga4Config: { measurementId: 'G-TEST', apiSecret: 'ga4_secret_test' } },
+    );
+  });
+
+  it('pending→refunded (refund before succeeded): no refund event — no purchase revenue was ever recorded', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: [{ data: [{ id: 'o1', private_sale_id: null }], error: null }],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendRefundConversion).not.toHaveBeenCalled();
+  });
+
+  it('replayed charge.refunded (already refunded, both CAS miss): does not re-fire the reversal', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendRefundConversion).not.toHaveBeenCalled();
   });
 });
 

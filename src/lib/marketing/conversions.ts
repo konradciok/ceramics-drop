@@ -5,7 +5,7 @@ import { variantLabel } from '../print-cart';
 import { toAnalyticsItem } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
-import { sendGa4Purchase, type Ga4Config, type Ga4PurchaseInput } from './ga4-mp';
+import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
 import type { MarketingContext } from './context';
 import { normalizeShippingAddress } from '../shipping-address';
 
@@ -200,6 +200,65 @@ export async function sendPurchaseConversions(
       console.error('ga4 mp purchase failed for', paymentIntentId, err);
       Sentry.captureException(err);
     }
+  }
+}
+
+export type RefundOrder = {
+  payment_intent_id: string;
+  subtotal: number; // grosze
+  shipping: number; // grosze
+  currency: string;
+  marketing: MarketingContext | null;
+};
+
+export type RefundConversionsDeps = {
+  ga4Config?: Ga4Config;
+  sendGa4Refund?: typeof sendGa4Refund;
+};
+
+/**
+ * GA4-only: Meta doesn't support un-firing a conversion. Fires only for a real
+ * paid→refunded transition (see releaseSale in route.ts) — never for the
+ * pending→refunded race, since no purchase was ever recorded as revenue there.
+ */
+export async function sendRefundConversion(
+  order: RefundOrder,
+  deps: RefundConversionsDeps,
+): Promise<void> {
+  if (!order.marketing || order.marketing.consent !== 'granted') return;
+  if (!deps.ga4Config) return;
+
+  // Input construction (order.currency.toUpperCase() etc.) is inside the try,
+  // not before it — releaseSale awaits this function, so a throw here on
+  // malformed persisted data (e.g. a null currency) must not escape and block
+  // the piece-relist/webhook-response path this function is meant to be
+  // best-effort against.
+  try {
+    const send = deps.sendGa4Refund ?? sendGa4Refund;
+    const refundInput: Ga4RefundInput = {
+      clientId: order.marketing.ga_client_id,
+      sessionId: order.marketing.ga_session_id,
+      transactionId: order.payment_intent_id,
+      value: order.subtotal / 100,
+      shipping: order.shipping / 100,
+      currency: order.currency.toUpperCase(),
+    };
+    const result = await send(deps.ga4Config, refundInput);
+    if (result.skipped) {
+      console.warn('ga4 mp refund skipped (consent granted, no clientId) for', order.payment_intent_id);
+      return;
+    }
+    if (!result.ok) {
+      console.error('ga4 mp refund http error for', order.payment_intent_id, result.status, result.errorBody);
+      Sentry.captureMessage(`ga4 mp refund http error ${result.status}`, {
+        level: 'error',
+        fingerprint: ['ga4-mp-refund-http-error', String(result.status), result.errorBody ?? ''],
+        extra: { payment_intent_id: order.payment_intent_id, status: result.status, response_body: result.errorBody },
+      });
+    }
+  } catch (err) {
+    console.error('ga4 mp refund failed for', order.payment_intent_id, err);
+    Sentry.captureException(err);
   }
 }
 
