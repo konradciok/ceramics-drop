@@ -12,8 +12,17 @@ vi.mock('@/lib/stripe', () => ({
 // conversion credentials (GA4/Meta) without affecting the rest of the suite,
 // which relies on trackPurchase no-op'ing with no creds configured. ---
 let cfEnv: Record<string, string | undefined> = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+// Conversion sends are deferred via ctx.waitUntil, so the fake collects the
+// promises instead of dropping them: tests still assert the send was *invoked*
+// synchronously (waitUntil receives an already-started promise), and
+// `settleDeferred()` lets a test await completion when it needs the effects.
+let deferred: Promise<unknown>[] = [];
+const settleDeferred = () => Promise.all(deferred);
 vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ env: cfEnv }),
+  getCloudflareContext: () => ({
+    env: cfEnv,
+    ctx: { waitUntil: (p: Promise<unknown>) => deferred.push(Promise.resolve(p).catch(() => {})) },
+  }),
 }));
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
@@ -30,7 +39,12 @@ vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
 vi.mock('@/lib/email', () => ({ emailNewOrderToStudio: vi.fn(), emailOrderConfirmationToCustomer: vi.fn() }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
-vi.mock('@/lib/marketing/conversions', () => ({ sendPurchaseConversions: vi.fn(), sendRefundConversion: vi.fn() }));
+// Both are `async` in the real module and are now handed to ctx.waitUntil with a
+// trailing .catch, so the fakes must resolve a promise rather than return undefined.
+vi.mock('@/lib/marketing/conversions', () => ({
+  sendPurchaseConversions: vi.fn(async () => {}),
+  sendRefundConversion: vi.fn(async () => {}),
+}));
 vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: vi.fn() }));
 vi.mock('@/server/fulfilment/enqueue', () => ({ enqueueProdigi: vi.fn() }));
 
@@ -298,6 +312,7 @@ describe('webhook releaseSale GA4 refund conversion (F-08)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(sendRefundConversion).mockClear();
+    deferred = [];
     cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
     process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
   });
@@ -679,6 +694,7 @@ describe('webhook trackPurchase loadOrder failure alert (F-06)', () => {
     constructEventAsync.mockReset();
     vi.mocked(Sentry.captureMessage).mockClear();
     vi.mocked(sendPurchaseConversions).mockClear();
+    deferred = [];
     cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
     process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
   });
@@ -705,6 +721,8 @@ describe('webhook trackPurchase loadOrder failure alert (F-06)', () => {
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
+    // The send is deferred via ctx.waitUntil, so the alert lands after the 200.
+    await settleDeferred();
 
     expect(res.status).toBe(200);
     expect(Sentry.captureMessage).toHaveBeenCalledWith('conversions_load_order_failed', {
@@ -719,6 +737,7 @@ describe('webhook trackPurchase conversions claim (F-05)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(sendPurchaseConversions).mockClear();
+    deferred = [];
     cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
     process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
   });
@@ -756,6 +775,30 @@ describe('webhook trackPurchase conversions claim (F-05)', () => {
 
     expect(res.status).toBe(200);
     expect(sendPurchaseConversions).not.toHaveBeenCalled();
+  });
+
+  it('the send is deferred via waitUntil: a slow Meta/GA4 call does not hold the webhook 200', async () => {
+    let releaseSend: () => void = () => {};
+    vi.mocked(sendPurchaseConversions).mockImplementationOnce(
+      () => new Promise<void>((resolve) => { releaseSend = resolve; }),
+    );
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      variantRows: { data: [], error: null },
+      conversionsClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    // Resolves even though the conversion send is still in flight — that's the
+    // point of the deferral. Awaited inline, this test would hang forever.
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(sendPurchaseConversions).toHaveBeenCalledTimes(1);
+    expect(deferred).toHaveLength(1);
+    releaseSend();
+    await settleDeferred();
   });
 
   it('a failed claim UPDATE does not send (and does not throw the webhook off its 200)', async () => {
