@@ -159,6 +159,20 @@ export async function POST(req: Request) {
           Sentry.captureMessage('stripe_webhook_unknown_payment_intent');
           return false;
         }
+        if (existing.status === 'failed' || existing.status === 'expired') {
+          // Stripe just confirmed payment for an order we consider dead. After the
+          // payment_failed fix in webhook.ts this should be rare — reachable only
+          // via a genuine payment_intent.canceled, or the under-fulfilment
+          // auto-refund branch below — but money moved, so silence would hide it.
+          // `paid` (below) is a normal idempotent retry; `refunded` is releaseSale's
+          // documented pending→refunded race (refund observed before success) —
+          // neither needs an alert.
+          console.error('markPaid: succeeded on a dead order', pi, existing.id, existing.status);
+          Sentry.captureMessage('stripe_webhook_succeeded_on_dead_order', {
+            level: 'error',
+            extra: { payment_intent_id: pi, order_id: existing.id, order_status: existing.status },
+          });
+        }
         if (existing.status !== 'paid') return false;
         orderId = existing.id;
         privateSaleId = existing.private_sale_id;

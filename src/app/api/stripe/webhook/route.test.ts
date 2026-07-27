@@ -103,6 +103,18 @@ function failedEventRequest() {
   });
 }
 
+function canceledEventRequest() {
+  constructEventAsync.mockResolvedValue({
+    type: 'payment_intent.canceled',
+    data: { object: { id: 'pi_1' } },
+  });
+  return new Request('http://localhost/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': 'sig_test' },
+    body: '{}',
+  });
+}
+
 describe('webhook releaseHold', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
@@ -116,7 +128,7 @@ describe('webhook releaseHold', () => {
     });
     supabaseImpl = supabase;
 
-    const res = await POST(failedEventRequest());
+    const res = await POST(canceledEventRequest());
 
     expect(res.status).toBe(200);
     expect(calls.pieceUpdated).toBe(true);
@@ -133,11 +145,31 @@ describe('webhook releaseHold', () => {
     });
     supabaseImpl = supabase;
 
-    const res = await POST(failedEventRequest());
+    const res = await POST(canceledEventRequest());
 
     expect(res.status).toBe(200);
     // Without the retry-safe fallback the release would be skipped and pieces stay reserved.
     expect(calls.pieceUpdated).toBe(true);
+  });
+});
+
+describe('webhook payment_intent.payment_failed', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+  });
+
+  it('is a no-op: a failed attempt does not release the hold (per-attempt event, not terminal)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(failedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.pieceUpdated).toBe(false);
   });
 });
 
@@ -547,6 +579,71 @@ describe('webhook markPaid unknown payment_intent (F9b)', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_order_lookup_failed');
     expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_unknown_payment_intent');
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook markPaid succeeded-on-dead-order alert (F-01)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(createOrderShipment).mockClear();
+  });
+
+  it('succeeded lands on an already-failed order: alerts via Sentry, does not fulfil, does not throw', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('markPaid: succeeded on a dead order', 'pi_1', 'o1', 'failed');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', {
+      level: 'error',
+      extra: { payment_intent_id: 'pi_1', order_id: 'o1', order_status: 'failed' },
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('succeeded lands on an already-expired order: alerts via Sentry', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'expired', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'expired' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', {
+      level: 'error',
+      extra: { payment_intent_id: 'pi_1', order_id: 'o1', order_status: 'expired' },
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("succeeded lands on an already-refunded order: no alert (releaseSale's documented race)", async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'refunded', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'refunded' }, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', expect.anything());
   });
 });
 
