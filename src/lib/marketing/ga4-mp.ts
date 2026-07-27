@@ -45,6 +45,15 @@ export function buildGa4PurchasePayload(input: Ga4PurchaseInput) {
   };
 }
 
+/** The MP collect endpoint, keyed by the config's credentials. Shared by both senders. */
+function ga4CollectUrl(config: Ga4Config): string {
+  return (
+    `https://www.google-analytics.com/mp/collect` +
+    `?measurement_id=${encodeURIComponent(config.measurementId)}` +
+    `&api_secret=${encodeURIComponent(config.apiSecret)}`
+  );
+}
+
 export async function sendGa4Purchase(
   config: Ga4Config,
   input: Ga4PurchaseInput,
@@ -55,11 +64,7 @@ export async function sendGa4Purchase(
   // console.warn + Sentry warning once it knows consent was granted; logging here too
   // would double every skip in the Workers logs.
   if (!input.clientId) return { ok: false, skipped: true };
-  const url =
-    `https://www.google-analytics.com/mp/collect` +
-    `?measurement_id=${encodeURIComponent(config.measurementId)}` +
-    `&api_secret=${encodeURIComponent(config.apiSecret)}`;
-  const res = await fetchImpl(url, {
+  const res = await fetchImpl(ga4CollectUrl(config), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(buildGa4PurchasePayload(input)),
@@ -107,11 +112,7 @@ export async function sendGa4Refund(
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ ok: boolean; status?: number; skipped?: boolean; errorBody?: string }> {
   if (!input.clientId) return { ok: false, skipped: true };
-  const url =
-    `https://www.google-analytics.com/mp/collect` +
-    `?measurement_id=${encodeURIComponent(config.measurementId)}` +
-    `&api_secret=${encodeURIComponent(config.apiSecret)}`;
-  const res = await fetchImpl(url, {
+  const res = await fetchImpl(ga4CollectUrl(config), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(buildGa4RefundPayload(input)),

@@ -311,4 +311,41 @@ describe('sendRefundConversion', () => {
     expect(sendGa4RefundMock).not.toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalled();
   });
+
+  it('warns without a Sentry message when GA4 skips for a missing clientId', async () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: false, skipped: true });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'ga4 mp refund skipped (consent granted, no clientId) for',
+      'pi_1',
+    );
+    // A skip is an attribution gap, not an error — unlike the purchase path it
+    // reverses nothing that was ever sent, so it stays out of Sentry.
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it('reports a non-ok GA4 response to Sentry, fingerprinted on status + body', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: false, status: 500, errorBody: 'oops' });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'ga4 mp refund http error 500',
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: ['ga4-mp-refund-http-error', '500', 'oops'],
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1', status: 500, response_body: 'oops' }),
+      }),
+    );
+    consoleSpy.mockRestore();
+  });
 });
