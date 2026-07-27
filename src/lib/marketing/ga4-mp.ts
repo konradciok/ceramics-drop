@@ -63,6 +63,7 @@ export async function sendGa4Purchase(
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(buildGa4PurchasePayload(input)),
+    signal: AbortSignal.timeout(8000),
   });
   if (res.ok) return { ok: true, status: res.status };
   // Unlike Meta's Graph API, GA4 MP validation errors don't embed a per-request trace

@@ -47,6 +47,13 @@ describe('sendGa4Purchase', () => {
     expect(init.method).toBe('POST');
   });
 
+  it('bounds the request with an 8s abort signal', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 204, text: async () => '' });
+    await sendGa4Purchase({ measurementId: 'G-X', apiSecret: 'S' }, input(), fetchImpl);
+    const [, init] = fetchImpl.mock.calls[0];
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('captures the response body on a non-ok response', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => '{"error":"forbidden"}' });
     const res = await sendGa4Purchase({ measurementId: 'G-X', apiSecret: 'S' }, input(), fetchImpl);

@@ -63,6 +63,13 @@ describe('sendMetaPurchase', () => {
     expect(JSON.parse(fetchImpl.mock.calls[0][1].body).test_event_code).toBe('TEST123');
   });
 
+  it('bounds the request with an 8s abort signal', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => '{}' });
+    await sendMetaPurchase({ pixelId: 'PIX', accessToken: 'TOK' }, input(), fetchImpl);
+    const [, init] = fetchImpl.mock.calls[0];
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('captures the response body on a non-ok response, so the real Meta error is diagnosable', async () => {
     const errorJson = '{"error":{"message":"Invalid OAuth access token","type":"OAuthException","code":190}}';
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 400, text: async () => errorJson });
