@@ -91,22 +91,25 @@ async function setupWorkspace() {
     name: 'ACC - Initialization',
     type: 'init',
   });
+  const consentTrigger = await upsertTrigger(workspace.path, consentUpdateTrigger());
 
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - GA4 base', ga4BaseHtml(ga4MeasurementId), [initTrigger.triggerId], {
-      oncePerLoad: true,
-      priority: 20,
-      consentTypes: ['analytics_storage'],
-    }),
+    customHtmlTag(
+      'ACC - GA4 base',
+      ga4BaseHtml(ga4MeasurementId),
+      [initTrigger.triggerId, consentTrigger.triggerId],
+      { oncePerLoad: true, priority: 20, consentTypes: ['analytics_storage'] },
+    ),
   );
   await upsertTag(
     workspace.path,
-    customHtmlTag('ACC - Meta Pixel base', metaBaseHtml(metaPixelId), [initTrigger.triggerId], {
-      oncePerLoad: true,
-      priority: 10,
-      consentTypes: ['ad_storage'],
-    }),
+    customHtmlTag(
+      'ACC - Meta Pixel base',
+      metaBaseHtml(metaPixelId),
+      [initTrigger.triggerId, consentTrigger.triggerId],
+      { oncePerLoad: true, priority: 10, consentTypes: ['ad_storage'] },
+    ),
   );
   await upsertTag(
     workspace.path,
@@ -123,6 +126,7 @@ async function setupWorkspace() {
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
   console.log('Created/updated GTM tags: GA4 base, Meta base, GA4 bridge, Meta bridge.');
+  console.log('GA4 base and Meta Pixel base now also fire on ACC - Consent Update (re-fire after mid-session Accept).');
 
   if (flags.has('--publish')) {
     const version = await tagmanager.accounts.containers.workspaces.create_version({
@@ -212,6 +216,22 @@ function customEventTrigger() {
         parameter: [
           templateParam('arg0', '{{_event}}'),
           templateParam('arg1', `^(${ANALYTICS_EVENTS.join('|')})$`),
+        ],
+      },
+    ],
+  };
+}
+
+function consentUpdateTrigger() {
+  return {
+    name: 'ACC - Consent Update',
+    type: 'customEvent',
+    customEventFilter: [
+      {
+        type: 'equals',
+        parameter: [
+          templateParam('arg0', '{{_event}}'),
+          templateParam('arg1', 'consent_update'),
         ],
       },
     ],
