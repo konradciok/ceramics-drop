@@ -49,4 +49,14 @@ export function setConsent(value: ConsentValue): void {
   window.gtag?.('consent', 'update', {
     ad_storage: state, ad_user_data: state, ad_personalization: state, analytics_storage: state,
   });
+  // GTM's Additional Consent Checks only gate a tag at the moment its own
+  // trigger fires — they don't re-fire a previously-blocked tag when consent
+  // updates later. This gives GTM's `ACC - Consent Update` trigger a fresh
+  // moment to re-evaluate the base tags now that consent has changed. Pushed
+  // directly (not via analytics.ts's pushDataLayer) since this event is a
+  // GTM-internal signal that never reaches GA4/Meta — importing analytics.ts
+  // here would drag the whole product catalog into every importer of this
+  // file, including server-side readConsent callers like the checkout route.
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push({ event: 'consent_update', consent_state: state });
 }
