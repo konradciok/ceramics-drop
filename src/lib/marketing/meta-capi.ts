@@ -83,6 +83,7 @@ export async function sendMetaPurchase(
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(8000),
   });
   if (res.ok) return { ok: true, status: res.status };
   // Meta returns a structured { error: { message, type, code, error_subcode, fbtrace_id } }

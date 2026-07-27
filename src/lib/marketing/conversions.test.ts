@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
-import { sendPurchaseConversions, type ConversionOrder } from './conversions';
+import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
 
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
@@ -255,5 +255,97 @@ describe('sendPurchaseConversions', () => {
     await sendPurchaseConversions('pi_1', d);
     expect(d.sendMeta).toHaveBeenCalled();
     expect(d.sendGa4).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendRefundConversion', () => {
+  const baseRefundOrder = (over: Partial<RefundOrder> = {}): RefundOrder => ({
+    payment_intent_id: 'pi_1',
+    subtotal: 30000,
+    shipping: 1800,
+    currency: 'pln',
+    marketing: {
+      consent: 'granted', fbp: null, fbc: null, ga_client_id: '111.222', ga_session_id: '999',
+      ip: null, user_agent: null, event_source_url: null, captured_at: '2026-06-09T00:00:00Z',
+    },
+    ...over,
+  });
+
+  it('sends a GA4 refund event mirroring the purchase value/shipping', async () => {
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).toHaveBeenCalledWith(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', sessionId: '999', transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+    );
+  });
+
+  it('does nothing when consent is not granted', async () => {
+    const sendGa4RefundMock = vi.fn();
+    const denied = baseRefundOrder();
+    await sendRefundConversion({ ...denied, marketing: { ...denied.marketing!, consent: 'denied' } }, {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when GA4 is not configured', async () => {
+    const sendGa4RefundMock = vi.fn();
+    await sendRefundConversion(baseRefundOrder(), { sendGa4Refund: sendGa4RefundMock });
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+  });
+
+  it('never throws, even on malformed persisted order data (best-effort boundary)', async () => {
+    const sendGa4RefundMock = vi.fn();
+    // Runtime-only malformation the type system can't rule out (a DB row with
+    // a null currency, say) — must be caught, not propagate to releaseSale.
+    const malformed = { ...baseRefundOrder(), currency: null } as unknown as RefundOrder;
+
+    await expect(
+      sendRefundConversion(malformed, { ga4Config: { measurementId: 'G-X', apiSecret: 'S' }, sendGa4Refund: sendGa4RefundMock }),
+    ).resolves.toBeUndefined();
+    expect(sendGa4RefundMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalled();
+  });
+
+  it('warns without a Sentry message when GA4 skips for a missing clientId', async () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: false, skipped: true });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'ga4 mp refund skipped (consent granted, no clientId) for',
+      'pi_1',
+    );
+    // A skip is an attribution gap, not an error — unlike the purchase path it
+    // reverses nothing that was ever sent, so it stays out of Sentry.
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it('reports a non-ok GA4 response to Sentry, fingerprinted on status + body', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: false, status: 500, errorBody: 'oops' });
+    await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'ga4 mp refund http error 500',
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: ['ga4-mp-refund-http-error', '500', 'oops'],
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1', status: 500, response_body: 'oops' }),
+      }),
+    );
+    consoleSpy.mockRestore();
   });
 });

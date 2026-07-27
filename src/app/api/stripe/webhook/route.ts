@@ -12,7 +12,8 @@ import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/e
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
-import { sendPurchaseConversions, type ConversionOrder } from '@/lib/marketing/conversions';
+import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
+import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
 import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
@@ -387,14 +388,43 @@ export async function POST(req: Request) {
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
-        .select('id, private_sale_id');
+        .select('id, private_sale_id, subtotal, shipping, currency, marketing');
       if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
-      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
+      const rows = data as Array<{
+        id: string;
+        private_sale_id: string | null;
+        subtotal: number;
+        shipping: number;
+        currency: string;
+        marketing: MarketingContext | null;
+      }> | null;
       if (rows && rows.length > 0) {
         // Print orders: stop the Prodigi side (cancel or alert). Runs only when
         // the paid→refunded CAS actually flipped, so a replayed event can't
         // re-enter. Best-effort — never throws.
         await cancelPrintFulfilment(rows[0].id, env);
+        // GA4 revenue correction: this order WAS recorded as purchase revenue
+        // (it was 'paid'), so a full refund must reverse it. Same real-transition
+        // scoping as cancelPrintFulfilment above — never fires on the
+        // pending→refunded or already-refunded branches, since no purchase was
+        // ever recorded there.
+        // Deferred like the purchase send above: the CAS that decides whether to
+        // reverse has already committed, so the outbound GA4 call must not hold
+        // the webhook response (or the piece relist below) for up to 8s.
+        const ga4Secret = env.GA4_API_SECRET;
+        const measurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+        ctx.waitUntil(
+          sendRefundConversion(
+            {
+              payment_intent_id: pi,
+              subtotal: rows[0].subtotal,
+              shipping: rows[0].shipping,
+              currency: rows[0].currency,
+              marketing: rows[0].marketing,
+            },
+            { ga4Config: ga4Secret && measurementId ? { measurementId, apiSecret: ga4Secret } : undefined },
+          ).catch((err) => console.error('releaseSale deferred refund conversion failed for', pi, err)),
+        );
         // Private-sale pieces were sold privately (already hidden from the shop) and must
         // stay `sold` on refund — skip the relist write entirely. Normal refunds relist.
         if (releaseTargetStatus(rows[0]) === 'sold') return true;
@@ -587,32 +617,72 @@ export async function POST(req: Request) {
 
         if (!metaConfig && !ga4Config) return;
 
-        await sendPurchaseConversions(pi, {
-          loadOrder: async (paymentIntentId) => {
-            const { data } = await supabase
-              .from('orders')
-              .select(
-                'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
-                  'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
-              )
-              .eq('payment_intent_id', paymentIntentId)
-              .single();
-            if (!data) return null;
-            const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
-            const { data: itemRows } = await supabase
-              .from('order_items')
-              .select('product_id, unit_price')
-              .eq('order_id', orderRow.id);
-            return {
-              ...orderRow,
-              items: (itemRows as ConversionOrder['items'] | null) ?? [],
-            };
-          },
-          metaConfig,
-          ga4Config,
-          appVersion,
-          appGitSha,
-        });
+        // Claim before sending: at-least-once webhook delivery means Stripe can
+        // redeliver payment_intent.succeeded (e.g. a later step in this same
+        // handler throws) well past Meta's ~48h event_id dedup window, which
+        // would double-count the conversion. One order = one attempt — deliberately
+        // no release-on-failure branch, unlike the email claims above:
+        // sendPurchaseConversions never throws (Meta/GA4 failures are its own
+        // logged/Sentried best-effort concern), so a release-on-failure branch here
+        // would never actually trigger. If a genuine crash between the claim and the
+        // send ever strands an order, the recovery is a manual column reset:
+        // `UPDATE orders SET conversions_sent_at = NULL WHERE id = '<order-id>'`.
+        const { data: claimed, error: claimErr } = await supabase
+          .from('orders')
+          .update({ conversions_sent_at: new Date().toISOString() })
+          .eq('payment_intent_id', pi)
+          .is('conversions_sent_at', null)
+          .select('id');
+        if (claimErr) {
+          console.error('conversions_sent_at claim failed for', pi, claimErr);
+          return;
+        }
+        if (!claimed || claimed.length === 0) return;
+
+        // Claim above is synchronous (it's the idempotency guarantee); the send
+        // itself is deferred so Stripe gets its 200 without waiting on Meta + GA4
+        // (up to ~16s with the 8s timeouts above). sendPurchaseConversions never
+        // throws — failures are its own logged/Sentried concern — so the .catch is
+        // belt-and-braces against an unhandled rejection escaping into waitUntil.
+        ctx.waitUntil(
+          sendPurchaseConversions(pi, {
+            loadOrder: async (paymentIntentId) => {
+              const { data, error } = await supabase
+                .from('orders')
+                .select(
+                  'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
+                    'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
+                )
+                .eq('payment_intent_id', paymentIntentId)
+                .single();
+              if (error || !data) {
+                // markPaid already ran by this point (trackPurchase fires right after
+                // it — see webhook.ts), so the order must exist; any miss here is a
+                // transient DB hiccup, not a genuine unknown PI. The old code silently
+                // returned null, dropping the server-side conversion with zero trace.
+                console.error('conversions loadOrder failed for', paymentIntentId, error);
+                Sentry.captureMessage('conversions_load_order_failed', {
+                  level: 'warning',
+                  extra: { payment_intent_id: paymentIntentId, error: error?.message ?? null },
+                });
+                return null;
+              }
+              const orderRow = data as unknown as { id: string } & Omit<ConversionOrder, 'items'>;
+              const { data: itemRows } = await supabase
+                .from('order_items')
+                .select('product_id, unit_price')
+                .eq('order_id', orderRow.id);
+              return {
+                ...orderRow,
+                items: (itemRows as ConversionOrder['items'] | null) ?? [],
+              };
+            },
+            metaConfig,
+            ga4Config,
+            appVersion,
+            appGitSha,
+          }).catch((err) => console.error('trackPurchase deferred send failed for', pi, err)),
+        );
       } catch (err) {
         console.error('trackPurchase failed for', pi, err);
       }
