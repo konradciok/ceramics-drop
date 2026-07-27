@@ -71,8 +71,6 @@ describe('setConsent', () => {
     expect(window.dataLayer).toEqual([
       expect.objectContaining({ event: 'consent_update', consent_state: 'granted' }),
     ]);
-
-    vi.unstubAllGlobals();
   });
 
   it('denied: writes the cookie, updates gtag consent, and pushes consent_update', () => {
@@ -92,8 +90,6 @@ describe('setConsent', () => {
     expect(window.dataLayer).toEqual([
       expect.objectContaining({ event: 'consent_update', consent_state: 'denied' }),
     ]);
-
-    vi.unstubAllGlobals();
   });
 });
 ```
@@ -342,7 +338,13 @@ const { google } = require('googleapis');
     ],
   });
   const tagmanager = google.tagmanager({ version: 'v2', auth });
-  const parent = 'accounts/6000988917/containers/254296918/workspaces/12';
+  // Workspace IDs are not stable in this container (observed 12 -> 16 -> 17
+  // across one session) — always resolve by name, never hardcode a path.
+  const containerPath = 'accounts/6000988917/containers/254296918';
+  const workspaces = await tagmanager.accounts.containers.workspaces.list({ parent: containerPath });
+  const ws = workspaces.data.workspace.find((w) => w.name === 'ACC analytics stack');
+  if (!ws) throw new Error('ACC analytics stack workspace not found (run Task 2 first)');
+  const parent = ws.path;
 
   const tags = await tagmanager.accounts.containers.workspaces.tags.list({ parent });
   const triggers = await tagmanager.accounts.containers.workspaces.triggers.list({ parent });
@@ -424,9 +426,14 @@ const { google } = require('googleapis');
     scopes: ['https://www.googleapis.com/auth/tagmanager.edit.containers'],
   });
   const tagmanager = google.tagmanager({ version: 'v2', auth });
-  const result = await tagmanager.accounts.containers.workspaces.sync({
-    path: 'accounts/6000988917/containers/254296918/workspaces/12',
-  });
+  // Workspace IDs are not stable in this container (observed 12 -> 16 -> 17
+  // across one session in Task 2) — always resolve by name, never hardcode a path.
+  const containerPath = 'accounts/6000988917/containers/254296918';
+  const workspaces = await tagmanager.accounts.containers.workspaces.list({ parent: containerPath });
+  const ws = workspaces.data.workspace.find((w) => w.name === 'ACC analytics stack');
+  if (!ws) throw new Error('ACC analytics stack workspace not found (run Task 2 first)');
+  const result = await tagmanager.accounts.containers.workspaces.sync({ path: ws.path });
+  console.log('workspace path used:', ws.path);
   console.log(JSON.stringify(result.data, null, 2));
 })();
 "
@@ -442,14 +449,19 @@ const { google } = require('googleapis');
   const auth = await google.auth.getClient({
     keyFile: '.secrets/gtm-api-deploy.json',
     scopes: [
+      'https://www.googleapis.com/auth/tagmanager.readonly',
       'https://www.googleapis.com/auth/tagmanager.edit.containers',
       'https://www.googleapis.com/auth/tagmanager.edit.containerversions',
       'https://www.googleapis.com/auth/tagmanager.publish',
     ],
   });
   const tagmanager = google.tagmanager({ version: 'v2', auth });
+  const containerPath = 'accounts/6000988917/containers/254296918';
+  const workspaces = await tagmanager.accounts.containers.workspaces.list({ parent: containerPath });
+  const ws = workspaces.data.workspace.find((w) => w.name === 'ACC analytics stack');
+  if (!ws) throw new Error('ACC analytics stack workspace not found (run Task 2 first)');
   const version = await tagmanager.accounts.containers.workspaces.create_version({
-    path: 'accounts/6000988917/containers/254296918/workspaces/12',
+    path: ws.path,
     requestBody: {
       name: 'Consent-update re-fire for base tags + Clarity',
       notes: 'Adds ACC - Consent Update trigger so GA4 base, Meta Pixel base, and Clarity get a fresh chance to fire when a visitor accepts consent mid-session, instead of staying blocked for the rest of that session.',
