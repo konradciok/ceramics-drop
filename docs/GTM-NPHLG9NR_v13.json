@@ -1,13 +1,13 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-07-27 12:38:01",
+  "exportTime": "2026-07-27 18:39:33",
   "containerVersion": {
-    "path": "accounts/6000988917/containers/254296918/versions/12",
+    "path": "accounts/6000988917/containers/254296918/versions/13",
     "accountId": "6000988917",
     "containerId": "254296918",
-    "containerVersionId": "12",
-    "name": "Gate Microsoft Clarity on analytics_storage consent",
-    "description": "F-02 follow-up: Clarity was live with consentStatus=notSet (fires regardless of visitor consent). Gated to match GA4 (analytics_storage).",
+    "containerVersionId": "13",
+    "name": "Consent-update re-fire for base tags + Clarity",
+    "description": "Adds ACC - Consent Update trigger so GA4 base, Meta Pixel base, and Clarity get a fresh chance to fire when a visitor accepts consent mid-session, instead of staying blocked for the rest of that session.",
     "container": {
       "path": "accounts/6000988917/containers/254296918",
       "accountId": "6000988917",
@@ -62,9 +62,10 @@
             "value": "false"
           }
         ],
-        "fingerprint": "1781298183392",
+        "fingerprint": "1785151966922",
         "firingTriggerId": [
-          "4"
+          "4",
+          "13"
         ],
         "tagFiringOption": "oncePerLoad",
         "consentSettings": {
@@ -102,9 +103,10 @@
             "value": "false"
           }
         ],
-        "fingerprint": "1781298184601",
+        "fingerprint": "1785151968770",
         "firingTriggerId": [
-          "4"
+          "4",
+          "13"
         ],
         "tagFiringOption": "oncePerLoad",
         "consentSettings": {
@@ -215,9 +217,10 @@
             "value": "{{Analytics Client ID}}"
           }
         ],
-        "fingerprint": "1785148586990",
+        "fingerprint": "1785152885295",
         "firingTriggerId": [
-          "2147479553"
+          "2147479553",
+          "13"
         ],
         "tagFiringOption": "oncePerEvent",
         "consentSettings": {
@@ -267,6 +270,31 @@
         "name": "ACC - Initialization",
         "type": "init",
         "fingerprint": "1780411958692"
+      },
+      {
+        "accountId": "6000988917",
+        "containerId": "254296918",
+        "triggerId": "13",
+        "name": "ACC - Consent Update",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "consent_update"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1785151964681"
       }
     ],
     "builtInVariable": [
@@ -313,8 +341,8 @@
         "name": "Analytics Session ID"
       }
     ],
-    "fingerprint": "1785148587920",
-    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/12?apiLink=version",
+    "fingerprint": "1785170282754",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/13?apiLink=version",
     "customTemplate": [
       {
         "accountId": "6000988917",
