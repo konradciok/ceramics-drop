@@ -14,6 +14,7 @@ import {
   reportPurchaseGapOnce,
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import { stripUrlParams } from '@/lib/use-strip-url-token';
 import { PRINT_DELIVERY_DRAFT_KEY } from '@/lib/print-delivery-key';
 
 const stripePromise = getStripe();
@@ -86,6 +87,15 @@ export default function ReturnPage() {
       .catch((err) => {
         Sentry.captureException(err, { level: 'warning', tags: { context: 'stripe_return_load' } });
         setStatus('fail');
+      })
+      .finally(() => {
+        // N-1: the client secret has now been consumed — scrub
+        // payment_intent[_client_secret] from the URL so a late gtag hit, browser
+        // history, or the Referer header never carries it. In .finally so it fires
+        // whether the retrieve resolved OR rejected (a reject skips the switch but
+        // must still scrub); the chain has already settled, so a refresh during the
+        // in-flight window could still have recovered the intent.
+        stripUrlParams(['payment_intent', 'payment_intent_client_secret']);
       });
   }, [clear]);
 
