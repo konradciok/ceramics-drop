@@ -62,5 +62,17 @@ test.describe('fine-art print configurator @ci', () => {
 
     await page.getByTestId('print-add').click(); // in-cart toggle → remove
     await expect.poll(events).toContain('remove_from_cart');
+
+    // The polls above only prove each event arrived, not that the funnel
+    // progressed in order. Assert the five events appear as a subsequence of the
+    // recorded buffer (subsequence, not equality — unrelated events like
+    // page_view interleave and must not fail the test).
+    const recorded = await events();
+    let cursor = -1;
+    for (const name of ['view_item_list', 'select_item', 'view_item', 'add_to_cart', 'remove_from_cart']) {
+      const at = recorded.indexOf(name, cursor + 1);
+      expect(at, `${name} out of order in ${recorded.join(' → ')}`).toBeGreaterThan(cursor);
+      cursor = at;
+    }
   });
 });
