@@ -10,11 +10,10 @@ import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { getPrintDesigns } from '@/lib/prints';
+import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
-import { ProductPageGallery } from './ProductPageGallery';
-import { PrintConfigurator } from './PrintConfigurator';
+import { PrintPdpPurchase } from './PrintPdpPurchase';
 import type { PrintDesign } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
@@ -48,6 +47,16 @@ export async function PrintProductScreen({
     .filter((d) => d.id !== design.id)
     .slice(0, 4);
 
+  // Under CATALOG_SOURCE=db, `design` comes from mapPrintDesigns() (catalog
+  // shadow tables), which doesn't carry `mockups` — WebP existence is
+  // code-bundle truth, not DB truth. Merge the flag from the code registry so
+  // the live-mockup hero is visible in production, not just in `code` mode.
+  // Guarded on the image staying in sync: mock files derive from the REGISTRY
+  // image stem, so if the DB media row ever drifts from it, degrade to the
+  // static hero (the designed dormant mode) instead of 404ing mockupSrc.
+  const registryDesign = registryPrintById(design.id);
+  const mockups = registryDesign?.image === design.image ? registryDesign?.mockups : undefined;
+
   return (
     <article className="pdp">
       <div className="pdp-inner">
@@ -60,36 +69,41 @@ export async function PrintProductScreen({
         </nav>
 
         <div className="pdp-layout">
-          <ProductPageGallery images={images} alt={displayName} />
-
-          <div className="pdp-body">
-            <div className="eyebrow">{categoryName}</div>
-            <h1>
-              {singular} <em>Nº {design.num}</em>
-            </h1>
-            {note && <p className="pdp-note">{note}</p>}
-
-            <PrintConfigurator design={design} usableVariantKeys={usableVariantKeys} />
-
-            <div className="lb-specs print-specs">
-              <div className="lb-spec">
-                <span className="k">{t('print.sectionDetails')}</span>
-                <span className="v">{t('print.technique')}<br />{sizeLines}</span>
+          <PrintPdpPurchase
+            design={mockups ? { ...design, mockups } : design}
+            images={images}
+            alt={displayName}
+            usableVariantKeys={usableVariantKeys}
+            header={
+              <>
+                <div className="eyebrow">{categoryName}</div>
+                <h1>
+                  {singular} <em>Nº {design.num}</em>
+                </h1>
+                {note && <p className="pdp-note">{note}</p>}
+              </>
+            }
+            footer={
+              <div className="lb-specs print-specs">
+                <div className="lb-spec">
+                  <span className="k">{t('print.sectionDetails')}</span>
+                  <span className="v">{t('print.technique')}<br />{sizeLines}</span>
+                </div>
+                <div className="lb-spec">
+                  <span className="k">{t('print.sectionEdition')}</span>
+                  <span className="v">{t('print.editionOpen')}</span>
+                </div>
+                <div className="lb-spec">
+                  <span className="k">{t('print.sectionDelivery')}</span>
+                  <span className="v">{t('print.deliveryNote')}</span>
+                </div>
+                <div className="lb-spec">
+                  <span className="k">{t('print.sectionCare')}</span>
+                  <span className="v">{t('print.careNote')}</span>
+                </div>
               </div>
-              <div className="lb-spec">
-                <span className="k">{t('print.sectionEdition')}</span>
-                <span className="v">{t('print.editionOpen')}</span>
-              </div>
-              <div className="lb-spec">
-                <span className="k">{t('print.sectionDelivery')}</span>
-                <span className="v">{t('print.deliveryNote')}</span>
-              </div>
-              <div className="lb-spec">
-                <span className="k">{t('print.sectionCare')}</span>
-                <span className="v">{t('print.careNote')}</span>
-              </div>
-            </div>
-          </div>
+            }
+          />
         </div>
       </div>
 

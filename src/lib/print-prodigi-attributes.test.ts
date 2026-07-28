@@ -13,8 +13,8 @@ describe('buildProdigiAttributes', () => {
   });
 
   it('includes mount attrs for framed mounted variants', () => {
-    expect(buildProdigiAttributes({ framed: true, mount: true, frameColour: 'white' })).toEqual({
-      color: 'white',
+    expect(buildProdigiAttributes({ framed: true, mount: true, frameColour: 'brown' })).toEqual({
+      color: 'brown',
       mount: '2.4mm',
       mountColor: 'Snow white',
     });

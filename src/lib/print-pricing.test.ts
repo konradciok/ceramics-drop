@@ -9,7 +9,7 @@ const mounted70  = { size: '70x100' as const, framed: true, mount: true,  frameC
 const design: PrintDesign = {
   id: 'fap01', category: 'fine-art-prints', num: '01', image: '/uploads/fap-01.webp',
   noteIndex: 0, sizes: ['30x40', '50x70', '70x100'],
-  frameColours: ['black', 'white', 'natural'], mountAvailable: true, published: true,
+  frameColours: ['black', 'natural', 'brown'], mountAvailable: true, published: true,
 };
 
 // Premium series (e.g. Ostrea): per-size override beats the shared base.

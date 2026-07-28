@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { PRINT_DESIGNS, registryPrintById } from '../src/lib/prints';
 
 test.describe('fine-art print configurator @ci', () => {
   test('renders configurator and adds print to cart', async ({ page }) => {
@@ -37,5 +38,58 @@ test.describe('fine-art print configurator @ci', () => {
     // 720 zł = 70x100 base 190 + frame 485 + mount 45 (src/lib/print-pricing.ts).
     // Pinned literal: update here when SIZE_BASE / *_DELTA tables change.
     await expect(page.getByTestId('print-price')).toHaveText('720 zł');
+  });
+
+  test('hero mockup follows configurator selection', async ({ page }) => {
+    const design = registryPrintById('fap01');
+    test.skip(!design?.mockups, 'fap01 mockup assets not published yet (flag off)');
+
+    await page.goto('/fine-art-prints/fap01');
+    const hero = page.locator('.pdp-img-main img');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-01.webp');
+
+    // Framing defaults to the first colour (black).
+    await page.getByTestId('opt-framed-true').click();
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-black.webp');
+
+    await page.getByTestId('opt-mount-true').click();
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-mount-black.webp');
+
+    await page.getByTestId('opt-colour-natural').click();
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-mount-natural.webp');
+
+    await page.getByTestId('opt-framed-false').click();
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-01.webp');
+
+    // syncKey snap-back: from another slide, a visual-state change must return
+    // the gallery to slide 0 (exercisable once fap01 ships a gallery slide).
+    if (design?.gallery?.length) {
+      await page.getByTestId('opt-framed-true').click();
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-black.webp');
+      await page.locator('.pdp-img-dot').nth(1).click();
+      await expect(hero).toHaveAttribute('src', design.gallery[0]);
+      await page.getByTestId('opt-colour-brown').click();
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-brown.webp');
+    }
+  });
+
+  test('design without mockups keeps a static hero', async ({ page }) => {
+    const design = PRINT_DESIGNS.find(
+      (d) => d.published && !d.mockups && d.frameColours.length > 0 && (d.gallery?.length ?? 0) > 0,
+    );
+    test.skip(!design, 'no published mockup-less design with a gallery slide');
+
+    await page.goto(`/fine-art-prints/${design!.id}`);
+    const hero = page.locator('.pdp-img-main img');
+    await expect(hero).toHaveAttribute('src', design!.image);
+    await page.getByTestId('opt-framed-true').click();
+    await expect(hero).toHaveAttribute('src', design!.image);
+
+    // syncKey no-op half (live today): with a static hero the visual state
+    // never changes, so browsing to another slide must survive option clicks.
+    await page.locator('.pdp-img-dot').nth(1).click();
+    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
+    await page.getByTestId('opt-colour-natural').click();
+    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
   });
 });

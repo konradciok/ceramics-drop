@@ -1,0 +1,276 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index e74f3c2..74c9fa0 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -33,7 +33,7 @@ Run a single E2E spec:
+ npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
+ ```
+ 
+-Operational / one-off scripts (full list in `package.json`): `npm run prodigi` (Prodigi API v4 CLI — sandbox quotes/orders, SKU lookup, order inspection; see `docs/prodigi-cli.md`), `npm run prodigi:contract-smoke` (manual sandbox create→inspect→cancel contract smoke proving the real mapper+client round-trip — audit H-1; runs locally or via the `prodigi-contract-smoke` workflow_dispatch; see `docs/prodigi-contract-smoke.md`), `npm run orders` (order/inventory inspection CLI + the four admin mutations — refund, release-reservation, resend-confirmation, create-shipment; see `docs/orders-cli.md`), `npm run private-sale:create` (mint a re-sale link for sold pieces), `npm run sync-prodigi-skus` (verify/upsert Prodigi print SKUs into `pod_variants`), `npm run print-assets:prepare` / `print-assets:upload` / `print-assets:verify` / `print-assets:publish` (the print-fulfilment asset pipeline — compose exact Prodigi print-area derivatives from an artwork master + background + SVG signature using a proportional layout, upload to R2 + stage rows, verify byte-identity + promote to `ready`, then atomically assign a revision to every active variant; all take `--product`/`--revision`, publish requires `--confirm <revision>`, all support `--dry-run`; need wrangler auth + `SUPABASE_*`, and honour a `PRINT_ASSETS_BUCKET` override from `.dev.vars`/`--env-file`; see `docs/plans/print-asset-pipeline.md` and operator procedures in `docs/print-asset-runbook.md`), `npm run print-assets:gallery` (storefront gallery WebPs from a published fulfilment derivative — uploads to R2 under `prints/{productId}/gallery/{slot}/` and mirrors to `public/uploads/`; `--product` required, optional `--slot`/`--revision`/`--dry-run`), `npm run print-assets:sandbox-matrix` (one Prodigi sandbox order per distinct print-area profile using production signed asset URLs; `--product`, optional `--run-id`/`--dry-run`), `npm run print-asset:smoke` (HEAD probe of a signed print-asset URL against a live origin — redacts `sig` in output; requires `PRINT_ASSET_TOKEN_SECRET` + `SUPABASE_*` + a `ready`/`retired` asset row), `npm run print-fulfilment:check-jobs` / `print-assets:inventory` (Phase 0/6 pre-cutover gates), `npm run reconcile:orders` (backfill missed emails / stuck InPost shipments for prod orders — dry-run by default), `npm run notes:generate` (draft product notes), `npm run i18n:pull` / `i18n:push` / `i18n:check` / `i18n:organize` (sync UI strings with Notion — see `docs/notion-i18n.md`), `npm run gtm:setup` / `gtm:list` / `gtm:key` (Google Tag Manager API), `npm run ga4:report` / `bq:query` (GA4 Data API + BigQuery export reports), `npm run generate-image-variants` (variant-only image optimise), `npm run cf-typegen` (regenerate Cloudflare env types), `npm run cf:dns-cleanup` / `cf:com-redirect` (Cloudflare DNS + `.com→.studio` redirect maintenance), `npm run admin:dev:lan` + `admin:proxy` (run the `/admin` UI over LAN via an nginx reverse proxy — see Admin below).
++Operational / one-off scripts (full list in `package.json`): `npm run prodigi` (Prodigi API v4 CLI — sandbox quotes/orders, SKU lookup, order inspection; see `docs/prodigi-cli.md`), `npm run prodigi:contract-smoke` (manual sandbox create→inspect→cancel contract smoke proving the real mapper+client round-trip — audit H-1; runs locally or via the `prodigi-contract-smoke` workflow_dispatch; see `docs/prodigi-contract-smoke.md`), `npm run orders` (order/inventory inspection CLI + the four admin mutations — refund, release-reservation, resend-confirmation, create-shipment; see `docs/orders-cli.md`), `npm run private-sale:create` (mint a re-sale link for sold pieces), `npm run sync-prodigi-skus` (verify/upsert Prodigi print SKUs into `pod_variants`), `npm run print-assets:prepare` / `print-assets:upload` / `print-assets:verify` / `print-assets:publish` (the print-fulfilment asset pipeline — compose exact Prodigi print-area derivatives from an artwork master + background + SVG signature using a proportional layout, upload to R2 + stage rows, verify byte-identity + promote to `ready`, then atomically assign a revision to every active variant; all take `--product`/`--revision`, publish requires `--confirm <revision>`, all support `--dry-run`; need wrangler auth + `SUPABASE_*`, and honour a `PRINT_ASSETS_BUCKET` override from `.dev.vars`/`--env-file`; see `docs/plans/print-asset-pipeline.md` and operator procedures in `docs/print-asset-runbook.md`), `npm run print-assets:gallery` (storefront gallery WebPs from a published fulfilment derivative — uploads to R2 under `prints/{productId}/gallery/{slot}/` and mirrors to `public/uploads/`; `--product` required, optional `--slot`/`--revision`/`--dry-run`), `npm run print-assets:mockups` (pre-rendered configurator hero mockups — composes published FAP/CFPM derivatives into shared frame masters from `config/print-assets/frames.json`; `--product` required, optional `--state`/`--revision`/`--dry-run`; ships together with the design's `mockups: true` flag), `npm run print-assets:sandbox-matrix` (one Prodigi sandbox order per distinct print-area profile using production signed asset URLs; `--product`, optional `--run-id`/`--dry-run`), `npm run print-asset:smoke` (HEAD probe of a signed print-asset URL against a live origin — redacts `sig` in output; requires `PRINT_ASSET_TOKEN_SECRET` + `SUPABASE_*` + a `ready`/`retired` asset row), `npm run print-fulfilment:check-jobs` / `print-assets:inventory` (Phase 0/6 pre-cutover gates), `npm run reconcile:orders` (backfill missed emails / stuck InPost shipments for prod orders — dry-run by default), `npm run notes:generate` (draft product notes), `npm run i18n:pull` / `i18n:push` / `i18n:check` / `i18n:organize` (sync UI strings with Notion — see `docs/notion-i18n.md`), `npm run gtm:setup` / `gtm:list` / `gtm:key` (Google Tag Manager API), `npm run ga4:report` / `bq:query` (GA4 Data API + BigQuery export reports), `npm run generate-image-variants` (variant-only image optimise), `npm run cf-typegen` (regenerate Cloudflare env types), `npm run cf:dns-cleanup` / `cf:com-redirect` (Cloudflare DNS + `.com→.studio` redirect maintenance), `npm run admin:dev:lan` + `admin:proxy` (run the `/admin` UI over LAN via an nginx reverse proxy — see Admin below).
+ 
+ ## Architecture
+ 
+diff --git a/docs/print-asset-runbook.md b/docs/print-asset-runbook.md
+index 41ffe44..32f9543 100644
+--- a/docs/print-asset-runbook.md
++++ b/docs/print-asset-runbook.md
+@@ -283,3 +283,32 @@ Per-profile orders: storefront checkout, `npm run print-assets:sandbox-matrix`,
+ ### Live rollout approval
+ 
+ **Status:** _sandbox matrix passed 2026-07-13_ (`ord_1162949`–`ord_1162955`, run `2026-07-13-1017`) — assets confirmed in Prodigi sandbox dashboard. **Remaining before `PRODIGI_ENV=live`:** studio visual sign-off on `design/print-assets/fap01/2026-07-12-r1/proof-*.jpg` + explicit operator PR sign-off. Keep Bot Fight Mode **off** on Free (or upgrade to Pro + Super Bot Fight Mode with per-path WAF skip if bot protection must stay on).
++
++## Configurator mockups (`print-assets:mockups`)
++
++Pre-rendered hero states for the PDP live-mockup feature (spec
++`docs/superpowers/specs/2026-07-19-print-configurator-live-mockup-design.md`).
++
++Prerequisites: the design's fulfilment revision is published (`ready`);
++`config/print-assets/frames.json` exists (copy `frames.example.json`) and its
++`file` entries point at the six frame masters under gitignored
++`design/print-assets/frames_blanks/` — opaque mockup blanks (baked
++background + shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one
++framed + one mount blank per colour (black / natural / brown). Mount blanks
++follow the recipe: window filled white, centred aperture at 85.7% × 90% of
++the window (ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge +
++subtle inner shadow. The `window` values in frames.json are fractions of
++each master's own canvas; the sheet is composited over that rect.
++
++    npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
++    npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
++
++The step composes the `8400x12000` FAP derivative (framed states) and the
++`7200x10800` CFPM derivative (mount states) into the colour's frame master,
++then emits `public/uploads/<stem>-mock-<state>.webp` + 400/800/1600w srcset
++variants and mirrors them to R2 (`prints/{product}/gallery/mock-<state>/`).
++
++Ship in ONE PR: the generated `public/uploads/*-mock-*.webp` files **and**
++`mockups: true` on the design in `src/lib/prints.ts` (the PDP only swaps the
++hero when the flag is set). Re-run after every new fulfilment revision, like
++`print-assets:gallery`.
+diff --git a/messages/de.json b/messages/de.json
+index bdf00ac..14b36d5 100644
+--- a/messages/de.json
++++ b/messages/de.json
+@@ -849,8 +849,8 @@
+     "framed": "Mit Rahmen",
+     "frameColour": "Rahmenfarbe",
+     "colour_black": "Schwarz",
+-    "colour_white": "Weiß",
+-    "colour_natural": "Natur",
++    "colour_natural": "Hellbraun",
++    "colour_brown": "Dunkelbraun",
+     "mount": "Passepartout",
+     "mount_none": "Ohne",
+     "mount_yes": "Mit Passepartout",
+diff --git a/messages/en.json b/messages/en.json
+index 295be50..05fdd7e 100644
+--- a/messages/en.json
++++ b/messages/en.json
+@@ -849,8 +849,8 @@
+     "framed": "Framed",
+     "frameColour": "Frame colour",
+     "colour_black": "Black",
+-    "colour_white": "White",
+-    "colour_natural": "Natural",
++    "colour_natural": "Light brown",
++    "colour_brown": "Dark brown",
+     "mount": "Mount",
+     "mount_none": "No mount",
+     "mount_yes": "With mount",
+diff --git a/messages/es.json b/messages/es.json
+index 97ef39e..be65f3d 100644
+--- a/messages/es.json
++++ b/messages/es.json
+@@ -849,8 +849,8 @@
+     "framed": "Enmarcado",
+     "frameColour": "Color del marco",
+     "colour_black": "Negro",
+-    "colour_white": "Blanco",
+-    "colour_natural": "Natural",
++    "colour_natural": "Marrón claro",
++    "colour_brown": "Marrón oscuro",
+     "mount": "Passepartout",
+     "mount_none": "Sin",
+     "mount_yes": "Con passepartout",
+diff --git a/messages/pl.json b/messages/pl.json
+index 3b2a1c4..324782e 100644
+--- a/messages/pl.json
++++ b/messages/pl.json
+@@ -849,8 +849,8 @@
+     "framed": "W ramie",
+     "frameColour": "Kolor ramy",
+     "colour_black": "Czarna",
+-    "colour_white": "Biała",
+-    "colour_natural": "Naturalna",
++    "colour_natural": "Jasny brąz",
++    "colour_brown": "Ciemny brąz",
+     "mount": "Passe-partout",
+     "mount_none": "Bez",
+     "mount_yes": "Z passe-partout",
+diff --git a/package.json b/package.json
+index 6cc2b5b..ccd926d 100644
+--- a/package.json
++++ b/package.json
+@@ -33,6 +33,7 @@
+     "print-assets:verify": "tsx scripts/print-assets-verify.ts",
+     "print-assets:publish": "tsx scripts/print-assets-publish.ts",
+     "print-assets:gallery": "tsx scripts/print-assets-gallery.ts",
++    "print-assets:mockups": "tsx scripts/print-assets-mockups.ts",
+     "print-assets:sandbox-matrix": "tsx scripts/print-assets-sandbox-matrix.ts",
+     "print-asset:smoke": "tsx scripts/print-asset-smoke.ts",
+     "catalog:backfill": "tsx scripts/backfill-catalog.ts",
+diff --git a/scripts/print-assets-gallery.ts b/scripts/print-assets-gallery.ts
+index fd079bf..bef5e76 100644
+--- a/scripts/print-assets-gallery.ts
++++ b/scripts/print-assets-gallery.ts
+@@ -14,21 +14,13 @@
+ import fs from 'node:fs';
+ import os from 'node:os';
+ import path from 'node:path';
+-import sharp from 'sharp';
+ import type { PrepareConfig } from '../src/lib/print-assets-prepare';
+-import { IMG_WIDTHS } from '../src/lib/images';
+-import { getArg, hasFlag, loadManifest, localDerivativePath, revisionDir, ROOT } from './lib/print-assets-cli';
+-import { hashFile } from './lib/image-facts';
+-import {
+-  galleryR2Key,
+-  resolveLatestReadyAsset,
+-  type ReadyAssetDetail,
+-} from './lib/print-assets-resolve';
+-import { printAssetsBucket, r2GetToFile, r2Put } from './lib/r2';
++import { getArg, hasFlag, ROOT } from './lib/print-assets-cli';
++import { galleryR2Key, resolveLatestReadyAsset } from './lib/print-assets-resolve';
++import { generateWebpSet, resolveSourcePath } from './lib/print-assets-storefront';
++import { printAssetsBucket, r2Put } from './lib/r2';
+ 
+-const CANONICAL_MAX_WIDTH = 1600;
+ const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
+-const WEBP_QUALITY = 80;
+ 
+ function loadConfig(productId: string): PrepareConfig {
+   const configPath = path.join(ROOT, 'config', 'print-assets', `${productId}.json`);
+@@ -42,94 +34,6 @@ function loadConfig(productId: string): PrepareConfig {
+   return parsed;
+ }
+ 
+-/**
+- * Resolve a local JPG/PNG derivative path when the prepare output tree exists;
+- * otherwise download the immutable R2 fulfilment object to a scratch file.
+- */
+-async function resolveSourcePath(
+-  productId: string,
+-  asset: ReadyAssetDetail,
+-  scratchDir: string,
+-  bucket: string,
+-): Promise<{ path: string; cleanup: boolean }> {
+-  const manifestPath = path.join(revisionDir(productId, asset.revision), 'manifest.json');
+-  if (fs.existsSync(manifestPath)) {
+-    const manifest = loadManifest(productId, asset.revision);
+-    const derivative = manifest.derivatives.find((d) => d.profileKey === asset.profile_key);
+-    if (derivative) {
+-      const localPath = localDerivativePath(
+-        productId,
+-        asset.revision,
+-        derivative.profileKey,
+-        derivative.sha256,
+-        derivative.format,
+-      );
+-      if (fs.existsSync(localPath)) {
+-        return { path: localPath, cleanup: false };
+-      }
+-    }
+-  }
+-
+-  const ext = path.extname(asset.r2_key) || '.jpg';
+-  const dest = path.join(scratchDir, `source-${asset.profile_key}${ext}`);
+-  const got = r2GetToFile(bucket, asset.r2_key, dest);
+-  if (!got.ok) {
+-    throw new Error(`Failed to download fulfilment source ${asset.r2_key}: ${got.error}`);
+-  }
+-  const downloadedSha = await hashFile(dest);
+-  if (downloadedSha !== asset.sha256) {
+-    throw new Error(
+-      `Integrity mismatch for ${asset.r2_key}: expected sha256 ${asset.sha256}, got ${downloadedSha}`,
+-    );
+-  }
+-  return { path: dest, cleanup: true };
+-}
+-
+-interface WebpOutput {
+-  filename: string;
+-  localPath: string;
+-  r2Key: string;
+-  publicPath: string;
+-}
+-
+-async function generateWebpSet(
+-  sourcePath: string,
+-  stem: string,
+-  scratchDir: string,
+-): Promise<WebpOutput[]> {
+-  const outputs: WebpOutput[] = [];
+-
+-  const canonicalName = `${stem}.webp`;
+-  const canonicalPath = path.join(scratchDir, canonicalName);
+-  await sharp(sourcePath)
+-    .resize({ width: CANONICAL_MAX_WIDTH, withoutEnlargement: true })
+-    .webp({ quality: WEBP_QUALITY })
+-    .toFile(canonicalPath);
+-  outputs.push({
+-    filename: canonicalName,
+-    localPath: canonicalPath,
+-    r2Key: '',
+-    publicPath: `/uploads/${canonicalName}`,
+-  });
+-
+-  for (const w of IMG_WIDTHS) {
+-    const variantName = `${stem}-${w}w.webp`;
+-    const variantPath = path.join(scratchDir, variantName);
+-    await sharp(sourcePath)
+-      .resize({ width: w, withoutEnlargement: true })
+-      .webp({ quality: WEBP_QUALITY })
+-      .toFile(variantPath);
+-    outputs.push({
+-      filename: variantName,
+-      localPath: variantPath,
+-      r2Key: '',
+-      publicPath: `/uploads/${variantName}`,
+-    });
+-  }
+-
+-  return outputs;
+-}
+-
+ async function main(): Promise<void> {
+   const productId = getArg('product');
+   const slot = getArg('slot') ?? 'hero';
+diff --git a/src/lib/print-assets-prepare.test.ts b/src/lib/print-assets-prepare.test.ts
+index ea7ae68..afd3a46 100644
+--- a/src/lib/print-assets-prepare.test.ts
++++ b/src/lib/print-assets-prepare.test.ts
+@@ -31,7 +31,7 @@ describe('distinctProfiles', () => {
+   it('deduplicates variants sharing the same dimensions into one profile', () => {
+     const variants = [
+       { variantKey: '30x40:true:false:black', w: 3614, h: 4795 },
+-      { variantKey: '30x40:true:false:white', w: 3614, h: 4795 },
++      { variantKey: '30x40:true:false:black', w: 3614, h: 4795 },
+       { variantKey: '30x40:true:false:natural', w: 3600, h: 4800 },
+     ];
+     const profiles = distinctProfiles(variants);
+diff --git a/src/styles/site.css b/src/styles/site.css
+index 378da09..1cab212 100644
+--- a/src/styles/site.css
++++ b/src/styles/site.css
+@@ -1219,9 +1219,9 @@ ul { list-style:none; padding:0; margin:0; }
+   content:''; width:13px; height:13px; border-radius:50%;
+   border:1px solid rgba(58,40,24,.2); background:var(--c-bone);
+ }
+-.print-opt-colour[data-colour="black"]::before { background:var(--c-espresso); border-color:rgba(250,246,236,.35); }
+-.print-opt-colour[data-colour="white"]::before { background:var(--c-paper); }
++.print-opt-colour[data-colour="black"]::before { background:#141414; border-color:rgba(250,246,236,.35); }
+ .print-opt-colour[data-colour="natural"]::before { background:var(--c-sand); }
++.print-opt-colour[data-colour="brown"]::before { background:var(--c-espresso); }
+ .print-opt-colour.active::before,
+ .print-opt-colour[aria-checked="true"]::before { border-color:rgba(250,246,236,.7); }
+ .print-price {
