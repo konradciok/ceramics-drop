@@ -1141,6 +1141,33 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(confirmClaimWrites[0].filters).toContainEqual(['is', ['confirmation_email_sent_at', null]]);
   });
 
+  it('captures a Sentry message when the cart.purchased (abandoned-checkout cancel) send fails', async () => {
+    vi.mocked(sendPurchasedEvent).mockRejectedValueOnce(new Error('resend down'));
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200); // best-effort: the failure must not fail the webhook
+    expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'stripe_webhook_purchased_event_failed',
+      expect.objectContaining({ level: 'error', extra: expect.objectContaining({ order_id: 'o1' }) }),
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
   it('releases the *_sent_at claim (CAS back to null on our own timestamp) when all 3 send attempts fail, so a replay can retry', async () => {
     vi.mocked(emailNewOrderToStudio).mockRejectedValue(new Error('resend down'));
     vi.mocked(emailOrderConfirmationToCustomer).mockRejectedValue(new Error('resend down'));

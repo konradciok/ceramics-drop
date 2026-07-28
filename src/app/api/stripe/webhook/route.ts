@@ -300,6 +300,13 @@ export async function POST(req: Request) {
               await sendPurchasedEvent({ orderId, email: orderRowTyped.email });
             } catch (err) {
               console.error('sendPurchasedEvent failed for', orderId, err);
+              // A failed cart.purchased leaves the abandoned-checkout automation armed,
+              // so a buyer who just paid can still get a recovery email. Best-effort
+              // (route still 200s) — surface it like the other webhook conditions.
+              Sentry.captureMessage('stripe_webhook_purchased_event_failed', {
+                level: 'error',
+                extra: { order_id: orderId, error: err instanceof Error ? err.message : String(err) },
+              });
             }
           }
         }
