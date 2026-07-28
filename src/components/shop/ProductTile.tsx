@@ -65,13 +65,14 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
         if (showroom) {
           // Demand signal for showroom pieces; the tile is otherwise a PDP link
           // (no lightbox). Reuse toAnalyticsItem so keys match every other event.
-          const item = toAnalyticsItem(product);
+          const item = toAnalyticsItem(product, { priceOverride: priceOfCurrency(product, currency) });
           pushDataLayer(
             buildEngagementEvent('showroom_product_view', {
               item_id: item.item_id,
               item_name: item.item_name,
               item_category: item.item_category,
               price: item.price,
+              currency: analyticsCurrency,
             }),
           );
           return;
@@ -81,13 +82,14 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
           // is otherwise a no-op (sold pieces don't open the lightbox). Reuse
           // toAnalyticsItem so item_name/price match every other ecommerce event
           // and stay locale-independent (so PL/EN/ES clicks aggregate as one piece).
-          const item = toAnalyticsItem(product);
+          const item = toAnalyticsItem(product, { priceOverride: priceOfCurrency(product, currency) });
           pushDataLayer(
             buildEngagementEvent('sold_item_view', {
               item_id: item.item_id,
               item_name: item.item_name,
               item_category: item.item_category,
               price: item.price,
+              currency: analyticsCurrency,
             }),
           );
           return;
