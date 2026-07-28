@@ -13,7 +13,7 @@ This document is the **actionable** layer. The two audit files remain useful **r
 |----------|------|-------------|
 | `docs/pony-audit.md` | De-bloat / mechanical dedup | **High** for Tier 1 mechanical items (#2, #3, #7, #9). **Do not act** on retracted items (CATALOG_SOURCE, admin DI, cart). USD/CAD removal (#1) is technically correct but is a product call — see task C-04. |
 | `docs/superpowers/specs/2026-07-13-prodigy-audit.md` | Test coverage & ops gaps | **High** for remaining coverage gaps (H-2, M-4, M-5, L-7, O-1). **Stale** on items already landed — see §Already resolved. Operational items (M-6, M-7, M-8) are real gaps but are **features**, not cleanup — listed separately. |
-| `CODE_CLEANING_PLAN.md` | Older (2026-07-07) plan | **Partial overlap** with pony-audit; prefer pony-audit + this file. |
+| `docs/archive/CODE_CLEANING_PLAN.md` | Older (2026-07-07) plan | **Partial overlap** with pony-audit; prefer pony-audit + this file. |
 
 ### Ground truth the audits got wrong or that changed since
 

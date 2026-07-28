@@ -1,3 +1,5 @@
+> **Historical (archived 2026-07-28).** Generic CSS scroll-animation/vendor guides collected during the 2026-07 storefront-upgrade exploration. No repo-specific content; not project guidance.
+
 
 --- Guide for scrollytelling ---
 # Scrollytelling
