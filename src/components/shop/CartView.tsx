@@ -19,6 +19,7 @@ import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
   buildEngagementEvent,
+  buildPrintRemoveFromCartEvent,
   buildRemoveFromCartEvent,
   buildViewCartEventFromItems,
   pushDataLayer,
@@ -578,7 +579,18 @@ export function CartView({
                   </div>
                   <div className="right">
                     <span className="price">{fmt(priceOfLine(l))}</span>
-                    <button className="rm" onClick={() => remove(l.id)}>
+                    <button
+                      className="rm"
+                      onClick={() => {
+                        remove(l.id);
+                        pushDataLayer(
+                          buildPrintRemoveFromCartEvent(
+                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l) },
+                            { currency: analyticsCurrency },
+                          ),
+                        );
+                      }}
+                    >
                       <Icon name="trash" /> {t('cart.remove')}
                     </button>
                   </div>
