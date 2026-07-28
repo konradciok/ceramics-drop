@@ -22,6 +22,33 @@ permissions:
   contents: read
 
 jobs:
+  homepage-smoke:
+    if: github.ref_name == github.event.repository.default_branch
+    name: Storefront homepage smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Guards the one failure mode CI structurally cannot catch: a Turbopack
+      # build succeeds in CI but ChunkLoadErrors at the Workers runtime →
+      # HTTP 500 on every page (see AGENTS.md § Build system). Cloudflare bot
+      # management may challenge runner IPs (403/503 with a cf-mitigated
+      # header), so only an UNmitigated 5xx fails the job.
+      - name: Probe homepage
+        run: |
+          code=$(curl -sS -D /tmp/headers.txt -o /tmp/home.html \
+            -w '%{http_code}' --max-time 30 https://anna-ciok.studio/ || echo 000)
+          echo "HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "::error::Homepage unreachable (curl failed)"; exit 1
+          fi
+          if [ "$code" -ge 500 ] && ! grep -qi '^cf-mitigated:' /tmp/headers.txt; then
+            echo "::error::Homepage returned HTTP $code (not a Cloudflare challenge) — possible broken deploy (Turbopack chunks?)"
+            exit 1
+          fi
+          if [ "$code" = "200" ] && ! grep -q 'lang="pl"' /tmp/home.html; then
+            echo "::warning::Homepage 200 but the lang=\"pl\" marker is missing — check the deploy"
+          fi
+
   print-asset-smoke:
     if: github.ref_name == github.event.repository.default_branch
     name: Print-asset signed-route smoke
