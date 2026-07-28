@@ -278,8 +278,23 @@ function ga4BaseHtml(measurementId) {
 (function(w,d,s,id){
   w.dataLayer = w.dataLayer || [];
   w.gtag = w.gtag || function(){ w.dataLayer.push(arguments); };
+  // N-1 belt-and-braces: gtag attaches page_location=document.location as a
+  // default param on EVERY event, incl. GA4 auto-events (session_start/
+  // first_visit) that fire before the app can history.replaceState the token
+  // away. Seed a redacted page_location at config time so those never carry
+  // ?order=/?payment_intent[_client_secret]=/?sale=/?preview=. Keep this key
+  // list in sync with SENSITIVE_QUERY_PARAMS in src/lib/analytics.ts.
+  function redactLocation(href){
+    try {
+      var u = new URL(href);
+      var keys = ['order','payment_intent','payment_intent_client_secret','sale','preview'];
+      var changed = false;
+      for (var i=0;i<keys.length;i++){ if(u.searchParams.has(keys[i])){ u.searchParams.set(keys[i],'redacted'); changed = true; } }
+      return changed ? u.toString() : href;
+    } catch(e){ return d.location.origin + d.location.pathname; } // parse failed: drop query/hash, never re-leak the raw href
+  }
   w.gtag('js', new Date());
-  w.gtag('config', id, { send_page_view: false });
+  w.gtag('config', id, { send_page_view: false, page_location: redactLocation(d.location.href) });
   var firstScript = d.getElementsByTagName(s)[0];
   var tag = d.createElement(s);
   tag.async = true;
@@ -368,6 +383,12 @@ ${dedupeBridgeSendSnippet('ga4')}
   }
   if (payload.user_data && payload.user_data.em) {
     window.gtag('set', 'user_data', { sha256_email_address: payload.user_data.em });
+  }
+  // N-1: on SPA navigation the app fires page_view with an already-redacted
+  // page_location; promote it to a gtag default so later GA4 auto-events on this
+  // page inherit the current redacted URL, not the stale config-time seed.
+  if (payload.event === 'page_view' && params.page_location) {
+    window.gtag('set', { page_location: params.page_location });
   }
   window.gtag('event', payload.event, params);
 })();

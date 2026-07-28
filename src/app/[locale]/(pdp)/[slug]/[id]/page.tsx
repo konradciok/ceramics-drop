@@ -11,6 +11,7 @@ import { productAlternates } from '@/lib/seo/urls';
 import { SITE_URL } from '@/lib/site';
 import { ProductPageScreen } from '@/components/shop/ProductPageScreen';
 import { PrintProductScreen } from '@/components/shop/PrintProductScreen';
+import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { getProductNote } from '@/lib/cms/messages';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug } from '@/lib/types';
@@ -103,6 +104,7 @@ export default async function Page({ params, searchParams }: Props) {
           : coverage.variants.filter((v) => v.usable).map((v) => v.variantKey);
     return (
       <main>
+        <StripUrlToken names={['preview']} />
         <JsonLd
           data={printProductSchema({
             design,
@@ -138,6 +140,7 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <main>
+      <StripUrlToken names={['preview']} />
       <JsonLd
         data={productSchema({
           product,
