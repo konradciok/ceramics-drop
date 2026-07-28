@@ -25,7 +25,7 @@ import {
 } from '@/lib/analytics';
 import {
   forgetRememberedCheckout,
-  pushCheckoutStartedItems,
+  pushCheckoutStartedItemsOnce,
   rememberCheckoutForReturn,
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
@@ -352,7 +352,7 @@ export function CartView({
     // begin_checkout itemises the whole cart (ceramics + prints); print items are
     // resolved from their tokens with server-equal prices.
     const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
-    pushCheckoutStartedItems(checkoutItems, {
+    pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
       userData: em ? { em } : undefined,
