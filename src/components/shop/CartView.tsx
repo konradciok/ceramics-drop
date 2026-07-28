@@ -15,6 +15,7 @@ import { currencyFormatter } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
+import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
   buildEngagementEvent,
@@ -146,6 +147,11 @@ export function CartView({
   // the server component). The cart is a locked bundle of (already-`sold`) pieces:
   // seeded from the link, not pruned against inventory, and not editable.
   const saleToken = propSaleToken ?? null;
+  // N-1: scrub the single-use ?sale= token from the URL now that the server has
+  // handed it to us as a prop — keeps it out of gtag's ambient page_location,
+  // browser history, and the Referer header. Private-sale mode is already seeded
+  // from propSaleToken, so a later hard reload intentionally drops to the normal cart.
+  useStripUrlParams(['sale']);
   const privateSale = saleToken !== null;
   const [privateSaleError, setPrivateSaleError] = useState(false);
   // True until the bundle fetch settles, so we show a placeholder instead of briefly
