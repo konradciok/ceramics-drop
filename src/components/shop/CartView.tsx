@@ -598,7 +598,12 @@ export function CartView({
                     className="rm"
                     onClick={() => {
                       remove(p.id);
-                      pushDataLayer(buildRemoveFromCartEvent(p));
+                      pushDataLayer(
+                        buildRemoveFromCartEvent(p, {
+                          currency: analyticsCurrency,
+                          itemPrices: [priceOfCurrency(p, currency)],
+                        }),
+                      );
                     }}
                   >
                     <Icon name="trash" /> {t('cart.remove')}
