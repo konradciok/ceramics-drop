@@ -38,4 +38,29 @@ test.describe('fine-art print configurator @ci', () => {
     // Pinned literal: update here when SIZE_BASE / *_DELTA tables change.
     await expect(page.getByTestId('print-price')).toHaveText('720 zł');
   });
+
+  test('fires the print funnel: list → select → view → add → remove', async ({ page }) => {
+    // pushDataLayer mirrors each event into sessionStorage on localhost (analytics.ts
+    // mirrorDebugEvent); poll because view_item_list / view_item fire in mount effects.
+    const events = () =>
+      page.evaluate(() =>
+        (JSON.parse(sessionStorage.getItem('acc_analytics_debug') ?? '[]') as { event: string }[]).map(
+          (e) => e.event,
+        ),
+      );
+
+    await page.goto('/fine-art-prints');
+    await expect.poll(events).toContain('view_item_list');
+
+    await page.getByTestId('print-tile').first().click();
+    await expect.poll(events).toContain('select_item');
+    await expect.poll(events).toContain('view_item'); // landed on the print PDP
+
+    await page.getByTestId('print-add').click();
+    await expect(page.locator('[data-cart-count]')).toHaveText('1');
+    await expect.poll(events).toContain('add_to_cart');
+
+    await page.getByTestId('print-add').click(); // in-cart toggle → remove
+    await expect.poll(events).toContain('remove_from_cart');
+  });
 });
