@@ -104,7 +104,9 @@ These params are collected on `purchase`/`begin_checkout` but are unregistered, 
   checkout_total 200 properties/539909256/customDimensions/<id>
   shipping_tier 200 properties/539909256/customDimensions/<id>
   ```
-  If a dimension already exists, GA4 returns `400 ... already exists` for that one — safe to ignore (the create is effectively idempotent; leave the existing dimension in place).
+  If a dimension already exists, GA4 returns `400/409 ... already exists` for that one — safe to ignore **only if** it is still an active dimension (the create is effectively idempotent; leave the existing dimension in place).
+
+  > **Run 2026-07-29:** `checkout_total` + `shipping_tier` created (200). `order_total` returned `409 ALREADY_EXISTS` **but is absent from the active list** — an archived `order_total`/EVENT dimension holds the slot, and the Admin API has no un-archive (`create`/`get`/`list`/`patch`/`archive` only). So this landed at **17** dimensions, not 18; a queryable `order_total` needs a manual restore in the GA4 UI (Admin → Custom definitions).
 
 - [ ] **Verify — re-list and confirm 18 dimensions including the 3 new params.** Re-run the pre-check snippet. Expected output:
   ```
@@ -332,8 +334,8 @@ Documentation-only. Lock the conventions and record the config changes from Task
 
 ## Done-when
 
-- [ ] GA4 property `539909256` lists **18** custom dimensions including `order_total`, `checkout_total`, `shipping_tier` (Task 1 verify).
-- [ ] EM `siteSearchEnabled` is `false`, `scrollsEnabled`/`formInteractionsEnabled` still `true` (Task 2 verify).
+- [x] GA4 property `539909256` custom dimensions — `checkout_total` + `shipping_tier` registered 2026-07-29 (count 15→**17**). `order_total` **blocked** by an archived same-name dimension (409 ALREADY_EXISTS, no un-archive API); needs a manual GA4-UI restore to reach 18 (Task 1 run note).
+- [x] EM `siteSearchEnabled` is `false` (GA4 omits the field when false), `scrollsEnabled`/`formInteractionsEnabled` still `true` — verified 2026-07-29 (Task 2 verify).
 - [ ] `grep` finds no `scroll_depth`/`contact_form_mailto_open` in `src/` (Task 3 verify; `newsletter_signup_requested` is retained per Plan 3); `npm run typecheck && npm run lint && npm run test` all pass.
 - [ ] `npx vitest run src/lib/marketing/meta-capi.test.ts` → 11 passed, with the token in the `Authorization: Bearer` header and absent from both the URL and the POST body (Task 4).
 - [ ] `docs/analytics-stack.md` states the value/variant conventions, the N-11 won't-fix decision, the EM-ownership record, and the completed `engagement_type` table (Task 5 verify).
