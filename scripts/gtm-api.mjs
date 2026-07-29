@@ -33,6 +33,38 @@ const ANALYTICS_EVENTS = [
   'site_engagement',
 ];
 
+// Top-level GA4 event params the native GA4 event tag forwards = the 15
+// GA4-registered custom dimensions (audit 2026-07-28 §4) + page_path/page_title.
+// `page_location` is added separately via the redaction variable; `ecommerce`
+// rides sendEcommerceData natively — neither is listed here. Declared up here
+// (not near the builders) so it is initialised before setupWorkspace() runs.
+const GA4_EVENT_PARAMS = [
+  'engagement_type', 'reason', 'status', 'method', 'page', 'locale',
+  'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
+  'item_id', 'item_category', 'app_version', 'app_git_sha',
+  'page_path', 'page_title',
+];
+
+// Nested meta.* dataLayer keys the UI-managed Meta Pixel tags read (GTM
+// dot-notation resolves these against the nested `meta` object).
+const META_EVENT_PARAMS = [
+  'meta.event_name', 'meta.event_id', 'meta.content_ids', 'meta.content_type',
+  'meta.contents', 'meta.currency', 'meta.value', 'meta.num_items', 'meta.order_id',
+];
+
+// Every dataLayer key needing a `DLV - <key>` variable, deduped (page_path is
+// shared). Read by both the native GA4 event tag and the UI Meta tags.
+const DATALAYER_VARS = [
+  ...new Set([
+    ...GA4_EVENT_PARAMS,
+    ...META_EVENT_PARAMS,
+    'user_data.em',
+    'event_id',
+    'percent_scrolled',
+    'engagement_seconds',
+  ]),
+];
+
 const command = process.argv[2] ?? 'help';
 const flags = new Set(process.argv.slice(3));
 
@@ -43,6 +75,18 @@ if (command === 'help' || command === '--help' || command === '-h') {
 
 const auth = await createAuthClient();
 const tagmanager = google.tagmanager({ version: 'v2', auth });
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// GTM API v2 allows only ~30 queries/min/user; a full `setup` makes ~50 requests
+// (triggers + ~30 data-layer variables + tags). Pace every request so a single
+// run stays under quota instead of 429-ing partway (RESOURCE_EXHAUSTED).
+let gtmLastCallAt = 0;
+async function throttle() {
+  const minGapMs = 2200; // ~27 calls/min, under the 30/min cap with margin
+  const wait = minGapMs - (Date.now() - gtmLastCallAt);
+  if (wait > 0) await sleep(wait);
+  gtmLastCallAt = Date.now();
+}
 
 if (command === 'list') {
   await listContainers();
@@ -74,10 +118,10 @@ async function setupWorkspace() {
   const containerId = requiredEnv('GTM_CONTAINER_ID');
   const gtmPublicId = requiredEnv('NEXT_PUBLIC_GTM_ID');
   const ga4MeasurementId = requiredEnv('NEXT_PUBLIC_GA4_MEASUREMENT_ID');
-  const metaPixelId = requiredEnv('NEXT_PUBLIC_META_PIXEL_ID');
   const workspaceName = process.env.GTM_WORKSPACE_NAME ?? 'ACC analytics stack';
   const parent = `accounts/${accountId}/containers/${containerId}`;
 
+  await throttle();
   const container = await tagmanager.accounts.containers.get({ path: parent });
   if (container.data.publicId !== gtmPublicId) {
     throw new Error(
@@ -93,52 +137,57 @@ async function setupWorkspace() {
   });
   const consentTrigger = await upsertTrigger(workspace.path, consentUpdateTrigger());
 
+  // Meta routing triggers. The Meta Pixel template tags themselves are UI-imported
+  // (the GTM API cannot import Community-Gallery templates), but their triggers are
+  // pure API, so they are codified here and wired to the UI tags. Meta must NOT fire
+  // on view_item_list/select_item/remove_from_cart/view_cart (the old bridge didn't).
+  const metaStd = await upsertTrigger(workspace.path, metaStandardTrigger());
+  const metaPv = await upsertTrigger(workspace.path, metaEqualsTrigger('ACC - meta page_view', 'page_view'));
+  const metaEng = await upsertTrigger(workspace.path, metaEqualsTrigger('ACC - meta site_engagement', 'site_engagement'));
+
+  // Data-layer + redaction variables the native GA4 event tag and the UI Meta tags
+  // map. `Page Location - redacted` carries the N-1 redaction forward (v14 seed +
+  // bridge refresh, now one fresh-evaluated variable).
+  await throttle();
+  const existingVars =
+    (await tagmanager.accounts.containers.workspaces.variables.list({ parent: workspace.path }))
+      .data.variable ?? [];
+  await upsertVariable(workspace.path, pageLocationRedactedVariable(), existingVars);
+  for (const key of DATALAYER_VARS) {
+    await upsertVariable(workspace.path, dataLayerVariable(key), existingVars);
+  }
+
   await upsertTag(
     workspace.path,
-    customHtmlTag(
-      'ACC - GA4 base',
-      ga4BaseHtml(ga4MeasurementId),
-      [initTrigger.triggerId, consentTrigger.triggerId],
-      { oncePerLoad: true, priority: 20, consentTypes: ['analytics_storage'] },
-    ),
+    ga4ConfigTag(ga4MeasurementId, [initTrigger.triggerId, consentTrigger.triggerId]),
   );
-  await upsertTag(
-    workspace.path,
-    customHtmlTag(
-      'ACC - Meta Pixel base',
-      metaBaseHtml(metaPixelId),
-      [initTrigger.triggerId, consentTrigger.triggerId],
-      { oncePerLoad: true, priority: 10, consentTypes: ['ad_storage'] },
-    ),
-  );
-  await upsertTag(
-    workspace.path,
-    customHtmlTag('ACC - GA4 dataLayer bridge', ga4BridgeHtml(gtmPublicId), [trigger.triggerId], {
-      consentTypes: ['analytics_storage'],
-    }),
-  );
-  await upsertTag(
-    workspace.path,
-    customHtmlTag('ACC - Meta dataLayer bridge', metaBridgeHtml(gtmPublicId), [trigger.triggerId], {
-      consentTypes: ['ad_storage'],
-    }),
-  );
+  await upsertTag(workspace.path, ga4EventTag(ga4MeasurementId, [trigger.triggerId]));
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
-  console.log('Created/updated GTM tags: GA4 base, Meta base, GA4 bridge, Meta bridge.');
-  console.log('GA4 base and Meta Pixel base now also fire on ACC - Consent Update (re-fire after mid-session Accept).');
+  console.log(
+    'Native GA4 tags: ACC - GA4 config (googtag, send_page_view:false) + ACC - GA4 event (gaawe) — replacing the Custom-HTML bridge.',
+  );
+  console.log(`Meta routing triggers ready: ${metaStd.name}, ${metaPv.name}, ${metaEng.name}.`);
+  console.log(
+    'Meta Pixel tags are UI-managed (gallery import + one-off API consent/trigger wiring, like Microsoft Clarity) — not created here.',
+  );
+  console.log(
+    'ACC - GA4 config fires on ACC - Initialization + ACC - Consent Update (re-fire after mid-session Accept).',
+  );
 
   if (flags.has('--publish')) {
+    await throttle();
     const version = await tagmanager.accounts.containers.workspaces.create_version({
       path: workspace.path,
       requestBody: {
         name: 'ACC analytics stack',
         notes:
-          'GA4 + Meta Pixel stack for Anna Ciok Ceramics ecommerce and engagement dataLayer events.',
+          'Native GA4 (googtag + gaawe) + Meta Pixel template stack for Anna Ciok Ceramics ecommerce and engagement dataLayer events.',
       },
     });
     const versionPath = version.data.containerVersion?.path;
     if (!versionPath) throw new Error('GTM did not return a container version path.');
+    await throttle();
     await tagmanager.accounts.containers.versions.publish({ path: versionPath });
     console.log(`Published ${versionPath}.`);
   } else {
@@ -147,6 +196,7 @@ async function setupWorkspace() {
 }
 
 async function getOrCreateWorkspace(parent, name) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.list({ parent });
   const existing = (list.data.workspace ?? []).find((workspace) => workspace.name === name);
   if (existing) {
@@ -154,6 +204,7 @@ async function getOrCreateWorkspace(parent, name) {
     return existing;
   }
 
+  await throttle();
   const created = await tagmanager.accounts.containers.workspaces.create({
     parent,
     requestBody: {
@@ -167,9 +218,11 @@ async function getOrCreateWorkspace(parent, name) {
 }
 
 async function upsertTrigger(parent, body) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.triggers.list({ parent });
   const existing = (list.data.trigger ?? []).find((trigger) => trigger.name === body.name);
   if (!existing) {
+    await throttle();
     const created = await tagmanager.accounts.containers.workspaces.triggers.create({
       parent,
       requestBody: body,
@@ -178,6 +231,7 @@ async function upsertTrigger(parent, body) {
     return created.data;
   }
 
+  await throttle();
   const updated = await tagmanager.accounts.containers.workspaces.triggers.update({
     path: existing.path,
     requestBody: { ...existing, ...body },
@@ -187,9 +241,11 @@ async function upsertTrigger(parent, body) {
 }
 
 async function upsertTag(parent, body) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.tags.list({ parent });
   const existing = (list.data.tag ?? []).find((tag) => tag.name === body.name);
   if (!existing) {
+    await throttle();
     const created = await tagmanager.accounts.containers.workspaces.tags.create({
       parent,
       requestBody: body,
@@ -198,11 +254,42 @@ async function upsertTag(parent, body) {
     return created.data;
   }
 
+  await throttle();
   const updated = await tagmanager.accounts.containers.workspaces.tags.update({
     path: existing.path,
     requestBody: { ...existing, ...body },
   });
   console.log(`Updated tag: ${updated.data.name}`);
+  return updated.data;
+}
+
+async function upsertVariable(parent, body, existingVars) {
+  // existingVars lets a caller pre-fetch the variable list once and reuse it
+  // across a batch (a ~30-var loop would otherwise re-list on every call).
+  let variables = existingVars;
+  if (!variables) {
+    await throttle();
+    variables =
+      (await tagmanager.accounts.containers.workspaces.variables.list({ parent })).data.variable ??
+      [];
+  }
+  const existing = variables.find((variable) => variable.name === body.name);
+  if (!existing) {
+    await throttle();
+    const created = await tagmanager.accounts.containers.workspaces.variables.create({
+      parent,
+      requestBody: body,
+    });
+    console.log(`Created variable: ${created.data.name}`);
+    return created.data;
+  }
+
+  await throttle();
+  const updated = await tagmanager.accounts.containers.workspaces.variables.update({
+    path: existing.path,
+    requestBody: { ...existing, ...body },
+  });
+  console.log(`Updated variable: ${updated.data.name}`);
   return updated.data;
 }
 
@@ -238,200 +325,159 @@ function consentUpdateTrigger() {
   };
 }
 
-function customHtmlTag(name, html, firingTriggerId, options = {}) {
-  return {
-    name,
-    type: 'html',
-    parameter: [
-      templateParam('html', html),
-      { key: 'supportDocumentWrite', type: 'boolean', value: 'false' },
-    ],
-    firingTriggerId,
-    tagFiringOption: options.oncePerLoad ? 'oncePerLoad' : 'oncePerEvent',
-    ...(options.priority
-      ? { priority: { key: 'priority', type: 'integer', value: String(options.priority) } }
-      : {}),
-    ...(options.consentTypes
-      ? {
-          consentSettings: {
-            consentStatus: 'needed',
-            // Tag Manager API v2: consentType is a SINGLE Parameter, not a repeating
-            // field. To carry one-or-more consent types it must be a list-type
-            // Parameter whose `list` holds the template params. Sending a bare array
-            // here fails with "Proto field is not repeating, cannot start list".
-            consentType: {
-              type: 'list',
-              list: options.consentTypes.map((t) => ({ type: 'template', value: t })),
-            },
-          },
-        }
-      : {}),
-  };
-}
-
 function templateParam(key, value) {
   return { key, type: 'template', value };
 }
 
-function ga4BaseHtml(measurementId) {
-  return `<script>
-(function(w,d,s,id){
-  w.dataLayer = w.dataLayer || [];
-  w.gtag = w.gtag || function(){ w.dataLayer.push(arguments); };
-  // N-1 belt-and-braces: gtag attaches page_location=document.location as a
-  // default param on EVERY event, incl. GA4 auto-events (session_start/
-  // first_visit) that fire before the app can history.replaceState the token
-  // away. Seed a redacted page_location at config time so those never carry
-  // ?order=/?payment_intent[_client_secret]=/?sale=/?preview=. Keep this key
-  // list in sync with SENSITIVE_QUERY_PARAMS in src/lib/analytics.ts.
-  function redactLocation(href){
-    try {
-      var u = new URL(href);
-      var keys = ['order','payment_intent','payment_intent_client_secret','sale','preview'];
-      var changed = false;
-      for (var i=0;i<keys.length;i++){ if(u.searchParams.has(keys[i])){ u.searchParams.set(keys[i],'redacted'); changed = true; } }
-      return changed ? u.toString() : href;
-    } catch(e){ return d.location.origin + d.location.pathname; } // parse failed: drop query/hash, never re-leak the raw href
-  }
-  w.gtag('js', new Date());
-  w.gtag('config', id, { send_page_view: false, page_location: redactLocation(d.location.href) });
-  var firstScript = d.getElementsByTagName(s)[0];
-  var tag = d.createElement(s);
-  tag.async = true;
-  tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
-  firstScript.parentNode.insertBefore(tag, firstScript);
-})(window, document, 'script', '${measurementId}');
-</script>`;
+function boolParam(key, value) {
+  return { key, type: 'boolean', value: String(value) };
 }
 
-function metaBaseHtml(pixelId) {
-  return `<script>
-(function(f,b,e,v,n,t,s){
-  if (f.fbq) return;
-  n = f.fbq = function(){ n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
-  if (!f._fbq) f._fbq = n;
-  n.push = n;
-  n.loaded = true;
-  n.version = '2.0';
-  n.queue = [];
-  t = b.createElement(e);
-  t.async = true;
-  t.src = v;
-  s = b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t, s);
-})(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${pixelId}');
-</script>`;
+function listParam(key, list) {
+  return { key, type: 'list', list };
 }
 
-/**
- * Shared JS snippet that resolves the EXACT raw dataLayer event object that
- * fired this tag. GTM processes the dataLayer message queue one message at a
- * time; while a message is being processed its `event_id` is reflected in the
- * container's data model, reachable via
- * `google_tag_manager['GTM-XXXX'].dataLayer.get('event_id')`. We read that id,
- * then find the raw object in window.dataLayer whose own `event_id` matches it
- * (scanning from the end). Matching the precise raw object — rather than "the
- * latest analytics event" — prevents collapse/double-send when two analytics
- * events are pushed back-to-back in one tick. Leaves `payload` set to the
- * resolved object, or returns (no-ops) if it cannot be resolved.
- */
-function resolveTriggeringEventSnippet(gtmPublicId) {
-  return `  var gtm = window.google_tag_manager && window.google_tag_manager['${gtmPublicId}'];
-  var targetId = gtm && gtm.dataLayer && typeof gtm.dataLayer.get === 'function'
-    ? gtm.dataLayer.get('event_id')
-    : null;
-  if (!targetId) return;
-  var dl = window.dataLayer || [];
-  var payload = null;
-  for (var i = dl.length - 1; i >= 0; i--) {
-    var entry = dl[i];
-    if (entry && typeof entry === 'object' && entry.event_id === targetId && entry.event) {
-      payload = entry;
-      break;
-    }
-  }
-  if (!payload) return;`;
+function mapEntry(map) {
+  return { type: 'map', map };
 }
 
-/** Prevent GA4/Meta bridge tags from re-firing when gtag() pushes back into dataLayer. */
-function dedupeBridgeSendSnippet(channel) {
-  return `  window.__accBridgeSent = window.__accBridgeSent || {};
-  var dedupeKey = '${channel}:' + payload.event_id;
-  if (window.__accBridgeSent[dedupeKey]) return;
-  window.__accBridgeSent[dedupeKey] = true;`;
+/** GA4 event-parameter / user-property row: { name, value }. */
+function nameValue(name, value) {
+  return mapEntry([templateParam('name', name), templateParam('value', value)]);
 }
 
-function ga4BridgeHtml(gtmPublicId) {
-  return `<script>
-(function(){
-${resolveTriggeringEventSnippet(gtmPublicId)}
-${dedupeBridgeSendSnippet('ga4')}
-  if (!window.gtag) return;
-  var params = {};
-  for (var key in payload) {
-    if (Object.prototype.hasOwnProperty.call(payload, key) && key !== 'event' && key !== 'meta' && key !== 'ecommerce' && key !== 'acc_origin' && key !== 'user_data') {
-      params[key] = payload[key];
-    }
-  }
-  if (payload.ecommerce && typeof payload.ecommerce === 'object') {
-    for (var ek in payload.ecommerce) {
-      if (Object.prototype.hasOwnProperty.call(payload.ecommerce, ek)) {
-        params[ek] = payload.ecommerce[ek];
-      }
-    }
-  }
-  if (payload.user_data && payload.user_data.em) {
-    window.gtag('set', 'user_data', { sha256_email_address: payload.user_data.em });
-  }
-  // N-1: on SPA navigation the app fires page_view with an already-redacted
-  // page_location; promote it to a gtag default so later GA4 auto-events on this
-  // page inherit the current redacted URL, not the stale config-time seed.
-  if (payload.event === 'page_view' && params.page_location) {
-    window.gtag('set', { page_location: params.page_location });
-  }
-  window.gtag('event', payload.event, params);
-})();
-</script>`;
+/** Google-tag configSettingsTable row: { parameter, parameterValue }. */
+function configRow(parameter, parameterValue) {
+  return mapEntry([templateParam('parameter', parameter), templateParam('parameterValue', parameterValue)]);
 }
 
-function metaBridgeHtml(gtmPublicId) {
-  return `<script>
-(function(){
-${resolveTriggeringEventSnippet(gtmPublicId)}
-${dedupeBridgeSendSnippet('meta')}
-  if (!window.fbq) return;
-  if (payload.user_data && payload.user_data.em) {
-    window.fbq('set', 'userData', { em: payload.user_data.em });
-  }
-  if (payload.event === 'page_view') {
-    window.fbq('track', 'PageView', {}, { eventID: payload.event_id });
-    return;
-  }
-  if (payload.meta && payload.meta.event_name) {
-    var meta = payload.meta;
-    var params = {
-      content_ids: meta.content_ids,
-      content_type: meta.content_type,
-      contents: meta.contents,
-      currency: meta.currency,
-      value: meta.value,
-      num_items: meta.num_items
-    };
-    if (meta.order_id) params.order_id = meta.order_id;
-    window.fbq('track', meta.event_name, params, { eventID: meta.event_id });
-    return;
-  }
-  if (payload.event === 'site_engagement') {
-    window.fbq('trackCustom', 'SiteEngagement', {
-      engagement_type: payload.engagement_type,
-      page_path: payload.page_path,
-      percent_scrolled: payload.percent_scrolled,
-      engagement_seconds: payload.engagement_seconds
-    }, { eventID: payload.event_id });
-  }
-})();
-</script>`;
+function consentNeeded(type) {
+  return {
+    consentStatus: 'needed',
+    // Same list-Parameter shape customHtmlTag() used (a bare array fails with
+    // "Proto field is not repeating, cannot start list").
+    consentType: { type: 'list', list: [{ type: 'template', value: type }] },
+  };
+}
+
+// N-1 carry-forward: mirrors redactSensitiveUrl() (src/lib/analytics.ts) and the
+// privacy plan's inline redactLocation() (was in ga4BaseHtml/ga4BridgeHtml, v14).
+// Evaluated fresh on every hit, so it is inherently sticky across SPA navigation —
+// this ONE variable replaces both the v14 config seed and the bridge gtag('set')
+// refresh. Keep the key list in sync with SENSITIVE_QUERY_PARAMS in analytics.ts.
+function pageLocationRedactedVariable() {
+  return {
+    name: 'Page Location - redacted',
+    type: 'jsm',
+    parameter: [
+      templateParam(
+        'javascript',
+        `function(){\n  try {\n    var u = new URL(document.location.href);\n    var keys = ['order','payment_intent','payment_intent_client_secret','sale','preview'];\n    for (var i=0;i<keys.length;i++){ if(u.searchParams.has(keys[i])){ u.searchParams.set(keys[i],'redacted'); } }\n    return u.toString();\n  } catch(e){ return document.location.href; }\n}`,
+      ),
+    ],
+  };
+}
+
+function ga4ConfigTag(measurementId, firingTriggerId) {
+  return {
+    name: 'ACC - GA4 config',
+    type: 'googtag',
+    parameter: [
+      templateParam('tagId', measurementId),
+      listParam('configSettingsTable', [
+        configRow('send_page_view', 'false'),
+        // N-1: clean default page_location for GA4 auto-events (session_start,
+        // first_visit, user_engagement, scroll) that fire outside our event tag.
+        configRow('page_location', '{{Page Location - redacted}}'),
+      ]),
+    ],
+    firingTriggerId,
+    // Must be 'unlimited', not 'oncePerLoad': the config fires on Init AND on
+    // ACC - Consent Update so it recovers after a mid-session Accept. oncePerLoad
+    // budgets one fire per load, which the consent-blocked Init fire consumes
+    // (the quirk noted in docs/analytics-stack.md) — so the re-fire never lands.
+    // Native googtag config is idempotent, so re-firing is safe.
+    tagFiringOption: 'unlimited',
+    priority: { key: 'priority', type: 'integer', value: '20' },
+    consentSettings: consentNeeded('analytics_storage'),
+  };
+}
+
+function ga4EventTag(measurementId, firingTriggerId) {
+  return {
+    name: 'ACC - GA4 event',
+    type: 'gaawe',
+    parameter: [
+      templateParam('eventName', '{{Event}}'),
+      boolParam('sendEcommerceData', true),
+      templateParam('getEcommerceDataFrom', 'dataLayer'),
+      // NB: measurementIdOverride, NOT measurementId — a wrong/empty key fails with
+      // "vendorTemplate.parameter.measurementIdOverride: The value must not be empty".
+      templateParam('measurementIdOverride', measurementId),
+      listParam('eventParameters', [
+        // N-1: override gtag's ambient raw page_location on every app event too.
+        nameValue('page_location', '{{Page Location - redacted}}'),
+        ...GA4_EVENT_PARAMS.map((p) => nameValue(p, `{{DLV - ${p}}}`)),
+      ]),
+      // NB: deliberately NO GA4 user-provided data here. The old bridge's
+      // gtag('set','user_data',{sha256_email_address}) fed GA4's User-Provided
+      // Data (enhanced-conversions) API — NOT a user property. A user property
+      // named sha256_email_address would neither feed UPD matching nor comply
+      // with Google's PII-in-user-properties policy. Server-side GA4 MP already
+      // sends hashed match data (src/lib/marketing/conversions.ts); if client-side
+      // UPD is wanted, wire it via a native User-Provided Data variable during the
+      // Task 4 Preview gate. (DLV - user_data.em is still used by the Meta tag.)
+    ],
+    firingTriggerId,
+    tagFiringOption: 'oncePerEvent',
+    consentSettings: consentNeeded('analytics_storage'),
+  };
+}
+
+function dataLayerVariable(dlKey) {
+  return {
+    name: `DLV - ${dlKey}`,
+    // 'v' = Data Layer Variable. NB: the "v2" is the dataLayerVersion param
+    // below, NOT the type — GTM 400s ("Unknown entity type … v2") on type:'v2'.
+    type: 'v',
+    parameter: [
+      templateParam('name', dlKey),
+      { key: 'dataLayerVersion', type: 'integer', value: '2' },
+      boolParam('setDefaultValue', false),
+    ],
+  };
+}
+
+function metaStandardTrigger() {
+  return {
+    name: 'ACC - meta standard events',
+    type: 'customEvent',
+    customEventFilter: [
+      {
+        type: 'matchRegex',
+        parameter: [
+          templateParam('arg0', '{{_event}}'),
+          templateParam('arg1', '^(view_item|add_to_cart|begin_checkout|purchase)$'),
+        ],
+      },
+    ],
+  };
+}
+
+function metaEqualsTrigger(name, eventName) {
+  return {
+    name,
+    type: 'customEvent',
+    customEventFilter: [
+      {
+        type: 'equals',
+        parameter: [
+          templateParam('arg0', '{{_event}}'),
+          templateParam('arg1', eventName),
+        ],
+      },
+    ],
+  };
 }
 
 /** Prefer the gtm-api-deploy service account key, then ADC. */
@@ -537,7 +583,7 @@ Required for setup:
   GTM_CONTAINER_ID
   NEXT_PUBLIC_GTM_ID
   NEXT_PUBLIC_GA4_MEASUREMENT_ID
-  NEXT_PUBLIC_META_PIXEL_ID
+  (Meta Pixel tags are UI-managed; the pixel ID lives in the GTM UI, not here.)
 
 Authentication:
   npm run gtm:key              # create .secrets/gtm-api-deploy.json once

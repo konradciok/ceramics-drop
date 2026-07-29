@@ -187,7 +187,7 @@ Target end-state tag set in the container:
   function dataLayerVariable(dlKey) {
     return {
       name: `DLV - ${dlKey}`,
-      type: 'v2',
+      type: 'v', // Data Layer Variable; 'v2' is the dataLayerVersion below, not the type
       parameter: [
         templateParam('name', dlKey),
         { key: 'dataLayerVersion', type: 'integer', value: '2' },
