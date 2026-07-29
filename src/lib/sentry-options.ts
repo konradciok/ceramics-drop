@@ -19,6 +19,15 @@ const MAX_EXTRA_STRING = 2_000;
 export function scrubSentryEvent(event: SentryEvent): SentryEvent {
   if (event.request) {
     delete event.request.cookies;
+    // Strip the query string from the request URL (and the separate query_string
+    // field): it can carry capability tokens — ?sale= / ?preview= /
+    // payment_intent_client_secret / ?order= — the same vectors Plan 1 redacts for
+    // analytics, and Sentry captures the URL even with sendDefaultPii:false. Dropped
+    // wholesale so a future sensitive param needs no allowlist maintained here.
+    if (typeof event.request.url === 'string') {
+      event.request.url = event.request.url.split(/[?#]/)[0];
+    }
+    delete event.request.query_string;
     if (event.request.headers) {
       // Header names are case-insensitive — a runtime may deliver `Cookie` /
       // `Authorization` / `X-Forwarded-For` in any casing. Compare on a

@@ -94,13 +94,20 @@ export async function POST(req: Request) {
       const emailId = evt.data.email_id ?? null;
       let orderId: string | null = null;
       if (emailId) {
-        const { getSupabaseAdmin } = await import('@/lib/supabase');
-        const { data } = await getSupabaseAdmin()
-          .from('orders')
-          .select('id')
-          .eq('resend_email_id', emailId)
-          .maybeSingle();
-        orderId = (data as { id: string } | null)?.id ?? null;
+        try {
+          const { getSupabaseAdmin } = await import('@/lib/supabase');
+          const { data } = await getSupabaseAdmin()
+            .from('orders')
+            .select('id')
+            .eq('resend_email_id', emailId)
+            .maybeSingle();
+          orderId = (data as { id: string } | null)?.id ?? null;
+        } catch (err) {
+          // A DB blip must NOT turn this log-only webhook into a 5xx (which would
+          // make Svix retry AND skip the alert below). Order correlation is a
+          // nice-to-have — degrade to order_id: null and still fire the alert.
+          console.error('resend webhook: order correlation lookup failed', err);
+        }
       }
       // order_id is not PII (a UUID) — safe to attach, unlike the recipient address.
       Sentry.captureMessage(`resend ${evt.type}`, {

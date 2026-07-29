@@ -17,6 +17,9 @@ describe('middleware security headers', () => {
     expect(csp).toContain('https://*.clarity.ms');
     // Violations must be observable before enforce (F-11).
     expect(csp).toContain('report-uri /api/csp-report');
+    // Assert the modern reporting directive too — removing it would still pass the
+    // report-uri check while silently disabling the Reporting-Endpoints integration.
+    expect(csp).toContain('report-to csp');
     expect(res.headers.get('Reporting-Endpoints')).toContain('/api/csp-report');
   });
 });

@@ -25,4 +25,14 @@ describe('scrubSentryEvent', () => {
     expect(e.extra.small).toBe('ok');
     expect(e.extra.n).toBe(5);
   });
+  it('strips the query string + fragment from request.url and drops query_string (token vectors)', () => {
+    const e = scrubSentryEvent({
+      request: {
+        url: 'https://x.test/koszyk/return?payment_intent_client_secret=secret&sale=tok#frag',
+        query_string: 'sale=tok',
+      },
+    } as never) as { request: { url: string; query_string?: unknown } };
+    expect(e.request.url).toBe('https://x.test/koszyk/return');
+    expect(e.request.query_string).toBeUndefined();
+  });
 });

@@ -71,4 +71,22 @@ describe('resend webhook route (F-13)', () => {
       }),
     );
   });
+
+  it('a DB blip on the order lookup still 200s and alerts (degrades to order_id: null)', async () => {
+    ordersMaybeSingle.mockRejectedValueOnce(new Error('db down'));
+    parseResendEvent.mockReturnValue({
+      type: 'email.complained',
+      data: { email_id: 'em_2' },
+      created_at: '2026-07-28T00:00:00Z',
+    });
+
+    const res = await POST(req(JSON.stringify({ any: 'payload' }), SVIX));
+
+    // The webhook must not 5xx (Svix retry + lost alert); the alert still fires.
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'resend email.complained',
+      expect.objectContaining({ extra: expect.objectContaining({ type: 'email.complained', order_id: null }) }),
+    );
+  });
 });
