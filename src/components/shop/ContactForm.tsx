@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
-import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 import { buildContactMailto } from '@/lib/contact-mailto';
 import { EMAIL } from '@/lib/email-addresses';
 
@@ -23,9 +22,6 @@ export function ContactForm() {
         const email = String(formData.get('email') ?? '');
         const topic = String(formData.get('topic') ?? '');
         const message = String(formData.get('message') ?? '');
-        // "Compose opened", not "message delivered" — delivery happens in the
-        // visitor's own mail client and is never confirmed here.
-        pushDataLayer(buildEngagementEvent('contact_form_mailto_open', { topic }));
         // No server-side inbox: hand the message off to the visitor's own mail
         // client, pre-addressed to the studio, so it actually reaches Anna.
         const url = buildContactMailto({

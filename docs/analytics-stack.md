@@ -34,7 +34,7 @@ The app pushes these events:
 | `view_cart` | cart page renders with items | ecommerce cart view | none |
 | `begin_checkout` | checkout button click | checkout start | `InitiateCheckout` |
 | `purchase` | confirmed payment / order success | purchase conversion | `Purchase` |
-| `site_engagement` | scroll depth, 30s time, language switch, contact submit, cart CTA/clear, plus the custom events below | engagement reporting | `SiteEngagement` custom event |
+| `site_engagement` | 30s dwell, language switch, delivery/locker selection, showroom demand, cart CTA/clear, plus the custom events below | engagement reporting | `SiteEngagement` custom event |
 
 `consent_update` is a GTM-internal signal only — pushed by `setConsent()` in `src/components/consent/consent-mode.ts` right after its `gtag('consent','update',...)` call, so GTM's `ACC - Consent Update` trigger can give the two base tags (and Microsoft Clarity) a fresh chance to fire if a visitor accepts consent mid-session rather than arriving with it already granted. Deliberately excluded from `ANALYTICS_EVENTS`, so it's never forwarded to GA4/Meta as a fake event.
 
@@ -52,19 +52,47 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 | `shop_filter` | buyer narrows the shop view via the status filter (sold/available) | `filter_status` (`all` \| `available` \| `sold`) |
 | `checkout_error` | pre-payment `/api/checkout` failure | `reason` (`sold_out` \| `rate_limited` \| `checkout_failed` \| `network_error` \| `response_parse_error` \| `order_conflict` \| `checkout_in_progress`), `status`, `sold_count` |
 | `payment_failed` | Stripe PaymentIntent failed/canceled on `/koszyk/return` | `status` (PaymentIntent status; the PI id is never sent). Deduped once per PaymentIntent via `pushPaymentFailedOnce` so refresh / Strict-Mode double-mount doesn't inflate counts. The `status` param preserves granularity (e.g. `canceled` vs. `requires_payment_method`). |
+| `time_on_page` | 30 s dwell on a page (`AnalyticsEvents.tsx`) | `engagement_seconds` (always 30), `page_path` (token-redacted) |
+| `showroom_product_view` | buyer views a not-for-sale showroom tile (`ProductTile.tsx`) | `item_id`, `item_name`, `item_category`, `price`, `currency` |
+| `showroom_view` | showroom section renders, once per page load (`ShowroomViewAnalytics.tsx`) | `count` |
+| `showroom_interest_submit` | buyer submits the showroom interest form (`ShowroomInterestForm.tsx`) | `item_id` |
+| `cart_clear` | buyer clears the selection bar (`SelectionBar.tsx`) | `item_ids`, `value`, `currency` |
+| `cart_cta_click` | buyer clicks the selection-bar "go to cart" CTA (`SelectionBar.tsx`) | `location` (`selection_bar`), `num_items`, `value`, `currency` |
+
+**Multi-currency:** the money-carrying demand params on `showroom_product_view` / `sold_item_view` / `cart_clear` / `cart_cta_click` are currency-labelled — each sends a `currency` sibling alongside a display-currency amount, so a PLN and a EUR signal are never summed as if they were the same unit (Plan 3, N-5: `docs/superpowers/plans/2026-07-28-analytics-event-correctness.md`).
 
 GA4 ecommerce payloads use:
 
 - `currency`: the buyer's display currency (`PLN`/`EUR`/`GBP`) — derived client-side from `useCurrency()` (`src/components/currency/CurrencyProvider.tsx`, seeded from the `currency_pref` cookie) via `currencyFormatter()` in `src/lib/format.ts`; server-side conversions (`src/lib/marketing/conversions.ts`) use the persisted `orders.currency` column instead. `ANALYTICS_CURRENCY` (`'PLN'`) in `src/lib/analytics.ts` is only a fallback default for callers that omit `currency` explicitly.
-- `ecommerce.value`: item subtotal
+- `ecommerce.value`: item subtotal — **excludes shipping**
 - `ecommerce.shipping`: shipping cost on purchase
 - `order_total`: subtotal plus shipping as a custom parameter
 - `transaction_id`: order number for `purchase`
 - `items[]`: `item_id`, `item_name`, `item_brand`, `item_category`, `item_variant`, `price`, `quantity`
 
+**`value` convention: GA4 and Meta deliberately differ (F-22 — do not "fix" this).** The GA4 `ecommerce.value` is the **item subtotal (excludes shipping)**; the Meta `value` — both the browser `meta.value` and the server CAPI `custom_data.value` — is the **order total (includes shipping)**. Each channel is internally consistent client↔server (the browser and the webhook send the same figure for the same order), which is what dedup and channel-level revenue reporting need. Equalising the two across channels is not a goal and would break the existing Meta baseline.
+
+**`item_variant` semantics (N-12).** For one-of-a-kind **ceramics** `item_variant` carries the piece number `Nº <num>` — there is no variant axis, every piece is unique, so the "variant" dimension is effectively a per-piece id. For **fine-art prints** it carries the real variant label (size / frame). This is a deliberate semantic overload of one GA4 field across two product kinds; payloads are **not** changing. When segmenting by `item_variant`, filter by `item_category` first (`fine-art-prints` vs. a ceramic category) or the two meanings mix in one report.
+
+**Revenue float tails are a GA4-side artifact — won't fix (N-11, cosmetic).** GA4's aggregate revenue can display float tails (e.g. `11134.000004`). That is GA4 summing many already-exact per-event values in binary floating point, **not** a per-event defect: the server emits `value = order.subtotal / 100` (grosze summed once as integers, then one division — `conversions.ts`) and the client `sumItems` rounds to 2 dp (`analytics.ts`), so every individual event value is exact. A client-side "sum minor units then divide once" refactor is not possible (client-side items carry major-unit prices only) and is unjustified for a 6th-decimal display artifact.
+
 Meta payloads use standard event names where available and include `event_id` for future browser/server deduplication.
 
-Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now.
+Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now. Three further event-scoped dimensions are **pending registration** (audit N-8): `order_total`, `checkout_total`, and `shipping_tier`. All three are already collected on `purchase`/`begin_checkout` but are unregistered and therefore unqueryable in Explore/reports. Registration is additive, safe (15/50 dimensions used), and non-retroactive — the dimensions populate from the registration date forward. It requires the gitignored `.secrets/gtm-api-deploy.json` key, so it is an operator step; the exact `node -e` snippets are in Task 1 of `docs/superpowers/plans/2026-07-28-ga4-measurement-hygiene.md`. Update this paragraph to record the date once run.
+
+### Enhanced Measurement ownership (N-3)
+
+**GA4 Enhanced Measurement is the single owner of scroll and form-interaction measurement.** EM `scrollsEnabled` and `formInteractionsEnabled` stay **on**, and the redundant hand-rolled `scroll_depth` and `contact_form_mailto_open` custom events were **removed** from the app 2026-07-28.
+
+The matching GA4-side toggle — turning EM `siteSearchEnabled` **off** — is **pending operator action** (same `.secrets/gtm-api-deploy.json` requirement; snippets in Task 2 of the plan). This store has no on-site search, so the live `view_search_results` events are noise from inbound URLs that happen to carry `s`/`q` params. Until it is switched off that noise keeps accruing; the app-side deletions above are independent and already effective.
+
+The newsletter event is **retained** as `newsletter_signup_requested` (see the table above). It is the one form event EM cannot replace: `FooterNewsletterForm`'s `<form>` has no `id`/`name`, so native `form_submit` reports it with an empty `form_id` and it can't be told apart from any other form. The named custom event remains the reliable newsletter-conversion signal.
+
+Accepted trade-offs — **none of this is retroactive**; historical rows are unaffected and only collection going forward changes:
+
+- **Scroll:** EM `scroll` fires once, at **90%**. The removed custom `scroll_depth` fired at **50% and 90%**, so the 50% mid-page signal is no longer collected.
+- **Contact form:** `<form id="contact-form">` (`ContactForm.tsx`), so EM `form_submit` carries `form_id=contact-form` and stays distinguishable in reports — but the custom event's `topic` parameter (which enquiry category the visitor picked) is lost.
+- **Site search:** once the toggle is flipped, existing `view_search_results` rows remain in historical reports and no new ones are collected.
 
 ## GA4 Property Configuration
 
