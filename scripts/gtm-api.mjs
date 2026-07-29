@@ -408,7 +408,9 @@ function ga4EventTag(measurementId, firingTriggerId) {
 function dataLayerVariable(dlKey) {
   return {
     name: `DLV - ${dlKey}`,
-    type: 'v2',
+    // 'v' = Data Layer Variable. NB: the "v2" is the dataLayerVersion param
+    // below, NOT the type — GTM 400s ("Unknown entity type … v2") on type:'v2'.
+    type: 'v',
     parameter: [
       templateParam('name', dlKey),
       { key: 'dataLayerVersion', type: 'integer', value: '2' },
