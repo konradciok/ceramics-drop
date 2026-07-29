@@ -32,6 +32,7 @@ type SimpleStorage = Pick<Storage, 'getItem' | 'setItem'> & {
 const PURCHASE_DEDUPE_PREFIX = 'acc_purchase_pi:';
 const PURCHASE_GAP_DEDUPE_PREFIX = 'acc_purchase_gap_pi:';
 const PAYMENT_FAILED_DEDUPE_PREFIX = 'acc_payment_failed_pi:';
+const BEGIN_CHECKOUT_DEDUPE_PREFIX = 'acc_begin_checkout_attempt:';
 const CHECKOUT_SNAPSHOT_KEY = 'acc_checkout_snapshot';
 
 type CheckoutSnapshot = {
@@ -64,6 +65,27 @@ export function pushCheckoutStartedItems(
   { shippingCost, shippingMethod, userData, currency, push = pushDataLayer }: CheckoutStartOptions,
 ): void {
   push(buildBeginCheckoutEventFromItems(items, { shippingCost, shippingMethod, userData, currency }));
+}
+
+/**
+ * begin_checkout fired at most once per checkout attempt. CartView regenerates
+ * `attemptId` whenever the cart changes or a checkout resolves (success, order_conflict,
+ * hard failure), so a retry after a *recoverable* error (network drop, checkout_in_progress)
+ * reuses the same attemptId and must not emit a second begin_checkout. Mirrors
+ * pushPaymentFailedOnce. Returns true if it fired, false if already fired for this attempt.
+ */
+export function pushCheckoutStartedItemsOnce(
+  attemptId: string,
+  items: AnalyticsItem[],
+  options: CheckoutStartOptions & { storage?: SimpleStorage },
+): boolean {
+  const storage = options.storage ?? getDefaultStorage();
+  const key = `${BEGIN_CHECKOUT_DEDUPE_PREFIX}${attemptId}`;
+  if (safeGetItem(storage, key) === '1') return false;
+
+  pushCheckoutStartedItems(items, options);
+  safeSetItem(storage, key, '1');
+  return true;
 }
 
 export function pushConfirmedPurchase(

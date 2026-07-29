@@ -37,7 +37,7 @@ export function FooterNewsletterForm() {
         body: JSON.stringify({ email: email.trim(), locale }),
       });
       if (!res.ok) throw new Error('newsletter_failed');
-      pushDataLayer(buildEngagementEvent('newsletter_signup'));
+      pushDataLayer(buildEngagementEvent('newsletter_signup_requested'));
       setStatus('done');
     } catch {
       setStatus('error');
