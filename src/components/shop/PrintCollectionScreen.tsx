@@ -13,8 +13,11 @@ import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
 import { srcSet } from '@/lib/images';
+import { variantLabel } from '@/lib/print-cart';
 import { richTags } from '@/components/ui/richTags';
+import { PrintCollectionAnalytics, type PrintListItem } from './PrintCollectionAnalytics';
 import type { Locale } from '@/i18n/routing';
+import type { PrintVariantSelection } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
 
@@ -23,7 +26,14 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   const designs = await getPrintDesigns();
   const currency = await getCurrency(locale);
   const printCurrency = toChargeableCurrency(currency);
-  const { fmt } = currencyFormatter(printCurrency);
+  const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
+
+  // Entry variant (first size, unframed) — matches the tile's displayed "from X"
+  // and the configurator's initial selection on the PDP the tile links to.
+  const analyticsItems: PrintListItem[] = designs.map((d) => {
+    const sel: PrintVariantSelection = { size: d.sizes[0], framed: false, mount: false, frameColour: 'none' };
+    return { id: d.id, num: d.num, variantLabel: variantLabel(sel, locale), price: fromPriceOf(d, printCurrency) };
+  });
 
   return (
     <>
@@ -37,7 +47,12 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      <div className="gallery" data-count={designs.length}>
+      <PrintCollectionAnalytics
+        items={analyticsItems}
+        listId={SLUG}
+        listName={SLUG}
+        currency={analyticsCurrency}
+      >
         {designs.map((d) => {
           const from = fmt(fromPriceOf(d, printCurrency));
           const name = `${t('product.print')} Nº ${d.num}`;
@@ -65,7 +80,7 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
             </Link>
           );
         })}
-      </div>
+      </PrintCollectionAnalytics>
     </>
   );
 }

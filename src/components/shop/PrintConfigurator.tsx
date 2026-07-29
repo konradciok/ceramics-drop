@@ -15,7 +15,7 @@ import { currencyFormatter } from '@/lib/format';
 import { priceOfVariant } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
 import { encodePrintToken, isPrintToken, printVariantButtonState, variantLabel } from '@/lib/print-cart';
-import { buildPrintAddToCartEvent, pushDataLayer } from '@/lib/analytics';
+import { buildPrintAddToCartEvent, buildPrintRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib/types';
 
 export function PrintConfigurator({
@@ -190,6 +190,12 @@ export function PrintConfigurator({
             const was = useCart.getState().ids.includes(token);
             if (inCart) {
               remove(token);
+              pushDataLayer(
+                buildPrintRemoveFromCartEvent(
+                  { id: design.id, num: design.num, variantLabel: variantLabel(sel, locale), price },
+                  { currency: analyticsCurrency },
+                ),
+              );
             } else {
               add(token);
               const now = useCart.getState().ids.includes(token);
