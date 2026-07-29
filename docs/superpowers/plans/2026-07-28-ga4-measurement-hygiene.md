@@ -336,6 +336,8 @@ Documentation-only. Lock the conventions and record the config changes from Task
 
 - [x] GA4 property `539909256` custom dimensions — `checkout_total` + `shipping_tier` registered 2026-07-29 (count 15→**17**). `order_total` **blocked** by an archived same-name dimension (409 ALREADY_EXISTS, no un-archive API); needs a manual GA4-UI restore to reach 18 (Task 1 run note).
 - [x] EM `siteSearchEnabled` is `false` (GA4 omits the field when false), `scrollsEnabled`/`formInteractionsEnabled` still `true` — verified 2026-07-29 (Task 2 verify).
-- [ ] `grep` finds no `scroll_depth`/`contact_form_mailto_open` in `src/` (Task 3 verify; `newsletter_signup_requested` is retained per Plan 3); `npm run typecheck && npm run lint && npm run test` all pass.
-- [ ] `npx vitest run src/lib/marketing/meta-capi.test.ts` → 11 passed, with the token in the `Authorization: Bearer` header and absent from both the URL and the POST body (Task 4).
-- [ ] `docs/analytics-stack.md` states the value/variant conventions, the N-11 won't-fix decision, the EM-ownership record, and the completed `engagement_type` table (Task 5 verify).
+- [x] `grep` finds no `scroll_depth`/`contact_form_mailto_open` in `src/` (Task 3 verify; `newsletter_signup_requested` is retained per Plan 3); `npm run typecheck && npm run lint && npm run test` all pass (130 files, 1669 tests, 2026-07-29).
+- [x] `npx vitest run src/lib/marketing/meta-capi.test.ts` → 11 passed, with the token in the `Authorization: Bearer` header and absent from both the URL and the POST body (Task 4).
+- [x] `docs/analytics-stack.md` states the value/variant conventions, the N-11 won't-fix decision, the EM-ownership record, and the completed `engagement_type` table (Task 5 verify).
+
+**Residual follow-up (not blocking this plan):** `order_total` remains unqueryable until someone restores or renames the archived same-name dimension in the GA4 UI — see the Task 1 run note. Everything else in Plan 4 is complete.

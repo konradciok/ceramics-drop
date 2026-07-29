@@ -92,7 +92,7 @@ Accepted trade-offs — **none of this is retroactive**; historical rows are una
 
 - **Scroll:** EM `scroll` fires once, at **90%**. The removed custom `scroll_depth` fired at **50% and 90%**, so the 50% mid-page signal is no longer collected.
 - **Contact form:** `<form id="contact-form">` (`ContactForm.tsx`), so EM `form_submit` carries `form_id=contact-form` and stays distinguishable in reports — but the custom event's `topic` parameter (which enquiry category the visitor picked) is lost.
-- **Site search:** once the toggle is flipped, existing `view_search_results` rows remain in historical reports and no new ones are collected.
+- **Site search:** since the toggle was flipped 2026-07-29, existing `view_search_results` rows remain in historical reports and no new ones are collected.
 
 ## GA4 Property Configuration
 
