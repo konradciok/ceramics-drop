@@ -334,10 +334,11 @@ Documentation-only. Lock the conventions and record the config changes from Task
 
 ## Done-when
 
-- [x] GA4 property `539909256` custom dimensions — `checkout_total` + `shipping_tier` registered 2026-07-29 (count 15→**17**). `order_total` **blocked** by an archived same-name dimension (409 ALREADY_EXISTS, no un-archive API); needs a manual GA4-UI restore to reach 18 (Task 1 run note).
+- [x] GA4 property `539909256` — `checkout_total` + `shipping_tier` registered as event-scoped custom dimensions 2026-07-29 (count 15→**17**).
+- [ ] **`order_total` is still unregistered and unqueryable.** Blocked by an archived same-name dimension: GA4 returns `409 ALREADY_EXISTS` while the param is absent from the active list, and the Admin API has no un-archive method. Reaching 18 needs a manual restore in the GA4 UI (Admin → Custom definitions), or renaming the param if the UI offers no restore. The value is still *collected* on `purchase`/`begin_checkout` — only the reporting registration is missing (Task 1 run note).
 - [x] EM `siteSearchEnabled` is `false` (GA4 omits the field when false), `scrollsEnabled`/`formInteractionsEnabled` still `true` — verified 2026-07-29 (Task 2 verify).
 - [x] `grep` finds no `scroll_depth`/`contact_form_mailto_open` in `src/` (Task 3 verify; `newsletter_signup_requested` is retained per Plan 3); `npm run typecheck && npm run lint && npm run test` all pass (130 files, 1669 tests, 2026-07-29).
 - [x] `npx vitest run src/lib/marketing/meta-capi.test.ts` → 11 passed, with the token in the `Authorization: Bearer` header and absent from both the URL and the POST body (Task 4).
 - [x] `docs/analytics-stack.md` states the value/variant conventions, the N-11 won't-fix decision, the EM-ownership record, and the completed `engagement_type` table (Task 5 verify).
 
-**Residual follow-up (not blocking this plan):** `order_total` remains unqueryable until someone restores or renames the archived same-name dimension in the GA4 UI — see the Task 1 run note. Everything else in Plan 4 is complete.
+Every item above is done except the one unchecked `order_total` box, which is a GA4-UI action with no code component — it does not block Plan 4 shipping, and the plan stays open on that single line until the dimension is restored or renamed.
