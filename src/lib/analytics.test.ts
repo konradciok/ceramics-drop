@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
 import {
   ANALYTICS_CURRENCY,
+  analyticsItemForId,
   buildAddToCartEvent,
   buildBeginCheckoutEvent,
   buildEngagementEvent,
+  buildLoginEvent,
   buildPageViewEvent,
   buildPrintAddToCartEvent,
   buildPrintRemoveFromCartEvent,
@@ -12,6 +14,11 @@ import {
   buildPrintViewItemEvent,
   buildPrintViewItemListEvent,
   buildPurchaseEvent,
+  buildRemoveFromCartEvent,
+  buildSelectItemEvent,
+  buildSignUpEvent,
+  buildViewItemEvent,
+  buildViewItemListEvent,
   pushDataLayer,
   redactSensitiveUrl,
   toAnalyticsItem,
@@ -420,5 +427,50 @@ describe('fine-art-print funnel builders', () => {
     const view = buildPrintViewItemEvent(fap, { currency: 'EUR' });
     expect(add.meta?.content_ids).toEqual(['fap01']);
     expect(view.meta?.content_ids).toEqual(['fap01']);
+  });
+});
+
+describe('previously-untested builders', () => {
+  it('remove_from_cart carries a single ceramic item and no meta', () => {
+    const e = buildRemoveFromCartEvent(product('k01'), { currency: 'EUR' });
+    expect(e.event).toBe('remove_from_cart');
+    expect(e.ecommerce?.items).toHaveLength(1);
+    expect(e.meta).toBeUndefined();
+  });
+  it('view_item wraps a ViewContent meta payload', () => {
+    const e = buildViewItemEvent(product('k01'), { currency: 'EUR' });
+    expect(e.event).toBe('view_item');
+    expect(e.meta?.event_name).toBe('ViewContent');
+  });
+  it('view_item_list indexes items and carries list ids', () => {
+    const e = buildViewItemListEvent([product('k01')], { itemListId: 'kubki', itemListName: 'Kubki' });
+    expect(e.event).toBe('view_item_list');
+    expect(e.ecommerce?.items[0].item_list_id).toBe('kubki');
+    expect(e.ecommerce?.items[0].index).toBe(0);
+  });
+  it('select_item builds a single-item ecommerce payload', () => {
+    expect(buildSelectItemEvent(product('k01')).event).toBe('select_item');
+  });
+  it('print add_to_cart uses the design id + variant label', () => {
+    const e = buildPrintAddToCartEvent(
+      { id: 'fap01', num: '1', variantLabel: 'A3 · framed', price: 220 },
+      { currency: 'EUR' },
+    );
+    expect(e.ecommerce?.items[0].item_id).toBe('fap01');
+    expect(e.ecommerce?.items[0].item_variant).toBe('A3 · framed');
+    expect(e.meta?.content_ids).toEqual(['fap01']);
+  });
+  it('analyticsItemForId drops a print token with no priceOverride', () => {
+    // Real 6-part token format `print:<design>:<size>:<framed>:<mount>:<frameColour>`
+    // (the plan's illustrative `a3:satin:oak` would fail decodePrintToken).
+    expect(analyticsItemForId('print:fap01:50x70:true:false:black')).toBeNull();
+    expect(analyticsItemForId('print:fap01:50x70:true:false:black', 220)?.item_id).toBe('fap01');
+  });
+  it('login / sign_up carry method + user_id and no ecommerce', () => {
+    const l = buildLoginEvent('google', 'u-123');
+    expect(l.event).toBe('login');
+    expect(l).toMatchObject({ method: 'google', user_id: 'u-123' });
+    expect(l.ecommerce).toBeUndefined();
+    expect(buildSignUpEvent('apple', 'u-9').event).toBe('sign_up');
   });
 });

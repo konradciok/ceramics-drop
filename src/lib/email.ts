@@ -53,7 +53,7 @@ async function sendResendTemplate(params: {
   variables: Record<string, string>;
   attachments?: Array<{ filename: string; content: string }>;
   signal?: AbortSignal;
-}): Promise<void> {
+}): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
     to: params.to,
@@ -82,6 +82,8 @@ async function sendResendTemplate(params: {
     const detail = await res.text().catch(() => '');
     throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
   }
+  const json = (await res.json().catch(() => null)) as { id?: string } | null;
+  return { id: json?.id ?? null };
 }
 
 /** Send a one-off inline-HTML email (no published template needed). */
@@ -91,7 +93,7 @@ async function sendResendHtml(params: {
   to: string[];
   subject: string;
   html: string;
-}): Promise<void> {
+}): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
     to: params.to,
@@ -113,6 +115,8 @@ async function sendResendHtml(params: {
       const detail = await res.text().catch(() => '');
       throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
     }
+    const json = (await res.json().catch(() => null)) as { id?: string } | null;
+    return { id: json?.id ?? null };
   } finally {
     clearTimeout(timer);
   }
@@ -850,20 +854,20 @@ export async function emailOrderConfirmationToCustomer(params: {
   kind?: OrderEmailKind;
   /** Explicit env (e.g. from the orders CLI) — defaults to the current Workers env. */
   env?: CloudflareEnv;
-}): Promise<void> {
+}): Promise<{ id: string | null }> {
   const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
 
   if (!env.RESEND_API_KEY) {
     throw new Error('Resend not configured: RESEND_API_KEY missing');
   }
-  if (!order.email) return;
+  if (!order.email) return { id: null };
 
   const { subject, mainContent } = buildOrderConfirmationEmail(params);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    await sendResendTemplate({
+    return await sendResendTemplate({
       apiKey: env.RESEND_API_KEY,
       from: EMAIL_FROM,
       to: [order.email],

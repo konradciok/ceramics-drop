@@ -13,6 +13,7 @@ import { Header } from '@/components/layout/Header';
 import { HeaderHeightProbe } from '@/components/layout/HeaderHeightProbe';
 import { Footer } from '@/components/layout/Footer';
 import { AnalyticsEvents } from '@/components/analytics/AnalyticsEvents';
+import { AuthAnalytics } from '@/components/analytics/AuthAnalytics';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 import { defaultConsentSnippet } from '@/components/consent/consent-mode';
 import { ConsentBanner } from '@/components/consent/ConsentBanner';
@@ -90,6 +91,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <NextIntlClientProvider>
           <CurrencyProvider initial={currency}>
             <AnalyticsEvents />
+            <AuthAnalytics />
             <HeaderHeightProbe />
             <Header />
             <div id="main-content" tabIndex={-1} style={{ outline: 'none' }}>

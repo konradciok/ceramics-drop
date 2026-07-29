@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { verifyResendSignature, parseResendEvent } from '@/lib/resend-webhook';
 
@@ -88,6 +89,25 @@ export async function POST(req: Request) {
         ...(bounce ? { bounce_type: bounce.type ?? null } : {}),
       }),
     );
+
+    if (evt.type === 'email.bounced' || evt.type === 'email.complained') {
+      const emailId = evt.data.email_id ?? null;
+      let orderId: string | null = null;
+      if (emailId) {
+        const { getSupabaseAdmin } = await import('@/lib/supabase');
+        const { data } = await getSupabaseAdmin()
+          .from('orders')
+          .select('id')
+          .eq('resend_email_id', emailId)
+          .maybeSingle();
+        orderId = (data as { id: string } | null)?.id ?? null;
+      }
+      // order_id is not PII (a UUID) — safe to attach, unlike the recipient address.
+      Sentry.captureMessage(`resend ${evt.type}`, {
+        level: 'warning',
+        extra: { type: evt.type, email_id: emailId, order_id: orderId, bounce_type: bounce?.type ?? null },
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

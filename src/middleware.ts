@@ -65,17 +65,20 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  // Report-only first so it can't break Stripe/GTM/GA/Meta/InPost; tighten + enforce after observing reports.
+  'Reporting-Endpoints': 'csp="/api/csp-report"',
+  // Report-only first so it can't break Stripe/GTM/GA/Meta/InPost/Clarity; tighten + enforce after observing reports.
   'Content-Security-Policy-Report-Only': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.googletagmanager.com https://*.google-analytics.com https://connect.facebook.net https://geowidget.inpost.pl",
+    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.googletagmanager.com https://*.google-analytics.com https://connect.facebook.net https://geowidget.inpost.pl https://*.clarity.ms",
     "style-src 'self' 'unsafe-inline' https://geowidget.inpost.pl",
-    "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.facebook.com",
-    "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.googletagmanager.com https://api-shipx-pl.easypack24.net https://*.supabase.co",
+    "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.facebook.com https://*.clarity.ms",
+    "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.googletagmanager.com https://api-shipx-pl.easypack24.net https://*.supabase.co https://*.clarity.ms",
     "frame-src https://js.stripe.com https://geowidget.inpost.pl",
     "font-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
+    "report-uri /api/csp-report",       // legacy reporting (Safari/older Chromium)
+    "report-to csp",                      // modern reporting group (Reporting-Endpoints)
   ].join('; '),
 };
 

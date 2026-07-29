@@ -11,7 +11,13 @@ describe('middleware security headers', () => {
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(res.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
     expect(res.headers.get('Permissions-Policy')).toBe('camera=(), microphone=(), geolocation=()');
-    expect(res.headers.get('Content-Security-Policy-Report-Only')).toContain("default-src 'self'");
+    const csp = res.headers.get('Content-Security-Policy-Report-Only') ?? '';
+    expect(csp).toContain("default-src 'self'");
+    // Clarity must be allowlisted (N-9) so a later enforce won't break it.
+    expect(csp).toContain('https://*.clarity.ms');
+    // Violations must be observable before enforce (F-11).
+    expect(csp).toContain('report-uri /api/csp-report');
+    expect(res.headers.get('Reporting-Endpoints')).toContain('/api/csp-report');
   });
 });
 
