@@ -442,6 +442,21 @@ export function buildEngagementEvent(
   };
 }
 
+export type AuthMethod = 'google' | 'apple';
+
+/**
+ * login / sign_up dataLayer events. `user_id` is the opaque Supabase user id
+ * (a random UUID, not PII) — emitted so GTM can set GA4's user_id for the
+ * session; `method` is the OAuth provider. No ecommerce/meta payload.
+ */
+export function buildLoginEvent(method: AuthMethod, userId: string): DataLayerEvent {
+  return { event: 'login', event_id: createEventId('login', userId), method, user_id: userId };
+}
+
+export function buildSignUpEvent(method: AuthMethod, userId: string): DataLayerEvent {
+  return { event: 'sign_up', event_id: createEventId('sign_up', userId), method, user_id: userId };
+}
+
 /** Query params that carry a capability token / secret and must never reach the
  *  dataLayer (and thus GA4 / Meta). `order` is the return capability token used by
  *  /zwrot?order=<uuid> → POST /api/returns. `payment_intent` /

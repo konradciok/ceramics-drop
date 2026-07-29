@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { resolveAuthEnv, applyAuthAntiCacheHeaders } from '@/lib/auth/session';
 import { createAuthServerClient, type AuthCookie } from '@/lib/auth/supabase-server';
-import { AUTH_NEXT_COOKIE, KONTO_PATH, sanitizeNextPath } from '@/lib/auth/redirects';
+import { AUTH_EVENT_COOKIE, AUTH_NEXT_COOKIE, KONTO_PATH, sanitizeNextPath } from '@/lib/auth/redirects';
 import { linkOrdersToUser } from '@/lib/account/link-orders';
 
 export const dynamic = 'force-dynamic';
@@ -71,7 +71,26 @@ export async function GET(req: Request) {
     console.error('auth callback: order backfill failed for user', data.user.id, err);
   }
 
-  return finish(storedNext ?? KONTO_PATH, setCookies);
+  const response = finish(storedNext ?? KONTO_PATH, setCookies);
+
+  // One-shot analytics hint (N-7). The provider comes from Supabase's identity
+  // metadata; created within ~60s of now ⇒ first-ever sign-in (sign_up) vs a
+  // returning login — a heuristic that only ever mislabels a funnel event, never
+  // blocks auth. Best-effort: a bad/absent provider just skips the event.
+  // ponytail: created_at recency; swap for an explicit "new user" signal if
+  // Supabase ever exposes one.
+  const provider = data.user.app_metadata?.provider;
+  if (provider === 'google' || provider === 'apple') {
+    const isNew = Date.now() - new Date(data.user.created_at).getTime() < 60_000;
+    response.cookies.set(AUTH_EVENT_COOKIE, `${isNew ? 'sign_up' : 'login'}:${provider}:${data.user.id}`, {
+      httpOnly: false, // the client island must read it
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 120,
+    });
+  }
+  return response;
 }
 
 /** Read a single cookie value from a raw request cookie header. */

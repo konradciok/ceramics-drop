@@ -25,6 +25,7 @@ import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
 import type { MarketingContext } from '@/lib/marketing/context';
+import { resolveGaClientId } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
@@ -362,7 +363,7 @@ export async function POST(req: Request) {
           consent,
           fbp: str2(mc.fbp),
           fbc: str2(mc.fbc),
-          ga_client_id: str2(mc.ga_client_id),
+          ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
           ga_session_id: str2(mc.ga_session_id),
           ip: clientIp,
           user_agent: req.headers.get('user-agent'),
