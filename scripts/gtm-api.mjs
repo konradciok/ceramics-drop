@@ -135,9 +135,12 @@ async function setupWorkspace() {
   // Data-layer + redaction variables the native GA4 event tag and the UI Meta tags
   // map. `Page Location - redacted` carries the N-1 redaction forward (v14 seed +
   // bridge refresh, now one fresh-evaluated variable).
-  await upsertVariable(workspace.path, pageLocationRedactedVariable());
+  const existingVars =
+    (await tagmanager.accounts.containers.workspaces.variables.list({ parent: workspace.path }))
+      .data.variable ?? [];
+  await upsertVariable(workspace.path, pageLocationRedactedVariable(), existingVars);
   for (const key of DATALAYER_VARS) {
-    await upsertVariable(workspace.path, dataLayerVariable(key));
+    await upsertVariable(workspace.path, dataLayerVariable(key), existingVars);
   }
 
   await upsertTag(
@@ -236,9 +239,14 @@ async function upsertTag(parent, body) {
   return updated.data;
 }
 
-async function upsertVariable(parent, body) {
-  const list = await tagmanager.accounts.containers.workspaces.variables.list({ parent });
-  const existing = (list.data.variable ?? []).find((variable) => variable.name === body.name);
+async function upsertVariable(parent, body, existingVars) {
+  // existingVars lets a caller pre-fetch the variable list once and reuse it
+  // across a batch (a ~30-var loop would otherwise re-list on every call).
+  const variables =
+    existingVars ??
+    (await tagmanager.accounts.containers.workspaces.variables.list({ parent })).data.variable ??
+    [];
+  const existing = variables.find((variable) => variable.name === body.name);
   if (!existing) {
     const created = await tagmanager.accounts.containers.workspaces.variables.create({
       parent,
@@ -355,7 +363,12 @@ function ga4ConfigTag(measurementId, firingTriggerId) {
       ]),
     ],
     firingTriggerId,
-    tagFiringOption: 'oncePerLoad',
+    // Must be 'unlimited', not 'oncePerLoad': the config fires on Init AND on
+    // ACC - Consent Update so it recovers after a mid-session Accept. oncePerLoad
+    // budgets one fire per load, which the consent-blocked Init fire consumes
+    // (the quirk noted in docs/analytics-stack.md) — so the re-fire never lands.
+    // Native googtag config is idempotent, so re-firing is safe.
+    tagFiringOption: 'unlimited',
     priority: { key: 'priority', type: 'integer', value: '20' },
     consentSettings: consentNeeded('analytics_storage'),
   };
@@ -377,10 +390,14 @@ function ga4EventTag(measurementId, firingTriggerId) {
         nameValue('page_location', '{{Page Location - redacted}}'),
         ...GA4_EVENT_PARAMS.map((p) => nameValue(p, `{{DLV - ${p}}}`)),
       ]),
-      // Client-side hashed email (parity with the old bridge's gtag('set','user_data')).
-      listParam('userProperties', [
-        nameValue('sha256_email_address', '{{DLV - user_data.em}}'),
-      ]),
+      // NB: deliberately NO GA4 user-provided data here. The old bridge's
+      // gtag('set','user_data',{sha256_email_address}) fed GA4's User-Provided
+      // Data (enhanced-conversions) API — NOT a user property. A user property
+      // named sha256_email_address would neither feed UPD matching nor comply
+      // with Google's PII-in-user-properties policy. Server-side GA4 MP already
+      // sends hashed match data (src/lib/marketing/conversions.ts); if client-side
+      // UPD is wanted, wire it via a native User-Provided Data variable during the
+      // Task 4 Preview gate. (DLV - user_data.em is still used by the Meta tag.)
     ],
     firingTriggerId,
     tagFiringOption: 'oncePerEvent',
