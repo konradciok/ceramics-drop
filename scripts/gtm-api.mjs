@@ -76,6 +76,18 @@ if (command === 'help' || command === '--help' || command === '-h') {
 const auth = await createAuthClient();
 const tagmanager = google.tagmanager({ version: 'v2', auth });
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// GTM API v2 allows only ~30 queries/min/user; a full `setup` makes ~50 requests
+// (triggers + ~30 data-layer variables + tags). Pace every request so a single
+// run stays under quota instead of 429-ing partway (RESOURCE_EXHAUSTED).
+let gtmLastCallAt = 0;
+async function throttle() {
+  const minGapMs = 2200; // ~27 calls/min, under the 30/min cap with margin
+  const wait = minGapMs - (Date.now() - gtmLastCallAt);
+  if (wait > 0) await sleep(wait);
+  gtmLastCallAt = Date.now();
+}
+
 if (command === 'list') {
   await listContainers();
 } else if (command === 'setup') {
@@ -109,6 +121,7 @@ async function setupWorkspace() {
   const workspaceName = process.env.GTM_WORKSPACE_NAME ?? 'ACC analytics stack';
   const parent = `accounts/${accountId}/containers/${containerId}`;
 
+  await throttle();
   const container = await tagmanager.accounts.containers.get({ path: parent });
   if (container.data.publicId !== gtmPublicId) {
     throw new Error(
@@ -135,6 +148,7 @@ async function setupWorkspace() {
   // Data-layer + redaction variables the native GA4 event tag and the UI Meta tags
   // map. `Page Location - redacted` carries the N-1 redaction forward (v14 seed +
   // bridge refresh, now one fresh-evaluated variable).
+  await throttle();
   const existingVars =
     (await tagmanager.accounts.containers.workspaces.variables.list({ parent: workspace.path }))
       .data.variable ?? [];
@@ -162,6 +176,7 @@ async function setupWorkspace() {
   );
 
   if (flags.has('--publish')) {
+    await throttle();
     const version = await tagmanager.accounts.containers.workspaces.create_version({
       path: workspace.path,
       requestBody: {
@@ -172,6 +187,7 @@ async function setupWorkspace() {
     });
     const versionPath = version.data.containerVersion?.path;
     if (!versionPath) throw new Error('GTM did not return a container version path.');
+    await throttle();
     await tagmanager.accounts.containers.versions.publish({ path: versionPath });
     console.log(`Published ${versionPath}.`);
   } else {
@@ -180,6 +196,7 @@ async function setupWorkspace() {
 }
 
 async function getOrCreateWorkspace(parent, name) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.list({ parent });
   const existing = (list.data.workspace ?? []).find((workspace) => workspace.name === name);
   if (existing) {
@@ -187,6 +204,7 @@ async function getOrCreateWorkspace(parent, name) {
     return existing;
   }
 
+  await throttle();
   const created = await tagmanager.accounts.containers.workspaces.create({
     parent,
     requestBody: {
@@ -200,9 +218,11 @@ async function getOrCreateWorkspace(parent, name) {
 }
 
 async function upsertTrigger(parent, body) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.triggers.list({ parent });
   const existing = (list.data.trigger ?? []).find((trigger) => trigger.name === body.name);
   if (!existing) {
+    await throttle();
     const created = await tagmanager.accounts.containers.workspaces.triggers.create({
       parent,
       requestBody: body,
@@ -211,6 +231,7 @@ async function upsertTrigger(parent, body) {
     return created.data;
   }
 
+  await throttle();
   const updated = await tagmanager.accounts.containers.workspaces.triggers.update({
     path: existing.path,
     requestBody: { ...existing, ...body },
@@ -220,9 +241,11 @@ async function upsertTrigger(parent, body) {
 }
 
 async function upsertTag(parent, body) {
+  await throttle();
   const list = await tagmanager.accounts.containers.workspaces.tags.list({ parent });
   const existing = (list.data.tag ?? []).find((tag) => tag.name === body.name);
   if (!existing) {
+    await throttle();
     const created = await tagmanager.accounts.containers.workspaces.tags.create({
       parent,
       requestBody: body,
@@ -231,6 +254,7 @@ async function upsertTag(parent, body) {
     return created.data;
   }
 
+  await throttle();
   const updated = await tagmanager.accounts.containers.workspaces.tags.update({
     path: existing.path,
     requestBody: { ...existing, ...body },
@@ -242,12 +266,16 @@ async function upsertTag(parent, body) {
 async function upsertVariable(parent, body, existingVars) {
   // existingVars lets a caller pre-fetch the variable list once and reuse it
   // across a batch (a ~30-var loop would otherwise re-list on every call).
-  const variables =
-    existingVars ??
-    (await tagmanager.accounts.containers.workspaces.variables.list({ parent })).data.variable ??
-    [];
+  let variables = existingVars;
+  if (!variables) {
+    await throttle();
+    variables =
+      (await tagmanager.accounts.containers.workspaces.variables.list({ parent })).data.variable ??
+      [];
+  }
   const existing = variables.find((variable) => variable.name === body.name);
   if (!existing) {
+    await throttle();
     const created = await tagmanager.accounts.containers.workspaces.variables.create({
       parent,
       requestBody: body,
@@ -256,6 +284,7 @@ async function upsertVariable(parent, body, existingVars) {
     return created.data;
   }
 
+  await throttle();
   const updated = await tagmanager.accounts.containers.workspaces.variables.update({
     path: existing.path,
     requestBody: { ...existing, ...body },
