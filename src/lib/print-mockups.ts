@@ -36,6 +36,23 @@ export function mockupHeroSrc(design: PrintDesign, sel: PrintVariantSelection): 
 }
 
 /**
+ * Merge the code registry's `mockups` flag into a DB-sourced design
+ * (CATALOG_SOURCE=db). The flag is code-bundle truth, never DB truth: the
+ * WebPs ship in the bundle and the catalog mapper doesn't carry the flag.
+ * Guarded on image parity — mock filenames derive from the REGISTRY image
+ * stem, so if the DB media row ever drifts from it, degrade to the static
+ * hero (the designed dormant mode) instead of 404ing mockupSrc.
+ */
+export function withRegistryMockups(
+  design: PrintDesign,
+  registryDesign: PrintDesign | undefined,
+): PrintDesign {
+  return registryDesign?.mockups && registryDesign.image === design.image
+    ? { ...design, mockups: true }
+    : design;
+}
+
+/**
  * Every mockup state the design's axes can reach ('plain' excluded — it has
  * no dedicated asset). Intentionally ignores the `mockups` flag: the pipeline
  * enumerates states BEFORE the flag ships. Also used to prefetch.

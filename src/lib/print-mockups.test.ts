@@ -4,6 +4,7 @@ import {
   mockupHeroSrc,
   mockupSrc,
   mockupState,
+  withRegistryMockups,
 } from './print-mockups';
 import type { PrintDesign, PrintVariantSelection } from './types';
 
@@ -85,5 +86,32 @@ describe('designMockupStates', () => {
   it('respects narrower axes (fap02 shape: 2 colours, no mount)', () => {
     const narrow: PrintDesign = { ...design, frameColours: ['black', 'natural'], mountAvailable: false };
     expect(designMockupStates(narrow)).toEqual(['framed-black', 'framed-natural']);
+  });
+});
+
+describe('withRegistryMockups', () => {
+  // The db-mode compensation PrintProductScreen relies on (and the reason the
+  // catalog parity tests may compare modulo `mockups`).
+  const dbDesign: PrintDesign = { ...design }; // mapper output never carries the flag
+  const flaggedRegistry: PrintDesign = { ...design, mockups: true };
+
+  it('merges the flag when the registry design is flagged and images match', () => {
+    expect(withRegistryMockups(dbDesign, flaggedRegistry)).toEqual({ ...dbDesign, mockups: true });
+  });
+
+  it('does not mutate its input', () => {
+    const input = { ...dbDesign };
+    withRegistryMockups(input, flaggedRegistry);
+    expect(input.mockups).toBeUndefined();
+  });
+
+  it('degrades to the static hero when the DB image drifts from the registry stem', () => {
+    const drifted = { ...dbDesign, image: '/uploads/fap-01-v2.webp' };
+    expect(withRegistryMockups(drifted, flaggedRegistry)).toBe(drifted);
+  });
+
+  it('is a no-op for unflagged registry designs and unknown ids', () => {
+    expect(withRegistryMockups(dbDesign, { ...design })).toBe(dbDesign);
+    expect(withRegistryMockups(dbDesign, undefined)).toBe(dbDesign);
   });
 });

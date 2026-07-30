@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { registryProducts } from '../products';
-import { PRINT_DESIGNS, isVariantAvailable } from '../prints';
+import { PRINT_DESIGNS, isVariantAvailable, registryPrintById } from '../prints';
+import { withRegistryMockups } from '../print-mockups';
 import { PRODIGI_SKU_MAP } from '../print-cart';
 import { priceOfVariant } from '../print-pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
@@ -34,6 +35,14 @@ describe('catalog seed ↔ registry parity', () => {
         return design;
       }),
     );
+  });
+
+  it('re-merging the registry mockups flag restores FULL registry parity (the PDP render path)', () => {
+    // Closes the loop the previous test opens: mapper output + the exact
+    // compensation PrintProductScreen applies (withRegistryMockups against
+    // registryPrintById) must reproduce the registry with no modulo at all.
+    const rebuilt = mapPrintDesigns(seed.products, seed.variants, seed.media);
+    expect(rebuilt.map((d) => withRegistryMockups(d, registryPrintById(d.id)))).toEqual(PRINT_DESIGNS);
   });
 
   it('registry print designs do not use unavailable/prices until mapper support (Stage 5)', () => {

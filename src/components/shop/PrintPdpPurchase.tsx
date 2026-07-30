@@ -63,7 +63,9 @@ export function PrintPdpPurchase({
     <>
       <ProductPageGallery
         images={heroImages}
-        alt={`${alt} — ${variantLabel(sel, locale)}`}
+        // Only describe the selected variant when the hero actually follows it;
+        // a static hero (no mockups flag) always shows the plain artwork.
+        alt={design.mockups ? `${alt} — ${variantLabel(sel, locale)}` : alt}
         syncKey={heroSrc}
       />
       <div className="pdp-body">

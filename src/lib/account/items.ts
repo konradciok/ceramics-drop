@@ -19,7 +19,7 @@ export type AccountItemLabel = {
 type Translate = (key: string) => string;
 
 const PRINT_SIZES = new Set(['30x40', '50x70', '70x100']);
-const FRAME_COLOURS = new Set(['black', 'white', 'natural']);
+const FRAME_COLOURS = new Set(['black', 'natural', 'brown']);
 
 function printDetail(variant: unknown, locale: string): string | null {
   if (typeof variant !== 'object' || variant === null) return null;

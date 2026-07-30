@@ -11,6 +11,7 @@ import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
 import { fromPriceOf } from '@/lib/print-pricing';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
+import { withRegistryMockups } from '@/lib/print-mockups';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
 import { PrintPdpPurchase } from './PrintPdpPurchase';
@@ -49,14 +50,10 @@ export async function PrintProductScreen({
     .slice(0, 4);
 
   // Under CATALOG_SOURCE=db, `design` comes from mapPrintDesigns() (catalog
-  // shadow tables), which doesn't carry `mockups` — WebP existence is
-  // code-bundle truth, not DB truth. Merge the flag from the code registry so
-  // the live-mockup hero is visible in production, not just in `code` mode.
-  // Guarded on the image staying in sync: mock files derive from the REGISTRY
-  // image stem, so if the DB media row ever drifts from it, degrade to the
-  // static hero (the designed dormant mode) instead of 404ing mockupSrc.
-  const registryDesign = registryPrintById(design.id);
-  const mockups = registryDesign?.image === design.image ? registryDesign?.mockups : undefined;
+  // shadow tables), which doesn't carry `mockups` — merge it from the code
+  // registry so the live-mockup hero is visible in production, not just in
+  // `code` mode (image-drift guard + rationale in withRegistryMockups).
+  const purchaseDesign = withRegistryMockups(design, registryPrintById(design.id));
 
   return (
     <>
@@ -73,7 +70,7 @@ export async function PrintProductScreen({
 
         <div className="pdp-layout">
           <PrintPdpPurchase
-            design={mockups ? { ...design, mockups } : design}
+            design={purchaseDesign}
             images={images}
             alt={displayName}
             usableVariantKeys={usableVariantKeys}
