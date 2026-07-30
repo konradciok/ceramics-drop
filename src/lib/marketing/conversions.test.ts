@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
+import { registryProductById } from '../products';
+import { toAnalyticsItem } from '../analytics';
 
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
@@ -76,6 +78,17 @@ describe('sendPurchaseConversions', () => {
     expect(ga4Input.shipping).toBe(18);
     expect(ga4Input.appVersion).toBe('0.10.0');
     expect(ga4Input.appGitSha).toBe('8ae90a5');
+  });
+
+  it('mirrors the client item_variant on the ceramic GA4 item (N-4 symmetry)', async () => {
+    const d = deps();
+    await sendPurchaseConversions('pi_1', d);
+    const ga4Input = d.sendGa4.mock.calls[0][1];
+    const ceramicItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'k01');
+    // Server item_variant must equal what the client builder produces for the same piece.
+    const expected = toAnalyticsItem(registryProductById('k01')!);
+    expect(ceramicItem.item_variant).toBe(expected.item_variant);
+    expect(ceramicItem.item_variant).toMatch(/^Nº \d+$/);
   });
 
   it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {

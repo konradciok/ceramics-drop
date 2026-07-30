@@ -34,7 +34,7 @@ The app pushes these events:
 | `view_cart` | cart page renders with items | ecommerce cart view | none |
 | `begin_checkout` | checkout button click | checkout start | `InitiateCheckout` |
 | `purchase` | confirmed payment / order success | purchase conversion | `Purchase` |
-| `site_engagement` | scroll depth, 30s time, language switch, contact submit, cart CTA/clear, plus the custom events below | engagement reporting | `SiteEngagement` custom event |
+| `site_engagement` | 30s dwell, language switch, delivery/locker selection, showroom demand, cart CTA/clear, plus the custom events below | engagement reporting | `SiteEngagement` custom event |
 
 `consent_update` is a GTM-internal signal only — pushed by `setConsent()` in `src/components/consent/consent-mode.ts` right after its `gtag('consent','update',...)` call, so GTM's `ACC - Consent Update` trigger can give the two base tags (and Microsoft Clarity) a fresh chance to fire if a visitor accepts consent mid-session rather than arriving with it already granted. Deliberately excluded from `ANALYTICS_EVENTS`, so it's never forwarded to GA4/Meta as a fake event.
 
@@ -47,23 +47,52 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 | `courier_select` | buyer picks courier delivery | `method`, `page` |
 | `pickup_select` | buyer picks free Warsaw studio pickup | `method`, `page` |
 | `parcel_locker_point_selected` | buyer completes InPost locker selection in the Geowidget | `locker_name` |
-| `sold_item_view` | buyer clicks an already-sold tile (demand signal for drops) | `item_id`, `item_name`, `item_category`, `price` |
+| `sold_item_view` | buyer clicks an already-sold tile (demand signal for drops) | `item_id`, `item_name`, `item_category`, `price`, `currency` |
+| `newsletter_signup_requested` | footer newsletter POST accepted — step 1 of the double opt-in (a confirmation email was sent; NOT a confirmed subscription — the confirmed-contact count lives in Resend) | — |
 | `shop_filter` | buyer narrows the shop view via the status filter (sold/available) | `filter_status` (`all` \| `available` \| `sold`) |
 | `checkout_error` | pre-payment `/api/checkout` failure | `reason` (`sold_out` \| `rate_limited` \| `checkout_failed` \| `network_error` \| `response_parse_error` \| `order_conflict` \| `checkout_in_progress`), `status`, `sold_count` |
 | `payment_failed` | Stripe PaymentIntent failed/canceled on `/koszyk/return` | `status` (PaymentIntent status; the PI id is never sent). Deduped once per PaymentIntent via `pushPaymentFailedOnce` so refresh / Strict-Mode double-mount doesn't inflate counts. The `status` param preserves granularity (e.g. `canceled` vs. `requires_payment_method`). |
+| `time_on_page` | 30 s dwell on a page (`AnalyticsEvents.tsx`) | `engagement_seconds` (always 30), `page_path` (token-redacted) |
+| `showroom_product_view` | buyer views a not-for-sale showroom tile (`ProductTile.tsx`) | `item_id`, `item_name`, `item_category`, `price`, `currency` |
+| `showroom_view` | showroom section renders, once per page load (`ShowroomViewAnalytics.tsx`) | `count` |
+| `showroom_interest_submit` | buyer submits the showroom interest form (`ShowroomInterestForm.tsx`) | `item_id` |
+| `cart_clear` | buyer clears the selection bar (`SelectionBar.tsx`) | `item_ids`, `value`, `currency` |
+| `cart_cta_click` | buyer clicks the selection-bar "go to cart" CTA (`SelectionBar.tsx`) | `location` (`selection_bar`), `num_items`, `value`, `currency` |
+
+**Multi-currency:** the money-carrying demand params on `showroom_product_view` / `sold_item_view` / `cart_clear` / `cart_cta_click` are currency-labelled — each sends a `currency` sibling alongside a display-currency amount, so a PLN and a EUR signal are never summed as if they were the same unit (Plan 3, N-5: `docs/superpowers/plans/2026-07-28-analytics-event-correctness.md`).
 
 GA4 ecommerce payloads use:
 
 - `currency`: the buyer's display currency (`PLN`/`EUR`/`GBP`) — derived client-side from `useCurrency()` (`src/components/currency/CurrencyProvider.tsx`, seeded from the `currency_pref` cookie) via `currencyFormatter()` in `src/lib/format.ts`; server-side conversions (`src/lib/marketing/conversions.ts`) use the persisted `orders.currency` column instead. `ANALYTICS_CURRENCY` (`'PLN'`) in `src/lib/analytics.ts` is only a fallback default for callers that omit `currency` explicitly.
-- `ecommerce.value`: item subtotal
+- `ecommerce.value`: item subtotal — **excludes shipping**
 - `ecommerce.shipping`: shipping cost on purchase
 - `order_total`: subtotal plus shipping as a custom parameter
 - `transaction_id`: order number for `purchase`
 - `items[]`: `item_id`, `item_name`, `item_brand`, `item_category`, `item_variant`, `price`, `quantity`
 
+**`value` convention: GA4 and Meta deliberately differ (F-22 — do not "fix" this).** The GA4 `ecommerce.value` is the **item subtotal (excludes shipping)**; the Meta `value` — both the browser `meta.value` and the server CAPI `custom_data.value` — is the **order total (includes shipping)**. Each channel is internally consistent client↔server (the browser and the webhook send the same figure for the same order), which is what dedup and channel-level revenue reporting need. Equalising the two across channels is not a goal and would break the existing Meta baseline.
+
+**`item_variant` semantics (N-12).** For one-of-a-kind **ceramics** `item_variant` carries the piece number `Nº <num>` — there is no variant axis, every piece is unique, so the "variant" dimension is effectively a per-piece id. For **fine-art prints** it carries the real variant label (size / frame). This is a deliberate semantic overload of one GA4 field across two product kinds; payloads are **not** changing. When segmenting by `item_variant`, filter by `item_category` first (`fine-art-prints` vs. a ceramic category) or the two meanings mix in one report.
+
+**Revenue float tails are a GA4-side artifact — won't fix (N-11, cosmetic).** GA4's aggregate revenue can display float tails (e.g. `11134.000004`). That is GA4 summing many already-exact per-event values in binary floating point, **not** a per-event defect: the server emits `value = order.subtotal / 100` (grosze summed once as integers, then one division — `conversions.ts`) and the client `sumItems` rounds to 2 dp (`analytics.ts`), so every individual event value is exact. A client-side "sum minor units then divide once" refactor is not possible (client-side items carry major-unit prices only) and is unjustified for a 6th-decimal display artifact.
+
 Meta payloads use standard event names where available and include `event_id` for future browser/server deduplication.
 
-Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now.
+Every event also carries `app_version` (semver from `package.json`) and `app_git_sha` (short git SHA, or `"dev"` for builds without git), stamped by `pushDataLayer()` in `src/lib/analytics.ts` from `NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_GIT_SHA` (`next.config.ts`) — the same build-time constants already used for the Sentry release and the admin footer badge. The GTM bridge forwards them to GA4 generically like any other param. Registered as event-scoped GA4 custom dimensions 2026-07-27 (`app_version` → "Wersja aplikacji", `app_git_sha` → "SHA commita"), closing the manual follow-up left open by #189 — usable in Explore/reports now. Three further event-scoped dimensions were targeted (audit N-8): `checkout_total` and `shipping_tier` were **registered 2026-07-29** (non-retroactive — they populate from that date forward). `order_total` could **not** be registered: GA4 returns `409 ALREADY_EXISTS` for it even though it is absent from the active list — an **archived** `order_total`/EVENT dimension still holds the `parameterName`+scope slot. The Admin API has no un-archive method (`create`/`get`/`list`/`patch`/`archive` only), so it can't be recreated programmatically; unblocking it is a manual GA4-UI check (Admin → Custom definitions) for the archived `order_total`, and if the UI offers no restore the param name is effectively burned (a rename would be needed to register it). Until then `order_total` stays unqueryable (all three params are still collected on `purchase`/`begin_checkout`). The property now lists 17 custom dimensions (was 15). Snippets in Task 1 of `docs/superpowers/plans/2026-07-28-ga4-measurement-hygiene.md`.
+
+### Enhanced Measurement ownership (N-3)
+
+**GA4 Enhanced Measurement is the single owner of scroll and form-interaction measurement.** EM `scrollsEnabled` and `formInteractionsEnabled` stay **on**, and the redundant hand-rolled `scroll_depth` and `contact_form_mailto_open` custom events were **removed** from the app 2026-07-28.
+
+The matching GA4-side toggle — turning EM `siteSearchEnabled` **off** — was done **2026-07-29** (`scrollsEnabled`/`formInteractionsEnabled` left **on**). This store has no on-site search, so the live `view_search_results` events were noise from inbound URLs that happen to carry `s`/`q` params; no new ones are collected from that date forward. The change is not retroactive — existing `view_search_results` rows remain in historical reports. The app-side deletions above are independent and already effective.
+
+The newsletter event is **retained** as `newsletter_signup_requested` (see the table above). It is the one form event EM cannot replace: `FooterNewsletterForm`'s `<form>` has no `id`/`name`, so native `form_submit` reports it with an empty `form_id` and it can't be told apart from any other form. The named custom event remains the reliable newsletter-conversion signal.
+
+Accepted trade-offs — **none of this is retroactive**; historical rows are unaffected and only collection going forward changes:
+
+- **Scroll:** EM `scroll` fires once, at **90%**. The removed custom `scroll_depth` fired at **50% and 90%**, so the 50% mid-page signal is no longer collected.
+- **Contact form:** `<form id="contact-form">` (`ContactForm.tsx`), so EM `form_submit` carries `form_id=contact-form` and stays distinguishable in reports — but the custom event's `topic` parameter (which enquiry category the visitor picked) is lost.
+- **Site search:** since the toggle was flipped 2026-07-29, existing `view_search_results` rows remain in historical reports and no new ones are collected.
 
 ## GA4 Property Configuration
 
@@ -99,7 +128,7 @@ Then list accessible GTM accounts and containers:
 npm run gtm:list
 ```
 
-After filling `GTM_ACCOUNT_ID`, `GTM_CONTAINER_ID`, `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, and `NEXT_PUBLIC_META_PIXEL_ID`:
+After filling `GTM_ACCOUNT_ID`, `GTM_CONTAINER_ID`, `NEXT_PUBLIC_GTM_ID`, and `NEXT_PUBLIC_GA4_MEASUREMENT_ID` (the Meta Pixel ID is UI-managed, not read by `gtm:setup`):
 
 ```bash
 npm run gtm:setup
@@ -107,12 +136,13 @@ npm run gtm:setup
 
 The setup creates or updates a GTM workspace named `ACC analytics stack` with:
 
-- trigger `ACC - Initialization`
-- trigger `ACC - analytics dataLayer events`
-- tag `ACC - GA4 base`
-- tag `ACC - Meta Pixel base`
-- tag `ACC - GA4 dataLayer bridge`
-- tag `ACC - Meta dataLayer bridge`
+- triggers `ACC - Initialization`, `ACC - analytics dataLayer events`, `ACC - Consent Update`
+- Meta routing triggers `ACC - meta standard events`, `ACC - meta page_view`, `ACC - meta site_engagement` (fire the UI-managed Meta tags)
+- the `Page Location - redacted` custom-JS variable (N-1) + one `DLV - <key>` data-layer variable per forwarded event/meta param
+- tag `ACC - GA4 config` — native Google tag (`googtag`), `send_page_view:false`, `analytics_storage`
+- tag `ACC - GA4 event` — native GA4 Event tag (`gaawe`), `eventName={{Event}}`, `sendEcommerceData` reads the `ecommerce` object natively, `analytics_storage`
+
+The **Meta Pixel tags** (`ACC - Meta PageView`, `ACC - Meta standard events`, `ACC - Meta SiteEngagement`, all `ad_storage`) are **template-managed** — the official Meta Pixel gallery template (`cvt_5RM3Q`) is imported once from the UI, then the three tags are created + trigger/consent-wired via one-off API calls (the GTM API cannot import gallery templates but can create tags of an already-imported one), exactly like `Microsoft Clarity - Official`. There is **no separate `ACC - Meta base` init tag**: the Meta template auto-initialises the pixel on its first fire, so `ACC - Meta PageView` (triggers `ACC - meta page_view` + `ACC - Consent Update`, firing **Unlimited**, `disablePushState:true` to prevent a double PageView on SPA navigation) doubles as init. They are not created by `gtm-api.mjs`; they persist in the container and are captured in the version export.
 
 It does not publish by default. Use GTM Preview / Tag Assistant first, then publish with:
 
@@ -140,12 +170,16 @@ Whenever the GTM container (`GTM-NPHLG9NR`) tags/triggers change — via `npm ru
 
 1. In GTM UI → Admin → Container → Export Container, export the newly published version.
 2. Save it as `docs/GTM-NPHLG9NR_v<N>.json` (N = the published version number) and remove the previous export file.
-3. Confirm every consent-relevant tag still shows `consentSettings.consentStatus: "needed"` in the export, gated on `analytics_storage` or `ad_storage` as appropriate, **and** that `ACC - GA4 base`, `ACC - Meta Pixel base`, and `Microsoft Clarity - Official` each fire on two triggers (`ACC - Initialization`/its own base trigger, plus `ACC - Consent Update`) — this is what lets them recover if a visitor accepts consent mid-session instead of on load. This covers the 4 `ACC - *` Custom HTML tags (`ACC - GA4 base`, `ACC - Meta Pixel base`, `ACC - GA4 dataLayer bridge`, `ACC - Meta dataLayer bridge` — gated via `consentTypes` in `scripts/gtm-api.mjs`) **and any tag added directly in the GTM UI** (e.g. `Microsoft Clarity - Official`, on `analytics_storage`) — those aren't managed by `gtm-api.mjs` and default to ungated, so a UI-added tag needs its consent status set by hand.
+3. Confirm every consent-relevant tag still shows `consentSettings.consentStatus: "needed"` in the export, gated on `analytics_storage` (GA4) or `ad_storage` (Meta) as appropriate, **and** that `ACC - GA4 config`, `ACC - Meta PageView`, and `Microsoft Clarity - Official` each fire on two triggers (their own base trigger — `ACC - Initialization` / `ACC - meta page_view` / All Pages respectively — plus `ACC - Consent Update`) — this is what lets them recover if a visitor accepts consent mid-session instead of on load. Post-v17 the GA4 tags are native (`ACC - GA4 config` `googtag` + `ACC - GA4 event` `gaawe`, gated via `consentNeeded()` in `scripts/gtm-api.mjs`); the Meta Pixel tags (`ACC - Meta *`) and `Microsoft Clarity - Official` are **UI-managed** imported template tags **not** managed by `gtm-api.mjs`, so each needs its consent status set by hand in the UI (Meta → `ad_storage`, Clarity → `analytics_storage`).
 4. Commit the new export in the same change as the container edit — a stale export is worse than no export.
 
 **F-02 verified 2026-07-25** (event-system-audit): live version was 10, all 4 `ACC - *` tags correctly gated. One gap found in the process: `Microsoft Clarity - Official` — added directly in the GTM UI at some point after the `v3.json` export, outside `gtm-api.mjs` — was live with `consentStatus: notSet`, firing for every visitor regardless of consent choice. Gated it to `analytics_storage` (matching GA4's treatment) and republished as version 12.
 
-**Consent-update re-fire fixed 2026-07-27** (`docs/superpowers/specs/2026-07-27-gtm-consent-refire-design.md`): GTM's Additional Consent Checks only gate a tag at the moment its own trigger fires — a visitor who accepted the cookie banner mid-session (rather than arriving with consent already granted) got no tracking at all for that session, since `ACC - GA4 base`/`ACC - Meta Pixel base` fired on a one-shot `Initialization` trigger and Clarity had the same shape of gap. Added the `ACC - Consent Update` trigger (matching the new `consent_update` dataLayer event from `setConsent()`) as a second firing trigger on all three tags and republished as version 13; current export is `docs/GTM-NPHLG9NR_v13.json`. **Not verified in GTM Preview before publishing** (Claude in Chrome extension was unavailable; published on explicit user decision) — the community-reported "once per page consumes the firing budget even when blocked" GTM quirk has not been empirically ruled out for the two base tags. If tracking still doesn't recover after a mid-session Accept, check that first.
+**Consent-update re-fire fixed 2026-07-27** (`docs/superpowers/specs/2026-07-27-gtm-consent-refire-design.md`): GTM's Additional Consent Checks only gate a tag at the moment its own trigger fires — a visitor who accepted the cookie banner mid-session (rather than arriving with consent already granted) got no tracking at all for that session, since `ACC - GA4 base`/`ACC - Meta Pixel base` fired on a one-shot `Initialization` trigger and Clarity had the same shape of gap. Added the `ACC - Consent Update` trigger (matching the new `consent_update` dataLayer event from `setConsent()`) as a second firing trigger on all three tags and republished as version 13; export saved as `docs/GTM-NPHLG9NR_v13.json`. **Not verified in GTM Preview before publishing** (Claude in Chrome extension was unavailable; published on explicit user decision) — the community-reported "once per page consumes the firing budget even when blocked" GTM quirk has not been empirically ruled out for the two base tags. If tracking still doesn't recover after a mid-session Accept, check that first.
+
+**N-1 `page_location` redaction — published as version 14 (2026-07-28).** `ga4BaseHtml()` and `ga4BridgeHtml()` in `scripts/gtm-api.mjs` seed a redacted `page_location` into the GA4 config (and refresh it on SPA `page_view`), so GA4 auto-events (`session_start`/`first_visit`) that fire before the app can `history.replaceState` never carry `?order=`/`?payment_intent[_client_secret]=`/`?sale=`/`?preview=`. See `docs/superpowers/plans/2026-07-28-analytics-privacy-token-redaction.md` Task 4. The app-layer `history.replaceState` strip (layer 1, shipped in PR #208) is the primary defence; this GA4-layer redaction (layer 2) closes the auto-event leak path that fires before React runs. Superseded by the Plan 6 native tags (v16/v17 below); `_v13.json` is **retained** as the committed rollback reference for the Plan 6 native-tags migration (`docs/superpowers/plans/2026-07-28-gtm-native-tags-migration.md`).
+
+**Plan 6 native-tag migration (F-03/F-04) — SHIPPED; live container is v17 (2026-07-29).** All four Custom-HTML tags/bridges are gone. **GA4 is native** (published v16): `ACC - GA4 config` (`googtag`, `send_page_view:false`, **Unlimited** firing so `ACC - Consent Update` recovers after a mid-session Accept) + `ACC - GA4 event` (`gaawe`, `eventName={{Event}}`, `sendEcommerceData`) — retires the `google_tag_manager[…].dataLayer.get()` reverse-scan (**F-03**); GA4 client-side user-provided data is **not** sent as a user property (server-side GA4 MP already carries hashed match data). The N-1 `page_location` redaction rides one fresh-evaluated `Page Location - redacted` custom-JS variable referenced by both GA4 tags. **Meta is native** (published v17): the official gallery Pixel template (`cvt_5RM3Q`) with three tags created via one-off API calls — `ACC - Meta PageView` (standard `PageView`, triggers `ACC - meta page_view` + `ACC - Consent Update`, **Unlimited**, `disablePushState:true`; template auto-inits the pixel so no separate base tag), `ACC - Meta standard events` (dynamic `eventName={{DLV - meta.event_name}}`, manual `meta.*` object properties, `eventID={{DLV - meta.event_id}}` = `purchase-<pi>` deduping with server CAPI, advanced matching on the pre-hashed `em` field — **F-04**, replacing the dead `fbq('set','userData')`), and `ACC - Meta SiteEngagement` (custom `SiteEngagement`, `eventID={{DLV - event_id}}`). All Meta tags `ad_storage`/`needed`. Verified before publish by API read-back + static dedup proof (browser `analytics.ts` `meta.event_id` === server `conversions.ts` `purchase-${payment_intent_id}`); **live Meta Test Events / Events Manager dedup + advanced-matching coverage is the post-publish soak check** (24-48h, F-04 close-out). Export: `docs/GTM-NPHLG9NR_v17.json`. Rollback: republish GTM version 13 (`docs/GTM-NPHLG9NR_v13.json`, last Custom-HTML) — or version 16 to keep GA4 native while reverting only the Meta half.
 
 ## Current storefront status
 

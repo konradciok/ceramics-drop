@@ -221,6 +221,12 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables); `code` (the unset default) reads the static registry and is the local/test fallback. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` — Stripe payment-method configuration (`pmc_…`, Dashboard → Settings → Payment methods; enables BLIK/P24/Bizum/cards). Mode-specific — test and live ids differ. Checkout **fails closed** (502 `stripe_failed`) without it, so set the secret **before** deploying this code (`wrangler secret put STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`).
 
+### Sentry environment isolation (preview)
+
+`src/lib/sentry-options.ts` reads `environment = SENTRY_ENVIRONMENT ?? NODE_ENV`, so with no override **preview builds report to Sentry as `production`**. Set `SENTRY_ENVIRONMENT=preview` on the **preview** Workers Build's environment variables to isolate server + edge (worker) events — the runtime where the worker forwards `alert.sentry.extra`, now bounded by the `beforeSend` scrub (`scrubSentryEvent`: drops request cookies + `cookie`/`authorization`/`x-forwarded-for` headers case-insensitively, truncates oversized `extra` strings).
+
+**Browser caveat:** the client bundle only picks up `preview` if it is exposed as a `NEXT_PUBLIC_`-prefixed value. As shipped, `SENTRY_ENVIRONMENT` is **not** inlined into the client, so **browser events still report under `production`** even on preview. To isolate browser events too, inline `NEXT_PUBLIC_SENTRY_ENVIRONMENT` in `next.config.ts`, read it in `getBaseSentryOptions` (`SENTRY_ENVIRONMENT ?? NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? NODE_ENV`), and set it on the preview build. Rollback: unset the var — everything falls back to `NODE_ENV`.
+
 ### npm version (lockfile)
 
 Workers Builds runs **npm 10.9.x** (bundled with Node 22). If you regenerate `package-lock.json` with **npm 11+**, `npm ci` can pass locally but fail in CI with:
@@ -248,6 +254,14 @@ Ensure `public/uploads/*.webp` is committed so CI includes product images.
 ## Middleware
 
 Locale routing uses `src/middleware.ts` (next-intl). This deployment uses OpenNext on Workers, **not** `output: 'export'`, so middleware runs at the edge.
+
+### Content-Security-Policy (report-only → enforce)
+
+`src/middleware.ts` emits `Content-Security-Policy-Report-Only` (never breaks a page) with a `Reporting-Endpoints` + `report-uri`/`report-to` sink at `/api/csp-report` (`src/app/api/csp-report/route.ts` logs a bounded, redacted `csp_report` line — no raw body, no query strings). `*.clarity.ms` is allowlisted in `script-src`/`img-src`/`connect-src` so Clarity survives enforce.
+
+**Observation window:** after deploy, watch Workers Logs for `csp_report` lines and confirm **no** legit first-party asset (GTM, GA, Stripe, InPost, Clarity, Supabase) is reported blocked.
+
+**Enforce cutover (GATED — do not flip until the window is clean):** after ≥1–2 weeks of report-only with zero legitimate violations, rename the header key in `SECURITY_HEADERS` from `Content-Security-Policy-Report-Only` to `Content-Security-Policy` (keep `report-uri`/`report-to` so violations stay visible), update the `middleware.test.ts` assertion to the enforced key, and deploy behind a canary if available. **Rollback:** revert the key back to `-Report-Only`.
 
 ## Windows note
 

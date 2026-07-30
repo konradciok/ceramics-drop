@@ -5,6 +5,7 @@ export type Ga4Item = {
   quantity: number;
   item_category: string;
   item_brand: string;
+  item_variant?: string;
 };
 
 export type Ga4PurchaseInput = {

@@ -14,7 +14,7 @@ import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 export function SelectionBar() {
   const t = useTranslations();
   const currency = useCurrency();
-  const { fmt } = currencyFormatter(currency);
+  const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
@@ -39,6 +39,7 @@ export function SelectionBar() {
                 buildEngagementEvent('cart_clear', {
                   item_ids: products.map((product) => product.id),
                   value: total,
+                  currency: analyticsCurrency,
                 }),
               );
               clear();
@@ -55,6 +56,7 @@ export function SelectionBar() {
                   location: 'selection_bar',
                   num_items: n,
                   value: total,
+                  currency: analyticsCurrency,
                 }),
               );
             }}

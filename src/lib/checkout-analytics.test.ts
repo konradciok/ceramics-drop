@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
+import { toAnalyticsItem } from './analytics';
 import {
   forgetRememberedCheckout,
   hasFiredPurchaseOnce,
+  pushCheckoutStartedItemsOnce,
   reportPurchaseGapOnce,
   rememberCheckoutForReturn,
   pushCheckoutStarted,
@@ -282,6 +284,41 @@ describe('checkout analytics semantics', () => {
     );
   });
 
+  it('begin_checkout fires once per attempt id and dedupes a same-attempt retry', () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+    };
+    const items = [toAnalyticsItem(product('k01'))];
+
+    const first = pushCheckoutStartedItemsOnce('attempt_1', items, {
+      shippingCost: 18, shippingMethod: 'kurier', push, storage: session,
+    });
+    const second = pushCheckoutStartedItemsOnce('attempt_1', items, {
+      shippingCost: 18, shippingMethod: 'kurier', push, storage: session,
+    });
+
+    expect(first).toBe(true);
+    expect(second).toBe(false);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith(expect.objectContaining({ event: 'begin_checkout' }));
+  });
+
+  it('begin_checkout fires again under a fresh attempt id (cart changed / checkout resolved)', () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+    };
+    const items = [toAnalyticsItem(product('k01'))];
+    pushCheckoutStartedItemsOnce('attempt_1', items, { shippingCost: 18, shippingMethod: 'kurier', push, storage: session });
+    pushCheckoutStartedItemsOnce('attempt_2', items, { shippingCost: 18, shippingMethod: 'kurier', push, storage: session });
+    expect(push).toHaveBeenCalledTimes(2);
+  });
+
   it('hasFiredPurchaseOnce tracks the per-intent dedupe key and survives forgetting the snapshot', () => {
     const store = new Map<string, string>();
     const session = {
@@ -484,6 +521,18 @@ describe('checkout analytics never breaks the storefront when storage throws', (
         storage: throwingStorage,
       }),
     ).not.toThrow();
+  });
+
+  it('pushCheckoutStartedItemsOnce still emits when storage throws', () => {
+    const push = vi.fn();
+    let fired = false;
+    expect(() => {
+      fired = pushCheckoutStartedItemsOnce('attempt_throw', [toAnalyticsItem(product('k01'))], {
+        shippingCost: 18, shippingMethod: 'kurier', push, storage: throwingStorage,
+      });
+    }).not.toThrow();
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledTimes(1);
   });
 
   it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', () => {

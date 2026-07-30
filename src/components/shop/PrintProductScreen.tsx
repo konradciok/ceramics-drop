@@ -14,6 +14,7 @@ import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
 import { PrintPdpPurchase } from './PrintPdpPurchase';
+import { PrintViewAnalytics } from './PrintViewAnalytics';
 import type { PrintDesign } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
@@ -58,6 +59,8 @@ export async function PrintProductScreen({
   const mockups = registryDesign?.image === design.image ? registryDesign?.mockups : undefined;
 
   return (
+    <>
+    <PrintViewAnalytics design={design} />
     <article className="pdp">
       <div className="pdp-inner">
         <nav className="pdp-breadcrumb" aria-label="breadcrumb">
@@ -142,5 +145,6 @@ export async function PrintProductScreen({
         </section>
       )}
     </article>
+    </>
   );
 }

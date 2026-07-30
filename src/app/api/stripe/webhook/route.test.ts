@@ -69,6 +69,57 @@ function chain(terminal: 'select' | 'maybeSingle', result: Result, onCall?: (met
   return b;
 }
 
+// --- webhook_events idempotency ledger fake (F-18) ---------------------------
+type WebhookEventsPlan = {
+  /** initial `.select().eq().eq().maybeSingle()` — default fresh (no row). */
+  seen?: QueryResult;
+  /** `.insert()` result — default success. */
+  insert?: QueryResult;
+  /** stale-lease reclaim `.update()…select('id').maybeSingle()` — default reclaimed. */
+  claimCas?: QueryResult;
+  /** completion `.update({status:'done'}).eq().eq()` — default success. */
+  done?: QueryResult;
+  /** records every `.update()` payload (assert lease release on throw). */
+  updates?: Array<Record<string, unknown>>;
+};
+
+/** Chain node for the webhook_events fake: `.eq()`/`.is()` return self,
+ *  `.select().maybeSingle()` and `.maybeSingle()` resolve `result`, and the node
+ *  is itself awaitable (the done-write awaits `.eq().eq()` directly). */
+function weChain(result: QueryResult): Record<string, unknown> {
+  const node: Record<string, unknown> = {
+    eq: () => node,
+    is: () => node,
+    select: () => ({ maybeSingle: async () => result }),
+    maybeSingle: async () => result,
+    then: (resolve: (v: QueryResult) => unknown, reject?: (e: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
+  };
+  return node;
+}
+
+/**
+ * webhook_events idempotency-ledger fake (F-18). Default = a *fresh* event that
+ * inserts and marks done cleanly, so the Stripe claim wrapper is transparent to
+ * every pre-existing test. Override to exercise dedup: `seen` a done/processing
+ * row, or make `done` an error. CAS vs done UPDATE are told apart by payload
+ * status (`processing` = stale-lease reclaim, `done` = completion write).
+ */
+function webhookEventsTable(plan: WebhookEventsPlan = {}) {
+  const seen = plan.seen ?? { data: null, error: null };
+  const insert = plan.insert ?? { error: null };
+  const claimCas = plan.claimCas ?? { data: { id: 'we_1' }, error: null };
+  const done = plan.done ?? { error: null };
+  return {
+    select: () => weChain(seen),
+    insert: async () => insert,
+    update: (payload: Record<string, unknown>) => {
+      plan.updates?.push(payload);
+      return weChain(payload.status === 'processing' ? claimCas : done);
+    },
+  };
+}
+
 /**
  * Supabase fake. `ordersUpdate` results are consumed per orders-UPDATE call
  * (releaseSale runs the pending→refunded CAS before the paid→refunded CAS);
@@ -78,7 +129,7 @@ function chain(terminal: 'select' | 'maybeSingle', result: Result, onCall?: (met
  * payload and its `.eq()`/`.in()` filter calls so tests can assert the release
  * actually ran (and with the right target status + scoping).
  */
-function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result }) {
+function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result; webhookEvents?: WebhookEventsPlan }) {
   const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
   const calls = {
     pieceUpdatePayload: undefined as unknown,
@@ -103,6 +154,7 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
           },
         };
       }
+      if (table === 'webhook_events') return webhookEventsTable(plan.webhookEvents);
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -566,6 +618,8 @@ function makeSucceededSupabase(opts: {
    * don't each have to opt in; the redelivery case sets an empty array explicitly.
    */
   conversionsClaim?: QueryResult;
+  /** F-18 idempotency ledger override; default = fresh event (transparent). */
+  webhookEvents?: WebhookEventsPlan;
 }) {
   const failedUpdateEqArgs: unknown[][] = [];
   // Claim UPDATEs recorded for assertion: the payload value written to the
@@ -628,6 +682,7 @@ function makeSucceededSupabase(opts: {
           },
         };
       }
+      if (table === 'webhook_events') return webhookEventsTable(opts.webhookEvents);
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -1141,6 +1196,33 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(confirmClaimWrites[0].filters).toContainEqual(['is', ['confirmation_email_sent_at', null]]);
   });
 
+  it('captures a Sentry message when the cart.purchased (abandoned-checkout cancel) send fails', async () => {
+    vi.mocked(sendPurchasedEvent).mockRejectedValueOnce(new Error('resend down'));
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      emailOrderSelect: { data: unclaimedOrderRow, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200); // best-effort: the failure must not fail the webhook
+    expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'stripe_webhook_purchased_event_failed',
+      expect.objectContaining({ level: 'error', extra: expect.objectContaining({ order_id: 'o1' }) }),
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
   it('releases the *_sent_at claim (CAS back to null on our own timestamp) when all 3 send attempts fail, so a replay can retry', async () => {
     vi.mocked(emailNewOrderToStudio).mockRejectedValue(new Error('resend down'));
     vi.mocked(emailOrderConfirmationToCustomer).mockRejectedValue(new Error('resend down'));
@@ -1258,5 +1340,108 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(emailNewOrderToStudio).not.toHaveBeenCalled();
     expect(emailOrderConfirmationToCustomer).not.toHaveBeenCalled();
     expect(sendPurchasedEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('webhook_events idempotency ledger (F-18)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(createOrderShipment).mockClear();
+    vi.mocked(enqueueProdigi).mockClear();
+  });
+
+  // Minimal succeeded opts for the dedup cases — the handler never runs, so
+  // orders/piece_state are untouched; only the ledger select is consulted.
+  const dedupOpts = {
+    casUpdate: { data: [], error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    variantRows: { data: [], error: null },
+  };
+
+  it('ledger row already `done`: dedupes without processing the event', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: { seen: { data: { id: 'we_1', status: 'done', processing_started_at: null }, error: null } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    const body = (await res.json()) as { deduped?: boolean };
+
+    expect(res.status).toBe(200);
+    expect(body.deduped).toBe(true);
+    // markPaid never ran ⇒ no fulfilment.
+    expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(enqueueProdigi).not.toHaveBeenCalled();
+  });
+
+  it('in-flight `processing` lease within TTL: dedupes (concurrent double-processing guard)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        seen: { data: { id: 'we_1', status: 'processing', processing_started_at: new Date().toISOString() }, error: null },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    const body = (await res.json()) as { deduped?: boolean };
+
+    expect(res.status).toBe(200);
+    expect(body.deduped).toBe(true);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('fresh event: inserts the row, processes, and marks it done (no dedup)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      // default webhookEvents stub = fresh (select null) → insert ok → done ok
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    const body = (await res.json()) as { deduped?: boolean; received?: boolean };
+
+    expect(res.status).toBe(200);
+    expect(body.received).toBe(true);
+    expect(body.deduped).toBeUndefined();
+  });
+
+  it('done-write error: the route throws so Stripe retries (never a false 200)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      webhookEvents: { done: { error: { message: 'boom' } } },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/webhook_events done update failed: boom/);
+  });
+
+  it('a mid-handler throw releases the lease (status=failed) so a retry reclaims immediately', async () => {
+    const updates: Array<Record<string, unknown>> = [];
+    const { supabase } = makeSupabase({
+      // refunded-CAS orders UPDATE errors ⇒ releaseSale throws out of handleStripeEvent.
+      ordersUpdate: { data: null, error: { message: 'db down' } },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: null, error: null },
+      webhookEvents: { updates },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(refundedEventRequest())).rejects.toThrow(/db down/);
+    // Lease handed back (not left `processing`) so the next Stripe retry reclaims
+    // it immediately, regardless of whether the retry lands inside the 5-min lease.
+    // Without this the retry would be deduped → fulfilment silently dropped.
+    expect(updates).toContainEqual({ status: 'failed', processing_started_at: null });
   });
 });

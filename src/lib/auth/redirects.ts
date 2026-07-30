@@ -13,6 +13,11 @@ import { SITE_URL } from '@/lib/site';
 /** Short-lived httpOnly cookie carrying the sanitized post-login path between /api/auth/login and /api/auth/callback. */
 export const AUTH_NEXT_COOKIE = 'sb-auth-next';
 
+/** One-shot, client-readable cookie the auth callback sets so the browser can
+ *  emit a login/sign_up analytics event exactly once (AuthAnalytics.tsx). NOT
+ *  httpOnly — the client must read it. Value: `<login|sign_up>:<method>:<userId>`. */
+export const AUTH_EVENT_COOKIE = 'acc_auth_event';
+
 /** Locale-less default landing page after auth actions. */
 export const KONTO_PATH = '/konto';
 

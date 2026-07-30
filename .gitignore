@@ -61,6 +61,9 @@ design/
 .claude/
 .worktrees/
 
+# local Pi agent config (per-machine)
+.pi/
+
 # Brainstorming visual companion (local only)
 .superpowers/
 1Password Emergency Kit.pdf

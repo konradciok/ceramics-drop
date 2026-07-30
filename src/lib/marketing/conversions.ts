@@ -85,6 +85,9 @@ export async function sendPurchaseConversions(
       quantity: 1 as const,
       item_category: ai?.item_category ?? '',
       item_brand: ai?.item_brand ?? 'Anna Ciok Ceramics',
+      // N-4: mirror the client's item_variant (`Nº <num>`) so browser and server GA4
+      // purchase items agree — GA4 keeps whichever hit lands first per transaction_id.
+      ...(ai?.item_variant ? { item_variant: ai.item_variant } : {}),
     };
   });
 

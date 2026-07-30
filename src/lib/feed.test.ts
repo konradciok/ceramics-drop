@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
+import { getPrintDesigns } from './prints';
 
 describe('buildFeedItems', () => {
   it('marks sold products as out of stock and others as in stock', async () => {
@@ -116,5 +117,32 @@ describe('buildMetaXml', () => {
   it('includes g:google_product_category', () => {
     const xml = buildMetaXml([sampleItem], 'en');
     expect(xml).toContain('<g:google_product_category>');
+  });
+});
+
+describe('fine-art-print feed rows', () => {
+  it('includes one row per published print design, matching the emitted content_ids', async () => {
+    const items = await buildFeedItems('en', new Set());
+    const feedIds = new Set(items.map((i) => i.id));
+    const designIds = (await getPrintDesigns()).map((d) => d.id);
+    expect(designIds).toContain('fap01'); // guard: registry actually has published prints
+    for (const id of designIds) expect(feedIds.has(id)).toBe(true);
+  });
+
+  it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
+    const pl = (await buildFeedItems('pl', new Set())).find((i) => i.id === 'fap01');
+    const en = (await buildFeedItems('en', new Set())).find((i) => i.id === 'fap01');
+    // fap01 cheapest size (30x40) = 105 PLN / 25 EUR (print-pricing SIZE_BASE).
+    expect(pl?.price).toBe('105.00 PLN');
+    expect(en?.price).toBe('25.00 EUR');
+    expect(pl?.category).toBe('fine-art-prints');
+    expect(pl?.availability).toBe('in stock'); // print-on-demand — never sold out
+    expect(pl?.shipping.length).toBeGreaterThan(0);
+  });
+
+  it('renders a print g:id into both feed XMLs', async () => {
+    const items = await buildFeedItems('en', new Set());
+    expect(buildMetaXml(items, 'en')).toContain('<g:id>fap01</g:id>');
+    expect(buildGoogleXml(items, 'en')).toContain('<g:id>fap01</g:id>');
   });
 });

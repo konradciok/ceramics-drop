@@ -162,18 +162,12 @@ export function buildAddToCartEvent(
   );
 }
 
-/**
- * add_to_cart for a fine-art print variant. Prints aren't `Product`s, so this
- * builds the AnalyticsItem directly: item_id = design id, item_variant = the
- * chosen size/paper/frame label, price = the resolved variant price (major units).
- */
-export function buildPrintAddToCartEvent(
-  print: { id: string; num: string; variantLabel: string; price: number },
-  options: EventOptions = {},
-): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('add_to_cart', `${print.id}-${print.variantLabel}`);
-  const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const item: AnalyticsItem = {
+type PrintItemInput = { id: string; num: string; variantLabel: string; price: number };
+
+/** One canonical AnalyticsItem shape for a print variant (item_id = design id,
+ *  so Meta content_ids / GA4 item_id match the fap0x merchant-feed rows). */
+function printAnalyticsItem(print: PrintItemInput): AnalyticsItem {
+  return {
     item_id: print.id,
     item_name: `Print Nº ${print.num}`,
     item_brand: BRAND,
@@ -182,15 +176,96 @@ export function buildPrintAddToCartEvent(
     price: print.price,
     quantity: 1,
   };
+}
+
+/**
+ * add_to_cart for a fine-art print variant. Prints aren't `Product`s, so this
+ * builds the AnalyticsItem via printAnalyticsItem: item_id = design id,
+ * item_variant = the chosen size/frame label, price = resolved variant price.
+ */
+export function buildPrintAddToCartEvent(
+  print: PrintItemInput,
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('add_to_cart', `${print.id}-${print.variantLabel}`);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
   return withMeta(
     {
       event: 'add_to_cart',
       event_id: eventId,
-      ecommerce: ecommerce([item], currency),
+      ecommerce: ecommerce([printAnalyticsItem(print)], currency),
     },
     'AddToCart',
     eventId,
   );
+}
+
+/** view_item for a print PDP — mirrors buildViewItemEvent (GA4 + Meta ViewContent). */
+export function buildPrintViewItemEvent(
+  print: PrintItemInput,
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('view_item', `${print.id}-${print.variantLabel}`);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  return withMeta(
+    {
+      event: 'view_item',
+      event_id: eventId,
+      ecommerce: ecommerce([printAnalyticsItem(print)], currency),
+    },
+    'ViewContent',
+    eventId,
+  );
+}
+
+/** view_item_list for the print collection — GA4-only, mirrors buildViewItemListEvent. */
+export function buildPrintViewItemListEvent(
+  prints: PrintItemInput[],
+  details: { itemListId: string; itemListName: string; eventId?: string; currency?: CurrencyCode },
+): DataLayerEvent {
+  const items = prints.map((print, index) => ({
+    ...printAnalyticsItem(print),
+    index,
+    item_list_id: details.itemListId,
+    item_list_name: details.itemListName,
+  }));
+  return {
+    event: 'view_item_list',
+    event_id: details.eventId ?? createEventId('view_item_list', details.itemListId),
+    ecommerce: ecommerce(items, details.currency),
+  };
+}
+
+/** select_item for a print tile — GA4-only, mirrors buildSelectItemEvent. */
+export function buildPrintSelectItemEvent(
+  print: PrintItemInput,
+  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: CurrencyCode } = {},
+): DataLayerEvent {
+  const item: AnalyticsItem = {
+    ...printAnalyticsItem(print),
+    ...(details.index !== undefined ? { index: details.index } : {}),
+    ...(details.itemListId ? { item_list_id: details.itemListId } : {}),
+    ...(details.itemListName ? { item_list_name: details.itemListName } : {}),
+  };
+  return {
+    event: 'select_item',
+    event_id: details.eventId ?? createEventId('select_item', print.id),
+    ecommerce: ecommerce([item], details.currency),
+  };
+}
+
+/** remove_from_cart for a print variant — GA4-only, mirrors buildRemoveFromCartEvent. */
+export function buildPrintRemoveFromCartEvent(
+  print: PrintItemInput,
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('remove_from_cart', `${print.id}-${print.variantLabel}`);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  return {
+    event: 'remove_from_cart',
+    event_id: eventId,
+    ecommerce: ecommerce([printAnalyticsItem(print)], currency),
+  };
 }
 
 export function buildRemoveFromCartEvent(
@@ -365,6 +440,21 @@ export function buildEngagementEvent(
     engagement_type: engagementType,
     ...properties,
   };
+}
+
+export type AuthMethod = 'google' | 'apple';
+
+/**
+ * login / sign_up dataLayer events. `user_id` is the opaque Supabase user id
+ * (a random UUID, not PII) — emitted so GTM can set GA4's user_id for the
+ * session; `method` is the OAuth provider. No ecommerce/meta payload.
+ */
+export function buildLoginEvent(method: AuthMethod, userId: string): DataLayerEvent {
+  return { event: 'login', event_id: createEventId('login', userId), method, user_id: userId };
+}
+
+export function buildSignUpEvent(method: AuthMethod, userId: string): DataLayerEvent {
+  return { event: 'sign_up', event_id: createEventId('sign_up', userId), method, user_id: userId };
 }
 
 /** Query params that carry a capability token / secret and must never reach the

@@ -42,6 +42,7 @@ async function sendEmailOnceWithClaim(
   orderId: string,
   column: 'studio_email_sent_at' | 'confirmation_email_sent_at',
   send: () => Promise<unknown>,
+  idColumn?: 'resend_email_id',
 ): Promise<void> {
   const claimAt = new Date().toISOString();
   const { data: claimed, error: claimErr } = await supabase
@@ -59,8 +60,26 @@ async function sendEmailOnceWithClaim(
   let sent = false;
   for (let attempt = 0; attempt < 3 && !sent; attempt++) {
     try {
-      await send();
+      const result = await send();
       sent = true;
+      if (idColumn) {
+        // Correlate the Resend send with this order (F-13) so an inbound
+        // bounce/complaint webhook can name it. Best-effort: the email already
+        // sent, so a failed write never rethrows — it alerts for reconciliation.
+        const emailId = (result as { id?: string | null } | undefined)?.id ?? null;
+        if (emailId) {
+          const { error: idErr } = await supabase
+            .from('orders')
+            .update({ [idColumn]: emailId })
+            .eq('id', orderId);
+          if (idErr) {
+            Sentry.captureMessage('resend_email_id persist failed', {
+              level: 'warning',
+              extra: { order_id: orderId, email_id: emailId, error: idErr.message },
+            });
+          }
+        }
+      }
     } catch (err) {
       if (attempt === 2) {
         console.error(`${column} email send failed for`, orderId, err);
@@ -109,6 +128,80 @@ export async function POST(req: Request) {
   }
 
   const supabase = getSupabaseAdmin();
+
+  // Idempotency ledger (F-18): claim this Stripe event id once, mirroring the
+  // Prodigi lease/CAS in src/server/prodigi/callbacks.ts (~L44-93). Statuses:
+  //  - `done`                      → completed delivery, skip.
+  //  - `processing` within lease   → a concurrent in-flight delivery owns it,
+  //                                   skip (prevents concurrent double-processing).
+  //  - `processing` past lease     → stale/abandoned; reclaim with a CAS on the
+  //                                   old lease value so only one racer wins.
+  // A mid-handler throw leaves the row `processing`; Stripe's retry (minutes–days
+  // later, well past the lease) reclaims the stale lease and re-runs the
+  // CAS-idempotent steps as no-ops.
+  const STRIPE_LEASE_MS = 5 * 60 * 1000;
+  const claimedAt = new Date().toISOString();
+  const { data: seen } = await supabase
+    .from('webhook_events')
+    .select('id, status, processing_started_at')
+    .eq('provider', 'stripe')
+    .eq('provider_event_id', event.id)
+    .maybeSingle();
+  const seenRow = seen as { id: string; status: string; processing_started_at: string | null } | null;
+
+  if (seenRow?.status === 'done') {
+    return NextResponse.json({ received: true, deduped: true });
+  }
+  if (seenRow) {
+    // Active (non-stale) processing lease ⇒ another delivery is mid-flight.
+    if (seenRow.status === 'processing' && seenRow.processing_started_at) {
+      const age = Date.now() - new Date(seenRow.processing_started_at).getTime();
+      if (age < STRIPE_LEASE_MS) {
+        return NextResponse.json({ received: true, deduped: true });
+      }
+    }
+    // Reclaim a stale lease with a compare-and-swap on the prior lease value so
+    // two racing deliveries can't both win (same shape as callbacks.ts).
+    const claimUpdate = supabase
+      .from('webhook_events')
+      .update({ status: 'processing', processing_started_at: claimedAt })
+      .eq('id', seenRow.id)
+      .eq('status', seenRow.status);
+    const claimCas = seenRow.processing_started_at === null
+      ? claimUpdate.is('processing_started_at', null)
+      : claimUpdate.eq('processing_started_at', seenRow.processing_started_at);
+    const { data: claimed, error: casErr } = await claimCas.select('id').maybeSingle();
+    if (casErr) throw new Error(`webhook_events claim failed: ${casErr.message}`);
+    if (!claimed) return NextResponse.json({ received: true, deduped: true });
+  } else {
+    const { error: insErr } = await supabase.from('webhook_events').insert({
+      provider: 'stripe',
+      provider_event_id: event.id,
+      event_type: event.type,
+      raw_json: event as unknown,
+      status: 'processing',
+      processing_started_at: claimedAt,
+    });
+    // Unique violation (23505) = a concurrent delivery claimed it first — let that one own it.
+    if (insErr && (insErr as { code?: string }).code === '23505') {
+      return NextResponse.json({ received: true, deduped: true });
+    }
+    if (insErr) throw new Error(`webhook_events insert failed: ${insErr.message}`);
+  }
+
+  // Release the webhook_events lease on any handler throw so Stripe's retry
+  // reclaims the event immediately (timing-independent) instead of being deduped
+  // as an in-flight `processing` row within STRIPE_LEASE_MS — which would silently
+  // drop fulfilment for a retryable failure (e.g. createShipment re-throwing a
+  // ShipX error). Mirrors releaseClaim in src/server/prodigi/callbacks.ts.
+  // Best-effort: if the release itself fails, the lease still expires after the TTL.
+  const releaseLease = () =>
+    supabase
+      .from('webhook_events')
+      .update({ status: 'failed', processing_started_at: null })
+      .eq('provider', 'stripe')
+      .eq('provider_event_id', event.id)
+      .then(undefined, (e) => console.error('webhook_events lease release failed', event.id, e));
 
   await handleStripeEvent(event, {
     markPaid: async (pi) => {
@@ -287,6 +380,7 @@ export async function POST(req: Request) {
                 locale: orderRowTyped.locale ?? 'pl',
                 kind: isPrintOnlyOrder ? 'print' : 'ceramic',
               }),
+              'resend_email_id',
             );
           }
 
@@ -300,6 +394,13 @@ export async function POST(req: Request) {
               await sendPurchasedEvent({ orderId, email: orderRowTyped.email });
             } catch (err) {
               console.error('sendPurchasedEvent failed for', orderId, err);
+              // A failed cart.purchased leaves the abandoned-checkout automation armed,
+              // so a buyer who just paid can still get a recovery email. Best-effort
+              // (route still 200s) — surface it like the other webhook conditions.
+              Sentry.captureMessage('stripe_webhook_purchased_event_failed', {
+                level: 'error',
+                extra: { order_id: orderId, error: err instanceof Error ? err.message : String(err) },
+              });
             }
           }
         }
@@ -687,7 +788,24 @@ export async function POST(req: Request) {
         console.error('trackPurchase failed for', pi, err);
       }
     },
+  }).catch(async (err) => {
+    await releaseLease();
+    throw err;
   });
+
+  const { error: doneErr } = await supabase
+    .from('webhook_events')
+    .update({ status: 'done', processed_at: new Date().toISOString() })
+    .eq('provider', 'stripe')
+    .eq('provider_event_id', event.id);
+  // Fail the request if the completion write errors (F-18): a 200 here would tell
+  // Stripe we're done while the ledger row is stuck `processing`. Release the lease
+  // and throw so the route 5xxes, Stripe retries, and the retry reclaims immediately
+  // and drives the row to `done` — the CAS-idempotent steps re-run as no-ops.
+  if (doneErr) {
+    await releaseLease();
+    throw new Error(`webhook_events done update failed: ${doneErr.message}`);
+  }
 
   return NextResponse.json({ received: true });
 }

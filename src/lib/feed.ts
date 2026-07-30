@@ -1,5 +1,8 @@
 import { getPublicProducts, CATEGORIES } from './products';
+import { getPrintDesigns } from './prints';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
+import { fromPriceOf } from './print-pricing';
+import { printShippingOf, type PrintCountry } from './print-shipping';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
 import { getProductNotes } from './cms/messages';
@@ -48,7 +51,7 @@ const PRICE_TIER: Record<CategorySlug, string> = {
   'wazony-srednie': 'premium',
   'wazony-duze': 'premium',
   'duze-michy': 'premium',
-  'fine-art-prints': 'standard', // ponytail: excluded from feed, but TS needs exhaustive map
+  'fine-art-prints': 'standard', // fine-art prints — merchant feed row (see buildPrintFeedItems)
 };
 
 const PRODUCT_FAMILY: Record<CategorySlug, string> = {
@@ -61,7 +64,7 @@ const PRODUCT_FAMILY: Record<CategorySlug, string> = {
   'wazony-duze': 'vessels',
   'duze-michy': 'bowls',
   'miski-falowane': 'bowls',
-  'fine-art-prints': 'prints', // ponytail: excluded from feed, but TS needs exhaustive map
+  'fine-art-prints': 'prints', // fine-art prints — merchant feed row (see buildPrintFeedItems)
 };
 
 // Exported so structured-data.ts can reuse the same per-locale shipping
@@ -85,7 +88,7 @@ const GOOGLE_CATEGORY: Record<CategorySlug, string> = {
   'talerze-duze': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Plates',
   'duze-michy': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
   'miski-falowane': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
-  'fine-art-prints': 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints', // ponytail: excluded from feed
+  'fine-art-prints': 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints', // fine-art prints — merchant feed row (see buildPrintFeedItems)
 };
 
 export type FeedItem = {
@@ -162,15 +165,67 @@ async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>,
   });
 }
 
-export async function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
-  return buildFeedItemsWithNotes(locale, soldIds, showroomIds);
+/**
+ * Merchant-feed rows for published fine-art prints. One row per design per
+ * locale, id = design id (fap0x) so it matches the fap0x content_ids/item_ids
+ * the print pixel + CAPI emit (see buildPrintAddToCartEvent). Prints are
+ * print-on-demand: always in stock, priced from the cheapest sellable variant,
+ * shipped to a home address (Prodigi) — never a locker.
+ */
+async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
+  const msg = LOCALE_MESSAGES[locale];
+  const cur = currency(locale); // 'PLN' | 'EUR'
+  const chargeable = locale === 'pl' ? 'pln' : 'eur'; // feeds never quote GBP
+  const singular = (msg.product as Record<string, string>).print ?? 'Print';
+  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
+  const designs = await getPrintDesigns(); // published only, CATALOG_SOURCE-aware
+
+  return designs.map((design) => {
+    const title = `${singular} #${design.num}`;
+    const notes = (msg.notes as Record<string, string[]>)['fine-art-prints'];
+    const description = notes?.[design.noteIndex] ?? title;
+
+    const link = absoluteUrl(locale, `/fine-art-prints/${design.id}`);
+    const imageLink = `${SITE_URL}${design.image}`;
+    const additionalImages = (design.gallery ?? []).map((g) => `${SITE_URL}${g}`);
+
+    const price = fromPriceOf(design, chargeable);
+    // Loose (unframed) rate pairs with the unframed "from" price above.
+    const shipCost = printShippingOf(country, false, chargeable);
+
+    return {
+      id: design.id,
+      title,
+      description,
+      link,
+      imageLink,
+      additionalImages,
+      availability: 'in stock' as const,
+      price: `${price}.00 ${cur}`,
+      category: 'fine-art-prints' as CategorySlug,
+      material: 'Fine Art Print',
+      productType: `Prints > ${singular}`,
+      customLabel0: PRICE_TIER['fine-art-prints'],
+      customLabel1: PRODUCT_FAMILY['fine-art-prints'],
+      customLabel2: 'fine-art-prints',
+      shipping: [{ country, service: 'Prodigi', price: `${shipCost}.00 ${cur}` }],
+    };
+  });
 }
 
+export async function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
+  const ceramics = await buildFeedItemsWithNotes(locale, soldIds, showroomIds);
+  return [...ceramics, ...(await buildPrintFeedItems(locale))];
+}
+
+// ponytail: print feed descriptions use static i18n notes; wire CMS print notes
+// only if editors start drafting them.
 export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
   const products = await getPublicProducts();
   const slugs = [...new Set(products.map((product) => product.category))];
   const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
-  return buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>, products);
+  const ceramics = await buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>, products);
+  return [...ceramics, ...(await buildPrintFeedItems(locale))];
 }
 
 function itemToGoogleXml(item: FeedItem): string {

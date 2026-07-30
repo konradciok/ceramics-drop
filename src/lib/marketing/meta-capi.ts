@@ -72,16 +72,22 @@ export async function sendMetaPurchase(
   input: MetaPurchaseInput,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ ok: boolean; status: number; errorBody?: string }> {
-  const url =
-    `https://graph.facebook.com/${GRAPH_API_VERSION}/${config.pixelId}/events` +
-    `?access_token=${encodeURIComponent(config.accessToken)}`;
+  // The token goes in the Authorization header, never the URL: a query-string
+  // credential lands in Meta's server logs, intermediary proxy logs, and any
+  // Sentry breadcrumb that captures request URLs (F-21). The Graph API does not
+  // read `access_token` from a JSON POST body, so the header is the only
+  // alternative that still authenticates.
+  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${config.pixelId}/events`;
   const body = {
     ...buildMetaPurchasePayload(input),
     ...(config.testEventCode ? { test_event_code: config.testEventCode } : {}),
   };
   const res = await fetchImpl(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      Authorization: `Bearer ${config.accessToken}`,
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(8000),
   });

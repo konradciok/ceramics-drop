@@ -52,8 +52,10 @@ describe('sendMetaPurchase', () => {
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toContain('https://graph.facebook.com/');
     expect(url).toContain('/PIX/events');
-    expect(url).toContain('access_token=TOK');
+    expect(url).not.toContain('access_token'); // F-21: token no longer in URL
     expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer TOK'); // token in header, not URL or body
+    expect(JSON.parse(init.body)).not.toHaveProperty('access_token');
     expect(JSON.parse(init.body)).not.toHaveProperty('test_event_code');
   });
 

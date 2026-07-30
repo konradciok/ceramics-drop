@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.12.0](https://github.com/konradciok/ceramics-drop/compare/v0.11.0...v0.12.0) (2026-07-29)
+
+
+### Features
+
+* **analytics:** native GTM tags replace the Custom-HTML bridges (F-03/F-04) ([#215](https://github.com/konradciok/ceramics-drop/issues/215)) ([caf7bc0](https://github.com/konradciok/ceramics-drop/commit/caf7bc0426662bdf7acd625bb323eefd6f6ffcf7))
+
+
+### Bug Fixes
+
+* **analytics:** event-correctness plan — item_variant symmetry, begin_checkout dedup, currency labels (Plan 3) ([#212](https://github.com/konradciok/ceramics-drop/issues/212)) ([c4b7757](https://github.com/konradciok/ceramics-drop/commit/c4b7757d6d53d8f239f65dd8d1086fa53e5daaa1))
+* **analytics:** fine-art prints analytics parity — feeds + full funnel (N-2) ([#211](https://github.com/konradciok/ceramics-drop/issues/211)) ([3602884](https://github.com/konradciok/ceramics-drop/commit/3602884c6126e0beb749fd2c93887ceb3ad4b131))
+* **analytics:** GA4 measurement hygiene — EM ownership, CAPI token header, doc conventions (Plan 4) ([#213](https://github.com/konradciok/ceramics-drop/issues/213)) ([93eb4b6](https://github.com/konradciok/ceramics-drop/commit/93eb4b6d992b83a61b52338b035fd8685ec69040))
+* **analytics:** identity, CI guards, Sentry/CSP hardening, webhook ledger (Plan 5) ([#214](https://github.com/konradciok/ceramics-drop/issues/214)) ([ac2e510](https://github.com/konradciok/ceramics-drop/commit/ac2e51087ca82e0cf251f43bd1280668ece9c684))
+* **analytics:** stop capability tokens leaking to GA4 via page_location (N-1) ([#208](https://github.com/konradciok/ceramics-drop/issues/208)) ([64a636c](https://github.com/konradciok/ceramics-drop/commit/64a636c5a02303bee49a18a01308e8103fcc450a))
+
 ## [0.11.0](https://github.com/konradciok/ceramics-drop/compare/v0.10.0...v0.11.0) (2026-07-28)
 
 

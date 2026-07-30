@@ -26,3 +26,18 @@ export function parseGaSessionId(gaSessionCookie: string | null): string | null 
   const parts = gaSessionCookie.split('.');
   return parts.length >= 3 ? parts[2] : null;
 }
+
+/**
+ * The GA4 client_id to persist for a checkout. Prefer the visitor's real `_ga`
+ * client_id (already parsed from the cookie by the caller); when it is absent —
+ * Safari ITP cleared `_ga`, or storage was denied — mint a per-order fallback so
+ * the server-side GA4 MP purchase (the revenue safety net) still records instead
+ * of skipping (see sendGa4Purchase in ga4-mp.ts / audit N-6). Caveat: a minted id
+ * is unique to this order, so GA4 cannot stitch it to the visitor's other
+ * sessions or devices.
+ * ponytail: per-order fallback; upgrade to a first-party `acc_ga_cid` cookie only
+ * if within-browser session stitching for cleared-cookie visitors ever matters.
+ */
+export function resolveGaClientId(fromCookie: string | null): string {
+  return fromCookie ?? crypto.randomUUID();
+}
