@@ -14,17 +14,14 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import sharp from 'sharp';
 import type { PrepareConfig } from '../src/lib/print-assets-prepare';
-import { IMG_WIDTHS } from '../src/lib/images';
 import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, ROOT } from './lib/print-assets-cli';
 import { resolveGallerySource } from './lib/print-assets-gallery';
 import { galleryR2Key, resolveLatestReadyAsset } from './lib/print-assets-resolve';
+import { generateWebpSet } from './lib/print-assets-storefront';
 import { printAssetsBucket, r2PutMutable } from './lib/r2';
 
-const CANONICAL_MAX_WIDTH = 1600;
 const UPLOADS_DIR = path.join(ROOT, 'public', 'uploads');
-const WEBP_QUALITY = 80;
 
 function loadConfig(productId: string): PrepareConfig {
   const configPath = path.join(ROOT, 'config', 'print-assets', `${productId}.json`);
@@ -36,51 +33,6 @@ function loadConfig(productId: string): PrepareConfig {
     throw new Error(`Config declares product "${parsed.product}", expected "${productId}"`);
   }
   return parsed;
-}
-
-interface WebpOutput {
-  filename: string;
-  localPath: string;
-  r2Key: string;
-  publicPath: string;
-}
-
-async function generateWebpSet(
-  sourcePath: string,
-  stem: string,
-  scratchDir: string,
-): Promise<WebpOutput[]> {
-  const outputs: WebpOutput[] = [];
-
-  const canonicalName = `${stem}.webp`;
-  const canonicalPath = path.join(scratchDir, canonicalName);
-  await sharp(sourcePath)
-    .resize({ width: CANONICAL_MAX_WIDTH, withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
-    .toFile(canonicalPath);
-  outputs.push({
-    filename: canonicalName,
-    localPath: canonicalPath,
-    r2Key: '',
-    publicPath: `/uploads/${canonicalName}`,
-  });
-
-  for (const w of IMG_WIDTHS) {
-    const variantName = `${stem}-${w}w.webp`;
-    const variantPath = path.join(scratchDir, variantName);
-    await sharp(sourcePath)
-      .resize({ width: w, withoutEnlargement: true })
-      .webp({ quality: WEBP_QUALITY })
-      .toFile(variantPath);
-    outputs.push({
-      filename: variantName,
-      localPath: variantPath,
-      r2Key: '',
-      publicPath: `/uploads/${variantName}`,
-    });
-  }
-
-  return outputs;
 }
 
 async function main(): Promise<void> {

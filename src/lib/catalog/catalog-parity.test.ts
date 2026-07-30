@@ -23,7 +23,17 @@ describe('catalog seed ↔ registry parity', () => {
 
   it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {
     const rebuilt = mapPrintDesigns(seed.products, seed.variants, seed.media);
-    expect(rebuilt).toEqual(PRINT_DESIGNS);
+    // `mockups` is code-bundle truth, never DB truth: the WebPs ship in the
+    // bundle, the mapper doesn't carry the flag, and PrintProductScreen
+    // re-merges it from the code registry (guarded on image parity). The DB
+    // round-trip is therefore exact modulo that one flag.
+    expect(rebuilt).toEqual(
+      PRINT_DESIGNS.map((d) => {
+        const design = { ...d };
+        delete design.mockups;
+        return design;
+      }),
+    );
   });
 
   it('registry print designs do not use unavailable/prices until mapper support (Stage 5)', () => {

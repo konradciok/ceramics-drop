@@ -13,6 +13,9 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    // Live-mockup hero: fap-01-mock-*.webp composed from the published
+    // 2026-07-12-r1 derivatives (print-assets:mockups) — ships with the flag.
+    mockups: true,
   },
   {
     id: 'fap02',

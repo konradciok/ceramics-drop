@@ -20,10 +20,11 @@ import { registryPrintById } from '../src/lib/prints';
 import { designMockupStates, type MockupState } from '../src/lib/print-mockups';
 import { composeMockup, type MockupWindow } from '../src/lib/print-mockups-compose';
 import type { PrintFrameColour } from '../src/lib/types';
-import { getArg, hasFlag, ROOT } from './lib/print-assets-cli';
+import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, ROOT } from './lib/print-assets-cli';
+import { resolveGallerySource } from './lib/print-assets-gallery';
 import { galleryR2Key, resolveLatestReadyAsset } from './lib/print-assets-resolve';
-import { generateWebpSet, resolveSourcePath } from './lib/print-assets-storefront';
-import { printAssetsBucket, r2Put } from './lib/r2';
+import { generateWebpSet } from './lib/print-assets-storefront';
+import { printAssetsBucket, r2PutMutable } from './lib/r2';
 
 /** Canonical 7:10 sources (spec decision 2): FAP sheet / CFPM aperture. */
 const SOURCE_PROFILE = { framed: '8400x12000', mount: '7200x10800' } as const;
@@ -61,10 +62,11 @@ function frameLayer(config: FramesConfig, state: Exclude<MockupState, 'plain'>):
 }
 
 async function main(): Promise<void> {
-  const productId = getArg('product');
-  const revisionArg = getArg('revision');
-  const stateFilter = getArg('state');
-  const dryRun = hasFlag('dry-run');
+  const args = parseScriptArgs(PRINT_ASSET_ARG_SPECS.mockups);
+  const productId = args.product;
+  const revisionArg = args.revision;
+  const stateFilter = args.state;
+  const dryRun = args['dry-run'] === true;
 
   if (!productId) throw new Error('Missing --product (e.g. --product fap01)');
   const design = registryPrintById(productId);
@@ -93,7 +95,7 @@ async function main(): Promise<void> {
       console.log(
         `source[${kind}]: profile=${asset.profile_key} revision=${asset.revision} ${asset.r2_key}`,
       );
-      const { path: sourcePath } = await resolveSourcePath(productId, asset, scratchDir, bucket);
+      const sourcePath = await resolveGallerySource(productId, asset, scratchDir, bucket);
       sheets.set(kind, fs.readFileSync(sourcePath));
     }
 
@@ -115,7 +117,7 @@ async function main(): Promise<void> {
           console.log(`  would write R2 ${file.r2Key} (${sizeKb} KB) + mirror ${file.publicPath}`);
           continue;
         }
-        const put = r2Put(bucket, file.r2Key, file.localPath, 'image/webp');
+        const put = r2PutMutable(bucket, file.r2Key, file.localPath, 'image/webp');
         if (!put.ok) throw new Error(`R2 upload failed for ${file.r2Key}: ${put.error}`);
         fs.copyFileSync(file.localPath, path.join(ROOT, 'public', file.publicPath));
         console.log(`  ${file.filename} → R2 + ${file.publicPath} (${sizeKb} KB)`);

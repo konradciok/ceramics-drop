@@ -106,7 +106,7 @@ New client wrapper (e.g. `PrintPdpPurchase`) rendered by `PrintProductScreen`
 in place of the current two siblings. It owns `sel` (the `useState` moves up
 from `PrintConfigurator`) and renders:
 
-- `PrintConfigurator` — becomes **controlled**: receives `sel` + `onChange`.
+- `PrintConfigurator` — becomes **controlled**: receives `sel` + `onSelChange`.
   Everything else (pricing, `printVariantButtonState`, mixed-cart rule,
   analytics add-to-cart event) is unchanged.
 - `ProductPageGallery` — stays dumb. The wrapper computes

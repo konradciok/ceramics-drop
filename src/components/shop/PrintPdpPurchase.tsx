@@ -13,6 +13,7 @@ import { useLocale } from 'next-intl';
 import { ProductPageGallery } from './ProductPageGallery';
 import { PrintConfigurator } from './PrintConfigurator';
 import { designMockupStates, mockupHeroSrc, mockupSrc } from '@/lib/print-mockups';
+import { srcSet } from '@/lib/images';
 import { variantLabel } from '@/lib/print-cart';
 import type { PrintDesign, PrintVariantSelection } from '@/lib/types';
 
@@ -43,11 +44,18 @@ export function PrintPdpPurchase({
   const heroImages = [heroSrc, ...images.slice(1)];
 
   // Warm the (≤6) mockup variants once so swaps render without flicker.
+  // srcset/sizes mirror ProductPageGallery's hero <img> so the browser warms
+  // the SAME responsive candidate it will render, not the full-size WebP.
   useEffect(() => {
     if (!design.mockups) return;
     for (const state of designMockupStates(design)) {
       const src = mockupSrc(design, state);
-      if (src) new Image().src = src;
+      if (src) {
+        const image = new Image();
+        image.srcset = srcSet(src);
+        image.sizes = '(min-width:861px) min(55vw, 720px), 100vw';
+        image.src = src;
+      }
     }
   }, [design]);
 

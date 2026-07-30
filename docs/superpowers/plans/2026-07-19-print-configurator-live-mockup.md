@@ -14,8 +14,8 @@
 - Product imagery uses native `<img>` + `srcSet()` from `src/lib/images.ts` — never `next/image`.
 - Server components by default; `'use client'` only where state/hooks exist.
 - No new npm dependencies.
-- Presentation-only: cart tokens, pricing, checkout validation, `PRODIGI_SKU_MAP`, fulfilment paths are untouched.
-- No new i18n strings (`variantLabel` from `src/lib/print-cart.ts` is reused for alt text); if copy is ever added it must land in all of `messages/{pl,en,es,de}.json`.
+- Pricing, cart-token format, checkout validation, and fulfilment paths are mechanically untouched. The frame-colour contract IS in scope: Task 0 remaps the `PRODIGI_SKU_MAP` keys (white → brown) and swaps the required `print.colour_*` labels (drop `colour_white`, add `colour_brown`) in all of `messages/{pl,en,es,de}.json`.
+- No i18n strings beyond that label swap (`variantLabel` from `src/lib/print-cart.ts` is reused for alt text); if copy is ever added it must land in all of `messages/{pl,en,es,de}.json`.
 - Designs without `mockups: true` must render byte-identical to today (feature is purely additive).
 - Canonical mockup ratio is 7:10 (`width/height = 0.7`); framed states composite the `8400x12000` FAP profile, mount states the `7200x10800` CFPM profile.
 - Frame colour axis after Task 0 is `black | natural | brown` (labels: czarny / jasny brąz / ciemny brąz; `white` dropped; fap02 = black + natural). Internal keys ARE Prodigi `attributes.color` values — verified against the live enum (`black`, `brown`, `natural` all valid).
@@ -834,6 +834,16 @@ export async function composeMockup(opts: {
   const outWidth = opts.outWidth ?? 2000;
   const background = opts.background ?? MOCKUP_DEFAULT_BACKGROUND;
   const win = opts.window;
+  if (
+    !Number.isFinite(win.left) ||
+    !Number.isFinite(win.top) ||
+    !Number.isFinite(win.width) ||
+    !Number.isFinite(win.height) ||
+    win.width <= 0 ||
+    win.height <= 0
+  ) {
+    throw new Error(`window has non-finite or non-positive dimensions: ${JSON.stringify(win)}`);
+  }
   if (win.left < 0 || win.top < 0 || win.left + win.width > 1 || win.top + win.height > 1) {
     throw new Error(`window exceeds the master canvas: ${JSON.stringify(win)}`);
   }
