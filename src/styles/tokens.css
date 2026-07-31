@@ -7,7 +7,7 @@
 :root {
   --c-periwinkle:#8AA4D6;
   --c-terracotta:#9C5A2C; --c-terracotta-deep:#7D4520;
-  --c-sand:#D9C89E; --c-butter:#E6DD8A; --c-espresso:#3A2818;
+  --c-sand:#D9C89E; --c-butter:#E6DD8A; --c-espresso:#3A2818; --c-frame-black:#141414;
   --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2;
   --c-espresso-muted:rgba(58,40,24,.74);
   --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);

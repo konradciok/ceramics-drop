@@ -403,8 +403,10 @@ the window (ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge +
 subtle inner shadow. The `window` values in frames.json are fractions of
 each master's own canvas; the sheet is composited over that rect.
 
-    npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
-    npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
+```bash
+npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
+npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
+```
 
 The step composes the `8400x12000` FAP derivative (framed states) and the
 `7200x10800` CFPM derivative (mount states) into the colour's frame master,

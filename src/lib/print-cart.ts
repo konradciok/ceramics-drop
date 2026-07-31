@@ -125,7 +125,7 @@ const UNFRAMED_LABEL: Record<string, string> = {
 };
 
 const COLOUR_LABEL: Record<string, Record<PrintFrameColour, string>> = {
-  pl: { black: 'czarna', natural: 'jasny brąz', brown: 'ciemny brąz' },
+  pl: { black: 'czarna', natural: 'jasnobrązowa', brown: 'ciemnobrązowa' },
   en: { black: 'black', natural: 'light brown', brown: 'dark brown' },
   es: { black: 'negro', natural: 'marrón claro', brown: 'marrón oscuro' },
   de: { black: 'schwarz', natural: 'hellbraun', brown: 'dunkelbraun' },

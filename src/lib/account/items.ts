@@ -5,7 +5,7 @@
    ============================================================ */
 import { CATEGORIES, registryProductById } from '@/lib/products';
 import { registryPrintById } from '@/lib/prints';
-import { variantLabel } from '@/lib/print-cart';
+import { PRINT_FRAME_COLOURS, PRINT_SIZES as CANONICAL_PRINT_SIZES, variantLabel } from '@/lib/print-cart';
 import type { PrintVariantSelection } from '@/lib/types';
 import type { AccountOrderItem } from './orders';
 
@@ -18,8 +18,10 @@ export type AccountItemLabel = {
 
 type Translate = (key: string) => string;
 
-const PRINT_SIZES = new Set(['30x40', '50x70', '70x100']);
-const FRAME_COLOURS = new Set(['black', 'natural', 'brown']);
+// Sets built from the canonical axis constants so a future size/colour change
+// can't silently strand this validation (the white→brown swap nearly did).
+const PRINT_SIZES = new Set<string>(CANONICAL_PRINT_SIZES);
+const FRAME_COLOURS = new Set<string>(PRINT_FRAME_COLOURS);
 
 function printDetail(variant: unknown, locale: string): string | null {
   if (typeof variant !== 'object' || variant === null) return null;

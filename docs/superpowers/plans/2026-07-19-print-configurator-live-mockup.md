@@ -18,7 +18,7 @@
 - No i18n strings beyond that label swap (`variantLabel` from `src/lib/print-cart.ts` is reused for alt text); if copy is ever added it must land in all of `messages/{pl,en,es,de}.json`.
 - Designs without `mockups: true` must render byte-identical to today (feature is purely additive).
 - Canonical mockup ratio is 7:10 (`width/height = 0.7`); framed states composite the `8400x12000` FAP profile, mount states the `7200x10800` CFPM profile.
-- Frame colour axis after Task 0 is `black | natural | brown` (labels: czarny / jasny brąz / ciemny brąz; `white` dropped; fap02 = black + natural). Internal keys ARE Prodigi `attributes.color` values — verified against the live enum (`black`, `brown`, `natural` all valid).
+- Frame colour axis after Task 0 is `black | natural | brown` (variantLabel pl: czarna / jasnobrązowa / ciemnobrązowa; `white` dropped; fap02 = black + natural). Internal keys ARE Prodigi `attributes.color` values — verified against the live enum (`black`, `brown`, `natural` all valid).
 - Per-colour print-area exception (prodigi/sku-catalog.md:84): at 30×40 the CFP print area is 3614×4795 **only for black** after the swap; brown and natural are 3600×4800. All other sizes and all CFPM entries are colour-uniform.
 - Frame masters are opaque blanks in gitignored `design/print-assets/frames_blanks/`; the sheet is composited OVER the window rect, then centre-cropped to 7:10. No alpha channel required; JPG tolerated, PNG preferred.
 - Monetary rules, analytics event contract, and locale routing are out of scope and must not change.
@@ -121,7 +121,7 @@ export const PRINT_FRAME_COLOURS: readonly PrintFrameColour[] = ['black', 'natur
 
 ```ts
 const COLOUR_LABEL: Record<string, Record<PrintFrameColour, string>> = {
-  pl: { black: 'czarna', natural: 'jasny brąz', brown: 'ciemny brąz' },
+  pl: { black: 'czarna', natural: 'jasnobrązowa', brown: 'ciemnobrązowa' },
   en: { black: 'black', natural: 'light brown', brown: 'dark brown' },
   es: { black: 'negro', natural: 'marrón claro', brown: 'marrón oscuro' },
   de: { black: 'schwarz', natural: 'hellbraun', brown: 'dunkelbraun' },
