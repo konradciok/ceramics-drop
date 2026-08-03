@@ -11,7 +11,10 @@
 
 **There is a narrow, real case for PostHog as a feature-flag + survey layer**, which this project has *zero* coverage of today. That case is genuine but small, and it is gated behind non-trivial compliance and CSP work. See [Recommendation](#recommendation) for the staged call.
 
-**On the reporting gaps (§3): PostHog is not the fix — linking the GA4 BigQuery export is.** The burned `order_total` custom dimension and the missing order↔behaviour join both resolve through the BigQuery export that `docs/analytics-stack.md:105` already flags as outstanding, which is free and already scripted (`npm run bq:query`). PostHog's warehouse can sit *downstream* of that export as a convenience layer, but it does not remove the dependency on it. Treat §3 as an argument for finishing the BigQuery link, not for adopting a vendor.
+**On the reporting gaps (§3), the two gaps resolve differently:**
+
+- The burned `order_total` custom dimension is fixed by **linking the GA4 BigQuery export alone** — free, already scripted (`npm run bq:query`), flagged as outstanding at `docs/analytics-stack.md:105`. PostHog adds nothing here.
+- The order↔behaviour join needs **both** sides in one place, and the BigQuery link only delivers the behaviour side. `scripts/bq-query.mjs` queries GA4 event tables only; **no Supabase→BigQuery path exists in this repo**, so completing the join means either building that pipeline or using PostHog's managed Supabase connector as the second source. That connector — sparing you an ETL you'd otherwise write and operate — is the one narrow, concrete thing PostHog contributes to §3.
 
 ---
 
@@ -55,7 +58,7 @@ Established by reading the code, not the docs.
 | **Feature flags** | **nothing** | ✅ **Genuine gap.** |
 | **Experiments** | **nothing** | ⚠️ Genuine gap, but see the traffic caveat in §4. |
 | **Surveys** | **nothing** | ✅ **Genuine gap**, cheapest possible win. |
-| **Data warehouse / HogQL** | GA4 BigQuery export — *which was never linked* | ✅ **Genuine gap, and it unblocks known-stuck work.** |
+| **Data warehouse / HogQL** | GA4 BigQuery export — *which was never linked* | ⚠️ **Partial.** The export alone fixes `order_total` (§3.1). For the order↔behaviour join (§3.2) PostHog's managed Supabase connector is a real contribution — no Supabase→BigQuery path exists here — but it is only useful *alongside* the export, never instead of it. |
 | CDP / data pipelines | Resend, Meta CAPI, GA4 MP — all hand-rolled and working | ➖ Neutral. Would be a rewrite of working code. |
 | LLM observability | n/a | ➖ Not applicable. |
 
@@ -63,7 +66,7 @@ Established by reading the code, not the docs.
 
 ## 3. Two real reporting gaps — and why BigQuery, not PostHog, is the fix
 
-Both gaps below are genuine. Neither is a good reason to adopt PostHog, because PostHog's warehouse can only reach this data *through* the same BigQuery export that already fixes it. Documented here so the reasoning is on record rather than re-litigated later.
+Both gaps below are genuine, and they resolve differently. **§3.1 (`order_total`) is fixed by the BigQuery export alone — PostHog adds nothing.** **§3.2 (the order↔behaviour join) needs the export *and* a Supabase-side connector**, and PostHog supplies that connector as a managed service where this repo has no Supabase→BigQuery path at all. Documented in full so the reasoning is on record rather than re-litigated later.
 
 ### 3.1 GA4's custom-dimension registry is a finite, burnable resource
 
@@ -79,13 +82,21 @@ PostHog would also store every property as queryable data with no registration, 
 
 ### 3.2 The order/behaviour join is currently impossible
 
-`orders`, `order_items`, and `piece_state` live in Supabase. Behavioural events live in GA4. There is no join. The intended bridge — GA4's BigQuery export — is documented as an outstanding prerequisite (`docs/analytics-stack.md:105`) and `npm run bq:query` fails until it is done.
+`orders`, `order_items`, and `piece_state` live in Supabase. Behavioural events live in GA4. There is no join. The GA4 BigQuery export — documented as an outstanding prerequisite (`docs/analytics-stack.md:105`), with `npm run bq:query` failing until it is done — is **half** the bridge, not the whole one.
 
 The questions worth asking are inherently joins — *"which collection pages did buyers of `duze-michy` view first?"*, *"what's the view→sale lag for a piece by category?"*, *"do private-sale link recipients convert differently?"*
 
 **PostHog only closes half of this join.** Its managed warehouse syncs Supabase Postgres directly, so `orders` / `order_items` / `piece_state` land cleanly — but that sync moves *orders, not behavioural events*. The other half of every question above is behavioural, and it only reaches PostHog if you either (a) adopt PostHog product analytics and send events there — which §2 recommends against — or (b) connect the GA4 BigQuery export as a source, which requires linking the export first.
 
-**So the actual unblock is the BigQuery link**, not a new vendor: it is free, already scripted, and puts GA4 events and `order_total` in a warehouse that can also read Supabase. PostHog on top buys a nicer query surface and a managed Supabase sync — real convenience, not a new capability.
+**And the BigQuery link alone does not close it either.** `scripts/bq-query.mjs` queries GA4 event tables only, and nothing in this repo syncs Supabase into BigQuery — so the export delivers the behaviour side and leaves the order side stranded. Completing the join needs one of:
+
+| Route | Behaviour side | Order side | Cost |
+| --- | --- | --- | --- |
+| **BigQuery only** | GA4 export ✅ | Build + operate a Supabase→BQ pipeline ❌ (does not exist) | Engineering time, ongoing |
+| **BigQuery + PostHog** | GA4 export, connected to PostHog as a BigQuery source | PostHog's managed Supabase connector ✅ | $0 on the free tier |
+| **PostHog only** | Requires adopting PostHog analytics — §2 recommends against | Managed Supabase connector ✅ | Duplicated event contract |
+
+**This is the one place PostHog earns its keep in §3:** it supplies the Supabase-side connector as a managed service, so you get the join without writing and maintaining an ETL. That is a genuine saving — narrower than "PostHog unifies your data," but real.
 
 **Second caveat:** either way this is *analyst* value, not *engineering* value. It pays off only if someone actually writes the queries. If nobody will, neither option is worth doing.
 
@@ -111,7 +122,11 @@ These are the things that would make a PostHog adoption more expensive here than
 
 `src/components/consent/consent-mode.ts` sets one cookie, `ciok_consent`, with one value (`granted`/`denied`), which drives all four Google Consent Mode v2 signals at once. Every tag today is gated by **GTM**, not by app code.
 
-PostHog is not in GTM's consent framework. Loading `posthog-js` in `instrumentation-client.ts` bypasses the entire consent architecture. Doing it correctly means initialising with **`opt_out_capturing_by_default: true`** and calling `posthog.opt_in_capturing()` / `posthog.opt_out_capturing()` from `setConsent()` — or adopting PostHog's documented `cookieless_mode: 'on_reject'` flow, which needs the matching project-level setting enabled or events are discarded server-side.
+PostHog is not in GTM's consent framework. Loading `posthog-js` in `instrumentation-client.ts` bypasses the entire consent architecture.
+
+**The recommended path is explicit opt-in, and only that:** initialise with **`opt_out_capturing_by_default: true`**, then map `setConsent()` one-to-one — `granted` → `posthog.opt_in_capturing()`, `denied` → `posthog.opt_out_capturing()`. This matches the app's existing binary model and the "denied means nothing is sent" behaviour GTM already enforces.
+
+**`cookieless_mode: 'on_reject'` is *not* an equivalent alternative** and should not be treated as one. It keeps capturing anonymous, server-hashed events *after* a visitor has rejected — a different tracking policy, not a different implementation of the same one. It also requires the Cookieless server hash mode setting enabled project-side or events are silently discarded on ingestion, and it forbids `identify()`. If it is ever considered, it needs an explicit legal/product decision about the lawful basis for capturing post-rejection in PL/EU, not a config-level judgement call.
 
 **`persistence: 'memory'` is not a consent mechanism** and must not be used as one: it only changes *where* the SDK stores identity, not *whether* it captures, so events would still be sent before the visitor has accepted. Either way this is a new, hand-maintained consent path parallel to the GTM one, for a PL/EU store where this is a live GDPR obligation, not a nicety.
 
@@ -160,12 +175,12 @@ If nothing below is compelling enough to schedule properly, **the correct action
 
 ### Stage 1 — the cheap, non-duplicative wins (recommended)
 
-**Link the GA4 BigQuery export first** — it is the actual fix for §3, it is free, and it is already scripted. Do this whether or not PostHog is ever adopted.
+**Link the GA4 BigQuery export first** — it fixes `order_total` outright, it is free, it is already scripted, and it is the behaviour half of the join. Do this whether or not PostHog is ever adopted.
 
-Then, if wanted: open a **PostHog Cloud EU** account, free tier, for **surveys**.
+Then, if wanted: open a **PostHog Cloud EU** account, free tier, for **surveys** and — if the order↔behaviour join is actually wanted — the **warehouse connectors**.
 
 - Surveys need the client SDK, so they carry the consent + CSP work in §5.1/§5.2. Do them **after** the CSP enforce cutover, not before.
-- The **Supabase warehouse sync** is optional and only worth it once the BigQuery link exists — on its own it gives PostHog orders with no behavioural events to join them to (§3.2). No `posthog-js` needed for that half; it is a server-side data connection.
+- The **warehouse half needs both connectors** to be useful: PostHog's managed Supabase source (orders) *and* its BigQuery source pointed at the GA4 export (behaviour). Either alone is a dead end (§3.2). No `posthog-js` involved — both are server-side data connections, so this half carries none of the consent/CSP/bundle cost.
 - Cost: **$0** (1,500 survey responses + 1M warehouse rows/month free).
 - Reversible: deleting the project removes the data; no code path depends on it.
 
