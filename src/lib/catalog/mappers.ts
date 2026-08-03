@@ -7,6 +7,7 @@
    eventual storefront flip (Stage 3) reuses the exact same reconstruction.
    ============================================================ */
 import { CATEGORY_ORDER } from '../products';
+import { PRINT_FRAME_COLOURS } from '../print-cart';
 import type { CategorySlug, PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
 import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
 
@@ -130,9 +131,15 @@ export function mapPrintDesigns(
     const gallery = imgs.filter((m) => !m.is_primary).map((m) => m.url);
 
     const sizes = distinctInOrder(axes.map((a) => a.size)) as PrintSize[];
+    // Axes are runtime DB data: clamp recovered colours to the canonical axis so
+    // a retired colour still present in stale variant rows (e.g. legacy 'white'
+    // before the post-swap backfill) can never surface a dead option — missing
+    // i18n label, unsellable token, 404 mockup hero.
     const frameColours = distinctInOrder(
       axes.filter((a) => a.framed && a.frameColour !== 'none').map((a) => a.frameColour),
-    ) as PrintFrameColour[];
+    ).filter((c): c is PrintFrameColour =>
+      (PRINT_FRAME_COLOURS as readonly string[]).includes(c),
+    );
     const mountAvailable = axes.some((a) => a.mount);
 
     out.push({

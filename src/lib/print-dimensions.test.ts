@@ -35,11 +35,11 @@ describe('validateProdigiDimensions', () => {
   });
 
   it('flags intra-SKU disagreement (the CFP-12X16 black/natural shape)', () => {
-    // Contract: black/white → 3614×4795, natural → 3600×4800.
+    // Contract: black is the exception at 3614×4795; natural and brown share 3600×4800.
     const report = validateProdigiDimensions(
       product(CFP_12X16, [
-        { w: 3614, h: 4795 }, // black/white
-        { w: 3614, h: 4795 }, // black/white
+        { w: 3614, h: 4795 }, // black
+        { w: 3614, h: 4795 }, // black
         { w: 3600, h: 4800 }, // natural — differs
       ]),
     );

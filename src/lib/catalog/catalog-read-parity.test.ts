@@ -123,8 +123,16 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     process.env.CATALOG_SOURCE = 'db';
     vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(dbPrints);
 
-    // getPrintDesigns filters to published, in num order — must equal the registry helper.
-    expect(await getPrintDesigns()).toEqual(registryPrintDesigns());
+    // getPrintDesigns filters to published, in num order — must equal the registry
+    // helper modulo `mockups`, which is code-bundle truth the DB path never carries
+    // (PrintProductScreen re-merges it from the code registry).
+    expect(await getPrintDesigns()).toEqual(
+      registryPrintDesigns().map((d) => {
+        const design = { ...d };
+        delete design.mockups;
+        return design;
+      }),
+    );
     // getPrintById resolves drafts too (checkout needs to reject hidden vs unknown).
     expect((await getPrintById('fap04'))?.published).toBe(false);
     expect(await getPrintById('unknown')).toBeUndefined();

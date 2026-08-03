@@ -45,6 +45,18 @@ describe('decodePrintToken validation', () => {
   });
 });
 
+describe('decodePrintToken — legacy white colour migration (2026-07-19 colour swap)', () => {
+  it('decodes a pre-migration :white token as brown instead of dropping it', () => {
+    const sel = { size: '50x70' as const, framed: true, mount: false, frameColour: 'brown' as const };
+    expect(decodePrintToken('print:fap01:50x70:true:false:white')).toEqual({ designId: 'fap01', sel });
+  });
+
+  it('decodes a pre-migration :white token with a mount as brown', () => {
+    const sel = { size: '30x40' as const, framed: true, mount: true, frameColour: 'brown' as const };
+    expect(decodePrintToken('print:fap01:30x40:true:true:white')).toEqual({ designId: 'fap01', sel });
+  });
+});
+
 describe('variantLabel', () => {
   it('labels an unframed print in Polish', () => {
     const sel = { size: '30x40' as const, framed: false, mount: false, frameColour: 'none' as const };
@@ -52,7 +64,7 @@ describe('variantLabel', () => {
   });
   it('labels a framed+mount print in English', () => {
     const sel = { size: '50x70' as const, framed: true, mount: true, frameColour: 'natural' as const };
-    expect(variantLabel(sel, 'en')).toBe('50×70 cm · frame natural · + mount');
+    expect(variantLabel(sel, 'en')).toBe('50×70 cm · frame light brown · + mount');
   });
   it('labels a framed print in Polish', () => {
     const sel = { size: '50x70' as const, framed: true, mount: false, frameColour: 'black' as const };
@@ -114,5 +126,31 @@ describe('PRODIGI_SKU_MAP', () => {
     const entry = PRODIGI_SKU_MAP[variantKey({ size: '50x70', framed: true, mount: true, frameColour: 'black' })];
     expect(entry.sku).toBe('GLOBAL-CFPM-20X28');
     expect(entry.printAreaPx).toEqual({ w: 4800, h: 7200 });
+  });
+});
+
+describe('PRODIGI_SKU_MAP — brown replaces white (2026-07-19 colour swap)', () => {
+  it('maps brown with per-colour print areas (30x40 CFP exception is black-only)', () => {
+    expect(PRODIGI_SKU_MAP['30x40:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-12X16',
+      printAreaPx: { w: 3600, h: 4800 },
+    });
+    expect(PRODIGI_SKU_MAP['30x40:true:true:brown']).toEqual({
+      sku: 'GLOBAL-CFPM-12X16',
+      printAreaPx: { w: 2400, h: 3600 },
+    });
+    expect(PRODIGI_SKU_MAP['50x70:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-20X28',
+      printAreaPx: { w: 6000, h: 8400 },
+    });
+    expect(PRODIGI_SKU_MAP['70x100:true:false:brown']).toEqual({
+      sku: 'GLOBAL-CFP-28X40',
+      printAreaPx: { w: 8400, h: 12000 },
+    });
+  });
+
+  it('has no white keys and still exactly 21 entries', () => {
+    expect(Object.keys(PRODIGI_SKU_MAP).some((k) => k.endsWith(':white'))).toBe(false);
+    expect(Object.keys(PRODIGI_SKU_MAP)).toHaveLength(21);
   });
 });

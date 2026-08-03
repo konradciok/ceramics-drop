@@ -262,7 +262,7 @@ function isPrintOnlyOrder(items) {
 // structure: GLOBAL-{FAP|CFP|CFPM}-{size-in-inches}. Keep in sync if the map changes.
 const PRINT_SIZE_LABEL = { '30x40': '30×40 cm', '50x70': '50×70 cm', '70x100': '70×100 cm' };
 const PRINT_SIZE_INCH = { '30x40': '12X16', '50x70': '20X28', '70x100': '28X40' };
-const PRINT_COLOUR_PL = { black: 'czarna', white: 'biała', natural: 'naturalna' };
+const PRINT_COLOUR_PL = { black: 'czarna', natural: 'jasnobrązowa', brown: 'ciemnobrązowa' };
 
 function printVariantLine(variant) {
   const parts = [PRINT_SIZE_LABEL[variant.size] ?? variant.size];

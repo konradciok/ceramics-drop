@@ -5,7 +5,6 @@
    Client island: picks a variant, shows the LIVE price, and adds the
    composite cart token (print:<id>:<size>:<framed>:<mount>:<colour>).
    ============================================================ */
-import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { Icon } from '@/components/ui/Icon';
@@ -21,9 +20,13 @@ import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib
 export function PrintConfigurator({
   design,
   usableVariantKeys,
+  sel,
+  onSelChange,
 }: {
   design: PrintDesign;
   usableVariantKeys?: string[];
+  sel: PrintVariantSelection;
+  onSelChange: (sel: PrintVariantSelection) => void;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -32,13 +35,6 @@ export function PrintConfigurator({
   // currency to EUR.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
-
-  const [sel, setSel] = useState<PrintVariantSelection>({
-    size: design.sizes[0],
-    framed: false,
-    mount: false,
-    frameColour: 'none',
-  });
 
   const structurallyAvailable = isVariantAvailable(design, sel);
   const price = priceOfVariant(design, sel, printCurrency);
@@ -59,12 +55,12 @@ export function PrintConfigurator({
   const canFrame = design.frameColours.length > 0;
 
   function setFramed(framed: boolean) {
-    setSel((s) => ({
-      ...s,
+    onSelChange({
+      ...sel,
       framed,
       mount: false,
       frameColour: framed ? (design.frameColours[0] ?? 'black') : 'none',
-    }));
+    });
   }
 
   return (
@@ -81,7 +77,7 @@ export function PrintConfigurator({
               aria-checked={sel.size === size}
               className={`print-opt${sel.size === size ? ' active' : ''}`}
               data-testid={`opt-size-${size}`}
-              onClick={() => setSel((s) => ({ ...s, size }))}
+              onClick={() => onSelChange({ ...sel, size })}
             >
               {t(`print.size.${size}`)}
             </button>
@@ -132,7 +128,7 @@ export function PrintConfigurator({
                 className={`print-opt print-opt-colour${sel.frameColour === colour ? ' active' : ''}`}
                 data-testid={`opt-colour-${colour}`}
                 data-colour={colour}
-                onClick={() => setSel((s) => ({ ...s, frameColour: colour as PrintFrameColour }))}
+                onClick={() => onSelChange({ ...sel, frameColour: colour as PrintFrameColour })}
               >
                 {t(`print.colour_${colour}`)}
               </button>
@@ -152,7 +148,7 @@ export function PrintConfigurator({
               aria-checked={!sel.mount}
               className={`print-opt${!sel.mount ? ' active' : ''}`}
               data-testid="opt-mount-false"
-              onClick={() => setSel((s) => ({ ...s, mount: false }))}
+              onClick={() => onSelChange({ ...sel, mount: false })}
             >
               {t('print.mount_none')}
             </button>
@@ -162,7 +158,7 @@ export function PrintConfigurator({
               aria-checked={sel.mount}
               className={`print-opt${sel.mount ? ' active' : ''}`}
               data-testid="opt-mount-true"
-              onClick={() => setSel((s) => ({ ...s, mount: true }))}
+              onClick={() => onSelChange({ ...sel, mount: true })}
             >
               {t('print.mount_yes')}
             </button>

@@ -85,7 +85,7 @@ export interface Category {
 export type PrintSize = '30x40' | '50x70' | '70x100';
 
 /** Frame colour offered in the store (3 of 8 Prodigi colours). */
-export type PrintFrameColour = 'black' | 'white' | 'natural';
+export type PrintFrameColour = 'black' | 'natural' | 'brown';
 
 /** A single resolved variant choice. mount is only meaningful when framed=true. */
 export interface PrintVariantSelection {
@@ -111,4 +111,8 @@ export interface PrintDesign {
   /** Per-size price overrides (major units) for premium designs; sizes not
       listed fall back to the shared SIZE_BASE in print-pricing.ts. */
   prices?: Partial<Record<PrintSize, { pln: number; eur: number; gbp: number }>>;
+  /** Set when pre-rendered configurator mockups exist in public/uploads
+      (<image-stem>-mock-{framed|mount}-{colour}.webp). Ship the flag in the
+      same PR as the generated files (print-assets:mockups). */
+  mockups?: true;
 }
