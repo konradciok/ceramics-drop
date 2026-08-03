@@ -87,7 +87,10 @@ export function decodePrintToken(
   if (!isPrintToken(token)) return null;
   const parts = token.split(':');
   if (parts.length !== 6) return null;
-  const [, designId, size, framedStr, mountStr, frameColour] = parts;
+  const [, designId, size, framedStr, mountStr, rawColour] = parts;
+  // Pre-2026-07-19 tokens offered 'white'; the axis was renamed to 'brown'.
+  // Decode legacy carts onto the closest surviving colour instead of dropping them.
+  const frameColour = rawColour === 'white' ? 'brown' : rawColour;
   if (!designId) return null;
   if (!PRINT_SIZES.includes(size as PrintSize)) return null;
   const framed = framedStr === 'true';

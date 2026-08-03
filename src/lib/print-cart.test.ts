@@ -45,6 +45,18 @@ describe('decodePrintToken validation', () => {
   });
 });
 
+describe('decodePrintToken — legacy white colour migration (2026-07-19 colour swap)', () => {
+  it('decodes a pre-migration :white token as brown instead of dropping it', () => {
+    const sel = { size: '50x70' as const, framed: true, mount: false, frameColour: 'brown' as const };
+    expect(decodePrintToken('print:fap01:50x70:true:false:white')).toEqual({ designId: 'fap01', sel });
+  });
+
+  it('decodes a pre-migration :white token with a mount as brown', () => {
+    const sel = { size: '30x40' as const, framed: true, mount: true, frameColour: 'brown' as const };
+    expect(decodePrintToken('print:fap01:30x40:true:true:white')).toEqual({ designId: 'fap01', sel });
+  });
+});
+
 describe('variantLabel', () => {
   it('labels an unframed print in Polish', () => {
     const sel = { size: '30x40' as const, framed: false, mount: false, frameColour: 'none' as const };
