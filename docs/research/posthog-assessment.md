@@ -7,11 +7,11 @@
 
 ## Verdict
 
-**Do not adopt PostHog as an analytics, error-tracking, or session-replay platform.** All three are already owned by incumbents that are more deeply wired into this codebase than a swap could justify, and two of them (Meta CAPI dedup, Google Shopping/Meta feeds) are load-bearing for paid acquisition.
+**Do not adopt PostHog as an analytics, error-tracking, or session-replay platform.** All three are already owned by incumbents that are more deeply wired into this codebase than a swap could justify.
 
 **There is a narrow, real case for PostHog as a feature-flag + survey layer**, which this project has *zero* coverage of today. That case is genuine but small, and it is gated behind non-trivial compliance and CSP work. See [Recommendation](#recommendation) for the staged call.
 
-The single strongest non-obvious finding: PostHog's **data warehouse / HogQL** would solve two concrete, currently-blocked problems — the unlinked GA4 → BigQuery export (`docs/analytics-stack.md:105`) and the permanently-burned `order_total` GA4 custom dimension (`docs/analytics-stack.md:81`). That is the most defensible reason to open an account, and it needs no client-side SDK at all.
+**On the reporting gaps (§3): PostHog is not the fix — linking the GA4 BigQuery export is.** The burned `order_total` custom dimension and the missing order↔behaviour join both resolve through the BigQuery export that `docs/analytics-stack.md:105` already flags as outstanding, which is free and already scripted (`npm run bq:query`). PostHog's warehouse can sit *downstream* of that export as a convenience layer, but it does not remove the dependency on it. Treat §3 as an argument for finishing the BigQuery link, not for adopting a vendor.
 
 ---
 
@@ -49,7 +49,7 @@ Established by reading the code, not the docs.
 | --- | --- | --- |
 | Error tracking | **Sentry** — fully | ❌ **Skip.** 86 capture sites, custom scrubbing, source maps, worker alerting, a tunnel route. Migration is weeks of work to land in a *less* mature error product. PostHog's own docs tell you to disable one autocapture if you run both. |
 | Session replay | **Microsoft Clarity** — fully | ❌ **Skip.** Clarity is free and unlimited; PostHog is free to 5k recordings then $0.005/recording. Running both doubles the replay-privacy surface on a checkout that handles addresses and payment fields. |
-| Product analytics | **GA4** — substantially | ❌ **Skip as a replacement.** GA4 is wired to the ad platforms; ripping it out breaks Meta CAPI dedup and the Shopping feeds. Running both means maintaining two event contracts against one `analytics.ts`. |
+| Product analytics | **GA4** — substantially | ❌ **Skip as a replacement.** Removing GA4 costs the GA4 MP server purchase (`ga4-mp.ts`) and GA4 ecommerce reporting. It does **not** break Meta CAPI (`meta-capi.ts` imports nothing GA4) or the feeds (`feed.ts` builds from the product registry) — those are independent and survive. The real objection is transport: `analytics.ts` → dataLayer → GTM is the shared pipe that also drives the Meta Pixel tags, so it stays regardless. PostHog would be a *third* event contract on top, not a replacement for the second. |
 | Web analytics | **GA4** | ❌ Skip. Pure duplication. |
 | Heatmaps | **Clarity** | ❌ Skip. |
 | **Feature flags** | **nothing** | ✅ **Genuine gap.** |
@@ -61,9 +61,11 @@ Established by reading the code, not the docs.
 
 ---
 
-## 3. The two problems PostHog actually solves that nothing else here does
+## 3. Two real reporting gaps — and why BigQuery, not PostHog, is the fix
 
-### 3.1 GA4's custom-dimension registry is a finite, burnable resource — HogQL has no such limit
+Both gaps below are genuine. Neither is a good reason to adopt PostHog, because PostHog's warehouse can only reach this data *through* the same BigQuery export that already fixes it. Documented here so the reasoning is on record rather than re-litigated later.
+
+### 3.1 GA4's custom-dimension registry is a finite, burnable resource
 
 From `docs/analytics-stack.md:81`:
 
@@ -71,15 +73,21 @@ From `docs/analytics-stack.md:81`:
 
 So `order_total` is collected on every `purchase` and `begin_checkout` and is **permanently unqueryable in GA4**. GA4 also caps event-scoped custom dimensions (the property is at 17), and registration is **non-retroactive** — a dimension registered today cannot see yesterday's data.
 
-PostHog stores every event property as queryable data by default. No registration, no cap, no retroactivity cliff. Any property you ever sent is available in HogQL from the moment you can query it.
+**This is a GA4 *UI/Data API* limitation, not a data-loss one.** `order_total` is still recorded on every event, and the GA4 **BigQuery export preserves it in `event_params`** with no registered custom dimension required. Linking the export therefore recovers `order_total` outright — that is the fix.
+
+PostHog would also store every property as queryable data with no registration, cap, or retroactivity cliff — but only for events *sent to PostHog*. It cannot retroactively read GA4's history. PostHog's **native GA4 connector syncs daily aggregate report data only** (users, sessions, pageviews, traffic sources) — not raw events, so not `order_total`. Getting raw GA4 events into PostHog requires either the BigQuery export (connected to PostHog as a BigQuery *source*, i.e. strictly downstream of the fix) or ingesting events into PostHog directly from the app. Neither removes the BigQuery dependency.
 
 ### 3.2 The order/behaviour join is currently impossible
 
 `orders`, `order_items`, and `piece_state` live in Supabase. Behavioural events live in GA4. There is no join. The intended bridge — GA4's BigQuery export — is documented as an outstanding prerequisite (`docs/analytics-stack.md:105`) and `npm run bq:query` fails until it is done.
 
-PostHog's managed data warehouse can sync Supabase Postgres directly and query it alongside event data in one SQL dialect. For a drop-based business where the interesting questions are inherently joins — *"which collection pages did buyers of `duze-michy` view first?"*, *"what's the view→sale lag for a piece by category?"*, *"do private-sale link recipients convert differently?"* — this is the capability gap, not "more dashboards."
+The questions worth asking are inherently joins — *"which collection pages did buyers of `duze-michy` view first?"*, *"what's the view→sale lag for a piece by category?"*, *"do private-sale link recipients convert differently?"*
 
-**Caveat, stated plainly:** this benefit is real but it is *analyst* value, not *engineering* value. It pays off only if someone actually sits down and writes the queries. If nobody will, this reduces to another dashboard nobody opens, and the honest answer is to link BigQuery instead — it's free and already scripted (`npm run bq:query`).
+**PostHog only closes half of this join.** Its managed warehouse syncs Supabase Postgres directly, so `orders` / `order_items` / `piece_state` land cleanly — but that sync moves *orders, not behavioural events*. The other half of every question above is behavioural, and it only reaches PostHog if you either (a) adopt PostHog product analytics and send events there — which §2 recommends against — or (b) connect the GA4 BigQuery export as a source, which requires linking the export first.
+
+**So the actual unblock is the BigQuery link**, not a new vendor: it is free, already scripted, and puts GA4 events and `order_total` in a warehouse that can also read Supabase. PostHog on top buys a nicer query surface and a managed Supabase sync — real convenience, not a new capability.
+
+**Second caveat:** either way this is *analyst* value, not *engineering* value. It pays off only if someone actually writes the queries. If nobody will, neither option is worth doing.
 
 ---
 
@@ -103,11 +111,13 @@ These are the things that would make a PostHog adoption more expensive here than
 
 `src/components/consent/consent-mode.ts` sets one cookie, `ciok_consent`, with one value (`granted`/`denied`), which drives all four Google Consent Mode v2 signals at once. Every tag today is gated by **GTM**, not by app code.
 
-PostHog is not in GTM's consent framework. Loading `posthog-js` in `instrumentation-client.ts` bypasses the entire consent architecture. Doing it correctly means initialising with `opt_out_capturing_by_default: true` (or `persistence: 'memory'`) and calling `posthog.opt_in_capturing()` from `setConsent()` — a new, hand-maintained consent path parallel to the GTM one, for a PL/EU store where this is a live GDPR obligation, not a nicety.
+PostHog is not in GTM's consent framework. Loading `posthog-js` in `instrumentation-client.ts` bypasses the entire consent architecture. Doing it correctly means initialising with **`opt_out_capturing_by_default: true`** and calling `posthog.opt_in_capturing()` / `posthog.opt_out_capturing()` from `setConsent()` — or adopting PostHog's documented `cookieless_mode: 'on_reject'` flow, which needs the matching project-level setting enabled or events are discarded server-side.
+
+**`persistence: 'memory'` is not a consent mechanism** and must not be used as one: it only changes *where* the SDK stores identity, not *whether* it captures, so events would still be sent before the visitor has accepted. Either way this is a new, hand-maintained consent path parallel to the GTM one, for a PL/EU store where this is a live GDPR obligation, not a nicety.
 
 ### 5.2 CSP is mid-migration and PostHog widens it
 
-`src/middleware.ts:70` runs `Content-Security-Policy-Report-Only`, explicitly staged to be **tightened and enforced** (Plan 5, group G5). PostHog requires `https://*.posthog.com` in `script-src` (SDK + lazily-loaded replay/survey bundles), `connect-src` (ingestion + flag evaluation), and `worker-src 'self' blob:`.
+`src/middleware.ts:70` runs `Content-Security-Policy-Report-Only`, explicitly staged to be **tightened and enforced** (Plan 5, group G5). PostHog requires `https://*.posthog.com` in `script-src` (SDK + lazily-loaded replay/survey bundles), `connect-src` (ingestion + flag evaluation), and `worker-src 'self' blob: data:` — `data:` included, or worker-backed features (session replay especially) fail silently once the policy is enforced.
 
 Adding a wildcard third-party origin to a policy you are about to enforce, at the same time you're enforcing it, is the wrong order of operations. Either do it after the enforce cutover, or route everything first-party through a reverse proxy — which this project already has the pattern for (`tunnelRoute: '/sentry-tunnel'`).
 
@@ -115,8 +125,10 @@ Adding a wildcard third-party origin to a policy you are about to enforce, at th
 
 `posthog-node` ships a dedicated `workerd` export, and `wrangler.jsonc:10` already sets `nodejs_compat`. Two known Workers-specific defects to be aware of:
 
-- **[posthog-js#3173](https://github.com/PostHog/posthog-js/issues/3173)** — `_flush()` never consumed the fetch response body, producing cross-request promise-cancellation warnings on Workers and silently cancelling post-flush continuations. **Fixed** in [#3516](https://github.com/PostHog/posthog-js/pull/3516), merged 2026-05-04. Pin above that release.
-- **[posthog#58394](https://github.com/posthog/posthog/issues/58394)** — `captureImmediate()` resolves before the HTTP request lands, dropping events in runtimes that freeze on response. Mitigated by `ctx.waitUntil`, which this codebase already uses correctly for exactly this class of problem in `src/lib/marketing/conversions.ts`.
+- **[posthog-js#3173](https://github.com/PostHog/posthog-js/issues/3173)** — `_flush()` never consumed the fetch response body, producing cross-request promise-cancellation warnings on Workers and silently cancelling post-flush continuations. **Fixed** in [#3516](https://github.com/PostHog/posthog-js/pull/3516), merged 2026-05-04 and released the same day. Pin **`posthog-node@5.33.2`** or later (and `@posthog/core@1.28.2` if it is ever depended on directly) — all three versions verified present on the npm registry.
+- **[posthog#58394](https://github.com/posthog/posthog/issues/58394)** — `captureImmediate()` resolved before the HTTP request landed, dropping events in runtimes that freeze on response. Fixed from `posthog-node@5.8.1` onward, so the 5.33.2 pin above already covers it. Belt-and-braces, dispatch under `ctx.waitUntil` anyway — the pattern this codebase already uses for exactly this class of problem in `src/lib/marketing/conversions.ts`.
+
+Both fixes are version-gated rather than workaround-gated, so the pin *is* the mitigation. If PostHog is ever actually adopted, the delivery path should get an end-to-end Workers check (a preview-only debug read asserting a captured event landed, in the shape of the existing `/api/debug/fulfilment-status` gate) — but that belongs with the implementation, not with this assessment.
 
 Server-side config must be `flushAt: 1, flushInterval: 0`, a fresh client per request, flushed under `waitUntil`. Workable, and the existing conversions code is the template — but it is a third async fire-and-forget vendor call hanging off the Stripe webhook's critical path.
 
@@ -148,10 +160,12 @@ If nothing below is compelling enough to schedule properly, **the correct action
 
 ### Stage 1 — the cheap, non-duplicative wins (recommended)
 
-Open a **PostHog Cloud EU** account, free tier, and use it for **surveys only**, plus optionally the **Supabase warehouse sync** for ad-hoc order/behaviour SQL.
+**Link the GA4 BigQuery export first** — it is the actual fix for §3, it is free, and it is already scripted. Do this whether or not PostHog is ever adopted.
 
-- No `posthog-js` in the app bundle for the warehouse half — it is a server-side data connection.
-- Surveys do need the client SDK, so they carry the consent + CSP work in §5.1/§5.2. Do them **after** the CSP enforce cutover, not before.
+Then, if wanted: open a **PostHog Cloud EU** account, free tier, for **surveys**.
+
+- Surveys need the client SDK, so they carry the consent + CSP work in §5.1/§5.2. Do them **after** the CSP enforce cutover, not before.
+- The **Supabase warehouse sync** is optional and only worth it once the BigQuery link exists — on its own it gives PostHog orders with no behavioural events to join them to (§3.2). No `posthog-js` needed for that half; it is a server-side data connection.
 - Cost: **$0** (1,500 survey responses + 1M warehouse rows/month free).
 - Reversible: deleting the project removes the data; no code path depends on it.
 
@@ -167,7 +181,7 @@ If Stage 2 lands and print traffic supports it, run experiments on the **fine-ar
 
 ### Never
 
-Error tracking, session replay, or product analytics. Sentry, Clarity, and GA4/Meta each own their lane, are more deeply integrated than PostHog would be for years, and two of them are load-bearing for paid acquisition.
+Error tracking, session replay, or product analytics. Sentry, Clarity, and GA4/Meta each own their lane and are more deeply integrated than PostHog would be for years. The Meta half specifically (Pixel + CAPI dedup, and the Google/Meta product feeds) is load-bearing for paid acquisition — and, per §2, it is independent of GA4 and would survive a GA4 swap. The objection to displacing GA4 is the shared `analytics.ts` → dataLayer → GTM transport, not a Meta dependency.
 
 ---
 
