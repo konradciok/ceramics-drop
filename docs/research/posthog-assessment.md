@@ -98,6 +98,8 @@ The questions worth asking are inherently joins — *"which collection pages did
 
 **This is the one place PostHog earns its keep in §3:** it supplies the Supabase-side connector as a managed service, so you get the join without writing and maintaining an ETL. That is a genuine saving — narrower than "PostHog unifies your data," but real.
 
+**Managed does not mean frictionless.** That connector carries real operational and privacy constraints — alpha CDC, a direct-connection requirement, a WAL-retention failure mode that lands on the production database, and personal data leaving for a new processor. They are set out under Stage 1 in the [Recommendation](#recommendation) and should be read before treating this row as a cheap win.
+
 **Second caveat:** either way this is *analyst* value, not *engineering* value. It pays off only if someone actually writes the queries. If nobody will, neither option is worth doing.
 
 ---
@@ -145,7 +147,7 @@ Adding a wildcard third-party origin to a policy you are about to enforce, at th
 
 Both fixes are version-gated rather than workaround-gated, so the pin *is* the mitigation. If PostHog is ever actually adopted, the delivery path should get an end-to-end Workers check (a preview-only debug read asserting a captured event landed, in the shape of the existing `/api/debug/fulfilment-status` gate) — but that belongs with the implementation, not with this assessment.
 
-Server-side config must be `flushAt: 1, flushInterval: 0`, a fresh client per request, flushed under `waitUntil`. Workable, and the existing conversions code is the template — but it is a third async fire-and-forget vendor call hanging off the Stripe webhook's critical path.
+Server-side config must be `flushAt: 1, flushInterval: 0`, with a fresh client per request. **`flushAt`/`flushInterval` are not a substitute for lifecycle finalisation** — call `posthog.shutdown()` after capturing and pass *that* promise to `ctx.waitUntil()`, so the isolate stays alive until the flush actually lands. Workable, and the existing conversions code is the template — but it is a third async fire-and-forget vendor call hanging off the Stripe webhook's critical path.
 
 ### 5.4 EU data residency is mandatory, not optional
 
@@ -154,6 +156,8 @@ PL-default store, EU customer base. PostHog Cloud **EU (Frankfurt)** only. That 
 ### 5.5 A second identity graph, landing on top of one being built right now
 
 Plan 5 group G2 is actively threading GA4 `user_id` (the opaque Supabase user id) through `/api/auth/callback` and a one-shot cookie. PostHog needs its own `distinct_id` + `posthog.identify()` + `posthog.reset()` lifecycle, and — for server events to link to browser sessions — `tracing_headers` on `fetch` calls to our own API routes.
+
+**Security note if that is ever wired up:** `tracing_headers` only makes the browser send `X-POSTHOG-DISTINCT-ID` / `X-POSTHOG-SESSION-ID`. Those are client-controlled and trivially spoofable, so they are **analytics context only** — a handler may pass them to `posthog-node` for event attribution, and must never treat them as identity for authorization. Authorization stays with the verified Supabase session, as it is today.
 
 Adopting PostHog mid-flight means designing a second identity model against the same auth seam, before the first one has shipped and been verified. Sequencing matters more than the merits here.
 
@@ -169,7 +173,7 @@ Adopting PostHog mid-flight means designing a second identity model against the 
 
 ### Stage 0 — do nothing yet, and consider that a legitimate answer
 
-The analytics stack was audited and remediated across six plans between 2026-07-26 and 2026-07-29. GTM v17 shipped four days ago. Meta CAPI dedup and advanced-matching coverage are still in their post-publish 24–48h soak (`docs/analytics-stack.md:182`). Adding a new vendor before that soak concludes means debugging two changes at once.
+The analytics stack was audited and remediated across six plans between 2026-07-26 and 2026-07-29, with GTM v17 published 2026-07-29. As of this assessment (2026-08-03) the F-04 Meta CAPI dedup / advanced-matching soak (`docs/analytics-stack.md:182`) had not been recorded as closed — **verify its current status before relying on this paragraph**, which is a point-in-time note, not a standing fact. If it is still open, adding a new vendor means debugging two changes at once.
 
 If nothing below is compelling enough to schedule properly, **the correct action is none** — and the highest-value analytics work available is finishing what's already queued: link the GA4 BigQuery export, and close out the F-04 soak.
 
@@ -180,19 +184,25 @@ If nothing below is compelling enough to schedule properly, **the correct action
 Then, if wanted: open a **PostHog Cloud EU** account, free tier, for **surveys** and — if the order↔behaviour join is actually wanted — the **warehouse connectors**.
 
 - Surveys need the client SDK, so they carry the consent + CSP work in §5.1/§5.2. Do them **after** the CSP enforce cutover, not before.
-- The **warehouse half needs both connectors** to be useful: PostHog's managed Supabase source (orders) *and* its BigQuery source pointed at the GA4 export (behaviour). Either alone is a dead end (§3.2). No `posthog-js` involved — both are server-side data connections, so this half carries none of the consent/CSP/bundle cost.
+- The **warehouse half needs both connectors** to be useful: PostHog's managed Supabase source (orders) *and* its BigQuery source pointed at the GA4 export (behaviour). Either alone is a dead end (§3.2). No `posthog-js` is involved, so this half avoids the **browser** consent, CSP, and bundle cost entirely — but it is not cost-free in privacy terms: syncing `orders` ships customer personal data to a new processor, which still needs the DPA in §5.4 and a deliberate decision about scope.
+- **Sync only what the questions need.** Use a read-only Supabase role and a BigQuery service account scoped to the approved tables plus a dedicated temporary-table dataset (the BigQuery source needs create/query/delete rights for temp tables — give it a sandbox dataset, not the estate). Leave `orders.email`, `contact`, and `shipping_address` out of the synced column set: every §3.2 question joins on `product_id` / `order_id` / timestamps, none of them need identifiers.
+- **The Supabase connector's CDC mode is alpha and has a production-facing failure mode.** It needs a *direct* connection (not the session pooler) plus the IPv4 add-on, and if PostHog cannot drain the replication slot fast enough Postgres retains WAL and can exhaust disk **on the production database**. If this is ever enabled, replication-slot and WAL monitoring are a prerequisite, not a follow-up.
 - Cost: **$0** (1,500 survey responses + 1M warehouse rows/month free).
 - Reversible: deleting the project removes the data; no code path depends on it.
 
 ### Stage 2 — feature flags, only when there is a flag worth having
 
-Adopt flags at the point a real product-surface toggle appears — a new PDP layout, a configurator variant, a checkout copy change. Not before. Evaluate **server-side** (`posthog-node` in the Workers runtime, per §5.3) so no client bundle is added and no flicker is possible.
+Adopt flags at the point a real product-surface toggle appears — a new PDP layout, a configurator variant, a checkout copy change. Not before. Evaluate **server-side** (`posthog-node` in the Workers runtime, per §5.3) so no client bundle is added and the value is resolved before HTML is sent, avoiding hydration flicker.
+
+That is not free, though: server-side evaluation puts a network call on the request path. Before flags touch a rendering path, fix a bounded `requestTimeout`, a safe default for every flag (fail to the current behaviour, never to the new one), and either local evaluation or caching so a slow or unreachable PostHog degrades the page rather than delaying it.
 
 Do **not** migrate the existing ops kill switches (`SUPABASE_PUBLISHABLE_KEY`, `HIDDEN_CATEGORIES`, `CATALOG_SOURCE`). They are correctly fail-closed env vars and should stay that way.
 
 ### Stage 3 — experiments, prints only
 
-If Stage 2 lands and print traffic supports it, run experiments on the **fine-art-prints** surface and sitewide layouts only. One-of-a-kind ceramics are structurally untestable — sample size one, sold once, gone.
+If Stage 2 lands and traffic supports it, scope experiments to the **fine-art-prints** surface and sitewide layouts.
+
+To be precise about why: unique inventory rules out **item-level treatment tests** — you cannot A/B a piece that sells once and is gone, sample size one. It does **not** make ceramic pages untestable per se; visitor-level layout and funnel experiments (PDP template, `/sklep` hub, checkout) assign on the visitor, not the item, and are perfectly valid there. Whether they are *useful* is a power question — traffic volume, eligible-visitor count, and controlled assignment — not a structural one. Prints are the recommended starting scope because repeatable inventory makes the item-level axis available too.
 
 ### Never
 
