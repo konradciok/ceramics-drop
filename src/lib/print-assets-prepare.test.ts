@@ -4,23 +4,30 @@ import { describe, it, expect } from 'vitest';
 import {
   buildR2Key,
   buildManifest,
+  buildFullBleedManifest,
   contentTypeForFormat,
   derivativeR2Key,
   distinctProfiles,
   parsePrepareManifest,
   parsePublishManifest,
   profileKeyFromPx,
+  ratioForProfile,
   resolvePlacement,
   validateLayoutFractions,
   validateNoUpscale,
   validatePlacement,
   validatePrepareConfig,
+  assertSourceMatchesRatio,
+  FULL_BLEED_LAYOUT,
   COMPOSE_RENDERER_VERSION,
+  type BuildFullBleedManifestInput,
   type BuildManifestInput,
-  type ManifestDerivative,
+  type FullBleedPrepareConfig,
+  type FullBleedPrepareManifest,
   type Placement,
-  type PrepareConfig,
-  type PrepareManifest,
+  type PosterManifestDerivative,
+  type PosterPrepareConfig,
+  type PosterPrepareManifest,
   type PrintLayout,
 } from './print-assets-prepare';
 
@@ -38,7 +45,7 @@ const V2_LAYOUT: PrintLayout = {
 const V2_ARTWORK = { width: 8000, height: 8000 };
 
 /** A derivative whose recorded boxes match resolvePlacement — passes semantic validation. */
-function v2Derivative(width: number, height: number, sha: string): ManifestDerivative {
+function v2Derivative(width: number, height: number, sha: string): PosterManifestDerivative {
   const p = resolvePlacement(V2_LAYOUT, { w: width, h: height }, { w: V2_ARTWORK.width, h: V2_ARTWORK.height }, true);
   return {
     width,
@@ -51,7 +58,7 @@ function v2Derivative(width: number, height: number, sha: string): ManifestDeriv
   };
 }
 
-function makeV2(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
+function makeV2(overrides: Partial<PosterPrepareManifest> = {}): PosterPrepareManifest {
   return {
     schemaVersion: 2,
     product: 'fap01',
@@ -77,7 +84,7 @@ function makeV2(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
 }
 
 /** Deep-clone a valid v2 manifest and mutate it (as `unknown`, so structural breakage is allowed). */
-function mutateV2(mutate: (m: PrepareManifest) => void): unknown {
+function mutateV2(mutate: (m: PosterPrepareManifest) => void): unknown {
   const clone = structuredClone(makeV2());
   mutate(clone);
   return clone;
@@ -402,7 +409,7 @@ const LAYOUT_CONFIG: PrintLayout = {
   signatureZoneHeight: 0.05,
 };
 
-const CONFIG: PrepareConfig = {
+const CONFIG: PosterPrepareConfig = {
   product: 'fap01',
   artwork: 'design/print-assets/fap01/artwork-master.png',
   background: '#E8E0D7',
@@ -612,5 +619,263 @@ describe('validateNoUpscale', () => {
   it('rejects an artwork that would be upscaled', () => {
     const errors = validateNoUpscale(LAYOUT, { w: 1000, h: 1000 }, { w: 50, h: 50 }, true);
     expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
+  });
+});
+
+// ── ratioForProfile (full-bleed) ────────────────────────────────────────────
+
+describe('ratioForProfile', () => {
+  it.each<[number, number, string]>([
+    [3600, 4800, '3x4'],
+    [6000, 8400, '5x7'],
+    [8400, 12000, '7x10'],
+    [2400, 3600, '2x3'],
+    [4800, 7200, '2x3'],
+    [7200, 10800, '2x3'],
+  ])('maps %ix%i to ratio %s', (w, h, ratio) => {
+    expect(ratioForProfile(w, h)).toBe(ratio);
+  });
+
+  it('throws on a profile that matches no known ratio (poison profile)', () => {
+    expect(() => ratioForProfile(1000, 1000)).toThrow(/no known print ratio/i);
+  });
+
+  it('throws on non-positive or non-finite dimensions', () => {
+    expect(() => ratioForProfile(0, 100)).toThrow(/invalid profile dimensions/i);
+    expect(() => ratioForProfile(100, -1)).toThrow(/invalid profile dimensions/i);
+    expect(() => ratioForProfile(NaN, 100)).toThrow(/invalid profile dimensions/i);
+  });
+
+  it('accepts a profile within the 0.5% tolerance of a known ratio', () => {
+    // 3600x4800 is exact 3:4; nudge height down 0.3% — still within tolerance.
+    expect(ratioForProfile(3600, 4786)).toBe('3x4');
+  });
+});
+
+// ── FULL_BLEED_LAYOUT + assertSourceMatchesRatio ────────────────────────────
+
+describe('FULL_BLEED_LAYOUT', () => {
+  it('resolves to a trivial full-canvas placement with no signature', () => {
+    const p = resolvePlacement(FULL_BLEED_LAYOUT, { w: 3600, h: 4800 }, { w: 3600, h: 4800 }, false);
+    expect(p.artworkBox).toEqual({ x: 0, y: 0, width: 3600, height: 4800 });
+    expect(p.signatureBox).toBeNull();
+    expect(p.scale).toBe(1);
+  });
+});
+
+describe('assertSourceMatchesRatio', () => {
+  it('accepts a source whose aspect matches the declared ratio', () => {
+    expect(() => assertSourceMatchesRatio('3x4', { w: 3600, h: 4800 })).not.toThrow();
+  });
+
+  it('throws when the source resolves to a different ratio (wrong/mislabeled file)', () => {
+    // A 5x7-shaped source assigned under the "3x4" key — a swapped-file mistake.
+    expect(() => assertSourceMatchesRatio('3x4', { w: 6000, h: 8400 })).toThrow(/resolve.*ratio.*"5x7".*"3x4"/is);
+  });
+
+  it('throws when the source matches no known ratio at all', () => {
+    expect(() => assertSourceMatchesRatio('2x3', { w: 1000, h: 1000 })).toThrow(/no known print ratio/i);
+  });
+});
+
+// ── validatePrepareConfig — fullBleed mode ──────────────────────────────────
+
+const FULL_BLEED_CONFIG: FullBleedPrepareConfig = {
+  product: 'fap005',
+  mode: 'fullBleed',
+  format: 'jpg',
+  sources: {
+    '3x4': 'design/uploads/master-images-prints/01/01__3x4.jpg',
+    '5x7': 'design/uploads/master-images-prints/01/01__5x7.jpg',
+    '7x10': 'design/uploads/master-images-prints/01/01__7x10.jpg',
+    '2x3': 'design/uploads/master-images-prints/01/01__2x3.jpg',
+  },
+};
+
+describe('validatePrepareConfig — fullBleed mode', () => {
+  it('accepts a complete fullBleed config', () => {
+    expect(validatePrepareConfig(FULL_BLEED_CONFIG, 'fap005')).toEqual([]);
+  });
+
+  it('rejects an unsupported mode value', () => {
+    const errors = validatePrepareConfig({ ...FULL_BLEED_CONFIG, mode: 'bogus' }, 'fap005');
+    expect(errors.some((e) => e.includes('mode'))).toBe(true);
+  });
+
+  it('rejects a missing sources object', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { sources: _sources, ...rest } = FULL_BLEED_CONFIG;
+    const errors = validatePrepareConfig(rest, 'fap005');
+    expect(errors.some((e) => e.includes('sources'))).toBe(true);
+  });
+
+  it('rejects a sources object missing a ratio key', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { '2x3': _omitted, ...partial } = FULL_BLEED_CONFIG.sources;
+    const errors = validatePrepareConfig({ ...FULL_BLEED_CONFIG, sources: partial }, 'fap005');
+    expect(errors.some((e) => e.includes('sources'))).toBe(true);
+  });
+
+  it('rejects a sources object with an extra unknown ratio key', () => {
+    const errors = validatePrepareConfig(
+      { ...FULL_BLEED_CONFIG, sources: { ...FULL_BLEED_CONFIG.sources, '1x1': 'x.jpg' } },
+      'fap005',
+    );
+    expect(errors.some((e) => e.includes('sources'))).toBe(true);
+  });
+
+  it('rejects an empty source path', () => {
+    const errors = validatePrepareConfig(
+      { ...FULL_BLEED_CONFIG, sources: { ...FULL_BLEED_CONFIG.sources, '3x4': '' } },
+      'fap005',
+    );
+    expect(errors.some((e) => e.includes('sources.3x4'))).toBe(true);
+  });
+
+  it.each(['artwork', 'background', 'layout', 'signature'] as const)(
+    'rejects a poster field "%s" present in fullBleed mode (explicit error, not silently ignored)',
+    (field) => {
+      const errors = validatePrepareConfig(
+        { ...FULL_BLEED_CONFIG, [field]: field === 'layout' || field === 'signature' ? {} : '#E8E0D7' },
+        'fap005',
+      );
+      expect(errors.some((e) => e.includes(field) && e.includes('not allowed'))).toBe(true);
+    },
+  );
+
+  it('leaves poster-mode validation unchanged', () => {
+    expect(validatePrepareConfig(CONFIG, 'fap01')).toEqual([]);
+  });
+});
+
+// ── buildFullBleedManifest + parsePrepareManifest — fullBleed ──────────────
+
+function makeFullBleedBuildInputs(overrides: Partial<BuildFullBleedManifestInput> = {}): BuildFullBleedManifestInput {
+  const profiles = distinctProfiles([
+    { variantKey: '30x40:false:false:none', w: 3600, h: 4800 },
+    { variantKey: '30x40:true:true:black', w: 2400, h: 3600 },
+    { variantKey: '50x70:true:true:black', w: 4800, h: 7200 },
+  ]);
+  return {
+    product: 'fap005',
+    revision: '2026-08-04-r1',
+    configSha256: 'f'.repeat(64),
+    profiles,
+    derivativeMeta: {
+      '3600x4800': {
+        sha256: 'a'.repeat(64),
+        byteSize: 100,
+        format: 'jpg',
+        source: {
+          ratio: '3x4',
+          path: 'design/uploads/master-images-prints/01/01__3x4.jpg',
+          sha256: 'b'.repeat(64),
+          width: 3600,
+          height: 4800,
+        },
+      },
+      '2400x3600': {
+        sha256: 'c'.repeat(64),
+        byteSize: 200,
+        format: 'jpg',
+        source: {
+          ratio: '2x3',
+          path: 'design/uploads/master-images-prints/01/01__2x3.jpg',
+          sha256: 'd'.repeat(64),
+          width: 2400,
+          height: 3600,
+        },
+      },
+      '4800x7200': {
+        sha256: 'e'.repeat(64),
+        byteSize: 300,
+        format: 'jpg',
+        source: {
+          ratio: '2x3',
+          path: 'design/uploads/master-images-prints/01/01__2x3.jpg',
+          sha256: 'd'.repeat(64),
+          width: 2400,
+          height: 3600,
+        },
+      },
+    },
+    ...overrides,
+  };
+}
+
+describe('buildFullBleedManifest', () => {
+  it('emits a schema-v2 fullBleed manifest with per-derivative source identity', () => {
+    const manifest = buildFullBleedManifest(makeFullBleedBuildInputs());
+    expect(manifest.schemaVersion).toBe(2);
+    expect(manifest.mode).toBe('fullBleed');
+    expect(manifest.rendererVersion).toBe(COMPOSE_RENDERER_VERSION);
+    const d = manifest.derivatives.find((x) => x.width === 3600)!;
+    expect(d.source).toEqual({
+      ratio: '3x4',
+      path: 'design/uploads/master-images-prints/01/01__3x4.jpg',
+      sha256: 'b'.repeat(64),
+      width: 3600,
+      height: 4800,
+    });
+    expect(d).not.toHaveProperty('artworkBoxPx');
+    expect(d).not.toHaveProperty('signatureBoxPx');
+  });
+
+  it('produces a manifest that passes parsePrepareManifest self-validation', () => {
+    const manifest = buildFullBleedManifest(makeFullBleedBuildInputs());
+    expect(() => parsePrepareManifest(manifest)).not.toThrow();
+  });
+});
+
+describe('parsePrepareManifest — fullBleed', () => {
+  function validFullBleedManifest(): FullBleedPrepareManifest {
+    return buildFullBleedManifest(makeFullBleedBuildInputs());
+  }
+
+  it('round-trips a self-consistent fullBleed manifest through JSON', () => {
+    const manifest = validFullBleedManifest();
+    expect(parsePrepareManifest(JSON.parse(JSON.stringify(manifest)))).toEqual(manifest);
+  });
+
+  it('rejects a derivative whose pixel ratio does not match its declared source ratio', () => {
+    const manifest = structuredClone(validFullBleedManifest());
+    // 3600x4800 is 3:4 — mislabel its source as "5x7".
+    manifest.derivatives[0].source.ratio = '5x7';
+    expect(() => parsePrepareManifest(manifest)).toThrow(/profile\/source ratio mismatch/i);
+  });
+
+  it('rejects a derivative whose source dimensions do not match its declared ratio (wrong/mislabeled master)', () => {
+    const manifest = structuredClone(validFullBleedManifest());
+    const target = manifest.derivatives.find((d) => d.width === 3600)!;
+    // Source recorded as "3x4" but its own dimensions are actually 5:7.
+    target.source.width = 6000;
+    target.source.height = 8400;
+    expect(() => parsePrepareManifest(manifest)).toThrow(/resolve.*ratio/i);
+  });
+
+  it('rejects duplicate derivative profiles', () => {
+    const manifest = structuredClone(validFullBleedManifest());
+    manifest.derivatives[1] = { ...structuredClone(manifest.derivatives[0]), sha256: '9'.repeat(64) };
+    expect(() => parsePrepareManifest(manifest)).toThrow(/duplicate.*profile/i);
+  });
+
+  it('rejects a fullBleed manifest with poster-only fields (schema is strict)', () => {
+    const manifest = { ...validFullBleedManifest(), background: '#E8E0D7' };
+    expect(() => parsePrepareManifest(manifest)).toThrow();
+  });
+
+  it('rejects an unrecognized print ratio in source.ratio', () => {
+    const manifest = structuredClone(validFullBleedManifest()) as unknown as Record<string, unknown>;
+    (manifest.derivatives as Array<Record<string, unknown>>)[0].source = {
+      ...(manifest.derivatives as Array<Record<string, unknown>>)[0].source as Record<string, unknown>,
+      ratio: '1x1',
+    };
+    expect(() => parsePrepareManifest(manifest)).toThrow();
+  });
+
+  it('projects a fullBleed manifest for publish, dropping the source field', () => {
+    const projected = parsePublishManifest(validFullBleedManifest());
+    expect(projected.derivatives[0]).not.toHaveProperty('source');
+    expect(projected).toMatchObject({ product: 'fap005', revision: '2026-08-04-r1' });
   });
 });

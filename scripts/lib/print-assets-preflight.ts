@@ -9,6 +9,7 @@
  */
 import path from 'node:path';
 import {
+  isFullBleedConfig,
   loadManifestV2,
   loadPrepareConfig,
   localDerivativePath,
@@ -89,50 +90,90 @@ export async function preflightPreparedRevision(
     );
   }
 
-  // 3. Config ⇄ manifest agreement on paths, background, layout, format, signature presence.
-  if (config.artwork.manifestPath !== manifest.artwork.path) {
-    throw new Error(`Config artwork path "${config.artwork.manifestPath}" does not match manifest "${manifest.artwork.path}".`);
-  }
-  if ((config.signature != null) !== (manifest.signature != null)) {
-    throw new Error('Config signature presence does not match the manifest.');
-  }
-  if (config.signature && manifest.signature && config.signature.manifestPath !== manifest.signature.path) {
-    throw new Error(
-      `Config signature path "${config.signature.manifestPath}" does not match manifest "${manifest.signature.path}".`,
-    );
-  }
-  if (config.value.background !== manifest.background) {
-    throw new Error(`Config background "${config.value.background}" does not match manifest "${manifest.background}".`);
-  }
-  if (!layoutsEqual(config.value.layout, manifest.layout)) {
-    throw new Error('Config layout does not match the manifest layout — re-run print-assets:prepare.');
-  }
-  if (manifest.derivatives.some((d) => d.format !== config.value.format)) {
-    throw new Error(`Manifest contains a derivative whose format is not the configured ${config.value.format}.`);
-  }
-
-  // 4. Current artwork/signature bytes must be the ones prepare hashed.
-  const artworkFacts = await deps.readImageFacts(config.artwork.absolutePath);
-  if (artworkFacts.sha256 !== manifest.artwork.sha256) {
-    throw new Error(
-      `Artwork sha256 mismatch: on-disk ${artworkFacts.sha256.slice(0, 12)}… vs manifest ` +
-        `${manifest.artwork.sha256.slice(0, 12)}… — the artwork master changed since prepare.`,
-    );
-  }
-  if (artworkFacts.width !== manifest.artwork.width || artworkFacts.height !== manifest.artwork.height) {
-    throw new Error(
-      `Artwork dimensions mismatch: on-disk ${artworkFacts.width}x${artworkFacts.height} vs manifest ` +
-        `${manifest.artwork.width}x${manifest.artwork.height}.`,
-    );
-  }
-  if (manifest.signature) {
-    if (!config.signature) throw new Error('Manifest declares a signature but the config has none.');
-    const signatureSha = await deps.hashFile(config.signature.absolutePath);
-    if (signatureSha !== manifest.signature.sha256) {
+  // 3-4. Mode-specific config ⇄ manifest agreement + current on-disk source bytes.
+  if (isFullBleedConfig(config)) {
+    if (manifest.mode !== 'fullBleed') {
       throw new Error(
-        `Signature sha256 mismatch: on-disk ${signatureSha.slice(0, 12)}… vs manifest ` +
-          `${manifest.signature.sha256.slice(0, 12)}… — the signature changed since prepare.`,
+        `Config is mode:'fullBleed' but manifest is ${manifest.mode ?? 'poster'} — re-run print-assets:prepare.`,
       );
+    }
+    if (manifest.derivatives.some((d) => d.format !== config.value.format)) {
+      throw new Error(`Manifest contains a derivative whose format is not the configured ${config.value.format}.`);
+    }
+    for (const derivative of manifest.derivatives) {
+      const configSource = config.sources[derivative.source.ratio];
+      if (!configSource) {
+        throw new Error(
+          `Manifest derivative references ratio "${derivative.source.ratio}" which is not present in config.sources.`,
+        );
+      }
+      if (configSource.manifestPath !== derivative.source.path) {
+        throw new Error(
+          `Config source "${derivative.source.ratio}" path "${configSource.manifestPath}" does not match manifest ` +
+            `"${derivative.source.path}".`,
+        );
+      }
+      const sourceFacts = await deps.readImageFacts(configSource.absolutePath);
+      if (sourceFacts.sha256 !== derivative.source.sha256) {
+        throw new Error(
+          `Source "${derivative.source.ratio}" sha256 mismatch: on-disk ${sourceFacts.sha256.slice(0, 12)}… vs ` +
+            `manifest ${derivative.source.sha256.slice(0, 12)}… — the master changed since prepare.`,
+        );
+      }
+      if (sourceFacts.width !== derivative.source.width || sourceFacts.height !== derivative.source.height) {
+        throw new Error(
+          `Source "${derivative.source.ratio}" dimensions mismatch: on-disk ${sourceFacts.width}x${sourceFacts.height} ` +
+            `vs manifest ${derivative.source.width}x${derivative.source.height}.`,
+        );
+      }
+    }
+  } else {
+    if (manifest.mode === 'fullBleed') {
+      throw new Error("Config is poster mode but manifest is mode:'fullBleed' — re-run print-assets:prepare.");
+    }
+    if (config.artwork.manifestPath !== manifest.artwork.path) {
+      throw new Error(`Config artwork path "${config.artwork.manifestPath}" does not match manifest "${manifest.artwork.path}".`);
+    }
+    if ((config.signature != null) !== (manifest.signature != null)) {
+      throw new Error('Config signature presence does not match the manifest.');
+    }
+    if (config.signature && manifest.signature && config.signature.manifestPath !== manifest.signature.path) {
+      throw new Error(
+        `Config signature path "${config.signature.manifestPath}" does not match manifest "${manifest.signature.path}".`,
+      );
+    }
+    if (config.value.background !== manifest.background) {
+      throw new Error(`Config background "${config.value.background}" does not match manifest "${manifest.background}".`);
+    }
+    if (!layoutsEqual(config.value.layout, manifest.layout)) {
+      throw new Error('Config layout does not match the manifest layout — re-run print-assets:prepare.');
+    }
+    if (manifest.derivatives.some((d) => d.format !== config.value.format)) {
+      throw new Error(`Manifest contains a derivative whose format is not the configured ${config.value.format}.`);
+    }
+
+    const artworkFacts = await deps.readImageFacts(config.artwork.absolutePath);
+    if (artworkFacts.sha256 !== manifest.artwork.sha256) {
+      throw new Error(
+        `Artwork sha256 mismatch: on-disk ${artworkFacts.sha256.slice(0, 12)}… vs manifest ` +
+          `${manifest.artwork.sha256.slice(0, 12)}… — the artwork master changed since prepare.`,
+      );
+    }
+    if (artworkFacts.width !== manifest.artwork.width || artworkFacts.height !== manifest.artwork.height) {
+      throw new Error(
+        `Artwork dimensions mismatch: on-disk ${artworkFacts.width}x${artworkFacts.height} vs manifest ` +
+          `${manifest.artwork.width}x${manifest.artwork.height}.`,
+      );
+    }
+    if (manifest.signature) {
+      if (!config.signature) throw new Error('Manifest declares a signature but the config has none.');
+      const signatureSha = await deps.hashFile(config.signature.absolutePath);
+      if (signatureSha !== manifest.signature.sha256) {
+        throw new Error(
+          `Signature sha256 mismatch: on-disk ${signatureSha.slice(0, 12)}… vs manifest ` +
+            `${manifest.signature.sha256.slice(0, 12)}… — the signature changed since prepare.`,
+        );
+      }
     }
   }
 

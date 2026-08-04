@@ -105,25 +105,41 @@ design/print-assets/_shared/signature.svg         # the one shared artist signat
 ```
 
 **Manifest:** copy `config/print-assets/onboarding-manifest.example.json` to
-`config/print-assets/onboarding-manifest.json` and add one row per design
-(`id`, `title`, `incomingFile`, `sizes`, `frameColours`, `mountAvailable`,
-`noteIndex`). `background`/`format`/layout fractions and `gallery.hero.sourceProfile`/
-`uploadStem` are derived automatically — every fap0N design shares the same
-thin-border layout and background today.
+`config/print-assets/onboarding-manifest.json` and add one row per design.
+Every row picks a `style`:
+
+- `style: "poster"` — the margins + background + signature layout (`id`,
+  `title`, `incomingFile`, `sizes`, `frameColours`, `mountAvailable`,
+  `noteIndex`). `background`/`format`/layout fractions and
+  `gallery.hero.sourceProfile`/`uploadStem` are derived automatically — every
+  fap0N poster design shares the same thin-border layout and background today.
+- `style: "fullBleed"` — the full-bleed per-ratio-master shape (docs/plans/
+  full-bleed-print-assets-plan.md): `id`, `title`, `noteIndex`, and an
+  optional `masterFolder` override (`id`, `title`, `noteIndex`). Every
+  full-bleed design sells every variant, so the row doesn't name axes at all.
+  It reads its four ratio masters straight from the canonical
+  `design/uploads/master-images-prints/{NN}/{NN}__{ratio}.jpg` pool
+  (`NN` defaults to the painting number implied by `id` under the
+  `NN -> fap(NN+4)` mapping) and never copies anything — those masters are
+  already in their permanent home.
 
 ```bash
 npm run print-assets:onboard -- --dry-run   # validates every export's resolution against
                                              # every variant the row will offer — no writes
-npm run print-assets:onboard                # copies masters + signature, writes config JSONs
+npm run print-assets:onboard                # poster: copies masters + signature, writes config JSONs
+                                             # fullBleed: writes config JSON only (no copy)
 ```
 
 Per row, the resolution check reuses the exact contain-scale math
 `print-assets:prepare` itself enforces (`src/lib/print-assets-master-scale.ts`)
 against every variant's **asset** pixels (`assetPxFor()` — see decision #6 in
 `prodigi/decisions.md`, not the raw Prodigi `printAreaPx`), so a PASS here
-means `prepare` will not later reject the same master for being too small.
-A design whose `design/print-assets/{id}/` already exists is skipped unless
-`--force`.
+means `prepare` will not later reject the same master for being too small. A
+fullBleed row additionally checks each of its four masters' own aspect ratio
+against its assigned ratio key (`ratioForProfile`) — a wrong/mislabeled file
+fails closed. A poster design whose `design/print-assets/{id}/` already
+exists, or a fullBleed design whose `config/print-assets/{id}.json` already
+exists, is skipped unless `--force`.
 
 The script never edits `src/lib/prints.ts` itself — it writes ready-to-paste
 `PrintDesign` object literals (all `published: false`) to

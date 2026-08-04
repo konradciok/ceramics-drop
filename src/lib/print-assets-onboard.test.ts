@@ -4,22 +4,33 @@ import {
   uploadStemFor,
   buildPrepareConfig,
   buildPrintDesignEntry,
+  defaultMasterFolder,
   expectedVariantDimensions,
   onboardingRowSchema,
   onboardingManifestSchema,
   ONBOARD_BACKGROUND,
   ONBOARD_FORMAT,
   ONBOARD_LAYOUT,
-  type OnboardingRow,
+  FULL_AXES,
+  type PosterOnboardingRow,
+  type FullBleedOnboardingRow,
 } from './print-assets-onboard';
 
-const ROW: OnboardingRow = {
+const ROW: PosterOnboardingRow = {
   id: 'fap005',
   title: 'Cumulonimbus 07',
+  style: 'poster',
   incomingFile: 'cumulonimbus-07.jpg',
   sizes: ['30x40', '50x70', '70x100'],
   frameColours: ['black', 'natural', 'brown'],
   mountAvailable: true,
+  noteIndex: 4,
+};
+
+const FULL_BLEED_ROW: FullBleedOnboardingRow = {
+  id: 'fap005',
+  title: 'Painting 01',
+  style: 'fullBleed',
   noteIndex: 4,
 };
 
@@ -52,8 +63,25 @@ describe('uploadStemFor', () => {
   });
 });
 
+describe('defaultMasterFolder', () => {
+  it('maps fap(NN+4) back to NN, zero-padded', () => {
+    expect(defaultMasterFolder('fap005')).toBe('01');
+    expect(defaultMasterFolder('fap047')).toBe('43');
+    expect(defaultMasterFolder('fap010')).toBe('06');
+  });
+
+  it('throws on an id that does not map to a positive painting number', () => {
+    expect(() => defaultMasterFolder('fap004')).toThrow();
+    expect(() => defaultMasterFolder('fap001')).toThrow();
+  });
+
+  it('throws on an id with no trailing digits', () => {
+    expect(() => defaultMasterFolder('fap')).toThrow();
+  });
+});
+
 describe('buildPrepareConfig', () => {
-  it('builds the exact PrepareConfig shape from a manifest row', () => {
+  it('builds the exact poster PrepareConfig shape from a manifest row', () => {
     const sourceProfile = deriveSourceProfile(ROW.sizes);
     const config = buildPrepareConfig(ROW, sourceProfile);
     expect(config).toEqual({
@@ -66,11 +94,48 @@ describe('buildPrepareConfig', () => {
       gallery: { hero: { sourceProfile: '8400x12000', uploadStem: 'fap-005' } },
     });
   });
+
+  it('builds the fullBleed PrepareConfig shape, deriving masterFolder from id', () => {
+    const sourceProfile = deriveSourceProfile(FULL_AXES.sizes);
+    const config = buildPrepareConfig(FULL_BLEED_ROW, sourceProfile);
+    expect(config).toEqual({
+      product: 'fap005',
+      mode: 'fullBleed',
+      format: 'jpg',
+      sources: {
+        '3x4': 'design/uploads/master-images-prints/01/01__3x4.jpg',
+        '5x7': 'design/uploads/master-images-prints/01/01__5x7.jpg',
+        '7x10': 'design/uploads/master-images-prints/01/01__7x10.jpg',
+        '2x3': 'design/uploads/master-images-prints/01/01__2x3.jpg',
+      },
+      gallery: { hero: { sourceProfile: '8400x12000', uploadStem: 'fap-005' } },
+    });
+  });
+
+  it('honours an explicit masterFolder override', () => {
+    const sourceProfile = deriveSourceProfile(FULL_AXES.sizes);
+    const config = buildPrepareConfig({ ...FULL_BLEED_ROW, masterFolder: '99' }, sourceProfile);
+    expect(config).toMatchObject({ sources: { '3x4': 'design/uploads/master-images-prints/99/99__3x4.jpg' } });
+  });
 });
 
 describe('buildPrintDesignEntry', () => {
-  it('builds an unpublished PrintDesign entry from a manifest row', () => {
+  it('builds an unpublished PrintDesign entry from a poster manifest row', () => {
     expect(buildPrintDesignEntry(ROW)).toEqual({
+      id: 'fap005',
+      category: 'fine-art-prints',
+      num: '005',
+      image: '/uploads/fap-005.webp',
+      noteIndex: 4,
+      sizes: ['30x40', '50x70', '70x100'],
+      frameColours: ['black', 'natural', 'brown'],
+      mountAvailable: true,
+      published: false,
+    });
+  });
+
+  it('builds a full-axes unpublished PrintDesign entry from a fullBleed manifest row', () => {
+    expect(buildPrintDesignEntry(FULL_BLEED_ROW)).toEqual({
       id: 'fap005',
       category: 'fine-art-prints',
       num: '005',
@@ -105,20 +170,54 @@ describe('expectedVariantDimensions', () => {
     expect(dims).toHaveLength(6);
     expect(dims.some((d) => d.variantKey.includes(':true:true:'))).toBe(false);
   });
+
+  it('enumerates all 21 variants for FULL_AXES (fullBleed rows)', () => {
+    expect(expectedVariantDimensions(FULL_AXES)).toHaveLength(21);
+  });
 });
 
 describe('onboardingRowSchema / onboardingManifestSchema', () => {
-  it('accepts a well-formed row', () => {
+  it('accepts a well-formed poster row', () => {
     expect(onboardingRowSchema.safeParse(ROW).success).toBe(true);
+  });
+
+  it('accepts a well-formed fullBleed row, with and without masterFolder', () => {
+    expect(onboardingRowSchema.safeParse(FULL_BLEED_ROW).success).toBe(true);
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, masterFolder: '01' }).success).toBe(true);
   });
 
   it('rejects an id that does not match fapNNN', () => {
     expect(onboardingRowSchema.safeParse({ ...ROW, id: 'fap5' }).success).toBe(false);
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, id: 'fap5' }).success).toBe(false);
   });
 
   it('rejects an unrecognized size or frame colour', () => {
     expect(onboardingRowSchema.safeParse({ ...ROW, sizes: ['a4'] }).success).toBe(false);
     expect(onboardingRowSchema.safeParse({ ...ROW, frameColours: ['white'] }).success).toBe(false);
+  });
+
+  it('rejects a malformed masterFolder', () => {
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, masterFolder: '1' }).success).toBe(false);
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, masterFolder: 'ab' }).success).toBe(false);
+  });
+
+  it('rejects an unrecognized style', () => {
+    expect(onboardingRowSchema.safeParse({ ...ROW, style: 'bogus' }).success).toBe(false);
+  });
+
+  it('rejects a poster row missing style', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { style: _style, ...withoutStyle } = ROW;
+    expect(onboardingRowSchema.safeParse(withoutStyle).success).toBe(false);
+  });
+
+  it('rejects a poster field on a fullBleed row (strict per-branch schema)', () => {
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, incomingFile: 'x.jpg' }).success).toBe(false);
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, sizes: ['30x40'] }).success).toBe(false);
+  });
+
+  it('rejects a fullBleed field on a poster row', () => {
+    expect(onboardingRowSchema.safeParse({ ...ROW, masterFolder: '01' }).success).toBe(false);
   });
 
   it('rejects an unknown extra field (strict)', () => {
@@ -128,5 +227,6 @@ describe('onboardingRowSchema / onboardingManifestSchema', () => {
   it('requires a non-empty array of rows', () => {
     expect(onboardingManifestSchema.safeParse([]).success).toBe(false);
     expect(onboardingManifestSchema.safeParse([ROW]).success).toBe(true);
+    expect(onboardingManifestSchema.safeParse([FULL_BLEED_ROW]).success).toBe(true);
   });
 });

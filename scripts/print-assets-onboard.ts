@@ -31,21 +31,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import { distinctProfiles } from '../src/lib/print-assets-prepare';
+import { assertSourceMatchesRatio, distinctProfiles, FULL_BLEED_LAYOUT, ratioForProfile, PRINT_RATIOS, type PrintRatio } from '../src/lib/print-assets-prepare';
 import {
   onboardingManifestSchema,
   deriveSourceProfile,
+  defaultMasterFolder,
   expectedVariantDimensions,
   buildPrepareConfig,
   buildPrintDesignEntry,
   ONBOARD_LAYOUT,
-  type OnboardingRow,
+  FULL_AXES,
+  type FullBleedOnboardingRow,
+  type PosterOnboardingRow,
 } from '../src/lib/print-assets-onboard';
 import { masterScaleReport, requiredMasterScale } from '../src/lib/print-assets-master-scale';
 import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, ROOT } from './lib/print-assets-cli';
 
 const INCOMING_DIR = path.join(ROOT, 'design', 'print-assets', '_incoming');
 const SHARED_SIGNATURE = path.join(ROOT, 'design', 'print-assets', '_shared', 'signature.svg');
+const MASTER_IMAGES_ROOT = path.join(ROOT, 'design', 'uploads', 'master-images-prints');
 const DEFAULT_MANIFEST = path.join(ROOT, 'config', 'print-assets', 'onboarding-manifest.json');
 const GENERATED_ENTRIES_PATH = path.join(INCOMING_DIR, 'generated-prints-entries.ts');
 
@@ -55,7 +59,11 @@ function designDir(id: string): string {
   return path.join(ROOT, 'design', 'print-assets', id);
 }
 
-async function checkResolution(row: OnboardingRow, incomingPath: string): Promise<string | null> {
+function configPathFor(id: string): string {
+  return path.join(ROOT, 'config', 'print-assets', `${id}.json`);
+}
+
+async function checkResolution(row: PosterOnboardingRow, incomingPath: string): Promise<string | null> {
   const meta = await sharp(incomingPath).metadata();
   const w = meta.width ?? 0;
   const h = meta.height ?? 0;
@@ -70,6 +78,52 @@ async function checkResolution(row: OnboardingRow, incomingPath: string): Promis
       `${w}x${h} is too small — needs ${worst.scale.toFixed(3)}x more for profile ${worst.profileKey} ` +
       `(box ${worst.box.width}x${worst.box.height})`
     );
+  }
+  return null;
+}
+
+/**
+ * Validate a fullBleed row's four canonical per-ratio masters: each must
+ * exist, decode, and resolve (via `ratioForProfile`) to the ratio its own
+ * filename claims, and each ratio's master must cover — without upscale —
+ * every profile that ratio serves (reuses `expectedVariantDimensions` +
+ * `masterScaleReport`, the same resolution-floor math `checkResolution` uses
+ * for poster rows).
+ */
+async function checkFullBleedResolution(row: FullBleedOnboardingRow): Promise<string | null> {
+  const folder = row.masterFolder ?? defaultMasterFolder(row.id);
+  const profiles = distinctProfiles(expectedVariantDimensions(FULL_AXES));
+  const profilesByRatio = new Map<PrintRatio, typeof profiles>();
+  for (const profile of profiles) {
+    const ratio = ratioForProfile(profile.w, profile.h);
+    profilesByRatio.set(ratio, [...(profilesByRatio.get(ratio) ?? []), profile]);
+  }
+
+  for (const ratio of PRINT_RATIOS) {
+    const sourcePath = path.join(MASTER_IMAGES_ROOT, folder, `${folder}__${ratio}.jpg`);
+    if (!fs.existsSync(sourcePath)) {
+      return `missing ${path.relative(ROOT, sourcePath)}`;
+    }
+    const meta = await sharp(sourcePath).metadata();
+    const w = meta.width ?? 0;
+    const h = meta.height ?? 0;
+    if (w === 0 || h === 0) return `could not decode ${path.relative(ROOT, sourcePath)}`;
+    try {
+      assertSourceMatchesRatio(ratio, { w, h });
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+
+    const ratioProfiles = profilesByRatio.get(ratio) ?? [];
+    const report = masterScaleReport(FULL_BLEED_LAYOUT, ratioProfiles, { w, h }, false);
+    const maxScale = requiredMasterScale(report);
+    if (maxScale > 1) {
+      const worst = report.reduce((a, b) => (b.scale > a.scale ? b : a));
+      return (
+        `${folder}__${ratio}.jpg (${w}x${h}) is too small — needs ${worst.scale.toFixed(3)}x more for profile ` +
+        `${worst.profileKey} (box ${worst.box.width}x${worst.box.height})`
+      );
+    }
   }
   return null;
 }
@@ -103,6 +157,40 @@ async function main(): Promise<void> {
   const generatedEntries: string[] = [];
 
   for (const row of rows) {
+    if (row.style === 'fullBleed') {
+      const resolutionError = await checkFullBleedResolution(row);
+      if (resolutionError) {
+        results.push({ id: row.id, status: 'fail', detail: resolutionError });
+        continue;
+      }
+
+      const configPath = configPathFor(row.id);
+      if (fs.existsSync(configPath) && !force) {
+        results.push({
+          id: row.id,
+          status: 'skip',
+          detail: `${path.relative(ROOT, configPath)} already exists (--force to overwrite)`,
+        });
+        generatedEntries.push(JSON.stringify(buildPrintDesignEntry(row), null, 2));
+        continue;
+      }
+
+      const sourceProfile = deriveSourceProfile(FULL_AXES.sizes);
+      generatedEntries.push(JSON.stringify(buildPrintDesignEntry(row), null, 2));
+
+      if (dryRun) {
+        results.push({ id: row.id, status: 'pass', detail: `would write ${path.relative(ROOT, configPath)}` });
+        continue;
+      }
+
+      // Sources are already in their canonical design/uploads/master-images-prints/
+      // home — fullBleed onboarding never copies masters, only points at them.
+      const config = { _comment: `${row.title} — generated by print-assets:onboard`, ...buildPrepareConfig(row, sourceProfile) };
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+      results.push({ id: row.id, status: 'pass', detail: `wrote ${path.relative(ROOT, configPath)}` });
+      continue;
+    }
+
     const incomingPath = path.join(INCOMING_DIR, row.incomingFile);
     if (!fs.existsSync(incomingPath)) {
       results.push({ id: row.id, status: 'fail', detail: `missing ${path.relative(ROOT, incomingPath)}` });
@@ -137,7 +225,7 @@ async function main(): Promise<void> {
     }
 
     const config = { _comment: `${row.title} — generated by print-assets:onboard`, ...buildPrepareConfig(row, sourceProfile) };
-    const configPath = path.join(ROOT, 'config', 'print-assets', `${row.id}.json`);
+    const configPath = configPathFor(row.id);
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
 
     results.push({ id: row.id, status: 'pass', detail: `wrote ${path.relative(ROOT, targetDir)}/ + ${path.relative(ROOT, configPath)}` });

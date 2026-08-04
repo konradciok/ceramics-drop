@@ -166,6 +166,41 @@ export async function composeDerivative(input: ComposeInput): Promise<Derivative
   return { sha256, byteSize: buffer.byteLength, format, buffer };
 }
 
+/**
+ * Compose one exact-pixel full-bleed derivative: a plain resize of the
+ * per-ratio master to the exact target pixels — no background canvas, no
+ * overlay, no crop. The caller (scripts/print-assets-prepare.ts) has already
+ * validated the source's ratio matches its assigned profile ratio and that no
+ * upscale is required (src/lib/print-assets-prepare.ts `assertSourceMatchesRatio`
+ * / `validateNoUpscale`), so `fit: 'fill'` here only ever applies the
+ * negligible (<=0.5%) correction that tolerance allows — never a real crop or
+ * letterbox. Lanczos3 kernel per plan; sRGB embedded via `.withMetadata()`.
+ */
+export async function composeFullBleedDerivative(input: {
+  sourcePath: string;
+  target: { w: number; h: number };
+  format: DerivativeFormat;
+}): Promise<DerivativeResult> {
+  const { sourcePath, target, format } = input;
+
+  let pipeline = sharp(sourcePath)
+    .resize(target.w, target.h, { fit: 'fill', kernel: sharp.kernel.lanczos3 })
+    .toColourspace('srgb')
+    .removeAlpha()
+    .withMetadata();
+
+  if (format === 'jpg') {
+    pipeline = pipeline.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
+  } else {
+    pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: false });
+  }
+
+  const buffer = await pipeline.toBuffer();
+  const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
+
+  return { sha256, byteSize: buffer.byteLength, format, buffer };
+}
+
 /** Require a self-contained path-only SVG that Sharp can decode. */
 export async function validateSignatureSvg(signatureSvgPath: string): Promise<void> {
   try {
