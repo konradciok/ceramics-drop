@@ -8,7 +8,7 @@ describe('getPrintDesigns', () => {
   it('returns only published designs', async () => {
     const designs = await getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
-    expect(designs.map(d => d.id)).toEqual(['fap01', 'fap02', 'fap03']);
+    expect(designs.map(d => d.id)).toEqual(['fap01', 'fap02', 'fap03', 'fap005']);
     expect(designs.find(d => d.id === 'fap04')).toBeUndefined();
   });
 });
