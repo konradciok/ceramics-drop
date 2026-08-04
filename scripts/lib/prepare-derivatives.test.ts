@@ -3,11 +3,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { composeDerivative, validateSignatureSvg, signatureDensity, rasterizeSignature, prepareOutputDir } from './prepare-derivatives';
+import {
+  composeDerivative,
+  composeFullBleedDerivative,
+  validateSignatureSvg,
+  signatureDensity,
+  rasterizeSignature,
+  prepareOutputDir,
+} from './prepare-derivatives';
 import type { Placement } from '../../src/lib/print-assets-prepare';
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'compose-test-'));
 const ARTWORK = path.join(TMP, 'artwork.png');
+// A 3:4 full-bleed master (30x40 px — tiny fixture, real ratio) — solid red.
+const FULL_BLEED_3X4 = path.join(TMP, 'full-bleed-3x4.jpg');
 const SIG = path.join(TMP, 'sig.svg');
 const BAD_SIG = path.join(TMP, 'bad.svg');
 const TEXT_SIG = path.join(TMP, 'text.svg');
@@ -21,6 +30,10 @@ beforeAll(async () => {
   await sharp({ create: { width: 200, height: 200, channels: 3, background: '#ff0000' } })
     .png()
     .toFile(ARTWORK);
+  // A solid-blue 30x40 (3:4) full-bleed master.
+  await sharp({ create: { width: 30, height: 40, channels: 3, background: '#0000ff' } })
+    .jpeg()
+    .toFile(FULL_BLEED_3X4);
   // A 100x20 solid-blue signature SVG.
   fs.writeFileSync(
     SIG,
@@ -201,6 +214,50 @@ describe('composeDerivative', () => {
       target: { w: 1000, h: 1000 },
       format: 'jpg',
     });
+    expect(result.byteSize).toBeGreaterThan(0);
+  });
+});
+
+describe('composeFullBleedDerivative', () => {
+  it('resizes the source directly to the exact target pixels — no canvas, no crop', async () => {
+    const result = await composeFullBleedDerivative({
+      sourcePath: FULL_BLEED_3X4,
+      target: { w: 60, h: 80 },
+      format: 'jpg',
+    });
+    const meta = await sharp(result.buffer).metadata();
+    expect(meta.width).toBe(60);
+    expect(meta.height).toBe(80);
+    expect(result.format).toBe('jpg');
+  });
+
+  it('is byte-deterministic across two runs', async () => {
+    const input = { sourcePath: FULL_BLEED_3X4, target: { w: 60, h: 80 }, format: 'jpg' as const };
+    const a = await composeFullBleedDerivative(input);
+    const b = await composeFullBleedDerivative(input);
+    expect(a.sha256).toBe(b.sha256);
+  });
+
+  it('embeds an sRGB ICC profile and produces a three-channel output with no alpha', async () => {
+    const result = await composeFullBleedDerivative({
+      sourcePath: FULL_BLEED_3X4,
+      target: { w: 60, h: 80 },
+      format: 'png',
+    });
+    const metadata = await sharp(result.buffer).metadata();
+    expect(metadata.space).toBe('srgb');
+    expect(metadata.hasProfile).toBe(true);
+    expect(metadata.channels).toBe(3);
+    expect(metadata.hasAlpha).toBe(false);
+  });
+
+  it('supports png format', async () => {
+    const result = await composeFullBleedDerivative({
+      sourcePath: FULL_BLEED_3X4,
+      target: { w: 60, h: 80 },
+      format: 'png',
+    });
+    expect(result.format).toBe('png');
     expect(result.byteSize).toBeGreaterThan(0);
   });
 });

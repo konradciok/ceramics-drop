@@ -11,6 +11,7 @@ import {
   loadManifestV2,
   loadPublishManifest,
   tryLoadManifestV2,
+  isFullBleedConfig,
 } from './print-assets-cli';
 import {
   buildManifest,
@@ -208,6 +209,7 @@ describe('config + manifest loaders', () => {
     it('loads a config, hashes its raw bytes, and resolves artwork/signature paths', () => {
       writeConfig('fap01', VALID_CONFIG);
       const loaded = loadPrepareConfig('fap01', root);
+      if (isFullBleedConfig(loaded)) throw new Error('expected a poster config in this test');
       expect(loaded.value.product).toBe('fap01');
       expect(loaded.sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(loaded.artwork.manifestPath).toBe('design/print-assets/fap01/artwork.png');

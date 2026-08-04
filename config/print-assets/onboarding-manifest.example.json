@@ -1,0 +1,25 @@
+[
+  {
+    "id": "fap006",
+    "title": "Ostrea 09",
+    "style": "poster",
+    "incomingFile": "ostrea-09.jpg",
+    "sizes": ["30x40", "50x70"],
+    "frameColours": ["black", "natural"],
+    "mountAvailable": false,
+    "noteIndex": 5
+  },
+  {
+    "id": "fap005",
+    "title": "Painting 01",
+    "style": "fullBleed",
+    "noteIndex": 4
+  },
+  {
+    "id": "fap009",
+    "title": "Painting 05",
+    "style": "fullBleed",
+    "masterFolder": "05",
+    "noteIndex": 8
+  }
+]

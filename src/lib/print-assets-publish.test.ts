@@ -11,7 +11,12 @@ import {
   type RemoteProbe,
   type FulfilmentUploadEffects,
 } from './print-assets-publish';
-import { buildR2Key, type ManifestDerivative, type PrepareManifest, type PublishManifest } from './print-assets-prepare';
+import {
+  buildR2Key,
+  type PosterManifestDerivative,
+  type PosterPrepareManifest,
+  type PublishManifest,
+} from './print-assets-prepare';
 
 // Module-scope regexes (avoid re-compiling inside each assertion).
 const REFUSING_OVERWRITE_RE = /Refusing to overwrite/;
@@ -24,8 +29,8 @@ const READBACK_MISMATCH_RE = /Read-back mismatch/;
 const READBACK_ABSENT_RE = /absent immediately after/;
 
 /** A minimal two-profile schema-v2 manifest: two derivatives, three variants (one shared). */
-function manifest(overrides: Partial<PrepareManifest> = {}): PrepareManifest {
-  const derivatives: ManifestDerivative[] = [
+function manifest(overrides: Partial<PosterPrepareManifest> = {}): PosterPrepareManifest {
+  const derivatives: PosterManifestDerivative[] = [
     {
       width: 3600,
       height: 4800,

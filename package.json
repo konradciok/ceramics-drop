@@ -29,6 +29,7 @@
     "sync-prodigi-skus": "tsx scripts/sync-prodigi-skus.ts",
     "print-assets:inventory": "tsx scripts/print-asset-inventory.ts",
     "print-fulfilment:check-jobs": "tsx scripts/check-print-fulfilment-jobs.ts",
+    "print-assets:onboard": "tsx scripts/print-assets-onboard.ts",
     "print-assets:prepare": "tsx scripts/print-assets-prepare.ts",
     "print-assets:upload": "tsx scripts/print-assets-upload.ts",
     "print-assets:verify": "tsx scripts/print-assets-verify.ts",

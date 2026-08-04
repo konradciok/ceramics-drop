@@ -134,7 +134,14 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
 
   rows.sort((a, b) => {
     const byCat = categoryRank(a.category) - categoryRank(b.category);
-    return byCat !== 0 ? byCat : a.num.localeCompare(b.num);
+    if (byCat !== 0) return byCat;
+    // `num` is digit-only ('01', '005', …) but not fixed-width across the
+    // registry (ceramics vs 2-digit vs 3-digit print ids) — a string compare
+    // sorts '005' before '01'. Compare numerically; fall back to string
+    // compare only if either side isn't a plain number.
+    const numA = Number(a.num);
+    const numB = Number(b.num);
+    return Number.isFinite(numA) && Number.isFinite(numB) ? numA - numB : a.num.localeCompare(b.num);
   });
   return rows;
 }

@@ -14,8 +14,12 @@ import {
   parsePrepareManifest,
   parsePublishManifest,
   validatePrepareConfig,
+  PRINT_RATIOS,
+  type FullBleedPrepareConfig,
+  type PosterPrepareConfig,
   type PrepareConfig,
   type PrepareManifest,
+  type PrintRatio,
   type PublishManifest,
 } from '../../src/lib/print-assets-prepare';
 
@@ -38,6 +42,7 @@ export const PRINT_ASSET_ARG_SPECS = {
   publish: { strings: ['product', 'revision', 'confirm', 'actor'], booleans: ['dry-run'] },
   gallery: { strings: ['product', 'slot', 'revision'], booleans: ['dry-run'] },
   mockups: { strings: ['product', 'state', 'revision'], booleans: ['dry-run'] },
+  onboard: { strings: ['manifest'], booleans: ['dry-run', 'force'] },
 } as const;
 
 /**
@@ -159,12 +164,34 @@ export function localDerivativePath(
  * normalized repository-relative POSIX paths; `absolutePath` fields are for
  * local I/O only and are never serialized.
  */
-export interface LoadedPrepareConfig {
-  value: PrepareConfig;
+export interface LoadedPosterPrepareConfig {
+  value: PosterPrepareConfig;
   configPath: string;
   sha256: string;
   artwork: { manifestPath: string; absolutePath: string };
   signature: { manifestPath: string; absolutePath: string } | null;
+}
+
+/**
+ * Full-bleed configs have no single artwork/signature — one resolved source
+ * per print ratio instead. Sources live under the shared canonical
+ * `design/uploads/master-images-prints/` pool (docs/plans/
+ * full-bleed-print-assets-plan.md), not `design/print-assets/{productId}/`,
+ * so they are guarded against escaping `design/` broadly rather than the
+ * narrower per-product directory poster configs use.
+ */
+export interface LoadedFullBleedPrepareConfig {
+  value: FullBleedPrepareConfig;
+  configPath: string;
+  sha256: string;
+  sources: Record<PrintRatio, { manifestPath: string; absolutePath: string }>;
+}
+
+export type LoadedPrepareConfig = LoadedPosterPrepareConfig | LoadedFullBleedPrepareConfig;
+
+/** Type-guard narrowing helper — nested-discriminant (`config.value.mode`) narrowing isn't inferred automatically. */
+export function isFullBleedConfig(config: LoadedPrepareConfig): config is LoadedFullBleedPrepareConfig {
+  return config.value.mode === 'fullBleed';
 }
 
 /** Resolve a config path under `design/print-assets/{productId}`, rejecting any escape. */
@@ -180,11 +207,22 @@ function resolveUnderProduct(root: string, productId: string, manifestPath: stri
   return absolute;
 }
 
+/** Resolve a config path under `design/`, rejecting any escape (full-bleed sources). */
+function resolveUnderDesign(root: string, manifestPath: string, label: string): string {
+  const designDir = path.join(root, 'design');
+  const absolute = path.resolve(root, manifestPath);
+  const relative = path.relative(designDir, absolute);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`Config ${label} path "${manifestPath}" resolves outside design/ — refusing.`);
+  }
+  return absolute;
+}
+
 /**
  * Load + validate `config/print-assets/{productId}.json`, hash its raw bytes,
- * and resolve its artwork/signature paths under the product's design directory.
- * Fails loudly on a missing, unparseable, structurally invalid, or path-escaping
- * config before any Sharp/Supabase/R2 work.
+ * and resolve its artwork/signature (poster) or per-ratio source (fullBleed)
+ * paths. Fails loudly on a missing, unparseable, structurally invalid, or
+ * path-escaping config before any Sharp/Supabase/R2 work.
  */
 export function loadPrepareConfig(productId: string, root: string = ROOT): LoadedPrepareConfig {
   assertSafeSegment('product', productId);
@@ -207,6 +245,18 @@ export function loadPrepareConfig(productId: string, root: string = ROOT): Loade
     throw new Error(`Invalid prepare config ${path.relative(root, configPath)}:\n  - ${errors.join('\n  - ')}`);
   }
   const value = parsed as PrepareConfig;
+
+  if (value.mode === 'fullBleed') {
+    const sources = {} as Record<PrintRatio, { manifestPath: string; absolutePath: string }>;
+    for (const ratio of PRINT_RATIOS) {
+      const manifestPath = value.sources[ratio];
+      sources[ratio] = {
+        manifestPath,
+        absolutePath: resolveUnderDesign(root, manifestPath, `sources.${ratio}`),
+      };
+    }
+    return { value, configPath, sha256, sources };
+  }
 
   const artwork = {
     manifestPath: value.artwork,

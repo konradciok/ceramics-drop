@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   encodePrintToken, decodePrintToken, isPrintToken,
   variantKey, variantLabel, printVariantButtonState, PRODIGI_SKU_MAP,
-  PRINT_SIZES, PRINT_FRAME_COLOURS,
+  PRINT_SIZES, PRINT_FRAME_COLOURS, assetPxFor,
 } from './print-cart';
 
 describe('isPrintToken', () => {
@@ -152,5 +152,27 @@ describe('PRODIGI_SKU_MAP — brown replaces white (2026-07-19 colour swap)', ()
   it('has no white keys and still exactly 21 entries', () => {
     expect(Object.keys(PRODIGI_SKU_MAP).some((k) => k.endsWith(':white'))).toBe(false);
     expect(Object.keys(PRODIGI_SKU_MAP)).toHaveLength(21);
+  });
+});
+
+describe('assetPxFor — asset contract vs Prodigi print area (2026-08-03 decision #6)', () => {
+  it('black 30x40 framed keeps printAreaPx as API truth but submits the shared 3600×4800 render', () => {
+    const black = PRODIGI_SKU_MAP['30x40:true:false:black'];
+    expect(black.printAreaPx).toEqual({ w: 3614, h: 4795 }); // drift-detection truth
+    expect(assetPxFor(black)).toEqual({ w: 3600, h: 4800 }); // render/upload contract
+  });
+
+  it('is the identity for every other variant (no other assetPx overrides)', () => {
+    for (const [key, entry] of Object.entries(PRODIGI_SKU_MAP)) {
+      if (key === '30x40:true:false:black') continue;
+      expect(entry.assetPx).toBeUndefined();
+      expect(assetPxFor(entry)).toEqual(entry.printAreaPx);
+    }
+  });
+
+  it('collapses 30x40 framed variants to a single render profile', () => {
+    const dims = ['black', 'natural', 'brown']
+      .map((c) => assetPxFor(PRODIGI_SKU_MAP[`30x40:true:false:${c}`]));
+    expect(new Set(dims.map((d) => `${d.w}x${d.h}`))).toEqual(new Set(['3600x4800']));
   });
 });

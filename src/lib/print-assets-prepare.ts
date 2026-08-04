@@ -29,6 +29,56 @@ export function buildR2Key(
   return `prints/${productId}/${revision}/${width}x${height}-${sha256}.${format}`;
 }
 
+// ── Print ratios (full-bleed profile → ratio mapping) ──────────────────────
+
+/**
+ * The four master-image aspect ratios the full-bleed print catalogue is shot
+ * against (docs/plans/full-bleed-print-assets-plan.md). `2x3` is shared by
+ * three CFPM (mounted) fulfilment profiles.
+ */
+export type PrintRatio = '3x4' | '5x7' | '7x10' | '2x3';
+
+export const PRINT_RATIOS: readonly PrintRatio[] = ['3x4', '5x7', '7x10', '2x3'];
+
+const RATIO_VALUE: Record<PrintRatio, number> = {
+  '3x4': 3 / 4,
+  '5x7': 5 / 7,
+  '7x10': 7 / 10,
+  '2x3': 2 / 3,
+};
+
+/** Relative aspect-ratio tolerance for full-bleed profile/source matching. */
+export const RATIO_TOLERANCE = 0.005;
+
+/**
+ * Map a pixel width/height to one of the four named print ratios by aspect,
+ * within `RATIO_TOLERANCE` (0.5% relative). Fails closed: throws when no
+ * ratio matches, so an unrecognized future profile shape breaks loudly
+ * instead of silently reusing the wrong master.
+ */
+export function ratioForProfile(w: number, h: number): PrintRatio {
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+    throw new Error(`Invalid profile dimensions ${w}x${h}`);
+  }
+  const actual = w / h;
+  let best: PrintRatio | null = null;
+  let bestDiff = Infinity;
+  for (const ratio of PRINT_RATIOS) {
+    const diff = Math.abs(actual - RATIO_VALUE[ratio]) / RATIO_VALUE[ratio];
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = ratio;
+    }
+  }
+  if (best === null || bestDiff > RATIO_TOLERANCE) {
+    throw new Error(
+      `No known print ratio matches profile ${w}x${h} (aspect ${actual.toFixed(4)}) within ` +
+        `${(RATIO_TOLERANCE * 100).toFixed(1)}% of 3x4, 5x7, 7x10, or 2x3.`,
+    );
+  }
+  return best;
+}
+
 // ── Profile dedupe ───────────────────────────────────────────────────────────
 
 export interface VariantDimension {
@@ -243,6 +293,38 @@ export function validateNoUpscale(
   return [];
 }
 
+/**
+ * Zero-fraction layout for full-bleed mode: `resolvePlacement` with this
+ * layout yields the trivial placement (artworkBox = full canvas, no
+ * signature) full-bleed derivatives need — the submitted derivative IS the
+ * artwork, edge to edge. Reused (not a bespoke placement function) so the
+ * same `validatePlacement`/`validateNoUpscale` fit checks apply uniformly.
+ */
+export const FULL_BLEED_LAYOUT: PrintLayout = {
+  sideMargin: 0,
+  topMargin: 0,
+  bottomMargin: 0,
+  gapAboveSignature: 0,
+  signatureZoneHeight: 0,
+};
+
+/**
+ * Guard against a wrong/renamed full-bleed master file: the decoded source's
+ * own aspect ratio must resolve (via `ratioForProfile`) to the ratio it was
+ * assigned under in `sources`. The pipeline never crops full-bleed masters —
+ * a same-ratio swap between designs is NOT caught by this (see plan risks;
+ * the manifest's per-source sha256 + operator proof review is that guard).
+ */
+export function assertSourceMatchesRatio(expected: PrintRatio, source: { w: number; h: number }): void {
+  const actual = ratioForProfile(source.w, source.h);
+  if (actual !== expected) {
+    throw new Error(
+      `Source dimensions ${source.w}x${source.h} resolve to ratio "${actual}", but it was assigned to ` +
+        `"${expected}" — wrong or mislabeled master file?`,
+    );
+  }
+}
+
 // ── Tracked config — config/print-assets/{productId}.json ──────────────────
 
 /** Storefront gallery slot — source fulfilment profile + public/uploads stem. */
@@ -260,9 +342,16 @@ export interface SignatureConfig {
  * Product-level composition config (one layout adapts to every profile).
  * Replaces the per-profile crop map. sourceSha256/sourceWidth/sourceHeight in
  * the manifest refer to the `artwork` master named here.
+ *
+ * `mode` is absent (or `'poster'`) for the existing margins + background +
+ * signature layout — back-compat, byte-for-byte unchanged. `'fullBleed'` is
+ * the per-ratio-master shape for the 43 full-bleed paintings (docs/plans/
+ * full-bleed-print-assets-plan.md): the submitted derivative IS the artwork,
+ * edge to edge, so there is no background/layout/signature to configure.
  */
-export interface PrepareConfig {
+export interface PosterPrepareConfig {
   product: string;
+  mode?: 'poster';
   artwork: string; // path to artwork-only master, under design/
   background: string; // hex colour, e.g. "#E8E0D7"
   format: DerivativeFormat; // product-level output format
@@ -272,20 +361,25 @@ export interface PrepareConfig {
   gallery?: Record<string, GallerySlotConfig>;
 }
 
+export interface FullBleedPrepareConfig {
+  product: string;
+  mode: 'fullBleed';
+  format: DerivativeFormat;
+  /** Per-ratio master image, one of each of the four print ratios. */
+  sources: Record<PrintRatio, string>;
+  /** Optional storefront gallery slots (operator `print-assets:gallery`). */
+  gallery?: Record<string, GallerySlotConfig>;
+}
+
+export type PrepareConfig = PosterPrepareConfig | FullBleedPrepareConfig;
+
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/**
- * Validate the untrusted JSON config before any filesystem, Supabase, or Sharp
- * work. TypeScript's `PrepareConfig` type does not protect the operator CLI at
- * runtime because the file is parsed from JSON.
- */
-export function validatePrepareConfig(value: unknown, expectedProduct?: string): string[] {
-  if (!isRecord(value)) return ['Prepare config must be a JSON object'];
-
+function validatePosterConfig(value: Record<string, unknown>, expectedProduct?: string): string[] {
   const errors: string[] = [];
   if (typeof value.product !== 'string' || value.product.trim() === '') {
     errors.push('Config field "product" must be a non-empty string');
@@ -314,10 +408,71 @@ export function validatePrepareConfig(value: unknown, expectedProduct?: string):
   return errors;
 }
 
+function validateFullBleedConfig(value: Record<string, unknown>, expectedProduct?: string): string[] {
+  const errors: string[] = [];
+  if (typeof value.product !== 'string' || value.product.trim() === '') {
+    errors.push('Config field "product" must be a non-empty string');
+  } else if (expectedProduct && value.product !== expectedProduct) {
+    errors.push(`Config declares product "${value.product}", expected "${expectedProduct}"`);
+  }
+  if (value.format !== 'jpg' && value.format !== 'png') {
+    errors.push(`Config field "format" must be "jpg" or "png", got ${JSON.stringify(value.format)}`);
+  }
+  if (!isRecord(value.sources)) {
+    errors.push('Config field "sources" must be an object with exactly the keys 3x4, 5x7, 7x10, 2x3');
+  } else {
+    const keys = Object.keys(value.sources).sort();
+    const expectedKeys = [...PRINT_RATIOS].sort();
+    if (keys.length !== expectedKeys.length || !keys.every((k, i) => k === expectedKeys[i])) {
+      errors.push(
+        `Config field "sources" must have exactly the keys ${expectedKeys.join(', ')}, got ${keys.join(', ') || '(none)'}`,
+      );
+    }
+    for (const ratio of PRINT_RATIOS) {
+      const path = value.sources[ratio];
+      if (path !== undefined && (typeof path !== 'string' || path.trim() === '')) {
+        errors.push(`Config field "sources.${ratio}" must be a non-empty path`);
+      }
+    }
+  }
+  // fullBleed mode has no background/layout/artwork/signature — reject them
+  // explicitly rather than silently ignoring a poster field left in by mistake.
+  for (const field of ['artwork', 'background', 'layout', 'signature'] as const) {
+    if (value[field] !== undefined) {
+      errors.push(`Config field "${field}" is not allowed in fullBleed mode (mode:'fullBleed' has no ${field})`);
+    }
+  }
+  return errors;
+}
+
+/**
+ * Validate the untrusted JSON config before any filesystem, Supabase, or Sharp
+ * work. TypeScript's `PrepareConfig` type does not protect the operator CLI at
+ * runtime because the file is parsed from JSON. Dispatches on `mode`: absent
+ * (or `'poster'`) validates the existing composition shape unchanged;
+ * `'fullBleed'` requires `sources` and rejects poster-only fields.
+ */
+export function validatePrepareConfig(value: unknown, expectedProduct?: string): string[] {
+  if (!isRecord(value)) return ['Prepare config must be a JSON object'];
+  if (value.mode !== undefined && value.mode !== 'poster' && value.mode !== 'fullBleed') {
+    return [`Config field "mode" must be "poster" or "fullBleed" when set, got ${JSON.stringify(value.mode)}`];
+  }
+  return value.mode === 'fullBleed'
+    ? validateFullBleedConfig(value, expectedProduct)
+    : validatePosterConfig(value, expectedProduct);
+}
+
 // ── Manifest schema v2 ─────────────────────────────────────────────────────
 
-/** Bump when the Sharp compose pipeline changes in any way that affects output bytes. */
-export const COMPOSE_RENDERER_VERSION = '2.1.0';
+/**
+ * Bump when the Sharp compose pipeline changes in any way that affects output
+ * bytes. 3.0.0 (2026-08-03): adds full-bleed mode (additive, mode-gated —
+ * existing poster manifests remain valid); re-gates every manifest so a
+ * future poster re-prepare is required before re-upload, but does not affect
+ * already-published assets (publish accepts any schema-v2 manifest regardless
+ * of rendererVersion — see parsePublishManifest).
+ */
+export const COMPOSE_RENDERER_VERSION = '3.0.0';
 
 const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
 const safeSegmentSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
@@ -351,7 +506,7 @@ const layoutSchema = z
     artworkMaxHeight: z.number().finite().min(0).max(1).optional(),
   })
   .strict();
-const derivativeSchema = z
+const posterDerivativeSchema = z
   .object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
@@ -362,6 +517,25 @@ const derivativeSchema = z
     signatureBoxPx: boxSchema.nullable(),
   })
   .strict();
+const fullBleedSourceSchema = z
+  .object({
+    ratio: z.enum(['3x4', '5x7', '7x10', '2x3']),
+    path: repoRelativePathSchema,
+    sha256: sha256Schema,
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+  })
+  .strict();
+const fullBleedDerivativeSchema = z
+  .object({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    format: formatSchema,
+    sha256: sha256Schema,
+    byteSize: z.number().int().positive(),
+    source: fullBleedSourceSchema,
+  })
+  .strict();
 const assignmentSchema = z
   .object({
     variantKey: z.string().min(1),
@@ -370,13 +544,15 @@ const assignmentSchema = z
   .strict();
 
 /**
- * Strict schema-v2 manifest. Every fact is stored exactly once: the derived
- * `profileKey` / `contentType` / `r2Key` a derivative used to carry are recomputed
- * from dimensions, format, hash, product, and revision by the consumers.
+ * Strict schema-v2 poster manifest (mode absent or `'poster'`). Every fact is
+ * stored exactly once: the derived `profileKey` / `contentType` / `r2Key` a
+ * derivative used to carry are recomputed from dimensions, format, hash,
+ * product, and revision by the consumers.
  */
-export const prepareManifestSchema = z
+const posterPrepareManifestSchema = z
   .object({
     schemaVersion: z.literal(2),
+    mode: z.literal('poster').optional(),
     product: safeSegmentSchema,
     revision: safeSegmentSchema,
     rendererVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
@@ -392,14 +568,40 @@ export const prepareManifestSchema = z
       })
       .strict(),
     signature: z.object({ path: repoRelativePathSchema, sha256: sha256Schema }).strict().nullable(),
-    derivatives: z.array(derivativeSchema).min(1),
+    derivatives: z.array(posterDerivativeSchema).min(1),
     assignments: z.array(assignmentSchema).min(1),
   })
   .strict();
 
-export type PrepareManifest = z.infer<typeof prepareManifestSchema>;
-export type ManifestDerivative = PrepareManifest['derivatives'][number];
-export type ManifestAssignment = PrepareManifest['assignments'][number];
+/**
+ * Strict schema-v2 full-bleed manifest (mode `'fullBleed'`, additive since
+ * 3.0.0 — docs/plans/full-bleed-print-assets-plan.md). No background/layout/
+ * artwork/signature: the submitted derivative IS the artwork, edge to edge.
+ * Each derivative instead carries its own per-ratio source identity.
+ */
+const fullBleedPrepareManifestSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    mode: z.literal('fullBleed'),
+    product: safeSegmentSchema,
+    revision: safeSegmentSchema,
+    rendererVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    configSha256: sha256Schema,
+    derivatives: z.array(fullBleedDerivativeSchema).min(1),
+    assignments: z.array(assignmentSchema).min(1),
+  })
+  .strict();
+
+/** Union of both schema-v2 manifest shapes, for external structural validation. */
+export const prepareManifestSchema = z.union([posterPrepareManifestSchema, fullBleedPrepareManifestSchema]);
+
+export type PosterPrepareManifest = z.infer<typeof posterPrepareManifestSchema>;
+export type FullBleedPrepareManifest = z.infer<typeof fullBleedPrepareManifestSchema>;
+export type PrepareManifest = PosterPrepareManifest | FullBleedPrepareManifest;
+export type PosterManifestDerivative = PosterPrepareManifest['derivatives'][number];
+export type FullBleedManifestDerivative = FullBleedPrepareManifest['derivatives'][number];
+export type ManifestDerivative = PosterManifestDerivative | FullBleedManifestDerivative;
+export type ManifestAssignment = z.infer<typeof assignmentSchema>;
 
 /** Matches DB `profile_key` and legacy manifest profile keys. */
 export function profileKeyFromPx(width: number, height: number): string {
@@ -457,18 +659,8 @@ function assertAssignmentCoverage(
   }
 }
 
-/**
- * Structurally parse a schema-v2 manifest, then enforce mode-neutral invariants:
- * unique derived profiles, signature-box consistency, renderer-2.1 placement
- * recomputation with canvas-bounds, and exact assignment coverage. Does not read
- * files or config; `loadManifestV2` adds the current-renderer requirement and
- * preflight adds config equality + source-byte checks.
- */
-export function parsePrepareManifest(value: unknown): PrepareManifest {
-  if (isRecord(value) && value.schemaVersion !== 2) {
-    throw new Error(`Manifest schemaVersion must be 2, got ${JSON.stringify(value.schemaVersion)}`);
-  }
-  const parsed = prepareManifestSchema.safeParse(value);
+function parsePosterManifest(value: unknown): PosterPrepareManifest {
+  const parsed = posterPrepareManifestSchema.safeParse(value);
   if (!parsed.success) throw new Error(`Invalid manifest schema v2: ${z.prettifyError(parsed.error)}`);
   const manifest = parsed.data;
 
@@ -516,6 +708,53 @@ export function parsePrepareManifest(value: unknown): PrepareManifest {
 
   assertAssignmentCoverage(profiles, manifest.assignments);
   return manifest;
+}
+
+function parseFullBleedManifest(value: unknown): FullBleedPrepareManifest {
+  const parsed = fullBleedPrepareManifestSchema.safeParse(value);
+  if (!parsed.success) throw new Error(`Invalid manifest schema v2 (fullBleed): ${z.prettifyError(parsed.error)}`);
+  const manifest = parsed.data;
+
+  const profiles = new Set<string>();
+  for (const derivative of manifest.derivatives) {
+    const profileKey = profileKeyFromPx(derivative.width, derivative.height);
+    if (profiles.has(profileKey)) throw new Error(`Manifest contains a duplicate derivative profile ${profileKey}`);
+    profiles.add(profileKey);
+
+    // The derivative's own pixel ratio must resolve to its declared source
+    // ratio, and the source's own decoded aspect must match that ratio too —
+    // the wrong-file guard the plan calls for (never crop; fail on mismatch).
+    const derivativeRatio = ratioForProfile(derivative.width, derivative.height);
+    if (derivativeRatio !== derivative.source.ratio) {
+      throw new Error(
+        `Derivative ${profileKey} resolves to ratio "${derivativeRatio}" but its source is recorded as ` +
+          `"${derivative.source.ratio}" — profile/source ratio mismatch.`,
+      );
+    }
+    assertSourceMatchesRatio(derivative.source.ratio, { w: derivative.source.width, h: derivative.source.height });
+  }
+
+  assertAssignmentCoverage(profiles, manifest.assignments);
+  return manifest;
+}
+
+/**
+ * Structurally parse a schema-v2 manifest, then enforce mode-neutral invariants:
+ * unique derived profiles and exact assignment coverage, plus mode-specific
+ * invariants (poster: signature-box consistency + placement recomputation with
+ * canvas-bounds; fullBleed: derivative/source ratio agreement). Dispatches on
+ * `mode` (absent/`'poster'` vs `'fullBleed'`). Does not read files or config;
+ * `loadManifestV2` adds the current-renderer requirement and preflight adds
+ * config equality + source-byte checks.
+ */
+export function parsePrepareManifest(value: unknown): PrepareManifest {
+  if (isRecord(value) && value.schemaVersion !== 2) {
+    throw new Error(`Manifest schemaVersion must be 2, got ${JSON.stringify(value.schemaVersion)}`);
+  }
+  if (isRecord(value) && value.mode === 'fullBleed') {
+    return parseFullBleedManifest(value);
+  }
+  return parsePosterManifest(value);
 }
 
 // ── Validated legacy publish projection ──────────────────────────────────────
@@ -668,12 +907,13 @@ export interface BuildManifestInput {
 }
 
 /**
- * Build a schema-v2 manifest, storing each fact once. Derivative entries carry
- * only dimensions, format, hash, byte size, and the resolved boxes — consumers
- * derive profileKey / contentType / r2Key from those canonical fields.
+ * Build a schema-v2 poster manifest, storing each fact once. Derivative
+ * entries carry only dimensions, format, hash, byte size, and the resolved
+ * boxes — consumers derive profileKey / contentType / r2Key from those
+ * canonical fields.
  */
-export function buildManifest(input: BuildManifestInput): PrepareManifest {
-  const derivatives: ManifestDerivative[] = input.profiles.map((profile) => {
+export function buildManifest(input: BuildManifestInput): PosterPrepareManifest {
+  const derivatives: PosterManifestDerivative[] = input.profiles.map((profile) => {
     const meta = input.derivativeMeta[profile.profileKey];
     if (!meta) throw new Error(`Missing derivative output for profile ${profile.profileKey}`);
     return {
@@ -698,6 +938,7 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
 
   return {
     schemaVersion: 2,
+    mode: 'poster',
     product: input.product,
     revision: input.revision,
     rendererVersion: COMPOSE_RENDERER_VERSION,
@@ -714,6 +955,62 @@ export function buildManifest(input: BuildManifestInput): PrepareManifest {
       input.signatureManifestPath && input.signatureSha256
         ? { path: input.signatureManifestPath, sha256: input.signatureSha256 }
         : null,
+    derivatives,
+    assignments,
+  };
+}
+
+// ── Build manifest v2 — fullBleed ─────────────────────────────────────────────
+
+export interface BuildFullBleedManifestInput {
+  product: string;
+  revision: string;
+  /** SHA-256 of the tracked config's raw bytes (provenance). */
+  configSha256: string;
+  profiles: DerivativeProfile[];
+  /** Per-profile compose output + the per-ratio source it was rendered from. */
+  derivativeMeta: Record<
+    string,
+    {
+      sha256: string;
+      byteSize: number;
+      format: DerivativeFormat;
+      source: { ratio: PrintRatio; path: string; sha256: string; width: number; height: number };
+    }
+  >;
+}
+
+/**
+ * Build a schema-v2 full-bleed manifest. No background/layout/artwork/
+ * signature — each derivative instead records its own per-ratio source
+ * identity (path/sha256/dimensions), the wrong-file guard `parsePrepareManifest`
+ * checks against `ratioForProfile`.
+ */
+export function buildFullBleedManifest(input: BuildFullBleedManifestInput): FullBleedPrepareManifest {
+  const derivatives: FullBleedManifestDerivative[] = input.profiles.map((profile) => {
+    const meta = input.derivativeMeta[profile.profileKey];
+    if (!meta) throw new Error(`Missing derivative output for profile ${profile.profileKey}`);
+    return {
+      width: profile.w,
+      height: profile.h,
+      format: meta.format,
+      sha256: meta.sha256,
+      byteSize: meta.byteSize,
+      source: meta.source,
+    };
+  });
+
+  const assignments: ManifestAssignment[] = input.profiles.flatMap((profile) =>
+    profile.variantKeys.map((variantKey) => ({ variantKey, profileKey: profile.profileKey })),
+  );
+
+  return {
+    schemaVersion: 2,
+    mode: 'fullBleed',
+    product: input.product,
+    revision: input.revision,
+    rendererVersion: COMPOSE_RENDERER_VERSION,
+    configSha256: input.configSha256,
     derivatives,
     assignments,
   };
