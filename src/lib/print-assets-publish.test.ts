@@ -26,7 +26,7 @@ const DIMENSION_MISMATCH_RE = /dimension mismatch/;
 const NO_READY_ROW_RE = /No ready print_fulfilment_assets row/;
 const NO_DERIVATIVE_RE = /no\s+derivative for that profile/;
 const READBACK_MISMATCH_RE = /Read-back mismatch/;
-const READBACK_ABSENT_RE = /absent immediately after/;
+const READBACK_ABSENT_RE = /still absent after/;
 
 /** A minimal two-profile schema-v2 manifest: two derivatives, three variants (one shared). */
 function manifest(overrides: Partial<PosterPrepareManifest> = {}): PosterPrepareManifest {
@@ -182,7 +182,21 @@ describe('uploadFulfilmentDerivative', () => {
 
   it('aborts when the just-put object is unreadable on read-back', async () => {
     const e = effects({ readBack: vi.fn().mockResolvedValue(null) });
-    await expect(uploadFulfilmentDerivative(derivative, e, { dryRun: false })).rejects.toThrow(READBACK_ABSENT_RE);
+    await expect(
+      uploadFulfilmentDerivative(derivative, e, { dryRun: false, readBackRetry: { attempts: 1, delayMs: 0 } }),
+    ).rejects.toThrow(READBACK_ABSENT_RE);
+  });
+
+  it('retries the read-back before giving up, for R2 write/read propagation lag', async () => {
+    const readBack = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(match);
+    const e = effects({ readBack });
+    await expect(
+      uploadFulfilmentDerivative(derivative, e, { dryRun: false, readBackRetry: { attempts: 5, delayMs: 0 } }),
+    ).resolves.toBe('created');
+    expect(readBack).toHaveBeenCalledTimes(3);
   });
 
   it('performs no conditional PUT in dry-run', async () => {

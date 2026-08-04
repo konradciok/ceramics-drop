@@ -131,10 +131,19 @@ export interface FulfilmentUploadEffects {
  *      lets the caller stage its DB row.
  * Every abort throws before any row is staged.
  */
+/**
+ * Defaults tuned for observed R2 S3-write / native-read propagation lag.
+ * Real-world observation (2026-08-04, fap005 pilot upload): one object took
+ * ~1-3 minutes, another exceeded 2 minutes before `wrangler r2 object get`
+ * could see an S3-PUT-confirmed object — budget generously above the worst
+ * case seen rather than re-tuning after every new data point.
+ */
+const DEFAULT_READBACK_RETRY = { attempts: 20, delayMs: 15_000 };
+
 export async function uploadFulfilmentDerivative(
   derivative: { sha256: string; r2Key: string },
   effects: FulfilmentUploadEffects,
-  options: { dryRun: boolean },
+  options: { dryRun: boolean; readBackRetry?: { attempts: number; delayMs: number } },
 ): Promise<FulfilmentUploadOutcome> {
   const existing = await effects.probe();
   if (decideUploadAction(derivative, existing) === 'skip') return 'present';
@@ -143,11 +152,22 @@ export async function uploadFulfilmentDerivative(
   if (options.dryRun) return 'dry-run';
 
   const created = await effects.create();
-  const readBack = await effects.readBack();
+  // The S3-compatible write path and the native API read path (what `readBack`
+  // uses) are not always immediately read-your-writes consistent — a fresh
+  // object can take a short while to become visible. Retry the read-back
+  // before concluding it's genuinely missing.
+  const { attempts, delayMs } = options.readBackRetry ?? DEFAULT_READBACK_RETRY;
+  let readBack: RemoteProbe | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    readBack = await effects.readBack();
+    if (readBack !== null) break;
+    if (attempt < attempts) await new Promise((r) => setTimeout(r, delayMs));
+  }
   if (readBack === null) {
     throw new Error(
-      `Read-back failed for ${derivative.r2Key}: the object is absent immediately after a "${created}" ` +
-        'response. Refusing to stage — resolve the R2 access issue and re-run.',
+      `Read-back failed for ${derivative.r2Key}: the object is still absent after a "${created}" response and ` +
+        `${attempts} read-back attempt(s) over ${(attempts * delayMs) / 1000}s. Refusing to stage — resolve the ` +
+        'R2 access issue and re-run.',
     );
   }
   if (readBack.sha256 !== derivative.sha256) {
