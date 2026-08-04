@@ -66,18 +66,18 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap005',
     category: 'fine-art-prints',
-    num: '005',
+    num: '1',
     image: '/uploads/fap-005.webp',
     noteIndex: 3,
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap006',
     category: 'fine-art-prints',
-    num: '006',
+    num: '2',
     image: '/uploads/fap-006.webp',
     noteIndex: 4,
     sizes: ['30x40', '50x70', '70x100'],
@@ -88,7 +88,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap007',
     category: 'fine-art-prints',
-    num: '007',
+    num: '3',
     image: '/uploads/fap-007.webp',
     noteIndex: 5,
     sizes: ['30x40', '50x70', '70x100'],
@@ -99,7 +99,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap008',
     category: 'fine-art-prints',
-    num: '008',
+    num: '4',
     image: '/uploads/fap-008.webp',
     noteIndex: 6,
     sizes: ['30x40', '50x70', '70x100'],
@@ -110,7 +110,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap009',
     category: 'fine-art-prints',
-    num: '009',
+    num: '5',
     image: '/uploads/fap-009.webp',
     noteIndex: 7,
     sizes: ['30x40', '50x70', '70x100'],
@@ -125,7 +125,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap010',
     category: 'fine-art-prints',
-    num: '010',
+    num: '6',
     image: '/uploads/fap-010.webp',
     noteIndex: 8,
     sizes: ['30x40', '50x70', '70x100'],
@@ -136,7 +136,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap011',
     category: 'fine-art-prints',
-    num: '011',
+    num: '7',
     image: '/uploads/fap-011.webp',
     noteIndex: 9,
     sizes: ['30x40', '50x70', '70x100'],
@@ -147,7 +147,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap012',
     category: 'fine-art-prints',
-    num: '012',
+    num: '8',
     image: '/uploads/fap-012.webp',
     noteIndex: 10,
     sizes: ['30x40', '50x70', '70x100'],
@@ -158,7 +158,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap013',
     category: 'fine-art-prints',
-    num: '013',
+    num: '9',
     image: '/uploads/fap-013.webp',
     noteIndex: 11,
     sizes: ['30x40', '50x70', '70x100'],
@@ -169,7 +169,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap014',
     category: 'fine-art-prints',
-    num: '014',
+    num: '10',
     image: '/uploads/fap-014.webp',
     noteIndex: 12,
     sizes: ['30x40', '50x70', '70x100'],
@@ -180,7 +180,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap015',
     category: 'fine-art-prints',
-    num: '015',
+    num: '11',
     image: '/uploads/fap-015.webp',
     noteIndex: 13,
     sizes: ['30x40', '50x70', '70x100'],
@@ -191,7 +191,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap016',
     category: 'fine-art-prints',
-    num: '016',
+    num: '12',
     image: '/uploads/fap-016.webp',
     noteIndex: 14,
     sizes: ['30x40', '50x70', '70x100'],
@@ -202,7 +202,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap017',
     category: 'fine-art-prints',
-    num: '017',
+    num: '13',
     image: '/uploads/fap-017.webp',
     noteIndex: 15,
     sizes: ['30x40', '50x70', '70x100'],
@@ -213,7 +213,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap018',
     category: 'fine-art-prints',
-    num: '018',
+    num: '14',
     image: '/uploads/fap-018.webp',
     noteIndex: 16,
     sizes: ['30x40', '50x70', '70x100'],
@@ -224,7 +224,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap019',
     category: 'fine-art-prints',
-    num: '019',
+    num: '15',
     image: '/uploads/fap-019.webp',
     noteIndex: 17,
     sizes: ['30x40', '50x70', '70x100'],
@@ -235,7 +235,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap020',
     category: 'fine-art-prints',
-    num: '020',
+    num: '16',
     image: '/uploads/fap-020.webp',
     noteIndex: 18,
     sizes: ['30x40', '50x70', '70x100'],
@@ -246,7 +246,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap021',
     category: 'fine-art-prints',
-    num: '021',
+    num: '17',
     image: '/uploads/fap-021.webp',
     noteIndex: 19,
     sizes: ['30x40', '50x70', '70x100'],
@@ -257,7 +257,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap022',
     category: 'fine-art-prints',
-    num: '022',
+    num: '18',
     image: '/uploads/fap-022.webp',
     noteIndex: 20,
     sizes: ['30x40', '50x70', '70x100'],
@@ -268,7 +268,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap023',
     category: 'fine-art-prints',
-    num: '023',
+    num: '19',
     image: '/uploads/fap-023.webp',
     noteIndex: 21,
     sizes: ['30x40', '50x70', '70x100'],
@@ -279,7 +279,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap024',
     category: 'fine-art-prints',
-    num: '024',
+    num: '20',
     image: '/uploads/fap-024.webp',
     noteIndex: 22,
     sizes: ['30x40', '50x70', '70x100'],
@@ -290,7 +290,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap025',
     category: 'fine-art-prints',
-    num: '025',
+    num: '21',
     image: '/uploads/fap-025.webp',
     noteIndex: 23,
     sizes: ['30x40', '50x70', '70x100'],
@@ -301,7 +301,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap026',
     category: 'fine-art-prints',
-    num: '026',
+    num: '22',
     image: '/uploads/fap-026.webp',
     noteIndex: 24,
     sizes: ['30x40', '50x70', '70x100'],
@@ -312,7 +312,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap027',
     category: 'fine-art-prints',
-    num: '027',
+    num: '23',
     image: '/uploads/fap-027.webp',
     noteIndex: 25,
     sizes: ['30x40', '50x70', '70x100'],
@@ -323,7 +323,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap028',
     category: 'fine-art-prints',
-    num: '028',
+    num: '24',
     image: '/uploads/fap-028.webp',
     noteIndex: 26,
     sizes: ['30x40', '50x70', '70x100'],
@@ -334,7 +334,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap029',
     category: 'fine-art-prints',
-    num: '029',
+    num: '25',
     image: '/uploads/fap-029.webp',
     noteIndex: 27,
     sizes: ['30x40', '50x70', '70x100'],
@@ -345,7 +345,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap030',
     category: 'fine-art-prints',
-    num: '030',
+    num: '26',
     image: '/uploads/fap-030.webp',
     noteIndex: 28,
     sizes: ['30x40', '50x70', '70x100'],
@@ -356,7 +356,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap031',
     category: 'fine-art-prints',
-    num: '031',
+    num: '27',
     image: '/uploads/fap-031.webp',
     noteIndex: 29,
     sizes: ['30x40', '50x70', '70x100'],
@@ -367,7 +367,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap032',
     category: 'fine-art-prints',
-    num: '032',
+    num: '28',
     image: '/uploads/fap-032.webp',
     noteIndex: 30,
     sizes: ['30x40', '50x70', '70x100'],
@@ -378,7 +378,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap033',
     category: 'fine-art-prints',
-    num: '033',
+    num: '29',
     image: '/uploads/fap-033.webp',
     noteIndex: 31,
     sizes: ['30x40', '50x70', '70x100'],
@@ -389,7 +389,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap034',
     category: 'fine-art-prints',
-    num: '034',
+    num: '30',
     image: '/uploads/fap-034.webp',
     noteIndex: 32,
     sizes: ['30x40', '50x70', '70x100'],
@@ -400,7 +400,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap035',
     category: 'fine-art-prints',
-    num: '035',
+    num: '31',
     image: '/uploads/fap-035.webp',
     noteIndex: 33,
     sizes: ['30x40', '50x70', '70x100'],
@@ -411,7 +411,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap036',
     category: 'fine-art-prints',
-    num: '036',
+    num: '32',
     image: '/uploads/fap-036.webp',
     noteIndex: 34,
     sizes: ['30x40', '50x70', '70x100'],
@@ -422,7 +422,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap037',
     category: 'fine-art-prints',
-    num: '037',
+    num: '33',
     image: '/uploads/fap-037.webp',
     noteIndex: 35,
     sizes: ['30x40', '50x70', '70x100'],
@@ -433,7 +433,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap038',
     category: 'fine-art-prints',
-    num: '038',
+    num: '34',
     image: '/uploads/fap-038.webp',
     noteIndex: 36,
     sizes: ['30x40', '50x70', '70x100'],
@@ -444,7 +444,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap039',
     category: 'fine-art-prints',
-    num: '039',
+    num: '35',
     image: '/uploads/fap-039.webp',
     noteIndex: 37,
     sizes: ['30x40', '50x70', '70x100'],
@@ -455,7 +455,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap040',
     category: 'fine-art-prints',
-    num: '040',
+    num: '36',
     image: '/uploads/fap-040.webp',
     noteIndex: 38,
     sizes: ['30x40', '50x70', '70x100'],
@@ -466,7 +466,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap041',
     category: 'fine-art-prints',
-    num: '041',
+    num: '37',
     image: '/uploads/fap-041.webp',
     noteIndex: 39,
     sizes: ['30x40', '50x70', '70x100'],
@@ -477,7 +477,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap042',
     category: 'fine-art-prints',
-    num: '042',
+    num: '38',
     image: '/uploads/fap-042.webp',
     noteIndex: 40,
     sizes: ['30x40', '50x70', '70x100'],
@@ -488,7 +488,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap043',
     category: 'fine-art-prints',
-    num: '043',
+    num: '39',
     image: '/uploads/fap-043.webp',
     noteIndex: 41,
     sizes: ['30x40', '50x70', '70x100'],
@@ -499,7 +499,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap044',
     category: 'fine-art-prints',
-    num: '044',
+    num: '40',
     image: '/uploads/fap-044.webp',
     noteIndex: 42,
     sizes: ['30x40', '50x70', '70x100'],
@@ -510,7 +510,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap045',
     category: 'fine-art-prints',
-    num: '045',
+    num: '41',
     image: '/uploads/fap-045.webp',
     noteIndex: 43,
     sizes: ['30x40', '50x70', '70x100'],
@@ -521,7 +521,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap046',
     category: 'fine-art-prints',
-    num: '046',
+    num: '42',
     image: '/uploads/fap-046.webp',
     noteIndex: 44,
     sizes: ['30x40', '50x70', '70x100'],
@@ -532,7 +532,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap047',
     category: 'fine-art-prints',
-    num: '047',
+    num: '43',
     image: '/uploads/fap-047.webp',
     noteIndex: 45,
     sizes: ['30x40', '50x70', '70x100'],

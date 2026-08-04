@@ -122,12 +122,17 @@ describe('assembleProductRows', () => {
     expect(rows[rows.length - 1].category).toBe('fine-art-prints');
   });
 
-  it('sorts prints numerically by num, not lexicographically (2-digit vs 3-digit ids)', () => {
+  it('sorts prints numerically by num, not lexicographically', () => {
     const rows = assembleProductRows(catalog, new Map());
-    const printIds = rows.filter((r) => r.category === 'fine-art-prints').map((r) => r.id);
+    const printRows = rows.filter((r) => r.category === 'fine-art-prints');
     // A string sort would put fap005 (num '005') before fap01 (num '01').
-    // Numeric sort keeps fap01-fap04 first, then fap005-fap047 in order.
-    expect(printIds.slice(0, 4)).toEqual(['fap01', 'fap02', 'fap03', 'fap04']);
-    expect(printIds.slice(4)).toEqual(printIds.slice(4).slice().sort((a, b) => Number(a.slice(3)) - Number(b.slice(3))));
+    // Numeric sort never regresses: each row's num is >= the previous row's.
+    for (let i = 1; i < printRows.length; i++) {
+      expect(Number(printRows[i].num)).toBeGreaterThanOrEqual(Number(printRows[i - 1].num));
+    }
+    // fap01 (num '01' -> 1) and fap005 (num '1' -> 1) tie numerically — a stable
+    // sort keeps fap01 first (registry order), never fap005 before it.
+    const printIds = printRows.map((r) => r.id);
+    expect(printIds.indexOf('fap01')).toBeLessThan(printIds.indexOf('fap005'));
   });
 });
