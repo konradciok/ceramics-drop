@@ -131,8 +131,14 @@ export interface FulfilmentUploadEffects {
  *      lets the caller stage its DB row.
  * Every abort throws before any row is staged.
  */
-/** Defaults tuned for observed R2 S3-write / native-read propagation lag (up to ~2 minutes). */
-const DEFAULT_READBACK_RETRY = { attempts: 6, delayMs: 10_000 };
+/**
+ * Defaults tuned for observed R2 S3-write / native-read propagation lag.
+ * Real-world observation (2026-08-04, fap005 pilot upload): one object took
+ * ~1-3 minutes, another exceeded 2 minutes before `wrangler r2 object get`
+ * could see an S3-PUT-confirmed object — budget generously above the worst
+ * case seen rather than re-tuning after every new data point.
+ */
+const DEFAULT_READBACK_RETRY = { attempts: 20, delayMs: 15_000 };
 
 export async function uploadFulfilmentDerivative(
   derivative: { sha256: string; r2Key: string },
