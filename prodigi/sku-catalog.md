@@ -63,7 +63,7 @@ Suffix from `size`: `30x40→12X16`, `50x70→20X28`, `70x100→28X40`.
 
 ## Full variant matrix
 
-Print areas are **authoritative from API** (`variants[].printAreaSizes.default` at 300 DPI). Asset pipeline must target these pixel dimensions per row.
+Print areas are **authoritative from API** (`variants[].printAreaSizes.default` at 300 DPI). Asset pipeline targets these pixel dimensions per row — **single exception:** black-frame 30×40 (3614×4795) receives the shared 3600×4800 render via `sizing: fillPrintArea` (≈1 mm centre-crop per horizontal edge; decision 2026-08-03, `decisions.md` #6, `assetPx` in `PRODIGI_SKU_MAP`).
 
 ### 30×40 cm (`12X16`)
 
@@ -84,6 +84,13 @@ Passe-partout window ≈ 20×30 cm (5 cm border per Prodigi FAQ for frames ≥30
 > 3614×4795 px while `natural`/`brown` (and all other colours) report 3600×4800 px.
 > All other SKUs share one print area across colours. `PRODIGI_SKU_MAP` in
 > `src/lib/print-cart.ts` matches the API exactly.
+>
+> **Asset decision 2026-08-03:** black does NOT get a dedicated 3614×4795 render.
+> The shared 3600×4800 asset is submitted with `sizing: fillPrintArea` (Prodigi
+> centre-crops ~12 px top+bottom ≈ 1 mm/edge, inside the generated edge band /
+> under the frame rebate). `printAreaPx` stays 3614×4795 for API drift detection;
+> `assetPx` (3600×4800) is the render contract — consumers use `assetPxFor()`.
+> See `decisions.md` #6.
 
 ### 50×70 cm (`20X28`)
 

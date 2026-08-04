@@ -38,13 +38,21 @@ describe('isVariantAvailable', () => {
     const fap04 = (await getPrintById('fap04'))!;
     expect(isVariantAvailable(fap04, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
-  it('rejects mount when design does not offer it', async () => {
-    const fap02 = (await getPrintById('fap02'))!;
-    expect(isVariantAvailable(fap02, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(false);
+  // 2026-08-03: fap02 widened to full axes (every print offers every variant),
+  // so the narrow-axes rejection paths are covered with synthetic shapes.
+  it('rejects mount when design does not offer it', () => {
+    const noMount: PrintDesign = { ...fap01, mountAvailable: false };
+    expect(isVariantAvailable(noMount, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(false);
   });
-  it('rejects size not offered by design', async () => {
+  it('rejects size not offered by design', () => {
+    const small: PrintDesign = { ...fap01, sizes: ['30x40', '50x70'] };
+    expect(isVariantAvailable(small, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
+  });
+  it('accepts the formerly restricted fap02 variants (full-axes policy)', async () => {
     const fap02 = (await getPrintById('fap02'))!;
-    expect(isVariantAvailable(fap02, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
+    expect(isVariantAvailable(fap02, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(true);
+    expect(isVariantAvailable(fap02, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(true);
+    expect(isVariantAvailable(fap02, { size: '50x70', framed: true, mount: false, frameColour: 'brown' })).toBe(true);
   });
   it('rejects framed=false with non-none colour', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

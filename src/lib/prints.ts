@@ -24,9 +24,15 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     image: '/uploads/fap-02.webp',
     gallery: ['/uploads/fap-02-room.webp'],
     noteIndex: 1,
-    sizes: ['30x40', '50x70'],
-    frameColours: ['black', 'natural'],
-    mountAvailable: false,
+    // 2026-08-03: widened to full axes (policy: every print offers every
+    // variant). Master (8000x11313) covers the 8400x12000 and 2x3 profiles
+    // without upscaling — the earlier 30x40/50x70-only shape was a
+    // merchandising restriction, not a technical one. New profiles need a
+    // print-assets prepare + publish run for fap02 before the new variants
+    // are purchasable (checkout fails closed with print_asset_unavailable).
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
     published: true,
   },
   {

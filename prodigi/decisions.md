@@ -147,3 +147,13 @@ Replaces the `claude/prints-feature` plan token `print:id:size:paper:frame`. No 
 3. **Frame / passe-partout surcharges** — **100% margin**: 2× Prodigi's cost delta per size (`FRAMED_DELTA` / `MOUNT_DELTA` in `src/lib/print-pricing.ts`).
 4. **No mixed cart is a hard rule** — enforced in `validateCart` (`mixed_cart`), the cart UI (banner + disabled checkout), and the print configurator (add blocked while ceramics in cart).
 5. **`GLOBAL-CFP-12X16` print areas** — re-verified via API: black/white 3614×4795 px vs natural 3600×4800 px is real, not a transcription error.
+
+---
+
+## P2 decisions (2026-08-03)
+
+6. **Black-frame 30×40 uses the shared 3600×4800 render (no dedicated 3614×4795 asset).**
+   Basis (Prodigi Print API reference, "sizing"): `fillPrintArea` (our setting, and Prodigi's default) = *"Your image will be centred and cropped so that it exactly fits the aspect ratio … Your image will cover all of the product print area."*
+   Math: 3600×4800 → cover 3614×4795 = upscale ×1.0039 → 3614×4818.7 → centre-crop ≈12 px top + bottom ≈ **1 mm per edge**, which falls inside the generated edge band and/or under the frame rebate. A dedicated render would save nothing visible and doubles the 30×40 asset pipeline.
+   Implementation: `PRODIGI_SKU_MAP['30x40:true:false:black']` keeps `printAreaPx: 3614×4795` as **API drift-detection truth** (sync tooling `print-dimensions.ts` unchanged) and gains `assetPx: 3600×4800`; all asset-contract consumers (checkout snapshot, catalog seed `print_area_*_px`, onboarding validation) now read `assetPxFor()`.
+   ⚠ Operational: DB rows seeded before 2026-08-03 carry `print_area_width_px=3614` for this variant — re-run the catalog seed before publishing assets, or the publish RPC will reject the 3600×4800 render.

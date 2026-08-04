@@ -160,10 +160,31 @@ export function variantLabel(sel: PrintVariantSelection, locale: string): string
 
 // ── Prodigi SKU lookup (from prodigi/sku-catalog.md) ─────────────────────────
 
+export interface ProdigiSkuEntry {
+  sku: string;
+  /** What the Prodigi API reports for the variant's print area (drift-detection truth). */
+  printAreaPx: { w: number; h: number };
+  /**
+   * Dimensions of the asset we actually render and submit, when they
+   * intentionally differ from `printAreaPx`. Only `30x40:true:false:black`:
+   * Prodigi reports 3614×4795 for the black frame, but we submit the shared
+   * 3600×4800 render with `sizing: "fillPrintArea"` — Prodigi upscales 0.39%
+   * and centre-crops ~12 px top+bottom (≈1 mm/edge, under the frame rebate).
+   * Decision 2026-08-03, see prodigi/decisions.md #6. Use `assetPxFor()`,
+   * not this field, wherever asset dimensions are consumed.
+   */
+  assetPx?: { w: number; h: number };
+}
+
+/** The asset-dimension contract for a variant: what we render/upload/validate. */
+export function assetPxFor(entry: Pick<ProdigiSkuEntry, 'printAreaPx' | 'assetPx'>): { w: number; h: number } {
+  return entry.assetPx ?? entry.printAreaPx;
+}
+
 /** Authoritative mapping from variantKey → Prodigi SKU + print-area pixels at 300 DPI. */
-export const PRODIGI_SKU_MAP: Record<string, { sku: string; printAreaPx: { w: number; h: number } }> = {
+export const PRODIGI_SKU_MAP: Record<string, ProdigiSkuEntry> = {
   '30x40:false:false:none':    { sku: 'GLOBAL-FAP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
-  '30x40:true:false:black':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3614, h: 4795 } },
+  '30x40:true:false:black':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3614, h: 4795 }, assetPx: { w: 3600, h: 4800 } },
   '30x40:true:false:natural':  { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
   '30x40:true:false:brown':    { sku: 'GLOBAL-CFP-12X16',  printAreaPx: { w: 3600, h: 4800 } },
   '30x40:true:true:black':     { sku: 'GLOBAL-CFPM-12X16', printAreaPx: { w: 2400, h: 3600 } },

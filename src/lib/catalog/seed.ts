@@ -15,7 +15,7 @@ import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../ty
 import { registryProducts } from '../products';
 import { PRINT_DESIGNS } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
-import { variantKey, PRODIGI_SKU_MAP } from '../print-cart';
+import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
 import { priceOfVariant } from '../print-pricing';
 import type { CatalogSeed } from './types';
 
@@ -151,11 +151,13 @@ function printRows(seed: CatalogSeed): void {
         stock_quantity: 0,
         allow_backorder: true,
         low_stock_threshold: null,
-        // Per-variant print-area pixels at 300 DPI from the Prodigi SKU map; the
+        // Per-variant ASSET pixels at 300 DPI (assetPxFor: the render we upload,
+        // not necessarily Prodigi's reported print area — black 30x40 framed
+        // submits the shared 3600×4800 render, prodigi/decisions.md #6); the
         // publish_print_asset_revision RPC checks ready assets against these.
         // Absent key → null → RPC treats it as a dimension mismatch (fail-closed).
-        print_area_width_px: mapped?.printAreaPx.w ?? null,
-        print_area_height_px: mapped?.printAreaPx.h ?? null,
+        print_area_width_px: mapped ? assetPxFor(mapped).w : null,
+        print_area_height_px: mapped ? assetPxFor(mapped).h : null,
       });
     });
 

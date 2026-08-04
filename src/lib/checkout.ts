@@ -1,7 +1,7 @@
 import { getProductById, isProductPublic, registryProducts } from './products';
 import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
-import { decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
+import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant } from './print-pricing';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
 import type { PrintVariantSelection } from './types';
@@ -15,6 +15,12 @@ export const MAX_CART = registryProducts().length + registryPrintDesigns().lengt
 
 export type CheckoutVariant = PrintVariantSelection & {
   prodigiSku: string;
+  /**
+   * Snapshot of the ASSET-dimension contract (assetPxFor), not necessarily
+   * Prodigi's reported print area — for `30x40:true:false:black` this is the
+   * shared 3600×4800 render submitted with sizing "fillPrintArea"
+   * (prodigi/decisions.md #6). Field name kept for snapshot compatibility.
+   */
   printAreaPx: { w: number; h: number };
   assetId: string;
   assetKey: string;
@@ -66,7 +72,7 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
         variant: {
           ...dec.sel,
           prodigiSku: skuInfo.sku,
-          printAreaPx: skuInfo.printAreaPx,
+          printAreaPx: assetPxFor(skuInfo),
           assetId: asset.assetId,
           assetKey: asset.r2Key,
           assetSha256: asset.sha256,

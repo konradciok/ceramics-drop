@@ -1,0 +1,20 @@
+[
+  {
+    "id": "fap005",
+    "title": "Cumulonimbus 07",
+    "incomingFile": "cumulonimbus-07.jpg",
+    "sizes": ["30x40", "50x70", "70x100"],
+    "frameColours": ["black", "natural", "brown"],
+    "mountAvailable": true,
+    "noteIndex": 4
+  },
+  {
+    "id": "fap006",
+    "title": "Ostrea 09",
+    "incomingFile": "ostrea-09.jpg",
+    "sizes": ["30x40", "50x70"],
+    "frameColours": ["black", "natural"],
+    "mountAvailable": false,
+    "noteIndex": 5
+  }
+]

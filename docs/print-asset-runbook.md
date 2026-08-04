@@ -89,6 +89,53 @@ promotion at the end. A dry run that reports "verified" is exactly as strong
 a proof of remote byte-identity as a real run; it just declines to flip any
 row to `ready`.
 
+## Batch onboarding new designs
+
+`scripts/print-assets-onboard.ts` (`npm run print-assets:onboard`) turns a
+manifest of new designs into everything the per-design pipeline below needs,
+so registering N designs is "fill one manifest row + drop one file" instead
+of hand-authoring N config JSONs and N registry entries. It never uploads
+anything and never writes the DB — it only prepares local files.
+
+**Intake (gitignored, under `design/`):**
+
+```text
+design/print-assets/_incoming/{anyFilename}.jpg   # your upscaled export (e.g. Lightroom Super Resolution)
+design/print-assets/_shared/signature.svg         # the one shared artist signature, fanned out per design
+```
+
+**Manifest:** copy `config/print-assets/onboarding-manifest.example.json` to
+`config/print-assets/onboarding-manifest.json` and add one row per design
+(`id`, `title`, `incomingFile`, `sizes`, `frameColours`, `mountAvailable`,
+`noteIndex`). `background`/`format`/layout fractions and `gallery.hero.sourceProfile`/
+`uploadStem` are derived automatically — every fap0N design shares the same
+thin-border layout and background today.
+
+```bash
+npm run print-assets:onboard -- --dry-run   # validates every export's resolution against
+                                             # every variant the row will offer — no writes
+npm run print-assets:onboard                # copies masters + signature, writes config JSONs
+```
+
+Per row, the resolution check reuses the exact contain-scale math
+`print-assets:prepare` itself enforces (`src/lib/print-assets-master-scale.ts`)
+against every variant's **asset** pixels (`assetPxFor()` — see decision #6 in
+`prodigi/decisions.md`, not the raw Prodigi `printAreaPx`), so a PASS here
+means `prepare` will not later reject the same master for being too small.
+A design whose `design/print-assets/{id}/` already exists is skipped unless
+`--force`.
+
+The script never edits `src/lib/prints.ts` itself — it writes ready-to-paste
+`PrintDesign` object literals (all `published: false`) to
+`design/print-assets/_incoming/generated-prints-entries.ts`. Paste those in by
+hand, then run `npm run catalog:backfill` before the per-design pipeline below.
+
+**Not done by this script (separate manual/content steps):** the `noteIndex`
+description text in `messages/{pl,en,es,de}.json` for each design, and
+flipping `published: true` / running the per-design `prepare → upload →
+verify → publish → gallery [→ mockups]` sequence — those stay exactly as
+documented below, once per design.
+
 ## New artwork (first publication)
 
 Place the approved, artwork-only master and, when the product config includes a

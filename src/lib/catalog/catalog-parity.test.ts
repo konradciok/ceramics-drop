@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { registryProducts } from '../products';
 import { PRINT_DESIGNS, isVariantAvailable, registryPrintById } from '../prints';
 import { withRegistryMockups } from '../print-mockups';
-import { PRODIGI_SKU_MAP } from '../print-cart';
+import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
 import { priceOfVariant } from '../print-pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
 import { mapCeramicProducts, mapPrintDesigns } from './mappers';
@@ -126,8 +126,9 @@ describe('catalog seed ↔ registry parity', () => {
     for (const v of printVariants) {
       const mapped = PRODIGI_SKU_MAP[v.variant_key];
       expect(mapped, v.variant_key).toBeDefined();
-      expect(v.print_area_width_px, v.variant_key).toBe(mapped.printAreaPx.w);
-      expect(v.print_area_height_px, v.variant_key).toBe(mapped.printAreaPx.h);
+      const assetPx = assetPxFor(mapped);
+      expect(v.print_area_width_px, v.variant_key).toBe(assetPx.w);
+      expect(v.print_area_height_px, v.variant_key).toBe(assetPx.h);
     }
   });
 
@@ -150,12 +151,11 @@ describe('catalog seed ↔ registry parity', () => {
   });
 
   it('enumerates the expected variant count per design', () => {
-    const fap01 = PRINT_DESIGNS.find((d) => d.id === 'fap01')!;
-    const fap02 = PRINT_DESIGNS.find((d) => d.id === 'fap02')!;
-    // fap01/fap03: 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21.
-    expect(enumeratePrintVariants(fap01)).toHaveLength(21);
-    // fap02: 2 sizes × (1 unframed + 2 colours, no mount) = 6.
-    expect(enumeratePrintVariants(fap02)).toHaveLength(6);
+    // Full-axes policy (2026-08-03): every print design offers every variant —
+    // 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21.
+    for (const d of PRINT_DESIGNS) {
+      expect(enumeratePrintVariants(d), d.id).toHaveLength(21);
+    }
   });
 
   it('marks exactly one primary image per product and preserves galleries', () => {

@@ -29,6 +29,9 @@ describe('resolveCartLines', () => {
     expect(resolveCartLines(['print:fap01:50x70:false'])).toHaveLength(0); // malformed (too few parts)
     expect(resolveCartLines(['print:nope:50x70:false:false:none'])).toHaveLength(0); // unknown design
     expect(resolveCartLines(['print:fap04:50x70:false:false:none'])).toHaveLength(0); // unpublished
-    expect(resolveCartLines(['print:fap02:50x70:true:true:black'])).toHaveLength(0); // mount unavailable for fap02
+    // 2026-08-03: fap02 now offers full axes, so no published design has a
+    // structurally-unavailable variant left; cover the invalid-colour decode
+    // path instead ('white' would legacy-migrate to brown, so use 'pink').
+    expect(resolveCartLines(['print:fap01:50x70:true:false:pink'])).toHaveLength(0); // unknown colour
   });
 });
