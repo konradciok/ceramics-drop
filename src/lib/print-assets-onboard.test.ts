@@ -201,6 +201,15 @@ describe('onboardingRowSchema / onboardingManifestSchema', () => {
     expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, masterFolder: 'ab' }).success).toBe(false);
   });
 
+  it('rejects an omitted masterFolder that does not resolve under NN -> fap(NN+4)', () => {
+    // fap004 -> NN=0, not a valid painting number, and no override is given.
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, id: 'fap004' }).success).toBe(false);
+  });
+
+  it('accepts an unresolvable id when masterFolder is given explicitly', () => {
+    expect(onboardingRowSchema.safeParse({ ...FULL_BLEED_ROW, id: 'fap004', masterFolder: '01' }).success).toBe(true);
+  });
+
   it('rejects an unrecognized style', () => {
     expect(onboardingRowSchema.safeParse({ ...ROW, style: 'bogus' }).success).toBe(false);
   });

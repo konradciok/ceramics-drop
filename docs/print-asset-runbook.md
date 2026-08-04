@@ -24,7 +24,7 @@ them:
 - **`schemaVersion`** (currently `2`) describes the manifest's **JSON
   shape** — which fields exist and how they nest. It changes only when the
   structure itself changes.
-- **`rendererVersion`** (currently `2.1.0`, `COMPOSE_RENDERER_VERSION` in
+- **`rendererVersion`** (currently `3.0.0`, `COMPOSE_RENDERER_VERSION` in
   `src/lib/print-assets-prepare.ts`) describes the Sharp compose pipeline's
   **output-byte logic**. It bumps whenever a code change could produce
   different pixels from the same inputs, independent of whether the JSON

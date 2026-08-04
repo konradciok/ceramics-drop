@@ -75,7 +75,24 @@ const fullBleedOnboardingRowSchema = z
     masterFolder: z.string().regex(/^\d{2,}$/, 'masterFolder must look like "01"').optional(),
     noteIndex: z.number().int().nonnegative(),
   })
-  .strict();
+  .strict()
+  .superRefine((row, ctx) => {
+    // An omitted masterFolder must resolve via defaultMasterFolder(id) —
+    // reject unresolvable ids (e.g. fap004, NN<=0) here rather than letting
+    // checkFullBleedResolution/buildPrepareConfig throw later.
+    if (row.masterFolder === undefined) {
+      try {
+        defaultMasterFolder(row.id);
+      } catch (error) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['masterFolder'],
+          message: `id "${row.id}" has no masterFolder and does not resolve one under the NN -> fap(NN+4) ` +
+            `convention (${error instanceof Error ? error.message : error}) — set masterFolder explicitly.`,
+        });
+      }
+    }
+  });
 
 export const onboardingRowSchema = z.discriminatedUnion('style', [
   posterOnboardingRowSchema,

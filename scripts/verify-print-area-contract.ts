@@ -25,7 +25,9 @@ async function main(): Promise<void> {
   const { count: stale, error: staleErr } = await supabase
     .from('product_variants')
     .select('*', { count: 'exact', head: true })
-    .eq('print_area_width_px', 3614);
+    .eq('variant_key', '30x40:true:false:black')
+    .eq('print_area_width_px', 3614)
+    .eq('print_area_height_px', 4795);
   if (staleErr) throw new Error(`stale-row query failed: ${staleErr.message}`);
 
   const { count: shared, error: sharedErr } = await supabase
