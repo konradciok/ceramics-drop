@@ -58,6 +58,66 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     mountAvailable: true,
     published: false,
   },
+  // Full-bleed paintings 01-05 (docs/plans/full-bleed-print-assets-plan.md),
+  // onboarded via print-assets:onboard from design/uploads/master-images-prints/.
+  // Titles/noteIndex text are placeholders — real note copy still needed in
+  // messages/{pl,en,es,de}.json before publishing. published:false until the
+  // prepare -> upload -> verify -> publish -> gallery pipeline runs per design.
+  {
+    id: 'fap005',
+    category: 'fine-art-prints',
+    num: '005',
+    image: '/uploads/fap-005.webp',
+    noteIndex: 3,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
+    published: false,
+  },
+  {
+    id: 'fap006',
+    category: 'fine-art-prints',
+    num: '006',
+    image: '/uploads/fap-006.webp',
+    noteIndex: 4,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
+    published: false,
+  },
+  {
+    id: 'fap007',
+    category: 'fine-art-prints',
+    num: '007',
+    image: '/uploads/fap-007.webp',
+    noteIndex: 5,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
+    published: false,
+  },
+  {
+    id: 'fap008',
+    category: 'fine-art-prints',
+    num: '008',
+    image: '/uploads/fap-008.webp',
+    noteIndex: 6,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
+    published: false,
+  },
+  {
+    id: 'fap009',
+    category: 'fine-art-prints',
+    num: '009',
+    image: '/uploads/fap-009.webp',
+    noteIndex: 7,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: true,
+    published: false,
+  },
 ];
 
 const BY_ID = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
