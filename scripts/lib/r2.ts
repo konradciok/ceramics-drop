@@ -84,7 +84,7 @@ export function r2GetToFile(bucket: string, key: string, destPath: string): R2Ge
   const res = spawnSync(
     'npx',
     ['wrangler', 'r2', 'object', 'get', `${bucket}/${key}`, '--remote', '--file', destPath],
-    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS },
+    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS, shell: process.platform === 'win32' },
   );
   if (res.status === 0) return { ok: true };
   const error = describeFailure(res);
@@ -120,7 +120,7 @@ export function r2PutMutable(
       contentType,
       '--remote',
     ],
-    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS },
+    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', timeout: WRANGLER_TIMEOUT_MS, shell: process.platform === 'win32' },
   );
   return res.status === 0 ? { ok: true } : { ok: false, error: describeFailure(res) };
 }
@@ -200,10 +200,15 @@ export async function r2PutIfAbsent(
   const encodedKey = input.key.split('/').map(encodeURIComponent).join('/');
   const url = `https://${input.accountId}.r2.cloudflarestorage.com/${encodeURIComponent(input.bucket)}/${encodedKey}`;
   const stream = Readable.toWeb(fs.createReadStream(input.filePath));
+  // A streamed body has no inherent length, so fetch/undici defaults to
+  // chunked transfer-encoding — R2's S3 API rejects that for PUT with
+  // 411 MissingContentLength. Declare it explicitly from the file's real size.
+  const contentLength = fs.statSync(input.filePath).size;
   const response = await client.fetch(url, {
     method: 'PUT',
     headers: {
       'content-type': input.contentType,
+      'content-length': String(contentLength),
       'if-none-match': '*',
       'x-amz-content-sha256': input.sha256,
     },

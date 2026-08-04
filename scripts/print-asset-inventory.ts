@@ -61,7 +61,7 @@ function probeKey(bucket: string, key: string): Omit<ProbeResult, 'id' | 'key'> 
   const res = spawnSync(
     'npx',
     ['wrangler', 'r2', 'object', 'get', `${bucket}/${key}`, '--remote', '--pipe'],
-    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' },
+    { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', shell: process.platform === 'win32' },
   );
   if (res.status === 0) return { present: true };
   const error =
