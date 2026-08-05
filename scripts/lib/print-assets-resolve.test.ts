@@ -118,16 +118,23 @@ describe('latestReadyByProfile', () => {
 });
 
 describe('buildSandboxMatrix', () => {
-  it('covers seven distinct print-area profiles', () => {
+  it('covers six distinct asset profiles (30x40 black-framed shares the unframed asset, decision #6)', () => {
     const matrix = buildSandboxMatrix();
-    expect(matrix).toHaveLength(7);
-    expect(new Set(matrix.map((r) => r.profileKey)).size).toBe(7);
+    expect(matrix).toHaveLength(6);
+    expect(new Set(matrix.map((r) => r.profileKey)).size).toBe(6);
+    expect(matrix.map((r) => r.profileKey).sort()).toEqual([
+      '2400x3600',
+      '3600x4800',
+      '4800x7200',
+      '6000x8400',
+      '7200x10800',
+      '8400x12000',
+    ]);
   });
 
-  it('matches the legacy hardcoded SKU set', () => {
+  it('matches the asset-contract SKU set (no GLOBAL-CFP-* — those profiles collapse into the FAP/CFPM ones)', () => {
     const matrix = buildSandboxMatrix();
     expect(matrix.map((r) => r.sku).sort()).toEqual([
-      'GLOBAL-CFP-12X16',
       'GLOBAL-CFPM-12X16',
       'GLOBAL-CFPM-20X28',
       'GLOBAL-CFPM-28X40',
