@@ -1,7 +1,7 @@
 /**
  * Shared fulfilment-asset resolution for print-asset operator scripts.
  */
-import { PRODIGI_SKU_MAP, parseVariantKey } from '../../src/lib/print-cart';
+import { PRODIGI_SKU_MAP, assetPxFor, parseVariantKey } from '../../src/lib/print-cart';
 import { buildProdigiAttributes } from '../../src/lib/print-prodigi-attributes';
 import { profileKeyFromPx } from '../../src/lib/print-assets-prepare';
 import { loadSupabaseClient } from './script-env';
@@ -132,15 +132,23 @@ export function latestReadyByProfile(rows: ReadyAssetRow[]): Map<string, ReadyAs
   return byProfile;
 }
 
-/** One sandbox order per distinct print-area profile, derived from PRODIGI_SKU_MAP. */
+/**
+ * One sandbox order per distinct print-area profile, derived from PRODIGI_SKU_MAP.
+ * Groups by `assetPxFor()` (the asset we actually render/upload/publish), not the
+ * raw `printAreaPx` (Prodigi's API drift-detection truth) — otherwise a variant
+ * like `30x40:true:false:black`, which intentionally reuses the shared unframed
+ * asset (prodigi/decisions.md #6), would be grouped under a profile no fulfilment
+ * asset is ever published for.
+ */
 export function buildSandboxMatrix(): SandboxMatrixRow[] {
   const entries = Object.entries(PRODIGI_SKU_MAP).sort(([a], [b]) => a.localeCompare(b));
   const byProfile = new Map<string, { variantKey: string; sku: string }>();
 
-  for (const [variantKey, { sku, printAreaPx }] of entries) {
-    const profileKey = profileKeyFromPx(printAreaPx.w, printAreaPx.h);
+  for (const [variantKey, entry] of entries) {
+    const px = assetPxFor(entry);
+    const profileKey = profileKeyFromPx(px.w, px.h);
     if (byProfile.has(profileKey)) continue;
-    byProfile.set(profileKey, { variantKey, sku });
+    byProfile.set(profileKey, { variantKey, sku: entry.sku });
   }
 
   return [...byProfile.entries()]
