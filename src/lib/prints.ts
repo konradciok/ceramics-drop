@@ -73,6 +73,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap006',
