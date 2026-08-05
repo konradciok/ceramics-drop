@@ -8,7 +8,17 @@ describe('getPrintDesigns', () => {
   it('returns only published designs', async () => {
     const designs = await getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
-    expect(designs.map(d => d.id)).toEqual(['fap01', 'fap02', 'fap03', 'fap005']);
+    expect(designs.map(d => d.id)).toEqual([
+      'fap01', 'fap02', 'fap03',
+      'fap005', 'fap006', 'fap007', 'fap008', 'fap009', 'fap010',
+      'fap011', 'fap012', 'fap013', 'fap014', 'fap015', 'fap016',
+      'fap017', 'fap018', 'fap019', 'fap020', 'fap021', 'fap022',
+      'fap023', 'fap024', 'fap025', 'fap026', 'fap027', 'fap028',
+      'fap029', 'fap030', 'fap031', 'fap032', 'fap033', 'fap034',
+      'fap035', 'fap036', 'fap037', 'fap038', 'fap039', 'fap040',
+      'fap041', 'fap042', 'fap043', 'fap044', 'fap045', 'fap046',
+      'fap047',
+    ]);
     expect(designs.find(d => d.id === 'fap04')).toBeUndefined();
   });
 });

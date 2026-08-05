@@ -84,7 +84,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap007',
@@ -95,7 +95,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap008',
@@ -106,7 +106,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap009',
@@ -117,7 +117,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   // Full-bleed paintings 06-43 (docs/plans/full-bleed-print-assets-plan.md),
   // onboarded via print-assets:onboard from design/uploads/master-images-prints/.
@@ -132,7 +132,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap011',
@@ -143,7 +143,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap012',
@@ -154,7 +154,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap013',
@@ -165,7 +165,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap014',
@@ -176,7 +176,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap015',
@@ -187,7 +187,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap016',
@@ -198,7 +198,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap017',
@@ -209,7 +209,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap018',
@@ -220,7 +220,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap019',
@@ -231,7 +231,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap020',
@@ -242,7 +242,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap021',
@@ -253,7 +253,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap022',
@@ -264,7 +264,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap023',
@@ -275,7 +275,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap024',
@@ -286,7 +286,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap025',
@@ -297,7 +297,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap026',
@@ -308,7 +308,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap027',
@@ -319,7 +319,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap028',
@@ -330,7 +330,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap029',
@@ -341,7 +341,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap030',
@@ -352,7 +352,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap031',
@@ -363,7 +363,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap032',
@@ -374,7 +374,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap033',
@@ -385,7 +385,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap034',
@@ -396,7 +396,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap035',
@@ -407,7 +407,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap036',
@@ -418,7 +418,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap037',
@@ -429,7 +429,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap038',
@@ -440,7 +440,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap039',
@@ -451,7 +451,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap040',
@@ -462,7 +462,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap041',
@@ -473,7 +473,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap042',
@@ -484,7 +484,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap043',
@@ -495,7 +495,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap044',
@@ -506,7 +506,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap045',
@@ -517,7 +517,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap046',
@@ -528,7 +528,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
   {
     id: 'fap047',
@@ -539,7 +539,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: false,
+    published: true,
   },
 ];
 
