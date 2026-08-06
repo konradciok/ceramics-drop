@@ -85,6 +85,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap007',
@@ -96,6 +97,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap008',
@@ -107,6 +109,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap009',
@@ -118,6 +121,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   // Full-bleed paintings 06-43 (docs/plans/full-bleed-print-assets-plan.md),
   // onboarded via print-assets:onboard from design/uploads/master-images-prints/.
@@ -133,6 +137,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap011',
@@ -144,6 +149,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap012',
@@ -155,6 +161,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap013',
@@ -166,6 +173,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap014',
@@ -177,6 +185,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap015',
@@ -188,6 +197,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap016',
@@ -199,6 +209,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap017',
@@ -210,6 +221,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap018',
@@ -221,6 +233,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap019',
@@ -232,6 +245,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap020',
@@ -243,6 +257,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap021',
@@ -254,6 +269,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap022',
@@ -265,6 +281,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap023',
@@ -276,6 +293,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap024',
@@ -287,6 +305,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap025',
@@ -298,6 +317,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap026',
@@ -309,6 +329,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap027',
@@ -320,6 +341,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap028',
@@ -331,6 +353,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap029',
@@ -342,6 +365,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap030',
@@ -353,6 +377,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap031',
@@ -364,6 +389,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap032',
@@ -375,6 +401,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap033',
@@ -386,6 +413,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap034',
@@ -397,6 +425,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap035',
@@ -408,6 +437,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap036',
@@ -419,6 +449,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap037',
@@ -430,6 +461,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap038',
@@ -441,6 +473,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap039',
@@ -452,6 +485,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap040',
@@ -463,6 +497,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap041',
@@ -474,6 +509,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap042',
@@ -485,6 +521,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap043',
@@ -496,6 +533,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap044',
@@ -507,6 +545,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap045',
@@ -518,6 +557,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap046',
@@ -529,6 +569,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
   {
     id: 'fap047',
@@ -540,6 +581,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
     published: true,
+    mockups: true,
   },
 ];
 
