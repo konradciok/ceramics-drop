@@ -32,8 +32,7 @@ export function PrintCollectionAnalytics({
 
   return (
     <div
-      className="gallery"
-      data-count={items.length}
+      className="print-groups"
       onClick={(e) => {
         const tile = (e.target as HTMLElement).closest('[data-product-id]');
         const id = tile?.getAttribute('data-product-id');

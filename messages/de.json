@@ -484,6 +484,14 @@
     "ctLShip": "Versand",
     "ctVShip": "Polen · Versand in 1–3 Werktagen"
   },
+  "printCollections": {
+    "ultramaryna": "Ultramarin",
+    "miedz": "Kupfer",
+    "agat": "Achat",
+    "szalwia": "Salbei",
+    "nokturn": "Nocturne",
+    "inne": "Weitere Drucke"
+  },
   "collection": {
     "hint": "Klicke auf ein Vorschaubild oder den Titel, um die <b>Details</b> des Stücks zu sehen. Füge es mit dem <b>„In den Warenkorb“</b>-Button auf der Kachel oder in der Vorschau hinzu. Ausgewählte Stücke sammeln sich in der Leiste am unteren Seitenrand.",
     "kubki": {
