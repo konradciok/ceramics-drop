@@ -3,6 +3,13 @@ import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
 
 export const PRINT_DESIGNS: PrintDesign[] = [
+  // fap01–fap03 (legacy ceramic-motif posters) withdrawn 2026-08-06: the
+  // storefront sells only pipeline-backed production designs (fap005+).
+  // fap02/fap03 never had fulfilment assets (checkout failed closed on every
+  // variant) and fap01's brown variants were unassigned. Entries kept —
+  // ids, noteIndexes 0–2, and uploads stay reserved; re-publishing requires
+  // restoring design/print-assets/fap0N/ sources and a full
+  // prepare → upload → verify → publish run per design.
   {
     id: 'fap01',
     category: 'fine-art-prints',
@@ -12,7 +19,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: true,
+    published: false,
     // Live-mockup hero: fap-01-mock-*.webp composed from the published
     // 2026-07-12-r1 derivatives (print-assets:mockups) — ships with the flag.
     mockups: true,
@@ -26,14 +33,13 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     noteIndex: 1,
     // 2026-08-03: widened to full axes (policy: every print offers every
     // variant). Master (8000x11313) covers the 8400x12000 and 2x3 profiles
-    // without upscaling — the earlier 30x40/50x70-only shape was a
-    // merchandising restriction, not a technical one. New profiles need a
-    // print-assets prepare + publish run for fap02 before the new variants
-    // are purchasable (checkout fails closed with print_asset_unavailable).
+    // without upscaling. A prepare + publish run never happened — do it
+    // before any re-publish (checkout fails closed with
+    // print_asset_unavailable otherwise).
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: true,
+    published: false,
   },
   {
     id: 'fap03',
@@ -44,7 +50,7 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     sizes: ['30x40', '50x70', '70x100'],
     frameColours: ['black', 'natural', 'brown'],
     mountAvailable: true,
-    published: true,
+    published: false,
   },
   {
     // Unpublished test fixture — never renders, so its noteIndex is unused.

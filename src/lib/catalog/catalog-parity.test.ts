@@ -54,11 +54,11 @@ describe('catalog seed ↔ registry parity', () => {
 
   it('excludes inactive variants from axis recovery on published designs only', () => {
     const variants = seed.variants.map((v) =>
-      v.product_id === 'fap01' && v.axes?.size === '70x100' ? { ...v, active: false } : v,
+      v.product_id === 'fap005' && v.axes?.size === '70x100' ? { ...v, active: false } : v,
     );
     const rebuilt = mapPrintDesigns(seed.products, variants, seed.media);
-    const fap01 = rebuilt.find((d) => d.id === 'fap01');
-    expect(fap01?.sizes).toEqual(['30x40', '50x70']);
+    const fap005 = rebuilt.find((d) => d.id === 'fap005');
+    expect(fap005?.sizes).toEqual(['30x40', '50x70']);
     const fap04 = rebuilt.find((d) => d.id === 'fap04');
     expect(fap04).toEqual(PRINT_DESIGNS.find((d) => d.id === 'fap04'));
   });
@@ -74,7 +74,9 @@ describe('catalog seed ↔ registry parity', () => {
     expect(prints).toHaveLength(PRINT_DESIGNS.length);
     // Unpublished designs land as drafts, published as active.
     expect(prints.find((p) => p.id === 'fap04')?.status).toBe('draft');
-    expect(prints.find((p) => p.id === 'fap01')?.status).toBe('active');
+    // fap01-03 withdrawn 2026-08-06 — land as drafts like fap04.
+    expect(prints.find((p) => p.id === 'fap01')?.status).toBe('draft');
+    expect(prints.find((p) => p.id === 'fap005')?.status).toBe('active');
   });
 
   it('gives every ceramic a single default variant tracked at qty 1', () => {

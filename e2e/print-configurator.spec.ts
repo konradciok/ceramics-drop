@@ -3,7 +3,7 @@ import { PRINT_DESIGNS, registryPrintById } from '../src/lib/prints';
 
 test.describe('fine-art print configurator @ci', () => {
   test('renders configurator and adds print to cart', async ({ page }) => {
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     // Variant options render as radiogroup buttons (role="radio"), so they are
     // addressed by test id rather than the implicit button role.
     await page.getByTestId('opt-size-50x70').click();
@@ -15,14 +15,14 @@ test.describe('fine-art print configurator @ci', () => {
   });
 
   test('unframed variant shows no colour/mount selectors', async ({ page }) => {
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     await page.getByTestId('opt-framed-false').click();
     await expect(page.getByTestId('opt-colour-black')).not.toBeVisible();
     await expect(page.getByTestId('opt-mount-false')).not.toBeVisible();
   });
 
   test('styles selector controls and updates mounted variant price', async ({ page }) => {
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
 
     await expect(page.locator('.print-axis').first()).toHaveCSS('border-width', '0px');
     await expect(page.getByTestId('opt-size-30x40')).toHaveAttribute('aria-checked', 'true');
@@ -41,35 +41,35 @@ test.describe('fine-art print configurator @ci', () => {
   });
 
   test('hero mockup follows configurator selection', async ({ page }) => {
-    const design = registryPrintById('fap01');
-    test.skip(!design?.mockups, 'fap01 mockup assets not published yet (flag off)');
+    const design = registryPrintById('fap005');
+    test.skip(!design?.mockups, 'fap005 mockup assets not published yet (flag off)');
 
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     const hero = page.locator('.pdp-img-main img');
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-01.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005.webp');
 
     // Framing defaults to the first colour (black).
     await page.getByTestId('opt-framed-true').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-black.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-black.webp');
 
     await page.getByTestId('opt-mount-true').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-mount-black.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-mount-black.webp');
 
     await page.getByTestId('opt-colour-natural').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-mount-natural.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-mount-natural.webp');
 
     await page.getByTestId('opt-framed-false').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-01.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005.webp');
 
     // syncKey snap-back: from another slide, a visual-state change must return
-    // the gallery to slide 0 (exercisable once fap01 ships a gallery slide).
+    // the gallery to slide 0 (exercisable once fap005 ships a second gallery slide).
     if (design?.gallery?.length) {
       await page.getByTestId('opt-framed-true').click();
-      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-black.webp');
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-black.webp');
       await page.locator('.pdp-img-dot').nth(1).click();
       await expect(hero).toHaveAttribute('src', design.gallery[0]);
       await page.getByTestId('opt-colour-brown').click();
-      await expect(hero).toHaveAttribute('src', '/uploads/fap-01-mock-framed-brown.webp');
+      await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-brown.webp');
     }
   });
 
