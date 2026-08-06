@@ -484,6 +484,14 @@
     "ctLShip": "Envío",
     "ctVShip": "Polonia · envío en 1–3 días laborables"
   },
+  "printCollections": {
+    "ultramaryna": "Ultramar",
+    "miedz": "Cobre",
+    "agat": "Ágata",
+    "szalwia": "Salvia",
+    "nokturn": "Nocturno",
+    "inne": "Otras láminas"
+  },
   "collection": {
     "hint": "Haz clic en una miniatura o en el título para ver los <b>detalles</b> de la pieza. Añádela con el botón <b>«Añadir al carrito»</b> en la ficha o en la vista previa. Las piezas seleccionadas se reúnen en la barra inferior.",
     "kubki": {

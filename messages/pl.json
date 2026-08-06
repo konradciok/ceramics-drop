@@ -484,6 +484,14 @@
     "ctLShip": "Wysyłka",
     "ctVShip": "Polska · nadanie w 1–3 dni roboczych"
   },
+  "printCollections": {
+    "ultramaryna": "Ultramaryna",
+    "miedz": "Miedź",
+    "agat": "Agat",
+    "szalwia": "Szałwia",
+    "nokturn": "Nokturn",
+    "inne": "Pozostałe"
+  },
   "collection": {
     "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
     "kubki": {
