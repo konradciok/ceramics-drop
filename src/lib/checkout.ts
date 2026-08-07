@@ -2,7 +2,8 @@ import { getProductById, isProductPublic, registryProducts } from './products';
 import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
-import { priceOfVariant } from './print-pricing';
+import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
+import { getPrintPricingConfig } from './print-pricing-config/get';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
 import type { PrintVariantSelection } from './types';
 
@@ -45,6 +46,9 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
 
   const seen = new Set<string>();
   const items: CheckoutItem[] = [];
+  // Loaded lazily on the first print token so ceramic-only carts skip it.
+  // This is THE price of record for prints — the client never sends a price.
+  let pricing: PrintPricingConfig | null = null;
   for (const raw of rawIds) {
     if (typeof raw !== 'string' || seen.has(raw)) continue;
     if (isPrintToken(raw)) {
@@ -64,7 +68,8 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       }
       if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
-      const major = priceOfVariant(design, dec.sel, currency);
+      pricing ??= await getPrintPricingConfig();
+      const major = priceOfVariant(dec.sel, currency, pricing);
       const unit_price = toMinor(major);
       items.push({
         product_id: dec.designId,

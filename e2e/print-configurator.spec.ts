@@ -35,9 +35,11 @@ test.describe('fine-art print configurator @ci', () => {
     await page.getByTestId('opt-mount-true').click();
 
     await expect(page.getByTestId('opt-mount-true')).toHaveAttribute('aria-checked', 'true');
-    // 720 zł = 70x100 base 190 + frame 485 + mount 45 (src/lib/print-pricing.ts).
-    // Pinned literal: update here when SIZE_BASE / *_DELTA tables change.
-    await expect(page.getByTestId('print-price')).toHaveText('720 zł');
+    // 575 zł = 70x100 base 320 + frame 150 + mount 105, derived from
+    // DEFAULT_PRINT_PRICING (75/35/25 EUR × 4.25, rounded to 5 zł per component).
+    // Pinned literal: update here when the pricing seed/defaults change — the
+    // hermetic E2E runs in CATALOG_SOURCE=code, so defaults are what renders.
+    await expect(page.getByTestId('print-price')).toHaveText('575 zł');
   });
 
   test('hero mockup follows configurator selection', async ({ page }) => {

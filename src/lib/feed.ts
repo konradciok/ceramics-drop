@@ -2,6 +2,7 @@ import { getPublicProducts, CATEGORIES } from './products';
 import { getPrintDesigns } from './prints';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { fromPriceOf } from './print-pricing';
+import { getPrintPricingConfig } from './print-pricing-config/get';
 import { printShippingOf, type PrintCountry } from './print-shipping';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
@@ -179,6 +180,7 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const singular = (msg.product as Record<string, string>).print ?? 'Print';
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
   const designs = await getPrintDesigns(); // published only, CATALOG_SOURCE-aware
+  const pricing = await getPrintPricingConfig(); // global price list, CATALOG_SOURCE-aware
 
   return designs.map((design) => {
     const title = `${singular} #${design.num}`;
@@ -189,7 +191,7 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
     const imageLink = `${SITE_URL}${design.image}`;
     const additionalImages = (design.gallery ?? []).map((g) => `${SITE_URL}${g}`);
 
-    const price = fromPriceOf(design, chargeable);
+    const price = fromPriceOf(design, chargeable, pricing);
     // Loose (unframed) rate pairs with the unframed "from" price above.
     const shipCost = printShippingOf(country, false, chargeable);
 

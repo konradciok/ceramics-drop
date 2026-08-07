@@ -15,6 +15,7 @@ import { PrintConfigurator } from './PrintConfigurator';
 import { designMockupStates, mockupHeroSrc, mockupSrc } from '@/lib/print-mockups';
 import { srcSet } from '@/lib/images';
 import { variantLabel } from '@/lib/print-cart';
+import type { PrintPricingConfig } from '@/lib/print-pricing';
 import type { PrintDesign, PrintVariantSelection } from '@/lib/types';
 
 export function PrintPdpPurchase({
@@ -22,6 +23,7 @@ export function PrintPdpPurchase({
   images,
   alt,
   usableVariantKeys,
+  pricing,
   header,
   footer,
 }: {
@@ -29,6 +31,7 @@ export function PrintPdpPurchase({
   images: string[];
   alt: string;
   usableVariantKeys?: string[];
+  pricing: PrintPricingConfig;
   header: ReactNode;
   footer: ReactNode;
 }) {
@@ -73,6 +76,7 @@ export function PrintPdpPurchase({
         <PrintConfigurator
           design={design}
           usableVariantKeys={usableVariantKeys}
+          pricing={pricing}
           sel={sel}
           onSelChange={setSel}
         />

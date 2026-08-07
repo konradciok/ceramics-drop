@@ -652,3 +652,16 @@
   .adm-top-tag { display: none; }
   .adm-top { grid-template-columns: 1fr; grid-template-areas: 'brand' 'nav'; }
 }
+
+/* ---- Pricing (Cennik) ------------------------------------------------- */
+.adm-pricing-input {
+  width: 90px; padding: 6px 8px; border: 1px solid var(--c-line); border-radius: var(--r-sharp);
+  background: var(--c-paper); font: inherit; color: inherit; font-variant-numeric: tabular-nums;
+}
+.adm-pricing-input.has-error { border-color: #a23b2e; }
+.adm-pricing-cell { display: flex; align-items: center; gap: 6px; }
+.adm-pricing-table td { vertical-align: top; }
+.adm-visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}

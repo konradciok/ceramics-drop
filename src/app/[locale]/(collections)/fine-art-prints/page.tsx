@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { printCollectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
 import { getProductNotes } from '@/lib/cms/messages';
+import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import type { Locale } from '@/i18n/routing';
 
 const PRINTS_SLUG = 'fine-art-prints';
@@ -24,15 +25,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, notes] = await Promise.all([
+  const [t, notes, pricing] = await Promise.all([
     getTranslations({ locale }),
     getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
+    getPrintPricingConfig(),
   ]);
-  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes });
+  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing });
   return (
     <main>
       <JsonLd data={schema} />
-      <PrintCollectionScreen locale={locale as Locale} />
+      <PrintCollectionScreen locale={locale as Locale} pricing={pricing} />
     </main>
   );
 }

@@ -12,8 +12,15 @@ vi.mock('./catalog/load', () => ({
 vi.mock('@/server/print-assets/repository', () => ({
   resolvePrintAsset: vi.fn(),
 }));
+// Mock the pricing-config loader so the db-mode test can prove checkout prices
+// from the DB config (admin-edited), not the code default.
+vi.mock('./print-pricing-config/load', () => ({
+  loadPrintPricingConfigFromDb: vi.fn(),
+}));
 import { loadCeramicProductsFromDb } from './catalog/load';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
+import { loadPrintPricingConfigFromDb } from './print-pricing-config/load';
+import { DEFAULT_PRINT_PRICING } from './print-pricing';
 
 const MOCK_ASSET = {
   assetId: 'asset-uuid-1',
@@ -95,7 +102,7 @@ describe('validateCart', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
-    expect(result.items[0].unit_price).toBe(45500); // (150 base + 305 frame) PLN × 100
+    expect(result.items[0].unit_price).toBe(36500); // (215 base + 150 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
     expect(result.items[0].variant).toMatchObject({
       assetId: MOCK_ASSET.assetId,
       assetKey: MOCK_ASSET.r2Key,
@@ -105,6 +112,28 @@ describe('validateCart', () => {
       assetHeightPx: MOCK_ASSET.heightPx,
     });
     expect(resolvePrintAsset).toHaveBeenCalledWith('fap005', '50x70:true:false:black');
+  });
+
+  it('prices prints from the DB pricing config in db mode, not the code default', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    // The catalog loaders are bare vi.fn()s here, so the design read falls back
+    // to the registry with a logged error — silence it; the pricing read is the
+    // subject under test.
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      vi.mocked(loadPrintPricingConfigFromDb).mockResolvedValue({
+        ...DEFAULT_PRINT_PRICING,
+        baseEur: { ...DEFAULT_PRINT_PRICING.baseEur, '50x70': 99 }, // admin-edited value
+      });
+      const token = encodePrintToken('fap005', { size: '50x70', framed: false, mount: false, frameColour: 'none' });
+      const result = await validateCart([token], 'eur');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.items[0].unit_price).toBe(9900); // 99 EUR × 100 from the DB config
+      expect(loadPrintPricingConfigFromDb).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+      errSpy.mockRestore();
+    }
   });
 
   it('rejects a print variant with no ready asset', async () => {

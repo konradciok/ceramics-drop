@@ -9,7 +9,7 @@ import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
-import { fromPriceOf } from '@/lib/print-pricing';
+import { fromPriceOf, type PrintPricingConfig } from '@/lib/print-pricing';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { withRegistryMockups } from '@/lib/print-mockups';
 import { SITE_NAME } from '@/lib/site';
@@ -24,10 +24,13 @@ export async function PrintProductScreen({
   design,
   noteOverride,
   usableVariantKeys,
+  pricing,
 }: {
   design: PrintDesign;
   noteOverride?: string;
   usableVariantKeys?: string[];
+  /** Global print price list, loaded once by the PDP page (getPrintPricingConfig). */
+  pricing: PrintPricingConfig;
 }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
@@ -57,7 +60,7 @@ export async function PrintProductScreen({
 
   return (
     <>
-    <PrintViewAnalytics design={design} />
+    <PrintViewAnalytics design={design} pricing={pricing} />
     <article className="pdp">
       <div className="pdp-inner">
         <nav className="pdp-breadcrumb" aria-label="breadcrumb">
@@ -74,6 +77,7 @@ export async function PrintProductScreen({
             images={images}
             alt={displayName}
             usableVariantKeys={usableVariantKeys}
+            pricing={pricing}
             header={
               <>
                 <div className="eyebrow">{categoryName}</div>
@@ -113,7 +117,7 @@ export async function PrintProductScreen({
             <h2>{t('print.moreFrom')}</h2>
             <div className="gallery" data-count={siblings.length}>
               {siblings.map((d) => {
-                const from = fmt(fromPriceOf(d, printCurrency));
+                const from = fmt(fromPriceOf(d, printCurrency, pricing));
                 const name = `${singular} Nº ${d.num}`;
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>

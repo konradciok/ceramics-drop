@@ -4,6 +4,7 @@ import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
 import { PRICE_EUR } from '@/lib/pricing';
 import { printShippingOf } from '@/lib/print-shipping';
+import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
 
@@ -304,7 +305,7 @@ describe('productSchema', () => {
 describe('printCollectionSchema', () => {
   let nodes: Node[];
   beforeAll(async () => {
-    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw });
+    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
     nodes = graph['@graph'] as unknown as Node[];
   });
 
@@ -340,7 +341,7 @@ describe('printCollectionSchema', () => {
   });
 
   it('en locale ships in EUR on the IE Prodigi rate', async () => {
-    const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw });
+    const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
     const items = (enGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
     items.forEach(({ item }) => {
       const [loose] = item.offers.shippingDetails ?? [];
@@ -359,7 +360,7 @@ describe('printProductSchema', () => {
   const tRawStub = (key: string) => (key.startsWith('notes.') ? notesStub : key);
 
   it('attaches Prodigi shippingDetails and a MerchantReturnNotPermitted policy', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub });
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING });
     const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
       shippingDetails: ShippingDetail[];
       hasMerchantReturnPolicy: ReturnPolicy;
@@ -370,7 +371,7 @@ describe('printProductSchema', () => {
   });
 
   it('falls through to the tRaw fallback when the description override is an empty string', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '' });
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '', pricing: DEFAULT_PRINT_PRICING });
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     expect(nodes[1]['description']).toBe('test note');
   });

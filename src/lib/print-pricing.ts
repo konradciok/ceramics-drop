@@ -1,49 +1,75 @@
 import type { PrintDesign, PrintSize, PrintVariantSelection } from './types';
 
-type Money = { pln: number; eur: number; gbp: number };
-type Currency = keyof Money;
+type Currency = 'pln' | 'eur' | 'gbp';
 
-// Default per-size prices; premium designs override per size via
-// PrintDesign.prices (e.g. the Ostrea series) so display and checkout
-// always agree on the same per-design number.
-const SIZE_BASE: Record<PrintSize, Money> = {
-  '30x40':  { pln: 105, eur: 25, gbp: 22 },
-  '50x70':  { pln: 150, eur: 35, gbp: 30 },
-  '70x100': { pln: 190, eur: 45, gbp: 38 },
-};
-
-// Frame / passe-partout surcharges at 100% margin: 2× Prodigi's cost delta
-// (CFP−FAP for the frame, CFPM−CFP for the mount), quoted 2026-07-03 from the
-// sandbox API. EUR is the quoted figure; PLN/GBP use the same fixed conversion
-// as the base tables (×4.25 / ×0.86), rounded to whole units.
-const FRAMED_DELTA: Record<PrintSize, Money> = {
-  '30x40':  { pln: 230, eur: 54,  gbp: 46 },  // cost delta €27.00
-  '50x70':  { pln: 305, eur: 72,  gbp: 62 },  // cost delta €36.00
-  '70x100': { pln: 485, eur: 114, gbp: 98 },  // cost delta €56.65
-};
-const MOUNT_DELTA: Record<PrintSize, Money> = {
-  '30x40':  { pln: 35,  eur: 8,   gbp: 7 },   // cost delta €4.00
-  '50x70':  { pln: 100, eur: 24,  gbp: 21 },  // cost delta €12.00
-  '70x100': { pln: 45,  eur: 10,  gbp: 9 },   // cost delta €5.00
-};
-
-function sizePrice(design: PrintDesign, size: PrintSize): Money {
-  return design.prices?.[size] ?? SIZE_BASE[size];
+/**
+ * The one global fine-art-print price list. EUR is canonical: the admin edits
+ * the 9 EUR values plus the two conversion rates at /admin/pricing (persisted
+ * in the single-row `print_pricing_config` table); PLN and GBP are derived
+ * per component by `derivePrice`. All prints share this config — there is no
+ * per-design pricing.
+ */
+export interface PrintPricingConfig {
+  /** Unframed price per size, whole EUR. */
+  baseEur: Record<PrintSize, number>;
+  /** Frame surcharge per size, whole EUR — identical for every frame colour. */
+  frameEur: Record<PrintSize, number>;
+  /** Passe-partout surcharge per size, whole EUR — only applied on framed variants. */
+  mountEur: Record<PrintSize, number>;
+  eurToPln: number;
+  eurToGbp: number;
 }
 
-/** Price in MAJOR units (PLN złoty / EUR / GBP). Conversion to minor units at checkout. */
+/**
+ * Code fallback + migration seed twin. Used when CATALOG_SOURCE=code
+ * (local/tests) and when the DB read fails; keep in lockstep with the seed
+ * row in supabase/migrations/20260807120000_print_pricing_config.sql and
+ * with any permanent price change made in /admin/pricing.
+ */
+export const DEFAULT_PRINT_PRICING: PrintPricingConfig = {
+  baseEur: { '30x40': 25, '50x70': 50, '70x100': 75 },
+  frameEur: { '30x40': 35, '50x70': 35, '70x100': 35 },
+  mountEur: { '30x40': 25, '50x70': 25, '70x100': 25 },
+  eurToPln: 4.25,
+  eurToGbp: 0.86,
+};
+
+/**
+ * Convert one EUR price component into the display currency. PLN rounds to
+ * the nearest 5 zł, GBP to the nearest 1 £. The intermediate round-to-cents
+ * step keeps IEEE noise out of the half-way cases (25 × 0.86 must be 21.5,
+ * not 21.4999…, so it rounds up to 22).
+ */
+export function derivePrice(eur: number, currency: Currency, config: PrintPricingConfig): number {
+  if (currency === 'eur') return eur;
+  const rate = currency === 'pln' ? config.eurToPln : config.eurToGbp;
+  const raw = Math.round(eur * rate * 100) / 100;
+  return currency === 'pln' ? Math.round(raw / 5) * 5 : Math.round(raw);
+}
+
+/**
+ * Price in MAJOR units (PLN złoty / EUR / GBP); conversion to minor units at
+ * checkout. Pure and sync — callers resolve the config (server: via
+ * getPrintPricingConfig(); client components: via a prop from their page).
+ * Derivation is component-wise (base/frame/mount each converted+rounded,
+ * then summed) so displayed component prices always add up.
+ */
 export function priceOfVariant(
-  design: PrintDesign,
   sel: PrintVariantSelection,
   currency: Currency,
+  config: PrintPricingConfig,
 ): number {
-  const base = sizePrice(design, sel.size);
-  const frame = sel.framed ? FRAMED_DELTA[sel.size][currency] : 0;
-  const mount = sel.framed && sel.mount ? MOUNT_DELTA[sel.size][currency] : 0;
-  return base[currency] + frame + mount;
+  const base = derivePrice(config.baseEur[sel.size], currency, config);
+  const frame = sel.framed ? derivePrice(config.frameEur[sel.size], currency, config) : 0;
+  const mount = sel.framed && sel.mount ? derivePrice(config.mountEur[sel.size], currency, config) : 0;
+  return base + frame + mount;
 }
 
 /** Cheapest sellable price of a design — the "from X" shown on tiles. */
-export function fromPriceOf(design: PrintDesign, currency: Currency): number {
-  return Math.min(...design.sizes.map((s) => sizePrice(design, s)[currency]));
+export function fromPriceOf(
+  design: PrintDesign,
+  currency: Currency,
+  config: PrintPricingConfig,
+): number {
+  return Math.min(...design.sizes.map((s) => derivePrice(config.baseEur[s], currency, config)));
 }
