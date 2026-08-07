@@ -353,7 +353,10 @@ describe('printCollectionSchema', () => {
 
 describe('printProductSchema', () => {
   const design = registryPrintDesigns()[0];
-  const tRawStub = (key: string) => (key.startsWith('notes.') ? ['test note'] : key);
+  // Notes arrays are indexed by noteIndex — pad so the first published
+  // design (fap005, noteIndex 3 since fap01-03 were withdrawn) resolves.
+  const notesStub = Array.from({ length: design.noteIndex + 1 }, () => 'test note');
+  const tRawStub = (key: string) => (key.startsWith('notes.') ? notesStub : key);
 
   it('attaches Prodigi shippingDetails and a MerchantReturnNotPermitted policy', () => {
     const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub });

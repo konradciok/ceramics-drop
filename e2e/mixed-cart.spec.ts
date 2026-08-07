@@ -15,7 +15,7 @@ test.describe('mixed cart @ci', () => {
     await resetCart(page);
 
     // 1. Add a print via the configurator.
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     await page.getByTestId('opt-size-50x70').click();
     await page.getByTestId('print-add').click();
     await expect(page.locator('[data-cart-count]')).toHaveText('1');

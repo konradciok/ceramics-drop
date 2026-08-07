@@ -26,7 +26,7 @@ const BUYER_EMAIL = 'e2e+playwright-print@example.com';
 test.describe('print cart UI @ci', () => {
   test('cart is courier-only for prints: no paczkomat, no odbiór, no Geowidget, country selectable', async ({ page }) => {
     await resetCart(page);
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     await page.getByTestId('opt-size-50x70').click();
     await page.getByTestId('opt-framed-true').click();
     await page.getByTestId('opt-colour-black').click();
@@ -56,7 +56,7 @@ test.describe('print cart UI @ci', () => {
   test('validates, restores a session draft, and reprices immediately when country changes', async ({ page }) => {
     await page.setExtraHTTPHeaders({ 'CF-IPCountry': 'DE' });
     await resetCart(page);
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     await page.getByTestId('opt-size-50x70').click();
     await page.getByTestId('opt-framed-true').click();
     await page.getByTestId('opt-colour-black').click();
@@ -116,7 +116,7 @@ test.describe('print purchase @checkout-edge @destructive', () => {
     }
 
     await resetCart(page);
-    await page.goto('/fine-art-prints/fap01');
+    await page.goto('/fine-art-prints/fap005');
     await page.getByTestId('opt-size-50x70').click();
     await page.getByTestId('opt-framed-true').click();
     await page.getByTestId('opt-colour-black').click();

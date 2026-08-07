@@ -145,15 +145,24 @@ silently reuse a wrong master).
 
 ## Phase 5 — Deferred / parallel (not fulfilment-blocking)
 
-- Storefront visuals for the 43: gallery WebPs (`print-assets:gallery` works
-  from a published derivative + `gallery` config), mockups (poster-specific
-  framing assumptions — review before reuse), product copy/notes, pricing
-  overrides if any.
-- Poster path for fap02's widened variants (existing decision) proceeds
-  independently with its existing config.
-- Photoshop Stage B script (`2_export_print_jpgs.jsx`) becomes redundant for
-  fulfilment once fullBleed prepare lands (Stage A / generative expansion
-  remains the artistic step). Retire it in the masters-folder README.
+- ~~Storefront visuals for the 43~~ — done (PRs #223/#225: real gallery +
+  mockup images for all 43; #227 added curated collections on top). Product
+  copy/notes shipped for all 46 designs; no pricing overrides taken.
+- ~~Poster path for fap02's widened variants~~ — superseded 2026-08-06:
+  the 2026-08-06 sweep found fap02 AND fap03 had no pipeline assets at all
+  (never prepared/published; checkout failed closed on every variant) and
+  fap01 lacked assignments for the six `brown` variants added by PR #205.
+  Decision (operator, 2026-08-06): **withdraw fap01–fap03 from the
+  storefront** — the shop sells only pipeline-backed production designs
+  (fap005+). Registry entries stay (`published: false`; ids and
+  noteIndexes 0–2 remain reserved), DB rows flipped to `draft` via
+  `catalog:backfill`. Re-publishing any of them requires restoring
+  `design/print-assets/fap0N/` sources (absent from the operator machine)
+  and a full prepare → upload → verify → publish run per design.
+- ~~Photoshop Stage B script (`2_export_print_jpgs.jsx`)~~ — moot 2026-08-06:
+  the script and the masters-folder README it was to be retired in no longer
+  exist on the operator machine; fullBleed prepare replaced Stage B for
+  fulfilment (Stage A / generative expansion remains the artistic step).
 
 ## Risks
 

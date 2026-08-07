@@ -44,19 +44,19 @@ describe('groupPrintDesigns', () => {
 
   it('covers every published design exactly once, in collection order', () => {
     const groups = groupPrintDesigns(published);
-    expect(groups.map((g) => g.slug)).toEqual([
-      ...PRINT_COLLECTIONS.map((c) => c.slug),
-      UNASSIGNED_COLLECTION,
-    ]);
+    // fap01-03 withdrawn 2026-08-06: every published design is curated, so
+    // the 'inne' fallback bucket is empty and dropped.
+    expect(groups.map((g) => g.slug)).toEqual(PRINT_COLLECTIONS.map((c) => c.slug));
     const flat = groups.flatMap((g) => g.designs.map((d) => d.id));
     expect(new Set(flat).size).toBe(flat.length);
     expect(flat.sort()).toEqual(published.map((d) => d.id).sort());
   });
 
-  it('legacy fap01–fap03 land in the fallback bucket', () => {
-    const groups = groupPrintDesigns(published);
-    const inne = groups.find((g) => g.slug === UNASSIGNED_COLLECTION);
-    expect(inne?.designs.map((d) => d.id)).toEqual(['fap01', 'fap02', 'fap03']);
+  it('withdrawn fap01–fap03 are unpublished and stay unassigned (fallback would catch them)', () => {
+    for (const id of ['fap01', 'fap02', 'fap03']) {
+      expect(PRINT_DESIGNS.find((d) => d.id === id)?.published, id).toBe(false);
+      expect(collectionOf(id), id).toBeUndefined();
+    }
   });
 
   it('unknown ids fall back to inne; empty groups are dropped', () => {

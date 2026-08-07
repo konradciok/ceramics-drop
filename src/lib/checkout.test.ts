@@ -17,7 +17,7 @@ import { resolvePrintAsset } from '@/server/print-assets/repository';
 
 const MOCK_ASSET = {
   assetId: 'asset-uuid-1',
-  r2Key: 'prints/fap01/rev1/3600x4800-abc.jpg',
+  r2Key: 'prints/fap005/rev1/3600x4800-abc.jpg',
   sha256: 'a'.repeat(64),
   contentType: 'image/jpeg' as const,
   widthPx: 4800,
@@ -90,7 +90,7 @@ describe('validateCart', () => {
   });
 
   it('accepts a valid print token and snapshots the resolved asset', async () => {
-    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     const result = await validateCart([token], 'pln');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -104,23 +104,23 @@ describe('validateCart', () => {
       assetWidthPx: MOCK_ASSET.widthPx,
       assetHeightPx: MOCK_ASSET.heightPx,
     });
-    expect(resolvePrintAsset).toHaveBeenCalledWith('fap01', '50x70:true:false:black');
+    expect(resolvePrintAsset).toHaveBeenCalledWith('fap005', '50x70:true:false:black');
   });
 
   it('rejects a print variant with no ready asset', async () => {
     vi.mocked(resolvePrintAsset).mockResolvedValueOnce(null);
-    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_unavailable' });
   });
 
   it('returns print_asset_error on a transient DB error from resolvePrintAsset', async () => {
     vi.mocked(resolvePrintAsset).mockRejectedValueOnce(new Error('connection reset'));
-    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_error' });
   });
 
   it('rejects a mixed ceramics + prints cart', async () => {
-    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });
   });
 

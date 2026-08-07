@@ -121,18 +121,21 @@ describe('buildMetaXml', () => {
 });
 
 describe('fine-art-print feed rows', () => {
-  it('includes one row per published print design, matching the emitted content_ids', async () => {
+  it('includes exactly one row per published print design, matching the emitted content_ids', async () => {
     const items = await buildFeedItems('en', new Set());
-    const feedIds = new Set(items.map((i) => i.id));
-    const designIds = (await getPrintDesigns()).map((d) => d.id);
-    expect(designIds).toContain('fap01'); // guard: registry actually has published prints
-    for (const id of designIds) expect(feedIds.has(id)).toBe(true);
+    const printFeedIds = items
+      .filter((i) => i.category === 'fine-art-prints')
+      .map((i) => i.id)
+      .sort();
+    const designIds = (await getPrintDesigns()).map((d) => d.id).sort();
+    expect(designIds).toContain('fap005'); // guard: registry actually has published prints
+    expect(printFeedIds).toEqual(designIds); // exact set — withdrawn designs must not leak
   });
 
   it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
-    const pl = (await buildFeedItems('pl', new Set())).find((i) => i.id === 'fap01');
-    const en = (await buildFeedItems('en', new Set())).find((i) => i.id === 'fap01');
-    // fap01 cheapest size (30x40) = 105 PLN / 25 EUR (print-pricing SIZE_BASE).
+    const pl = (await buildFeedItems('pl', new Set())).find((i) => i.id === 'fap005');
+    const en = (await buildFeedItems('en', new Set())).find((i) => i.id === 'fap005');
+    // fap005 cheapest size (30x40) = 105 PLN / 25 EUR (print-pricing SIZE_BASE).
     expect(pl?.price).toBe('105.00 PLN');
     expect(en?.price).toBe('25.00 EUR');
     expect(pl?.category).toBe('fine-art-prints');
@@ -142,7 +145,7 @@ describe('fine-art-print feed rows', () => {
 
   it('renders a print g:id into both feed XMLs', async () => {
     const items = await buildFeedItems('en', new Set());
-    expect(buildMetaXml(items, 'en')).toContain('<g:id>fap01</g:id>');
-    expect(buildGoogleXml(items, 'en')).toContain('<g:id>fap01</g:id>');
+    expect(buildMetaXml(items, 'en')).toContain('<g:id>fap005</g:id>');
+    expect(buildGoogleXml(items, 'en')).toContain('<g:id>fap005</g:id>');
   });
 });
