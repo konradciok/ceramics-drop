@@ -17,7 +17,7 @@
 
 ### Bug Fixes
 
-* **analytics:** enhance webhook fulfillment details and include fine-art prints in product feeds ([#221](https://github.com/konradciok/ceramics-drop/issues/221)) ([6bda2a4](https://github.com/konradciok/ceramics-drop/commit/6bda2a4573ae9a1ab0b171a0c9a80c1dec1c1a49))
+* **analytics:** docs-only — AGENTS.md sync describing the already-shipped webhook idempotency ledger and print feed rows (no runtime change) ([#221](https://github.com/konradciok/ceramics-drop/issues/221)) ([6bda2a4](https://github.com/konradciok/ceramics-drop/commit/6bda2a4573ae9a1ab0b171a0c9a80c1dec1c1a49))
 * **print-assets:** Windows spawnSync + R2 upload bugs found running the real fap005 pilot ([#222](https://github.com/konradciok/ceramics-drop/issues/222)) ([f8fbd09](https://github.com/konradciok/ceramics-drop/commit/f8fbd099faf6b70c98dc8f02af52ea2014d2d970))
 
 ## [0.12.0](https://github.com/konradciok/ceramics-drop/compare/v0.11.0...v0.12.0) (2026-07-29)
