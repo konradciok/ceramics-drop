@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/konradciok/ceramics-drop/compare/v0.13.0...v0.14.0) (2026-08-07)
+
+
+### Features
+
+* **admin/products:** list navigation, editor safety, audit timeline ([#234](https://github.com/konradciok/ceramics-drop/issues/234)) ([392bbdf](https://github.com/konradciok/ceramics-drop/commit/392bbdf097c0cb6aae467d3934dd40a6232a4a50))
+* **notes:** support fine-art prints in notes:generate ([#230](https://github.com/konradciok/ceramics-drop/issues/230)) ([e2d8acf](https://github.com/konradciok/ceramics-drop/commit/e2d8acfcc1903e83bd5c411c049bd6a9639ed257))
+* **prints:** global admin-managed print price list (EUR-canonical) ([#235](https://github.com/konradciok/ceramics-drop/issues/235)) ([d0f9006](https://github.com/konradciok/ceramics-drop/commit/d0f90062cf884904ae33ef8119a9f20044d7e82c))
+* **prints:** real Polish notes for all 43 production designs ([#232](https://github.com/konradciok/ceramics-drop/issues/232)) ([0de2151](https://github.com/konradciok/ceramics-drop/commit/0de21518513530e0f2d10600d168212f58d36fa4))
+* **prints:** translate the 43 print notes into en/es/de ([#233](https://github.com/konradciok/ceramics-drop/issues/233)) ([0fd93d8](https://github.com/konradciok/ceramics-drop/commit/0fd93d8471780878c2e7dbadaf2bfc07caa9c165))
+
 ## [0.13.0](https://github.com/konradciok/ceramics-drop/compare/v0.12.0...v0.13.0) (2026-08-07)
 
 
