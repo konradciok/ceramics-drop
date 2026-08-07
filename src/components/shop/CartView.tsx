@@ -7,7 +7,7 @@ import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
-import { priceOfVariant } from '@/lib/print-pricing';
+import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
@@ -133,10 +133,13 @@ function readOrCreateAttemptId(): string {
 export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
+  printPricing,
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
-} = {}) {
+  /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
+  printPricing: PrintPricingConfig;
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const mounted = useMounted();
@@ -253,7 +256,7 @@ export function CartView({
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const priceOfLine = (l: CartLine) =>
     l.kind === 'print'
-      ? priceOfVariant(l.design, l.sel, printCurrency)
+      ? priceOfVariant(l.sel, printCurrency, printPricing)
       : priceOfCurrency(l.product, currency);
   const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);

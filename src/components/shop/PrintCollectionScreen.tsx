@@ -9,7 +9,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getPrintDesigns } from '@/lib/prints';
 import { groupPrintDesigns } from '@/lib/print-collections';
-import { fromPriceOf } from '@/lib/print-pricing';
+import { fromPriceOf, type PrintPricingConfig } from '@/lib/print-pricing';
 import { currencyFormatter } from '@/lib/format';
 import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
@@ -22,7 +22,14 @@ import type { PrintVariantSelection } from '@/lib/types';
 
 const SLUG = 'fine-art-prints';
 
-export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
+export async function PrintCollectionScreen({
+  locale,
+  pricing,
+}: {
+  locale: Locale;
+  /** Global print price list, loaded once by the page (getPrintPricingConfig). */
+  pricing: PrintPricingConfig;
+}) {
   const t = await getTranslations();
   const designs = await getPrintDesigns();
   const currency = await getCurrency(locale);
@@ -37,7 +44,7 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
   // and the configurator's initial selection on the PDP the tile links to.
   const analyticsItems: PrintListItem[] = ordered.map((d) => {
     const sel: PrintVariantSelection = { size: d.sizes[0], framed: false, mount: false, frameColour: 'none' };
-    return { id: d.id, num: d.num, variantLabel: variantLabel(sel, locale), price: fromPriceOf(d, printCurrency) };
+    return { id: d.id, num: d.num, variantLabel: variantLabel(sel, locale), price: fromPriceOf(d, printCurrency, pricing) };
   });
 
   return (
@@ -78,7 +85,7 @@ export async function PrintCollectionScreen({ locale }: { locale: Locale }) {
             <h2 className="gallery-group-head">{t(`printCollections.${g.slug}`)}</h2>
             <div className="gallery" data-count={g.designs.length}>
               {g.designs.map((d) => {
-                const from = fmt(fromPriceOf(d, printCurrency));
+                const from = fmt(fromPriceOf(d, printCurrency, pricing));
                 const name = `${t('product.print')} Nº ${d.num}`;
                 return (
                   <Link

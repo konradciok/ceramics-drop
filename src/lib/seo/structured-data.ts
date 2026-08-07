@@ -4,7 +4,7 @@ import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory } from '@/lib/products';
 import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
 import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
-import { priceOfVariant } from '@/lib/print-pricing';
+import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
@@ -117,17 +117,21 @@ function printReturnPolicy() {
 }
 
 /** Prices (major units, given currency) of every sellable variant of a design. */
-function sellableVariantPrices(design: PrintDesign, currency: 'pln' | 'eur' | 'gbp'): number[] {
+function sellableVariantPrices(
+  design: PrintDesign,
+  currency: 'pln' | 'eur' | 'gbp',
+  pricing: PrintPricingConfig,
+): number[] {
   const prices: number[] = [];
   for (const size of PRINT_SIZES) {
     // Unframed variant
     const unframed = { size, framed: false, mount: false, frameColour: 'none' as const };
-    if (isVariantAvailable(design, unframed)) prices.push(priceOfVariant(design, unframed, currency));
+    if (isVariantAvailable(design, unframed)) prices.push(priceOfVariant(unframed, currency, pricing));
     // Framed variants
     for (const frameColour of PRINT_FRAME_COLOURS) {
       for (const mount of [false, true]) {
         const sel = { size, framed: true, mount, frameColour };
-        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(design, sel, currency));
+        if (isVariantAvailable(design, sel)) prices.push(priceOfVariant(sel, currency, pricing));
       }
     }
   }
@@ -243,6 +247,8 @@ type PrintCollectionArgs = {
   tRaw?: (key: string) => unknown;
   /** CMS-resolved per-design notes (id → text) from `getProductNotes(PRINTS_SLUG, locale)`. */
   notes?: Record<string, string>;
+  /** Global print price list — loaded once by the page and shared with the screen. */
+  pricing: PrintPricingConfig;
 };
 
 /**
@@ -251,7 +257,7 @@ type PrintCollectionArgs = {
  * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
  * print is configurable, not a single SKU.
  */
-export async function printCollectionSchema({ locale, t, tRaw, notes }: PrintCollectionArgs): Promise<Graph> {
+export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
@@ -275,7 +281,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes }: PrintCol
         name: categoryName,
         numberOfItems: designs.length,
         itemListElement: designs.map((d, i) => {
-          const prices = sellableVariantPrices(d, currency);
+          const prices = sellableVariantPrices(d, currency, pricing);
           return {
             '@type': 'ListItem',
             position: i + 1,
@@ -311,13 +317,15 @@ type PrintProductArgs = {
   t: (key: string) => string;
   tRaw: (key: string) => unknown;
   description?: string;
+  /** Global print price list — loaded once by the PDP and shared with the screen. */
+  pricing: PrintPricingConfig;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride }: PrintProductArgs): Graph {
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing }: PrintProductArgs): Graph {
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
@@ -328,7 +336,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
   const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
-  const prices = sellableVariantPrices(design, currency);
+  const prices = sellableVariantPrices(design, currency, pricing);
 
   return {
     '@context': 'https://schema.org',

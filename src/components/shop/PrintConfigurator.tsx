@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
-import { priceOfVariant } from '@/lib/print-pricing';
+import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
 import { encodePrintToken, isPrintToken, printVariantButtonState, variantLabel } from '@/lib/print-cart';
 import { buildPrintAddToCartEvent, buildPrintRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
@@ -20,11 +20,14 @@ import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib
 export function PrintConfigurator({
   design,
   usableVariantKeys,
+  pricing,
   sel,
   onSelChange,
 }: {
   design: PrintDesign;
   usableVariantKeys?: string[];
+  /** Global print price list, resolved server-side and passed down (client islands cannot reach the DB). */
+  pricing: PrintPricingConfig;
   sel: PrintVariantSelection;
   onSelChange: (sel: PrintVariantSelection) => void;
 }) {
@@ -37,7 +40,7 @@ export function PrintConfigurator({
   const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
 
   const structurallyAvailable = isVariantAvailable(design, sel);
-  const price = priceOfVariant(design, sel, printCurrency);
+  const price = priceOfVariant(sel, printCurrency, pricing);
   const token = encodePrintToken(design.id, sel);
 
   const ids = useCart((s) => s.ids);

@@ -3,7 +3,7 @@ import { registryProducts } from '../products';
 import { PRINT_DESIGNS, isVariantAvailable, registryPrintById } from '../prints';
 import { withRegistryMockups } from '../print-mockups';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
-import { priceOfVariant } from '../print-pricing';
+import { DEFAULT_PRINT_PRICING, priceOfVariant } from '../print-pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
 import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 
@@ -45,10 +45,9 @@ describe('catalog seed ↔ registry parity', () => {
     expect(rebuilt.map((d) => withRegistryMockups(d, registryPrintById(d.id)))).toEqual(PRINT_DESIGNS);
   });
 
-  it('registry print designs do not use unavailable/prices until mapper support (Stage 5)', () => {
+  it('registry print designs do not use unavailable until mapper support (Stage 5)', () => {
     for (const d of PRINT_DESIGNS) {
       expect(d.unavailable, d.id).toBeUndefined();
-      expect(d.prices, d.id).toBeUndefined();
     }
   });
 
@@ -145,10 +144,12 @@ describe('catalog seed ↔ registry parity', () => {
       const design = byId.get(v.product_id)!;
       // Matches the exact sellability rule checkout.ts / cart-lines.ts enforce.
       expect(isVariantAvailable(design, v.axes!), v.variant_key).toBe(true);
-      // Prices are derived from print-pricing.ts and must stay in lockstep with it.
-      expect(v.price_pln, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'pln'));
-      expect(v.price_eur, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'eur'));
-      expect(v.price_gbp, v.variant_key).toBe(priceOfVariant(design, v.axes!, 'gbp'));
+      // Seed prices derive from DEFAULT_PRINT_PRICING (buildCatalogSeed's default
+      // arg) and must stay in lockstep with it. These shadow columns are read by
+      // nobody at runtime — live pricing comes from getPrintPricingConfig().
+      expect(v.price_pln, v.variant_key).toBe(priceOfVariant(v.axes!, 'pln', DEFAULT_PRINT_PRICING));
+      expect(v.price_eur, v.variant_key).toBe(priceOfVariant(v.axes!, 'eur', DEFAULT_PRINT_PRICING));
+      expect(v.price_gbp, v.variant_key).toBe(priceOfVariant(v.axes!, 'gbp', DEFAULT_PRINT_PRICING));
     }
   });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
 import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
-import { priceOfVariant } from './print-pricing';
+import { DEFAULT_PRINT_PRICING, priceOfVariant } from './print-pricing';
 import type { PrintDesign, PrintVariantSelection } from './types';
 
 describe('getPrintDesigns', () => {
@@ -90,9 +90,9 @@ describe('published print variant coverage', () => {
           if (!isVariantAvailable(design, sel)) continue;
           const key = variantKey(sel);
           expect(PRODIGI_SKU_MAP[key], `${design.id} ${key}`).toBeDefined();
-          expect(priceOfVariant(design, sel, 'pln'), `${design.id} ${key} PLN`).toBeGreaterThan(0);
-          expect(priceOfVariant(design, sel, 'eur'), `${design.id} ${key} EUR`).toBeGreaterThan(0);
-          expect(priceOfVariant(design, sel, 'gbp'), `${design.id} ${key} GBP`).toBeGreaterThan(0);
+          expect(priceOfVariant(sel, 'pln', DEFAULT_PRINT_PRICING), `${design.id} ${key} PLN`).toBeGreaterThan(0);
+          expect(priceOfVariant(sel, 'eur', DEFAULT_PRINT_PRICING), `${design.id} ${key} EUR`).toBeGreaterThan(0);
+          expect(priceOfVariant(sel, 'gbp', DEFAULT_PRINT_PRICING), `${design.id} ${key} GBP`).toBeGreaterThan(0);
           checked++;
         }
       }

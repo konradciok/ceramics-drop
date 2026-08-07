@@ -16,7 +16,7 @@ import { registryProducts } from '../products';
 import { PRINT_DESIGNS } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
-import { priceOfVariant } from '../print-pricing';
+import { DEFAULT_PRINT_PRICING, priceOfVariant, type PrintPricingConfig } from '../print-pricing';
 import type { CatalogSeed } from './types';
 
 /**
@@ -100,7 +100,7 @@ function ceramicRows(seed: CatalogSeed): void {
   }
 }
 
-function printRows(seed: CatalogSeed): void {
+function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
   for (const d of PRINT_DESIGNS) {
     seed.products.push({
       id: d.id,
@@ -128,7 +128,7 @@ function printRows(seed: CatalogSeed): void {
     // Default = the cheapest sellable variant (matches fromPriceOf semantics),
     // rather than the first enumerated one — robust even if `design.unavailable`
     // ever excludes the smallest unframed variant.
-    const prices = sels.map((sel) => priceOfVariant(d, sel, 'pln'));
+    const prices = sels.map((sel) => priceOfVariant(sel, 'pln', pricing));
     const defaultIdx = prices.reduce((best, p, i) => (p < prices[best] ? i : best), 0);
     sels.forEach((sel, i) => {
       const key = variantKey(sel);
@@ -138,12 +138,14 @@ function printRows(seed: CatalogSeed): void {
         variant_key: key,
         sku: mapped?.sku ?? null,
         axes: sel,
-        // Derived from print-pricing.ts at seed time (major units). checkout still
-        // reads print-pricing.ts directly; the parity test asserts these stay in
-        // lockstep so the shadow copy can never silently drift.
+        // Derived from the passed pricing config at seed time (major units;
+        // defaults to DEFAULT_PRINT_PRICING). These shadow columns are read by
+        // nobody — checkout prices via getPrintPricingConfig() — so after an
+        // /admin/pricing edit they reflect the code default, not the live DB
+        // config. The parity test pins them to the same default.
         price_pln: prices[i],
-        price_eur: priceOfVariant(d, sel, 'eur'),
-        price_gbp: priceOfVariant(d, sel, 'gbp'),
+        price_eur: priceOfVariant(sel, 'eur', pricing),
+        price_gbp: priceOfVariant(sel, 'gbp', pricing),
         is_default: i === defaultIdx,
         active: d.published,
         position: i,
@@ -169,9 +171,9 @@ function printRows(seed: CatalogSeed): void {
 }
 
 /** Build the full catalog backfill payload from the static registry. */
-export function buildCatalogSeed(): CatalogSeed {
+export function buildCatalogSeed(pricing: PrintPricingConfig = DEFAULT_PRINT_PRICING): CatalogSeed {
   const seed: CatalogSeed = { products: [], variants: [], media: [] };
   ceramicRows(seed);
-  printRows(seed);
+  printRows(seed, pricing);
   return seed;
 }
