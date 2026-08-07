@@ -1,3 +1,5 @@
+> **Superseded (archived 2026-07-28).** Use `docs/cleaning-instructions.md` — it ranks this plan against `docs/pony-audit.md` and lists what is already done. Do not execute tasks from this file directly.
+
 # CODE_CLEANING_PLAN.md
 
 **Type:** Read-only cleanup **planning** session (no code changed except this file).

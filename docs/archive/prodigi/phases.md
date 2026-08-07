@@ -1,3 +1,5 @@
+> **Historical (archived 2026-07-28).** Task-scoped Prodigi build documents from June 2026. Repo-state claims here (e.g. "no Cloudflare Queues", "no R2", "no Zod") are **outdated** — the pipeline is live. Current truth: `AGENTS.md` § Fine-Art Prints & Prodigi and `docs/prodigi-sku-catalog.md`.
+
 # Prodigi Integration — Phases
 
 > Last updated: 2026-06-26

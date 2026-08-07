@@ -158,7 +158,7 @@ export function variantLabel(sel: PrintVariantSelection, locale: string): string
   return parts.join(' · ');
 }
 
-// ── Prodigi SKU lookup (from prodigi/sku-catalog.md) ─────────────────────────
+// ── Prodigi SKU lookup (from docs/prodigi-sku-catalog.md) ─────────────────────────
 
 export interface ProdigiSkuEntry {
   sku: string;

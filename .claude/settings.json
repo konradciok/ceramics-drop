@@ -1,4 +1,23 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(npx vitest *)",
+      "Bash(npx playwright *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(git show *)",
+      "Bash(jq *)",
+      "Bash(ls *)",
+      "Bash(find . *)",
+      "Bash(grep *)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -24,5 +43,8 @@
         ]
       }
     ]
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".next"]
   }
 }
