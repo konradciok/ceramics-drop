@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import type { ProductListRow } from '@/lib/admin/catalog-list';
 import type { ProductDisplayStatus } from '@/lib/catalog/status';
+import type { CategorySlug } from '@/lib/types';
 
 /** PL label + reused pill colour class per display status. */
 const STATUS_META: Record<ProductDisplayStatus, { label: string; pill: string }> = {
@@ -18,43 +19,100 @@ const STATUS_META: Record<ProductDisplayStatus, { label: string; pill: string }>
   archived: { label: 'Archiwum', pill: 'expired' },
 };
 
+/** KPI tiles that partition every product (counts sum to rows.length). */
+const KPI_TILES: { label: string; statuses: ProductDisplayStatus[] }[] = [
+  { label: 'Aktywne', statuses: ['active'] },
+  { label: 'Rezerwacje', statuses: ['reserved'] },
+  { label: 'Sprzedane', statuses: ['sold'] },
+  { label: 'Showroom', statuses: ['showroom'] },
+  { label: 'Brak stanu', statuses: ['out_of_stock'] },
+  { label: 'Szkice', statuses: ['draft'] },
+  { label: 'Ukryte / archiwum', statuses: ['hidden', 'archived'] },
+];
+
 type TypeFilter = 'all' | 'ceramic' | 'print';
 type SortKey = 'category' | 'status' | 'price';
+
+/** Set equality for status arrays (order-independent). */
+function sameStatuses(a: ProductDisplayStatus[] | null, b: ProductDisplayStatus[]): boolean {
+  if (!a) return false;
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((s) => set.has(s));
+}
 
 export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
   const [query, setQuery] = useState('');
   const [type, setType] = useState<TypeFilter>('all');
-  const [status, setStatus] = useState<ProductDisplayStatus | 'all'>('all');
+  const [statuses, setStatuses] = useState<ProductDisplayStatus[] | null>(null);
+  const [category, setCategory] = useState<CategorySlug | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('category');
 
-  // Only offer status chips that actually occur in the data.
-  const statusesPresent = useMemo(() => {
-    const set = new Set<ProductDisplayStatus>();
-    for (const r of rows) set.add(r.status);
-    return [...set];
+  // KPI counts computed client-side from the full rows set.
+  const counts = useMemo(() => {
+    const c = {} as Record<ProductDisplayStatus, number>;
+    for (const r of rows) c[r.status] = (c[r.status] ?? 0) + 1;
+    return c;
+  }, [rows]);
+  const tally = (ss: ProductDisplayStatus[]) => ss.reduce((n, s) => n + (counts[s] ?? 0), 0);
+
+  // Category chips derived from the data, preserving server row order.
+  const categoriesPresent = useMemo(() => {
+    const seen = new Map<CategorySlug, string>();
+    for (const r of rows) {
+      if (!seen.has(r.category)) seen.set(r.category, r.categoryLabel);
+    }
+    return [...seen.entries()].map(([slug, label]) => ({ slug, label }));
   }, [rows]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const out = rows.filter((r) => {
       if (type !== 'all' && r.type !== type) return false;
-      if (status !== 'all' && r.status !== status) return false;
-      if (q && !(`${r.id} ${r.num} ${r.title}`.toLowerCase().includes(q))) return false;
+      if (statuses && !statuses.includes(r.status)) return false;
+      if (category !== 'all' && r.category !== category) return false;
+      if (q && !(`${r.id} ${r.num} ${r.title} ${r.categoryLabel}`.toLowerCase().includes(q))) return false;
       return true;
     });
     if (sort === 'status') out.sort((a, b) => a.status.localeCompare(b.status));
     else if (sort === 'price') out.sort((a, b) => a.priceValue - b.priceValue);
     // 'category' keeps the server order (category → num).
     return out;
-  }, [rows, query, type, status, sort]);
+  }, [rows, query, type, statuses, category, sort]);
+
+  function toggleStatuses(ss: ProductDisplayStatus[]) {
+    setStatuses((prev) => (sameStatuses(prev, ss) ? null : ss));
+  }
 
   return (
     <>
+      {/* KPI tiles — double as quick-filter shortcuts */}
+      <div className="adm-kpis adm-kpis--tight" role="group" aria-label="Filtruj po statusie">
+        {KPI_TILES.map((tile) => {
+          const count = tally(tile.statuses);
+          const active = sameStatuses(statuses, tile.statuses);
+          const disabled = count === 0 && !active;
+          return (
+            <button
+              type="button"
+              key={tile.label}
+              className={`adm-kpi ${active ? 'is-active' : ''}`}
+              aria-pressed={active}
+              disabled={disabled}
+              onClick={() => toggleStatuses(tile.statuses)}
+            >
+              <p className="adm-kpi-label">{tile.label}</p>
+              <div className="adm-kpi-value">{count}</div>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="adm-toolbar">
         <input
           className="adm-search"
           type="search"
-          placeholder="Szukaj: id, numer, nazwa…"
+          placeholder="Szukaj: id, numer, nazwa, kategoria…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Szukaj produktów"
@@ -69,14 +127,30 @@ export function ProductsTable({ rows }: { rows: ProductListRow[] }) {
         </select>
       </div>
 
-      <div className="adm-toolbar">
-        <button type="button" aria-pressed={status === 'all'} className={`adm-chip ${status === 'all' ? 'is-active' : ''}`} onClick={() => setStatus('all')}>Każdy status</button>
-        {statusesPresent.map((s) => (
-          <button type="button" key={s} aria-pressed={status === s} className={`adm-chip ${status === s ? 'is-active' : ''}`} onClick={() => setStatus(s)}>
-            {STATUS_META[s].label}
+      {categoriesPresent.length > 1 && (
+        <div className="adm-toolbar">
+          <button type="button" aria-pressed={category === 'all'} className={`adm-chip ${category === 'all' ? 'is-active' : ''}`} onClick={() => setCategory('all')}>
+            Wszystkie kategorie
           </button>
-        ))}
-      </div>
+          {categoriesPresent.map(({ slug, label }) => (
+            <button
+              type="button"
+              key={slug}
+              aria-pressed={category === slug}
+              className={`adm-chip ${category === slug ? 'is-active' : ''}`}
+              onClick={() => setCategory(slug)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length !== rows.length && (
+        <p className="adm-sub adm-sub--tight" style={{ marginBottom: 12 }}>
+          Pokazuję {filtered.length} z {rows.length}
+        </p>
+      )}
 
       <DataTable
         columns={COLUMNS}
