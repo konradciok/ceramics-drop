@@ -283,3 +283,36 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
     pieceState,
   };
 }
+
+/* ============================================================
+   Audit timeline — reads catalog_audit_log (Stage 3)
+   ============================================================ */
+
+export interface ProductAuditEntry {
+  id: string;
+  actor_email: string | null;
+  action: string;
+  created_at: string;
+}
+
+/**
+ * Recent audit entries for a product (newest first). Returns [] on a transient
+ * DB failure — the detail page must not 500 just because the audit read failed.
+ * Index: catalog_audit_log(product_id, created_at desc) — migration 20260710120000.
+ */
+export async function listProductAudit(productId: string, limit = 10): Promise<ProductAuditEntry[]> {
+  const supabase = adminSupabase();
+  try {
+    const { data, error } = await supabase
+      .from('catalog_audit_log')
+      .select('id, actor_email, action, created_at')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data as ProductAuditEntry[] | null) ?? [];
+  } catch (err) {
+    console.error('[admin/products] listProductAudit failed', err);
+    return [];
+  }
+}
