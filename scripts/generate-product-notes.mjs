@@ -27,7 +27,12 @@ function fail(message) {
 function usage() {
   console.log(`Usage:
   node scripts/generate-product-notes.mjs --category kubki [--category talerze-srednie]
+  node scripts/generate-product-notes.mjs --category fine-art-prints
   node scripts/generate-product-notes.mjs --category kubki --write --draft docs/product-notes-drafts/2026-06-10-kubki.json
+
+Draft mode needs OPENAI_API_KEY in the environment. "fine-art-prints" drafts
+notes for published print designs only (their sparse noteIndexes leave the
+withdrawn legacy posters' slots untouched); --write applies to messages/pl.json.
 `);
 }
 
