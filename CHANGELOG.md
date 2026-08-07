@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.13.0](https://github.com/konradciok/ceramics-drop/compare/v0.12.0...v0.13.0) (2026-08-07)
+
+
+### Features
+
+* **print-assets:** full-bleed mode for prepare/onboard pipeline (Phases 1-3) ([#219](https://github.com/konradciok/ceramics-drop/issues/219)) ([1460dd7](https://github.com/konradciok/ceramics-drop/commit/1460dd707b5833b2be8ae45a500fd1fb37fef8a7))
+* **prints:** fap005 fully live — real gallery + mockup images ([#223](https://github.com/konradciok/ceramics-drop/issues/223)) ([060f2e1](https://github.com/konradciok/ceramics-drop/commit/060f2e129eee481d2ca1b6e6ecab150ffcda64ee))
+* **prints:** fap006-fap047 fully live (Phase C batch, 41 designs + fap015 retry) ([#225](https://github.com/konradciok/ceramics-drop/issues/225)) ([4bc0d87](https://github.com/konradciok/ceramics-drop/commit/4bc0d872f38695a7f7f0f8fb11a052284a5fbe76))
+* **prints:** group fine-art prints into five curated collections ([#227](https://github.com/konradciok/ceramics-drop/issues/227)) ([96da974](https://github.com/konradciok/ceramics-drop/commit/96da974e89cd9b4078bac4e2dd140dda326f2489))
+* **prints:** live print mockups + brown frames ([#205](https://github.com/konradciok/ceramics-drop/issues/205)) ([6167c62](https://github.com/konradciok/ceramics-drop/commit/6167c622d8b900808ce117583baa6e52474694ec))
+* **prints:** publish fap005 MVP content, set num for all 43 full-bleed designs ([#220](https://github.com/konradciok/ceramics-drop/issues/220)) ([fcca606](https://github.com/konradciok/ceramics-drop/commit/fcca6062bc33960c3382adcc694f53fd632c9d8f))
+* **prints:** publish fap006-fap047 (Phase C batch, 42 designs) ([#224](https://github.com/konradciok/ceramics-drop/issues/224)) ([ac3c3c4](https://github.com/konradciok/ceramics-drop/commit/ac3c3c41aa3b0ae252362883ac3712533a55329a))
+* **prints:** withdraw legacy posters fap01-03 — production designs only ([#228](https://github.com/konradciok/ceramics-drop/issues/228)) ([29ed36b](https://github.com/konradciok/ceramics-drop/commit/29ed36b8840639195c309ed87513acdb6ac75726))
+
+
+### Bug Fixes
+
+* **analytics:** enhance webhook fulfillment details and include fine-art prints in product feeds ([#221](https://github.com/konradciok/ceramics-drop/issues/221)) ([6bda2a4](https://github.com/konradciok/ceramics-drop/commit/6bda2a4573ae9a1ab0b171a0c9a80c1dec1c1a49))
+* **print-assets:** Windows spawnSync + R2 upload bugs found running the real fap005 pilot ([#222](https://github.com/konradciok/ceramics-drop/issues/222)) ([f8fbd09](https://github.com/konradciok/ceramics-drop/commit/f8fbd099faf6b70c98dc8f02af52ea2014d2d970))
+
 ## [0.12.0](https://github.com/konradciok/ceramics-drop/compare/v0.11.0...v0.12.0) (2026-07-29)
 
 
