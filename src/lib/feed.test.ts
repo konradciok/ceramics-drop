@@ -121,12 +121,15 @@ describe('buildMetaXml', () => {
 });
 
 describe('fine-art-print feed rows', () => {
-  it('includes one row per published print design, matching the emitted content_ids', async () => {
+  it('includes exactly one row per published print design, matching the emitted content_ids', async () => {
     const items = await buildFeedItems('en', new Set());
-    const feedIds = new Set(items.map((i) => i.id));
-    const designIds = (await getPrintDesigns()).map((d) => d.id);
+    const printFeedIds = items
+      .filter((i) => i.category === 'fine-art-prints')
+      .map((i) => i.id)
+      .sort();
+    const designIds = (await getPrintDesigns()).map((d) => d.id).sort();
     expect(designIds).toContain('fap005'); // guard: registry actually has published prints
-    for (const id of designIds) expect(feedIds.has(id)).toBe(true);
+    expect(printFeedIds).toEqual(designIds); // exact set — withdrawn designs must not leak
   });
 
   it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
