@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "category": "fine-art-prints",
+  "generatedAt": "2026-08-07T13:28:04.425Z",
+  "itemCount": 43,
+  "model": "gpt-4.1-mini",
+  "items": [
+    {
+      "category": "fine-art-prints",
+      "productId": "fap005",
+      "displayNum": "1",
+      "noteIndex": 3,
+      "image": "/uploads/fap-005.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 1.",
+      "proposedNote": "Niebieska plama z drobnymi zielonymi i żółtymi cętkami oraz zielony owal z delikatnymi białymi liniami. Kompozycja emanuje spokojnym, płynnym rytmem z lekko przerywanym gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap006",
+      "displayNum": "2",
+      "noteIndex": 4,
+      "image": "/uploads/fap-006.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 2.",
+      "proposedNote": "Delikatne, nieregularne plamy w odcieniach błękitu, zieleni i żółci oraz cienkie, promieniste linie. Kompozycja tworzy lekki, spokojny rytm z miękkim, malarskim gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap007",
+      "displayNum": "3",
+      "noteIndex": 5,
+      "image": "/uploads/fap-007.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 3.",
+      "proposedNote": "Beżowo-terakotowe plamy i drobne cętkowania otoczone turkusowo-granatową, falującą linią i cienkimi kreskami. Kompozycja pulsuje łagodnym i nieregularnym rytmem malarskiego gestu."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap008",
+      "displayNum": "4",
+      "noteIndex": 6,
+      "image": "/uploads/fap-008.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 4.",
+      "proposedNote": "Niebieskie i terakotowe plamy z rozmytymi brzegami oraz cienkie, falowane linie na jasnym tle. Kompozycja swobodnie płynie i pulsuje delikatnym, nieregularnym rytmem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap009",
+      "displayNum": "5",
+      "noteIndex": 7,
+      "image": "/uploads/fap-009.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 5.",
+      "proposedNote": "Abstrakcyjna kompozycja o organicznym kształcie zbudowana z rozmytych plam błękitów, beżów i zieleni, podkreślona cienkimi liniami i fragmentem w złotym kolorze. Gest malarski jest płynny i warstwowy, tworzący spokojny rytm i wrażenie delikatnej głębi."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap010",
+      "displayNum": "6",
+      "noteIndex": 8,
+      "image": "/uploads/fap-010.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 6.",
+      "proposedNote": "Nieregularne plamy błękitu i beżu z bordowymi kreskami na jasnym tle. Motyw pulsuje dynamicznym, nieregularnym rytmem i subtelnym kontrastem barw."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap011",
+      "displayNum": "7",
+      "noteIndex": 9,
+      "image": "/uploads/fap-011.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 7.",
+      "proposedNote": "Kształty owalne i nieregularne w terakotowych, białych i czarnych tonacjach z delikatnym kreskowaniem. Kompozycję wyróżnia rytmiczne powtarzanie linii i miękki, płynny gest."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap012",
+      "displayNum": "8",
+      "noteIndex": 10,
+      "image": "/uploads/fap-012.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 8.",
+      "proposedNote": "Błękitne i terakotowe plamy z delikatnymi czarnymi liniami tworzą abstrakcyjną kompozycję na jasnym tle. Rytm łagodnych przejść barwnych i cienkich kresek nadaje obrazowi lekkość i płynność."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap013",
+      "displayNum": "9",
+      "noteIndex": 11,
+      "image": "/uploads/fap-013.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 9.",
+      "proposedNote": "Zawijasy cienkich linii, niebieskie i czarne falowane pasy oraz rozproszone plamy w szarościach i terakotowym beżu. Kompozycja pulsuje miękkim, swobodnym rytmem z delikatnym, wzniosłym gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap014",
+      "displayNum": "10",
+      "noteIndex": 12,
+      "image": "/uploads/fap-014.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 10.",
+      "proposedNote": "Niebieskie i terakotowe plamy z cienkimi, czarnymi kreskami i kropkami na jasnym tle. Motyw płynie swobodnym, dynamicznym rytmem, łącząc malarskie gesty z delikatnością linii."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap015",
+      "displayNum": "11",
+      "noteIndex": 13,
+      "image": "/uploads/fap-015.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 11.",
+      "proposedNote": "Brązowe łuki z delikatnym kreskowaniem oraz niebiesko-szare smugi z plamami na jasnym tle. Motyw unosi się lekko po powierzchni, tworząc rytm łagodnych, płynnych łuków."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap016",
+      "displayNum": "12",
+      "noteIndex": 14,
+      "image": "/uploads/fap-016.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 12.",
+      "proposedNote": "Czarne i brązowe smugi i plamy na jasnym tle, uzupełnione cienkimi liniami i kropkami. Kompozycja płynie z energią i spontanicznym rytmem malarskiego gestu."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap017",
+      "displayNum": "13",
+      "noteIndex": 15,
+      "image": "/uploads/fap-017.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 13.",
+      "proposedNote": "Pionowe pasy w ciepłych brązach i chłodnych błękitach na jasnym tle. Kompozycję cechuje delikatna, rozmyta faktura z miękkim, spokojnym rytmem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap018",
+      "displayNum": "14",
+      "noteIndex": 16,
+      "image": "/uploads/fap-018.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 14.",
+      "proposedNote": "Brązowe plamy i niebieskie smugi na jasnym tle połączone są falującą szarą linią i cienkimi kreskami. Kompozycja zyskuje dzięki dynamicznemu rytmowi łagodnych zakrętów i rozproszonych akcentów."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap019",
+      "displayNum": "15",
+      "noteIndex": 17,
+      "image": "/uploads/fap-019.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 15.",
+      "proposedNote": "Brązowo-błękitna plama z delikatnym kreskowaniem i intensywnym, niebieskim owalem w prawym górnym rogu. Kompozycja płynie z dynamicznym rytmem rozprysków i subtelnych linii."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap020",
+      "displayNum": "16",
+      "noteIndex": 18,
+      "image": "/uploads/fap-020.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 16.",
+      "proposedNote": "Brązowe i niebieskie plamy w połączeniu z delikatnymi, cienkimi kreskami tworzą abstrakcyjną kompozycję na jasnym tle. Gest malarski ma lekki, płynny rytm z wyraźnymi akcentami kolorystycznymi."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap021",
+      "displayNum": "17",
+      "noteIndex": 19,
+      "image": "/uploads/fap-021.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 17.",
+      "proposedNote": "Żółty pierścień z cienkimi kreskami i szare plamy z białymi, nieregularnymi punktami na jasnym tle. Kompozycja pulsuje cichym, płynnym rytmem malarskich gestów."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap022",
+      "displayNum": "18",
+      "noteIndex": 20,
+      "image": "/uploads/fap-022.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 18.",
+      "proposedNote": "Niebieskie i terakotowe plamy z czarnymi, cienkimi liniami na jasnym tle. Kompozycja tworzy rytm łączący spokojne rozmycia z dynamicznymi kreślonymi detalami."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap023",
+      "displayNum": "19",
+      "noteIndex": 21,
+      "image": "/uploads/fap-023.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 19.",
+      "proposedNote": "Beżowe tło z nieregularnymi plamami czerni i terakotowymi kropkami oraz ciemnym, pierścieniowym kształtem u góry. Kompozycję dopełniają delikatne, zwiewne linie i miękki, przenikający się rytm plam."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap024",
+      "displayNum": "20",
+      "noteIndex": 22,
+      "image": "/uploads/fap-024.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 20.",
+      "proposedNote": "Szare plamy z czarnymi, delikatnymi kreskami oraz brązowo-białymi okręgami o zróżnicowanej fakturze. Kompozycja z dynamicznym rytmem przenikających się linii i plam tworzy wrażenie lekkości i płynności."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap025",
+      "displayNum": "21",
+      "noteIndex": 23,
+      "image": "/uploads/fap-025.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 21.",
+      "proposedNote": "Szare plamy i smugi z delikatnymi, cienkimi liniami oraz dwoma niebieskimi okręgami na jasnym tle. Kompozycja płynie miękkim, unoszącym się rytmem z subtelnym, akwarelowym gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap026",
+      "displayNum": "22",
+      "noteIndex": 24,
+      "image": "/uploads/fap-026.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 22.",
+      "proposedNote": "Niebieska, zielona i żółta abstrakcja z delikatnym czarnym rysunkiem i białymi akcentami. Przestrzeń obrazu wypełnia płynny rytm i lekkość malarskich gestów."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap027",
+      "displayNum": "23",
+      "noteIndex": 25,
+      "image": "/uploads/fap-027.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 23.",
+      "proposedNote": "Niebieskie i kremowe pasma przeplatają się z brązowymi i czarnymi liniami na jasnym tle. Kompozycja charakteryzuje się delikatnym, falującym ruchem i subtelnością malarskich gestów."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap028",
+      "displayNum": "24",
+      "noteIndex": 26,
+      "image": "/uploads/fap-028.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 24.",
+      "proposedNote": "Rozmyte plamy terakoty, szarości i zieleni z delikatnymi białymi liniami tworzą subtelną kompozycję na jasnym tle. Malarski gest pulsuje rytmem swobodnych, falujących ruchów i miękkich rozmyć kolorów."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap029",
+      "displayNum": "25",
+      "noteIndex": 27,
+      "image": "/uploads/fap-029.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 25.",
+      "proposedNote": "Duże owalne kształty w odcieniach niebieskiego i szarości z delikatnymi, drobnymi liniami. Kompozycja pulsuje rytmem płynności i lekkości gestu malarskiego."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap030",
+      "displayNum": "26",
+      "noteIndex": 28,
+      "image": "/uploads/fap-030.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 26.",
+      "proposedNote": "Szare i brązowe plamy z delikatnymi kreskami tworzą abstrakcyjną kompozycję na jasnym tle. Malarstwo cechuje lekki, dynamiczny gest i subtelny rytm linii."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap031",
+      "displayNum": "27",
+      "noteIndex": 29,
+      "image": "/uploads/fap-031.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 27.",
+      "proposedNote": "Beżowe pasmo z niebieskimi falistymi liniami i czerwony, nieregularny kształt ponad pomarańczowym, plamistym motywem oraz niebieskim, subtelnie kreskowanym obszarem. Kompozycja wyróżnia się spokojnym, harmonijnym rytmem i delikatnym, malarskim gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap032",
+      "displayNum": "28",
+      "noteIndex": 30,
+      "image": "/uploads/fap-032.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 28.",
+      "proposedNote": "Niebieskie i brązowe pasy z drobnym kreskowaniem na jasnym tle tworzą dynamiczną kompozycję z mocnymi akcentami barwnymi. Rytm falowanych linii wyznacza spokojny, płynny charakter obrazu z lekkim zrywem gestu malarskiego."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap033",
+      "displayNum": "29",
+      "noteIndex": 31,
+      "image": "/uploads/fap-033.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 29.",
+      "proposedNote": "Niebieskie i fioletowe akwarelowe plamy zestawione z delikatnymi rysunkami liniowymi na jasnym tle. Kompozycja płynie miękkim, harmonijnym rytmem z lekkim przejściem tonalnym."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap034",
+      "displayNum": "30",
+      "noteIndex": 32,
+      "image": "/uploads/fap-034.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 30.",
+      "proposedNote": "Błękitne i terakotowe plamy z cieniowanymi obrysami i cienkimi liniami na jasnym tle. Kompozycja pulsuje miękkim rytmem z delikatnymi rozpryskami i precyzyjnymi kreskami."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap035",
+      "displayNum": "31",
+      "noteIndex": 33,
+      "image": "/uploads/fap-035.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 31.",
+      "proposedNote": "Brązowe i granatowe plamy z delikatnymi kreskami na jasnym tle. Kompozycja płynie z lekkością i spokojnym ruchem łuków."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap036",
+      "displayNum": "32",
+      "noteIndex": 34,
+      "image": "/uploads/fap-036.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 32.",
+      "proposedNote": "Jasnoniebieska forma o owalnym kształcie z cienkimi, delikatnymi liniami i granatowymi detalami na białym tle. Kompozycja wyróżnia się swobodnym, płynnym ruchem i subtelnym malarskim gestem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap037",
+      "displayNum": "33",
+      "noteIndex": 35,
+      "image": "/uploads/fap-037.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 33.",
+      "proposedNote": "Błękitna, nieregularna forma z pionową, zygzakowatą linią w mocnym niebieskim kolorze i delikatnymi szarymi kreskami. Kompozycja pulsuje spokojnym, miękkim rytmem z kontrastującym akcentem."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap038",
+      "displayNum": "34",
+      "noteIndex": 36,
+      "image": "/uploads/fap-038.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 34.",
+      "proposedNote": "Niebieskie plamy i smugi z czarnymi rozbryzgami oraz delikatną złotą smugą na jasnym tle. Swobodny, płynny rytm z finezyjnymi liniami tworzy lekki, malarski gest."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap039",
+      "displayNum": "35",
+      "noteIndex": 37,
+      "image": "/uploads/fap-039.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 35.",
+      "proposedNote": "Owalne kształty w odcieniach błękitu i rdzawego brązu z delikatnymi liniami i jasnymi okręgami. Kompozycja pulsuje rytmem łagodnych przejść i precyzyjnych, cienkich pociągnięć pędzla."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap040",
+      "displayNum": "36",
+      "noteIndex": 38,
+      "image": "/uploads/fap-040.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 36.",
+      "proposedNote": "Szaroniebieska plama z czarnymi cieniowaniami i czerwonym owalnym kształtem na jasnym tle. Kompozycja pulsuje delikatnym rytmem subtelnych linii i rozmyć."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap041",
+      "displayNum": "37",
+      "noteIndex": 39,
+      "image": "/uploads/fap-041.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 37.",
+      "proposedNote": "Pastele błękitu i terakoty z czarnymi i białymi liniami tworzą nowe kształty na jasnym tle. Kompozycja pulsuje spokojnym rytmem i delikatnym ruchem malarskiego gestu."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap042",
+      "displayNum": "38",
+      "noteIndex": 40,
+      "image": "/uploads/fap-042.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 38.",
+      "proposedNote": "Niebieskie i czarne plamy barwne przeplatają się z terakotowymi, paskowanymi łukami na jasnym tle. Kompozycja płynie miękkim, falującym rytmem, tworząc spokojną i dynamiczną całość."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap043",
+      "displayNum": "39",
+      "noteIndex": 41,
+      "image": "/uploads/fap-043.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 39.",
+      "proposedNote": "Błękitne i brązowe plamy z pociągnięciami głębokiego szafiru na jasnym tle. Kompozycja pulsuje dynamicznym rytmem liściastych kształtów i smużystych linii."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap044",
+      "displayNum": "40",
+      "noteIndex": 42,
+      "image": "/uploads/fap-044.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 40.",
+      "proposedNote": "Niebieskie tło z brązowymi plamami i pionową, kremowo-beżową falowaną linią. Kompozycja pulsuje rytmem kontrastujących kształtów i delikatnych śladów pędzla."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap045",
+      "displayNum": "41",
+      "noteIndex": 43,
+      "image": "/uploads/fap-045.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 41.",
+      "proposedNote": "Niebieskie pionowe formy i brązowe plamy na jasnym tle tworzą subtelną kompozycję z delikatnymi, cienkimi liniami. Obraz emanuje lekkim, spokojnym rytmem i zwiewnym charakterem gestu malarskiego."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap046",
+      "displayNum": "42",
+      "noteIndex": 44,
+      "image": "/uploads/fap-046.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 42.",
+      "proposedNote": "Szaroniebieskie elipsy z delikatnym rozmyciem i czarna, rytmicznie kreskowana nieregularna obręcz na jasnym tle. Kompozycja rozwija się w spokojnym, zrównoważonym rytmie z wyraźnym napięciem między elementami."
+    },
+    {
+      "category": "fine-art-prints",
+      "productId": "fap047",
+      "displayNum": "43",
+      "noteIndex": 45,
+      "image": "/uploads/fap-047.webp",
+      "currentNote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nº 43.",
+      "proposedNote": "Rozmyte plamy w odcieniach czerni, brązu i błękitu z kolażem linii i okrągłych kształtów. Energetyczny gest malarski tworzy dynamiczny, płynny rytm na jasnym tle."
+    }
+  ]
+}
