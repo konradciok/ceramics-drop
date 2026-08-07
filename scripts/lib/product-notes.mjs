@@ -37,26 +37,43 @@ export function buildCategoryDraft({
   invariant(Array.isArray(products) && products.length > 0, `No products found for category "${category}".`);
   invariant(Array.isArray(currentNotes), `Current notes for category "${category}" must be an array.`);
   invariant(
-    currentNotes.length === products.length,
-    `Expected ${products.length} current notes for category "${category}", got ${currentNotes.length}.`,
-  );
-  invariant(
     Array.isArray(proposedNotes) && proposedNotes.length === products.length,
     `Expected ${products.length} proposed notes for category "${category}", got ${proposedNotes?.length ?? 0}.`,
   );
 
+  // Notes are keyed by each product's registry noteIndex, not by position:
+  // prints use a sparse range (slots 0-2 belong to withdrawn legacy posters
+  // and must stay untouched), ceramics happen to be dense (noteIndex == position).
+  const seenNoteIndexes = new Set();
+  for (const product of products) {
+    invariant(
+      Number.isInteger(product.noteIndex),
+      `Product "${product.id}" is missing a numeric noteIndex.`,
+    );
+    invariant(
+      product.noteIndex >= 0 && product.noteIndex < currentNotes.length,
+      `Product "${product.id}" has noteIndex ${product.noteIndex} outside the ${currentNotes.length}-slot notes array for "${category}".`,
+    );
+    invariant(
+      !seenNoteIndexes.has(product.noteIndex),
+      `Duplicate noteIndex ${product.noteIndex} in category "${category}" (product "${product.id}").`,
+    );
+    seenNoteIndexes.add(product.noteIndex);
+  }
+
   const items = products.map((product, index) => {
     invariant(product.category === category, `Product "${product.id}" does not belong to category "${category}".`);
     invariant(isNonEmptyString(product.image), `Product "${product.id}" is missing an image path.`);
-    invariant(isNonEmptyString(currentNotes[index]), `Current note ${index + 1} for "${category}" is empty.`);
+    invariant(isNonEmptyString(currentNotes[product.noteIndex]), `Current note for "${product.id}" (noteIndex ${product.noteIndex}) is empty.`);
     invariant(isNonEmptyString(proposedNotes[index]), `Proposed note ${index + 1} for "${category}" is empty.`);
 
     return {
       category,
       productId: product.id,
       displayNum: product.num,
+      noteIndex: product.noteIndex,
       image: product.image,
-      currentNote: currentNotes[index],
+      currentNote: currentNotes[product.noteIndex],
       proposedNote: proposedNotes[index],
     };
   });
@@ -88,6 +105,20 @@ export function validateCategoryDraftAgainstProducts(draft, products) {
     invariant(item.category === draft.category, `Draft item ${index + 1} has mismatched category.`);
     invariant(item.productId === product.id, `Draft item ${index + 1} expected product "${product.id}", got "${item.productId}".`);
     invariant(item.displayNum === product.num, `Draft item ${index + 1} expected display number "${product.num}", got "${item.displayNum}".`);
+    if (item.noteIndex === undefined) {
+      // Legacy version-1 drafts predate noteIndex and were dense/positional —
+      // only safe when the registry is positional at this slot too, otherwise
+      // the positional fallback in apply would overwrite foreign slots.
+      invariant(
+        product.noteIndex === index,
+        `Draft item ${index + 1} has no noteIndex, but "${product.id}" sits at noteIndex ${product.noteIndex} — regenerate the draft.`,
+      );
+    } else {
+      invariant(
+        item.noteIndex === product.noteIndex,
+        `Draft item ${index + 1} expected noteIndex ${product.noteIndex}, got ${item.noteIndex} — the registry moved since the draft was generated.`,
+      );
+    }
     invariant(item.image === product.image, `Draft item ${index + 1} expected image "${product.image}", got "${item.image}".`);
     invariant(isNonEmptyString(item.currentNote), `Draft item ${index + 1} is missing currentNote.`);
     invariant(isNonEmptyString(item.proposedNote), `Draft item ${index + 1} is missing proposedNote.`);
@@ -106,19 +137,28 @@ export function saveCategoryDraft(draft, { dateStamp, outputDir }) {
   return outputPath;
 }
 
-function applyCategoryDraftToMessages(messages, draft) {
+export function applyCategoryDraftToMessages(messages, draft) {
   invariant(messages && typeof messages === 'object', 'Messages payload must be an object.');
   const currentNotes = ensureCategoryNotes(messages, draft.category);
-  invariant(
-    currentNotes.length === draft.items.length,
-    `Messages for "${draft.category}" currently have ${currentNotes.length} notes, but the draft has ${draft.items.length}.`,
-  );
+
+  // Write each drafted note at its noteIndex and leave every other slot as-is
+  // (for prints, slots 0-2 belong to withdrawn legacy posters). Version-1
+  // drafts without noteIndex fall back to their dense/positional meaning.
+  const nextNotes = [...currentNotes];
+  draft.items.forEach((item, index) => {
+    const noteIndex = item.noteIndex ?? index;
+    invariant(
+      Number.isInteger(noteIndex) && noteIndex >= 0 && noteIndex < nextNotes.length,
+      `Draft item ${index + 1} has noteIndex ${noteIndex} outside the ${nextNotes.length}-slot notes array for "${draft.category}".`,
+    );
+    nextNotes[noteIndex] = item.proposedNote;
+  });
 
   return {
     ...messages,
     notes: {
       ...messages.notes,
-      [draft.category]: draft.items.map((item) => item.proposedNote),
+      [draft.category]: nextNotes,
     },
   };
 }
@@ -137,6 +177,24 @@ export function applyCategoryDraftToMessagesFile({ draft, messagesPath, products
 
 export function buildPrompt({ category, product, referenceExamples }) {
   const examples = referenceExamples.map((note) => `- ${note}`).join('\n');
+
+  if (category === 'fine-art-prints') {
+    return [
+      'Jesteś redaktorem opisów katalogowych dla sklepu Anny Ciok.',
+      'Napisz po polsku dokładnie dwa krótkie zdania o reprodukcji obrazu (fine art print) na podstawie zdjęcia.',
+      `Numer produktu: ${product.num}.`,
+      'Konwencja:',
+      '- zdanie 1: konkretny motyw, paleta barw albo kompozycja widoczna na obrazie',
+      '- zdanie 2: krótki nastrój, rytm albo charakter malarskiego gestu',
+      'Zakazy:',
+      '- nie pisz ogólników typu "piękny", "unikatowy", jeśli nie wynikają ze zdjęcia',
+      '- nie zgaduj techniki, materiału ani rzeczy niewidocznych na zdjęciu',
+      '- nie wspominaj o cenie, artystce ani sklepie',
+      '- nie używaj cudzysłowów, wypunktowań ani tytułu',
+      'Wzorce tonu (z opisów ceramiki — przejmij rytm i zwięzłość, nie treść):',
+      examples,
+    ].join('\n');
+  }
 
   return [
     'Jesteś redaktorem opisów katalogowych dla sklepu z ceramiką Anny Ciok.',
