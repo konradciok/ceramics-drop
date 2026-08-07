@@ -118,10 +118,16 @@ describe('validateCategoryDraftAgainstProducts', () => {
     expect(() => validateCategoryDraftAgainstProducts(draft, moved)).toThrow(/noteIndex/);
   });
 
-  it('still accepts legacy version-1 items without noteIndex', () => {
+  it('still accepts legacy version-1 items without noteIndex when the registry is positional', () => {
     const draft = draftFor(ceramicProducts, ['a', 'b'], ['A', 'B']);
     for (const item of draft.items) delete item.noteIndex;
     expect(validateCategoryDraftAgainstProducts(draft, ceramicProducts)).toBe(true);
+  });
+
+  it('rejects indexless items when the registry is sparse (would overwrite legacy slots)', () => {
+    const draft = draftFor(printProducts, printNotes, ['New 1', 'New 2']);
+    for (const item of draft.items) delete item.noteIndex;
+    expect(() => validateCategoryDraftAgainstProducts(draft, printProducts)).toThrow(/no noteIndex/);
   });
 });
 

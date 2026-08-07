@@ -105,8 +105,15 @@ export function validateCategoryDraftAgainstProducts(draft, products) {
     invariant(item.category === draft.category, `Draft item ${index + 1} has mismatched category.`);
     invariant(item.productId === product.id, `Draft item ${index + 1} expected product "${product.id}", got "${item.productId}".`);
     invariant(item.displayNum === product.num, `Draft item ${index + 1} expected display number "${product.num}", got "${item.displayNum}".`);
-    if (item.noteIndex !== undefined) {
-      // Legacy version-1 drafts predate noteIndex and were dense/positional.
+    if (item.noteIndex === undefined) {
+      // Legacy version-1 drafts predate noteIndex and were dense/positional —
+      // only safe when the registry is positional at this slot too, otherwise
+      // the positional fallback in apply would overwrite foreign slots.
+      invariant(
+        product.noteIndex === index,
+        `Draft item ${index + 1} has no noteIndex, but "${product.id}" sits at noteIndex ${product.noteIndex} — regenerate the draft.`,
+      );
+    } else {
       invariant(
         item.noteIndex === product.noteIndex,
         `Draft item ${index + 1} expected noteIndex ${product.noteIndex}, got ${item.noteIndex} — the registry moved since the draft was generated.`,
