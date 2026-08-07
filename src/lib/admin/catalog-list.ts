@@ -183,6 +183,16 @@ export async function listProducts(): Promise<ProductListResult> {
   };
 }
 
+/** Ceramic piece_state context for the editor sidebar (null for prints / registry fallback). */
+export interface EditorPieceState {
+  status: 'available' | 'reserved' | 'sold';
+  reserved_until: string | null;
+  reservedExpired: boolean;
+  order_id: string | null;
+  showroom: boolean;
+  showroom_entered_at: string | null;
+}
+
 export interface ProductEditorState {
   row: ProductSeedRow;
   title: string;
@@ -196,6 +206,8 @@ export interface ProductEditorState {
   notesHref: string;
   /** Print fulfilment asset coverage (prints in db mode; na for ceramics/registry). */
   printAssets: ProductPrintAssetsState;
+  /** Ceramic inventory context (ceramics in db mode only; null otherwise). */
+  pieceState: EditorPieceState | null;
 }
 
 /**
@@ -229,6 +241,36 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
     }
   }
 
+  // Ceramic piece_state context for the sidebar (reservation/expiry/order/showroom).
+  // Null for prints, registry fallback, or a transient DB failure — the page must
+  // not 500, same posture as the print-asset load above.
+  let pieceState: EditorPieceState | null = null;
+  if (row.type === 'ceramic') {
+    try {
+      const { data: piece, error } = await supabase
+        .from('piece_state')
+        .select('product_id, status, reserved_until, order_id, showroom, showroom_entered_at')
+        .eq('product_id', id)
+        .maybeSingle();
+      if (!error && piece) {
+        const now = Date.now();
+        pieceState = {
+          status: piece.status,
+          reserved_until: piece.reserved_until,
+          reservedExpired:
+            piece.status === 'reserved' &&
+            !!piece.reserved_until &&
+            new Date(piece.reserved_until).getTime() < now,
+          order_id: piece.order_id,
+          showroom: piece.showroom ?? false,
+          showroom_entered_at: piece.showroom_entered_at,
+        };
+      }
+    } catch (err) {
+      console.error('[admin/products] piece_state read failed', err);
+    }
+  }
+
   return {
     row,
     title: ref.label,
@@ -238,5 +280,6 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
     pdpPath: `/${row.category_slug}/${row.id}`,
     notesHref: `/admin/content/product_notes/${row.category_slug}`,
     printAssets,
+    pieceState,
   };
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAdminAction } from '@/components/admin/useAdminAction';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
-import type { ProductEditorState } from '@/lib/admin/catalog-list';
+import type { EditorPieceState, ProductEditorState } from '@/lib/admin/catalog-list';
 import type { ProductStatus } from '@/lib/catalog/types';
 import type { PrintAssetCoverage } from '@/server/print-assets/types';
 
@@ -14,6 +15,12 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
   archived: 'Archiwum',
 };
 
+const PIECE_STATUS_LABEL: Record<EditorPieceState['status'], string> = {
+  available: 'Dostępny',
+  reserved: 'Zarezerwowany',
+  sold: 'Sprzedany',
+};
+
 const ERROR_MAP: Record<string, string> = {
   slug_taken: 'Ten slug jest już zajęty przez inny produkt.',
   product_not_found: 'Produkt nie istnieje jeszcze w bazie — uruchom catalog:backfill.',
@@ -22,6 +29,18 @@ const ERROR_MAP: Record<string, string> = {
   still_assigned: 'Asset jest nadal przypisany do aktywnego wariantu. Użyj wymuszenia lub opublikuj nową rewizję.',
   already_revoked: 'Asset jest już unieważniony.',
 };
+
+/** Initial field values derived from the server row — used as the dirty-check baseline. */
+function initialValues(row: ProductEditorState['row']) {
+  return {
+    num: row.num,
+    pricePln: row.price_pln?.toString() ?? '',
+    measure: row.measure ?? '',
+    seoTitle: row.seo_title ?? '',
+    seoDesc: row.seo_description ?? '',
+    slug: row.slug ?? '',
+  };
+}
 
 /**
  * Client editor for one product. Metadata is saved in a single POST; publish
@@ -36,15 +55,65 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
   const locked = state.source === 'registry';
   const { run, busy } = useAdminAction();
 
-  const [num, setNum] = useState(row.num);
-  const [pricePln, setPricePln] = useState(row.price_pln?.toString() ?? '');
-  const [measure, setMeasure] = useState(row.measure ?? '');
-  const [seoTitle, setSeoTitle] = useState(row.seo_title ?? '');
-  const [seoDesc, setSeoDesc] = useState(row.seo_description ?? '');
-  const [slug, setSlug] = useState(row.slug ?? '');
+  const init = useMemo(() => initialValues(row), [row]);
+
+  const [num, setNum] = useState(init.num);
+  const [pricePln, setPricePln] = useState(init.pricePln);
+  const [measure, setMeasure] = useState(init.measure);
+  const [seoTitle, setSeoTitle] = useState(init.seoTitle);
+  const [seoDesc, setSeoDesc] = useState(init.seoDesc);
+  const [slug, setSlug] = useState(init.slug);
   const [status, setStatus] = useState<ProductStatus>(row.status);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<{ assetId: string; force: boolean } | null>(null);
+  const [confirmStatusDirty, setConfirmStatusDirty] = useState<null | ProductStatus>(null);
+
+  // Baseline for dirty comparison — updated to current field values after a
+  // successful save so the dirty flag clears on save.
+  const savedValues = useRef(init);
+
+  const dirty = useMemo(() => {
+    const sv = savedValues.current;
+    return (
+      num !== sv.num ||
+      pricePln !== sv.pricePln ||
+      measure !== sv.measure ||
+      seoTitle !== sv.seoTitle ||
+      seoDesc !== sv.seoDesc ||
+      slug !== sv.slug
+    );
+  }, [num, pricePln, measure, seoTitle, seoDesc, slug]);
+
+  // Guard hard exits (tab close / reload / URL bar navigation).
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
+  // Guard soft navigations (App Router <Link> clicks don't trigger beforeunload).
+  // Intercept same-origin anchor clicks without modifier keys or target=_blank.
+  useEffect(() => {
+    if (!dirty) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const anchor = (e.target as HTMLElement | null)?.closest<HTMLAnchorElement>('a[href]');
+      if (!anchor) return;
+      if (anchor.target === '_blank') return;
+      const href = anchor.getAttribute('href');
+      if (!href || !href.startsWith('/')) return;
+      if (!window.confirm('Masz niezapisane zmiany. Opuścić stronę?')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [dirty]);
 
   const savePath = `/api/admin/products/${row.id}`;
   const publishPath = `${savePath}/publish`;
@@ -69,16 +138,40 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
       if (pricePln.trim() !== '') body.price_pln = Number(pricePln);
       body.measure = measure;
     }
-    await run('save', savePath, { body, successText: 'Zapisano zmiany.', errorMap: ERROR_MAP });
+    const ok = await run('save', savePath, { body, successText: 'Zapisano zmiany.', errorMap: ERROR_MAP });
+    if (ok) {
+      // Update the dirty baseline so the flag clears and subsequent edits are
+      // measured against the just-saved values.
+      savedValues.current = { num, pricePln, measure, seoTitle, seoDesc, slug };
+    }
   }
 
   async function setPublish(next: ProductStatus) {
+    // If there are unsaved metadata edits, confirm before the status transition
+    // (router.refresh won't lose the field values, but the operator may believe
+    // the click also saved their metadata edits — this prevents that confusion).
+    if (dirty) {
+      setConfirmStatusDirty(next);
+      return;
+    }
+    await doPublish(next);
+  }
+
+  async function doPublish(next: ProductStatus) {
     const ok = await run(`status:${next}`, publishPath, {
       body: { status: next },
       successText: `Status: ${STATUS_LABEL[next]}.`,
       errorMap: ERROR_MAP,
     });
     if (ok) setStatus(next);
+  }
+
+  function handleArchive() {
+    if (dirty) {
+      setConfirmStatusDirty('archived');
+      return;
+    }
+    setConfirmArchive(true);
   }
 
   return (
@@ -151,6 +244,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
           <button className="adm-btn" disabled={busy !== null || locked} onClick={saveMeta}>
             {busy === 'save' ? 'Zapisywanie…' : 'Zapisz zmiany'}
           </button>
+          {dirty && <span className="adm-action-msg">Niezapisane zmiany</span>}
         </div>
       </div>
 
@@ -188,7 +282,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
               </button>
             )}
             {status !== 'archived' && (
-              <button className="adm-btn" disabled={busy !== null || locked} onClick={() => setConfirmArchive(true)}>
+              <button className="adm-btn" disabled={busy !== null || locked} onClick={handleArchive}>
                 Archiwizuj
               </button>
             )}
@@ -207,7 +301,27 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             </p>
           )}
         </section>
+
+        {isCeramic && state.pieceState && (
+          <PieceStatePanel pieceState={state.pieceState} />
+        )}
       </aside>
+
+      <ConfirmModal
+        open={confirmStatusDirty !== null}
+        title="Masz niezapisane zmiany"
+        message="Zmiana statusu nie zapisze edytowanych metadanych. Kontynuować?"
+        confirmLabel="Kontynuuj"
+        busy={busy !== null}
+        onConfirm={() => {
+          const next = confirmStatusDirty;
+          setConfirmStatusDirty(null);
+          if (next === null) return;
+          if (next === 'archived') setConfirmArchive(true);
+          else void doPublish(next);
+        }}
+        onCancel={() => setConfirmStatusDirty(null)}
+      />
 
       <ConfirmModal
         open={revokeTarget !== null}
@@ -242,11 +356,60 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
         busy={busy !== null}
         onConfirm={() => {
           setConfirmArchive(false);
-          void setPublish('archived');
+          void doPublish('archived');
         }}
         onCancel={() => setConfirmArchive(false)}
       />
     </div>
+  );
+}
+
+function PieceStatePanel({ pieceState }: { pieceState: EditorPieceState }) {
+  const fmtDate = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString('pl-PL') : '—';
+  return (
+    <section className="adm-editor">
+      <h2 className="adm-h">Stan magazynowy</h2>
+      <dl className="adm-dl">
+        <dt>Status</dt>
+        <dd>
+          <span className={`adm-pill ${pieceState.status}`}>{PIECE_STATUS_LABEL[pieceState.status]}</span>
+          {pieceState.status === 'reserved' && pieceState.reservedExpired && (
+            <span className="adm-text-danger"> · wygasła</span>
+          )}
+        </dd>
+        {pieceState.status === 'reserved' && (
+          <>
+            <dt>Rezerwacja do</dt>
+            <dd>{fmtDate(pieceState.reserved_until)}</dd>
+          </>
+        )}
+        {pieceState.order_id && (
+          <>
+            <dt>Zamówienie</dt>
+            <dd>
+              <Link className="adm-mono" href={`/admin/orders/${pieceState.order_id}`}>
+                {pieceState.order_id.slice(0, 8)}
+              </Link>
+            </dd>
+          </>
+        )}
+        {pieceState.showroom && (
+          <>
+            <dt>Showroom</dt>
+            <dd>
+              <span className="adm-pill showroom">showroom</span>
+              {pieceState.showroom_entered_at && (
+                <span className="adm-muted"> · od {fmtDate(pieceState.showroom_entered_at)}</span>
+              )}
+            </dd>
+          </>
+        )}
+      </dl>
+      <div className="adm-actions">
+        <Link className="adm-btn" href="/admin/inventory">Zarządzaj w Magazynie →</Link>
+      </div>
+    </section>
   );
 }
 
