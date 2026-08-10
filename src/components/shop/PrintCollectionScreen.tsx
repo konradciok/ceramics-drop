@@ -7,7 +7,8 @@
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { getPrintDesigns } from '@/lib/prints';
+import { getPrintDesigns, registryPrintById } from '@/lib/prints';
+import { printListingImage } from '@/lib/print-mockups';
 import { groupPrintDesigns } from '@/lib/print-collections';
 import { fromPriceOf, type PrintPricingConfig } from '@/lib/print-pricing';
 import { currencyFormatter } from '@/lib/format';
@@ -87,6 +88,7 @@ export async function PrintCollectionScreen({
               {g.designs.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
                 const name = `${t('product.print')} Nº ${d.num}`;
+                const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link
                     key={d.id}
@@ -98,8 +100,8 @@ export async function PrintCollectionScreen({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={d.image}
-                      srcSet={srcSet(d.image)}
+                      src={image}
+                      srcSet={srcSet(image)}
                       sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw"
                       alt={name}
                       loading="lazy"

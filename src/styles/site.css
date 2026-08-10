@@ -564,6 +564,21 @@ ul { list-style:none; padding:0; margin:0; }
 .tile.selected { outline-width:3px; }
 .tile.selected .veil { background:rgba(110,138,196,.16); }
 
+/* Print tiles: the image (framed-natural mockup by default) dictates the
+   tile's proportions — it flows in-document at natural ratio instead of
+   filling a fixed 4/5 box, so the file is never cropped or letterboxed.
+   Placeholder estimate mirrors .tile's but at the 7:10 mockup ratio
+   (2286/1600 = 1.42875); `auto` remembers the true size after first render. */
+.tile-print { aspect-ratio:auto; }
+.tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 12px) / 2 * 1.42875); }
+@media (min-width:561px) {
+  .tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 2 * clamp(14px,1.6vw,24px)) / 3 * 1.42875); }
+}
+@media (min-width:1101px) {
+  .tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.42875); }
+}
+.tile-print img { position:static; height:auto; }
+
 /* znacznik wyboru (kółko / checkmark) */
 .tile .check {
   position:absolute; top:12px; left:12px; width:28px; height:28px; border-radius:50%;
