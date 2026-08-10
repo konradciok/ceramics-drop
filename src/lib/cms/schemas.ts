@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
-import { CMS_DOCUMENT_KINDS, CMS_LOCALES, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
+import { CMS_DOCUMENT_KINDS, CMS_LOCALES, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
 
 const PRINTS_SLUG = 'fine-art-prints';
@@ -29,6 +29,21 @@ export const collectionCopySchema = z.object({
   title: titleWithEm,
   lead: plainText,
   metaDescription: plainText,
+});
+
+// Unlike plainText above, empty is legal here: publishing an empty field is
+// how the admin disables a PDP section.
+const optionalPlainText = z.string().trim().refine((value) => !/[<>]/.test(value), {
+  message: 'To pole obsługuje tylko zwykły tekst',
+});
+
+export const printPdpSchema = z.object({
+  artist: z.object({ name: optionalPlainText, bio: optionalPlainText }),
+  accordions: z.object({
+    productDetails: optionalPlainText,
+    framing: optionalPlainText,
+    shipping: optionalPlainText,
+  }),
 });
 
 export const homePageSchema = z.object({
@@ -107,6 +122,7 @@ export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload:
     case 'collection':
       return collectionCopySchema.parse(payload);
     case 'page':
+      if (slug === PRINT_PDP_SLUG) return printPdpSchema.parse(payload);
       if (slug === 'home') return homePageSchema.parse(payload);
       if (slug === 'studio') return studioPageSchema.parse(payload);
       if (slug === 'gallery') return galleryPageSchema.parse(payload);

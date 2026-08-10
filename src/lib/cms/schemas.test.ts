@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
-import { collectionCopySchema, productNoteIds, validateProductNotesPayload } from './schemas';
+import { collectionCopySchema, printPdpSchema, productNoteIds, validateCmsPayload, validateProductNotesPayload } from './schemas';
 
 function notesFor(ids: string[], fill = 'Opis'): Record<string, string> {
   return Object.fromEntries(ids.map((id) => [id, fill]));
@@ -59,5 +59,42 @@ describe('CMS collection copy schema', () => {
       lead: 'Krotki opis',
       metaDescription: 'Meta opis',
     })).toThrow('Dozwolony jest tylko znacznik <em>');
+  });
+});
+
+describe('CMS print PDP schema', () => {
+  const full = {
+    artist: { name: 'Anna Ciok', bio: 'Bio artystki.' },
+    accordions: { productDetails: 'Papier EMA.', framing: 'Rama drewniana.', shipping: 'Prodigi 5-10 dni.' },
+  };
+
+  it('accepts a fully populated payload', () => {
+    expect(() => printPdpSchema.parse(full)).not.toThrow();
+  });
+
+  it('accepts empty fields (empty = section disabled, unlike other CMS schemas)', () => {
+    const empty = {
+      artist: { name: '', bio: '' },
+      accordions: { productDetails: '', framing: '', shipping: '' },
+    };
+    expect(printPdpSchema.parse(empty).artist.bio).toBe('');
+  });
+
+  it('trims whitespace-only fields to empty', () => {
+    expect(printPdpSchema.parse({ ...full, artist: { name: '  ', bio: ' x ' } }).artist).toEqual({ name: '', bio: 'x' });
+  });
+
+  it('rejects markup in any field', () => {
+    expect(() => printPdpSchema.parse({ ...full, accordions: { ...full.accordions, framing: '<b>rama</b>' } }))
+      .toThrow('To pole obsługuje tylko zwykły tekst');
+  });
+
+  it('is reachable through validateCmsPayload under page:print-pdp', () => {
+    expect(() => validateCmsPayload('page', 'print-pdp', full)).not.toThrow();
+    expect(() => validateCmsPayload('page', 'unknown-page', full)).toThrow();
+  });
+
+  it('rejects a payload missing the accordions object', () => {
+    expect(() => printPdpSchema.parse({ artist: full.artist })).toThrow();
   });
 });
