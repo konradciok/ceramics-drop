@@ -1234,6 +1234,41 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
 .pdp-body .lb-specs { margin-top:auto; }
 
+/* ── PDP accordions (print info sections) ─────────────────── */
+.pdp-accordions { border-top:1px solid var(--c-line); margin-bottom:24px; }
+.pdp-body .pdp-accordions { margin-top:auto; }
+.pdp-acc { border-bottom:1px solid var(--c-line); }
+.pdp-acc summary {
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  padding:14px 0; cursor:pointer; list-style:none;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+}
+.pdp-acc summary::-webkit-details-marker { display:none; }
+.pdp-acc summary::after { content:'+'; font-size:15px; line-height:1; opacity:.55; flex:none; }
+.pdp-acc[open] summary::after { content:'−'; }
+.pdp-acc-body { padding:2px 0 16px; font-size:14.5px; line-height:1.65; opacity:.85; }
+.pdp-acc-body p { margin:0 0 10px; }
+.pdp-acc-body p:last-child { margin-bottom:0; }
+.pdp-acc-facts { font-family:var(--f-cond); font-size:12.5px; letter-spacing:.06em; opacity:.75; }
+
+/* ── Expandable text (PDP note "read more") ───────────────── */
+.x-text { margin:0 0 22px; }
+.x-text .pdp-note { margin-bottom:0; }
+.x-text-toggle {
+  margin-top:6px; padding:0; background:none; border:0; cursor:pointer;
+  font:inherit; font-size:13px; text-decoration:underline; color:inherit; opacity:.7;
+}
+.x-text-toggle:hover { opacity:1; }
+
+/* ── About the artist (print PDP band) ────────────────────── */
+.about-artist-inner { max-width:640px; margin:0 auto; text-align:center; }
+.about-artist .section-eyebrow { justify-content:center; }
+.about-artist .section-title { margin-bottom:8px; }
+.about-artist img { width:min(320px,70%); height:auto; display:block; margin:18px auto 24px; border-radius:var(--r-sharp); }
+.about-artist-bio { text-align:left; font-size:15px; line-height:1.7; opacity:.85; }
+.about-artist-bio p { margin:0 0 12px; }
+.about-artist-bio p:last-child { margin-bottom:0; }
+
 /* Fine-art print configurator */
 .print-config { margin:0 0 24px; display:flex; flex-direction:column; gap:14px; }
 .print-axis {

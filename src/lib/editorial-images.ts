@@ -34,6 +34,8 @@ export const HOME_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
 export const HOME_HERO_BEAT_IMAGE = EDITORIAL_IMAGES.photo02;
 export const STUDIO_HEAD_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
 export const STUDIO_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
+// Print PDP "About the Artist" band — portrait of Anna in the studio.
+export const PRINT_PDP_ARTIST_IMAGE = EDITORIAL_IMAGES.aniaSunlight;
 
 export const GALLERY_EDITORIAL_IMAGES = [
   EDITORIAL_IMAGES.photo01,
