@@ -53,6 +53,22 @@ export function withRegistryMockups(
 }
 
 /**
+ * Default storefront presentation of a print (listing tiles, cards): the
+ * framed-natural mockup, falling back to the plain artwork when the design
+ * has no mockups, no 'natural' frame, or (db mode) a drifted image. Pass the
+ * code-registry design as `registryDesign` like withRegistryMockups — under
+ * CATALOG_SOURCE=db the mapped design never carries the `mockups` flag.
+ */
+export function printListingImage(
+  design: PrintDesign,
+  registryDesign: PrintDesign | undefined,
+): string {
+  const merged = withRegistryMockups(design, registryDesign);
+  if (!merged.frameColours.includes('natural')) return merged.image;
+  return mockupSrc(merged, 'framed-natural') ?? merged.image;
+}
+
+/**
  * Every mockup state the design's axes can reach ('plain' excluded — it has
  * no dedicated asset). Intentionally ignores the `mockups` flag: the pipeline
  * enumerates states BEFORE the flag ships. Also used to prefetch.

@@ -4,6 +4,7 @@ import {
   mockupHeroSrc,
   mockupSrc,
   mockupState,
+  printListingImage,
   withRegistryMockups,
 } from './print-mockups';
 import type { PrintDesign, PrintVariantSelection } from './types';
@@ -86,6 +87,31 @@ describe('designMockupStates', () => {
   it('respects narrower axes (fap02 shape: 2 colours, no mount)', () => {
     const narrow: PrintDesign = { ...design, frameColours: ['black', 'natural'], mountAvailable: false };
     expect(designMockupStates(narrow)).toEqual(['framed-black', 'framed-natural']);
+  });
+});
+
+describe('printListingImage', () => {
+  // Listing tiles default to the framed-natural mockup (2026-08 unified
+  // presentation); db-mode designs need the registry merge exactly like the
+  // PDP hero, so failure modes degrade to the plain artwork, never a 404.
+  it('returns the framed-natural mockup for flagged designs', () => {
+    expect(printListingImage(design, flagged)).toBe('/uploads/fap-01-mock-framed-natural.webp');
+    expect(printListingImage(flagged, flagged)).toBe('/uploads/fap-01-mock-framed-natural.webp');
+  });
+
+  it('falls back to the plain artwork without the mockups flag', () => {
+    expect(printListingImage(design, design)).toBe('/uploads/fap-01.webp');
+    expect(printListingImage(design, undefined)).toBe('/uploads/fap-01.webp');
+  });
+
+  it('falls back when the design offers no natural frame (asset would not exist)', () => {
+    const noNatural: PrintDesign = { ...flagged, frameColours: ['black', 'brown'] };
+    expect(printListingImage(noNatural, noNatural)).toBe('/uploads/fap-01.webp');
+  });
+
+  it('falls back when the db image drifts from the registry stem', () => {
+    const drifted: PrintDesign = { ...design, image: '/uploads/fap-01-v2.webp' };
+    expect(printListingImage(drifted, flagged)).toBe('/uploads/fap-01-v2.webp');
   });
 });
 

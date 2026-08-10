@@ -11,7 +11,7 @@ import { getCurrency } from '@/lib/currency.server';
 import { toChargeableCurrency } from '@/lib/currency';
 import { fromPriceOf, type PrintPricingConfig } from '@/lib/print-pricing';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
-import { withRegistryMockups } from '@/lib/print-mockups';
+import { printListingImage, withRegistryMockups } from '@/lib/print-mockups';
 import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
 import { PrintPdpPurchase } from './PrintPdpPurchase';
@@ -119,12 +119,13 @@ export async function PrintProductScreen({
               {siblings.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
                 const name = `${singular} Nº ${d.num}`;
+                const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={d.image}
-                      srcSet={srcSet(d.image)}
+                      src={image}
+                      srcSet={srcSet(image)}
                       sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw"
                       alt={name}
                       loading="lazy"
