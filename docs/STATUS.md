@@ -16,3 +16,4 @@ anything old as "verify before relying on it". Update this file (not
 | Ceramic catalogue | ~125 live pieces across 9 categories (`src/lib/products.test.ts` asserts the exact count) | 2026-07-27 |
 | Currencies | PLN / EUR / GBP live; USD & CAD scaffolded only (`priceOfCurrency` throws) — intentional, do not remove without an owner decision | 2026-07-14 |
 | Versioning | release-please active; current series pre-1.0 (`0.x`), **v0.13.0 released 2026-08-07** (the full-bleed prints rollout + fap01–03 withdrawal) | 2026-08-07 |
+| Print PDP sections | Three info accordions (details/framing/shipping) + About-the-Artist band live behind the `page:print-pdp` CMS document; fallback copy ships in `messages/*` so the storefront renders correctly with no document published. **Publish pending** — admin has not yet published a `page:print-pdp` document, so all four locales are still serving fallback copy | 2026-08-10 |
