@@ -1,64 +1,67 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { CMS_LOCALES, CmsLocale } from '@/lib/cms/types';
+import type { CMS_LOCALES, CmsLocale, PrintPdpPayload } from '@/lib/cms/types';
 import type { ContentEditorState } from '@/lib/admin/content';
 import { postJson, type FieldErrors } from './editor-shared';
 
-type Props = {
-  state: ContentEditorState;
-};
-
-type NotesById = Record<string, string>;
-
 const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 
-function notesFromPayload(payload: unknown, ids: string[]): NotesById {
-  const raw = (payload as { notes?: unknown })?.notes;
-  const obj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  return Object.fromEntries(ids.map((id) => [id, typeof obj[id] === 'string' ? obj[id] : '']));
+const FIELDS = [
+  { path: 'artist.name' as const, label: 'Artystka — imię i nazwisko', rows: 1 },
+  { path: 'artist.bio' as const, label: 'Artystka — bio (puste = sekcja ukryta)', rows: 5 },
+  { path: 'accordions.productDetails' as const, label: 'Akordeon: szczegóły produktu (puste = ukryty)', rows: 5 },
+  { path: 'accordions.framing' as const, label: 'Akordeon: oprawa i passe-partout (puste = ukryty)', rows: 5 },
+  { path: 'accordions.shipping' as const, label: 'Akordeon: wysyłka i zwroty (puste = ukryty)', rows: 5 },
+];
+
+type FieldPath = (typeof FIELDS)[number]['path'];
+
+function getField(payload: PrintPdpPayload, path: FieldPath): string {
+  const [a, b] = path.split('.') as [keyof PrintPdpPayload, string];
+  return ((payload[a] as Record<string, string>)[b] ?? '');
 }
 
-export function ContentEditor({ state }: Props) {
+function setField(payload: PrintPdpPayload, path: FieldPath, value: string): PrintPdpPayload {
+  const [a, b] = path.split('.') as [keyof PrintPdpPayload, string];
+  return { ...payload, [a]: { ...(payload[a] as Record<string, string>), [b]: value } };
+}
+
+function asPayload(raw: unknown): PrintPdpPayload {
+  const p = (raw ?? {}) as Partial<PrintPdpPayload>;
+  return {
+    artist: { name: p.artist?.name ?? '', bio: p.artist?.bio ?? '' },
+    accordions: {
+      productDetails: p.accordions?.productDetails ?? '',
+      framing: p.accordions?.framing ?? '',
+      shipping: p.accordions?.shipping ?? '',
+    },
+  };
+}
+
+export function PrintPdpEditor({ state }: { state: ContentEditorState }) {
   const router = useRouter();
   const [activeLocale, setActiveLocale] = useState<CmsLocale>('pl');
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const itemIds = useMemo(() => state.items.map((item) => item.id), [state.items]);
-  const [notesByLocale, setNotesByLocale] = useState<Record<CmsLocale, NotesById>>(() => {
-    return Object.fromEntries(LOCALES.map((locale) => [
-      locale,
-      notesFromPayload(state.locales[locale].payload, itemIds),
-    ])) as Record<CmsLocale, NotesById>;
-  });
-
-  const notes = notesByLocale[activeLocale];
-  const current = state.locales[activeLocale];
-  const latestVersion = current.latestDraft?.version ?? current.published?.version ?? null;
-
-  // Dirty = local textarea differs from the persisted payload for this locale.
-  // Publish/preview operate on the saved version, so an unsaved edit would
-  // silently re-publish stale copy — block both until the draft is saved.
-  const savedNotes = (current.payload as { notes?: NotesById })?.notes ?? {};
-  const isDirty = itemIds.some((id) => (notes[id] ?? '').trim() !== (savedNotes[id] ?? '').trim());
-
-  const emptyIds = useMemo(
-    () => itemIds.map((id) => (notes[id]?.trim() ? null : id)).filter((id): id is string => id !== null),
-    [notes, itemIds],
+  const [payloads, setPayloads] = useState<Record<CmsLocale, PrintPdpPayload>>(() =>
+    Object.fromEntries(LOCALES.map((locale) => [locale, asPayload(state.locales[locale].payload)])) as Record<CmsLocale, PrintPdpPayload>,
   );
 
-  function updateNote(id: string, value: string) {
-    setNotesByLocale((prev) => ({
-      ...prev,
-      [activeLocale]: { ...prev[activeLocale], [id]: value },
-    }));
+  const payload = payloads[activeLocale];
+  const current = state.locales[activeLocale];
+  const latestVersion = current.latestDraft?.version ?? current.published?.version ?? null;
+  const saved = asPayload(current.payload);
+  const isDirty = FIELDS.some((f) => getField(payload, f.path).trim() !== getField(saved, f.path).trim());
+
+  function update(path: FieldPath, value: string) {
+    setPayloads((prev) => ({ ...prev, [activeLocale]: setField(prev[activeLocale], path, value) }));
     setErrors((prev) => {
       const next = { ...prev };
-      delete next[`notes.${id}`];
-      delete next.notes;
+      delete next[path];
       return next;
     });
   }
@@ -72,7 +75,7 @@ export function ContentEditor({ state }: Props) {
         kind: state.kind,
         slug: state.slug,
         locale: activeLocale,
-        payload: { notes },
+        payload,
       });
       setMessage({ ok: true, text: `Szkic zapisany jako wersja ${data.version?.version ?? ''}.` });
       startTransition(() => router.refresh());
@@ -152,9 +155,9 @@ export function ContentEditor({ state }: Props) {
       <div className="adm-panel">
         <div className="adm-editor-head">
           <div>
-            <h2 className="adm-section-title">Notatki produktu</h2>
+            <h2 className="adm-section-title">Sekcje print PDP</h2>
             <p className="adm-sub adm-sub--tight">
-              {state.items.length} pol. Ostatni szkic: {current.latestDraft?.version ?? 'brak'} · opublikowana: {current.published?.version ?? 'brak'}
+              Ostatni szkic: {current.latestDraft?.version ?? 'brak'} · opublikowana: {current.published?.version ?? 'brak'}
             </p>
           </div>
           <div className="adm-actions adm-actions--top">
@@ -171,34 +174,23 @@ export function ContentEditor({ state }: Props) {
         </div>
 
         {isDirty ? <div className="adm-banner">Masz niezapisane zmiany — zapisz szkic przed podgladem lub publikacja.</div> : null}
-        {emptyIds.length > 0 ? (
-          <div className="adm-banner">{emptyIds.length} pustych opisow. Publikacja wymaga kompletu niepustych notatek.</div>
-        ) : null}
-        {errors.notes ? <p className="adm-field-error">{errors.notes}</p> : null}
+        <div className="adm-banner">Puste pole wylacza dana sekcje na stronie produktu. Bez opublikowanego dokumentu strona uzywa tekstow domyslnych z tlumaczen.</div>
 
         <div className="adm-note-list">
-          {state.items.map((item) => (
-            <label className="adm-note-row" key={item.id}>
-              <span className="adm-note-media">
-                {item.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.image} alt="" />
-                ) : (
-                  <span className="adm-item-noimg" />
-                )}
-              </span>
+          {FIELDS.map((field) => (
+            <label className="adm-note-row" key={field.path}>
               <span className="adm-note-body">
                 <span className="adm-note-label">
-                  <span>{item.label}</span>
-                  <span className="adm-mono">{item.id}</span>
+                  <span>{field.label}</span>
+                  <span className="adm-mono">{field.path}</span>
                 </span>
                 <textarea
-                  className={errors[`notes.${item.id}`] ? 'has-error' : ''}
-                  value={notes[item.id] ?? ''}
-                  onChange={(event) => updateNote(item.id, event.target.value)}
-                  rows={3}
+                  className={errors[field.path] ? 'has-error' : ''}
+                  value={getField(payload, field.path)}
+                  onChange={(event) => update(field.path, event.target.value)}
+                  rows={field.rows}
                 />
-                {errors[`notes.${item.id}`] ? <span className="adm-field-error">{errors[`notes.${item.id}`]}</span> : null}
+                {errors[field.path] ? <span className="adm-field-error">{errors[field.path]}</span> : null}
               </span>
             </label>
           ))}

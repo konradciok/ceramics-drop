@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getContentEditorState } from '@/lib/admin/content';
 import { isCmsKind } from '@/lib/cms/schemas';
 import { ContentEditor } from './ContentEditor';
+import { PrintPdpEditor } from './PrintPdpEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,8 @@ export default async function ContentEditorPage({ params }: Props) {
         <div>
           <h1 className="adm-h1">{state.label}</h1>
           <p className="adm-sub">
-            <span className="adm-mono">{state.kind}:{state.slug}</span> · {state.items.length} opisow
+            <span className="adm-mono">{state.kind}:{state.slug}</span>
+            {state.items.length > 0 ? <> · {state.items.length} opisow</> : null}
           </p>
         </div>
         <div className="adm-actions adm-actions--top">
@@ -30,7 +32,7 @@ export default async function ContentEditorPage({ params }: Props) {
         </div>
       </div>
 
-      <ContentEditor state={state} />
+      {state.kind === 'page' ? <PrintPdpEditor state={state} /> : <ContentEditor state={state} />}
     </>
   );
 }
