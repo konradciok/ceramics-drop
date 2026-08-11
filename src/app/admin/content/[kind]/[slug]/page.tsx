@@ -15,8 +15,9 @@ export default async function ContentEditorPage({ params }: Props) {
   if (!isCmsKind(kind)) notFound();
   const state = await getContentEditorState(kind, slug);
   if (!state) notFound();
+  const isPrintPdp = state.kind === 'page' && state.slug === PRINT_PDP_SLUG;
 
-  return (
+  const content = (
     <>
       <Link className="adm-back" href="/admin/content">← Tresci</Link>
       <div className="adm-fulfillment-head">
@@ -33,11 +34,13 @@ export default async function ContentEditorPage({ params }: Props) {
         </div>
       </div>
 
-      {state.kind === 'page' && state.slug === PRINT_PDP_SLUG ? (
+      {isPrintPdp ? (
         <PrintPdpEditor state={state} />
       ) : (
         <ContentEditor state={state} />
       )}
     </>
   );
+
+  return isPrintPdp ? <div className="adm-content-page--fixed-fields">{content}</div> : content;
 }

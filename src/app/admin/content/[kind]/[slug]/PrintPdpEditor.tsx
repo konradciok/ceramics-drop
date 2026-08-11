@@ -9,7 +9,7 @@ import { postJson, type FieldErrors } from './editor-shared';
 const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 
 const FIELDS = [
-  { path: 'artist.name' as const, label: 'Artystka — imię i nazwisko', rows: 1 },
+  { path: 'artist.name' as const, label: 'Artystka — imię i nazwisko', rows: 1, compact: true },
   { path: 'artist.bio' as const, label: 'Artystka — bio (puste = sekcja ukryta)', rows: 5 },
   { path: 'accordions.productDetails' as const, label: 'Akordeon: szczegóły produktu (puste = ukryty)', rows: 5 },
   { path: 'accordions.framing' as const, label: 'Akordeon: oprawa i passe-partout (puste = ukryty)', rows: 5 },
@@ -127,7 +127,7 @@ export function PrintPdpEditor({ state }: { state: ContentEditorState }) {
   }
 
   return (
-    <div className="adm-editor">
+    <div className="adm-editor adm-editor--fixed-fields">
       <div className="adm-tabs" role="tablist" aria-label="Locale">
         {LOCALES.map((locale) => {
           const localeState = state.locales[locale];
@@ -178,7 +178,7 @@ export function PrintPdpEditor({ state }: { state: ContentEditorState }) {
 
         <div className="adm-note-list">
           {FIELDS.map((field) => (
-            <label className="adm-note-row" key={field.path}>
+            <label className={`adm-note-row adm-note-row--form${field.compact ? ' adm-note-row--compact' : ''}`} key={field.path}>
               <span className="adm-note-body">
                 <span className="adm-note-label">
                   <span>{field.label}</span>

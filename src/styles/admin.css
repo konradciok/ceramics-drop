@@ -401,6 +401,7 @@
 .adm-locale.missing { color: rgba(58, 40, 24, .45); background: var(--c-line-soft); }
 .adm-sub--tight { margin-bottom: 0; }
 .adm-editor { display: grid; gap: 14px; }
+.adm-content-page--fixed-fields { max-width: 960px; margin: 0 auto; }
 .adm-tabs {
   display: flex;
   gap: 8px;
@@ -438,6 +439,11 @@
   border-radius: var(--r-sharp);
   background: var(--c-paper);
 }
+.adm-note-row--form {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 16px;
+}
+.adm-note-row--compact .adm-note-body textarea { min-height: 44px; }
 .adm-note-media img,
 .adm-note-media .adm-item-noimg {
   display: block;
@@ -632,9 +638,18 @@
   .adm-actions--top { align-items: stretch; width: 100%; }
   .adm-editor-head { flex-direction: column; align-items: stretch; }
   .adm-note-row { grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 10px; }
+  .adm-note-row--form { grid-template-columns: minmax(0, 1fr); padding: 12px; }
   .adm-note-media img,
   .adm-note-media .adm-item-noimg { width: 56px; height: 70px; }
   .adm-note-label { flex-direction: column; gap: 2px; }
+  .adm-editor--fixed-fields .adm-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .adm-editor--fixed-fields .adm-tab {
+    min-height: 44px;
+    justify-content: space-between;
+  }
 
   .adm-h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 }
