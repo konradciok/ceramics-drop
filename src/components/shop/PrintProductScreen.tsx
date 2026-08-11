@@ -16,7 +16,12 @@ import { SITE_NAME } from '@/lib/site';
 import { srcSet } from '@/lib/images';
 import { PrintPdpPurchase } from './PrintPdpPurchase';
 import { PrintViewAnalytics } from './PrintViewAnalytics';
+import { PdpAccordions } from './PdpAccordions';
+import { AboutArtistSection } from './AboutArtistSection';
+import { ExpandableText } from './ExpandableText';
+import { PRINT_PDP_ARTIST_IMAGE } from '@/lib/editorial-images';
 import type { PrintDesign } from '@/lib/types';
+import type { PrintPdpPayload } from '@/lib/cms/types';
 
 const SLUG = 'fine-art-prints';
 
@@ -25,12 +30,15 @@ export async function PrintProductScreen({
   noteOverride,
   usableVariantKeys,
   pricing,
+  content,
 }: {
   design: PrintDesign;
   noteOverride?: string;
   usableVariantKeys?: string[];
   /** Global print price list, loaded once by the PDP page (getPrintPricingConfig). */
   pricing: PrintPricingConfig;
+  /** Print-PDP section content (accordions + artist), loaded once by the PDP page (getPrintPdpContent). */
+  content: PrintPdpPayload;
 }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
@@ -84,28 +92,38 @@ export async function PrintProductScreen({
                 <h1>
                   {singular} <em>Nº {design.num}</em>
                 </h1>
-                {note && <p className="pdp-note">{note}</p>}
+                {note && (
+                  <ExpandableText
+                    className="pdp-note"
+                    text={note}
+                    lines={4}
+                    moreLabel={t('printPdp.readMore')}
+                    lessLabel={t('printPdp.readLess')}
+                  />
+                )}
               </>
             }
             footer={
-              <div className="lb-specs print-specs">
-                <div className="lb-spec">
-                  <span className="k">{t('print.sectionDetails')}</span>
-                  <span className="v">{t('print.technique')}<br />{sizeLines}</span>
-                </div>
-                <div className="lb-spec">
-                  <span className="k">{t('print.sectionEdition')}</span>
-                  <span className="v">{t('print.editionOpen')}</span>
-                </div>
-                <div className="lb-spec">
-                  <span className="k">{t('print.sectionDelivery')}</span>
-                  <span className="v">{t('print.deliveryNote')}</span>
-                </div>
-                <div className="lb-spec">
-                  <span className="k">{t('print.sectionCare')}</span>
-                  <span className="v">{t('print.careNote')}</span>
-                </div>
-              </div>
+              <PdpAccordions
+                items={[
+                  {
+                    key: 'productDetails',
+                    title: t('printPdp.accordionProductDetailsTitle'),
+                    body: content.accordions.productDetails,
+                    extra: <p className="pdp-acc-facts">{sizeLines}</p>,
+                  },
+                  {
+                    key: 'framing',
+                    title: t('printPdp.accordionFramingTitle'),
+                    body: content.accordions.framing,
+                  },
+                  {
+                    key: 'shipping',
+                    title: t('printPdp.accordionShippingTitle'),
+                    body: content.accordions.shipping,
+                  },
+                ]}
+              />
             }
           />
         </div>
@@ -146,6 +164,13 @@ export async function PrintProductScreen({
           </div>
         </section>
       )}
+
+      <AboutArtistSection
+        title={t('printPdp.aboutArtistTitle')}
+        name={content.artist.name}
+        bio={content.artist.bio}
+        image={PRINT_PDP_ARTIST_IMAGE}
+      />
     </article>
     </>
   );

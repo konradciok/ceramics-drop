@@ -13,6 +13,7 @@ import { ProductPageScreen } from '@/components/shop/ProductPageScreen';
 import { PrintProductScreen } from '@/components/shop/PrintProductScreen';
 import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { getProductNote } from '@/lib/cms/messages';
+import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug } from '@/lib/types';
@@ -91,10 +92,11 @@ export default async function Page({ params, searchParams }: Props) {
     const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const [note, coverage, pricing] = await Promise.all([
+    const [note, coverage, pricing, pdpContent] = await Promise.all([
       getProductNote(PRINT_SLUG, locale as Locale, design.id, preview),
       getPrintAssetCoverage(design.id).catch(() => null),
       getPrintPricingConfig(),
+      getPrintPdpContent(locale as Locale, preview),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
@@ -117,7 +119,7 @@ export default async function Page({ params, searchParams }: Props) {
             pricing,
           })}
         />
-        <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} />
+        <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} />
       </main>
     );
   }

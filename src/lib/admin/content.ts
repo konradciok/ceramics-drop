@@ -2,7 +2,8 @@ import { adminSupabase } from './clients';
 import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
 import { fallbackProductNotes } from '@/lib/cms/messages';
-import { CMS_LOCALES, type CmsDocumentKind, type CmsLocale, type CmsPayload, type CmsVersionRow } from '@/lib/cms/types';
+import { fallbackPrintPdpPayload } from '@/lib/cms/print-pdp';
+import { CMS_LOCALES, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type CmsPayload, type CmsVersionRow } from '@/lib/cms/types';
 import { validateCmsPayload } from '@/lib/cms/schemas';
 import type { CategorySlug } from '@/lib/types';
 
@@ -27,6 +28,16 @@ export const PRODUCT_NOTE_DOCUMENTS: EditableContentDocument[] = [
     publicPath: '/fine-art-prints',
   },
 ];
+
+export const PRINT_PDP_DOCUMENT: EditableContentDocument = {
+  kind: 'page',
+  slug: PRINT_PDP_SLUG,
+  label: 'Print PDP — sekcje',
+  publicPath: '/fine-art-prints',
+};
+
+/** Every document the admin CMS list/editor exposes. */
+export const EDITABLE_DOCUMENTS: EditableContentDocument[] = [...PRODUCT_NOTE_DOCUMENTS, PRINT_PDP_DOCUMENT];
 
 export type ContentSummary = EditableContentDocument & {
   documentId: string | null;
@@ -67,10 +78,11 @@ type RawDocument = {
 };
 
 export function editableDocument(kind: string, slug: string): EditableContentDocument | null {
-  return PRODUCT_NOTE_DOCUMENTS.find((doc) => doc.kind === kind && doc.slug === slug) ?? null;
+  return EDITABLE_DOCUMENTS.find((doc) => doc.kind === kind && doc.slug === slug) ?? null;
 }
 
 export function contentItems(slug: string): ContentItem[] {
+  if (slug === PRINT_PDP_SLUG) return [];
   if (slug === 'fine-art-prints') {
     return registryPrintDesigns().map((design) => ({
       id: design.id,
@@ -85,23 +97,28 @@ export function contentItems(slug: string): ContentItem[] {
   }));
 }
 
-function emptyLocaleState(locale: CmsLocale, slug: string): LocaleEditorState {
+function defaultPayload(kind: CmsDocumentKind, slug: string, locale: CmsLocale): CmsPayload {
+  if (kind === 'page' && slug === PRINT_PDP_SLUG) return fallbackPrintPdpPayload(locale);
+  return { notes: fallbackProductNotes(slug, locale) };
+}
+
+function emptyLocaleState(locale: CmsLocale, kind: CmsDocumentKind, slug: string): LocaleEditorState {
   return {
     locale,
-    payload: { notes: fallbackProductNotes(slug, locale) },
+    payload: defaultPayload(kind, slug, locale),
     latestDraft: null,
     published: null,
     versions: [],
   };
 }
 
-function localeState(locale: CmsLocale, slug: string, versions: CmsVersionRow[]): LocaleEditorState {
+function localeState(locale: CmsLocale, kind: CmsDocumentKind, slug: string, versions: CmsVersionRow[]): LocaleEditorState {
   const sorted = [...versions].sort((a, b) => b.version - a.version);
   const latestDraft = sorted.find((v) => v.status === 'draft') ?? null;
   const published = sorted.find((v) => v.status === 'published') ?? null;
   return {
     locale,
-    payload: latestDraft?.payload ?? published?.payload ?? { notes: fallbackProductNotes(slug, locale) },
+    payload: latestDraft?.payload ?? published?.payload ?? defaultPayload(kind, slug, locale),
     latestDraft,
     published,
     versions: sorted,
@@ -125,12 +142,12 @@ export async function listContentSummaries(status?: string): Promise<ContentSumm
   const { data, error } = await supabase
     .from('cms_documents')
     .select('id, kind, slug, status, updated_at, published_at, cms_document_versions(locale, version, status)')
-    .eq('kind', 'product_notes');
+    .in('kind', ['product_notes', 'page']);
   if (error) throw error;
 
   const byKey = new Map(((data as RawDocument[] | null) ?? []).map((row) => [`${row.kind}:${row.slug}`, row]));
 
-  return PRODUCT_NOTE_DOCUMENTS.map((doc) => {
+  return EDITABLE_DOCUMENTS.map((doc) => {
     const row = byKey.get(`${doc.kind}:${doc.slug}`) ?? null;
     const locales = Object.fromEntries(CMS_LOCALES.map((locale) => {
       const versions = ((row?.cms_document_versions ?? []) as CmsVersionRow[]).filter((v) => v.locale === locale);
@@ -163,7 +180,7 @@ export async function getContentEditorState(kind: CmsDocumentKind, slug: string)
   const versions = (row?.cms_document_versions ?? []) as CmsVersionRow[];
   const locales = Object.fromEntries(CMS_LOCALES.map((locale) => [
     locale,
-    row ? localeState(locale, slug, versions.filter((v) => v.locale === locale)) : emptyLocaleState(locale, slug),
+    row ? localeState(locale, kind, slug, versions.filter((v) => v.locale === locale)) : emptyLocaleState(locale, kind, slug),
   ])) as ContentEditorState['locales'];
   return {
     ...doc,

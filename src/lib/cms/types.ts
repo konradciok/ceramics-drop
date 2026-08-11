@@ -34,7 +34,21 @@ export type CollectionCopyPayload = {
   metaDescription: string;
 };
 
-export type CmsPayload = ProductNotesPayload | CollectionCopyPayload | Record<string, unknown>;
+export const PRINT_PDP_SLUG = 'print-pdp';
+
+/** Fixed-schema content for the fine-art-print PDP sections. Empty string =
+    section intentionally disabled by the admin (deliberate departure from the
+    min(1) rule other CMS schemas use). */
+export type PrintPdpPayload = {
+  artist: { name: string; bio: string };
+  accordions: {
+    productDetails: string;
+    framing: string;
+    shipping: string;
+  };
+};
+
+export type CmsPayload = ProductNotesPayload | CollectionCopyPayload | PrintPdpPayload | Record<string, unknown>;
 
 export type CmsDocumentRef = {
   kind: CmsDocumentKind;

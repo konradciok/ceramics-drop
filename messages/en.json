@@ -993,5 +993,18 @@
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
     "moreFrom": "More prints",
     "mixedCart": "Prints are ordered separately from ceramics — finish or empty your ceramics cart first."
+  },
+  "printPdp": {
+    "aboutArtistTitle": "About the artist",
+    "readMore": "Read more",
+    "readLess": "Show less",
+    "accordionProductDetailsTitle": "Product details",
+    "accordionFramingTitle": "Frame & passe-partout",
+    "accordionShippingTitle": "Shipping & returns",
+    "artistName": "Anna Ciok",
+    "artistBio": "Anna Ciok is a Warsaw-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
+    "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
+    "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown. Framed versions can be ordered with a passe-partout mount, which gives the work extra breathing room and depth.",
+    "accordionShipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
   }
 }
