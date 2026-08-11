@@ -58,13 +58,15 @@ New keys in `messages/{pl,en,es,de}.json` (edited directly in all four files —
 Notion sync is PL-only):
 
 - `printPdp.artistName`, `printPdp.artistBio` — artist fallback copy.
-- `printPdp.accordion.productDetails` / `.framing` / `.shipping` — seeded from
-  the current spec-block strings (`print.technique`, `print.editionOpen`,
-  `print.careNote` → productDetails; `print.deliveryNote` → shipping) plus new
-  framing copy.
+- `printPdp.accordionProductDetails` / `printPdp.accordionFraming` /
+  `printPdp.accordionShipping` — seeded from the current spec-block strings
+  (`print.technique`, `print.editionOpen`, `print.careNote` → productDetails;
+  `print.deliveryNote` → shipping) plus new framing copy.
 - Accordion/section **headings** are static UI strings
-  (`print.accordion.*Title`, `print.aboutArtistTitle`) — chrome, not CMS
-  content.
+  (`printPdp.accordionProductDetailsTitle` / `printPdp.accordionFramingTitle` /
+  `printPdp.accordionShippingTitle`, `printPdp.aboutArtistTitle`, plus
+  `printPdp.readMore` / `printPdp.readLess` for the bio toggle) — chrome, not
+  CMS content.
 
 With no CMS document at all, the PDP renders complete content from messages
 (acceptance criterion: unconfigured products render correctly).
@@ -109,7 +111,7 @@ components unless noted:
 
 ### PDP layout after the change
 
-```
+```text
 breadcrumb
 buy box (gallery + configurator + note w/ ExpandableText)   ← unchanged behaviour
 PdpAccordions (product details / framing / shipping)         ← replaces spec block, in buy-box column
