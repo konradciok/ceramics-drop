@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getContentEditorState } from '@/lib/admin/content';
 import { isCmsKind } from '@/lib/cms/schemas';
+import { PRINT_PDP_SLUG } from '@/lib/cms/types';
 import { ContentEditor } from './ContentEditor';
 import { PrintPdpEditor } from './PrintPdpEditor';
 
@@ -32,7 +33,11 @@ export default async function ContentEditorPage({ params }: Props) {
         </div>
       </div>
 
-      {state.kind === 'page' ? <PrintPdpEditor state={state} /> : <ContentEditor state={state} />}
+      {state.kind === 'page' && state.slug === PRINT_PDP_SLUG ? (
+        <PrintPdpEditor state={state} />
+      ) : (
+        <ContentEditor state={state} />
+      )}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { editableDocument } from '@/lib/admin/content';
 import { contentError, localizedPath, parseJson, versionBodySchema } from '@/lib/admin/content-routes';
 import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
-import type { CmsLocale } from '@/lib/cms/types';
+import { PRINT_PDP_SLUG, type CmsLocale } from '@/lib/cms/types';
 import type { CategorySlug } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ function firstPublishedPrintPath(locale: CmsLocale): string {
 }
 
 function previewPath(kind: string, slug: string, locale: CmsLocale): string {
-  if (kind === 'page' && slug === 'print-pdp') return firstPublishedPrintPath(locale);
+  if (kind === 'page' && slug === PRINT_PDP_SLUG) return firstPublishedPrintPath(locale);
   if (kind !== 'product_notes') return localizedPath(locale, '/');
   // fap01 was withdrawn (published:false) — preview must land on a live PDP.
   if (slug === 'fine-art-prints') return firstPublishedPrintPath(locale);
