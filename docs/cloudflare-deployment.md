@@ -24,12 +24,12 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 
 **Not provisioned:** D1, KV, Durable Objects (beyond OpenNext cache DOs), Hyperdrive, Cloudflare Images.
 
-> **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
-> `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy.
+> **Migrations auto-apply on merge — do NOT apply them by hand.**
+> The Supabase GitHub integration (the "Supabase Preview" check) applies `supabase/migrations/**` to the production DB automatically on merge to `main` — typically within ~1 minute, i.e. **before** the ~7-minute Workers build promotes the new code (verified 2026-08-07 with `20260807120000_print_pricing_config.sql`, applied ~41 s after the PR #235 merge). Consequences:
 >
-> Before merging PR #51, apply `supabase/migrations/20260609130000_orders_marketing.sql` to Supabase prod. The checkout route now inserts `orders.marketing`; without this column the insert fails at runtime.
->
-> Before promoting a Workers build that includes `orders.fulfilment_type` checkout writes (PR #112 / stack 5), apply `supabase/migrations/20260707140000_orders_fulfilment_type.sql` and `supabase/migrations/20260707150000_drop_pod_variant_id.sql` to Supabase prod **first**. If code ships before the column exists, `orders.insert` fails after the PaymentIntent is created → rolled back → buyers see a generic checkout failure. The migration's `DEFAULT 'inpost'` only covers the reverse window (migration applied, old code still inserting without the column); pickup/print orders placed in that gap may be mislabelled until you re-run the backfill `UPDATE` without the `where fulfilment_type is null` guard.
+> - **Write migrations that are backward-compatible with the still-running old code.** The migration is live for several minutes while the previous Workers build keeps serving traffic — additive changes (new tables/columns with defaults, new RPCs) are safe; destructive changes (drops, renames, constraint tightening the old code violates) need a two-step rollout.
+> - The old failure mode is inverted: code-before-migration can no longer happen on a normal merge, but migration-before-code always does. Don't instruct anyone to run a merged migration manually — check `list_migrations` / the Supabase dashboard instead.
+> - `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Any release that adds/renames product ids must include the seeding migration in the same PR (e.g. `20260609120000_inventory_review_june.sql` added `k01`).
 >
 > Audit for gaps — paste the catalogue ids (`getProducts().map(p => p.id)` from `src/lib/products.ts`) into the array literal; any rows returned are ids missing a `piece_state` row:
 >

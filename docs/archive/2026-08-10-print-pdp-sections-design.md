@@ -1,3 +1,5 @@
+> **Archived 2026-08-11 — shipped.** Implemented and merged as PR #237 (`97a17f5`). Current feature state lives in `docs/STATUS.md` (Print PDP sections row); architecture in `AGENTS.md` (CMS content layer). Kept for rationale only.
+
 # Print PDP — reusable admin-managed sections (design)
 
 **Date:** 2026-08-10

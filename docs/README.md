@@ -64,5 +64,6 @@ Trust chain for cleanup work: **`cleaning-instructions.md` is authoritative**;
 Every file carries a banner naming what superseded it. Facts inside may be
 false today; never act on them without verifying against the code. Contents
 include the 2026-07-07 code-cleaning plan, the Prodigi build-time master
-prompt/phases/decisions (June 2026), the Stripe stage-one audit, and generic
-CSS scroll-animation guides from the storefront-upgrade exploration.
+prompt/phases/decisions (June 2026), the Stripe stage-one audit, generic
+CSS scroll-animation guides from the storefront-upgrade exploration, and the
+shipped print-PDP sections plan/spec (2026-08-10, PR #237).

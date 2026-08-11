@@ -1,3 +1,5 @@
+> **Archived 2026-08-11 — shipped.** Implemented and merged as PR #237 (`97a17f5`). Current feature state lives in `docs/STATUS.md` (Print PDP sections row); architecture in `AGENTS.md` (CMS content layer). Kept for rationale only.
+
 # Print PDP — Admin-Managed Sections Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Next.js 16 App Router (server components), zod, Supabase (`cms_documents`/`cms_document_versions` — no new tables, no migration), next-intl, vitest, plain CSS with tokens.
 
-**Spec:** `docs/superpowers/specs/2026-08-10-print-pdp-sections-design.md`
+**Spec:** `docs/archive/2026-08-10-print-pdp-sections-design.md`
 
 ## Global Constraints
 
@@ -1182,7 +1184,7 @@ gh pr create --title "feat(prints): admin-managed print PDP sections (accordions
 - Accordions replace the static spec block (content absorbed into fallback copy in messages/*)
 - Product note gets a measured read-more clamp; per-design size facts stay registry-driven
 - Admin: fixed-fields editor variant at /admin/content/page/print-pdp; preview path fixed for withdrawn fap01
-- Spec: docs/superpowers/specs/2026-08-10-print-pdp-sections-design.md
+- Spec: docs/archive/2026-08-10-print-pdp-sections-design.md
 
 ## Test plan
 - [ ] vitest: cms schema + print-pdp helper suites
