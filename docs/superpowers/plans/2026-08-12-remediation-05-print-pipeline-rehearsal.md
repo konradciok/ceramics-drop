@@ -52,7 +52,7 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 
 ## Out of scope
 
-- Any code change (if the rehearsal finds a defect: **stop, record, file** — fixes go through their owning plan or a new plan; do not hotfix inside the rehearsal).
+- **Remediation** code changes — if the rehearsal finds a *defect*, **stop, record, file**; fixes go through their owning plan, not a hotfix inside the rehearsal. **Exception:** the `PRODIGI_API_BASE_URL` preview override (Task 3) **is** an in-scope code change *this plan owns* — it is test/rehearsal harness, not a remediation fix — and it ships **with automated unit tests** (see Tests). It is the one deliberate code change here.
 - Live-mode Stripe, live Prodigi, production customer rows.
 - Load/perf testing.
 
@@ -77,7 +77,7 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 ### Task 3 — failure path: alerts are loud
 
 - [ ] **Define an *executable* injection mechanism up front — the drill must force a *retryable* failure deterministically, cannot depend on Plan 11 (which runs *after* this rehearsal), and needs a real knob that exists at rehearsal time.** An invalid sandbox key can surface as a **terminal** `ProdigiError` (`retryable: false`), which `decideMessageDisposition` **acks** (`src/server/fulfilment/queue-disposition.test.ts` documents `retryable: false → ack`) — proves nothing, drops the job with no DLQ hop.
-  - **Prerequisite:** check `src/server/prodigi/client.ts` `baseUrl(env)` — it currently switches sandbox/live by `PRODIGI_ENV` and has **no arbitrary-URL override**, so "point the base URL at a 5xx endpoint" is *not runnable as-is*. Add a small **preview-only** `PRODIGI_API_BASE_URL` override read in `baseUrl(env)` (guarded so it is ignored unless a non-prod marker is set — it must never take effect in production), as rehearsal prep. This is the executable knob.
+  - **Prerequisite (in-scope code change + tests, per Out of scope / Tests):** check `src/server/prodigi/client.ts` `baseUrl(env)` — it currently switches sandbox/live by `PRODIGI_ENV` and has **no arbitrary-URL override**, so "point the base URL at a 5xx endpoint" is *not runnable as-is*. Add a small **preview-only** `PRODIGI_API_BASE_URL` override read in `baseUrl(env)`, **guarded so it is ignored in production** (never takes effect there), and ship it **with the three unit tests in the Tests section** (override applies off-prod, override rejected on prod, unset = unchanged). This is the executable knob; the prod-rejection test is its safety gate.
   - **Drill:** set `PRODIGI_API_BASE_URL` in the preview env to a 5xx/unroutable endpoint → the client's `fetch` catch maps the network error to `ProdigiError(…, null, true)` (retryable) → every delivery retries → DLQ. Do **not** rely on Plan 11's timeout (not merged at rehearsal time).
 - [ ] **Before running the drill, assert the injected error is classified `'retry'`** — e.g. a one-off `decideMessageDisposition(<the injected error>) === 'retry'` check (unit or a `wrangler tail` observation of a retry, not an ack) — so the drill is known to exercise backoff→DLQ, not a silent ack.
 - [ ] Run it: observe retries with backoff (Plan 02) in tail, then DLQ delivery.
@@ -111,7 +111,13 @@ None. SQL used is read-only except preview-target test-row cleanup/backdating, w
 
 ## Tests
 
-No new automated tests (the destructive E2E already exists and is the driver). If the E2E proves unrunnable on the executing machine, the manual drive-through is acceptable — but every assertion above must still be recorded with evidence.
+The destructive E2E already exists and is the rehearsal driver; if it proves unrunnable on the executing machine, the manual drive-through is acceptable — but every assertion above must still be recorded with evidence.
+
+**Required automated unit tests for the one code change (the `PRODIGI_API_BASE_URL` override in `src/server/prodigi/client.ts` `baseUrl(env)`):**
+- when `PRODIGI_API_BASE_URL` is set **and** a non-production marker is present → `baseUrl(env)` returns the override;
+- when `PRODIGI_API_BASE_URL` is set **but the host/env is production** → the override is **ignored** (returns the normal sandbox/live URL) — proving the override can never redirect production Prodigi traffic;
+- when `PRODIGI_API_BASE_URL` is unset → unchanged behaviour (sandbox/live by `PRODIGI_ENV`).
+These land in the same commit as the override; the production-rejection test is the safety gate that makes the harness acceptable.
 
 ## Verification
 
@@ -124,6 +130,7 @@ This plan is itself the verification stage for Plans 02/03 and the pipeline. Com
 
 ## Acceptance criteria
 
+- [ ] The `PRODIGI_API_BASE_URL` override + its three unit tests (off-prod applies, **prod rejects**, unset unchanged) are merged and green — the executable failure-injection knob is in place and provably cannot affect production.
 - [ ] One print order processed end-to-end through the **real queue runtime** in preview, with all rows terminal and a sandbox Prodigi order created.
 - [ ] DLQ email + worker-context Sentry event both observed (screenshots/ids in the log).
 - [ ] Stalled-job alert observed via the backdated-row test.
