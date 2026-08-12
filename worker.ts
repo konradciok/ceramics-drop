@@ -67,13 +67,20 @@ export default {
           const disposition = decideMessageDisposition(err);
           // L-21: log every queue error before ack/retry — otherwise a terminal
           // ack drops the message with no trace, and retries burn silently.
+          // Redacted: log a stable error class + code only, never the raw message
+          // (external-service errors can echo customer/request data). Full
+          // per-item detail is persisted to fulfilment_jobs.last_error by
+          // processJob; this handler log is a coarse retry/ack signal.
+          const e = err as { name?: string; code?: string | number; status?: string | number };
           console.error(
             JSON.stringify({
               event: 'fulfilment_queue_error',
               orderId: msg.body?.orderId,
               attempt: msg.attempts,
               disposition,
-              error: String(err),
+              errorName: err instanceof Error ? err.name : typeof err,
+              ...(e?.code !== undefined ? { errorCode: e.code } : {}),
+              ...(e?.status !== undefined ? { errorStatus: e.status } : {}),
             }),
           );
           if (disposition === 'ack') msg.ack();
