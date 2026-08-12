@@ -5,7 +5,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
-import * as Sentry from '@sentry/nextjs';
+import { captureWorkerAlert, type WorkerAlertLevel } from './src/lib/worker-sentry';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import { buildDlqAlert, buildDlqBatchAlertEmail, DLQ_QUEUE_NAME } from './src/server/fulfilment/dlq';
@@ -127,17 +127,14 @@ async function handleDlqBatch(
   for (const msg of batch.messages) {
     const alert = buildDlqAlert({ id: msg.id, body: msg.body, attempts: msg.attempts });
     console.error(JSON.stringify(alert.log));
-    try {
-      Sentry.captureMessage(alert.sentry.message, {
-        level: alert.sentry.level,
-        extra: alert.sentry.extra,
-      });
-    } catch (sentryErr) {
-      // ponytail: no rethrow — a Sentry init/outage must not block the ack.
-      console.error(
-        JSON.stringify({ event: 'prodigi_dlq_sentry_failed', messageId: msg.id, error: String(sentryErr) }),
-      );
-    }
+    // M-16: worker-context Sentry via a direct envelope POST (fail-soft; never
+    // blocks the ack). @sentry/nextjs's captureMessage no-ops here (no init in
+    // the worker bundle outside the fetch path).
+    await captureWorkerAlert(env, {
+      message: alert.sentry.message,
+      level: alert.sentry.level as WorkerAlertLevel,
+      extra: alert.sentry.extra,
+    });
     sections.push(alert.emailSection);
     msg.ack(); // alert-only — ack every message, never retry/requeue
   }
@@ -305,17 +302,13 @@ async function sweepFailedActionJobs(env: CloudflareEnv): Promise<void> {
   const alert = buildFailedActionAlert(inputs);
   console.error(JSON.stringify(alert.log));
 
-  // Sentry is best-effort: an init/outage must not block the email or the mark.
-  try {
-    Sentry.captureMessage(alert.sentry.message, {
-      level: alert.sentry.level,
-      extra: alert.sentry.extra,
-    });
-  } catch (sentryErr) {
-    console.error(
-      JSON.stringify({ event: 'failed_action_sentry_failed', error: String(sentryErr) }),
-    );
-  }
+  // M-16: worker-context Sentry via a direct envelope POST (fail-soft; must not
+  // block the email or the mark).
+  await captureWorkerAlert(env, {
+    message: alert.sentry.message,
+    level: alert.sentry.level as WorkerAlertLevel,
+    extra: alert.sentry.extra,
+  });
 
   // Email THROWS on failure (missing config or Resend error) — we only mark
   // alerted_at after a successful send, so a failure retries next tick.
