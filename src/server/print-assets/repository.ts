@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import type { PrintAssetCoverage, PrintAssetReadiness, PrintAssetVariantCoverage, ResolvedPrintAsset } from './types';
 
@@ -136,9 +137,13 @@ export type FulfilmentAssetRecord = {
  * see a 404.
  */
 export async function getAssetForFulfilment(
+  supabase: SupabaseClient,
   assetId: string,
 ): Promise<FulfilmentAssetRecord | null> {
-  const supabase = getSupabaseAdmin();
+  // C-2: the Supabase client is INJECTED (not built via getSupabaseAdmin) because
+  // this function is reachable from the queue consumer, which runs outside the
+  // request ALS. Callers on the fetch path pass getSupabaseAdmin(); the queue path
+  // passes supabaseFromEnv(env). Do not reintroduce getSupabaseAdmin() here.
   const { data, error } = await supabase
     .from('print_fulfilment_assets')
     .select('id, r2_key, sha256, revision, status')

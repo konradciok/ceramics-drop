@@ -64,8 +64,29 @@ export default {
       await processJob(msg.body, env, ctx)
         .then(() => msg.ack())
         .catch((err) => {
-          if (decideMessageDisposition(err) === 'ack') msg.ack();
-          else msg.retry();
+          const disposition = decideMessageDisposition(err);
+          // L-21: log every queue error before ack/retry — otherwise a terminal
+          // ack drops the message with no trace, and retries burn silently.
+          // Redacted: log a stable error class + code only, never the raw message
+          // (external-service errors can echo customer/request data). Full
+          // per-item detail is persisted to fulfilment_jobs.last_error by
+          // processJob; this handler log is a coarse retry/ack signal.
+          const e = err as { name?: string; code?: string | number; status?: string | number };
+          console.error(
+            JSON.stringify({
+              event: 'fulfilment_queue_error',
+              orderId: msg.body?.orderId,
+              attempt: msg.attempts,
+              disposition,
+              errorName: err instanceof Error ? err.name : typeof err,
+              ...(e?.code !== undefined ? { errorCode: e.code } : {}),
+              ...(e?.status !== undefined ? { errorStatus: e.status } : {}),
+            }),
+          );
+          if (disposition === 'ack') msg.ack();
+          // M-23: exponential backoff (60s, 120s, 240s … capped at 1h) so a brief
+          // vendor blip doesn't burn all retries into the DLQ in seconds.
+          else msg.retry({ delaySeconds: Math.min(2 ** msg.attempts * 30, 3600) });
         });
     }
   },

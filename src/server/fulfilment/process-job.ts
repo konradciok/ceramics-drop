@@ -1,4 +1,5 @@
-import { getSupabaseAdmin } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabaseFromEnv } from '@/lib/supabase';
 import { signPrintAssetUrl } from '@/lib/print-assets';
 import { getWorkerOrigin } from '@/lib/site.server';
 import { getAssetForFulfilment } from '@/server/print-assets/repository';
@@ -18,6 +19,7 @@ function shaPrefix(sha256: string): string {
 async function resolveSignedAssetUrl(
   item: PrintItemRow,
   env: CloudflareEnv,
+  supabase: SupabaseClient,
 ): Promise<AssetResolveResult> {
   const { variant } = item;
   if (!variant.assetId) {
@@ -33,7 +35,7 @@ async function resolveSignedAssetUrl(
 
   let record;
   try {
-    record = await getAssetForFulfilment(variant.assetId);
+    record = await getAssetForFulfilment(supabase, variant.assetId);
   } catch (e) {
     return { ok: false, kind: 'retryable', reason: String(e) };
   }
@@ -96,7 +98,10 @@ export async function processJob(
   _ctx: ExecutionContext,
 ): Promise<void> {
   const { orderId, jobId } = msg;
-  const supabase = getSupabaseAdmin();
+  // C-2: the queue consumer runs outside the request AsyncLocalStorage, so
+  // getSupabaseAdmin() (via getCloudflareContext()) would throw here. Build the
+  // service-role client from the explicit env, like the cron/scheduled path.
+  const supabase = supabaseFromEnv(env);
   const now = () => new Date().toISOString();
 
   // Throws → queue retry; used for every write whose loss would strand the job.
@@ -160,7 +165,7 @@ export async function processJob(
   const assetUrls: Record<string, string> = {};
   const assetMeta: string[] = [];
   for (const item of items) {
-    const resolved = await resolveSignedAssetUrl(item, env);
+    const resolved = await resolveSignedAssetUrl(item, env, supabase);
     if (!resolved.ok) {
       const status = resolved.kind === 'retryable' ? 'failed_retryable' : 'failed_action_required';
       await failJob(status, resolved.reason, (job.attempts ?? 0) + 1);
