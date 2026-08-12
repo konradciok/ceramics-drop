@@ -6,7 +6,7 @@
 
 **Goal:** Close the narrow-but-real failure windows inside the webhook route: the one unchecked money-path UPDATE, the private-sale double-payment 5xx loop, two idempotency-ledger drop windows, the un-CAS'd lease release, missing dispute/invoice/post-processing alerts, and unprotected email retries.
 
-**Architecture:** All changes live in `src/app/api/stripe/webhook/route.ts`, `src/lib/webhook.ts`, and `src/lib/email.ts`, following the file's own established patterns (destructure-and-throw, CAS predicates). No new abstractions; each fix is a few lines plus tests.
+**Architecture:** Most changes live in `src/app/api/stripe/webhook/route.ts`, `src/lib/webhook.ts`, and `src/lib/email.ts`, following the file's own established patterns (destructure-and-throw, CAS predicates). **Task 2's `failed`-state contract additionally touches `src/lib/account/status.ts`** (the `customerOrderStatus` fix) and adds regression coverage across the `failed`-status consumers (account list/detail, admin fulfilment, print worker, conversions) — so this is not strictly a three-file change. No new abstractions; each fix is a few lines plus tests.
 
 **Do not change the email-send concurrency model.** `sendEmailOnceWithClaim` is intentionally **awaited inline** in the webhook handler so the "sent" claim is recorded only *after* the send completes — if the send were moved into `ctx.waitUntil`, the webhook could return `200` with the claim already written and Stripe would not redeliver after an isolate termination, silently losing the email. The M-27 fix (Task 6) adds a Resend `Idempotency-Key` for retry safety; it does **not** move the send off the inline path. `ctx.waitUntil` remains reserved for the conversions dispatch, not for claim-based emails.
 
@@ -59,7 +59,8 @@ Every mutation on the paid path either succeeds, throws (→ Stripe retry), or p
 - `src/app/api/stripe/webhook/route.ts`
 - `src/lib/webhook.ts` (dispute-created branch + deps)
 - `src/lib/email.ts` (+ its direct callers for the idempotency key parameter)
-- `src/app/api/stripe/webhook/route.test.ts`, `src/lib/webhook.test.ts`, email tests
+- `src/lib/account/status.ts` (Task 2 — `customerOrderStatus` fix for a `failed` order)
+- `src/app/api/stripe/webhook/route.test.ts`, `src/lib/webhook.test.ts`, email tests, and consumer regression tests (account/fulfilment/worker/conversions `failed`-state)
 
 ## Out of scope
 
@@ -80,13 +81,14 @@ Order: each fix = failing test → minimal change → green → commit. All test
 
 ### Task 2 — M-5: catch the private-sale unique violation
 
-**State machine (decided — implement exactly this, do not leave it open):** on a `23505` from the second order's `pending→paid` CAS, the terminal state is **`failed`**, never left `pending`. Rationale: a `pending` order is eligible for the abandoned-checkout cron (cancel PI + expire) and other pending flows, and non-`paid` orders are excluded from fulfilment — a captured-but-refunded double-payment left `pending` would be acted on incorrectly by those flows. Ordering and idempotency:
-  1. **Refund first**, then transition state — so a crash between the two re-runs safely: `refunds.create({ payment_intent: pi }, { idempotencyKey: <the file's refund key, e.g. `refund_${pi}`> })`. The idempotency key makes a retry after a crash a no-op at Stripe (already-refunded attempts return the same refund, not a double refund).
-  2. **CAS `pending→failed`** (`update orders set status='failed' … where payment_intent_id=$pi and status='pending'`). A **zero-row** result means another delivery already transitioned it — treat as success (do **not** 5xx-loop). A CAS **error** (not zero-row) still propagates (throw → Stripe retry).
-  3. Fire the studio email + `Sentry.captureMessage('private_sale_double_paid', { level: 'error' })`.
-  4. Return **200** only after the refund and the state transition have both succeeded (or the CAS was a benign zero-row). Any error **other than** `23505` on the original CAS keeps the existing unconditional throw.
+**State machine (decided — implement exactly this, do not leave it open):** on a `23505` from the second order's `pending→paid` CAS, the terminal state is **`failed`**, never left `pending`. Rationale: a `pending` order is eligible for the abandoned-checkout cron (cancel PI + expire) and other pending flows, and non-`paid` orders are excluded from fulfilment — a captured-but-refunded double-payment left `pending` would be acted on incorrectly by those flows. Ordering, crash-safety, and idempotency:
+  1. **Mark the order refund-pending *before* calling Stripe** — set a durable marker (a new nullable `orders.refund_pending_at timestamptz`, tiny additive migration) CAS'd `where payment_intent_id=$pi and status='pending'`. This closes the crash window: if the isolate dies *after* `refunds.create` but *before* the `pending→failed` CAS, the order is still `pending` — the marker is what keeps the abandoned-checkout cron and other pending consumers from acting on a payment that is being refunded. **Pending consumers must exclude `refund_pending_at IS NOT NULL`** (extend the cron/expiry query — coordinate with Plan 03's cron sweep). Stripe's retry re-runs the handler and the refund idempotency key makes the second `refunds.create` a no-op, then the CAS completes.
+  2. **Refund:** `refunds.create({ payment_intent: pi }, { idempotencyKey: <the file's refund key, e.g. `refund_${pi}`> })` — the key makes a crash-retry a no-op at Stripe (already-refunded attempts return the same refund, not a double refund).
+  3. **CAS `pending→failed`** (`update orders set status='failed', refund_pending_at=null … where payment_intent_id=$pi and status='pending'`). On **zero rows**, do **not** blindly 200 — perform a **follow-up lookup** of the order and only ack 200 when it is in a documented safe state (already `failed`, or already `refunded`). If the order is **missing** or in an **unexpected** status, throw (→ Stripe retry) rather than acknowledging — a blanket zero-row=success masks a genuinely lost order. A CAS **error** (not zero-row) still propagates.
+  4. Fire the studio email + `Sentry.captureMessage('private_sale_double_paid', { level: 'error' })`.
+  5. Return **200** only after the refund and the state transition have both succeeded (or the follow-up lookup confirmed a safe terminal state). Any error **other than** `23505` on the original CAS keeps the existing unconditional throw.
 
-- [ ] Failing tests: (a) second `payment_intent.succeeded` for a different order on the same private sale → CAS rejects `{ code: '23505' }` → `refunds.create` called once with the file's refund idempotency key, order ends `failed`, response 200, studio alert fired; (b) the same event redelivered after the order is already `failed` → CAS returns zero rows → still 200, refund not re-created (idempotency key), no throw; (c) a non-`23505` error on the CAS → still throws (5xx).
+- [ ] Failing tests: (a) second `payment_intent.succeeded` for a different order on the same private sale → `refund_pending_at` set before `refunds.create`, refund called once with the file's key, order ends `failed` with `refund_pending_at` cleared, response 200, studio alert fired; (b) redelivery after the order is already `failed` → CAS zero rows → follow-up lookup finds `failed` → 200, refund not re-created (idempotency key), no throw; (c) **crash after `refunds.create`, before the CAS** → order still `pending` **with `refund_pending_at` set** → the abandoned-checkout cron **skips** it (regression test on the pending-consumer query); (d) CAS zero rows + follow-up finds the order **missing or in an unexpected status** → **throw** (5xx), not a silent 200; (e) a non-`23505` error on the CAS → still throws.
 - [ ] Fix: widen the error narrowing at `:208-218` to include `code?: string`; implement the state machine above. Confirm the exact refund idempotency-key constant by reading the under-fulfilment path at `:297-319` and reuse it verbatim.
 - [ ] **`failed`-consumer audit (a required Task 2 gate, not an open question).** Verify every consumer of `orders.status` handles a `failed` row that represents a *captured-then-refunded* payment correctly:
   - Account list/detail (`src/lib/account/orders.ts`) already filter to `['paid','refunded']` — a `failed` order is correctly excluded (confirm).
@@ -118,19 +120,20 @@ Order: each fix = failing test → minimal change → green → commit. All test
 ### Task 5 — L-5 + L-7: stop the silent catches
 
 - [ ] `ensureInvoiced` catch (`:575-582`): keep the swallow (Stripe must still get 200 — invoicing is best-effort by design) but add the studio-alert email alongside the existing Sentry capture, so a failed invoice is operator-visible the day it happens. Test: invoice failure → alert dep called, response still 200.
-- [ ] `markPaid` post-processing catch(es) (L-7): upgrade `console.error`-only catches to also `Sentry.captureException` (locate by grepping the function for bare `console.error` catches). Test where the fixture allows it cheaply.
+- [ ] `markPaid` post-processing catch(es) (L-7): **first enumerate every `console.error`-only catch** in the post-processing path (grep the function for bare `console.error` catches and list them explicitly in the PR). Upgrade **each** to also `Sentry.captureException`, and add **one regression test per enumerated catch** (not a vague "≥2") so the gate cannot pass with one silent catch left un-upgraded. If a catch is deliberately left console-only, list it as an explicit exception with a reason.
 - [ ] Green + commit: `fix(webhook): surface invoice/post-processing failures to Sentry + studio (L-5, L-7)`
 
 ### Task 6 — M-27: Resend idempotency keys
 
-- [ ] Add an optional `idempotencyKey?: string` to `sendResendTemplate` / `sendResendHtml` params in `src/lib/email.ts`; when present, send header `'Idempotency-Key': idempotencyKey` (Resend dedupes for 24 h).
-- [ ] Thread keys from the claim-based senders: use the claim identity, e.g. `order-confirmation/<orderId>`, `studio-new-order/<orderId>` — the same key on a retry after timeout makes the retry safe.
-- [ ] Failing test first: the fetch mock asserts the header is present with the expected key for the order-confirmation path; absent when no key passed.
+- [ ] Add an optional `idempotencyKey?: string` to `sendResendTemplate` **and** `sendResendHtml` params in `src/lib/email.ts`; when present, send header `'Idempotency-Key': idempotencyKey` (Resend dedupes for 24 h).
+- [ ] Thread keys from **every** claim-based sender: `order-confirmation/<orderId>` (customer, `sendResendTemplate`) **and** `studio-new-order/<orderId>` (studio, `sendResendHtml`) — the same key on a retry after timeout makes the retry safe.
+- [ ] Failing tests first — **cover both helpers and both senders**: assert `sendResendTemplate` sends `Idempotency-Key: order-confirmation/<orderId>` and `sendResendHtml` sends `Idempotency-Key: studio-new-order/<orderId>` when a claim is present, and that each omits the header when no key is passed.
+- [ ] **Residual duplicate-send window (document + accept — MCP-flagged):** Resend's `Idempotency-Key` dedupes for only **24 h**, while Stripe retries a released event for up to **3 days**. Narrow but real: if Resend *accepts* the email but the response times out, all 3 local send attempts fail, the `*_sent_at` claim is released, and a Stripe retry **>24 h later** re-sends a duplicate (`resend_email_id` doesn't prevent it — it's recorded only on a successful response). Fully closing this needs durable send-state reconciliation for ambiguous/timed-out requests (query Resend by idempotency key before re-sending), which is disproportionate to a sub-1%-of-a-rare-case window. **Decision: accept the residual and document it** here + in the runbook; the belt-and-braces claim + 24 h key already covers the common retry-within-a-day case. Revisit only if duplicate confirmations are observed.
 - [ ] Green + commit: `fix(email): Idempotency-Key on Resend sends so claim-retry can't double-send (M-27)`
 
 ## Database / migration work
 
-None. (L-4's claim-scoping uses the existing `processing_started_at` column.)
+One tiny additive migration for Task 2's crash-window fix: `alter table orders add column if not exists refund_pending_at timestamptz;` (nullable, no default, no backfill). Set before `refunds.create`, cleared on the `pending→failed` CAS; pending consumers (abandoned-checkout cron, expiry) must exclude `refund_pending_at IS NOT NULL`. Backward-compatible — old code ignores the column (the marker is only *written* by the new code; the risk it guards only exists once the new refund-first path is live, so there's no old-code window that needs it). Auto-applies on merge; rollback = drop the column (reverts to the crash-window residual). L-4's claim-scoping uses the existing `processing_started_at` column (no migration).
 
 ## External-system changes
 
@@ -141,19 +144,19 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 - **Modified:** route tests asserting dedupe-200 during an active lease (now 409); any snapshot of the deps object shape.
 - **New (enumerated — the release gate requires every one, do not collapse to a round number):**
   - Task 1 (H-1): reserved→sold UPDATE error → throw/5xx, no refund. *(1)*
-  - Task 2 (M-5): `23505` → refund-once + `failed` + 200 + alert; redelivery over already-`failed` → 200, no re-refund; non-`23505` CAS error → throw. *(3)*
+  - Task 2 (M-5): refund-pending marker set before `refunds.create`; `23505` → refund-once + `failed` (marker cleared) + 200 + alert; redelivery over already-`failed` → follow-up lookup → 200, no re-refund; **crash after refund, before CAS → order stays `pending` with marker → abandoned cron skips it**; zero-row CAS + missing/unexpected order → throw; non-`23505` CAS error → throw. *(5)*
   - Task 2 (failed-consumer contract): captured-then-refunded `failed` order → no fulfilment / no pending-cron action / absent from account lists / `customerOrderStatus` not a normal delivery state. *(≥3)*
   - Task 3 (M-21/M-22/L-4): seen-SELECT error → throw; active-lease → 409; stale-claim release writes zero rows. *(3)*
   - Task 4 (L-6): `charge.dispute.created` → deadline-bearing alert. *(1)*
-  - Task 5 (L-5/L-7): invoice failure → alert + still 200; post-processing failure → Sentry. *(≥2)*
-  - Task 6 (M-27): claim-based send carries `Idempotency-Key`; absent when none passed. *(1)*
+  - Task 5 (L-5/L-7): invoice failure → alert + still 200; **one regression per enumerated `console.error`-only catch** upgraded to Sentry (count = the number of catches found, listed in the PR — not a round number). *(1 + N)*
+  - Task 6 (M-27): `sendResendTemplate` sends `Idempotency-Key: order-confirmation/<orderId>`; `sendResendHtml` sends `studio-new-order/<orderId>`; each omits the header when no key passed. *(≥3)*
   - Regression: full `payment_intent.succeeded` happy path → 200 with all claims stamped. *(1)*
-  Total ≥ 15 task-level cases (not "six").
+  Total ≥ 17 task-level cases + one per L-7 catch (not "six"); the gate is the enumerated list, not the number.
 - **Failure modes simulated:** asymmetric piece_state write failure; `23505` on the order CAS; ledger SELECT failure; concurrent delivery during a lease; stale lease release; Resend timeout + retry; a `failed`-status order reaching each consumer.
 
 ## Verification
 
-- **Local/unit:** `npx vitest run src/app/api/stripe/webhook/route.test.ts src/lib/webhook.test.ts` — paste the run; confirm **all ≥15 enumerated task-level cases** above are present and green (the gate is the enumerated list, not a total count). `npm run lint && npm run typecheck && npm test`.
+- **Local/unit:** `npx vitest run src/app/api/stripe/webhook/route.test.ts src/lib/webhook.test.ts src/lib/email.test.ts` — paste the run; confirm **every enumerated task-level case** above is present and green (the gate is the enumerated list incl. one test per L-7 catch, not a total count). `npm run lint && npm run typecheck && npm test`.
 - **Preview:** drive one test-mode checkout through the preview webhook (can piggyback Plan 05's rehearsal) — confirm 200 + all rows/claims correct with the new code.
 - **Live read-only:** after deploy, watch the Stripe delivery log for the first real deliveries — all 2xx (or expected 409-then-2xx pairs under concurrent redelivery).
 - **Live mutation:** none.
@@ -167,7 +170,7 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 
 ## Acceptance criteria
 
-- [ ] All ≥15 enumerated task-level tests (see Tests) present and green; full webhook suite green (pasted).
+- [ ] Every enumerated task-level test (see Tests — incl. one per L-7 catch and both email helpers/senders) present and green; full webhook suite green (pasted).
 - [ ] A simulated asymmetric failure no longer auto-refunds; a simulated double-paid private sale refunds exactly once and returns 200.
 - [ ] Active-lease redelivery returns 409; `done` rows still dedupe-200.
 - [ ] `charge.dispute.created` produces a deadline-bearing alert.
