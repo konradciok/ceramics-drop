@@ -25,7 +25,15 @@ const { mockFrom, mockPostOrder, mockGetAssetForFulfilment } = vi.hoisted(() => 
   mockGetAssetForFulfilment: vi.fn(),
 }));
 
-vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
+// C-2 guard: the queue runs OUTSIDE the request ALS, so getSupabaseAdmin() (which
+// resolves getCloudflareContext()) throws there. Mock it to throw and provide the
+// env-based client instead — processJob must build its client via supabaseFromEnv(env).
+vi.mock('@/lib/supabase', () => ({
+  supabaseFromEnv: () => ({ from: mockFrom }),
+  getSupabaseAdmin: () => {
+    throw new Error('getCloudflareContext outside ALS');
+  },
+}));
 vi.mock('../prodigi/client', async (importOriginal) => {
   // Spread the real module so ProdigiError is the real class — any change to its
   // constructor signature surfaces here instead of silently passing a stand-in.

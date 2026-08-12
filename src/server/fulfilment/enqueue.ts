@@ -48,6 +48,9 @@ export async function enqueueProdigi(
     await env.FULFILMENT_QUEUE.send(msg); // throws → Stripe retry
   } else {
     // Local dev without wrangler: run inline, never throw from webhook handler.
+    // Structured warn so a *production* binding regression (queue unexpectedly
+    // unset) is at least visible in Workers Logs instead of silently inlining.
+    console.warn(JSON.stringify({ event: 'fulfilment_inline_fallback', orderId, jobId }));
     const { processJob } = await import('./process-job');
     ctx.waitUntil(
       processJob(msg, env, ctx).catch((e) =>

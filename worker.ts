@@ -64,8 +64,22 @@ export default {
       await processJob(msg.body, env, ctx)
         .then(() => msg.ack())
         .catch((err) => {
-          if (decideMessageDisposition(err) === 'ack') msg.ack();
-          else msg.retry();
+          const disposition = decideMessageDisposition(err);
+          // L-21: log every queue error before ack/retry — otherwise a terminal
+          // ack drops the message with no trace, and retries burn silently.
+          console.error(
+            JSON.stringify({
+              event: 'fulfilment_queue_error',
+              orderId: msg.body?.orderId,
+              attempt: msg.attempts,
+              disposition,
+              error: String(err),
+            }),
+          );
+          if (disposition === 'ack') msg.ack();
+          // M-23: exponential backoff (60s, 120s, 240s … capped at 1h) so a brief
+          // vendor blip doesn't burn all retries into the DLQ in seconds.
+          else msg.retry({ delaySeconds: Math.min(2 ** msg.attempts * 30, 3600) });
         });
     }
   },

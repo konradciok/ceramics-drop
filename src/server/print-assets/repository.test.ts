@@ -367,6 +367,9 @@ describe('getPrintAssetCoverage', () => {
 // ── getAssetForFulfilment ─────────────────────────────────────────────────────
 
 describe('getAssetForFulfilment', () => {
+  // C-2: the client is injected (queue path passes supabaseFromEnv(env)); here we
+  // pass the same mocked `{ from: mockFrom }` the other helpers build internally.
+  const SUPA = { from: mockFrom } as never;
   const BASE = {
     id: 'asset-1',
     r2_key: 'prints/fap01/rev1/4800x7200-abc.jpg',
@@ -378,7 +381,7 @@ describe('getAssetForFulfilment', () => {
   it('returns the record for a ready asset', async () => {
     setupSingleAsset(BASE);
     const { getAssetForFulfilment } = await import('./repository');
-    expect(await getAssetForFulfilment('asset-1')).toEqual({
+    expect(await getAssetForFulfilment(SUPA, 'asset-1')).toEqual({
       id: 'asset-1',
       r2Key: BASE.r2_key,
       sha256: BASE.sha256,
@@ -390,32 +393,32 @@ describe('getAssetForFulfilment', () => {
   it('returns the record for a retired asset (historical orders still valid)', async () => {
     setupSingleAsset({ ...BASE, status: 'retired' });
     const { getAssetForFulfilment } = await import('./repository');
-    const result = await getAssetForFulfilment('asset-1');
+    const result = await getAssetForFulfilment(SUPA, 'asset-1');
     expect(result?.status).toBe('retired');
   });
 
   it('returns null for a staged asset (no R2 object yet, route would 404)', async () => {
     setupSingleAsset({ ...BASE, status: 'staged' });
     const { getAssetForFulfilment } = await import('./repository');
-    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+    expect(await getAssetForFulfilment(SUPA, 'asset-1')).toBeNull();
   });
 
   it('returns null for a revoked asset', async () => {
     setupSingleAsset({ ...BASE, status: 'revoked' });
     const { getAssetForFulfilment } = await import('./repository');
-    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+    expect(await getAssetForFulfilment(SUPA, 'asset-1')).toBeNull();
   });
 
   it('returns null when the row is absent', async () => {
     setupSingleAsset(null);
     const { getAssetForFulfilment } = await import('./repository');
-    expect(await getAssetForFulfilment('asset-1')).toBeNull();
+    expect(await getAssetForFulfilment(SUPA, 'asset-1')).toBeNull();
   });
 
   it('throws on a DB error (caller marks job failed_retryable)', async () => {
     setupSingleAssetError();
     const { getAssetForFulfilment } = await import('./repository');
-    await expect(getAssetForFulfilment('asset-1')).rejects.toThrow('connection reset');
+    await expect(getAssetForFulfilment(SUPA, 'asset-1')).rejects.toThrow('connection reset');
   });
 });
 
