@@ -63,19 +63,19 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 - [ ] While it runs: `wrangler tail` on the preview worker. Capture: webhook receipt, ledger claim, `enqueueProdigi` (must go through the **queue branch**, not inline — assert the absence of `fulfilment_inline_fallback` warns), queue delivery, `processJob` completion.
 - [ ] Verify rows (SQL, read-only): `webhook_events` has the `payment_intent.succeeded` row `status='done'`; `fulfilment_jobs` row reached a submitted/terminal status (not stranded `queued`); `prodigi_orders` row exists with a sandbox `prodigi_order_id`.
 - [ ] Verify via the debug endpoint: `GET /api/debug/fulfilment-status?payment_intent=<pi>` returns the advanced status.
-- [ ] Verify in Prodigi sandbox (CLI `npm run prodigi -- order get <id>`): order exists; record its `outcome` and initial stage. Then **cancel the sandbox order** via the CLI (cleanup).
+- [ ] Verify in Prodigi sandbox (CLI `npm run prodigi -- order get <id>`): order exists; record its `outcome` and initial stage. **Do NOT cancel the sandbox order here.** Task 4's refund leg must exercise the *refund-triggered* cancel path, and `cancelPrintFulfilment` early-returns when `prodigi_status_stage === 'Cancelled'` — pre-cancelling now would let Task 4 pass vacuously. Leave this order active; cancellation is deferred to Task 5 cleanup (or drive Task 4 against a **second, dedicated** print order, created fresh — see Task 4).
 - [ ] Record for L-22/§6.11: the actual callback stages received (does `InProduction` ever appear?), the `recipientCost` currency behaviour, and whether any 409-idempotency case arose. File discrepancies as findings for Plan 11 — do not fix here.
 
 ### Task 3 — failure path: alerts are loud
 
-- [ ] Force one failing job in preview (cheapest lever: a job whose Prodigi call fails — e.g. temporarily invalid sandbox key in preview env, or an order referencing a revoked asset). Observe: retries with backoff (Plan 02) visible in tail, then DLQ delivery.
+- [ ] Force one failing job in preview using a failure the disposition helper classifies as **retryable** — this is the point of the drill (proving backoff → DLQ). An invalid sandbox key can surface as a **terminal** `ProdigiError` (`retryable: false`), which `decideMessageDisposition` **acks** (`src/server/fulfilment/queue-disposition.test.ts` documents `retryable: false → ack`) — that would prove nothing and drop the job with no DLQ hop. Use a known-retryable lever instead (e.g. a Prodigi endpoint 5xx / network error, or a timeout via Plan 11's `AbortSignal`), **or** assert the injected error's disposition is `'retry'` before relying on it. Observe: retries with backoff (Plan 02) visible in tail, then DLQ delivery.
 - [ ] Confirm the DLQ handler fires: studio email received AND Sentry event visible (Plan 03's worker-context init — this is its live proof).
 - [ ] Confirm the stalled-job sweep (Plan 02 Task 3): a job left in a non-terminal state > 2 h alerts. (Time-box: temporarily lower the threshold via a preview-only env/edit is NOT allowed — instead backdate the test row's `updated_at` via SQL on the preview target, which keeps code untouched.)
 - [ ] Restore the sandbox key; re-drive or cancel the failed job; clean up rows.
 
 ### Task 4 — refund leg (joint with Plan 01, test mode)
 
-- [ ] In Stripe **test mode** on the preview endpoint (its own test webhook endpoint with `charge.refunded` + `refund.failed` subscribed): refund the Task 2 test payment fully; confirm the order flips `refunded`, pieces (n/a for prints) and print-fulfilment cancel path runs (`cancelPrintFulfilment` → sandbox cancel attempt recorded).
+- [ ] In Stripe **test mode** on the preview endpoint (its own test webhook endpoint with `charge.refunded` + `refund.failed` subscribed): refund the payment of a print order whose sandbox Prodigi order is **still active** (the Task 2 order kept active per Task 2, or a fresh second order created here). Confirm the order flips `refunded` and the **refund-triggered** print-fulfilment cancel path actually runs — assert the sandbox order was `Cancelled` *by this refund* (record its stage before = active, after = Cancelled), proving `cancelPrintFulfilment` did the work rather than early-returning on an already-cancelled order.
 - [ ] Record as Plan 01's E2E evidence.
 
 ### Task 5 — go/no-go + cleanup

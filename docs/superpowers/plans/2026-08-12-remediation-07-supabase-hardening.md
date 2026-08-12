@@ -134,10 +134,11 @@ alter table prodigi_orders validate constraint prodigi_status_stage_check;
 ### Task 3 — fail-closed catalog read (M-4 app side)
 
 - [ ] Failing test first (`src/lib/catalog/mappers` tests): a row with `price_pln: null` or `0` for a ceramic is **excluded** from the mapped output and reported (`console.error` + `Sentry.captureException` via the existing error-reporting pattern in that layer) — never rendered at price 0. Excluding (fail-closed per-product) beats throwing (which would take down the whole collection page for one bad row) — record this decision in a comment.
-- [ ] Implement: in `mapCeramicProducts`, replace `price: row.price_pln ?? 0` with a guard that skips-and-reports invalid rows; add a Zod row schema (extend `schemas.ts` or a sibling `read-schemas.ts`) with `price_pln: z.number().int().positive()` for ceramic rows, applied in `repository.ts:99` (`readCeramicProducts`) replacing the bare cast — validate once at the read boundary, `safeParse` per row, skip+report failures.
+- [ ] Implement at a **single centralized boundary that every production catalog reader passes through** — not just `readCeramicProducts`. The evidence lists raw `as ProductSeedRow[]` casts at `repository.ts:34, 99, 134, 172, 224`; a fix scoped to `:99` alone leaves the others able to feed a NULL/0-priced ceramic into checkout or rendering. Enumerate every reader (`listCatalogRows` :34, `readCeramicProducts` :99, `readPrintDesigns` :134, `readProductRow` :172, and the helper at :224) and route each through one shared `parseProductRow(row)` guard: a Zod row schema (extend `schemas.ts` or a sibling `read-schemas.ts`) with `price_pln: z.number().int().positive()` **for ceramic rows** (print rows keep nullable price — `type='print'` branch), `safeParse` per row, skip-and-report (`console.error` + `Sentry.captureException`) on failure. Replace the bare casts at all five sites with this guard so validation cannot be bypassed by a reader the fix forgot. In `mapCeramicProducts`, the `price: row.price_pln ?? 0` becomes unreachable for invalid rows (they never reach the mapper) — remove the `?? 0` fallback so a future bypass fails loudly rather than silently pricing at 0.
 - [ ] Tighten the admin write schema `schemas.ts:40` from `.nonnegative()` to `.positive()` (0 was never a legitimate ceramic price).
+- [ ] Add a test per reader path (five) proving a NULL/0-priced ceramic row is skipped+reported at each boundary, and a print row with NULL price passes untouched.
 - [ ] `npx vitest run src/lib/catalog/` + `npm run typecheck` — green.
-- [ ] Commit sequence: migration+pgTAP (`fix(db): …`), then mapper (`fix(catalog): fail closed on missing/zero ceramic price (M-4)`).
+- [ ] Commit sequence: migration+pgTAP (`fix(db): …`), then mapper (`fix(catalog): fail closed on missing/zero ceramic price at every read boundary (M-4)`).
 
 ### Task 4 — M-3 origin note
 
@@ -166,8 +167,8 @@ The migration above is the core of the plan. Key properties:
 
 - **Local:** `supabase db start && supabase db reset && supabase test db` — full green run pasted. `npm test` + `npm run typecheck` green.
 - **CI:** the `db.yml` workflow triggers (migration touches `supabase/**`) and passes.
-- **Live read-only (post-merge):** `select has_function_privilege('anon','reserve_pieces(text[],uuid,integer)','execute');` → `f`; `select count(*) from pg_policies where tablename='piece_state';` → `0`; advisors list clean of 0006; one checkout on the live site (real user flow or test-mode) confirms reservation still works (service-role path unaffected).
-- **Live mutation:** none beyond the auto-applied migration.
+- **Live read-only (post-merge):** `select has_function_privilege('anon','reserve_pieces(text[],uuid,integer)','execute');` → `f`; `select count(*) from pg_policies where tablename='piece_state';` → `0`; advisors list clean of 0006. (These queries are genuinely read-only.)
+- **Live mutation (separate, gated):** confirming the checkout reservation path still works is a **state-changing** check — it runs `reserve_pieces`, creates an order + PaymentIntent, and reserves pieces. It is **not** read-only. Run it in **preview / Stripe test-mode** (piggyback Plan 05's rehearsal, which already exercises reserve→PI), or, only with explicit operator approval and immediate cleanup (cancel PI + release reservation), as a one-off live test-mode checkout. The auto-applied migration itself is the other production mutation (the merge is its gate).
 
 ## Rollout / recovery
 

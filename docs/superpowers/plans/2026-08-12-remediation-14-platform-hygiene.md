@@ -60,8 +60,9 @@ Every `/api`/`/admin` response carries the baseline security-header set; feeds s
 ### Task 2 — L-32: CDN-cache the feeds
 
 - [ ] Change both feed routes' response headers to `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400` (keep `force-dynamic` — the caching is CDN-side, deliberately NOT the inert app-layer cache; comment this rationale referencing M-24). One-hour staleness on merchant feeds is safe: Google/Meta fetch on multi-hour cadences; sold-out races are already tolerated by the feeds' design (state the assumption in the comment).
-- [ ] Test: route test asserts the header; preview: two `curl -sI` calls, second shows a CDN cache HIT (`cf-cache-status`) — note: Workers responses need the zone's cache to be eligible; if `cf-cache-status` shows `DYNAMIC`, add the route to a cache rule or accept header-only readiness and record the residual (do not build a Cache API workaround in this plan).
-- [ ] Commit: `perf(feeds): CDN cache headers on merchant feeds (L-32)`
+- [ ] Test: route test asserts the header; preview: two `curl -sI` calls and read `cf-cache-status`. **`s-maxage` is only a *hint* — if `cf-cache-status` is `DYNAMIC`, the feed still rebuilds on every request and the performance goal is NOT met.** Header-only readiness does **not** close L-32.
+- [ ] **Acceptance for L-32:** a confirmed cache **HIT** on the second request (the feed served from CDN, not rebuilt). If the zone won't cache the Workers response without a cache rule, L-32 stays **OPEN** with a **gated zone-cache-rule follow-up** (dashboard change, operator) — do not mark L-32 done on the header change alone, and do not build a Cache API workaround in this plan.
+- [ ] Commit: `perf(feeds): CDN cache headers on merchant feeds (L-32; HIT-gated)`
 
 ### Task 3 — M-24: resolve the cache layer (time-boxed spike → decide)
 
@@ -74,9 +75,25 @@ Every `/api`/`/admin` response carries the baseline security-header set; feeds s
 
 ### Task 4 — L-14: retention sweep
 
-- [ ] Add a cron sweep (pattern of Plans 02/11 sweeps): delete `webhook_events` rows with `status='done'` older than **90 days** (keep non-`done` rows regardless of age — they are evidence of failures), and `cms_audit_log`/`catalog_audit_log` rows older than **365 days**. Batch-limited (`limit 500` per run — the 15-min cadence drains any backlog gradually).
-- [ ] Unit tests: old `done` deleted; old `failed` kept; young kept; batch limit respected.
-- [ ] An index supporting the delete predicate: check if `webhook_events` has a usable `(status, processed_at)` or timestamp index; if not, add a small migration (`create index if not exists webhook_events_done_prune_idx on webhook_events(processed_at) where status='done';`) — backward-compatible, auto-applies safely.
+- [ ] Add a cron sweep (pattern of Plans 02/11 sweeps) with **two retention rules on `webhook_events`**, because the stated objective is "raw PII must not be held forever":
+  - **Row deletion:** delete `webhook_events` rows with `status='done'` older than **90 days**.
+  - **Raw-payload bounding (the PII fix):** for **non-`done` rows** (permanently-failed events kept as evidence), do **not** retain `raw_json` forever — after a bounded evidence window (e.g. **30 days**), `update … set raw_json = null` (or redact PII fields) while **keeping the row and its failure metadata** (`provider`, `provider_event_id`, `status`, timestamps). This closes the "a permanently-failed row retains customer PII indefinitely" gap that plain row-deletion misses.
+  - `cms_audit_log`/`catalog_audit_log` rows older than **365 days** are deleted (keyed on `created_at`).
+- [ ] **Use a key-selection CTE, not `DELETE … LIMIT`** — PostgreSQL does not support `DELETE … LIMIT` directly. Pattern for the batch-limited delete:
+
+  ```sql
+  WITH batch AS (
+    SELECT id FROM webhook_events
+    WHERE status = 'done' AND processed_at < now() - interval '90 days'
+    ORDER BY processed_at, id
+    LIMIT 500
+  )
+  DELETE FROM webhook_events AS e USING batch WHERE e.id = batch.id;
+  ```
+
+  Apply the analogous CTE per table with its own predicate (`webhook_events.processed_at`, `cms_audit_log.created_at`, `catalog_audit_log.created_at`). **State explicitly** that the 500-row limit is **per table per run** (not a shared budget), and that the 15-min cadence drains any backlog gradually.
+- [ ] Unit tests: old `done` row deleted; old **non-`done`** row **kept but `raw_json` nulled** after the 30-day window (failure metadata intact); a young failed row keeps its `raw_json`; young `done` kept; the CTE batch limit caps rows touched per table per run.
+- [ ] Indexes supporting the predicates: check `webhook_events` for a usable `(status, processed_at)`/timestamp index; if absent add `create index if not exists webhook_events_done_prune_idx on webhook_events(processed_at) where status='done';` plus, for the raw-payload sweep, an index aiding `status <> 'done' and processed_at < …` if the table grows — backward-compatible, `if not exists`, auto-applies safely.
 - [ ] Commit: `feat(worker): retention pruning for webhook_events and audit logs (L-14)`
 
 ## Database / migration work
@@ -91,7 +108,7 @@ Only the optional pruning index (Task 4) — additive, `if not exists`, no backw
 ## Tests
 
 - **New:** shared header-list module test; feed header assertion; retention sweep matrix; (adopt branch) a preview-level cache-hit check.
-- **Regressions caught:** headers dropped from API responses; feeds reverting to `no-store`; retention accidentally deleting failure evidence (the `done`-only predicate test).
+- **Regressions caught:** headers dropped from API responses; feeds reverting to `no-store`; retention accidentally **deleting** a failed row (must be kept as evidence — only its `raw_json` is nulled); retention retaining PII in a failed row's `raw_json` past the evidence window.
 
 ## Verification
 
@@ -107,9 +124,9 @@ Each task ships independently; revert independently. **Stop signals:** any webho
 ## Acceptance criteria
 
 - [ ] `/api/*` and `/admin*` responses carry the baseline header set (preview + live curl evidence).
-- [ ] Feeds serve with `s-maxage` and the cache-status observation is recorded.
+- [ ] Feeds serve with `s-maxage` **and** a confirmed CDN cache `HIT` on the second request; if the zone shows `DYNAMIC`, L-32 is left **OPEN** with a gated zone-cache-rule follow-up recorded (header-only does not close it).
 - [ ] The cache layer is in exactly one of the two resolved states, documented, with zero `set()` error noise in tail.
-- [ ] Retention sweep unit-green; predicate provably spares non-`done` rows.
+- [ ] Retention sweep unit-green: `done` rows deleted after 90 days via the key-selection CTE; non-`done` rows **kept as evidence but with `raw_json` nulled/redacted** after the 30-day window (failure metadata intact); the 500-row cap is per-table-per-run.
 
 ## Dependencies
 

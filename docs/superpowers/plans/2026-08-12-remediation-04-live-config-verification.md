@@ -57,10 +57,11 @@ Each step records: command/screen, output, chosen branch.
 ### Task 1 — H-4: root-cause the admin-editor Sentry error
 
 - [ ] In Sentry, open the "supabaseUrl is required." issue; read the newest event's **request host/URL** and `release`/environment tags.
-- [ ] Branch on the host:
-  - **Preview/build host (or no request context)** → benign build/route-collection noise. Outcome: mark H-4 resolved-as-benign in the log; optionally file a one-line backlog item to fail-soft the admin editor like `/konto` (no P1 work).
+- [ ] Branch on the host — but **"no request context" is not, by itself, benign**: a Sentry event without a request host can still originate from a production isolate. Require *corroborating* evidence before closing H-4 as benign, not the absence of a host alone.
+  - **Preview/build host** (an explicit non-prod host on the event) → benign build/route-collection noise. Outcome: mark H-4 resolved-as-benign in the log; optionally file a one-line backlog item to fail-soft the admin editor like `/konto` (no P1 work).
   - **`anna-ciok.studio`** → the prod `SUPABASE_URL` binding regressed for that deployment. Outcome: escalate immediately — check `wrangler secret list` / Workers Builds env for the missing binding; fixing it is a **gated live mutation** (operator approval) executed outside this plan.
-- [ ] Cross-check: is the error still occurring (any event in the last 7 days)? A stopped error + build-window clustering strongly supports the benign branch.
+  - **No request context / ambiguous** → do **not** default to benign. Only mark benign when the `release`/environment tag is a preview/build release **and** the event timing clusters with a build window **and** the error has stopped recurring; if any of those is missing or the release maps to a production deploy, record H-4 as **unresolved** and escalate to the `anna-ciok.studio` branch's checks. Otherwise leave it open for a follow-up with the operator.
+- [ ] Cross-check (feeds the branch above): is the error still occurring (any event in the last 7 days)? Read the `release`, environment, and deployment host, and the first/last-seen timestamps. A stopped error + build-window clustering + a preview/build release together support benign; a production release, ongoing events, or missing corroboration do not.
 
 ### Task 2 — M-6: Cloudflare Access policy + allowlist presence
 
@@ -79,8 +80,12 @@ Each step records: command/screen, output, chosen branch.
 
 ### Task 4 — L-25: R2 bucket posture
 
-- [ ] `wrangler r2 bucket info anna-ciok-print-assets` (read-only): confirm no public `r2.dev` access and no custom domain. Also confirm (dashboard) that the operator S3 API token is scoped to this bucket only.
-- [ ] Branch: public access found → escalate (the signed-URL model is bypassed; disabling public access is a gated mutation, urgent). Otherwise closed.
+- [ ] Collect **separate** read-only evidence for each exposure control — `wrangler r2 bucket info` alone does **not** prove `r2.dev` or custom-domain state:
+  - `wrangler r2 bucket dev-url get anna-ciok-print-assets` → confirm the managed `r2.dev` dev URL is **disabled**.
+  - `wrangler r2 bucket domain list anna-ciok-print-assets` → confirm **no** custom public domain is attached.
+  - `wrangler r2 bucket info anna-ciok-print-assets` → general posture (recorded, but not sufficient on its own).
+  - Separately (Cloudflare dashboard / API): confirm the operator S3 API token is scoped to **this bucket only**.
+- [ ] Branch: any public access (enabled dev URL, attached custom domain) → escalate (the signed-URL model is bypassed; disabling it is a gated mutation, urgent). All three checks clean **and** token scoped → closed with the three command outputs recorded.
 
 ### Task 5 — H-2: empirical admin-gate variant probes (preview only)
 
@@ -98,9 +103,10 @@ Each step records: command/screen, output, chosen branch.
 ### Task 7 — L-40: display-vs-charge price parity (read-only data check)
 
 - [ ] Read-only SQL against prod (or the Supabase dashboard SQL editor): `select id, category_slug, price_pln, price_eur, price_gbp from products where type='ceramic'` — compare against `PRICE_EUR`/`PRICE_GBP` per-category constants in `src/lib/pricing.ts`.
+- [ ] **Note the current-state evidence:** no code path reads `products.price_eur`/`products.price_gbp` — checkout and display both use the per-category constants in `src/lib/pricing.ts`. So a divergence in these columns is **data drift in unused columns, not a customer-visible display-vs-charge mismatch** on its own.
 - [ ] Branch:
-  - **Columns NULL/unused or equal to constants** → parity holds; L-40 stays a backlog item (§6.5: wire or remove the columns).
-  - **Columns diverge from constants** → customers see one price and are charged another under some surface — escalate as a data-integrity finding and reconcile (which direction wins is an operator decision).
+  - **Columns NULL/unused, or equal to the constants** → parity holds; L-40 stays a backlog item (§6.5: wire or remove the columns).
+  - **Columns diverge from the constants** → record as **data drift** and keep L-40 a backlog item. Do **not** escalate to a customer-facing pricing incident on this evidence alone. Escalate to a data-integrity finding **only after** confirming a live customer-facing or charging surface actually reads those columns and produces a value different from the charged per-category constant.
 
 ### Task 8 — write the log
 

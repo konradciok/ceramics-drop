@@ -39,8 +39,10 @@ All `VERIFIED` at HEAD `3da7ee0`:
 ## Scope
 
 - `wrangler.jsonc` (bindings), `cloudflare-env.d.ts` / `cloudflare-bindings.d.ts` (types; regen with `npm run cf-typegen` if applicable)
-- `src/lib/checkout-rate-limit.ts` + `return-rate-limit.ts` (binding-aware variant), the six consumer routes (swap factory call only)
-- Tests for the adapter
+- `src/lib/checkout-rate-limit.ts` + `return-rate-limit.ts` (binding-aware variant)
+- **`src/lib/auth/rate-limit.ts`** — the login limiter wrapper (`createAuthRateLimiter`) delegates to `createReturnRateLimiter`; it must be updated to thread the binding through, or `auth/login` silently stays on the per-isolate Map fallback while the other routes go global. Do **not** omit this file.
+- the six consumer routes (swap factory call only): checkout, newsletter, newsletter/confirm, interest, returns, **auth/login**
+- Tests for the adapter **and** a login integration test proving `auth/login` uses the binding-backed limiter
 
 ## Out of scope
 
@@ -51,11 +53,24 @@ All `VERIFIED` at HEAD `3da7ee0`:
 
 ## Implementation steps
 
-- [ ] **Docs check first:** confirm the current rate-limit binding config shape (`unsafe.bindings` vs stable `ratelimit` key), supported `period` values (binding supports a limited window set — historically {10, 60} seconds), and per-key `limit()` API. Map current limits: checkout 30/60 s, newsletter 5/60 s, confirm 20/60 s, interest 10/60 s, login+returns 3/600 s → **the 600 s window is likely unsupported**; if so, approximate returns/login as e.g. 1/60 s sustained (equivalent throughput, tighter burst) and record the mapping decision.
-- [ ] Add bindings in `wrangler.jsonc` — one binding per family with a distinct `namespace_id`, e.g. `RL_CHECKOUT`, `RL_NEWSLETTER`, `RL_NEWSLETTER_CONFIRM`, `RL_INTEREST`, `RL_AUTH_RETURNS`.
-- [ ] Extend the limiter factory: `createCheckoutRateLimiter({ binding?: RateLimit, …existing })` — when `binding` is provided, `allow(ip)` calls `binding.limit({ key: ip })` and returns its verdict; otherwise the existing Map path runs (local dev / tests). Keep the in-memory check as an additional fast-path guard in front of the binding call (defense-in-depth, saves binding ops on hot abuse).
-- [ ] Failing tests first: adapter prefers the binding verdict when present (mock binding: deny → 429 even though the Map would allow); falls back to Map without a binding; binding errors fail **open** with a structured log (availability over strictness for checkout — document this choice; for newsletter/interest failing **closed** is acceptable and preferable — decide per-route and test both).
-- [ ] Wire each of the six routes: fetch the binding from the route's env (`getCloudflareContext().env.RL_*` — these are fetch-path routes, ALS is fine here) and pass it to the singleton factory. Keep 429 response shapes identical.
+- [ ] **Docs check + verify current budgets first:** confirm the binding config shape (`unsafe.bindings` vs stable `ratelimit` key), supported `period` values (binding supports a limited window set — historically **only {10, 60} seconds**), and the per-key `limit()` API. Read each route's **actual** current budget from code (do not assume): checkout 30/60 s, newsletter 5/60 s, confirm 20/60 s, interest 10/60 s, **returns** (`return-rate-limit.ts` defaults 3/600 s), **login** (`src/lib/auth/rate-limit.ts` — confirm its exact value; it is **not** the same as returns, verify whether it is 10/600 s). Record the verified numbers in the plan/PR.
+- [ ] **Do not loosen budgets in the mapping.** The 600 s window is unsupported by the binding, but approximating 3/600 s as `1/60 s` is **wrong** — `1/60 s` permits 10 requests per 600 s vs the intended 3, i.e. ~3× looser. For any route whose window the binding can't express (returns, login), choose one of: (a) keep it on the existing in-memory limiter (+ WAF) and document why the binding doesn't fit, or (b) if approximating, pick a bound **no looser** than the original (e.g. a lower per-60 s cap or the binding's smallest window) and state the exact effective budget. Never silently increase the allowance.
+- [ ] Add bindings in `wrangler.jsonc` — one binding per family with a distinct `namespace_id`, and **separate bindings for login and returns** (their budgets and semantics differ; do not share one `RL_AUTH_RETURNS`): `RL_CHECKOUT`, `RL_NEWSLETTER`, `RL_NEWSLETTER_CONFIRM`, `RL_INTEREST`, `RL_RETURNS`, `RL_LOGIN`.
+- [ ] Extend the limiter factory: `createCheckoutRateLimiter({ binding?: RateLimit, onOutage?: 'open' | 'closed', …existing })` — when `binding` is provided, `allow(ip)` calls `binding.limit({ key: ip })` and returns its verdict; otherwise the existing Map path runs (local dev / tests). Keep the in-memory check as an additional fast-path guard in front of the binding call (defense-in-depth, saves binding ops on hot abuse). **The outage policy is an explicit input per call site — the shared adapter must not infer it.**
+- [ ] **Binding-outage policy table (define for ALL six routes, not just checkout):**
+
+  | Route | On binding error | Rationale |
+  |---|---|---|
+  | checkout | **fail-open** | availability of the money path outweighs a brief limiter gap; WAF rule still covers it |
+  | newsletter | **fail-closed** | unauthenticated arbitrary-recipient email sender (M-8) — a gap is a mail-bomb window |
+  | newsletter/confirm | **fail-closed** | same email-abuse surface |
+  | interest | **fail-closed** | same (unauthenticated sender) |
+  | returns | **fail-closed** | creates real return shipments; abuse has cost |
+  | auth/login | **fail-closed** | credential endpoint; a limiter gap aids brute-force |
+
+  (Adjust only with a recorded rationale; the point is every route has an explicit, tested policy — no route left to adapter inference.)
+- [ ] Failing tests first: adapter prefers the binding verdict when present (mock binding: deny → 429 even though the Map would allow); falls back to Map without a binding; **binding error → the per-route policy from the table above** (checkout allows-with-log; the other five 429/deny-with-log) — one test per route.
+- [ ] Wire each of the six routes: fetch the binding from the route's env (`getCloudflareContext().env.RL_*` — these are fetch-path routes, ALS is fine here) and pass it **plus its `onOutage` policy** to the singleton factory. For `auth/login`, thread the binding through `src/lib/auth/rate-limit.ts`'s wrapper. Keep 429 response shapes identical.
 - [ ] `npm run cf-typegen` (or manual d.ts) so the bindings typecheck.
 - [ ] `npm run preview:cf` — bindings exist in wrangler preview: hammer one endpoint (`for i in $(seq 40); do curl -s -o /dev/null -w "%{http_code}\n" -X POST <preview>/api/newsletter …; done`) and observe global 429s after the limit.
 - [ ] Commit: `feat(rate-limit): global Workers rate-limit bindings with in-memory fallback (M-8, M-9)`

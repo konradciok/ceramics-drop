@@ -37,7 +37,7 @@ All `VERIFIED` at HEAD `3da7ee0`:
 ## Desired end state
 
 - Sentry events captured from `queue()`, `scheduled()`, and the DLQ handler reliably arrive in Sentry regardless of isolate history, tagged so worker-context events are distinguishable (e.g. `runtime: worker-handler`).
-- A `succeeded`/`processing` PI found on a still-`pending` order by the cron produces a **studio email + Sentry event** (once per order, claim-stamped), not just a log line.
+- A `succeeded`/`processing` PI found on a still-`pending` order by the cron produces a **studio email + Sentry event at most once per order** — durably de-duplicated by a claim stamp so a persistently-pending order cannot emit an unbounded stream of alerts every 15 minutes (which would burn Resend + Sentry quota). See Task 2 for the claim mechanism.
 - A sweep that itself throws produces a Sentry event.
 - Prod presence of the three prerequisite secrets is confirmed and recorded.
 
@@ -74,7 +74,8 @@ All `VERIFIED` at HEAD `3da7ee0`:
 
 - [ ] Extend `ExpireOrdersDeps` in `src/lib/expire-orders.ts` with `alertPaidOnPending(orderId: string, piStatus: string): Promise<void>`; call it (in addition to the existing `warn`) on the paid-on-pending branch.
 - [ ] **Failing test first:** unit-test `expireAbandonedOrders` (mirroring its existing test style) — a sweep encountering a `succeeded` PI on a `pending` order calls `alertPaidOnPending` exactly once and does **not** cancel that PI.
-- [ ] In `worker.ts`, implement `alertPaidOnPending` using the same studio-alert machinery as the failed-action path (Resend email with an 8 s AbortController — the pattern at :155-156/:328-329 — plus `Sentry.captureMessage('paid_on_pending_order', { level: 'error', extra: { orderId, piStatus } })`). Alert-once: guard with a claim column if one exists for this signal; if not, accept at-most-every-15-min repetition (the cron interval) and log the decision — do NOT add a migration in this plan.
+- [ ] In `worker.ts`, implement `alertPaidOnPending` using the same studio-alert machinery as the failed-action path (Resend email with an 8 s AbortController — the pattern at :155-156/:328-329 — plus `Sentry.captureMessage('paid_on_pending_order', { level: 'error', extra: { orderId, piStatus } })`).
+- [ ] **Durable alert-once claim (required — resolves the objective's "at most once per order"):** before sending, atomically claim the alert with a CAS on a new nullable `orders.paid_on_pending_alerted_at timestamptz` column — `update orders set paid_on_pending_alerted_at = now() where id = $1 and paid_on_pending_alerted_at is null returning id`; only send when the claim returns a row (mirrors the existing `confirmation_email_sent_at` / `conversions_sent_at` / `alerted_at` claim pattern already used across the codebase). This is a tiny, backward-compatible additive migration (see Database / migration work) — the still-running old code simply never writes the column. Belt-and-braces: also pass a Resend `Idempotency-Key: paid-on-pending/<orderId>` and a Sentry `fingerprint: ['paid-on-pending', orderId]` so even a claim race collapses to one email/issue.
 - [ ] Wrap each `waitUntil`'d sweep's `.catch` to also `Sentry.captureException(err)` (keeping the structured log).
 - [ ] Run `npx vitest run src/lib/expire-orders*` — expect PASS.
 - [ ] Commit: `fix(worker): alert (email+Sentry) on paid-on-pending orders and sweep failures (M-15)`
@@ -86,7 +87,7 @@ All `VERIFIED` at HEAD `3da7ee0`:
 
 ## Database / migration work
 
-None (explicitly: the alert-once claim column for paid-on-pending is out of scope; the 15-min repeat is acceptable and self-limiting).
+One tiny additive migration: `alter table orders add column if not exists paid_on_pending_alerted_at timestamptz;` (nullable, no default, no backfill). Backward-compatible — old code ignores it; the cron CAS-claims it to guarantee at-most-once alerting. Auto-applies on merge to `main` before the Workers build, same as every migration (write it additively so the still-running old worker is unaffected). Rollback: drop the column (the alert simply reverts to unbounded-but-logged, i.e. today's behaviour). Verify with `\d orders` / a `select` that the column exists post-merge.
 
 ## External-system changes
 
@@ -96,7 +97,7 @@ None (explicitly: the alert-once claim column for paid-on-pending is out of scop
 
 ## Tests
 
-- **New:** `alertPaidOnPending` invocation test (fires once, does not cancel the PI); a smoke unit test that the worker's Sentry wrapper is fail-soft without a DSN (no throw when `SENTRY_DSN` undefined).
+- **New:** `alertPaidOnPending` invocation test (fires once, does not cancel the PI); a **claim-stamp de-dup test** (first cron pass sends; a second pass over the same order — `paid_on_pending_alerted_at` already set — sends nothing); a smoke unit test that the worker's Sentry wrapper is fail-soft without a DSN (no throw when `SENTRY_DSN` undefined).
 - **Regressions caught:** paid-on-pending regressing to log-only; sweep-death regressing to silent-green.
 - **Simulated:** a `succeeded` PI on `pending` order; a sweep dep that throws.
 
@@ -117,7 +118,7 @@ None (explicitly: the alert-once claim column for paid-on-pending is out of scop
 ## Acceptance criteria
 
 - [ ] A Sentry event emitted from a worker (non-fetch) context is visible in the Sentry UI post-deploy (screenshot/event-id in verification notes).
-- [ ] Paid-on-pending produces an email + Sentry event in a unit-tested path wired into the cron.
+- [ ] Paid-on-pending produces an email + Sentry event in a unit-tested path wired into the cron, and a **second** cron pass over the same still-pending order sends **nothing** (claim-stamp test proves at-most-once).
 - [ ] Sweep-death produces a Sentry event.
 - [ ] `wrangler secret list` confirms the three prerequisite secrets (or the gap is escalated, not silently accepted).
 - [ ] Preview boots with the DO re-exports intact; all tests green.

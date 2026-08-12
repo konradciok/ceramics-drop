@@ -78,10 +78,15 @@ Order: each fix = failing test → minimal change → green → commit. All test
 
 ### Task 2 — M-5: catch the private-sale unique violation
 
-- [ ] Failing test: second `payment_intent.succeeded` for a different order on the same private sale → the CAS UPDATE rejects with `{ code: '23505', message: … }` → expect: order CAS'd to `failed` (or left `pending` — decide with the simplest correct semantics below), `refunds.create` called once with idempotency key `refund_<pi>`, response 200 (no retry loop), studio alert fired.
-- [ ] Fix: widen the error narrowing at `:208-218` to include `code?: string`; on `23505`: (a) `refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` })`; (b) CAS the order `pending→failed`; (c) studio email + `Sentry.captureMessage('private_sale_double_paid')`; (d) return normally (200). Any other error keeps the unconditional throw.
-- [ ] Note: `refund_<pi>` matches the file's existing refund idempotency-key convention (verify the exact constant used by the under-fulfilment path at `:297-319` and reuse it).
-- [ ] Green + commit: `fix(webhook): refund + fail instead of 5xx-looping on double-paid private sale (M-5)`
+**State machine (decided — implement exactly this, do not leave it open):** on a `23505` from the second order's `pending→paid` CAS, the terminal state is **`failed`**, never left `pending`. Rationale: a `pending` order is eligible for the abandoned-checkout cron (cancel PI + expire) and other pending flows, and non-`paid` orders are excluded from fulfilment — a captured-but-refunded double-payment left `pending` would be acted on incorrectly by those flows. Ordering and idempotency:
+  1. **Refund first**, then transition state — so a crash between the two re-runs safely: `refunds.create({ payment_intent: pi }, { idempotencyKey: <the file's refund key, e.g. `refund_${pi}`> })`. The idempotency key makes a retry after a crash a no-op at Stripe (already-refunded attempts return the same refund, not a double refund).
+  2. **CAS `pending→failed`** (`update orders set status='failed' … where payment_intent_id=$pi and status='pending'`). A **zero-row** result means another delivery already transitioned it — treat as success (do **not** 5xx-loop). A CAS **error** (not zero-row) still propagates (throw → Stripe retry).
+  3. Fire the studio email + `Sentry.captureMessage('private_sale_double_paid', { level: 'error' })`.
+  4. Return **200** only after the refund and the state transition have both succeeded (or the CAS was a benign zero-row). Any error **other than** `23505` on the original CAS keeps the existing unconditional throw.
+
+- [ ] Failing tests: (a) second `payment_intent.succeeded` for a different order on the same private sale → CAS rejects `{ code: '23505' }` → `refunds.create` called once with the file's refund idempotency key, order ends `failed`, response 200, studio alert fired; (b) the same event redelivered after the order is already `failed` → CAS returns zero rows → still 200, refund not re-created (idempotency key), no throw; (c) a non-`23505` error on the CAS → still throws (5xx).
+- [ ] Fix: widen the error narrowing at `:208-218` to include `code?: string`; implement the state machine above. Confirm the exact refund idempotency-key constant by reading the under-fulfilment path at `:297-319` and reuse it verbatim.
+- [ ] Green + commit: `fix(webhook): refund-then-fail state machine for double-paid private sale (M-5)`
 
 ### Task 3 — M-21 + M-22 + L-4: ledger correctness
 
@@ -159,4 +164,4 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 ## Risks / unresolved questions
 
 - M-22's 409 semantics: if a handler legitimately runs longer than 5 min (it shouldn't — Stripe's own timeout is shorter), the event redelivers and 409s until the lease expires; the lease TTL (`STRIPE_LEASE_MS`) may deserve tuning down to ~2 min in the same change — decide from the p99 handler duration visible in Workers logs.
-- M-5's "order → `failed`" choice: verify no downstream consumer treats `failed` + captured-money as impossible; if so, prefer leaving `pending` + alert. Decide during implementation with a grep for `status = 'failed'` consumers.
+- M-5 terminal state is **decided as `failed`** (see Task 2 — `pending` is unsafe because the abandoned-checkout cron and other pending flows would act on it). The one implementation check that remains: grep for `status = 'failed'` consumers to confirm none treats "failed + a real refund" as impossible in a way that would misreport; if such a consumer exists, add a distinguishing marker (e.g. a `refunded_reason`) rather than reverting to `pending`.

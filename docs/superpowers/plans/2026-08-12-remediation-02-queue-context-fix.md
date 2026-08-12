@@ -117,9 +117,9 @@ vi.mock('@/lib/supabase', () => ({
 
 ### Task 4 — regression tripwire (Opp-6)
 
-- [ ] Create `scripts/queue-context-guard.test.ts`, mirroring `scripts/build-config.test.ts` (readFileSync tripwire + "do not weaken" comment): recursively read `src/server/fulfilment/**/*.ts` (excluding `*.test.ts`) and assert none contains `getSupabaseAdmin` or `getCloudflareContext`. Include a comment explaining C-2 (queue/scheduled handlers run outside the request ALS; only `supabaseFromEnv(env)` / injected clients are safe here).
-- [ ] Run `npx vitest run scripts/queue-context-guard.test.ts` — expect PASS (post-Task-1). Temporarily re-add a `getSupabaseAdmin` import to confirm it FAILS, then revert.
-- [ ] Optionally add a scoped ESLint `no-restricted-imports` block for `files: ['src/server/fulfilment/**/*.ts']` forbidding importing `getSupabaseAdmin` from `@/lib/supabase` — belt and braces; the tripwire test is the required deliverable (it runs in `npm test` + CI unconditionally).
+- [ ] Create `scripts/queue-context-guard.test.ts`, mirroring `scripts/build-config.test.ts` (readFileSync tripwire + "do not weaken" comment): recursively read **every module reachable from a queue delivery**, not just `src/server/fulfilment/**`. Task 1 already identifies the second ALS-dependent caller, `src/server/print-assets/repository.ts` (`getAssetForFulfilment` → `getSupabaseAdmin`) — a guard scoped to `fulfilment/**` alone would pass while that file silently re-breaks deliveries (CodeRabbit finding). Define an explicit `QUEUE_REACHABLE_GLOBS` list in the test = `['src/server/fulfilment/**/*.ts', 'src/server/print-assets/repository.ts']` (plus any further queue-only module the Task-1 typecheck fan-out surfaces), exclude `*.test.ts`, and assert none contains `getSupabaseAdmin` or `getCloudflareContext`. Include a comment explaining C-2 (queue/scheduled handlers run outside the request ALS; only `supabaseFromEnv(env)` / injected clients are safe here) **and** a note that any new file entering the queue call-tree must be added to `QUEUE_REACHABLE_GLOBS`.
+- [ ] Run `npx vitest run scripts/queue-context-guard.test.ts` — expect PASS (post-Task-1). Temporarily re-add a `getSupabaseAdmin` import to **both** a `fulfilment/**` file and `repository.ts` to confirm each FAILS, then revert.
+- [ ] Add a scoped ESLint `no-restricted-imports` block for `files: ['src/server/fulfilment/**/*.ts', 'src/server/print-assets/repository.ts']` forbidding importing `getSupabaseAdmin`/`getCloudflareContext` from `@/lib/supabase` — this enforces the injected-client API at lint time on exactly the queue-reachable set, belt-and-braces with the tripwire test (which is the required deliverable; it runs in `npm test` + CI unconditionally).
 - [ ] Commit: `test(fulfilment): tripwire against ALS-dependent imports in the queue path (Opp-6)`
 
 ## Database / migration work
@@ -149,20 +149,20 @@ None in this plan. The controlled queue rehearsal (preview deploy, real queue bi
 2. Do **not** announce prints as safe until Plan 05's rehearsal passes in preview.
 3. **Rollback:** revert the PR — the previous behaviour is the known-broken-but-latent state, no worse than today. No data migration to unwind.
 4. **Stop signals:** `fulfilment_queue_error` logs with `disposition: 'retry'` recurring for the same order in preview; any DLQ delivery during the rehearsal.
-5. If a real print order arrives **before** this lands: the DLQ email + `npm run prodigi` manual submission is the documented recovery path — link `docs/prodigi-cli.md` in the PR description.
+5. If a real print order arrives **before** this lands: the customer has paid but the job dead-lettered. **Do not hand-submit via `npm run prodigi`** — the CLI blocks live production order creation by design (AGENTS.md), and a manual submission would bypass the idempotency key, retry, and status-recovery that the queue path owns, risking a double-submit or an untracked Prodigi order. The recovery path is **queue-safe re-enqueue**: fix the job row to a re-enqueueable state and re-drive it through `enqueueProdigi()` → `FULFILMENT_QUEUE` → `process-job.ts` (the same path the webhook uses), or, until that recovery tooling exists (Plan 11 / Opp-5 reconcile-mode), **stop-and-escalate**: alert the operator from the DLQ handler and reconcile manually against Prodigi state before any resubmission. Link `docs/prodigi-cli.md` (for inspection only) in the PR description.
 
 ## Acceptance criteria
 
 - [ ] `process-job.test.ts` fails on the pre-fix code and passes on the post-fix code (demonstrated in the PR by the ordered commits).
-- [ ] No file under `src/server/fulfilment/` references `getSupabaseAdmin`/`getCloudflareContext`; the tripwire test enforces it.
+- [ ] No queue-reachable module (`src/server/fulfilment/**` **and** `src/server/print-assets/repository.ts`, plus any further module in `QUEUE_REACHABLE_GLOBS`) references `getSupabaseAdmin`/`getCloudflareContext`; the tripwire test + scoped ESLint rule enforce it.
 - [ ] Queue errors produce a structured log line with order id + attempt; retries carry `delaySeconds`.
 - [ ] A > 2 h `queued` job alerts exactly once through the existing alert machinery.
 - [ ] Plan 05's preview rehearsal completes one job end-to-end through the real queue runtime.
 
 ## Dependencies
 
-- **Plan 03 (M-16)** should land before or with this plan so the new alerts actually reach Sentry from worker contexts; the structured logs stand alone otherwise.
-- **Plan 05** (rehearsal) is the runtime exit gate; it depends on this plan.
+- **Plan 03 (M-16)** should land before or with this plan so the new alerts actually reach Sentry from worker contexts; the structured logs stand alone otherwise. This is the only **upstream** dependency.
+- **Plan 05** (rehearsal) is this plan's runtime **exit gate**, not an upstream dependency — Plan 05 depends on Plan 02, not the reverse. Land 02's code first; 05 then validates it at runtime in preview. (This avoids the 02↔05 cycle the master index previously implied.)
 - Plan 11 (Prodigi robustness) touches `process-job.ts` too — sequence after this plan to avoid conflicts.
 
 ## Risks / unresolved questions

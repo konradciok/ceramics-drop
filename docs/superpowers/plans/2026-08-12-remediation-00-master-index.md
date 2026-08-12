@@ -4,7 +4,7 @@
 
 **Source audit:** `docs/audits/backend-audit-2026-08-12.md` (1 CRITICAL · 1 HIGH · 29 MEDIUM · 44 LOW · 15 incomplete features · 23 opportunities).
 
-**Planning baseline:** all evidence re-verified read-only against **HEAD `3da7ee0`** (`docs/context-refresh`) on 2026-08-12 by four inspection passes (Stripe/webhook, queue/worker/Prodigi, Supabase/data, auth/admin/misc). **No finding was found already-resolved** — every audited defect still exists at HEAD. Four audit **line-number/scope corrections** surfaced and are carried into the owning plans (see "Audit corrections" below). This is a **planning stage only** — no code, migration, config, or data was changed; the only repository changes are these plan files.
+**Planning baseline:** all evidence re-verified read-only against **HEAD `3da7ee0`** (`docs/context-refresh`) on 2026-08-12 by four inspection passes (Stripe/webhook, queue/worker/Prodigi, Supabase/data, auth/admin/misc). **No finding was found already-resolved** — every **non-refuted** finding remains applicable or requires verification at HEAD (H-2 is `[REFUTED]` in the audit: not an active bypass, only a residual hardening item — see Plan 09). Four audit **line-number/scope corrections** surfaced and are carried into the owning plans (see "Audit corrections" below). This is a **planning stage only** — no code, migration, config, or data was changed; the only repository changes are these plan files.
 
 ---
 
@@ -15,7 +15,7 @@
 | 00 | `…-00-master-index.md` (this) | — | ledger | — | — |
 | 04 | `…-04-live-config-verification.md` | **P0** (read-only, run first) | H-4, M-6*, M-25, L-25, H-2*, L-40, §15.1/.9 | Read-only dashboard/CLI access | none |
 | 01 | `…-01-stripe-refund-reconciliation.md` | **P0** | C-1, H-3, M-28, Opp-2, Opp-3 | **YES** — Stripe `enabled_events` + prod backfill | none (folds §15.1) |
-| 02 | `…-02-queue-context-fix.md` | **P0** | C-2, M-10, M-23, L-21, Opp-6 | Preview rehearsal is the exit gate | 03 (alerts), 05 (runtime gate) |
+| 02 | `…-02-queue-context-fix.md` | **P0** | C-2, M-10, M-23, L-21, Opp-6 | Preview rehearsal is the exit gate | 03 (alerts) — Plan 05 is 02's runtime **exit gate**, not an upstream dependency |
 | 03 | `…-03-worker-sentry-cron-alerting.md` | **P0** | M-16, M-15, §15.9(partial) | `wrangler secret list` (read); DSN set if missing (gated) | none |
 | 05 | `…-05-print-pipeline-rehearsal.md` | **P0 exit gate** | L-15, L-22, §15.2, §15.8, §6.11(observe) | **YES** — preview deploy + Stripe test-mode + Prodigi sandbox | 01(Task5), 02, 03 |
 | 06 | `…-06-stripe-webhook-hardening.md` | **P1** | H-1, M-5, M-21, M-22, M-27, L-4, L-5, L-6, L-7 | none (preview validation) | 01 (same files) |
@@ -212,10 +212,10 @@ Read-only inspection at HEAD `3da7ee0` confirmed every finding but corrected fou
 
 ## Counts
 
-- **PLANNED:** 45 findings — C-1, C-2, H-1, H-3(partial), M-1, M-2, M-3, M-4, M-5, M-7, M-8, M-9, M-10, M-11, M-12, M-13, M-14, M-15, M-16, M-17, M-18, M-19, M-21, M-22, M-23, M-24, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-19, L-24, L-26, L-27, L-29, L-30, L-32, L-33, L-34, L-35.
+- **PLANNED:** 47 findings — C-1, C-2, H-1, H-3(partial), M-1, M-2, M-3, M-4, M-5, M-7, M-8, M-9, M-10, M-11, M-12, M-13, M-14, M-15, M-16, M-17, M-18, M-19, M-21, M-22, M-23, M-24, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-14, L-19, L-24, L-26, L-27, L-29, L-30, L-32, L-33, L-34, L-35. *(count verified against the ledger above — L-14 → Plan 14 is included.)*
 - **REQUIRES-VERIFICATION:** 11 — H-2, H-4, M-6, M-25, L-15, L-22, L-25, L-39, L-40, §6.3, §6.11 (each owned by Plan 04 or 05, with a decision fork into an implementation plan).
 - **DEFERRED (with rationale):** 19 detailed + the undetailed-range set — M-20, L-1, L-8, L-9, L-11, L-16, L-17, L-18, L-20, L-23, L-31, L-38, plus §6 features 4/5(wire)/6/7/10/12/13, Opp-5/9/16-23, and the un-enumerated L-2/L-3/L-28/L-36/L-37 (backlog, pending the audit's full master ledger).
-- **STALE/ALREADY-RESOLVED:** 0 — every audited defect reproduces at HEAD `3da7ee0`.
+- **STALE/ALREADY-RESOLVED:** 0 — every **non-refuted** finding remains applicable or requires verification at HEAD `3da7ee0`. (H-2 is `[REFUTED]` in the audit — not an active bypass; it carries only a residual defense-in-depth hardening item, tracked under REQUIRES-VERIFICATION / Plan 09.)
 - **NEW FINDINGS:** 1 (NF-1, LOW — folded into Plan 09/L-30).
 
 ## Optional backlog (NOT remediation)

@@ -4,9 +4,11 @@
 >
 > Source audit: `docs/audits/backend-audit-2026-08-12.md` §5 M-13, §9 (InPost), L-34/L-35. Evidence re-verified at HEAD `3da7ee0`.
 
-**Goal:** Close the three InPost-webhook weaknesses: the shared secret riding in a URL that lands in 100%-sampled persisted logs, the non-timing-safe token compare (the only non-constant-time webhook auth in the codebase), and status mirroring with no allow-list or monotonic guard (out-of-order redeliveries regress `/konto` tracking status).
+**Goal:** Close the three InPost-webhook weaknesses: the shared secret riding in a URL that lands in 100%-sampled persisted logs (mitigated by **rotation** — app-level redaction alone cannot remove it from platform invocation logs; see Architecture), the non-timing-safe token compare (the only non-constant-time webhook auth in the codebase), and status mirroring with no allow-list or monotonic guard (out-of-order redeliveries regress `/konto` tracking status).
 
-**Architecture:** Point fixes in `src/app/api/inpost/webhook/route.ts` + `src/lib/shipx.ts`: constant-time compare (WebCrypto digest-equality helper), a status allow-list with rank-based monotonic advance, log-redaction of the token, and an optional source-IP allowlist as secondary defense. The token stays in the URL — the InPost panel only registers a URL (`route.ts:24` comment) — so the mitigation is redaction + rotation + secondary checks, not relocation.
+**Architecture:** Point fixes in `src/app/api/inpost/webhook/route.ts` + `src/lib/shipx.ts`: constant-time compare (WebCrypto digest-equality helper), a status allow-list with rank-based monotonic advance (applied atomically), redaction of the token from our own `console.*` calls, and an optional source-IP allowlist as secondary defense. The token stays in the URL — the InPost panel only registers a URL (`route.ts:24` comment).
+
+**Scope of the log-exposure mitigation (be precise):** application-level redaction removes the token from **our** log statements, but it **cannot** remove the token from **Cloudflare Workers invocation logs**, which persist the full request URL (incl. `?token=`) at 100% sampling — that is platform-generated, outside our code. So redaction alone does **not** solve M-13. The **actual** mitigation for the platform-log exposure is **token rotation** (Task 3, gated) plus, if available, a Cloudflare-side log-redaction/retention control — investigated and either applied-and-verified or explicitly recorded as unavailable. This plan does not claim app redaction closes the platform-log vector; rotation is the load-bearing control.
 
 **Tech stack:** WebCrypto (`crypto.subtle.digest` equality — Workers-safe), InPost ShipX webhook docs (https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153494/Webhooks).
 
@@ -58,8 +60,12 @@ Constant-time token check; token never appears in logs (redacted at our logging 
 
 - [ ] Enumerate the known ShipX status vocabulary actually consumed by the app (grep `/konto` tracking display + `docs/` for the status list; consult the InPost docs for the canonical sequence, e.g. `created → offers_prepared → offer_selected → confirmed → dispatched_by_sender → collected_from_sender → taken_by_courier → adopted_at_source_branch → … → out_for_delivery → ready_to_pickup → delivered`). Build `SHIPX_STATUS_RANK: Record<string, number>` in `src/lib/shipx.ts` from that list — ranks with gaps (10, 20, 30…) so intermediate statuses slot in later.
 - [ ] Failing tests (shipx + route): a known status with higher rank than the stored one updates; a lower/equal rank does NOT regress the column (no-op + structured log `inpost_status_out_of_order`); an unknown status does not touch `delivery_status` (logged `inpost_status_unknown`, still 200 — InPost must not retry-loop on our vocabulary gaps); tracking-number backfill still applies regardless of rank outcome.
-- [ ] Implement: fetch the current `delivery_status` in the existing order lookup (it already reads the order — extend the select), gate the update at `route.ts:77-84` on rank advance. Terminal statuses (`delivered`, `returned_to_sender`) rank highest.
-- [ ] Green + commit: `fix(inpost): allow-listed, monotonic delivery-status updates (L-35)`
+- [ ] **Make the advance atomic — a read-then-unconditional-write leaves a race** (an older event reads the old status, a newer event advances it, then the older event writes last and regresses the row). Do **not** read the rank in JS and then issue an unconditional UPDATE. Instead gate the write with a conditional predicate evaluated **in the database** so only a strictly-higher rank wins:
+  - **Preferred:** add a `delivery_status_rank smallint` column (tiny additive migration), written alongside `delivery_status`, and update `... set delivery_status=$new, delivery_status_rank=$newrank where id=$id and (delivery_status_rank is null or delivery_status_rank < $newrank)`. Atomic, monotonic, no lost-update.
+  - **No-migration alternative:** put the current-status→rank mapping in the `WHERE` clause as an inline `CASE` expression comparing the stored `delivery_status` to `$newrank` — verbose but avoids the column. (Optimistic `where delivery_status = <value-we-read>` + retry is a weaker fallback; prefer one of the two above.)
+  Terminal statuses (`delivered`, `returned_to_sender`) rank highest. Keep **tracking-number backfill in an independent UPDATE** so it applies regardless of the rank-gated status write.
+- [ ] Failing test additions: two concurrent-ish events applied out of order (higher rank first, then lower) → the row holds the higher status; the lower-rank write affects **zero rows** (assert the predicate, not just the final value).
+- [ ] Green + commit: `fix(inpost): atomic, allow-listed, monotonic delivery-status updates (L-35)`
 
 ### Task 3 — M-13: exposure reduction
 
@@ -71,7 +77,9 @@ Constant-time token check; token never appears in logs (redacted at our logging 
 
 ## Database / migration work
 
-None (`delivery_status` stays free-text at the DB layer; the allow-list is enforced in code — a DB CHECK would fight InPost's evolving vocabulary; decision recorded here deliberately, diverging from L-13's DB-side approach because the value set is external).
+`delivery_status` stays free-text at the DB layer (no CHECK — a DB CHECK would fight InPost's evolving vocabulary; deliberate divergence from L-13's DB-side approach because the value set is external).
+
+**Optional (Task 2 atomicity, preferred path):** one tiny additive column `alter table orders add column if not exists delivery_status_rank smallint;` (nullable, no backfill) to make the monotonic advance an atomic DB-side predicate rather than a read-then-write race. Backward-compatible (old code ignores it); auto-applies on merge. The no-migration inline-`CASE` alternative in Task 2 achieves the same atomicity without it — pick one.
 
 ## External-system changes
 

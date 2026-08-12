@@ -66,15 +66,22 @@ Prodigi calls time out and classify as retryable; a stuck non-terminal `prodigi_
 
 ### Task 1 — M-11: timeouts in the Prodigi client
 
-- [ ] Failing test: a `fetch` that never resolves (mock with a hanging promise + fake timers) → `request()` rejects with `ProdigiError(retryable: true)` within the timeout.
-- [ ] Add `signal: AbortSignal.timeout(PRODIGI_TIMEOUT_MS)` (15 000 ms; constant at top of `client.ts`) to the fetch; map `TimeoutError`/`AbortError` into the existing `ProdigiError(…, null, true)` network branch (:62).
-- [ ] Green + commit: `fix(prodigi): 15 s timeout on all Prodigi calls (M-11)`
+- [ ] **Confirm the runtime-supported timeout mechanism first.** The in-repo precedent (`worker.ts` Resend calls) uses `AbortController` + `setTimeout(...).abort()`, not `AbortSignal.timeout`. Verify whether `AbortSignal.timeout()` is available in the Cloudflare Workers runtime the project targets (it is in recent `workerd`, but confirm against the installed types/runtime); if unconfirmed, use the established `AbortController` + `setTimeout` pattern for consistency. Whichever is chosen, define `PRODIGI_TIMEOUT_MS = 15_000` as a constant at the top of `client.ts`.
+- [ ] Failing test: a `fetch` that never resolves (mock with a hanging promise + fake timers) → `request()` rejects with a `ProdigiError` whose `retryable` is **true**, within the timeout. Explicitly assert the timeout error is mapped to the **retryable** branch — an unmapped `AbortError` could otherwise fall through as a non-retryable error and get acked instead of retried.
+- [ ] Add the timeout signal to the shared `request<T>()` fetch; map `TimeoutError`/`AbortError` into the existing `ProdigiError(…, null, true)` network branch (:62) so a timeout is retryable (→ backoff/DLQ), never a silent ack.
+- [ ] Green + commit: `fix(prodigi): 15 s retryable timeout on all Prodigi calls (M-11)`
 
 ### Task 2 — M-26: branch on `outcome`
 
-- [ ] Failing tests (process-job suite): `outcome: 'Created'`/`'AlreadyExists'` → current behaviour; `outcome: 'CreatedWithIssues'` → order id still recorded, but job/status notes the issues (persist the `issues` array into `fulfilment_jobs.last_error` or a dedicated field — prefer `last_error` to avoid a migration) and a studio alert fires; `outcome: 'OnHold'` → same treatment.
-- [ ] Implement after `:189`: read `res.outcome`; on non-`Created`/`AlreadyExists`, record + alert (reuse the failed-action alert helper family), but do **not** throw (the order exists at Prodigi; throwing would retry-create). Exact severity mapping per outcome value from the Prodigi docs — confirm the current outcome enum at implementation.
-- [ ] Green + commit: `fix(fulfilment): surface non-Created Prodigi outcomes (M-26)`
+**Outcome → status/alert/retry contract (define explicitly — `process-job.ts` currently marks *every* successful POST `fulfilment_submitted`):**
+  - `Created` / `AlreadyExists` → `fulfilment_submitted`, no alert (current happy path).
+  - `CreatedWithIssues` → the Prodigi order **exists**, so record `prodigiOrderId` and set status `fulfilment_submitted`, **but** persist the `issues` array (into `fulfilment_jobs.last_error` to avoid a migration) and fire a studio alert. **Do not throw** (throwing would retry-create a duplicate order). The reconciliation sweep (Task 3) continues to track it.
+  - `OnHold` → the order exists but will not progress without action → set **`failed_action_required`** (the human-attention status the cron sweep already surfaces), persist the reason, and alert. Not terminal-success, not a retry-create.
+  - Any unknown/other `outcome` value → treat as `CreatedWithIssues` (record + alert), never silently as success.
+  - **Status-vocabulary coordination:** no new status string is introduced (reusing `fulfilment_submitted` / `failed_action_required`), so this stays within the CHECK constraint added by Plan 07 (L-13). If implementation does add a status value, extend that CHECK in lockstep.
+- [ ] Failing tests (process-job suite): one per outcome above — `Created`/`AlreadyExists` (submitted, no alert), `CreatedWithIssues` (submitted + issues persisted + alert, no throw, no re-create), `OnHold` (`failed_action_required` + alert), unknown outcome (treated as issues).
+- [ ] Implement after `:189`: read `res.outcome` and branch per the contract; reuse the failed-action alert helper family. Confirm the current outcome enum against the Prodigi docs at implementation (the set may include values beyond those named here — the unknown-outcome branch covers additions safely).
+- [ ] Green + commit: `fix(fulfilment): branch on Prodigi order outcome (submitted/issues/on-hold) (M-26)`
 
 ### Task 3 — M-12/Opp-4: cron reconciliation sweep
 
@@ -92,7 +99,11 @@ Prodigi calls time out and classify as retryable; a stuck non-terminal `prodigi_
 
 ### Task 5 — L-19 + L-24: hygiene pair
 
-- [ ] L-19: at the enqueue/insert conflict site, handle the per-order unique violation gracefully when the existing row belongs to a **different `PRODIGI_ENV`**: fail the job to `failed_action_required` with a clear `last_error` (`env_flip_conflict`) instead of an unconditional throw→5xx loop. Test: seeded sandbox-era row + live re-enqueue → no throw, actionable status.
+- [ ] L-19: reliable env-flip detection. **The blocker:** `fulfilment_jobs` has **no persisted `PRODIGI_ENV` column** — the environment appears only inside `idempotency_key` (`prodigi:${env}:order:${orderId}:v1`), while the uniqueness is per `order_id`. So the conflict handler cannot naively assume "unique violation == env flip." Choose one discriminator and implement it precisely:
+  - **Preferred:** add a persisted `fulfilment_jobs.prodigi_env text` column (tiny additive migration, backward-compatible) written on enqueue, and read the existing row's value directly; **or**
+  - **No-migration:** a strict parser that extracts the env segment from the existing row's `idempotency_key` with an exact regex (`^prodigi:(sandbox|live):order:`), rejecting any key that doesn't match rather than guessing.
+- [ ] Classify `env_flip_conflict` **only** when *all* hold: the DB error is a unique violation **named `fulfilment_jobs_order_unique`** (check the constraint name, not just SQLSTATE `23505`), **and** the existing active row for the same `order_id` has a **different** env than the current `PRODIGI_ENV`. In that case fail the job to `failed_action_required` with `last_error='env_flip_conflict'` (no throw→5xx loop). **Every other** unique violation — same-env duplicate (a genuine idempotent retry), or a violation on a *different* constraint — must **propagate through the existing retry/error path** unchanged, not be swallowed as an env flip.
+- [ ] Tests (three cases the finding names): (a) sandbox-era row + live re-enqueue → `env_flip_conflict`, `failed_action_required`, no throw; (b) same-env duplicate enqueue → handled by the existing idempotent path, **not** classified as env flip; (c) an unrelated unique violation (different constraint) → propagates as an error, not swallowed.
 - [ ] L-24: in the signed asset route, serve the DB-validated content-type column, falling back to R2 `httpMetadata` only when the column is null. Test both orders of precedence.
 - [ ] Green + commit: `fix(fulfilment): graceful env-flip conflict; DB-validated content type on asset route (L-19, L-24)`
 
@@ -102,7 +113,9 @@ Prodigi calls time out and classify as retryable; a stuck non-terminal `prodigi_
 
 ## Database / migration work
 
-None required (Task 2 reuses `last_error`; Task 3 reads existing columns). If implementation finds `last_error` too narrow for the issues array, prefer truncation over a migration.
+None **required** — Task 2 reuses `last_error`; Task 3 reads existing columns. If `last_error` is too narrow for the issues array, prefer truncation over a migration.
+
+**Optional (Task 5, preferred path):** one tiny additive column `alter table fulfilment_jobs add column if not exists prodigi_env text;` (nullable, no backfill) written on enqueue, to make env-flip detection a direct column read instead of parsing `idempotency_key`. Backward-compatible (old code ignores it); auto-applies on merge. If the migration is undesired, the no-migration strict-parser variant in Task 5 achieves the same classification without it — pick one, not both.
 
 ## External-system changes
 
