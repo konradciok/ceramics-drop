@@ -82,8 +82,8 @@ Order: each fix = failing test → minimal change → green → commit. All test
 ### Task 2 — M-5: catch the private-sale unique violation
 
 **State machine (decided — implement exactly this, do not leave it open):** on a `23505` from the second order's `pending→paid` CAS, the terminal state is **`failed`**, never left `pending`. Rationale: a `pending` order is eligible for the abandoned-checkout cron (cancel PI + expire) and other pending flows, and non-`paid` orders are excluded from fulfilment — a captured-but-refunded double-payment left `pending` would be acted on incorrectly by those flows. Ordering, crash-safety, and idempotency:
-  1. **Mark the order refund-pending *before* calling Stripe** — set a durable marker (a new nullable `orders.refund_pending_at timestamptz`, tiny additive migration) CAS'd `where payment_intent_id=$pi and status='pending'`. This closes the crash window: if the isolate dies *after* `refunds.create` but *before* the `pending→failed` CAS, the order is still `pending` — the marker is what keeps the abandoned-checkout cron and other pending consumers from acting on a payment that is being refunded. **Pending consumers must exclude `refund_pending_at IS NOT NULL`** (extend the cron/expiry query — coordinate with Plan 03's cron sweep). Stripe's retry re-runs the handler and the refund idempotency key makes the second `refunds.create` a no-op, then the CAS completes.
-  2. **Refund:** `refunds.create({ payment_intent: pi }, { idempotencyKey: <the file's refund key, e.g. `refund_${pi}`> })` — the key makes a crash-retry a no-op at Stripe (already-refunded attempts return the same refund, not a double refund).
+  1. **Mark the order refund-pending *before* calling Stripe** — set a durable marker (a new nullable `orders.refund_pending_at timestamptz`, tiny additive migration) CAS'd `where payment_intent_id=$pi and status='pending'`. This closes the crash window: if the isolate dies *after* the refund but *before* the `pending→failed` CAS, the order is still `pending` — the marker keeps pending consumers off a payment that is being refunded. **Guard the actual mutating pending-consumers, not just their list queries:** `expireOrders` (its final `pending→expired` status write + PI cancel) and `releaseReservation` (its piece-release write) must gate their mutations on `refund_pending_at IS NULL` **at write time** — either add `and refund_pending_at is null` to their update predicates, or hold a row lock (`select … for update`) across the read-and-mutate so a marker set *between* their read and write still blocks them. A list-level filter alone loses the race where the consumer read the row before the marker was set. Coordinate with Plan 03's cron sweep. Test **both** interleavings (marker-before-read and marker-after-read).
+  2. **Refund (idempotent, with already-refunded recovery):** `refunds.create({ payment_intent: pi }, { idempotencyKey: <the file's refund key> })`. The key makes a crash-retry *within its validity window* a no-op. **But Stripe idempotency keys expire (~24 h) while Stripe retries for up to 3 days** — a crash-retry after key expiry would hit Stripe fresh and get an **already-refunded** error (the charge is fully refunded). Handle it as success: catch the already-refunded error (or `refunds.list({ payment_intent: pi })` first and skip create if a full refund exists), then **continue** to the CAS transition — do not throw. Only a genuinely new refund failure propagates.
   3. **CAS `pending→failed`** (`update orders set status='failed', refund_pending_at=null … where payment_intent_id=$pi and status='pending'`). On **zero rows**, do **not** blindly 200 — perform a **follow-up lookup** of the order and only ack 200 when it is in a documented safe state (already `failed`, or already `refunded`). If the order is **missing** or in an **unexpected** status, throw (→ Stripe retry) rather than acknowledging — a blanket zero-row=success masks a genuinely lost order. A CAS **error** (not zero-row) still propagates.
   4. Fire the studio email + `Sentry.captureMessage('private_sale_double_paid', { level: 'error' })`.
   5. Return **200** only after the refund and the state transition have both succeeded (or the follow-up lookup confirmed a safe terminal state). Any error **other than** `23505` on the original CAS keeps the existing unconditional throw.
@@ -100,15 +100,23 @@ Order: each fix = failing test → minimal change → green → commit. All test
 
 ### Task 3 — M-21 + M-22 + L-4: ledger correctness
 
-- [ ] Failing tests:
+**Principle: dedupe-200 is reserved for a `status='done'` row only. *Every* claim loser returns non-2xx (409) so Stripe retries** — an isolated winning-handler failure must never be suppressed by a sibling delivery's 200. There are **four** claim-loser paths in the ledger; all currently 200, all must become 409 unless the existing row is `done`:
+  1. active lease (`:155-162`) — the winner is still processing;
+  2. claim-CAS lost race (`:175`) — another delivery just claimed it;
+  3. initial-insert `23505` race (`:187`) — a concurrent insert won the row;
+  4. a stale/`failed` (non-`done`) existing row that isn't reclaimed here.
+- [ ] Failing tests (one per claim-loser path + the seen-error + the stale-release):
   - seen-SELECT returns `{ error }` → route throws (5xx), no dedupe-200;
-  - an event with an **active** lease → response is **non-2xx** (409 preferred) so Stripe redelivers after the lease, instead of dedupe-200;
-  - `releaseLease`/done-write include `.eq('processing_started_at', <claimedAt>)` — a stale releaser (mismatched claim) writes nothing (assert the builder chain got the extra `.eq`).
+  - active lease → **409** (Stripe redelivers after the lease);
+  - claim-CAS lost race → **409**;
+  - initial-insert `23505` race where the existing row is **not** `done` → **409**;
+  - existing row **is** `done` (any path) → **dedupe-200** (the only 200 case);
+  - `releaseLease`/done-write include `.eq('processing_started_at', <claimedAt>)` — a stale releaser (mismatched claim) writes nothing (assert the extra `.eq`).
 - [ ] Fixes:
   - `:144-150` destructure `{ data: seen, error: seenErr }`; throw on `seenErr`.
-  - `:155-162` change the active-lease branch to `return NextResponse.json({ received: false, inFlight: true }, { status: 409 })` — reserve dedupe-200 for `status='done'` rows only. (Stripe treats any non-2xx as retry-later; document this in a comment.)
+  - Make dedupe-200 conditional on the existing row's `status === 'done'` at **every** loser branch (`:155-162` active lease, `:175` CAS-lost, `:187` insert-`23505`): if the row is not `done`, `return NextResponse.json({ received: false, inFlight: true }, { status: 409 })`; only a `done` row returns `{ received: true, deduped: true }` 200. (Stripe treats any non-2xx as retry-later; document this in a comment.)
   - `:198-204` and `:796-800` add `.eq('processing_started_at', claimedAtIso)` to both writes (the claim timestamp is already known at both call sites — thread it if needed).
-- [ ] Check the ~49 existing route tests: the M-22 semantic change will flip any test asserting dedupe-200 during a lease — update those assertions deliberately (they encode the old, droppy behaviour).
+- [ ] Check the ~49 existing route tests: the M-22 semantic change will flip any test asserting dedupe-200 during a lease **or on an insert/CAS race over a non-`done` row** — update those assertions deliberately (they encode the old, droppy behaviour).
 - [ ] Green + commit: `fix(webhook): harden the idempotency ledger (seen-error throw, 409 on active lease, claim-scoped release) (M-21, M-22, L-4)`
 
 ### Task 4 — L-6: dispute-created alert branch
@@ -133,7 +141,9 @@ Order: each fix = failing test → minimal change → green → commit. All test
 
 ## Database / migration work
 
-One tiny additive migration for Task 2's crash-window fix: `alter table orders add column if not exists refund_pending_at timestamptz;` (nullable, no default, no backfill). Set before `refunds.create`, cleared on the `pending→failed` CAS; pending consumers (abandoned-checkout cron, expiry) must exclude `refund_pending_at IS NOT NULL`. Backward-compatible — old code ignores the column (the marker is only *written* by the new code; the risk it guards only exists once the new refund-first path is live, so there's no old-code window that needs it). Auto-applies on merge; rollback = drop the column (reverts to the crash-window residual). L-4's claim-scoping uses the existing `processing_started_at` column (no migration).
+One tiny additive migration for Task 2's crash-window fix: `alter table orders add column if not exists refund_pending_at timestamptz;` (nullable, no default, no backfill). Set before `refunds.create`, cleared on the `pending→failed` CAS; pending consumers (abandoned-checkout cron, expiry, reservation-release) gate their **writes** on `refund_pending_at IS NULL`. Backward-compatible — old code ignores the column.
+
+**Rollback is not stateless — the column is a persistent schema change.** A code rollback (revert the PR) must **retain** the `refund_pending_at` column: it is additive and harmless when unread, and any in-flight row that already carries the marker would otherwise be orphaned. Dropping the column is a **separate follow-up migration**, done only *after* all `refund_pending_at` references are removed from code and no row still carries a pending marker. Never drop it as part of the code revert. (Same applies to the identical rollback note in Rollout / recovery.) L-4's claim-scoping uses the existing `processing_started_at` column (no migration).
 
 ## External-system changes
 
@@ -144,14 +154,14 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 - **Modified:** route tests asserting dedupe-200 during an active lease (now 409); any snapshot of the deps object shape.
 - **New (enumerated — the release gate requires every one, do not collapse to a round number):**
   - Task 1 (H-1): reserved→sold UPDATE error → throw/5xx, no refund. *(1)*
-  - Task 2 (M-5): refund-pending marker set before `refunds.create`; `23505` → refund-once + `failed` (marker cleared) + 200 + alert; redelivery over already-`failed` → follow-up lookup → 200, no re-refund; **crash after refund, before CAS → order stays `pending` with marker → abandoned cron skips it**; zero-row CAS + missing/unexpected order → throw; non-`23505` CAS error → throw. *(5)*
-  - Task 2 (failed-consumer contract): captured-then-refunded `failed` order → no fulfilment / no pending-cron action / absent from account lists / `customerOrderStatus` not a normal delivery state. *(≥3)*
-  - Task 3 (M-21/M-22/L-4): seen-SELECT error → throw; active-lease → 409; stale-claim release writes zero rows. *(3)*
+  - Task 2 (M-5): (a) refund-pending marker set before `refunds.create`; (b) `23505` → refund-once + `failed` (marker cleared) + 200 + alert; (c) redelivery over already-`failed` → follow-up lookup → 200, no re-refund; (d) crash after refund, before CAS → order stays `pending` with marker → `expireOrders` and `releaseReservation` both skip it (marker-before-read **and** marker-after-read interleavings); (e) already-refunded error after idempotency-key expiry → treated as success, CAS proceeds to `failed`; (f) zero-row CAS + missing/unexpected order → throw; (g) non-`23505` CAS error → throw. *(7)*
+  - Task 2 (failed-consumer contract): (a) no fulfilment; (b) no pending-cron/reservation action; (c) absent from account list; (d) absent from account detail; (e) `customerOrderStatus` renders a non-delivery status. *(5)*
+  - Task 3 (M-21/M-22/L-4): (a) seen-SELECT error → throw; (b) active-lease → 409; (c) claim-CAS lost race → 409; (d) insert-`23505` over a non-`done` row → 409; (e) existing `done` row → dedupe-200; (f) stale-claim release writes zero rows. *(6)*
   - Task 4 (L-6): `charge.dispute.created` → deadline-bearing alert. *(1)*
-  - Task 5 (L-5/L-7): invoice failure → alert + still 200; **one regression per enumerated `console.error`-only catch** upgraded to Sentry (count = the number of catches found, listed in the PR — not a round number). *(1 + N)*
-  - Task 6 (M-27): `sendResendTemplate` sends `Idempotency-Key: order-confirmation/<orderId>`; `sendResendHtml` sends `studio-new-order/<orderId>`; each omits the header when no key passed. *(≥3)*
+  - Task 5 (L-5/L-7): invoice failure → alert + still 200 *(1)*; **one regression per enumerated `console.error`-only catch** upgraded to Sentry — count = N, the exact number of catches found (listed in the PR). *(1 + N)*
+  - Task 6 (M-27): (a) `sendResendTemplate` sends `Idempotency-Key: order-confirmation/<orderId>`; (b) `sendResendHtml` sends `studio-new-order/<orderId>`; (c) `sendResendTemplate` omits the header with no key; (d) `sendResendHtml` omits the header with no key. *(4)*
   - Regression: full `payment_intent.succeeded` happy path → 200 with all claims stamped. *(1)*
-  Total ≥ 17 task-level cases + one per L-7 catch (not "six"); the gate is the enumerated list, not the number.
+  Total **≥ 25 task-level cases + N** (one per L-7 catch); the gate is the enumerated list, not the number.
 - **Failure modes simulated:** asymmetric piece_state write failure; `23505` on the order CAS; ledger SELECT failure; concurrent delivery during a lease; stale lease release; Resend timeout + retry; a `failed`-status order reaching each consumer.
 
 ## Verification
@@ -165,7 +175,7 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 
 1. Single PR (`fix:`), after Plan 01 merges (shared files).
 2. The M-22 change (409 on active lease) alters Stripe-visible behaviour: concurrent duplicate deliveries now show as failed attempts that later succeed. Note this in the PR so nobody "fixes" the 409s back.
-3. **Rollback:** revert the PR; all changes are stateless code paths, nothing to unwind.
+3. **Rollback:** revert the PR — the code paths are stateless **except** the additive `orders.refund_pending_at` column (Task 2). The revert must **retain** that column (dropping it is a separate follow-up migration, done only after all references are gone and no row still carries a pending marker — see Database / migration work). Everything else unwinds with the code revert.
 4. **Stop signals:** sustained 409s for the *same* event beyond the 5-min lease (indicates a stuck lease — investigate before assuming Stripe's fault); any refund created by the M-5 path (should be near-impossible; each one deserves a manual review).
 
 ## Acceptance criteria
