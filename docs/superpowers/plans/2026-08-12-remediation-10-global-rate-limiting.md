@@ -4,15 +4,17 @@
 >
 > Source audit: `docs/audits/backend-audit-2026-08-12.md` §5 M-8/M-9, §6.1, §13 Opp-1. Evidence re-verified at HEAD `3da7ee0`.
 
-**Goal:** Replace the per-isolate in-memory limiters — which provide **no global throttle** on Workers — with the native Workers rate-limit binding, closing the two concrete abuse vectors: unauthenticated arbitrary-recipient email sending (mail-bomb + Resend-reputation damage → order-confirmation deliverability, M-8) and full-catalogue reservation griefing that closes the shop every 15 minutes with no money moved (M-9).
+**Goal:** Replace the per-isolate in-memory limiters — which provide **no cross-isolate throttle** on Workers — with the native Workers rate-limit binding, closing the two concrete abuse vectors: unauthenticated arbitrary-recipient email sending (mail-bomb + Resend-reputation damage → order-confirmation deliverability, M-8) and full-catalogue reservation griefing that closes the shop every 15 minutes with no money moved (M-9). **Note the binding is not a *globally exact* limiter** — see the contract below; it is a large, correct improvement over per-isolate, not a strict global counter.
 
-**Architecture:** Add `ratelimit` bindings in `wrangler.jsonc` (one per route family with its window/limit), and a thin adapter that prefers the binding when present and falls back to the existing in-memory limiter locally (where bindings are absent in plain `next dev`). The route-level call-sites keep their current shape — the limiter factory grows a binding-aware variant, so route diffs are minimal.
+**Architecture:** Declare the bindings under the top-level **`ratelimits`** key in `wrangler.jsonc`, each with `name`, a unique `namespace_id`, and `simple: { limit, period }` where **`period` is restricted to 10 or 60 seconds**. A thin adapter prefers the binding when present and falls back to the existing in-memory limiter locally (where bindings are absent in plain `next dev`). The route-level call-sites keep their current shape — the limiter factory grows a binding-aware variant, so route diffs are minimal.
 
-**Tech stack:** Cloudflare Workers rate-limiting binding (https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ — confirm current syntax + GA/beta status at implementation time), existing `checkout-rate-limit.ts` / `return-rate-limit.ts`.
+**Binding contract & locality (load-bearing — do not describe this as a global counter):** `limit({ key })` is **eventually consistent** and enforced **per Cloudflare location** (data center), cached per-isolate and reconciled asynchronously against a location-local store — Cloudflare documents it as permissive, "not an accounting/auditing system." So: (a) counters are per-location, not one global tally; (b) the adapter keys by client IP, so different IPs use different counters (expected); (c) enforcement is cross-isolate **within a location**, which is the actual win over today's per-isolate Map. Objective and acceptance below are written to this reality, not to a global-exactness claim.
+
+**Tech stack:** Cloudflare Workers rate-limiting binding (https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ — confirm current syntax + GA/beta status at implementation time; the `ratelimits` + `simple{limit,period}` shape and the 10/60 s period restriction are current as of this writing), existing `checkout-rate-limit.ts` / `return-rate-limit.ts`.
 
 ## Objective
 
-Every abuse-relevant unauthenticated endpoint gets a **cross-isolate** limit; the in-memory limiter remains only as the local-dev fallback and defense-in-depth.
+Every abuse-relevant unauthenticated endpoint gets a **cross-isolate, per-location** limit (eventually consistent — not a globally exact counter); the in-memory limiter remains only as the local-dev fallback and defense-in-depth.
 
 ## Findings covered
 
@@ -34,13 +36,13 @@ All `VERIFIED` at HEAD `3da7ee0`:
 
 ## Desired end state
 
-`wrangler.jsonc` declares per-family `ratelimit` bindings; all six consumer routes throttle globally in production; local dev behaviour unchanged; the WAF checkout rule stays (defense-in-depth).
+`wrangler.jsonc` declares per-family `ratelimits` bindings (`name` + `namespace_id` + `simple{limit,period}`, period ∈ {10,60}s); all six consumer routes throttle cross-isolate per-location in production (eventually consistent); local dev behaviour unchanged; the WAF checkout rule stays (defense-in-depth).
 
 ## Scope
 
 - `wrangler.jsonc` (bindings), `cloudflare-env.d.ts` / `cloudflare-bindings.d.ts` (types; regen with `npm run cf-typegen` if applicable)
 - `src/lib/checkout-rate-limit.ts` + `return-rate-limit.ts` (binding-aware variant)
-- **`src/lib/auth/rate-limit.ts`** — the login limiter wrapper (`createAuthRateLimiter`) delegates to `createReturnRateLimiter`; it must be updated to thread the binding through, or `auth/login` silently stays on the per-isolate Map fallback while the other routes go global. Do **not** omit this file.
+- **`src/lib/auth/rate-limit.ts`** — the login limiter wrapper (`createAuthRateLimiter`) delegates to `createReturnRateLimiter`; it must be updated to thread the binding through, or `auth/login` silently stays on the per-isolate Map fallback while the other routes use the binding. Do **not** omit this file.
 - the six consumer routes (swap factory call only): checkout, newsletter, newsletter/confirm, interest, returns, **auth/login**
 - Tests for the adapter **and** a login integration test proving `auth/login` uses the binding-backed limiter
 
@@ -72,7 +74,7 @@ All `VERIFIED` at HEAD `3da7ee0`:
 - [ ] Failing tests first: adapter prefers the binding verdict when present (mock binding: deny → 429 even though the Map would allow); falls back to Map without a binding; **binding error → the per-route policy from the table above** (checkout allows-with-log; the other five 429/deny-with-log) — one test per route.
 - [ ] Wire each of the six routes: fetch the binding from the route's env (`getCloudflareContext().env.RL_*` — these are fetch-path routes, ALS is fine here) and pass it **plus its `onOutage` policy** to the singleton factory. For `auth/login`, thread the binding through `src/lib/auth/rate-limit.ts`'s wrapper. Keep 429 response shapes identical.
 - [ ] `npm run cf-typegen` (or manual d.ts) so the bindings typecheck.
-- [ ] `npm run preview:cf` — bindings exist in wrangler preview: hammer one endpoint (`for i in $(seq 40); do curl -s -o /dev/null -w "%{http_code}\n" -X POST <preview>/api/newsletter …; done`) and observe global 429s after the limit.
+- [ ] `npm run preview:cf` — bindings exist in wrangler preview: hammer one endpoint from a **single IP/key** (`for i in $(seq 40); do curl -s -o /dev/null -w "%{http_code}\n" -X POST <preview>/api/newsletter …; done`) and observe 429s after the limit. Because the counter is per-location + eventually consistent, assert **same-key** enforcement across isolates (the same IP hitting the limit), not a globally exact cutoff — the flip to 429 may be slightly permissive by design.
 - [ ] Commit: `feat(rate-limit): global Workers rate-limit bindings with in-memory fallback (M-8, M-9)`
 
 ## Database / migration work
@@ -93,7 +95,7 @@ None.
 ## Verification
 
 - **Local/unit:** `npm test` green (paste adapter suite run).
-- **Preview:** the hammer test above — paste the status-code sequence showing the flip to 429 at the threshold; confirm two different source paths (two terminals/IPs if feasible, else note single-IP scope) still share the global counter.
+- **Preview:** the hammer test above — paste the status-code sequence showing the flip to 429 at (approximately) the threshold; confirm the **same key/IP** is throttled across isolates within a location (the cross-isolate win). Do not expect a globally exact cutoff — the binding is eventually consistent and per-location; note this in the evidence.
 - **Live read-only:** post-deploy, normal traffic unaffected (Workers logs: no unexpected 429s in the first hour).
 - **Live mutation:** none.
 
@@ -105,9 +107,10 @@ None.
 
 ## Acceptance criteria
 
-- [ ] All six routes throttle via the binding in preview (hammer evidence pasted).
+- [ ] All six routes throttle via the binding in preview, same-key/cross-isolate within a location (hammer evidence pasted; per-location eventual-consistency noted, not a global-exact claim).
+- [ ] Bindings declared under top-level `ratelimits` with `name` + `namespace_id` + `simple{limit,period}`, `period` ∈ {10,60}s; separate `RL_LOGIN` / `RL_RETURNS`.
 - [ ] Local dev + `npm test` run without bindings present.
-- [ ] Checkout fails open on binding outage; newsletter/interest per the recorded per-route decision.
+- [ ] Every route has an explicit, tested binding-outage policy (checkout fail-open; newsletter/confirm/interest/returns/login fail-closed) per the policy table.
 - [ ] No legitimate-traffic 429s in the first post-deploy day (operator check).
 
 ## Dependencies

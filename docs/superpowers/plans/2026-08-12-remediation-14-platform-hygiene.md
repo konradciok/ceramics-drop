@@ -77,7 +77,7 @@ Every `/api`/`/admin` response carries the baseline security-header set; feeds s
 
 - [ ] Add a cron sweep (pattern of Plans 02/11 sweeps) with **two retention rules on `webhook_events`**, because the stated objective is "raw PII must not be held forever":
   - **Row deletion:** delete `webhook_events` rows with `status='done'` older than **90 days**.
-  - **Raw-payload bounding (the PII fix):** for **non-`done` rows** (permanently-failed events kept as evidence), do **not** retain `raw_json` forever — after a bounded evidence window (e.g. **30 days**), `update … set raw_json = null` (or redact PII fields) while **keeping the row and its failure metadata** (`provider`, `provider_event_id`, `status`, timestamps). This closes the "a permanently-failed row retains customer PII indefinitely" gap that plain row-deletion misses.
+  - **Raw-payload bounding (the PII fix) — terminal failures only, never pending/retryable:** `status <> 'done'` is **too broad** — it matches in-flight `processing` leases and released-but-still-retryable `failed` rows (Stripe retries a released event for ~3 days), and nulling their `raw_json` would destroy a payload still needed for replay. First **confirm the ledger's status vocabulary** (`webhook_events` uses a leased status — e.g. `processing` / `done` / `failed`; read `20260626120003_webhook_events.sql` + `20260728120000_webhook_events_stripe.sql`). Define **terminal-failure** conservatively as a non-`done` row **older than a window safely past Stripe's 3-day retract window** (e.g. **30 days**) so it cannot still be mid-retry. Then `update … set raw_json = null` for those rows only, keeping the row + failure metadata (`provider`, `provider_event_id`, `status`, timestamps). **Do not key the age on `processed_at`** — that column is only set on the `done`-write, so it is `NULL` on the very non-`done` rows this rule targets (the predicate would never fire). Key on a timestamp present on all rows — `created_at` (or `processing_started_at`); confirm which exists. Recent pending/retryable rows keep their `raw_json` and stay replayable.
   - `cms_audit_log`/`catalog_audit_log` rows older than **365 days** are deleted (keyed on `created_at`).
 - [ ] **Use a key-selection CTE, not `DELETE … LIMIT`** — PostgreSQL does not support `DELETE … LIMIT` directly. Pattern for the batch-limited delete:
 
@@ -92,7 +92,7 @@ Every `/api`/`/admin` response carries the baseline security-header set; feeds s
   ```
 
   Apply the analogous CTE per table with its own predicate (`webhook_events.processed_at`, `cms_audit_log.created_at`, `catalog_audit_log.created_at`). **State explicitly** that the 500-row limit is **per table per run** (not a shared budget), and that the 15-min cadence drains any backlog gradually.
-- [ ] Unit tests: old `done` row deleted; old **non-`done`** row **kept but `raw_json` nulled** after the 30-day window (failure metadata intact); a young failed row keeps its `raw_json`; young `done` kept; the CTE batch limit caps rows touched per table per run.
+- [ ] Unit tests: old `done` row deleted; a **terminal-failure** row (non-`done`, `created_at` > 30 days) → `raw_json` nulled, failure metadata intact; a **recent retryable/pending** row (non-`done`, within the retry window) → `raw_json` **preserved** (still replayable — this is the regression the terminal-only predicate prevents); a row with `NULL processed_at` is still correctly handled (predicate keys on `created_at`, not `processed_at`); young `done` kept; the CTE batch limit caps rows touched per table per run.
 - [ ] Indexes supporting the predicates: check `webhook_events` for a usable `(status, processed_at)`/timestamp index; if absent add `create index if not exists webhook_events_done_prune_idx on webhook_events(processed_at) where status='done';` plus, for the raw-payload sweep, an index aiding `status <> 'done' and processed_at < …` if the table grows — backward-compatible, `if not exists`, auto-applies safely.
 - [ ] Commit: `feat(worker): retention pruning for webhook_events and audit logs (L-14)`
 
@@ -108,7 +108,7 @@ Only the optional pruning index (Task 4) — additive, `if not exists`, no backw
 ## Tests
 
 - **New:** shared header-list module test; feed header assertion; retention sweep matrix; (adopt branch) a preview-level cache-hit check.
-- **Regressions caught:** headers dropped from API responses; feeds reverting to `no-store`; retention accidentally **deleting** a failed row (must be kept as evidence — only its `raw_json` is nulled); retention retaining PII in a failed row's `raw_json` past the evidence window.
+- **Regressions caught:** headers dropped from API responses; feeds reverting to `no-store`; retention accidentally **deleting** a terminal-failure row (must be kept as evidence — only its `raw_json` is nulled); retention **nulling a still-retryable row's `raw_json`** (breaks replay); retention retaining PII in a terminal-failure row's `raw_json` past the evidence window.
 
 ## Verification
 
@@ -126,7 +126,7 @@ Each task ships independently; revert independently. **Stop signals:** any webho
 - [ ] `/api/*` and `/admin*` responses carry the baseline header set (preview + live curl evidence).
 - [ ] Feeds serve with `s-maxage` **and** a confirmed CDN cache `HIT` on the second request; if the zone shows `DYNAMIC`, L-32 is left **OPEN** with a gated zone-cache-rule follow-up recorded (header-only does not close it).
 - [ ] The cache layer is in exactly one of the two resolved states, documented, with zero `set()` error noise in tail.
-- [ ] Retention sweep unit-green: `done` rows deleted after 90 days via the key-selection CTE; non-`done` rows **kept as evidence but with `raw_json` nulled/redacted** after the 30-day window (failure metadata intact); the 500-row cap is per-table-per-run.
+- [ ] Retention sweep unit-green: `done` rows deleted after 90 days via the key-selection CTE; **terminal-failure** rows (non-`done`, aged past the ~30-day terminal window, keyed on `created_at` not `processed_at`) **kept as evidence with `raw_json` nulled/redacted**; **still-retryable/pending** rows keep `raw_json`; the 500-row cap is per-table-per-run.
 
 ## Dependencies
 

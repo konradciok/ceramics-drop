@@ -6,7 +6,9 @@
 
 **Goal:** Close the narrow-but-real failure windows inside the webhook route: the one unchecked money-path UPDATE, the private-sale double-payment 5xx loop, two idempotency-ledger drop windows, the un-CAS'd lease release, missing dispute/invoice/post-processing alerts, and unprotected email retries.
 
-**Architecture:** All changes live in `src/app/api/stripe/webhook/route.ts`, `src/lib/webhook.ts`, and `src/lib/email.ts`, following the file's own established patterns (destructure-and-throw, CAS predicates, claim-once + `waitUntil`). No new abstractions; each fix is a few lines plus tests.
+**Architecture:** All changes live in `src/app/api/stripe/webhook/route.ts`, `src/lib/webhook.ts`, and `src/lib/email.ts`, following the file's own established patterns (destructure-and-throw, CAS predicates). No new abstractions; each fix is a few lines plus tests.
+
+**Do not change the email-send concurrency model.** `sendEmailOnceWithClaim` is intentionally **awaited inline** in the webhook handler so the "sent" claim is recorded only *after* the send completes — if the send were moved into `ctx.waitUntil`, the webhook could return `200` with the claim already written and Stripe would not redeliver after an isolate termination, silently losing the email. The M-27 fix (Task 6) adds a Resend `Idempotency-Key` for retry safety; it does **not** move the send off the inline path. `ctx.waitUntil` remains reserved for the conversions dispatch, not for claim-based emails.
 
 **Tech stack:** Existing webhook route (~49 tests in `route.test.ts`), Resend REST (`Idempotency-Key` header per https://resend.com/docs/dashboard/emails/idempotency-keys).
 
@@ -86,7 +88,13 @@ Order: each fix = failing test → minimal change → green → commit. All test
 
 - [ ] Failing tests: (a) second `payment_intent.succeeded` for a different order on the same private sale → CAS rejects `{ code: '23505' }` → `refunds.create` called once with the file's refund idempotency key, order ends `failed`, response 200, studio alert fired; (b) the same event redelivered after the order is already `failed` → CAS returns zero rows → still 200, refund not re-created (idempotency key), no throw; (c) a non-`23505` error on the CAS → still throws (5xx).
 - [ ] Fix: widen the error narrowing at `:208-218` to include `code?: string`; implement the state machine above. Confirm the exact refund idempotency-key constant by reading the under-fulfilment path at `:297-319` and reuse it verbatim.
-- [ ] Green + commit: `fix(webhook): refund-then-fail state machine for double-paid private sale (M-5)`
+- [ ] **`failed`-consumer audit (a required Task 2 gate, not an open question).** Verify every consumer of `orders.status` handles a `failed` row that represents a *captured-then-refunded* payment correctly:
+  - Account list/detail (`src/lib/account/orders.ts`) already filter to `['paid','refunded']` — a `failed` order is correctly excluded (confirm).
+  - Admin fulfilment (`src/lib/admin/fulfillment.ts`) and the print worker require `status === 'paid'` — `failed` is correctly excluded (confirm).
+  - Server conversions (`src/lib/marketing/conversions.ts`) return unless `paid` — correct (confirm).
+  - **`customerOrderStatus` (`src/lib/account/status.ts`) does NOT special-case `failed`** and would map a direct `failed` input to a normal delivery state — **fix it** so a `failed` order surfaces a non-delivery status (or is excluded), and add a regression test. This is the one consumer that needs a code change.
+- [ ] Regression tests for the contract: a captured-but-refunded `failed` order triggers **no** fulfilment and **no** pending/abandoned-cron action, is **absent** from account lists, and `customerOrderStatus` does not render it as a normal delivery state.
+- [ ] Green + commit: `fix(webhook): refund-then-fail state machine + failed-state consumer contract (M-5)`
 
 ### Task 3 — M-21 + M-22 + L-4: ledger correctness
 
@@ -131,12 +139,21 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 ## Tests
 
 - **Modified:** route tests asserting dedupe-200 during an active lease (now 409); any snapshot of the deps object shape.
-- **New:** the six failing-first tests above; plus one integration-style test that a full `payment_intent.succeeded` happy path still returns 200 with all claims stamped (regression net for the semantic changes).
-- **Failure modes simulated:** asymmetric piece_state write failure; `23505` on the order CAS; ledger SELECT failure; concurrent delivery during a lease; stale lease release; Resend timeout + retry.
+- **New (enumerated — the release gate requires every one, do not collapse to a round number):**
+  - Task 1 (H-1): reserved→sold UPDATE error → throw/5xx, no refund. *(1)*
+  - Task 2 (M-5): `23505` → refund-once + `failed` + 200 + alert; redelivery over already-`failed` → 200, no re-refund; non-`23505` CAS error → throw. *(3)*
+  - Task 2 (failed-consumer contract): captured-then-refunded `failed` order → no fulfilment / no pending-cron action / absent from account lists / `customerOrderStatus` not a normal delivery state. *(≥3)*
+  - Task 3 (M-21/M-22/L-4): seen-SELECT error → throw; active-lease → 409; stale-claim release writes zero rows. *(3)*
+  - Task 4 (L-6): `charge.dispute.created` → deadline-bearing alert. *(1)*
+  - Task 5 (L-5/L-7): invoice failure → alert + still 200; post-processing failure → Sentry. *(≥2)*
+  - Task 6 (M-27): claim-based send carries `Idempotency-Key`; absent when none passed. *(1)*
+  - Regression: full `payment_intent.succeeded` happy path → 200 with all claims stamped. *(1)*
+  Total ≥ 15 task-level cases (not "six").
+- **Failure modes simulated:** asymmetric piece_state write failure; `23505` on the order CAS; ledger SELECT failure; concurrent delivery during a lease; stale lease release; Resend timeout + retry; a `failed`-status order reaching each consumer.
 
 ## Verification
 
-- **Local/unit:** `npx vitest run src/app/api/stripe/webhook/route.test.ts src/lib/webhook.test.ts` — paste the run (expect the full suite, ~55+ tests, green). `npm run lint && npm run typecheck && npm test`.
+- **Local/unit:** `npx vitest run src/app/api/stripe/webhook/route.test.ts src/lib/webhook.test.ts` — paste the run; confirm **all ≥15 enumerated task-level cases** above are present and green (the gate is the enumerated list, not a total count). `npm run lint && npm run typecheck && npm test`.
 - **Preview:** drive one test-mode checkout through the preview webhook (can piggyback Plan 05's rehearsal) — confirm 200 + all rows/claims correct with the new code.
 - **Live read-only:** after deploy, watch the Stripe delivery log for the first real deliveries — all 2xx (or expected 409-then-2xx pairs under concurrent redelivery).
 - **Live mutation:** none.
@@ -150,7 +167,7 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 
 ## Acceptance criteria
 
-- [ ] All six task-level tests green; full webhook suite green (pasted).
+- [ ] All ≥15 enumerated task-level tests (see Tests) present and green; full webhook suite green (pasted).
 - [ ] A simulated asymmetric failure no longer auto-refunds; a simulated double-paid private sale refunds exactly once and returns 200.
 - [ ] Active-lease redelivery returns 409; `done` rows still dedupe-200.
 - [ ] `charge.dispute.created` produces a deadline-bearing alert.
@@ -164,4 +181,4 @@ None. (Resend `Idempotency-Key` is a request header, no dashboard config. The di
 ## Risks / unresolved questions
 
 - M-22's 409 semantics: if a handler legitimately runs longer than 5 min (it shouldn't — Stripe's own timeout is shorter), the event redelivers and 409s until the lease expires; the lease TTL (`STRIPE_LEASE_MS`) may deserve tuning down to ~2 min in the same change — decide from the p99 handler duration visible in Workers logs.
-- M-5 terminal state is **decided as `failed`** (see Task 2 — `pending` is unsafe because the abandoned-checkout cron and other pending flows would act on it). The one implementation check that remains: grep for `status = 'failed'` consumers to confirm none treats "failed + a real refund" as impossible in a way that would misreport; if such a consumer exists, add a distinguishing marker (e.g. a `refunded_reason`) rather than reverting to `pending`.
+- M-5 terminal state is **decided as `failed`** (see Task 2 — `pending` is unsafe because the abandoned-checkout cron and other pending flows would act on it). The consumer audit is now a Task 2 **gate** (not an open question): account lists, admin fulfilment, print worker, and conversions all correctly require/allow only `paid`/`refunded`; the one code change is fixing `customerOrderStatus` so a `failed` order is not rendered as a normal delivery state. If a *future* consumer needs to distinguish "failed + a real refund", add a marker (e.g. `refunded_reason`) rather than reverting to `pending`.

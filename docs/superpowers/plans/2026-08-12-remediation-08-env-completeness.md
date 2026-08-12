@@ -4,7 +4,7 @@
 >
 > Source audit: `docs/audits/backend-audit-2026-08-12.md` §5 M-17, §13 Opp-12 (env-var completeness test). Evidence re-verified at HEAD `3da7ee0`.
 
-**Goal:** A disaster-recovery redeploy provisioned from `.env.example` must not silently produce a store where **every checkout 502s**. Document the missing required secrets and add a test that keeps `.env.example` complete forever.
+**Goal (scoped to documentation completeness — not a provisioning guarantee):** keep `.env.example` a complete, machine-checked catalogue of the runtime-required variables, so a disaster-recovery operator provisioning from it has every name in front of them. **An `.env.example` entry does not *provision* a Cloudflare Worker secret** — an uncommented `KEY=` line documents that a value is needed, it does not install it. This guard therefore closes the "the operator never knew the variable existed" half of M-17; the "the value is actually set in prod" half is owned by **Plan 04's secret-presence sweep** plus a post-provision checkout smoke test. Do not claim this plan alone guarantees DR checkout availability.
 
 **Architecture:** `.env.example` additions + one guard test in `scripts/` (the tripwire pattern of `build-config.test.ts`), cross-checking the non-optional keys declared in `cloudflare-env.d.ts` against `.env.example` — the type declaration file is the machine-readable source of truth for "required".
 
@@ -12,7 +12,7 @@
 
 ## Objective
 
-Anyone provisioning a fresh environment from `.env.example` gets every runtime-required variable named, and CI fails when a new `env.X` requirement lands without an `.env.example` entry.
+Anyone provisioning a fresh environment from `.env.example` gets every runtime-required variable **named** (documentation completeness), and CI fails when a new required env reference lands without an `.env.example` entry. Actual prod-secret **presence** is verified separately (Plan 04 Task 6 + a post-provision checkout smoke) — this plan does not assert values are set.
 
 ## Findings covered
 
@@ -46,10 +46,11 @@ Anyone provisioning a fresh environment from `.env.example` gets every runtime-r
 ## Implementation steps
 
 - [ ] **Failing test first.** `scripts/env-example-completeness.test.ts`:
+  - **Fail closed on parser misses:** first assert the `CloudflareEnv` interface was actually found in `cloudflare-env.d.ts` **and** that the parsed required-key set is non-empty. If either assertion fails, the test **fails** (a silent regex miss must never let the completeness check pass vacuously).
   - Parse `cloudflare-env.d.ts` for declared key names, splitting required (no `?`) from optional (`?`).
   - Parse `.env.example` twice, distinguishing **active** entries (`^\s*([A-Z0-9_]+)=`, uncommented) from **commented-out** entries (`^\s*#\s*([A-Z0-9_]+)=`). A commented entry documents a name but does **not** provision it when an operator copies `.env.example` to `.env`.
   - Assert every **required** key from the type file has an **active (uncommented) `KEY=` line** in `.env.example` (empty value is fine — the point is the line survives a copy so the operator sees it must be filled). A commented-out required key **fails** the test — that is exactly the M-17 failure mode (a DR redeploy silently omits `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` / `CMS_PREVIEW_SECRET` and every checkout 502s). Comment-only entries are permitted **only** for optional keys or allowlisted non-provisioned bindings (e.g. `FULFILMENT_QUEUE`, `PRINT_ASSETS`, `ASSETS`, `WORKER_SELF_REFERENCE` — binding names live in `wrangler.jsonc`, not env files; also `NEXT_PUBLIC_APP_VERSION`, build-inlined), each with a justification comment.
-  - Second assertion (drift the other way): every `NEXT_PUBLIC_*`/secret name referenced as `env.<NAME>` in `src/**` + `worker.ts` (regex scan) is either declared in `cloudflare-env.d.ts` or on the allowlist — this catches the `ADMIN_*`-style untyped escape hatch next time.
+  - Second assertion (drift the other way): every config name referenced in `src/**` + `worker.ts` is either declared in `cloudflare-env.d.ts` or on the allowlist — this catches the `ADMIN_*`-style untyped escape hatch next time. **Define the scan scope explicitly and cover every access form actually used in the repo:** both `env.<NAME>` / `env['<NAME>']` **and** `process.env.<NAME>` (the codebase reads `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `NODE_ENV`, `NEXT_RUNTIME` via `process.env` — e.g. `src/lib/sentry-options.ts`, `next.config.ts`). Either include `process.env.<NAME>` reads in the scan (allowlisting build/runtime intrinsics like `NODE_ENV`/`NEXT_RUNTIME`), or, if `process.env`-only vars are deemed out of scope, **document and test that boundary explicitly** (assert the known `process.env` names are the allowlisted set) rather than silently ignoring them. Prefer covering them — an ad-hoc regex that misses `process.env` would let a future `process.env.NEW_SECRET` escape the guard.
 - [ ] Run it — expect FAIL naming exactly `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` and `CMS_PREVIEW_SECRET` (plus the `ADMIN_*` trio on the second assertion).
 - [ ] Add the two required entries as **active (uncommented) `KEY=` lines** in `.env.example` with explanatory comments matching neighbours (mode-specific PMC id, `wrangler secret put` instruction, checkout-fails-closed note; dedicated HMAC secret, never reuse others — mirror the audit/AGENTS.md language). Add the three optional `ADMIN_*` vars as a **commented** local-only block (they are optional overrides — comment form is correct for them) referencing `src/lib/admin/clients.ts`.
 - [ ] Adjust the allowlist until the test is green for the *right* reasons (each allowlist entry gets a one-line justification comment).

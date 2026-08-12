@@ -20,7 +20,7 @@ Prove, with recorded evidence, that after Plan 02's fix: (1) a queue delivery pr
 - **L-22** (LOW) — unexercised Prodigi contract assumptions (PLN `recipientCost`, 409-body idempotency, `InProduction` stage). → PLANNED (observed during rehearsal; discrepancies filed, not fixed here)
 - **§15.2** — C-2 runtime verification (post-fix: expect success; also optionally demonstrate the pre-fix throw for the record if cheap). → PLANNED
 - **§15.8** — end-to-end pipeline rehearsal incl. alert channels. → PLANNED
-- **§6.11** (`in_production` stage reality) — observed from sandbox callbacks during the rehearsal; outcome recorded for Plan 11. → REQUIRES-VERIFICATION (settled here)
+- **§6.11** (`in_production` stage reality) — **REQUIRES-VERIFICATION**: stays open until the rehearsal log records the actual sandbox callback stages. This plan *observes* it (does not pre-settle it); once the log captures the result, the master ledger is updated to the resulting status and Plan 11 Task 6 acts on it.
 
 ## Current-state evidence
 
@@ -40,7 +40,15 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 - Stripe **test mode** objects (orders/PIs created and abandoned/refunded in test mode)
 - Prodigi **sandbox** orders (created and cancelled)
 - Preview-target Supabase rows (test orders); if preview shares the prod Supabase project, use clearly-marked test order rows and clean up after — record what was created
-- New file: rehearsal log appended to `docs/audits/backend-audit-2026-08-12-verification.md` (or a sibling dated file)
+- New file: rehearsal log appended to `docs/audits/backend-audit-2026-08-12-verification.md` (or a sibling dated file). **This is a tracked, committed file — every evidence entry MUST be redacted first (see the redaction checklist below).** Raw, unredacted evidence (full tail dumps, signed URLs, screenshots with PII) stays **outside** the repo.
+
+**Redaction checklist (apply to every logged evidence item before commit — especially since preview may share the production Supabase project):**
+- Email addresses → mask (`a***@domain`).
+- Customer / order identifiers, `payment_intent` ids, Prodigi order ids → truncate or pseudonymise (keep enough to correlate, not to identify — e.g. last 6 chars).
+- Webhook payloads / `raw_json` → do not paste; summarise the relevant fields only.
+- Signed print-asset URLs → strip `sig`/token query params (keep path + `exp` if needed).
+- Tokens / secrets (`FULFILMENT_DEBUG_TOKEN`, keys) → never paste, not even partially.
+- Screenshots → crop/blur any of the above before attaching.
 
 ## Out of scope
 
@@ -68,10 +76,12 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 
 ### Task 3 — failure path: alerts are loud
 
-- [ ] Force one failing job in preview using a failure the disposition helper classifies as **retryable** — this is the point of the drill (proving backoff → DLQ). An invalid sandbox key can surface as a **terminal** `ProdigiError` (`retryable: false`), which `decideMessageDisposition` **acks** (`src/server/fulfilment/queue-disposition.test.ts` documents `retryable: false → ack`) — that would prove nothing and drop the job with no DLQ hop. Use a known-retryable lever instead (e.g. a Prodigi endpoint 5xx / network error, or a timeout via Plan 11's `AbortSignal`), **or** assert the injected error's disposition is `'retry'` before relying on it. Observe: retries with backoff (Plan 02) visible in tail, then DLQ delivery.
+- [ ] **Define the injection mechanism up front — the drill must force a *retryable* failure deterministically, and it cannot depend on Plan 11 (which runs *after* this rehearsal).** An invalid sandbox key can surface as a **terminal** `ProdigiError` (`retryable: false`), which `decideMessageDisposition` **acks** (`src/server/fulfilment/queue-disposition.test.ts` documents `retryable: false → ack`) — that would prove nothing and drop the job with no DLQ hop. Concrete preview-only lever available today: **point the Prodigi base URL at a 5xx/unroutable endpoint in the preview env** (the client's `fetch` catch maps a network error to `ProdigiError(…, null, true)` — retryable), so every delivery retries → DLQ. Do not rely on Plan 11's timeout (not yet merged at rehearsal time).
+- [ ] **Before running the drill, assert the injected error is classified `'retry'`** — e.g. a one-off `decideMessageDisposition(<the injected error>) === 'retry'` check (unit or a `wrangler tail` observation of a retry, not an ack) — so the drill is known to exercise backoff→DLQ, not a silent ack.
+- [ ] Run it: observe retries with backoff (Plan 02) in tail, then DLQ delivery.
 - [ ] Confirm the DLQ handler fires: studio email received AND Sentry event visible (Plan 03's worker-context init — this is its live proof).
-- [ ] Confirm the stalled-job sweep (Plan 02 Task 3): a job left in a non-terminal state > 2 h alerts. (Time-box: temporarily lower the threshold via a preview-only env/edit is NOT allowed — instead backdate the test row's `updated_at` via SQL on the preview target, which keeps code untouched.)
-- [ ] Restore the sandbox key; re-drive or cancel the failed job; clean up rows.
+- [ ] Confirm the stalled-job sweep (Plan 02 Task 3): a job left in a non-terminal state > 2 h alerts. (Time-box: temporarily lowering the threshold via a preview-only env/edit is NOT allowed — instead backdate the test row's `updated_at` via SQL on the preview target, which keeps code untouched.)
+- [ ] Restore the Prodigi base URL / sandbox key; re-drive or cancel the failed job; clean up rows.
 
 ### Task 4 — refund leg (joint with Plan 01, test mode)
 
@@ -81,7 +91,7 @@ A recorded rehearsal log showing every pipeline stage green in preview, every al
 ### Task 5 — go/no-go + cleanup
 
 - [ ] Cleanup checklist executed (test orders annotated/removed per Task 1 plan; sandbox orders cancelled; preview-only secrets like `FULFILMENT_DEBUG_TOKEN` confirmed absent from prod — cross-check Plan 04 Task 6).
-- [ ] Write the go/no-go statement for real print sales into the log, signed with date + evidence links. **No-go criteria:** any stage silently failed, any alert channel dark, any stranded row.
+- [ ] Write the go/no-go statement for real print sales into the log, signed with date + evidence links — **all evidence redacted per the checklist in Task 1** before commit. **No-go criteria:** any stage silently failed, any alert channel dark, any stranded row.
 
 ## Database / migration work
 
