@@ -46,12 +46,26 @@ export interface ProdigiShipment {
   dispatchDate?: string;
 }
 
+/** Per-order issue as documented for `status.issues` (v4). */
+export interface ProdigiOrderIssue {
+  objectId?: string;
+  errorCode?: string;
+  description?: string;
+  authorisationDetails?: unknown;
+  [key: string]: unknown;
+}
+
 export interface ProdigiOrderResponse {
-  outcome: 'Created' | 'AlreadyExists' | string;
+  /**
+   * Docs list `created` / `createdWithIssues` / `alreadyExists` / `onHold`, but
+   * examples elsewhere use PascalCase — compare case-insensitively (same
+   * self-disagreement as ProdigiCancelResponse below).
+   */
+  outcome: 'Created' | 'CreatedWithIssues' | 'AlreadyExists' | 'OnHold' | string;
   order: {
     id: string;
     merchantReference?: string;
-    status: { stage: string };
+    status: { stage: string; issues?: ProdigiOrderIssue[] };
     items: Array<{ id: string; sku: string; status: { detail: string } }>;
     shipments?: ProdigiShipment[];
     recipient?: ProdigiRecipient;

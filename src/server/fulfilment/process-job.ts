@@ -3,9 +3,12 @@ import { supabaseFromEnv } from '@/lib/supabase';
 import { signPrintAssetUrl } from '@/lib/print-assets';
 import { getWorkerOrigin } from '@/lib/site.server';
 import { getAssetForFulfilment } from '@/server/print-assets/repository';
+import { captureWorkerAlert } from '@/lib/worker-sentry';
+import { sendStudioAlertEmail } from '@/lib/studio-alert-email';
 import { prodigiClient, ProdigiError } from '../prodigi/client';
 import { buildProdigiPayload, type OrderRow, type PrintItemRow } from '../prodigi/mapper';
-import type { FulfilmentJobMessage } from '../prodigi/types';
+import { buildOutcomeAlert, serializeOutcomeIssues } from './outcome-alert';
+import type { FulfilmentJobMessage, ProdigiOrderIssue } from '../prodigi/types';
 
 type AssetResolveResult =
   | { ok: true; url: string; shaPrefix: string; revision: string }
@@ -190,9 +193,15 @@ export async function processJob(
   }
 
   let prodigiOrderId: string;
+  // M-26: outcome normalized to lowercase — Prodigi's docs/examples disagree on
+  // casing ('createdWithIssues' vs 'CreatedWithIssues'), same as cancel outcomes.
+  let outcome = 'created';
+  let outcomeIssues: ProdigiOrderIssue[] = [];
   try {
     const res = await client.postOrder(payload);
     prodigiOrderId = res.order.id;
+    outcome = (res.outcome ?? '').toLowerCase() || 'unknown';
+    outcomeIssues = res.order.status?.issues ?? [];
   } catch (e) {
     // 409 = idempotencyKey duplicate: the order already exists on Prodigi.
     // Recover its id from the response body instead of failing the job.
@@ -201,6 +210,7 @@ export async function processJob(
       : undefined;
     if (dupId) {
       prodigiOrderId = dupId;
+      outcome = 'alreadyexists';
     } else if (e instanceof ProdigiError && e.status === 409) {
       // Order exists but the body carried no id — callbacks will reconcile via
       // merchantReference; do not create a second order.
@@ -218,22 +228,55 @@ export async function processJob(
     }
   }
 
-  // 6. Persist Prodigi order + mark submitted. Errors throw → queue retry
-  // (re-POST hits 409 above and lands back here with the recovered id).
+  // 6. Persist prodigi_orders for EVERY created remote order — BEFORE the
+  // outcome branch (M-26): CreatedWithIssues/OnHold orders exist at Prodigi
+  // too, and the reconciliation sweep (M-12) can only re-poll persisted rows.
+  // Errors throw → queue retry (re-POST hits 409 above, lands back here).
   const { error: poErr } = await supabase.from('prodigi_orders').upsert(
     { order_id: orderId, prodigi_order_id: prodigiOrderId, prodigi_status_stage: 'InProgress' },
     { onConflict: 'prodigi_order_id' },
   );
   if (poErr) throw poErr;
 
-  const { error: doneErr } = await supabase.from('fulfilment_jobs')
+  // 7. Finalize per outcome — single finalization path (M-26). Previously every
+  // 200 POST was marked submitted, silently absorbing CreatedWithIssues/OnHold.
+  const attempts = (job.attempts ?? 0) + 1;
+
+  if (outcome === 'created' || outcome === 'alreadyexists') {
+    const { error: doneErr } = await supabase.from('fulfilment_jobs')
+      .update({ status: 'fulfilment_submitted', attempts, updated_at: now() })
+      .eq('id', jobId);
+    if (doneErr) throw doneErr;
+    return;
+  }
+
+  if (outcome === 'onhold') {
+    // Order exists but will not progress without action → the human-attention
+    // status the failed-action cron sweep already alerts on. Never throw here:
+    // a queue retry would re-POST and re-classify via 409 as alreadyexists.
+    await failJob('failed_action_required', serializeOutcomeIssues('OnHold', outcomeIssues), attempts);
+    return;
+  }
+
+  // CreatedWithIssues + any unknown outcome: the order exists and keeps moving,
+  // but carries issues → track as submitted (reconciliation keeps polling it),
+  // persist the full diagnostics, and alert loudly. No throw (retry-create risk).
+  const { error: issuesErr } = await supabase.from('fulfilment_jobs')
     .update({
       status: 'fulfilment_submitted',
-      attempts: (job.attempts ?? 0) + 1,
+      attempts,
+      last_error: serializeOutcomeIssues(outcome, outcomeIssues),
       updated_at: now(),
     })
     .eq('id', jobId);
-  if (doneErr) throw doneErr;
+  if (issuesErr) throw issuesErr;
+
+  const alert = buildOutcomeAlert({ orderId, jobId, prodigiOrderId, outcome, issues: outcomeIssues });
+  console.error(JSON.stringify(alert.log));
+  await captureWorkerAlert(env, alert.sentry); // fail-soft by contract
+  await sendStudioAlertEmail(env, alert.email, 'prodigi order created with issues').catch((e) =>
+    console.error(JSON.stringify({ event: 'prodigi_outcome_email_failed', orderId, error: String(e) })),
+  );
 }
 
 // ponytail: mapProdigiStage re-exported for consumers who only need the mapping without the full job runner

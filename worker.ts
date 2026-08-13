@@ -26,6 +26,9 @@ import { releaseTargetStatus } from './src/lib/piece-release';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
+// Shared with the queue consumer (process-job outcome alerts) — throws on
+// failure so cron sweeps only mark their `*_alerted_at` after a real send.
+import { sendStudioAlertEmail } from './src/lib/studio-alert-email';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
 const STRANDED_AFTER_MS = 2 * 60 * 60 * 1000; // 2h — a normal job leaves the pre-submission states in seconds; >2h means stuck
@@ -480,47 +483,6 @@ async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
   if (markErr) throw new Error(`sweepStrandedJobs mark failed: ${markErr.message}`);
 
   console.log(JSON.stringify({ event: 'fulfilment_job_stranded_alerted', count: inputs.length }));
-}
-
-/**
- * Send a studio alert email via Resend. Uses `env` directly (the scheduled
- * handler has no request context). THROWS on missing config or a Resend failure
- * — the caller only marks its `*_alerted_at` once this resolves, so a throw
- * correctly leaves the rows unalerted for the next cron tick.
- */
-async function sendStudioAlertEmail(
-  env: CloudflareEnv,
-  email: { subject: string; html: string },
-  context: string,
-): Promise<void> {
-  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
-    throw new Error(`RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing — cannot alert: ${context}`);
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: EMAIL_FROM,
-        to: [env.STUDIO_NOTIFY_EMAIL],
-        reply_to: EMAIL.contact,
-        subject: email.subject,
-        html: email.html,
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '');
-      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-    }
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 // Re-export the OpenNext Durable Object classes so the deployment keeps working.

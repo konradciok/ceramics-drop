@@ -19,10 +19,12 @@ describe('isTerminalStatus', () => {
 
 // ── processJob guard tests ────────────────────────────────────────────────────
 
-const { mockFrom, mockPostOrder, mockGetAssetForFulfilment } = vi.hoisted(() => ({
+const { mockFrom, mockPostOrder, mockGetAssetForFulfilment, mockCaptureAlert, mockStudioEmail } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockPostOrder: vi.fn(),
   mockGetAssetForFulfilment: vi.fn(),
+  mockCaptureAlert: vi.fn(async () => {}),
+  mockStudioEmail: vi.fn(async () => {}),
 }));
 
 // C-2 guard: the queue runs OUTSIDE the request ALS, so getSupabaseAdmin() (which
@@ -45,6 +47,8 @@ vi.mock('../prodigi/mapper', async (importOriginal) => {
   return { ...actual, buildProdigiPayload: vi.fn(() => ({})) };
 });
 vi.mock('@/lib/print-assets', () => ({ signPrintAssetUrl: vi.fn().mockResolvedValue('https://cdn.example.com/asset.jpg') }));
+vi.mock('@/lib/worker-sentry', () => ({ captureWorkerAlert: mockCaptureAlert }));
+vi.mock('@/lib/studio-alert-email', () => ({ sendStudioAlertEmail: mockStudioEmail }));
 vi.mock('@/server/print-assets/repository', () => ({
   getAssetForFulfilment: mockGetAssetForFulfilment,
 }));
@@ -127,7 +131,7 @@ function setupMocks({
 describe('processJob', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPostOrder.mockResolvedValue({ order: { id: 'pr_order_1' } });
+    mockPostOrder.mockResolvedValue({ outcome: 'Created', order: { id: 'pr_order_1', status: { stage: 'InProgress' } } });
     mockGetAssetForFulfilment.mockResolvedValue({
       id: ASSET_ID,
       r2Key: PRINT_VARIANT.assetKey,
@@ -313,6 +317,129 @@ describe('processJob', () => {
       status: 'failed_action_required',
       last_error: expect.stringContaining('r2_key mismatch'),
     });
+  });
+
+  // ── M-26: Prodigi outcome matrix ─────────────────────────────────────────
+
+  /** Table index helpers: assert prodigi_orders is persisted BEFORE finalization. */
+  function tableOrder() {
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    return {
+      tables,
+      poIdx: tables.lastIndexOf('prodigi_orders'),
+      lastJobIdx: tables.lastIndexOf('fulfilment_jobs'),
+      lastJobUpdate: () => {
+        const chain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+        return chain['update'].mock.calls[0][0] as Record<string, unknown>;
+      },
+      poUpsert: () => {
+        const chain = mockFrom.mock.results[tables.lastIndexOf('prodigi_orders')].value as Record<string, ReturnType<typeof vi.fn>>;
+        return chain['upsert'].mock.calls[0][0] as Record<string, unknown>;
+      },
+    };
+  }
+
+  it('outcome Created: submitted, prodigi_orders written, NO alert', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    const o = tableOrder();
+    expect(o.poUpsert()).toMatchObject({ prodigi_order_id: 'pr_order_1' });
+    expect(o.lastJobUpdate()).toMatchObject({ status: 'fulfilment_submitted' });
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+    expect(mockStudioEmail).not.toHaveBeenCalled();
+  });
+
+  it('outcome alreadyExists (docs camelCase): submitted, no alert — casing-insensitive', async () => {
+    mockPostOrder.mockResolvedValueOnce({ outcome: 'alreadyExists', order: { id: 'pr_order_1', status: { stage: 'InProgress' } } });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    expect(tableOrder().lastJobUpdate()).toMatchObject({ status: 'fulfilment_submitted' });
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+    expect(mockStudioEmail).not.toHaveBeenCalled();
+  });
+
+  it('outcome CreatedWithIssues: prodigi_orders BEFORE finalization, submitted + untruncated issues + loud alert, no throw', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const longDescription = 'asset colour profile mismatch — '.repeat(20); // ~640 chars, must survive whole
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'CreatedWithIssues',
+      order: {
+        id: 'pr_issues_1',
+        status: {
+          stage: 'InProgress',
+          issues: [{ objectId: 'item-1', errorCode: 'items.assets.NotDownloaded', description: longDescription }],
+        },
+      },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined(); // no throw → no retry-create
+
+    const o = tableOrder();
+    expect(o.poIdx).toBeGreaterThan(-1);
+    expect(o.poIdx).toBeLessThan(o.lastJobIdx); // remote order persisted before status finalization
+    expect(o.poUpsert()).toMatchObject({ prodigi_order_id: 'pr_issues_1' });
+    const update = o.lastJobUpdate();
+    expect(update).toMatchObject({ status: 'fulfilment_submitted' });
+    expect(String(update.last_error)).toContain('items.assets.NotDownloaded');
+    expect(String(update.last_error)).toContain(longDescription); // no silent truncation
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert.mock.calls[0][1]).toMatchObject({ message: 'prodigi_order_outcome_issues', level: 'error' });
+    expect(mockStudioEmail).toHaveBeenCalledTimes(1);
+    expect(mockPostOrder).toHaveBeenCalledTimes(1); // never re-POSTed
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('outcome OnHold: prodigi_orders written, failed_action_required with reason (cron sweep alerts it)', async () => {
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'OnHold',
+      order: { id: 'pr_hold_1', status: { stage: 'InProgress', issues: [] } },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined();
+
+    const o = tableOrder();
+    expect(o.poUpsert()).toMatchObject({ prodigi_order_id: 'pr_hold_1' });
+    expect(o.poIdx).toBeLessThan(o.lastJobIdx);
+    const update = o.lastJobUpdate();
+    expect(update).toMatchObject({ status: 'failed_action_required' });
+    expect(String(update.last_error)).toContain('OnHold');
+  });
+
+  it('unknown outcome: treated as CreatedWithIssues (submitted + alert), never as silent success', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'SomeFutureOutcome',
+      order: { id: 'pr_future_1', status: { stage: 'InProgress' } },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+    await processJob(MSG, ENV_SIGNED, CTX);
+
+    const update = tableOrder().lastJobUpdate();
+    expect(update).toMatchObject({ status: 'fulfilment_submitted' });
+    expect(String(update.last_error)).toContain('somefutureoutcome');
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('a studio-email failure on the issues path is swallowed (never a retry-create)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockStudioEmail.mockRejectedValueOnce(new Error('resend down'));
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'CreatedWithIssues',
+      order: { id: 'pr_issues_2', status: { stage: 'InProgress', issues: [] } },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { processJob } = await import('./process-job');
+
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined();
+    consoleErrorSpy.mockRestore();
   });
 
   it('marks job failed_action_required when shipping address is missing', async () => {
