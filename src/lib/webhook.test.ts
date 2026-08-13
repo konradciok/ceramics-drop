@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type Stripe from 'stripe';
-import { handleStripeEvent, type WebhookDeps } from './webhook';
+import { handleStripeEvent, HANDLED_STRIPE_EVENTS, type WebhookDeps } from './webhook';
 
 function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
@@ -11,6 +11,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     createShipment: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
     trackPurchase: vi.fn().mockResolvedValue(undefined),
+    alertRefundFailed: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -31,6 +32,15 @@ const dispute = (overrides: Partial<{ payment_intent: string | { id: string } | 
   object: 'dispute',
   payment_intent: 'pi_1',
   status: 'lost',
+  ...overrides,
+});
+
+const refund = (overrides: Partial<{ payment_intent: string | null; failure_reason: string }> = {}) => ({
+  id: 're_1',
+  object: 'refund',
+  payment_intent: 'pi_1',
+  status: 'failed',
+  failure_reason: 'expired_or_canceled_card',
   ...overrides,
 });
 
@@ -192,5 +202,53 @@ describe('handleStripeEvent', () => {
       );
       expect(d.releaseSale).not.toHaveBeenCalled();
     });
+  });
+
+  // refund.failed
+  describe('refund.failed', () => {
+    it('alerts the studio exactly once and mutates no order state', async () => {
+      const d = deps();
+      const r = refund();
+      await handleStripeEvent({ type: 'refund.failed', data: { object: r } } as unknown as Stripe.Event, d);
+      expect(d.alertRefundFailed).toHaveBeenCalledTimes(1);
+      expect(d.alertRefundFailed).toHaveBeenCalledWith(r);
+      expect(d.releaseSale).not.toHaveBeenCalled();
+      expect(d.markPaid).not.toHaveBeenCalled();
+      expect(d.releaseHold).not.toHaveBeenCalled();
+      expect(d.revalidate).not.toHaveBeenCalled();
+    });
+  });
+
+  // HANDLED_STRIPE_EVENTS ↔ switch drift guard: webhook-config-check asserts the
+  // live endpoint subscribes exactly this constant, so a handler added to the
+  // switch without updating the constant (or vice versa) would make the drift
+  // guard assert the wrong set. Every member must reach a non-default branch.
+  describe('HANDLED_STRIPE_EVENTS matches the switch', () => {
+    // Per event type: a minimal event object + the dep its branch must invoke
+    // (null = the documented payment_failed no-op, asserted as "no dep called").
+    const branchByEvent: Record<string, { object: unknown; dep: keyof WebhookDeps | null }> = {
+      'payment_intent.succeeded': { object: pi(), dep: 'markPaid' },
+      'payment_intent.canceled': { object: pi(), dep: 'releaseHold' },
+      'payment_intent.payment_failed': { object: pi(), dep: null },
+      'charge.refunded': { object: charge(), dep: 'releaseSale' },
+      'charge.dispute.closed': { object: dispute(), dep: 'releaseSale' },
+      'refund.failed': { object: refund(), dep: 'alertRefundFailed' },
+    };
+
+    it('the constant and this test cover exactly the same event set', () => {
+      expect([...HANDLED_STRIPE_EVENTS].sort()).toEqual(Object.keys(branchByEvent).sort());
+    });
+
+    for (const [type, { object, dep }] of Object.entries(branchByEvent)) {
+      it(`${type}: ${dep ? `invokes ${dep}` : 'is the documented no-op (no dep invoked)'}`, async () => {
+        const d = deps();
+        await handleStripeEvent({ type, data: { object } } as unknown as Stripe.Event, d);
+        if (dep) {
+          expect(d[dep]).toHaveBeenCalled();
+        } else {
+          for (const fn of Object.values(d)) expect(fn).not.toHaveBeenCalled();
+        }
+      });
+    }
   });
 });

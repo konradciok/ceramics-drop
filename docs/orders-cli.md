@@ -18,6 +18,8 @@ order refund <uuid> --confirm <uuid>
 order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
 order create-shipment <uuid> [--recreate] --confirm <uuid>
+webhook-config-check
+reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]
 ```
 
 `--compact` prints single-line JSON. Output is redacted (email, name, phone, address) by default; use `--show-pii` only when full personal data is operationally necessary.
@@ -55,6 +57,7 @@ The local-admin `ADMIN_SUPABASE_URL` / `ADMIN_SUPABASE_SERVICE_ROLE_KEY` / `ADMI
 - `order get <uuid>` — merges the order + its line items, the matching `piece_state` rows for ceramic items, `prodigi_orders`/`fulfilment_jobs` rows for print items, and a Stripe PaymentIntent summary (status, card brand/last4, refunded amount).
 - `order list [--status STATUS] [--email EMAIL] [--top N]` — thin wrapper on `listOrders()`. `--status` must be one of `pending`, `paid`, `failed`, `expired`, `refunded`.
 - `inventory list [--status STATUS]` — wrapper on `listInventory()`. `--status` must be one of `available`, `reserved`, `sold`. Each row's `reservedExpired` flag marks a stuck hold worth investigating.
+- `webhook-config-check` — Stripe webhook drift guard (needs only `STRIPE_SECRET_KEY`). For every **enabled** endpoint whose URL host is `anna-ciok.studio` it asserts (a) `enabled_events` is a superset of the code's `HANDLED_STRIPE_EVENTS` (`src/lib/webhook.ts`) and (b) the endpoint's `api_version` equals the SDK's pinned request version. Missing required events or a version mismatch exit `4` with code `webhook_config_drift`, naming each problem — a missing event means that handler branch is silently dead in production (this is exactly how the C-1 refund outage happened). Subscribed-but-unhandled events are listed as `subscribedButUnhandled` (a warning, not a failure). Run it **after any Stripe Dashboard webhook change and after every `stripe` package bump** (see the API-version ritual in `AGENTS.md` and [stripe-operations.md](./stripe-operations.md)).
 
 Reads work against whatever Supabase project the loaded env points at — there is no production-target guard on read-only commands.
 
@@ -72,6 +75,8 @@ Mutations are additionally blocked unless the loaded `SUPABASE_URL` resolves to 
 - `order release-reservation <uuid> --confirm <uuid>` — cancels the order's PaymentIntent if still pending, then frees any pieces stuck in `reserved` (private-sale orders return to `sold`, never relisted publicly).
 - `order resend-confirmation <uuid> --confirm <uuid>` — re-sends the customer order-confirmation email.
 - `order create-shipment <uuid> [--recreate] --confirm <uuid>` — (re)creates the InPost shipment for a paid ceramic order; idempotent unless `--recreate` is passed. Print-only orders are rejected (Prodigi ships those, not InPost).
+- `reconcile-refunds [--since ISO8601]` — **dry-run by default** (no writes). Sweeps Stripe for succeeded refunds since `--since` (default `2026-06-01`, the ledger epoch), keeps only **fully** refunded charges (`amount_refunded === amount` — partial refunds never reconcile), joins to `orders` by `payment_intent_id`, and reports every order that is **not fully converged**: status ≠ `refunded`/`failed`, or `piece_state` rows still `sold` (non-private-sale only), or an active `prodigi_orders`/`fulfilment_jobs` row, or (`followUps`) a recorded GA4 purchase whose revenue was never reversed. An order drops off only when every detectable side effect is done — the report never reads empty while a refunded order still has an active Prodigi job. Refunds with no matching order are surfaced as `no_order_for_payment_intent`.
+- `reconcile-refunds --confirm <uuid> [--skip-relist]` — converges ONE order with the same CAS predicates as the webhook's `releaseSale`: order `paid`/`pending`→`refunded`, pieces relisted `sold`/`reserved`→`available` scoped to `order_id` (private-sale orders converge `reserved`→`sold`, never relisted publicly). Refuses unless Stripe confirms the payment is fully refunded **right now**. Side effects the CLI cannot do offline are emitted as an explicit `requiredFollowUps` block — **Prodigi cancel** (replay the `charge.refunded` event from Workbench, or cancel in the Prodigi dashboard) and **GA4 revenue reversal** — and the order stays partially-converged (`converged: false`, still listed by the next dry-run) until they're done. `--skip-relist` records the deliberate operator decision that the piece must NOT return to sale (e.g. damaged-in-transit): pieces converge to the same terminal state `releaseSale` gives private-sale pieces — `sold` with the order link detached (`order_id = NULL`) — so the decision lives in `piece_state` itself and the dry-run stops flagging the order (history stays in `order_items`). Prefer replaying the `charge.refunded` event when the webhook is subscribed and healthy — this command is the bounded offline repair, not a `releaseSale` replacement.
 
 ## Output and exit codes
 

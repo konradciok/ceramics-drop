@@ -29,6 +29,7 @@ import {
   type PieceStatus,
 } from '../src/lib/admin/data';
 import { adminSupabaseFromEnv, adminStripeFromEnv } from '../src/lib/admin/clients';
+import { HANDLED_STRIPE_EVENTS } from '../src/lib/webhook';
 import { inpostFromEnv, type InPostClient } from '../src/lib/inpost';
 import {
   refundOrder,
@@ -86,7 +87,9 @@ inventory list [--status STATUS]
 order refund <uuid> --confirm <uuid>
 order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
-order create-shipment <uuid> [--recreate] --confirm <uuid>`;
+order create-shipment <uuid> [--recreate] --confirm <uuid>
+webhook-config-check
+reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]`;
 
 type ParsedOptions = {
   'env-file'?: string;
@@ -98,6 +101,8 @@ type ParsedOptions = {
   top?: string;
   confirm?: string;
   recreate?: boolean;
+  since?: string;
+  'skip-relist'?: boolean;
   help?: boolean;
 };
 
@@ -117,6 +122,8 @@ export function parseCliArgs(argv: string[]): { options: ParsedOptions; position
         top: { type: 'string' },
         confirm: { type: 'string' },
         recreate: { type: 'boolean' },
+        since: { type: 'string' },
+        'skip-relist': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
       },
     });
@@ -347,6 +354,407 @@ async function orderGet(supabase: SupabaseClient, stripe: Stripe, id: string): P
   };
 }
 
+// ── webhook-config-check: enabled_events / API-version drift guard ────────────
+
+/** Host of the production storefront — endpoints on other hosts are ignored. */
+const PROD_WEBHOOK_HOST = 'anna-ciok.studio';
+
+type WebhookEndpointReport = {
+  id: string;
+  url: string;
+  apiVersion: string | null;
+  /** Handled events the endpoint does NOT subscribe — each one is a silently dead code path (this is how C-1 happened). */
+  missingRequired: string[];
+  apiVersionMismatch: { endpoint: string | null; sdk: string } | null;
+  /** Subscribed events the handler ignores (`default: return`) — harmless noise, surfaced as a warning. */
+  subscribedButUnhandled: string[];
+  ok: boolean;
+};
+
+/**
+ * Opp-2 drift guard: assert every enabled prod endpoint subscribes a superset
+ * of HANDLED_STRIPE_EVENTS and delivers on the SDK's pinned API version.
+ * Read-only. Run after any Stripe Dashboard change and after every `stripe`
+ * package bump (see docs/stripe-operations.md).
+ */
+async function webhookConfigCheck(stripe: Stripe): Promise<unknown> {
+  const sdkVersion = String(stripe.getApiField('version'));
+  const { data: endpoints } = await stripe.webhookEndpoints.list({ limit: 100 });
+  const required: readonly string[] = HANDLED_STRIPE_EVENTS;
+
+  const prodEndpoints = endpoints.filter((ep) => {
+    if (ep.status !== 'enabled') return false;
+    try {
+      return new URL(ep.url).hostname === PROD_WEBHOOK_HOST;
+    } catch {
+      return false;
+    }
+  });
+  if (prodEndpoints.length === 0) {
+    throw new CliError(
+      `No enabled webhook endpoint found for host ${PROD_WEBHOOK_HOST} — the storefront receives no Stripe events at all`,
+      4,
+      'webhook_config_drift',
+    );
+  }
+
+  const reports: WebhookEndpointReport[] = prodEndpoints.map((ep) => {
+    const enabled = new Set(ep.enabled_events);
+    const wildcard = enabled.has('*');
+    const missingRequired = wildcard ? [] : required.filter((e) => !enabled.has(e));
+    const subscribedButUnhandled = wildcard ? [] : ep.enabled_events.filter((e) => !required.includes(e));
+    const apiVersionMismatch =
+      ep.api_version === sdkVersion ? null : { endpoint: ep.api_version, sdk: sdkVersion };
+    return {
+      id: ep.id,
+      url: ep.url,
+      apiVersion: ep.api_version,
+      missingRequired,
+      apiVersionMismatch,
+      subscribedButUnhandled,
+      ok: missingRequired.length === 0 && apiVersionMismatch === null,
+    };
+  });
+
+  const failing = reports.filter((r) => !r.ok);
+  if (failing.length > 0) {
+    const summary = failing
+      .map((r) => {
+        const problems: string[] = [];
+        if (r.missingRequired.length > 0) problems.push(`missing required events: ${r.missingRequired.join(', ')}`);
+        if (r.apiVersionMismatch) {
+          problems.push(
+            `api_version '${r.apiVersionMismatch.endpoint ?? '(account default)'}' does not match SDK '${r.apiVersionMismatch.sdk}'`,
+          );
+        }
+        return `${r.id}: ${problems.join('; ')}`;
+      })
+      .join(' | ');
+    throw new CliError(`Webhook config drift — ${summary}`, 4, 'webhook_config_drift', {
+      sdkApiVersion: sdkVersion,
+      endpoints: reports,
+    });
+  }
+
+  return { sdkApiVersion: sdkVersion, endpoints: reports };
+}
+
+// ── reconcile-refunds: full-refund convergence sweep (Opp-3) ─────────────────
+
+/**
+ * Earliest order in the ledger — bounds the Stripe refund sweep so the command
+ * stays O(recent) forever. Override with --since.
+ */
+const LEDGER_EPOCH = '2026-06-01';
+
+/** fulfilment_jobs statuses that still lead to (or already reached) a Prodigi submission — same set cancelPrintFulfilment kills. */
+const ACTIVE_JOB_STATUSES = ['queued', 'fulfilment_submitting', 'fulfilment_submitted', 'failed_retryable'];
+
+type OrderJoinRow = {
+  id: string;
+  status: string;
+  payment_intent_id: string | null;
+  private_sale_id: string | null;
+  conversions_sent_at: string | null;
+};
+
+type ProdigiRow = {
+  order_id: string;
+  prodigi_order_id: string;
+  prodigi_status_stage: string | null;
+  cancel_alerted_at: string | null;
+};
+
+function extractRefundPi(refund: Stripe.Refund): string | null {
+  if (typeof refund.payment_intent === 'string') return refund.payment_intent;
+  if (refund.payment_intent && typeof refund.payment_intent === 'object') return refund.payment_intent.id;
+  const charge = refund.charge;
+  if (charge && typeof charge === 'object') {
+    const pi = (charge as Stripe.Charge).payment_intent;
+    return typeof pi === 'string' ? pi : pi?.id ?? null;
+  }
+  return null;
+}
+
+/** List succeeded refunds since `sinceIso` whose charge is FULLY refunded, grouped by payment intent. */
+async function listFullyRefundedPayments(
+  stripe: Stripe,
+  sinceIso: string,
+): Promise<Map<string, string[]>> {
+  const sinceEpoch = Math.floor(Date.parse(sinceIso) / 1000);
+  const byPi = new Map<string, string[]>();
+  let startingAfter: string | undefined;
+  for (;;) {
+    const page = await stripe.refunds.list({
+      limit: 100,
+      created: { gte: sinceEpoch },
+      expand: ['data.charge'],
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+    for (const refund of page.data) {
+      if (refund.status !== 'succeeded') continue;
+      const charge = refund.charge && typeof refund.charge === 'object' ? (refund.charge as Stripe.Charge) : null;
+      // Only a FULLY refunded charge converges the order — partial refunds
+      // (e.g. shipping only) must never relist a piece.
+      if (!charge || charge.amount_refunded < charge.amount) continue;
+      const pi = extractRefundPi(refund);
+      if (!pi) continue;
+      byPi.set(pi, [...(byPi.get(pi) ?? []), refund.id]);
+    }
+    if (!page.has_more || page.data.length === 0) break;
+    startingAfter = page.data[page.data.length - 1].id;
+  }
+  return byPi;
+}
+
+/**
+ * Opp-3 dry-run: report every fully-refunded payment whose order is not FULLY
+ * converged — status, piece relist, Prodigi cancel and GA4 reversal all
+ * accounted for. An order drops off only when every detectable side effect is
+ * done, so the report can never read empty while a refunded order still has an
+ * active Prodigi job.
+ */
+async function reconcileRefundsDryRun(
+  supabase: SupabaseClient,
+  stripe: Stripe,
+  sinceIso: string,
+): Promise<unknown> {
+  const byPi = await listFullyRefundedPayments(stripe, sinceIso);
+  const piIds = [...byPi.keys()];
+  if (piIds.length === 0) return { since: sinceIso, fullyRefundedPayments: 0, unreconciled: [] };
+
+  const { data: orderRows, error: ordersErr } = await supabase
+    .from('orders')
+    .select('id, status, payment_intent_id, private_sale_id, conversions_sent_at')
+    .in('payment_intent_id', piIds);
+  if (ordersErr) throw new CliError(`orders lookup failed: ${ordersErr.message}`, 4, 'action_failed');
+  const orders = (orderRows ?? []) as OrderJoinRow[];
+  const orderIds = orders.map((o) => o.id);
+
+  const [piecesRes, jobsRes, prodigiRes] = await Promise.all([
+    orderIds.length > 0
+      ? supabase.from('piece_state').select('order_id, product_id').in('order_id', orderIds).eq('status', 'sold')
+      : Promise.resolve({ data: [], error: null }),
+    orderIds.length > 0
+      ? supabase.from('fulfilment_jobs').select('order_id, status').in('order_id', orderIds).in('status', ACTIVE_JOB_STATUSES)
+      : Promise.resolve({ data: [], error: null }),
+    orderIds.length > 0
+      ? supabase
+          .from('prodigi_orders')
+          .select('order_id, prodigi_order_id, prodigi_status_stage, cancel_alerted_at')
+          .in('order_id', orderIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  for (const res of [piecesRes, jobsRes, prodigiRes]) {
+    if (res.error) throw new CliError(`convergence lookup failed: ${res.error.message}`, 4, 'action_failed');
+  }
+  const soldPieces = (piecesRes.data ?? []) as Array<{ order_id: string; product_id: string }>;
+  const activeJobs = (jobsRes.data ?? []) as Array<{ order_id: string; status: string }>;
+  const prodigiRows = (prodigiRes.data ?? []) as ProdigiRow[];
+
+  const ordersByPi = new Map(orders.map((o) => [o.payment_intent_id, o]));
+  const unreconciled: unknown[] = [];
+  let convergedCount = 0;
+
+  for (const [pi, refundIds] of byPi) {
+    const order = ordersByPi.get(pi);
+    if (!order) {
+      // A refund for a payment this shop has no order for — an orphaned PI or
+      // an event from another environment; surface it rather than skip.
+      unreconciled.push({ orderId: null, paymentIntentId: pi, refundIds, problems: ['no_order_for_payment_intent'] });
+      continue;
+    }
+
+    const problems: string[] = [];
+    const followUps: string[] = [];
+    // `failed` is the markPaid under-fulfilment path: it issued its own refund
+    // and freed the pieces before setting the order failed — releaseSale
+    // deliberately no-ops there, so the CLI must treat it as converged too.
+    if (order.status !== 'refunded' && order.status !== 'failed') problems.push('status_not_refunded');
+    // Private-sale pieces stay `sold` on refund by design — never a problem.
+    const stillSold = order.private_sale_id ? [] : soldPieces.filter((p) => p.order_id === order.id).map((p) => p.product_id);
+    if (stillSold.length > 0) problems.push('pieces_still_sold');
+    const jobs = activeJobs.filter((j) => j.order_id === order.id);
+    const prodigi = prodigiRows.find(
+      (p) => p.order_id === order.id && p.prodigi_status_stage !== 'Cancelled' && !p.cancel_alerted_at,
+    );
+    if (jobs.length > 0 || prodigi) problems.push('prodigi_active');
+    // GA4 reversal only ever fires on releaseSale's real paid→refunded flip; if
+    // the order never converged AND a purchase conversion was recorded, the
+    // recorded revenue is still standing.
+    if (problems.includes('status_not_refunded') && order.conversions_sent_at) followUps.push('ga4_refund_reversal');
+
+    if (problems.length === 0) {
+      convergedCount += 1;
+      continue;
+    }
+    unreconciled.push({
+      orderId: order.id,
+      paymentIntentId: pi,
+      refundIds,
+      orderStatus: order.status,
+      privateSale: order.private_sale_id !== null,
+      problems,
+      piecesStillSold: stillSold,
+      ...(jobs.length > 0 || prodigi
+        ? {
+            prodigi: {
+              activeJobs: jobs.length,
+              ...(prodigi ? { prodigiOrderId: prodigi.prodigi_order_id, stage: prodigi.prodigi_status_stage } : {}),
+            },
+          }
+        : {}),
+      followUps,
+    });
+  }
+
+  return {
+    since: sinceIso,
+    fullyRefundedPayments: byPi.size,
+    converged: convergedCount,
+    unreconciled,
+  };
+}
+
+/**
+ * Opp-3 repair: converge ONE order using the same CAS predicates as
+ * releaseSale (order paid/pending→refunded, pieces relisted scoped to
+ * order_id). Side effects the CLI cannot perform offline — Prodigi cancel
+ * (needs the Workers env) and the GA4 revenue reversal (no marketing context
+ * offline) — are emitted as an explicit REQUIRED FOLLOW-UP block and the order
+ * is reported partially-converged, so the next dry-run still lists it. This is
+ * a bounded repair with an explicit remainder, not a releaseSale replacement —
+ * prefer replaying the `charge.refunded` event from Stripe Workbench when the
+ * webhook is subscribed and healthy.
+ */
+async function reconcileRefundConfirm(
+  supabase: SupabaseClient,
+  stripe: Stripe,
+  orderId: string,
+  skipRelist: boolean,
+): Promise<unknown> {
+  const { data: orderRow, error: orderErr } = await supabase
+    .from('orders')
+    .select('id, status, payment_intent_id, private_sale_id, conversions_sent_at')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (orderErr) throw new CliError(`order lookup failed: ${orderErr.message}`, 4, 'action_failed');
+  const order = orderRow as OrderJoinRow | null;
+  if (!order) throw new CliError(`Order not found: ${orderId}`, 4, 'not_found');
+  if (!order.payment_intent_id) throw new CliError(`Order ${orderId} has no payment_intent_id`, 4, 'action_failed');
+  if (order.status === 'failed' || order.status === 'expired') {
+    // The under-fulfilment auto-refund (failed) already freed the pieces, and
+    // an expired order was never paid — releaseSale no-ops for both by design.
+    throw new CliError(
+      `Order ${orderId} is '${order.status}' — nothing to reconcile (releaseSale deliberately no-ops here)`,
+      4,
+      'order_not_reconcilable',
+    );
+  }
+
+  // Money-path guard: never converge an order to `refunded` unless Stripe
+  // confirms the payment is FULLY refunded right now.
+  const pi = await stripe.paymentIntents.retrieve(order.payment_intent_id, { expand: ['latest_charge'] });
+  const charge = pi.latest_charge && typeof pi.latest_charge === 'object' ? (pi.latest_charge as Stripe.Charge) : null;
+  if (!charge || charge.amount_refunded < charge.amount) {
+    throw new CliError(
+      `Payment ${order.payment_intent_id} is not fully refunded in Stripe (refunded ${charge?.amount_refunded ?? 0} of ${charge?.amount ?? '?'}) — refusing to converge`,
+      4,
+      'not_fully_refunded',
+    );
+  }
+
+  // Order CAS — same predicate family as releaseSale (paid→refunded and the
+  // pending→refunded park); an already-refunded order skips to the relist.
+  let orderStatusCas: 'refunded' | 'already_refunded' = 'already_refunded';
+  if (order.status !== 'refunded') {
+    const { data: casRows, error: casErr } = await supabase
+      .from('orders')
+      .update({ status: 'refunded' })
+      .eq('id', orderId)
+      .in('status', ['paid', 'pending'])
+      .select('id');
+    if (casErr) throw new CliError(`order CAS failed: ${casErr.message}`, 4, 'action_failed');
+    if (!casRows || casRows.length === 0) {
+      throw new CliError(
+        `Order ${orderId} changed status concurrently — re-run the dry-run and retry`,
+        4,
+        'action_failed',
+      );
+    }
+    orderStatusCas = 'refunded';
+  }
+
+  // Piece release — releaseSale's convergence semantics: public orders relist
+  // sold/reserved rows to `available`; private-sale orders converge only
+  // stranded `reserved` rows to `sold` (never relisted publicly). Scoped to
+  // order_id so pieces re-sold to another order are never touched.
+  // --skip-relist (operator decision: the piece must NOT return to sale, e.g.
+  // damaged-in-transit) converges pieces to the same TERMINAL state releaseSale
+  // gives private-sale pieces — `sold` with the order link detached — so the
+  // decision is recorded in piece_state itself and the dry-run stops flagging
+  // the order (a piece left `sold` with order_id set is indistinguishable from
+  // a crashed release and would re-surface forever).
+  const offSale = skipRelist || order.private_sale_id !== null;
+  const target = offSale ? 'sold' : 'available';
+  const fromStatuses = order.private_sale_id && !skipRelist ? ['reserved'] : ['sold', 'reserved'];
+  const { data: freed, error: relistErr } = await supabase
+    .from('piece_state')
+    .update({ status: target, reserved_until: null, order_id: null })
+    .eq('order_id', orderId)
+    .in('status', fromStatuses)
+    .select('product_id');
+  if (relistErr) throw new CliError(`piece_state release failed: ${relistErr.message}`, 4, 'action_failed');
+  const relist = {
+    outcome: skipRelist ? ('kept_off_sale' as const) : order.private_sale_id ? ('private_sale_converged' as const) : ('relisted' as const),
+    pieces: ((freed ?? []) as Array<{ product_id: string }>).map((p) => p.product_id),
+  };
+
+  // Side effects the CLI cannot perform offline → explicit REQUIRED FOLLOW-UP.
+  const requiredFollowUps: Array<{ kind: string; detail: string }> = [];
+  const [jobsRes, prodigiRes] = await Promise.all([
+    supabase.from('fulfilment_jobs').select('order_id, status').eq('order_id', orderId).in('status', ACTIVE_JOB_STATUSES),
+    supabase
+      .from('prodigi_orders')
+      .select('order_id, prodigi_order_id, prodigi_status_stage, cancel_alerted_at')
+      .eq('order_id', orderId),
+  ]);
+  const jobs = (jobsRes.data ?? []) as Array<{ order_id: string; status: string }>;
+  const prodigi = ((prodigiRes.data ?? []) as ProdigiRow[]).find(
+    (p) => p.prodigi_status_stage !== 'Cancelled' && !p.cancel_alerted_at,
+  );
+  if (jobs.length > 0 || prodigi) {
+    requiredFollowUps.push({
+      kind: 'prodigi_cancel',
+      detail:
+        `Prodigi fulfilment is still active for ${orderId}` +
+        (prodigi ? ` (prodigi order ${prodigi.prodigi_order_id}, stage ${prodigi.prodigi_status_stage})` : ` (${jobs.length} active job(s))`) +
+        '. Cancel via cancelPrintFulfilment in the Workers env: replay the charge.refunded event from Stripe Workbench, or cancel manually in the Prodigi dashboard. Do NOT mark this handled until the job/order is cancelled.',
+    });
+  }
+  if (order.status === 'paid' && order.conversions_sent_at) {
+    requiredFollowUps.push({
+      kind: 'ga4_refund_reversal',
+      detail:
+        `A GA4 purchase was recorded for ${orderId} (conversions_sent_at set) and its revenue is NOT yet reversed. ` +
+        'The offline CLI has no marketing context to send the refund event — send a GA4 `refund` event manually ' +
+        '(see src/lib/marketing/ga4-mp.ts) or accept the standing revenue and note it.',
+    });
+  }
+
+  return {
+    orderId,
+    paymentIntentId: order.payment_intent_id,
+    previousStatus: order.status,
+    orderStatusCas,
+    relist,
+    requiredFollowUps,
+    // Partially-converged while any follow-up remains — subsequent dry-runs
+    // keep listing this order until the Prodigi side is actually cancelled.
+    converged: requiredFollowUps.length === 0,
+  };
+}
+
 // ── command router ────────────────────────────────────────────────────────────
 
 async function execute(
@@ -382,6 +790,34 @@ async function execute(
     const status = pieceStatusOption(options.status);
     const pieces = await listInventory({ supabase });
     return status ? pieces.filter((p) => p.status === status) : pieces;
+  }
+
+  if (resource === 'webhook-config-check') {
+    if (positionals.length !== 1) throw new CliError('Expected webhook-config-check', 2, 'invalid_arguments');
+    const stripe = deps.stripeFactory(resolveStripeKey(env));
+    return webhookConfigCheck(stripe);
+  }
+
+  if (resource === 'reconcile-refunds') {
+    if (positionals.length !== 1) {
+      throw new CliError('Expected reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]', 2, 'invalid_arguments');
+    }
+    const sinceIso = options.since ?? LEDGER_EPOCH;
+    if (Number.isNaN(Date.parse(sinceIso))) {
+      throw new CliError(`--since must be an ISO-8601 date, got '${sinceIso}'`, 2, 'invalid_arguments');
+    }
+    const { url, key } = resolveSupabaseCreds(env);
+    const stripe = deps.stripeFactory(resolveStripeKey(env));
+    if (options.confirm === undefined) {
+      const supabase = deps.supabaseFactory(url, key);
+      return reconcileRefundsDryRun(supabase, stripe, sinceIso);
+    }
+    if (!isUuid(options.confirm)) {
+      throw new CliError('--confirm must be the order uuid to converge', 2, 'invalid_arguments');
+    }
+    assertProdTarget(url, options['allow-nonprod'] ?? false);
+    const supabase = deps.supabaseFactory(url, key);
+    return reconcileRefundConfirm(supabase, stripe, options.confirm, options['skip-relist'] ?? false);
   }
 
   if (resource === 'order' && action === 'refund') {

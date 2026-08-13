@@ -1,5 +1,20 @@
 import type Stripe from 'stripe';
 
+/**
+ * Events this handler needs delivered. The live endpoint's enabled_events
+ * must be a superset — asserted by `npm run orders -- webhook-config-check`.
+ * Keep in lockstep with the switch in handleStripeEvent (guarded by the
+ * completeness test in webhook.test.ts).
+ */
+export const HANDLED_STRIPE_EVENTS = [
+  'payment_intent.succeeded',
+  'payment_intent.canceled',
+  'payment_intent.payment_failed',
+  'charge.refunded',
+  'charge.dispute.closed',
+  'refund.failed',
+] as const;
+
 export type WebhookDeps = {
   /** Flip order pending→paid and claim pieces still reserved to this order. Returns false if already processed (idempotent no-op). */
   markPaid: (paymentIntentId: string) => Promise<boolean>;
@@ -28,6 +43,12 @@ export type WebhookDeps = {
   revalidate: (tag: string) => void;
   /** Fire server-side purchase conversions (Meta CAPI + GA4 MP). Best-effort: errors swallowed by the impl. */
   trackPurchase: (paymentIntentId: string) => Promise<void>;
+  /**
+   * Alert the studio that an already-issued refund later failed to reach the
+   * customer (closed account / expired card — up to ~30 days after creation).
+   * Allowed to throw so the webhook 5xxes and Stripe retries the delivery.
+   */
+  alertRefundFailed: (refund: Stripe.Refund) => Promise<void>;
 };
 
 /** Extract a payment-intent id from a field that Stripe may expand or leave as a string. */
@@ -84,6 +105,14 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       if (!piId) return;
       const relisted = await deps.releaseSale(piId);
       if (relisted) deps.revalidate('inventory');
+      return;
+    }
+    case 'refund.failed': {
+      const refund = event.data.object as Stripe.Refund;
+      // A refund the customer never received (closed account / expired card,
+      // up to ~30 days later). No automatic state change — the order stays
+      // `refunded` in the DB; a human must re-issue the refund another way.
+      await deps.alertRefundFailed(refund);
       return;
     }
     default:
