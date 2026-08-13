@@ -39,7 +39,22 @@
 --   - The price CHECKs (block 4) are validated NOT VALID → VALIDATE against a
 --     live read confirming zero NULL/0-priced ceramic rows (125 ceramic rows,
 --     47 print rows, all clean) — so VALIDATE cannot fail, and no code path
---     writes a NULL/0 ceramic price today.
+--     writes a NULL/0 ceramic price today under the NEW admin write schema
+--     (`.positive()`, src/lib/catalog/schemas.ts, shipped alongside this
+--     migration). The OLD, still-running code during the ~6-minute
+--     migration-then-deploy window used `.nonnegative()` (0 allowed): in that
+--     narrow window an admin PATCH attempting `price_pln: 0` would get a raw
+--     23514 DB error (500) instead of the old code's clean 400 validation
+--     rejection. A low-probability edge case — single-operator internal
+--     tooling, not a storefront-facing path — worth documenting accurately
+--     rather than claiming no code path could hit it.
+--   - Only `price_pln` is guarded (block 4), matching Task 1's own SQL
+--     template. The plan's "Desired end state" also mentions constraining the
+--     ceramic sale/EUR/GBP price columns; this migration deliberately does
+--     not, because those columns are inert today — mapCeramicProducts never
+--     reads them, and EUR/GBP prices are resolved from per-category constants,
+--     not per-product columns. Intentional/correct as shipped; noted here so a
+--     future reader doesn't assume full price-column coverage.
 --   - The FK indexes (block 5) are pure additions — no behavioural change.
 --   - The status CHECKs (block 6) use value lists that are supersets of BOTH
 --     (a) every status/stage this repo's code (HEAD) can currently write —

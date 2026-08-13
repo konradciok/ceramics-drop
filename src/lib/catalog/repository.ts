@@ -299,5 +299,9 @@ export async function updateProductStatus(
     }
     throw new Error(`update status: ${result.error}`);
   }
+  // Admin-only write result: validate + report (Sentry) but do NOT withhold —
+  // same posture as updateProductMeta/readProductRow (see parseProductRow's
+  // doc comment).
+  parseProductRow(result.product);
   return result.product;
 }

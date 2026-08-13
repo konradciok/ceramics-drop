@@ -75,7 +75,7 @@ insert into print_fulfilment_assets (id, product_id, revision, r2_key, sha256, c
   ('f0000000-0000-0000-0000-000000000002', 'tap_p6', 'r1', 'prints/tap_p6/r1/staged.jpg', 'sha_6s', 'image/jpeg', 3600, 4800, 123456, 'staged');
 
 -- tap_pc: a ceramic product for the product_not_found (type guard) check.
-insert into products (id, type, category_slug, num) values ('tap_pc', 'ceramic', 'kubki', '99');
+insert into products (id, type, category_slug, num, price_pln) values ('tap_pc', 'ceramic', 'kubki', '99', 100);
 insert into product_variants (product_id, variant_key) values ('tap_pc', 'default');
 
 -- tap_pm1..tap_pm6: promote_print_assets_ready (transactional staged → ready).

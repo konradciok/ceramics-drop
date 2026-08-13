@@ -7,10 +7,10 @@ set local search_path to extensions, public, pg_temp;
 
 select plan(11);
 
-insert into products (id, type, category_slug, num, status) values
-  ('tap_status_ready', 'print', 'fine-art-prints', '91', 'draft'),
-  ('tap_status_missing', 'print', 'fine-art-prints', '92', 'draft'),
-  ('tap_status_ceramic', 'ceramic', 'kubki', '93', 'draft');
+insert into products (id, type, category_slug, num, price_pln, status) values
+  ('tap_status_ready', 'print', 'fine-art-prints', '91', null, 'draft'),
+  ('tap_status_missing', 'print', 'fine-art-prints', '92', null, 'draft'),
+  ('tap_status_ceramic', 'ceramic', 'kubki', '93', 100, 'draft');
 
 insert into product_variants (
   product_id,
