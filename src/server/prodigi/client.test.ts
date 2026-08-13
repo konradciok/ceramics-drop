@@ -242,6 +242,37 @@ describe('prodigiClient', () => {
   });
 });
 
+describe('PRODIGI_API_BASE_URL override (rehearsal failure injection)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => jsonResponse()));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('redirects sandbox traffic to the override URL when set off-production', async () => {
+    const env = { ...sandboxEnv, PRODIGI_API_BASE_URL: 'https://injected.example.com/v4.0/' } as CloudflareEnv;
+    await prodigiClient(env).getOrder('ord-1');
+    expect(lastRequest()[0]).toBe('https://injected.example.com/v4.0/orders/ord-1');
+  });
+
+  it('ignores the override entirely in live mode — production traffic cannot be redirected', async () => {
+    const env = { ...liveEnv, PRODIGI_API_BASE_URL: 'https://injected.example.com/v4.0' } as CloudflareEnv;
+    await prodigiClient(env).getOrder('ord-1');
+    expect(lastRequest()[0]).toBe('https://api.prodigi.com/v4.0/orders/ord-1');
+  });
+
+  it('leaves behaviour unchanged when the override is unset or blank', async () => {
+    await prodigiClient(sandboxEnv).getOrder('ord-1');
+    expect(lastRequest()[0]).toBe('https://api.sandbox.prodigi.com/v4.0/orders/ord-1');
+
+    const blankEnv = { ...sandboxEnv, PRODIGI_API_BASE_URL: '   ' } as CloudflareEnv;
+    await prodigiClient(blankEnv).getOrder('ord-1');
+    expect(lastRequest()[0]).toBe('https://api.sandbox.prodigi.com/v4.0/orders/ord-1');
+  });
+});
+
 describe('ProdigiError', () => {
   it('is an Error subclass with a stable name', () => {
     const error = new ProdigiError('x', 400, false);
