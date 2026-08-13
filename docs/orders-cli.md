@@ -18,6 +18,7 @@ order refund <uuid> --confirm <uuid>
 order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
 order create-shipment <uuid> [--recreate] --confirm <uuid>
+webhook-config-check
 ```
 
 `--compact` prints single-line JSON. Output is redacted (email, name, phone, address) by default; use `--show-pii` only when full personal data is operationally necessary.
@@ -55,6 +56,7 @@ The local-admin `ADMIN_SUPABASE_URL` / `ADMIN_SUPABASE_SERVICE_ROLE_KEY` / `ADMI
 - `order get <uuid>` — merges the order + its line items, the matching `piece_state` rows for ceramic items, `prodigi_orders`/`fulfilment_jobs` rows for print items, and a Stripe PaymentIntent summary (status, card brand/last4, refunded amount).
 - `order list [--status STATUS] [--email EMAIL] [--top N]` — thin wrapper on `listOrders()`. `--status` must be one of `pending`, `paid`, `failed`, `expired`, `refunded`.
 - `inventory list [--status STATUS]` — wrapper on `listInventory()`. `--status` must be one of `available`, `reserved`, `sold`. Each row's `reservedExpired` flag marks a stuck hold worth investigating.
+- `webhook-config-check` — Stripe webhook drift guard (needs only `STRIPE_SECRET_KEY`). For every **enabled** endpoint whose URL host is `anna-ciok.studio` it asserts (a) `enabled_events` is a superset of the code's `HANDLED_STRIPE_EVENTS` (`src/lib/webhook.ts`) and (b) the endpoint's `api_version` equals the SDK's pinned request version. Missing required events or a version mismatch exit `4` with code `webhook_config_drift`, naming each problem — a missing event means that handler branch is silently dead in production (this is exactly how the C-1 refund outage happened). Subscribed-but-unhandled events are listed as `subscribedButUnhandled` (a warning, not a failure). Run it **after any Stripe Dashboard webhook change and after every `stripe` package bump** (see the API-version ritual in `AGENTS.md` and [stripe-operations.md](./stripe-operations.md)).
 
 Reads work against whatever Supabase project the loaded env points at — there is no production-target guard on read-only commands.
 

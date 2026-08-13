@@ -29,6 +29,7 @@ import {
   type PieceStatus,
 } from '../src/lib/admin/data';
 import { adminSupabaseFromEnv, adminStripeFromEnv } from '../src/lib/admin/clients';
+import { HANDLED_STRIPE_EVENTS } from '../src/lib/webhook';
 import { inpostFromEnv, type InPostClient } from '../src/lib/inpost';
 import {
   refundOrder,
@@ -86,7 +87,8 @@ inventory list [--status STATUS]
 order refund <uuid> --confirm <uuid>
 order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
-order create-shipment <uuid> [--recreate] --confirm <uuid>`;
+order create-shipment <uuid> [--recreate] --confirm <uuid>
+webhook-config-check`;
 
 type ParsedOptions = {
   'env-file'?: string;
@@ -347,6 +349,91 @@ async function orderGet(supabase: SupabaseClient, stripe: Stripe, id: string): P
   };
 }
 
+// ── webhook-config-check: enabled_events / API-version drift guard ────────────
+
+/** Host of the production storefront — endpoints on other hosts are ignored. */
+const PROD_WEBHOOK_HOST = 'anna-ciok.studio';
+
+type WebhookEndpointReport = {
+  id: string;
+  url: string;
+  apiVersion: string | null;
+  /** Handled events the endpoint does NOT subscribe — each one is a silently dead code path (this is how C-1 happened). */
+  missingRequired: string[];
+  apiVersionMismatch: { endpoint: string | null; sdk: string } | null;
+  /** Subscribed events the handler ignores (`default: return`) — harmless noise, surfaced as a warning. */
+  subscribedButUnhandled: string[];
+  ok: boolean;
+};
+
+/**
+ * Opp-2 drift guard: assert every enabled prod endpoint subscribes a superset
+ * of HANDLED_STRIPE_EVENTS and delivers on the SDK's pinned API version.
+ * Read-only. Run after any Stripe Dashboard change and after every `stripe`
+ * package bump (see docs/stripe-operations.md).
+ */
+async function webhookConfigCheck(stripe: Stripe): Promise<unknown> {
+  const sdkVersion = String(stripe.getApiField('version'));
+  const { data: endpoints } = await stripe.webhookEndpoints.list({ limit: 100 });
+  const required: readonly string[] = HANDLED_STRIPE_EVENTS;
+
+  const prodEndpoints = endpoints.filter((ep) => {
+    if (ep.status !== 'enabled') return false;
+    try {
+      return new URL(ep.url).hostname === PROD_WEBHOOK_HOST;
+    } catch {
+      return false;
+    }
+  });
+  if (prodEndpoints.length === 0) {
+    throw new CliError(
+      `No enabled webhook endpoint found for host ${PROD_WEBHOOK_HOST} — the storefront receives no Stripe events at all`,
+      4,
+      'webhook_config_drift',
+    );
+  }
+
+  const reports: WebhookEndpointReport[] = prodEndpoints.map((ep) => {
+    const enabled = new Set(ep.enabled_events);
+    const wildcard = enabled.has('*');
+    const missingRequired = wildcard ? [] : required.filter((e) => !enabled.has(e));
+    const subscribedButUnhandled = wildcard ? [] : ep.enabled_events.filter((e) => !required.includes(e));
+    const apiVersionMismatch =
+      ep.api_version === sdkVersion ? null : { endpoint: ep.api_version, sdk: sdkVersion };
+    return {
+      id: ep.id,
+      url: ep.url,
+      apiVersion: ep.api_version,
+      missingRequired,
+      apiVersionMismatch,
+      subscribedButUnhandled,
+      ok: missingRequired.length === 0 && apiVersionMismatch === null,
+    };
+  });
+
+  const failing = reports.filter((r) => !r.ok);
+  if (failing.length > 0) {
+    const summary = failing
+      .map((r) => {
+        const problems: string[] = [];
+        if (r.missingRequired.length > 0) problems.push(`missing required events: ${r.missingRequired.join(', ')}`);
+        if (r.apiVersionMismatch) {
+          problems.push(
+            `api_version '${r.apiVersionMismatch.endpoint ?? '(account default)'}' does not match SDK '${r.apiVersionMismatch.sdk}'`,
+          );
+        }
+        return `${r.id}: ${problems.join('; ')}`;
+      })
+      .join(' | ');
+    throw new CliError(`Webhook config drift — ${summary}`, 4, 'webhook_config_drift', {
+      sdkApiVersion: sdkVersion,
+      endpoints: reports,
+    });
+  }
+
+  return { sdkApiVersion: sdkVersion, endpoints: reports };
+}
+
 // ── command router ────────────────────────────────────────────────────────────
 
 async function execute(
@@ -382,6 +469,12 @@ async function execute(
     const status = pieceStatusOption(options.status);
     const pieces = await listInventory({ supabase });
     return status ? pieces.filter((p) => p.status === status) : pieces;
+  }
+
+  if (resource === 'webhook-config-check') {
+    if (positionals.length !== 1) throw new CliError('Expected webhook-config-check', 2, 'invalid_arguments');
+    const stripe = deps.stripeFactory(resolveStripeKey(env));
+    return webhookConfigCheck(stripe);
   }
 
   if (resource === 'order' && action === 'refund') {

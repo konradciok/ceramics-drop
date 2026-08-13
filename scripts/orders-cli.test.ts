@@ -33,6 +33,7 @@ import {
   runCli,
   type CliDependencies,
 } from './orders-cli';
+import { HANDLED_STRIPE_EVENTS } from '../src/lib/webhook';
 
 function missingFile(): NodeJS.ErrnoException {
   return Object.assign(new Error('missing'), { code: 'ENOENT' });
@@ -345,5 +346,83 @@ describe('runCli — mutation guards', () => {
       ORDER_ID,
       { recreate: true },
     );
+  });
+});
+
+describe('runCli — webhook-config-check', () => {
+  const SDK_VERSION = '2026-05-27.dahlia';
+
+  function wcEndpoint(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'we_prod',
+      url: 'https://anna-ciok.studio/api/stripe/webhook',
+      status: 'enabled',
+      api_version: SDK_VERSION,
+      enabled_events: [...HANDLED_STRIPE_EVENTS],
+      ...overrides,
+    };
+  }
+
+  function stripeWithEndpoints(endpoints: unknown[]) {
+    return {
+      getApiField: (key: string) => (key === 'version' ? SDK_VERSION : undefined),
+      webhookEndpoints: { list: vi.fn(async () => ({ data: endpoints })) },
+    };
+  }
+
+  function wcHarness(endpoints: unknown[]) {
+    const h = harness({ env: { STRIPE_SECRET_KEY: 'sk' } });
+    h.deps.stripeFactory = () => stripeWithEndpoints(endpoints) as never;
+    return h;
+  }
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('passes when the prod endpoint subscribes a superset with matching version, warning on unhandled extras', async () => {
+    const h = wcHarness([
+      wcEndpoint({ enabled_events: [...HANDLED_STRIPE_EVENTS, 'payment_intent.created'] }),
+      // Non-prod-host and disabled endpoints must be ignored entirely.
+      wcEndpoint({ id: 'we_other', url: 'https://example.com/hook', enabled_events: [] }),
+      wcEndpoint({ id: 'we_disabled', status: 'disabled', enabled_events: [] }),
+    ]);
+    const code = await runCli(['webhook-config-check'], h.deps);
+    expect(code).toBe(0);
+    const data = lastJson(h.stdout).data as {
+      sdkApiVersion: string;
+      endpoints: Array<{ id: string; ok: boolean; subscribedButUnhandled: string[] }>;
+    };
+    expect(data.sdkApiVersion).toBe(SDK_VERSION);
+    expect(data.endpoints).toHaveLength(1);
+    expect(data.endpoints[0].id).toBe('we_prod');
+    expect(data.endpoints[0].ok).toBe(true);
+    expect(data.endpoints[0].subscribedButUnhandled).toEqual(['payment_intent.created']);
+    expect(h.supabaseCalls).toHaveLength(0);
+  });
+
+  it('fails naming the missing event when charge.refunded is not subscribed', async () => {
+    const events = [...HANDLED_STRIPE_EVENTS].filter((e) => e !== 'charge.refunded');
+    const h = wcHarness([wcEndpoint({ enabled_events: events })]);
+    const code = await runCli(['webhook-config-check'], h.deps);
+    expect(code).toBe(4);
+    const err = lastJson(h.stderr).error;
+    expect(err?.code).toBe('webhook_config_drift');
+    expect(err?.message).toContain('charge.refunded');
+  });
+
+  it('fails on an endpoint/SDK API-version mismatch', async () => {
+    const h = wcHarness([wcEndpoint({ api_version: '2025-03-31.basil' })]);
+    const code = await runCli(['webhook-config-check'], h.deps);
+    expect(code).toBe(4);
+    const err = lastJson(h.stderr).error;
+    expect(err?.code).toBe('webhook_config_drift');
+    expect(err?.message).toContain('2025-03-31.basil');
+    expect(err?.message).toContain(SDK_VERSION);
+  });
+
+  it('fails when no enabled endpoint matches the prod host', async () => {
+    const h = wcHarness([wcEndpoint({ url: 'https://staging.example.com/api/stripe/webhook' })]);
+    const code = await runCli(['webhook-config-check'], h.deps);
+    expect(code).toBe(4);
+    expect(lastJson(h.stderr).error?.code).toBe('webhook_config_drift');
   });
 });

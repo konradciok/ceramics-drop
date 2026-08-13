@@ -56,6 +56,21 @@ Issue refunds from the admin panel or `npm run orders -- order refund <id> --con
 Private-sale orders are the exception: on refund their pieces converge to
 `sold`, never back to the public shop.
 
+## Webhook config drift guard
+
+```bash
+npm run orders -- webhook-config-check
+```
+
+Asserts every enabled endpoint on `anna-ciok.studio` subscribes a superset of
+the code's `HANDLED_STRIPE_EVENTS` (`src/lib/webhook.ts`) and matches the
+SDK's pinned API version; exits non-zero naming each problem. A missing
+required event means that handler branch is silently dead in production —
+the C-1 refund outage (refunds never relisting pieces) was exactly a missing
+`charge.refunded` subscription. **Cadence: run after any Stripe Dashboard
+webhook change and after every `stripe` package bump**, in both cases before
+considering the change done.
+
 ## Alerts — one-time setup checklist (operator, external)
 
 - [ ] Workbench → Webhooks → the endpoint → enable delivery-failure notifications (test AND live mode).
