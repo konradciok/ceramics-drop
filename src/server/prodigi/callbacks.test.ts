@@ -111,7 +111,7 @@ function setup(opts: {
       return {
         select: () =>
           makeChain({
-            data: opts.jobRow !== undefined ? opts.jobRow : { id: 'j1', status: 'in_production' },
+            data: opts.jobRow !== undefined ? opts.jobRow : { id: 'j1', status: 'fulfilment_submitted' },
             error: null,
           }),
         update: (p: Record<string, unknown>) => {
@@ -178,11 +178,11 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     expect(mockShipEmail).not.toHaveBeenCalled();
   });
 
-  it('non-shipped stage (InProduction): no claim attempt, no email', async () => {
-    mockGetOrder.mockResolvedValue(prodigiOrder('InProduction'));
+  it('non-shipped stage (InProgress): no claim attempt, no email', async () => {
+    mockGetOrder.mockResolvedValue(prodigiOrder('InProgress'));
     const calls = setup();
 
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
 
     expect(res.status).toBe(200);
     expect(calls.shippingClaims).toHaveLength(0);
@@ -444,7 +444,7 @@ describe('handleProdigiCallback — real Prodigi CloudEvents shape (F-1)', () =>
 describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetOrder.mockResolvedValue(prodigiOrder('InProduction'));
+    mockGetOrder.mockResolvedValue(prodigiOrder('InProgress'));
     mockShipEmail.mockResolvedValue(undefined);
   });
 
@@ -465,7 +465,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     setup({
       existingEvent: { id: 'we-1', status: 'processing', processing_started_at: new Date().toISOString() },
     });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(res.message).toBe('In flight');
     expect(mockGetOrder).not.toHaveBeenCalled();
@@ -483,7 +483,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
       existingEvent: { id: 'we-1', status: 'processing', processing_started_at: staleStartedAt },
     });
 
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
 
     expect(res.status).toBe(200);
     expect(res.message).toBe('OK');
@@ -491,28 +491,28 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
   });
 
-  it('maps the Prodigi stage onto the latest fulfilment job (InProduction → in_production)', async () => {
-    const calls = setup({ jobRow: { id: 'j1', status: 'fulfilment_submitted' } });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+  it('maps the Prodigi stage onto the latest fulfilment job (InProgress → fulfilment_submitted)', async () => {
+    const calls = setup({ jobRow: { id: 'j1', status: 'failed_retryable' } });
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(calls.jobUpdates).toHaveLength(1);
-    expect(calls.jobUpdates[0]).toMatchObject({ status: 'in_production' });
+    expect(calls.jobUpdates[0]).toMatchObject({ status: 'fulfilment_submitted' });
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
   });
 
   it('never downgrades a terminal job status', async () => {
     const calls = setup({ jobRow: { id: 'j1', status: 'shipped' } });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(calls.jobUpdates).toHaveLength(0);
   });
 
   it('unknown local order (no mapping, no merchantReference match) → 500 and the claim is released for retry', async () => {
     mockGetOrder.mockResolvedValue({
-      order: { ...prodigiOrder('InProduction').order, merchantReference: 'missing' },
+      order: { ...prodigiOrder('InProgress').order, merchantReference: 'missing' },
     });
     const calls = setup({ poRow: null, orderRow: null });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(500);
     // releaseClaim marks the event 'failed' so Prodigi's retry can re-claim it.
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
@@ -522,7 +522,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockGetOrder.mockRejectedValue(new Error('prodigi down'));
     const calls = setup();
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(500);
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
     consoleErrorSpy.mockRestore();

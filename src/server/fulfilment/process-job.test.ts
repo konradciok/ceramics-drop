@@ -5,10 +5,13 @@ import { signPrintAssetUrl } from '@/lib/print-assets';
 import { SITE_URL } from '@/lib/site';
 
 describe('mapProdigiStage', () => {
-  it('maps InProduction', () => expect(mapProdigiStage('InProduction')).toBe('in_production'));
+  it('maps InProgress to fulfilment_submitted', () =>
+    expect(mapProdigiStage('InProgress')).toBe('fulfilment_submitted'));
   it('maps Complete to shipped', () => expect(mapProdigiStage('Complete')).toBe('shipped'));
   it('returns null for unknown stages so they never downgrade a job', () =>
     expect(mapProdigiStage('Pending')).toBeNull());
+  it('§6.11: v4 has no top-level InProduction stage — no mapping, null branch', () =>
+    expect(mapProdigiStage('InProduction')).toBeNull());
 });
 
 describe('isTerminalStatus', () => {

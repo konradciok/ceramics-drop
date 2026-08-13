@@ -11,6 +11,13 @@ export interface ProdigiOrderItem {
     md5Hash?: string;
     pageCount?: number;
   }>;
+  /**
+   * What WE charged the customer for this item (sent in the ORDER currency for
+   * customs/records). L-22/F-4 (rehearsal): money fields Prodigi RETURNS on
+   * order reads are quoted in the merchant-account currency (EUR for this
+   * account), NOT the order currency — never reconcile them 1:1 against what
+   * was sent here.
+   */
   recipientCost?: { amount: string; currency: string };
 }
 
