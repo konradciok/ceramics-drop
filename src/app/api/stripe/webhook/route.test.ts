@@ -37,7 +37,11 @@ vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn(), captureException: vi
 vi.mock('@/lib/inpost', () => ({ getInPost: () => ({}) }));
 vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
-vi.mock('@/lib/email', () => ({ emailNewOrderToStudio: vi.fn(), emailOrderConfirmationToCustomer: vi.fn() }));
+vi.mock('@/lib/email', () => ({
+  emailNewOrderToStudio: vi.fn(),
+  emailOrderConfirmationToCustomer: vi.fn(),
+  emailRefundFailedAlertToStudio: vi.fn(async () => {}),
+}));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
 // trailing .catch, so the fakes must resolve a promise rather than return undefined.

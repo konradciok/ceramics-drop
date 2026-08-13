@@ -378,6 +378,55 @@ export async function emailPrintRefundAlertToStudio(params: PrintRefundAlert): P
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio refund-failed alert ───────────────────────────────────────────────
+
+export type RefundFailedAlert = {
+  /** Correlated order id, or null when the payment_intent matched no order. No other customer data belongs here. */
+  orderId: string | null;
+  refundId: string;
+  failureReason: string | null;
+};
+
+/** Pure function — subject + inner HTML for the "refund never reached the customer" studio alert (Stripe `refund.failed`). */
+export function buildRefundFailedAlertEmail(params: RefundFailedAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
+    { label: 'Zwrot Stripe', value: escapeHtml(params.refundId) },
+    { label: 'Powód', value: escapeHtml(params.failureReason ?? '(brak)') },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Zwrot pieniędzy nie dotarł do klienta.</strong>'),
+    emailParagraph(
+      'Stripe zgłosił refund.failed — bank odrzucił zwrot (np. zamknięte konto lub wygasła karta), ' +
+        'a środki wróciły na saldo Stripe. Zamówienie w bazie pozostaje oznaczone jako zwrócone. ' +
+        'Skontaktuj się z klientem i wykonaj zwrot inną metodą (np. przelewem).',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Zwrot] Zwrot nie dotarł do klienta — ${params.orderId ?? params.refundId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that an issued refund failed to reach the customer. Throws if Resend isn't configured (caller must catch). */
+export async function emailRefundFailedAlertToStudio(params: RefundFailedAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildRefundFailedAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Customer shipping-confirmation email ─────────────────────────────────────
 
 export type CustomerShippingOrder = {

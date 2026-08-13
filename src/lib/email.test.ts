@@ -5,6 +5,7 @@ import {
   buildNewOrderToStudioEmail,
   buildOrderConfirmationEmail,
   buildPrintShippingConfirmation,
+  buildRefundFailedAlertEmail,
   buildReturnLabelEmail,
   buildShippingConfirmation,
   buildShowroomInterestEmail,
@@ -85,6 +86,30 @@ describe('buildNewOrderToStudioEmail', () => {
     expect(html).toContain('50×70 cm');
     expect(html).toContain('czarna'); // frame colour, PL studio copy
     expect(html).toContain('GLOBAL-CFP-20X28');
+  });
+});
+
+describe('buildRefundFailedAlertEmail', () => {
+  it('prefixes subject with [Zwrot], names the order, and lists refund id + reason', () => {
+    const { subject, mainContent } = buildRefundFailedAlertEmail({
+      orderId: 'ord-refund-1',
+      refundId: 're_123',
+      failureReason: 'expired_or_canceled_card',
+    });
+    expect(subject).toBe('[Zwrot] Zwrot nie dotarł do klienta — ord-refund-1');
+    expect(mainContent).toContain('re_123');
+    expect(mainContent).toContain('expired_or_canceled_card');
+  });
+
+  it('falls back to the refund id in the subject when no order matched', () => {
+    const { subject, mainContent } = buildRefundFailedAlertEmail({
+      orderId: null,
+      refundId: 're_456',
+      failureReason: null,
+    });
+    expect(subject).toBe('[Zwrot] Zwrot nie dotarł do klienta — re_456');
+    expect(mainContent).toContain('(nie znaleziono)');
+    expect(mainContent).toContain('(brak)');
   });
 });
 
