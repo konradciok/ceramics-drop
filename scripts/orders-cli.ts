@@ -689,26 +689,26 @@ async function reconcileRefundConfirm(
   // sold/reserved rows to `available`; private-sale orders converge only
   // stranded `reserved` rows to `sold` (never relisted publicly). Scoped to
   // order_id so pieces re-sold to another order are never touched.
-  let relist: { outcome: 'relisted' | 'private_sale_converged' | 'skipped_by_operator'; pieces: string[] };
-  if (skipRelist) {
-    // A deliberate, logged operator decision (e.g. damaged-in-transit must NOT
-    // return to sale) — not a silent skip.
-    relist = { outcome: 'skipped_by_operator', pieces: [] };
-  } else {
-    const target = order.private_sale_id ? 'sold' : 'available';
-    const fromStatuses = order.private_sale_id ? ['reserved'] : ['sold', 'reserved'];
-    const { data: freed, error: relistErr } = await supabase
-      .from('piece_state')
-      .update({ status: target, reserved_until: null, order_id: null })
-      .eq('order_id', orderId)
-      .in('status', fromStatuses)
-      .select('product_id');
-    if (relistErr) throw new CliError(`piece_state release failed: ${relistErr.message}`, 4, 'action_failed');
-    relist = {
-      outcome: order.private_sale_id ? 'private_sale_converged' : 'relisted',
-      pieces: ((freed ?? []) as Array<{ product_id: string }>).map((p) => p.product_id),
-    };
-  }
+  // --skip-relist (operator decision: the piece must NOT return to sale, e.g.
+  // damaged-in-transit) converges pieces to the same TERMINAL state releaseSale
+  // gives private-sale pieces — `sold` with the order link detached — so the
+  // decision is recorded in piece_state itself and the dry-run stops flagging
+  // the order (a piece left `sold` with order_id set is indistinguishable from
+  // a crashed release and would re-surface forever).
+  const offSale = skipRelist || order.private_sale_id !== null;
+  const target = offSale ? 'sold' : 'available';
+  const fromStatuses = order.private_sale_id && !skipRelist ? ['reserved'] : ['sold', 'reserved'];
+  const { data: freed, error: relistErr } = await supabase
+    .from('piece_state')
+    .update({ status: target, reserved_until: null, order_id: null })
+    .eq('order_id', orderId)
+    .in('status', fromStatuses)
+    .select('product_id');
+  if (relistErr) throw new CliError(`piece_state release failed: ${relistErr.message}`, 4, 'action_failed');
+  const relist = {
+    outcome: skipRelist ? ('kept_off_sale' as const) : order.private_sale_id ? ('private_sale_converged' as const) : ('relisted' as const),
+    pieces: ((freed ?? []) as Array<{ product_id: string }>).map((p) => p.product_id),
+  };
 
   // Side effects the CLI cannot perform offline → explicit REQUIRED FOLLOW-UP.
   const requiredFollowUps: Array<{ kind: string; detail: string }> = [];

@@ -619,11 +619,12 @@ describe('runCli — reconcile-refunds', () => {
     expect(data.converged).toBe(false);
   });
 
-  it('--confirm --skip-relist performs only the order CAS and records the deliberate decision', async () => {
+  it('--confirm --skip-relist keeps pieces OFF sale: converges them to detached sold (private-sale terminal state), never available', async () => {
     const h = reconcileHarness({
       db: {
         orderById: { id: ORDER_ID, status: 'paid', payment_intent_id: 'pi_1', private_sale_id: null, conversions_sent_at: null },
         orderCasRows: [{ id: ORDER_ID }],
+        relistRows: [{ product_id: 's15' }],
       },
       piById: { pi_1: { id: 'pi_1', status: 'succeeded', latest_charge: { amount: 1000, amount_refunded: 1000 } } },
     });
@@ -632,10 +633,15 @@ describe('runCli — reconcile-refunds', () => {
 
     expect(code).toBe(0);
     const updates = dbUpdates(h.db.calls);
-    expect(updates).toHaveLength(1);
+    expect(updates).toHaveLength(2);
     expect(updates[0].table).toBe('orders');
-    const data = lastJson(h.stdout).data as { relist: { outcome: string } };
-    expect(data.relist.outcome).toBe('skipped_by_operator');
+    expect(updates[1].table).toBe('piece_state');
+    expect(updates[1].payload).toEqual({ status: 'sold', reserved_until: null, order_id: null });
+    expect(updates[1].filters).toContainEqual(['eq', 'order_id', ORDER_ID]);
+    expect(updates[1].filters).toContainEqual(['in', 'status', ['sold', 'reserved']]);
+    const data = lastJson(h.stdout).data as { relist: { outcome: string; pieces: string[] } };
+    expect(data.relist.outcome).toBe('kept_off_sale');
+    expect(data.relist.pieces).toEqual(['s15']);
   });
 
   it('--confirm on a private-sale order converges pieces to sold, never relists publicly', async () => {
