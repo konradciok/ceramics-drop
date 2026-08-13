@@ -95,17 +95,29 @@ export default {
     // waitUntil discards rejections silently, so catch + log here — otherwise a
     // Supabase/Stripe failure mid-sweep would vanish with no signal that the cron ran.
     ctx.waitUntil(
-      sweepAbandoned(env).catch((err) =>
-        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) })),
-      ),
+      sweepAbandoned(env).catch(async (err) => {
+        // M-15: a dead sweep must alert, not just log — Cron Past Events shows the
+        // invocation green regardless, so a silent throw here goes unnoticed.
+        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'abandoned_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
     );
     // Alert sweep for failed_action_required fulfilment jobs. Idempotent: rows
     // are only marked alerted_at after the studio email sends, so a re-run with
     // no new failed jobs (or a transient email failure) sends/marks nothing.
     ctx.waitUntil(
-      sweepFailedActionJobs(env).catch((err) =>
-        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) })),
-      ),
+      sweepFailedActionJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'failed_action_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
     );
   },
 } satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
@@ -252,9 +264,72 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
       return true;
     },
     warn: (msg, meta) => console.warn(JSON.stringify({ event: 'abandoned_sweep_warn', msg, ...meta })),
+    alertPaidOnPending: async (orderId) => {
+      // M-15: durable at-most-once claim — only alert if we win the CAS on the
+      // `paid_on_pending_alerted_at` column, so a persistently-stuck order can't
+      // emit a duplicate alert every 15-min cron tick.
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ paid_on_pending_alerted_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .is('paid_on_pending_alerted_at', null)
+        .select('id');
+      if (error) {
+        console.error(JSON.stringify({ event: 'paid_on_pending_claim_failed', orderId, error: error.message }));
+        return;
+      }
+      if (!data || data.length === 0) return; // already alerted for this order — no-op.
+      await captureWorkerAlert(env, {
+        message:
+          'paid_on_pending_order: a paid/processing PaymentIntent was found on a still-pending order (likely a missed payment_intent.succeeded)',
+        level: 'error',
+        extra: { orderId },
+      });
+      // Best-effort studio email — never throw (must not break the sweep).
+      await sendPaidOnPendingEmail(env, orderId).catch((e) =>
+        console.error(JSON.stringify({ event: 'paid_on_pending_email_failed', orderId, error: String(e) })),
+      );
+    },
   });
 
   console.log(JSON.stringify({ event: 'abandoned_sweep_done', ...result }));
+}
+
+/**
+ * Best-effort studio email for a paid-on-pending order (M-15). Skips silently
+ * when Resend/notify config is absent (the Sentry alert still fired). Uses `env`
+ * directly (no request context in the cron).
+ */
+async function sendPaidOnPendingEmail(env: CloudflareEnv, orderId: string): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    console.warn(JSON.stringify({ event: 'paid_on_pending_email_skipped', reason: 'RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing' }));
+    return;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [env.STUDIO_NOTIFY_EMAIL],
+        reply_to: EMAIL.contact,
+        subject: `⚠️ Paid PaymentIntent on a pending order (${orderId})`,
+        html: `<p>The abandoned-checkout cron found a <strong>paid/processing</strong> PaymentIntent on order <code>${orderId}</code>, which is still <code>pending</code> — a likely <strong>missed <code>payment_intent.succeeded</code></strong> webhook.</p><p>Reconcile the order manually (e.g. <code>npm run reconcile:orders</code>) and check the Stripe webhook delivery log.</p>`,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**

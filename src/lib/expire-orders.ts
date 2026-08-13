@@ -15,6 +15,13 @@ export type ExpireOrdersDeps = {
   expireOrder: (orderId: string) => Promise<boolean>;
   /** Structured log for observability (e.g. a paid PI found on a pending order). */
   warn: (msg: string, meta: Record<string, unknown>) => void;
+  /**
+   * M-15: alert (email + Sentry) that a paid/processing PI was found on a still-
+   * pending order (a likely-missed `payment_intent.succeeded`). Must be
+   * de-duplicated (at most once per order) and must NOT throw — a Resend/Sentry
+   * outage cannot break the sweep.
+   */
+  alertPaidOnPending: (orderId: string) => Promise<void>;
 };
 
 export type ExpireOrdersResult = { scanned: number; expired: number; stillActive: number; errors: number };
@@ -39,6 +46,7 @@ export async function expireAbandonedOrders(deps: ExpireOrdersDeps): Promise<Exp
     } else if (outcome === 'paid') {
       result.stillActive += 1;
       deps.warn('abandoned-sweep: PaymentIntent not cancelable (paid/processing) on a pending order — possible missed webhook', { orderId: order.id, paymentIntentId: order.payment_intent_id });
+      await deps.alertPaidOnPending(order.id);
     } else {
       result.errors += 1;
     }
