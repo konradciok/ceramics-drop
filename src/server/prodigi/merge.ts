@@ -114,13 +114,18 @@ export async function fetchAndMergeProdigiOrder(
 
   // Meaningful provider progress = stage change or any tracking-field change.
   // Only that bumps updated_at (see module doc — the M-12 clock separation).
+  // shipped_at compares as a TIME VALUE: Postgres echoes timestamptz as
+  // `+00:00` while parseShippedAt emits `…Z`, so string equality would call
+  // every poll of a dispatched order "progress" and never let it stall.
+  const timeEquals = (a: string | null, b: string | null) =>
+    a === b || (a !== null && b !== null && Date.parse(a) === Date.parse(b));
   const progressed =
     !existingPO ||
     newStage !== (existingPO.prodigi_status_stage ?? null) ||
     merged.carrier !== (existingPO.carrier ?? null) ||
     merged.tracking_number !== (existingPO.tracking_number ?? null) ||
     merged.tracking_url !== (httpsUrlOrNull(existingPO.tracking_url) ?? null) ||
-    merged.shipped_at !== (existingPO.shipped_at ?? null);
+    !timeEquals(merged.shipped_at, existingPO.shipped_at ?? null);
 
   const { error: upErr } = await supabase.from('prodigi_orders').upsert(
     {

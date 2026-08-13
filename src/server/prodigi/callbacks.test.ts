@@ -301,6 +301,31 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
     expect(calls.poUpserts[0]).not.toHaveProperty('updated_at');
   });
 
+  it('a no-op merge with a Postgres-formatted stored shipped_at (+00:00) still counts as no progress', async () => {
+    // PostgREST echoes timestamptz as `2026-07-20T10:00:00+00:00` while the
+    // merge computes `2026-07-20T10:00:00.000Z` — same instant, different
+    // string. Equality must be on the time value or every poll "progresses".
+    mockGetOrder.mockResolvedValue({
+      order: {
+        ...prodigiOrder('Complete').order,
+        shipments: [{
+          id: 'shp_1',
+          carrier: { name: 'dpd' },
+          tracking: { number: 'TRK123', url: 'https://track.example.com/TRK123' },
+          dispatchDate: '2026-07-20T10:00:00.000Z',
+        }],
+      },
+    });
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'Complete', shipped_at: '2026-07-20T10:00:00+00:00' },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-tz-noop' }, ENV);
+
+    expect(calls.poUpserts[0]).not.toHaveProperty('updated_at');
+  });
+
   it('a stage change DOES refresh updated_at (meaningful provider progress)', async () => {
     mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
     const calls = setup({
