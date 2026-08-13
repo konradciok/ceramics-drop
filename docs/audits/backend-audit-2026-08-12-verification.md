@@ -27,6 +27,19 @@ Access confirmed via `wrangler` OAuth (konrad.ciok@gmail.com, account `3ebc59b80
 
 ---
 
+## Plan 01 gates (Stripe refund reconciliation) — verified 2026-08-13
+
+Read-only evidence gathered while implementing Plan 01 (branch `fix/stripe-refund-reconciliation-c1`). Live-mode reads via the Stripe MCP connector (account `acct_1Qiwd0J0KFK9lrjH`, Anna Ciok Studio); test-mode reads via the local `sk_test_` key in `.dev.vars` (the only key available locally — no live secret key exists on this machine).
+
+| Gate | Finding / §15 | Check | Result | Status |
+|---|---|---|---|---|
+| Plan 01 T5 pre-check | **C-1** (live `enabled_events`) | `GET /v1/webhook_endpoints` (livemode, MCP) | Single live endpoint `we_1TgXEgJ0KFK9lrjHNbgIUSbr` → `https://anna-ciok.studio/api/stripe/webhook`, `api_version 2026-05-27.dahlia` (matches SDK pin), `enabled_events` = `payment_intent.{succeeded,canceled,payment_failed,created,processing,requires_action}`, `charge.dispute.{closed,created}`, `charge.captured` — **`charge.refunded` and `refund.failed` both missing**, exactly as the audit found. | **ACTION** (Task 5 gate: add both events) |
+| Plan 01 T5 pre-check | **C-1** (damage still standing) | `npm run orders -- order get 8be30881…` (prod Supabase, PII-redacted) + `GET /v1/refunds?payment_intent=pi_3Tw1WW…` (livemode, MCP) | Order `8be30881-4f02-44a6-9627-221f54c67125` still `status='paid'`; piece `s15` still `sold` (order_id matches); refund `pyr_1Tw3aZJ0KFK9lrjHTvwyQoly` **succeeded, full 13 900 gr (139 zł), BLIK**. Un-reconciled as of 2026-08-13 — backfill still required (Task 5 gate 2). | **ACTION** |
+| §15.1 | Stripe **v2 Event Destinations** | `GET /v2/core/event_destinations` (test-mode key) + livemode inference | **Test mode:** 2 destinations — `ed_test_61Unzq…` (thin payload, only `v2.core.account_*` events) and the v2 mirror of legacy endpoint `we_1TebsmJ4XAbcEQUuEK9nt0RX` (snapshot, has `charge.refunded`, missing `refund.failed`). **No test-mode v2 destination independently re-adds `charge.refunded`.** **Live mode:** not directly listable read-only from this machine (no live key locally; the MCP connector exposes no v2 operations) — but the livemode v1 list shows exactly one endpoint (above), and the DB proof (a succeeded 2026-07-22 full refund left the order `paid`) rules out any *working* alternative `charge.refunded` delivery path to the storefront. Fix target stays "subscribe the event on `we_1TgXEg…`". Operator: glance at Dashboard → Event destinations during the gate as final confirmation. | **CLOSED** |
+| Plan 01 T5 post-check tooling | Opp-2 | `npm run orders -- webhook-config-check` (test-mode key) | New drift guard ran against the test-mode account: correctly flagged `we_1Tebsm…` missing `refund.failed` (exit 4, `webhook_config_drift`). Post-gate confirmation against live requires a live key in the loaded env (`ADMIN_STRIPE_SECRET_KEY` or `STRIPE_SECRET_KEY`). | **CLOSED** (tooling verified) |
+
+---
+
 ## Remaining gates — not yet checked (non-Cloudflare)
 
 | Gate | Finding / §15 | Where it's checked | Status |
@@ -35,7 +48,7 @@ Access confirmed via `wrangler` OAuth (konrad.ciok@gmail.com, account `3ebc59b80
 | Plan 04 T3 | **M-25** (Supabase key format) | Supabase dashboard — legacy JWT vs `sb_secret_`/`sb_publishable_` | OPEN |
 | Plan 04 T5 | **H-2** (admin-gate encoded-path probes) | `curl` against a **preview** deploy (never prod) | OPEN |
 | Plan 04 T7 | **L-40** (ceramic EUR/GBP display-vs-charge parity) | read-only SQL vs `PRICE_EUR`/`PRICE_GBP` constants | OPEN |
-| §15.1 | Stripe **v2 Event Destinations** | Stripe Dashboard / `GET /v2/core/event_destinations` (folded into Plan 01 T5) | OPEN |
+| §15.1 | Stripe **v2 Event Destinations** | Stripe Dashboard / `GET /v2/core/event_destinations` (folded into Plan 01 T5) | **CLOSED** — see Plan 01 section above |
 
 ---
 
