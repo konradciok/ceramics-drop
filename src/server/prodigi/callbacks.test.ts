@@ -70,13 +70,17 @@ function setup(opts: {
     shippingClaims: [] as Record<string, unknown>[],
     jobUpdates: [] as Record<string, unknown>[],
     eventUpdates: [] as Record<string, unknown>[],
+    eventInserts: [] as Record<string, unknown>[],
     poUpserts: [] as Record<string, unknown>[],
   };
   mockFrom.mockImplementation((table: string) => {
     if (table === 'webhook_events') {
       return {
         select: () => makeChain({ data: opts.existingEvent ?? null, error: null }),
-        insert: () => makeChain({ error: null }),
+        insert: (p: Record<string, unknown>) => {
+          calls.eventInserts.push(p);
+          return makeChain({ error: null });
+        },
         update: (p: Record<string, unknown>) => {
           calls.eventUpdates.push(p);
           return makeChain({ data: [{ id: 'we-1' }], error: null });
@@ -287,6 +291,53 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
     await handleProdigiCallback({ ...callbackBody(), id: 'evt-bad-url' }, ENV);
 
     expect(calls.poUpserts[0]).toMatchObject({ tracking_url: null });
+  });
+});
+
+describe('handleProdigiCallback — signed-URL redaction in persisted payloads (M-14)', () => {
+  const SIG = 'f'.repeat(64);
+  const SIGNED_URL = `https://anna-ciok.studio/api/print-assets/asset-1?exp=1770000000&sig=${SIG}`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockShipEmail.mockResolvedValue(undefined);
+    mockGetOrder.mockResolvedValue({
+      order: {
+        ...prodigiOrder('Complete').order,
+        items: [{ id: 'item-1', assets: [{ printArea: 'default', url: SIGNED_URL }] }],
+      },
+    });
+  });
+
+  it('prodigi_raw_json is persisted with sig redacted but path + exp kept', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(callbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    const raw = JSON.stringify(calls.poUpserts[0].prodigi_raw_json);
+    expect(raw).not.toContain(SIG);
+    expect(raw).toContain('/api/print-assets/asset-1');
+    expect(raw).toContain('exp=1770000000');
+  });
+
+  it('webhook_events.raw_json (the inbound body) is persisted with sig redacted', async () => {
+    const calls = setup();
+    const body = {
+      ...callbackBody(),
+      data: {
+        prodigiOrderId: 'pr_1',
+        order: { id: 'pr_1', items: [{ assets: [{ url: SIGNED_URL }] }] },
+      },
+    };
+
+    const res = await handleProdigiCallback(body, ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.eventInserts).toHaveLength(1);
+    const raw = JSON.stringify(calls.eventInserts[0].raw_json);
+    expect(raw).not.toContain(SIG);
+    expect(raw).toContain('exp=1770000000');
   });
 });
 

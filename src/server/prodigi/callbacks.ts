@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { emailPrintShippingConfirmationToCustomer } from '@/lib/email';
+import { deepRedactSignedUrls } from '@/lib/print-asset-redact';
 import { httpsUrlOrNull } from '@/lib/tracking';
 import { prodigiClient } from './client';
 import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
@@ -88,7 +89,9 @@ export async function handleProdigiCallback(
       provider: 'prodigi',
       provider_event_id: event.id,
       event_type: event.type,
-      raw_json: body,
+      // M-14: the callback body echoes items[].assets[].url — a signed URL is a
+      // bearer token for its TTL and must not be persisted verbatim.
+      raw_json: deepRedactSignedUrls(body),
       status: 'processing',
       processing_started_at: now,
     });
@@ -162,7 +165,8 @@ export async function handleProdigiCallback(
       order_id: orderId,
       prodigi_order_id: prodigiOrderId,
       prodigi_status_stage: newStage,
-      prodigi_raw_json: prodigiOrder,
+      // M-14: the re-fetched order echoes the signed asset URLs — redact before persisting.
+      prodigi_raw_json: deepRedactSignedUrls(prodigiOrder),
       updated_at: now,
       // Monotonic per-field merge: a later callback whose re-fetched order is
       // sparse (no shipments, or a shipment missing a field) must never erase
