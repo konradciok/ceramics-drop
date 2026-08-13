@@ -41,12 +41,22 @@
 --     47 print rows, all clean) — so VALIDATE cannot fail, and no code path
 --     writes a NULL/0 ceramic price today.
 --   - The FK indexes (block 5) are pure additions — no behavioural change.
---   - The status CHECKs (block 6) use value lists that are supersets of every
---     status/stage this repo's code (HEAD) can currently write — see the
---     per-block comments below for the exact enumeration and citations. A
---     genuinely new upstream Prodigi stage value remains an accepted,
---     documented risk for prodigi_status_stage (that column mirrors an
---     external API's free-text field).
+--   - The status CHECKs (block 6) use value lists that are supersets of BOTH
+--     (a) every status/stage this repo's code (HEAD) can currently write —
+--     see the per-block comments below for the exact enumeration and
+--     citations — AND (b) every value actually present in the live prod rows
+--     at the time this migration was authored, confirmed by a read-only
+--     query run against prod before this migration was written:
+--       select distinct status from fulfilment_jobs;
+--         -- live result: {cancelled, shipped} — both are in the 8-value list.
+--       select distinct prodigi_status_stage from prodigi_orders;
+--         -- live result: {InProgress, Complete} — both are in the 5-value list.
+--     VALIDATE only needs to hold against what a table's rows already
+--     contain, not against what HEAD's code merely CAN write, so the live
+--     read (not just the code enumeration) is what actually guarantees
+--     VALIDATE cannot fail here. A genuinely new upstream Prodigi stage value
+--     remains an accepted, documented risk for prodigi_status_stage going
+--     forward (that column mirrors an external API's free-text field).
 --
 -- Rollback (manual — none of this is auto-reverted by a follow-up migration):
 --   -- Block 1 (NOT desired — re-opening PUBLIC execute defeats M-2):
@@ -125,6 +135,10 @@ grant execute on function publish_print_asset_revision(text, text, jsonb, text) 
 -- Management API / audit-log access in this session (per plan: "do not spend
 -- more than a few minutes"). This migration restores the migrations-are-truth
 -- invariant for piece_state.
+-- Schema-qualified (c.relnamespace = 'public'::regnamespace and an explicit
+-- `on public.piece_state`) so this can never match/drop policies on some
+-- other schema's same-named table — not a live risk today (no other
+-- piece_state table exists), but this makes the block correct regardless.
 do $$
 declare
   pol record;
@@ -134,8 +148,9 @@ begin
     from pg_policy p
     join pg_class c on c.oid = p.polrelid
     where c.relname = 'piece_state'
+      and c.relnamespace = 'public'::regnamespace
   loop
-    execute format('drop policy if exists %I on piece_state', pol.polname);
+    execute format('drop policy if exists %I on public.piece_state', pol.polname);
   end loop;
 end $$;
 
@@ -318,7 +333,9 @@ create index if not exists prodigi_orders_order_idx on prodigi_orders(order_id);
 -- write of that value doesn't hit the CHECK. `in_production` is deliberately
 -- EXCLUDED: status-map.ts's own comment confirms that mapping was dead code,
 -- already removed; resurrecting it into a live CHECK would reintroduce
--- removed dead code.
+-- removed dead code. Live-row check before authoring this migration —
+-- `select distinct status from fulfilment_jobs;` -> {cancelled, shipped} —
+-- both already in this list, so VALIDATE below cannot fail.
 alter table fulfilment_jobs add constraint fulfilment_jobs_status_check
   check (status in (
     'queued',
@@ -340,7 +357,10 @@ alter table fulfilment_jobs validate constraint fulfilment_jobs_status_check;
 -- the CHECK. This column mirrors an external API's free-text field: a
 -- genuinely new upstream Prodigi stage value would make this CHECK reject the
 -- write — an accepted, documented risk per the plan's own request for a CHECK
--- here (not a NOT NULL/enum type).
+-- here (not a NOT NULL/enum type). Live-row check before authoring this
+-- migration — `select distinct prodigi_status_stage from prodigi_orders;`
+-- -> {InProgress, Complete} — both already in this list, so VALIDATE below
+-- cannot fail.
 alter table prodigi_orders add constraint prodigi_status_stage_check
   check (prodigi_status_stage is null or prodigi_status_stage in (
     'Draft',

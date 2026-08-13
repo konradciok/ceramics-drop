@@ -11,7 +11,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(23);
+select plan(24);
 
 -- ── M-2: RPC execute privileges ────────────────────────────────────────────
 -- anon/authenticated must NOT be able to execute any of the four legacy RPCs;
@@ -109,14 +109,23 @@ select ok(
 );
 
 -- ── M-4: ceramic price guards ───────────────────────────────────────────────
--- A 0-priced ceramic row violates products_ceramic_price_positive; a NULL-priced
--- print row is untouched by either ceramic-only CHECK.
+-- A 0-priced ceramic row violates products_ceramic_price_positive; a
+-- NULL-priced ceramic row violates products_ceramic_price_present; a
+-- NULL-priced print row is untouched by either ceramic-only CHECK.
 select throws_ok(
   $$ insert into products (id, type, category_slug, num, price_pln, status)
      values ('tap_price_zero', 'ceramic', 'kubki', '99', 0, 'draft') $$,
   '23514',
   null, -- skip matching the (locale-dependent) message text; errcode is enough
   'M-4: a 0-priced ceramic insert is rejected (23514 check_violation)'
+);
+
+select throws_ok(
+  $$ insert into products (id, type, category_slug, num, price_pln, status)
+     values ('tap_price_null', 'ceramic', 'kubki', '99', null, 'draft') $$,
+  '23514',
+  null, -- skip matching the (locale-dependent) message text; errcode is enough
+  'M-4: a NULL-priced ceramic insert is rejected (23514 check_violation, products_ceramic_price_present)'
 );
 
 select lives_ok(
