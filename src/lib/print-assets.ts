@@ -7,7 +7,11 @@ import { SITE_URL } from './site';
  * `{assetId}:{exp}` using PRINT_ASSET_TOKEN_SECRET.
  */
 
-export const PRINT_ASSET_TTL_SECS = 60 * 60 * 24 * 7; // 7 days — Prodigi downloads well within this
+// 48 h (M-14: was 7 days — a persisted/logged URL was a week-long bearer token).
+// Safe floor: the Plan 05 rehearsal showed Prodigi downloads assets at ORDER
+// INTAKE (asset Complete within seconds of submission), not at production start.
+// If Prodigi ever pulls later than 48 h post-submission, bump this back first.
+export const PRINT_ASSET_TTL_SECS = 60 * 60 * 48;
 
 const enc = new TextEncoder();
 

@@ -40,9 +40,9 @@ describe('signPrintAssetUrl — URL shape', () => {
     expect(url.startsWith(`${STAGING_ORIGIN}/api/print-assets/`)).toBe(true);
   });
 
-  it('sets exp = floor(nowMs/1000) + PRINT_ASSET_TTL_SECS (7 days)', () => {
-    expect(PRINT_ASSET_TTL_SECS).toBe(60 * 60 * 24 * 7);
-    expect(expFor(NOW_MS)).toBe(Math.floor(NOW_MS / 1000) + 604800);
+  it('sets exp = floor(nowMs/1000) + PRINT_ASSET_TTL_SECS (48 h — M-14)', () => {
+    expect(PRINT_ASSET_TTL_SECS).toBe(60 * 60 * 48);
+    expect(expFor(NOW_MS)).toBe(Math.floor(NOW_MS / 1000) + 172800);
   });
 });
 

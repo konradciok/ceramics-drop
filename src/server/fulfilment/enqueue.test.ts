@@ -1,25 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFrom, processJob } = vi.hoisted(() => ({
+const { mockFrom, processJob, mockCaptureAlert } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   processJob: vi.fn(async () => {}),
+  mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
 }));
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
 vi.mock('./process-job', () => ({ processJob }));
+vi.mock('@/lib/worker-sentry', () => ({ captureWorkerAlert: mockCaptureAlert }));
 
-import { enqueueProdigi } from './enqueue';
+import { enqueueProdigi, parseEnvFromIdempotencyKey } from './enqueue';
 
-function makeEnv(send = vi.fn(async () => {})) {
-  return { env: { PRODIGI_ENV: 'sandbox', FULFILMENT_QUEUE: { send } } as unknown as CloudflareEnv, send };
+function makeEnv(send = vi.fn(async () => {}), prodigiEnv = 'sandbox') {
+  return { env: { PRODIGI_ENV: prodigiEnv, FULFILMENT_QUEUE: { send } } as unknown as CloudflareEnv, send };
 }
 
 function setup(opts: {
   upsertRow?: { id: string } | null;
-  upsertError?: { message: string } | null;
+  upsertError?: { message: string; code?: string; details?: string } | null;
   existingRow?: { id: string } | null;
   selectError?: { message: string } | null;
+  /** Row returned by the env-flip classification select (active job for the order). */
+  activeRow?: Record<string, unknown> | null;
+  /** Rows returned by the park UPDATE's select (empty = CAS lost). */
+  parkedRows?: unknown[];
 }) {
-  const calls = { upserts: [] as unknown[][] };
+  const calls = { upserts: [] as unknown[][], updates: [] as Record<string, unknown>[] };
   mockFrom.mockImplementation((table: string) => {
     if (table !== 'fulfilment_jobs') throw new Error(`unexpected table: ${table}`);
     return {
@@ -33,13 +39,33 @@ function setup(opts: {
       },
       select: () => ({
         eq: () => ({
+          // Recovery select (idempotency-key conflict path).
           single: async () => ({ data: opts.existingRow ?? null, error: opts.selectError ?? null }),
+          // Env-flip classification select (active row for the order).
+          not: () => ({
+            maybeSingle: async () => ({ data: opts.activeRow ?? null, error: null }),
+          }),
         }),
       }),
+      update: (p: Record<string, unknown>) => {
+        calls.updates.push(p);
+        return {
+          eq: () => ({
+            eq: () => ({
+              select: async () => ({ data: opts.parkedRows ?? [{ id: 'job-old' }], error: null }),
+            }),
+          }),
+        };
+      },
     };
   });
   return calls;
 }
+
+const ORDER_UNIQUE_ERROR = {
+  code: '23505',
+  message: 'duplicate key value violates unique constraint "fulfilment_jobs_order_unique"',
+};
 
 describe('enqueueProdigi', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -56,6 +82,7 @@ describe('enqueueProdigi', () => {
       order_id: 'ord-1',
       idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
       status: 'queued',
+      prodigi_env: 'sandbox', // L-19: env persisted for future flip classification
     });
     expect(send).toHaveBeenCalledExactlyOnceWith({ orderId: 'ord-1', jobId: 'job-1' });
   });
@@ -95,6 +122,135 @@ describe('enqueueProdigi', () => {
     const ctx = {} as ExecutionContext;
 
     await expect(enqueueProdigi('ord-1', env, ctx)).rejects.toThrow('queue down');
+  });
+
+  // ── L-19: env-flip conflict classification ────────────────────────────────
+
+  it('sandbox-era job + live re-enqueue: parked as failed_action_required (env_flip_conflict), no throw, no message', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'queued',
+        prodigi_env: 'sandbox',
+        idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      },
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).resolves.toBeUndefined();
+
+    expect(calls.updates).toHaveLength(1);
+    expect(calls.updates[0]).toMatchObject({ status: 'failed_action_required' });
+    expect(String(calls.updates[0].last_error)).toContain('env_flip_conflict');
+    expect(send).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('legacy row without prodigi_env: classified via the strict idempotency-key parser', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'queued',
+        prodigi_env: null,
+        idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      },
+    });
+    const { env } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).resolves.toBeUndefined();
+    expect(calls.updates[0]).toMatchObject({ status: 'failed_action_required' });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('malformed legacy key + no column: NOT classified — the original error propagates', async () => {
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'queued',
+        prodigi_env: null,
+        idempotency_key: 'prodigi:sandbox:order:ord-1:v1:extra-suffix',
+      },
+    });
+    const { env } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).rejects.toThrow(/job upsert failed/);
+    expect(calls.updates).toHaveLength(0);
+  });
+
+  it('same-env active row on the order-unique violation: propagates, never classified as env flip', async () => {
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'queued',
+        prodigi_env: 'live',
+        idempotency_key: 'prodigi:live:order:ord-1:v2', // hypothetical future key version
+      },
+    });
+    const { env } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).rejects.toThrow(/job upsert failed/);
+    expect(calls.updates).toHaveLength(0);
+  });
+
+  it('a unique violation on a DIFFERENT constraint propagates as an error', async () => {
+    const calls = setup({
+      upsertRow: null,
+      upsertError: {
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "some_other_unique"',
+      },
+      activeRow: {
+        id: 'job-old', status: 'queued', prodigi_env: 'sandbox', idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      },
+    });
+    const { env } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).rejects.toThrow(/job upsert failed/);
+    expect(calls.updates).toHaveLength(0);
+  });
+
+  it('a delivered job (shipped) on env flip is NEVER rewritten — alert only, no park, no throw', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'shipped',
+        prodigi_env: 'sandbox',
+        idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      },
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).resolves.toBeUndefined();
+
+    expect(calls.updates).toHaveLength(0); // history untouched, unique slot NOT freed
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert.mock.calls[0][1]).toMatchObject({
+      message: 'fulfilment_env_flip_conflict_delivered_job',
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('parseEnvFromIdempotencyKey: full-format match only', () => {
+    expect(parseEnvFromIdempotencyKey('prodigi:sandbox:order:ord-1:v1')).toBe('sandbox');
+    expect(parseEnvFromIdempotencyKey('prodigi:live:order:ord-1:v1')).toBe('live');
+    expect(parseEnvFromIdempotencyKey('prodigi:live:order:ord-1:v1:tail')).toBeNull();
+    expect(parseEnvFromIdempotencyKey('prodigi:staging:order:ord-1:v1')).toBeNull();
+    expect(parseEnvFromIdempotencyKey('prodigi:live:order:v1')).toBeNull();
+    expect(parseEnvFromIdempotencyKey(null)).toBeNull();
   });
 
   it('without FULFILMENT_QUEUE: schedules processJob via waitUntil and resolves (local dev path)', async () => {

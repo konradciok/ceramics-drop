@@ -70,10 +70,13 @@ async function authorizeAndResolve(
 
 function assetHeaders(
   obj: { size: number; httpEtag: string; httpMetadata?: { contentType?: string } },
-  contentType: 'image/jpeg' | 'image/png',
+  contentType: 'image/jpeg' | 'image/png' | null | undefined,
 ): Headers {
   const headers = new Headers({
-    'content-type': obj.httpMetadata?.contentType ?? contentType,
+    // L-24: the DB-validated content-type column wins; R2 httpMetadata (set at
+    // upload time, unvalidated at read) is only the fallback when the column
+    // is somehow absent.
+    'content-type': contentType ?? obj.httpMetadata?.contentType ?? 'application/octet-stream',
     'content-length': String(obj.size),
     etag: obj.httpEtag,
     'cache-control': 'private, no-store',

@@ -147,6 +147,50 @@ Signed: rehearsal executed 2026-08-13 by Claude (Opus 4.8) with operator konrad.
 
 ---
 
+## Plan 11 — Prodigi robustness (F-1 / M-11 / M-12 / M-14 / M-26 / L-19 / L-24 / §6.11) — executed 2026-08-13
+
+Branch `fix/prodigi-robustness-plan11` (off `main` @ `9b3b006`, Plan 05 merged). Implementation summary lives in the PR; this section records the **live evidence** and the settled gaps. All times UTC.
+
+### Callback-leg re-test (preview, sandbox) — F-1 CLOSED ✅
+
+Preview worker `ceramics-drop-preview` redeployed from the branch (`env.preview`, deploy output verified: workers.dev + cron + queue consumers ONLY, no custom-domain routes — prod `/api/inventory` 200 throughout). Dedicated queues recreated; secrets from local dev values; `SENTRY_DSN` deliberately omitted (short-lived preview, log-only). The two Plan 11 migrations were NOT pre-applied to prod — the callback merge doesn't read the new columns (verified live), so the leg tests cleanly without them.
+
+Driver: synthetic test order `16fb092f-9bb7-4509-a67c-86c9aed106e7` (terminal `refunded` from insert, 0 total, buyer `delivered@resend.dev`) + one sandbox order created via `npm run prodigi -- order create` with `callbackUrl` → the preview route and `merchantReference` → the synthetic order. Sandbox order **`ord_1167177`** (fap005 4800×7200 asset `3be45c3e…`, `GLOBAL-CFP-20X28` framed black; asset URL signed against the preview origin — HEAD 200 `image/jpeg`, the DB-validated content type per L-24).
+
+| Evidence | Result |
+|---|---|
+| Real Prodigi CloudEvents parsed (the F-1 failure mode) | **6/6 events → `done`** in `webhook_events`: `stage.changed#Draft` ×2 (`evt_1050826`, `evt_1050829`), `#InProgress` ×2 (`evt_1050827`, `evt_1050830`), `shipments.shipment#Complete` (`evt_1050843`), `stage.changed#Complete` (`evt_1050847`). Zero 400s, zero `prodigi_callback_rejected` lines. In the pre-fix code every one of these would have bounced 400 traceless. |
+| Local order resolution | `prodigi_orders` row created with `order_id = 16fb092f…` resolved via `merchantReference` (no pre-existing mapping row — the fallback path). |
+| Stage + tracking persistence | `prodigi_status_stage: Complete`, `carrier: DPD NL`, `tracking_number: PH000000000GB`, `shipped_at: 2026-08-13T15:45:06.5Z` (from Prodigi `dispatchDate`). |
+| Customer shipping email (5b leg) | claim `shipping_email_sent_at 15:46:06`; Resend `4701bbd8-05b3-4f48-b7fe-00dca3371d36` „Twoje zamówienie zostało wysłane” → `delivered@resend.dev` **status: delivered** 15:46:06. |
+| M-14 redaction on a real payload | persisted `prodigi_raw_json`: **no `sig` value present**, `[REDACTED]` marker present, `exp` kept. |
+| Token gate | callbacks for a first, mis-built order (`ord_1167176`, callbackUrl carried literal quotes from a tooling bug; order cancelled cleanly — `outcome: Cancelled` inside the pre-production window) bounced off the token gate as designed. |
+
+**Tooling gotcha recorded:** two `.dev.vars` values (`PRODIGI_CALLBACK_TOKEN`, `PRINT_ASSET_TOKEN_SECRET`) are double-quoted — any `grep|cut → wrangler secret put` pipeline must strip the quotes or the deployed secret (and anything derived from it, like a callback URL) silently carries literal `"` characters.
+
+### §6.11 / F-5 — SETTLED
+
+Observed top-level stages across the retest callbacks: `Draft`, `InProgress`, `Complete` (plus the `shipments.shipment#Complete` event type). **No top-level `InProduction` exists in v4** (matches the docs' stage list); production progress moves only under `status.details.*`. The dead `InProduction → 'in_production'` mapping was removed; `Draft` (not in the docs' list either, but observed live) falls into the unknown→null no-op branch by design. F-4/L-22 (merchant-currency money fields) and F-2 (post-submission refunds routinely `manual_cancel_required`) are recorded in `types.ts` / `docs/orders-cli.md`.
+
+### Adversarial review
+
+A 4-lens multi-agent review ran against the branch diff; Anthropic API overload (529) killed 3 lenses and all dedicated verifiers, but the **correctness/concurrency lens completed with 5 findings — each manually verified against the code and all 5 fixed** in commit `1a6a65a` (cron-safe shipping email env injection; `status.details`-aware progress + stall threshold 2→8 polls ≈ 48 h; env-flip guard for delivered jobs; 4xx re-fetch denial alerts; job-before-stage write ordering in the merge). Residual: the security/reliability/regression lenses never produced output — M-14 redaction and the §6.11/regression surface were checked manually with live evidence above; a re-run (e.g. `/code-review ultra`) is cheap if desired.
+
+### Cleanup
+
+Preview worker deleted (URL → 404; its secrets died with it), both preview queues deleted (`wrangler queues list` clean), tail stopped, prod domains + `/api/inventory` 200 verified after every step. Test rows kept-annotated (Plan 05 convention): order `16fb092f…` (terminal `refunded`), its `prodigi_orders` row (`ord_1167177`, terminal `Complete`), 6 `webhook_events` rows (`done`). Sandbox orders cost nothing and ship nothing.
+
+### Post-merge follow-ups (operator)
+
+1. **M-12 live proof:** the rehearsal's frozen row `ord_1167165` (stage `InProgress` in DB; real sandbox stage `Complete`) is the natural fixture — within ~30 min of the merge deploying (migrations auto-apply first), the prod reconciliation sweep should advance it to `Complete`. Expected artifacts: one `prodigi_reconcile_sweep_done` log with `progressed: 1`, and one failed shipping-email attempt for the `@example.com` rehearsal buyer (Resend 422 — benign, row then terminal).
+2. Watch the first REAL print order's callbacks: `webhook_events` rows `done`, redacted raw JSON, tracking columns, customer email.
+
+**Verdict: the Plan 05 blocking condition is cleared** — real print sales are unblocked once this PR merges (the money path was already GO).
+
+Signed: executed 2026-08-13 by Claude (Fable 5), operator konrad.ciok@gmail.com (standing gates from Plan 05: preview architecture, shared-Supabase test rows, sandbox mutations).
+
+---
+
 ## Remaining gates — not yet checked (non-Cloudflare)
 
 | Gate | Finding / §15 | Where it's checked | Status |

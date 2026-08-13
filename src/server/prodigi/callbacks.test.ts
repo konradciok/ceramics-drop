@@ -7,7 +7,12 @@ const { mockFrom, mockGetOrder, mockShipEmail } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
-vi.mock('./client', () => ({ prodigiClient: vi.fn(() => ({ getOrder: mockGetOrder })) }));
+vi.mock('./client', async (importOriginal) => {
+  // Spread the real module so ProdigiError stays the real class (merge.ts
+  // instanceof-checks it when classifying re-fetch failures).
+  const actual = await importOriginal<typeof import('./client')>();
+  return { ...actual, prodigiClient: vi.fn(() => ({ getOrder: mockGetOrder })) };
+});
 vi.mock('@/lib/email', () => ({ emailPrintShippingConfirmationToCustomer: mockShipEmail }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
@@ -70,13 +75,17 @@ function setup(opts: {
     shippingClaims: [] as Record<string, unknown>[],
     jobUpdates: [] as Record<string, unknown>[],
     eventUpdates: [] as Record<string, unknown>[],
+    eventInserts: [] as Record<string, unknown>[],
     poUpserts: [] as Record<string, unknown>[],
   };
   mockFrom.mockImplementation((table: string) => {
     if (table === 'webhook_events') {
       return {
         select: () => makeChain({ data: opts.existingEvent ?? null, error: null }),
-        insert: () => makeChain({ error: null }),
+        insert: (p: Record<string, unknown>) => {
+          calls.eventInserts.push(p);
+          return makeChain({ error: null });
+        },
         update: (p: Record<string, unknown>) => {
           calls.eventUpdates.push(p);
           return makeChain({ data: [{ id: 'we-1' }], error: null });
@@ -102,7 +111,7 @@ function setup(opts: {
       return {
         select: () =>
           makeChain({
-            data: opts.jobRow !== undefined ? opts.jobRow : { id: 'j1', status: 'in_production' },
+            data: opts.jobRow !== undefined ? opts.jobRow : { id: 'j1', status: 'fulfilment_submitted' },
             error: null,
           }),
         update: (p: Record<string, unknown>) => {
@@ -146,6 +155,8 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
       order: { id: 'o1', email: 'buyer@example.com', receiver_first_name: 'Anna', locale: 'en' },
       tracking: { number: 'TRK123', url: 'https://track.example.com/TRK123', carrier: 'dpd' },
       locale: 'en',
+      // Injected so the sender also works from the cron sweep (no request ALS).
+      env: ENV,
     });
   });
 
@@ -169,11 +180,11 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
     expect(mockShipEmail).not.toHaveBeenCalled();
   });
 
-  it('non-shipped stage (InProduction): no claim attempt, no email', async () => {
-    mockGetOrder.mockResolvedValue(prodigiOrder('InProduction'));
+  it('non-shipped stage (InProgress): no claim attempt, no email', async () => {
+    mockGetOrder.mockResolvedValue(prodigiOrder('InProgress'));
     const calls = setup();
 
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
 
     expect(res.status).toBe(200);
     expect(calls.shippingClaims).toHaveLength(0);
@@ -275,6 +286,79 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
     });
   });
 
+  it('a no-op merge (same stage, same tracking) does NOT refresh updated_at — the M-12 clock separation', async () => {
+    // Stored row already matches everything the re-fetched order carries: the
+    // upsert must omit updated_at, or a reconciliation poll would keep resetting
+    // the very progress clock the sweep predicate falls back on.
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'Complete' },
+      claimRows: [],
+    });
+
+    const res = await handleProdigiCallback({ ...callbackBody(), id: 'evt-noop' }, ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.poUpserts).toHaveLength(1);
+    expect(calls.poUpserts[0]).not.toHaveProperty('updated_at');
+  });
+
+  it('a no-op merge with a Postgres-formatted stored shipped_at (+00:00) still counts as no progress', async () => {
+    // PostgREST echoes timestamptz as `2026-07-20T10:00:00+00:00` while the
+    // merge computes `2026-07-20T10:00:00.000Z` — same instant, different
+    // string. Equality must be on the time value or every poll "progresses".
+    mockGetOrder.mockResolvedValue({
+      order: {
+        ...prodigiOrder('Complete').order,
+        shipments: [{
+          id: 'shp_1',
+          carrier: { name: 'dpd' },
+          tracking: { number: 'TRK123', url: 'https://track.example.com/TRK123' },
+          dispatchDate: '2026-07-20T10:00:00.000Z',
+        }],
+      },
+    });
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'Complete', shipped_at: '2026-07-20T10:00:00+00:00' },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-tz-noop' }, ENV);
+
+    expect(calls.poUpserts[0]).not.toHaveProperty('updated_at');
+  });
+
+  it('a stage change DOES refresh updated_at (meaningful provider progress)', async () => {
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'InProgress' },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-progress' }, ENV);
+
+    expect(calls.poUpserts[0]).toHaveProperty('updated_at');
+  });
+
+  it('a details sub-status change counts as progress even when the coarse stage is unchanged', async () => {
+    const order = prodigiOrder('Complete').order;
+    mockGetOrder.mockResolvedValue({
+      order: { ...order, status: { stage: 'Complete', details: { shipping: 'Complete' } } },
+    });
+    const calls = setup({
+      poRow: {
+        ...STORED,
+        prodigi_status_stage: 'Complete',
+        prodigi_raw_json: { status: { stage: 'Complete', details: { shipping: 'InProgress' } } },
+      },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-details' }, ENV);
+
+    expect(calls.poUpserts[0]).toHaveProperty('updated_at');
+  });
+
   it('never re-persists a non-https stored tracking_url, even as the fallback', async () => {
     mockGetOrder.mockResolvedValue({
       order: { ...prodigiOrder('Complete').order, shipments: [] },
@@ -290,10 +374,123 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
   });
 });
 
+describe('handleProdigiCallback — signed-URL redaction in persisted payloads (M-14)', () => {
+  const SIG = 'f'.repeat(64);
+  const SIGNED_URL = `https://anna-ciok.studio/api/print-assets/asset-1?exp=1770000000&sig=${SIG}`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockShipEmail.mockResolvedValue(undefined);
+    mockGetOrder.mockResolvedValue({
+      order: {
+        ...prodigiOrder('Complete').order,
+        items: [{ id: 'item-1', assets: [{ printArea: 'default', url: SIGNED_URL }] }],
+      },
+    });
+  });
+
+  it('prodigi_raw_json is persisted with sig redacted but path + exp kept', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(callbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    const raw = JSON.stringify(calls.poUpserts[0].prodigi_raw_json);
+    expect(raw).not.toContain(SIG);
+    expect(raw).toContain('/api/print-assets/asset-1');
+    expect(raw).toContain('exp=1770000000');
+  });
+
+  it('webhook_events.raw_json (the inbound body) is persisted with sig redacted', async () => {
+    const calls = setup();
+    const body = {
+      ...callbackBody(),
+      data: {
+        prodigiOrderId: 'pr_1',
+        order: { id: 'pr_1', items: [{ assets: [{ url: SIGNED_URL }] }] },
+      },
+    };
+
+    const res = await handleProdigiCallback(body, ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.eventInserts).toHaveLength(1);
+    const raw = JSON.stringify(calls.eventInserts[0].raw_json);
+    expect(raw).not.toContain(SIG);
+    expect(raw).toContain('exp=1770000000');
+  });
+});
+
+describe('handleProdigiCallback — real Prodigi CloudEvents shape (F-1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    mockShipEmail.mockResolvedValue(undefined);
+  });
+
+  /** The shape Prodigi actually sends (Plan 05 rehearsal + v4 docs): the order
+   *  object rides in `data.order`, and `subject` carries the order id. */
+  function realCallbackBody(stage = 'Complete') {
+    return {
+      specversion: '1.0',
+      id: 'evt-real-1',
+      type: 'com.prodigi.order.status.stage#changed',
+      source: 'http://api.prodigi.com/v4.0/Orders/',
+      subject: 'pr_1',
+      time: '2026-08-13T13:28:05Z',
+      datacontenttype: 'application/json',
+      data: {
+        order: {
+          id: 'pr_1',
+          merchantReference: 'o1',
+          status: { stage },
+          items: [],
+        },
+      },
+    };
+  }
+
+  it('accepts data.order (real shape) and processes to done', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(realCallbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    expect(mockGetOrder).toHaveBeenCalledExactlyOnceWith('pr_1');
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
+  it('falls back to the CloudEvents subject when data carries no order id', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(
+      { ...realCallbackBody(), data: { unexpected: true } },
+      ENV,
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockGetOrder).toHaveBeenCalledExactlyOnceWith('pr_1');
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
+  it('a rejected callback leaves a structured log trace (no more silent 400s)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup();
+
+    const res = await handleProdigiCallback({ id: 'evt-x', type: 't', data: {} }, ENV);
+
+    expect(res.status).toBe(400);
+    const logged = consoleErrorSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toContain('prodigi_callback_rejected');
+    expect(logged).toContain('evt-x');
+    consoleErrorSpy.mockRestore();
+  });
+});
+
 describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetOrder.mockResolvedValue(prodigiOrder('InProduction'));
+    mockGetOrder.mockResolvedValue(prodigiOrder('InProgress'));
     mockShipEmail.mockResolvedValue(undefined);
   });
 
@@ -314,7 +511,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     setup({
       existingEvent: { id: 'we-1', status: 'processing', processing_started_at: new Date().toISOString() },
     });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(res.message).toBe('In flight');
     expect(mockGetOrder).not.toHaveBeenCalled();
@@ -332,7 +529,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
       existingEvent: { id: 'we-1', status: 'processing', processing_started_at: staleStartedAt },
     });
 
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
 
     expect(res.status).toBe(200);
     expect(res.message).toBe('OK');
@@ -340,28 +537,28 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
   });
 
-  it('maps the Prodigi stage onto the latest fulfilment job (InProduction → in_production)', async () => {
-    const calls = setup({ jobRow: { id: 'j1', status: 'fulfilment_submitted' } });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+  it('maps the Prodigi stage onto the latest fulfilment job (InProgress → fulfilment_submitted)', async () => {
+    const calls = setup({ jobRow: { id: 'j1', status: 'failed_retryable' } });
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(calls.jobUpdates).toHaveLength(1);
-    expect(calls.jobUpdates[0]).toMatchObject({ status: 'in_production' });
+    expect(calls.jobUpdates[0]).toMatchObject({ status: 'fulfilment_submitted' });
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
   });
 
   it('never downgrades a terminal job status', async () => {
     const calls = setup({ jobRow: { id: 'j1', status: 'shipped' } });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(200);
     expect(calls.jobUpdates).toHaveLength(0);
   });
 
   it('unknown local order (no mapping, no merchantReference match) → 500 and the claim is released for retry', async () => {
     mockGetOrder.mockResolvedValue({
-      order: { ...prodigiOrder('InProduction').order, merchantReference: 'missing' },
+      order: { ...prodigiOrder('InProgress').order, merchantReference: 'missing' },
     });
     const calls = setup({ poRow: null, orderRow: null });
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(500);
     // releaseClaim marks the event 'failed' so Prodigi's retry can re-claim it.
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
@@ -371,7 +568,7 @@ describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', (
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockGetOrder.mockRejectedValue(new Error('prodigi down'));
     const calls = setup();
-    const res = await handleProdigiCallback(callbackBody('InProduction'), ENV);
+    const res = await handleProdigiCallback(callbackBody('InProgress'), ENV);
     expect(res.status).toBe(500);
     expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'failed' });
     consoleErrorSpy.mockRestore();

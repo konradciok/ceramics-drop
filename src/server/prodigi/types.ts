@@ -11,6 +11,13 @@ export interface ProdigiOrderItem {
     md5Hash?: string;
     pageCount?: number;
   }>;
+  /**
+   * What WE charged the customer for this item (sent in the ORDER currency for
+   * customs/records). L-22/F-4 (rehearsal): money fields Prodigi RETURNS on
+   * order reads are quoted in the merchant-account currency (EUR for this
+   * account), NOT the order currency — never reconcile them 1:1 against what
+   * was sent here.
+   */
   recipientCost?: { amount: string; currency: string };
 }
 
@@ -46,12 +53,32 @@ export interface ProdigiShipment {
   dispatchDate?: string;
 }
 
+/** Per-order issue as documented for `status.issues` (v4). */
+export interface ProdigiOrderIssue {
+  objectId?: string;
+  errorCode?: string;
+  description?: string;
+  authorisationDetails?: unknown;
+  [key: string]: unknown;
+}
+
 export interface ProdigiOrderResponse {
-  outcome: 'Created' | 'AlreadyExists' | string;
+  /**
+   * Docs list `created` / `createdWithIssues` / `alreadyExists` / `onHold`, but
+   * examples elsewhere use PascalCase — compare case-insensitively (same
+   * self-disagreement as ProdigiCancelResponse below).
+   */
+  outcome: 'Created' | 'CreatedWithIssues' | 'AlreadyExists' | 'OnHold' | string;
   order: {
     id: string;
     merchantReference?: string;
-    status: { stage: string };
+    /**
+     * Top-level `stage` is coarse (Draft/InProgress/Complete/Cancelled — §6.11);
+     * granular production progress lives in `details` sub-statuses
+     * (downloadAssets, printReadyAssetsPrepared, allocateProductionLocation,
+     * inProduction, shipping), each NotStarted/InProgress/Complete.
+     */
+    status: { stage: string; issues?: ProdigiOrderIssue[]; details?: Record<string, unknown> };
     items: Array<{ id: string; sku: string; status: { detail: string } }>;
     shipments?: ProdigiShipment[];
     recipient?: ProdigiRecipient;

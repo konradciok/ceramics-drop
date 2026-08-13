@@ -1,5 +1,11 @@
 /** Safe logging + HEAD probe for HMAC-signed print-asset URLs. Never log `sig`. */
 
+import { redactSignedPrintAssetUrl } from './print-asset-redact';
+
+// Re-exported so existing consumers keep working; the implementation moved to
+// print-asset-redact.ts (shared with the Prodigi callback persistence, M-14).
+export { redactSignedPrintAssetUrl };
+
 export type HeadProbeResult =
   | {
       ok: true;
@@ -18,15 +24,6 @@ export type HeadProbeResult =
       etag: string | null;
       error?: string;
     };
-
-/** Strip the HMAC signature from a signed URL for operator/CI logs. */
-export function redactSignedPrintAssetUrl(url: string): string {
-  const parsed = new URL(url);
-  if (parsed.searchParams.has('sig')) {
-    parsed.searchParams.set('sig', '[REDACTED]');
-  }
-  return parsed.toString();
-}
 
 /** HEAD a signed print-asset URL; result URL is always redacted. */
 export async function probeSignedPrintAssetHead(
