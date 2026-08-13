@@ -272,11 +272,15 @@ export async function POST(req: Request) {
         privateSaleId = existing.private_sale_id;
       }
 
-      await supabase
+      // H-1: an unchecked failure here is asymmetric — the follow-up COUNT
+      // still succeeds, reads 0 sold rows, and the under-fulfilment branch
+      // below auto-refunds a legitimate payment. Throw → 5xx → Stripe retries.
+      const { error: soldErr } = await supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
         .eq('order_id', orderId)
         .eq('status', 'reserved');
+      if (soldErr) throw new Error(`markPaid piece_state sold update failed: ${soldErr.message}`);
 
       const { count: fulfilledCount, error: fulfilledErr } = await supabase
         .from('piece_state')

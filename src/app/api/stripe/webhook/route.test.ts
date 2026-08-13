@@ -605,6 +605,8 @@ function makeSucceededSupabase(opts: {
   casUpdate: QueryResult;
   fallbackSelect?: QueryResult;
   shipmentLookup: QueryResult;
+  /** Result of the reserved→sold piece_state UPDATE (H-1). Defaults to success. */
+  pieceSoldUpdate?: QueryResult;
   soldCount?: QueryResult;
   ceramicCount?: QueryResult;
   variantRows?: QueryResult;
@@ -674,7 +676,7 @@ function makeSucceededSupabase(opts: {
       }
       if (table === 'piece_state') {
         return {
-          update: () => proxyChain({ data: null, error: null }),
+          update: () => proxyChain(opts.pieceSoldUpdate ?? { data: null, error: null }),
           select: () => proxyChain(opts.soldCount ?? { count: 0, error: null }),
         };
       }
@@ -940,6 +942,32 @@ describe('webhook markPaid succeeded-on-dead-order alert (F-01)', () => {
 
     expect(res.status).toBe(200);
     expect(Sentry.captureMessage).not.toHaveBeenCalledWith('stripe_webhook_succeeded_on_dead_order', expect.anything());
+  });
+});
+
+describe('webhook markPaid reserved→sold update failure (H-1)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockClear();
+  });
+
+  it('throws (5xx → Stripe retry) when the sold-UPDATE errors — never auto-refunds off the asymmetric COUNT', async () => {
+    const { supabase, failedUpdateEqArgs } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      // The sold-UPDATE fails, but the follow-up COUNT succeeds at 0 sold rows:
+      // without the error check this reads as under-fulfilment and auto-refunds
+      // a legitimate payment (H-1). It must throw instead so Stripe retries.
+      pieceSoldUpdate: { data: null, error: { message: 'transient db failure' } },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/piece_state sold update failed/);
+    expect(refundsCreate).not.toHaveBeenCalled();
+    expect(failedUpdateEqArgs).toEqual([]);
   });
 });
 
