@@ -39,14 +39,20 @@ describe('transactional FROM address', () => {
 // timeout on an accepted request + a local retry would double-send without a
 // provider-side key. Resend dedupes an Idempotency-Key for 24 h.
 describe('Resend Idempotency-Key (M-27)', () => {
-  const fetchMock = vi.fn(async () => ({
+  type FetchInit = { headers: Record<string, string> };
+  const fetchMock = vi.fn<(url: string, init?: FetchInit) => Promise<{
+    ok: boolean;
+    json: () => Promise<{ id: string }>;
+    text: () => Promise<string>;
+  }>>(async () => ({
     ok: true,
     json: async () => ({ id: 'em_1' }),
     text: async () => '',
   }));
 
   function headersOfLastCall(): Record<string, string> {
-    const init = fetchMock.mock.calls.at(-1)?.[1] as unknown as { headers: Record<string, string> };
+    const init = fetchMock.mock.calls.at(-1)?.[1];
+    if (!init) throw new Error('fetch was not called');
     return init.headers;
   }
 
