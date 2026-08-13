@@ -41,6 +41,9 @@ vi.mock('@/lib/email', () => ({
   emailNewOrderToStudio: vi.fn(),
   emailOrderConfirmationToCustomer: vi.fn(),
   emailRefundFailedAlertToStudio: vi.fn(async () => {}),
+  emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
+  emailDisputeCreatedAlertToStudio: vi.fn(async () => {}),
+  emailInvoiceFailedAlertToStudio: vi.fn(async () => {}),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
@@ -57,7 +60,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -77,23 +80,29 @@ function chain(terminal: 'select' | 'maybeSingle', result: Result, onCall?: (met
 type WebhookEventsPlan = {
   /** initial `.select().eq().eq().maybeSingle()` — default fresh (no row). */
   seen?: QueryResult;
+  /** the re-SELECT after an insert-`23505` race (M-22) — defaults to `seen`. */
+  seenAfterInsert?: QueryResult;
   /** `.insert()` result — default success. */
   insert?: QueryResult;
   /** stale-lease reclaim `.update()…select('id').maybeSingle()` — default reclaimed. */
   claimCas?: QueryResult;
-  /** completion `.update({status:'done'}).eq().eq()` — default success. */
+  /** completion `.update({status:'done'}).eq().eq().eq()` — default success. */
   done?: QueryResult;
   /** records every `.update()` payload (assert lease release on throw). */
   updates?: Array<Record<string, unknown>>;
+  /** records every `.update()` payload + its chained filters (L-4 claim scoping). */
+  updateCalls?: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }>;
+  /** records `.insert()` payloads (recover the claimedAt lease token). */
+  inserts?: Array<Record<string, unknown>>;
 };
 
 /** Chain node for the webhook_events fake: `.eq()`/`.is()` return self,
  *  `.select().maybeSingle()` and `.maybeSingle()` resolve `result`, and the node
- *  is itself awaitable (the done-write awaits `.eq().eq()` directly). */
-function weChain(result: QueryResult): Record<string, unknown> {
+ *  is itself awaitable (the done-write awaits `.eq().eq().eq()` directly). */
+function weChain(result: QueryResult, onFilter?: (method: string, args: unknown[]) => void): Record<string, unknown> {
   const node: Record<string, unknown> = {
-    eq: () => node,
-    is: () => node,
+    eq: (...args: unknown[]) => { onFilter?.('eq', args); return node; },
+    is: (...args: unknown[]) => { onFilter?.('is', args); return node; },
     select: () => ({ maybeSingle: async () => result }),
     maybeSingle: async () => result,
     then: (resolve: (v: QueryResult) => unknown, reject?: (e: unknown) => unknown) =>
@@ -107,19 +116,30 @@ function weChain(result: QueryResult): Record<string, unknown> {
  * inserts and marks done cleanly, so the Stripe claim wrapper is transparent to
  * every pre-existing test. Override to exercise dedup: `seen` a done/processing
  * row, or make `done` an error. CAS vs done UPDATE are told apart by payload
- * status (`processing` = stale-lease reclaim, `done` = completion write).
+ * status (`processing` = stale-lease reclaim, `done`/`failed` = completion or
+ * lease release). The second `.select()` (the post-insert-race re-read) serves
+ * `seenAfterInsert` when provided.
  */
 function webhookEventsTable(plan: WebhookEventsPlan = {}) {
   const seen = plan.seen ?? { data: null, error: null };
   const insert = plan.insert ?? { error: null };
   const claimCas = plan.claimCas ?? { data: { id: 'we_1' }, error: null };
   const done = plan.done ?? { error: null };
+  let selects = 0;
   return {
-    select: () => weChain(seen),
-    insert: async () => insert,
+    select: () => {
+      selects += 1;
+      return weChain(selects === 1 ? seen : plan.seenAfterInsert ?? seen);
+    },
+    insert: async (payload: Record<string, unknown>) => {
+      plan.inserts?.push(payload);
+      return insert;
+    },
     update: (payload: Record<string, unknown>) => {
       plan.updates?.push(payload);
-      return weChain(payload.status === 'processing' ? claimCas : done);
+      const call = { payload, filters: [] as Array<[string, unknown[]]> };
+      plan.updateCalls?.push(call);
+      return weChain(payload.status === 'processing' ? claimCas : done, (method, args) => call.filters.push([method, args]));
     },
   };
 }
@@ -135,17 +155,23 @@ function webhookEventsTable(plan: WebhookEventsPlan = {}) {
  */
 function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result; webhookEvents?: WebhookEventsPlan }) {
   const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
+  // One ledger instance per fake — its select counter (seen vs seenAfterInsert)
+  // must survive across `.from()` calls.
+  const webhookEvents = webhookEventsTable(plan.webhookEvents);
   const calls = {
     pieceUpdatePayload: undefined as unknown,
     pieceUpdated: false,
     pieceFilters: [] as Array<{ method: string; args: unknown[] }>,
+    ordersUpdatePayloads: [] as Array<Record<string, unknown>>,
   };
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
         return {
-          update: () =>
-            chain('select', ordersUpdates.length > 1 ? (ordersUpdates.shift() as Result) : ordersUpdates[0]),
+          update: (payload: Record<string, unknown>) => {
+            calls.ordersUpdatePayloads.push(payload);
+            return chain('select', ordersUpdates.length > 1 ? (ordersUpdates.shift() as Result) : ordersUpdates[0]);
+          },
           select: () => chain('maybeSingle', plan.ordersSelect),
         };
       }
@@ -158,7 +184,7 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
           },
         };
       }
-      if (table === 'webhook_events') return webhookEventsTable(plan.webhookEvents);
+      if (table === 'webhook_events') return webhookEvents;
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -457,6 +483,10 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
     expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
     // fulfilment never enqueues for a never-paid order — nothing to cancel
     expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+    // The pending→refunded CAS clears the M-5 marker/lease as it goes terminal:
+    // a charge.refunded racing the double-paid window must not leave
+    // refund_pending_at set forever on a refunded row.
+    expect(calls.ordersUpdatePayloads[0]).toEqual({ status: 'refunded', refund_pending_at: null, expiry_claim_at: null });
   });
 
   it('lost dispute before succeeded: same parking behaviour as a refund', async () => {
@@ -605,6 +635,12 @@ function makeSucceededSupabase(opts: {
   casUpdate: QueryResult;
   fallbackSelect?: QueryResult;
   shipmentLookup: QueryResult;
+  /** Result of the reserved→sold piece_state UPDATE (H-1). Defaults to success. */
+  pieceSoldUpdate?: QueryResult;
+  /** M-5: result of the `refund_pending_at` marker CAS (no `status` in payload). */
+  markerClaim?: QueryResult;
+  /** M-5: result of the `{ status: 'failed', refund_pending_at: null }` CAS. */
+  doublePaidCas?: QueryResult;
   soldCount?: QueryResult;
   ceramicCount?: QueryResult;
   variantRows?: QueryResult;
@@ -614,6 +650,10 @@ function makeSucceededSupabase(opts: {
   studioClaim?: QueryResult;
   /** Result of the atomic `confirmation_email_sent_at IS NULL` claim UPDATE. */
   confirmClaim?: QueryResult;
+  /** Result of a `*_sent_at` claim RELEASE write (payload value null) — default success (L-7). */
+  claimRelease?: QueryResult;
+  /** Make the conversions-claim UPDATE throw synchronously (L-7 outer-catch test). */
+  conversionsClaimThrows?: boolean;
   /** The conversions `loadOrder` select (`id, payment_intent_id, status, subtotal, ...`). */
   conversionsOrderSelect?: QueryResult;
   /**
@@ -631,22 +671,54 @@ function makeSucceededSupabase(opts: {
   // filter call, so tests can prove the atomic `.is(col, null)` guard is used.
   const studioClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
   const confirmClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
+  // One ledger instance per fake — its select counter (seen vs seenAfterInsert)
+  // must survive across `.from()` calls.
+  const webhookEvents = webhookEventsTable(opts.webhookEvents);
+  // M-5: global operation sequence (marker CAS / final CAS / piece writes) —
+  // tests append refund creation via a refundsCreate mockImplementation, so
+  // ordering constraints (marker BEFORE refund) are assertable. Both CAS
+  // writes also record their filter chains, so the `.eq('status','pending')`
+  // predicates are pinned (not just the payload shape).
+  const seq: string[] = [];
+  const markerWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
+  const doublePaidWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
+  const pieceWrites: Array<Record<string, unknown>> = [];
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
         return {
           update: (payload: Record<string, unknown>) => {
             if (payload.status === 'paid') return proxyChain(opts.casUpdate);
+            if (payload.status === 'failed' && 'refund_pending_at' in payload) {
+              seq.push('double_paid_cas');
+              const write = { payload, filters: [] as Array<[string, unknown[]]> };
+              doublePaidWrites.push(write);
+              return proxyChain(
+                opts.doublePaidCas ?? { data: [{ id: 'o1' }], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
+            }
             if (payload.status === 'failed') {
               return proxyChain({ data: null, error: null }, (method, args) => {
                 if (method === 'eq') failedUpdateEqArgs.push(args);
               });
             }
+            if ('refund_pending_at' in payload) {
+              seq.push('marker');
+              const write = { payload, filters: [] as Array<[string, unknown[]]> };
+              markerWrites.push(write);
+              return proxyChain(
+                opts.markerClaim ?? { data: [{ id: 'o1', private_sale_id: 'ps_1' }], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
+            }
             if ('studio_email_sent_at' in payload) {
               const write = { value: payload.studio_email_sent_at, filters: [] as Array<[string, unknown[]]> };
               studioClaimWrites.push(write);
               return proxyChain(
-                payload.studio_email_sent_at === null ? { data: [], error: null } : opts.studioClaim ?? { data: [], error: null },
+                payload.studio_email_sent_at === null
+                  ? opts.claimRelease ?? { data: [], error: null }
+                  : opts.studioClaim ?? { data: [], error: null },
                 (method, args) => write.filters.push([method, args]),
               );
             }
@@ -654,11 +726,14 @@ function makeSucceededSupabase(opts: {
               const write = { value: payload.confirmation_email_sent_at, filters: [] as Array<[string, unknown[]]> };
               confirmClaimWrites.push(write);
               return proxyChain(
-                payload.confirmation_email_sent_at === null ? { data: [], error: null } : opts.confirmClaim ?? { data: [], error: null },
+                payload.confirmation_email_sent_at === null
+                  ? opts.claimRelease ?? { data: [], error: null }
+                  : opts.confirmClaim ?? { data: [], error: null },
                 (method, args) => write.filters.push([method, args]),
               );
             }
             if ('conversions_sent_at' in payload) {
+              if (opts.conversionsClaimThrows) throw new Error('conversions claim blew up');
               return proxyChain(opts.conversionsClaim ?? { data: [{ id: 'o1' }], error: null });
             }
             throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
@@ -674,7 +749,11 @@ function makeSucceededSupabase(opts: {
       }
       if (table === 'piece_state') {
         return {
-          update: () => proxyChain({ data: null, error: null }),
+          update: (payload: Record<string, unknown>) => {
+            seq.push('piece_update');
+            pieceWrites.push(payload);
+            return proxyChain(opts.pieceSoldUpdate ?? { data: null, error: null });
+          },
           select: () => proxyChain(opts.soldCount ?? { count: 0, error: null }),
         };
       }
@@ -686,11 +765,11 @@ function makeSucceededSupabase(opts: {
           },
         };
       }
-      if (table === 'webhook_events') return webhookEventsTable(opts.webhookEvents);
+      if (table === 'webhook_events') return webhookEvents;
       throw new Error(`unexpected table: ${table}`);
     },
   };
-  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites };
+  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites };
 }
 
 describe('webhook markPaid unknown payment_intent (F9b)', () => {
@@ -943,6 +1022,267 @@ describe('webhook markPaid succeeded-on-dead-order alert (F-01)', () => {
   });
 });
 
+describe('webhook markPaid reserved→sold update failure (H-1)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockClear();
+  });
+
+  it('throws (5xx → Stripe retry) when the sold-UPDATE errors — never auto-refunds off the asymmetric COUNT', async () => {
+    const { supabase, failedUpdateEqArgs } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      // The sold-UPDATE fails, but the follow-up COUNT succeeds at 0 sold rows:
+      // without the error check this reads as under-fulfilment and auto-refunds
+      // a legitimate payment (H-1). It must throw instead so Stripe retries.
+      pieceSoldUpdate: { data: null, error: { message: 'transient db failure' } },
+      soldCount: { count: 0, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/piece_state sold update failed/);
+    expect(refundsCreate).not.toHaveBeenCalled();
+    expect(failedUpdateEqArgs).toEqual([]);
+  });
+});
+
+describe('webhook charge.dispute.created alert (L-6)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailDisputeCreatedAlertToStudio).mockClear();
+  });
+
+  function disputeCreatedRequest() {
+    constructEventAsync.mockResolvedValue({
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_1',
+          payment_intent: 'pi_1',
+          status: 'needs_response',
+          reason: 'fraudulent',
+          amount: 13900,
+          currency: 'pln',
+          evidence_details: { due_by: 1767139200 }, // 2025-12-31T00:00:00Z
+        },
+      },
+    });
+    return new Request('http://localhost/api/stripe/webhook', {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig_test' },
+      body: '{}',
+    });
+  }
+
+  it('fires the deadline-bearing studio alert + Sentry, correlated to the order by payment_intent', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(disputeCreatedRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_dispute_created', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ dispute_id: 'dp_1', evidence_due_by: 1767139200, order_id: 'o1' }),
+    }));
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledTimes(1);
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith({
+      orderId: 'o1',
+      disputeId: 'dp_1',
+      amount: 13900,
+      currency: 'pln',
+      reason: 'fraudulent',
+      evidenceDueBy: 1767139200,
+    });
+  });
+
+  it('a failed alert send throws (5xx) so Stripe retries the delivery — a dispute alert must not be droppable', async () => {
+    vi.mocked(emailDisputeCreatedAlertToStudio).mockRejectedValueOnce(new Error('resend down'));
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(disputeCreatedRequest())).rejects.toThrow(/resend down/);
+  });
+});
+
+describe('webhook markPaid private-sale double-payment (M-5)', () => {
+  // The pending→paid CAS violating private_sales_one_paid_order — Postgres
+  // unique-violation code 23505 — is the double-paid signal.
+  const uniqueViolation = {
+    code: '23505',
+    message: 'duplicate key value violates unique constraint "private_sales_one_paid_order"',
+  };
+
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockReset();
+    refundsCreate.mockResolvedValue({});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mockClear();
+  });
+
+  const doublePaidOpts = () => ({
+    casUpdate: { data: null, error: uniqueViolation },
+    shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('(a) sets the refund_pending_at marker BEFORE refunds.create, which runs once with the shared refund key', async () => {
+    const { supabase, seq, markerWrites } = makeSucceededSupabase(doublePaidOpts());
+    refundsCreate.mockImplementation(async () => {
+      seq.push('refund');
+      return {};
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+    expect(refundsCreate).toHaveBeenCalledWith({ payment_intent: 'pi_1' }, { idempotencyKey: 'refund_pi_1' });
+    expect(markerWrites).toHaveLength(1);
+    expect(typeof markerWrites[0].payload.refund_pending_at).toBe('string');
+    // The marker CAS must be scoped — an unfiltered UPDATE would stamp every order.
+    expect(markerWrites[0].filters).toContainEqual(['eq', ['payment_intent_id', 'pi_1']]);
+    expect(markerWrites[0].filters).toContainEqual(['eq', ['status', 'pending']]);
+    // The durable marker must exist before money moves — the crash-window guard.
+    expect(seq.indexOf('marker')).toBeLessThan(seq.indexOf('refund'));
+  });
+
+  it('(b) terminal state: pending→failed CAS clears the marker, pieces converge to sold, 200 + Sentry + studio alert', async () => {
+    const { supabase, doublePaidWrites, pieceWrites, seq } = makeSucceededSupabase(doublePaidOpts());
+    vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mockImplementationOnce(async () => {
+      seq.push('alert');
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(doublePaidWrites).toHaveLength(1);
+    expect(doublePaidWrites[0].payload).toEqual({ status: 'failed', refund_pending_at: null });
+    // The final CAS is scoped like the marker CAS.
+    expect(doublePaidWrites[0].filters).toContainEqual(['eq', ['payment_intent_id', 'pi_1']]);
+    expect(doublePaidWrites[0].filters).toContainEqual(['eq', ['status', 'pending']]);
+    // Order B's still-reserved private-sale pieces must not strand `reserved`
+    // (a lapsed reservation would leak into public reserve_pieces()) — they
+    // converge to the private-sale terminal state before the final CAS.
+    expect(pieceWrites).toContainEqual({ status: 'sold', reserved_until: null, order_id: null });
+    expect(seq.indexOf('piece_update')).toBeLessThan(seq.indexOf('double_paid_cas'));
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('private_sale_double_paid', expect.objectContaining({ level: 'error' }));
+    expect(emailPrivateSaleDoublePaidAlertToStudio).toHaveBeenCalledTimes(1);
+    // Alert BEFORE the terminal CAS (an isolate death after the CAS would ack
+    // without re-alerting), deduped across crash-retries by the Resend key.
+    expect(seq.indexOf('alert')).toBeLessThan(seq.indexOf('double_paid_cas'));
+    expect(vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mock.calls[0][0]).toMatchObject({
+      idempotencyKey: 'double-paid-alert/o1',
+    });
+  });
+
+  it('(e) already-refunded error after idempotency-key expiry: treated as success, CAS still proceeds to failed', async () => {
+    refundsCreate.mockRejectedValue({ code: 'charge_already_refunded', message: 'Charge ch_1 has already been refunded.' });
+    const { supabase, doublePaidWrites } = makeSucceededSupabase(doublePaidOpts());
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(doublePaidWrites).toHaveLength(1);
+    expect(doublePaidWrites[0].payload).toEqual({ status: 'failed', refund_pending_at: null });
+  });
+
+  it('(g3) zero-row final CAS with a follow-up lookup finding a safe terminal state: acks 200 (no retry loop on a benign convergence race)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      doublePaidCas: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('private_sale_double_paid', expect.objectContaining({ level: 'error' }));
+  });
+
+  it('(f) zero-row marker CAS with the order already failed: NO refunds.create, ack 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(f2) zero-row marker CAS with the order already refunded: NO refunds.create, ack 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'refunded', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(g) zero-row marker CAS with the order missing: throws (5xx → Stripe retry), never refunds a row it cannot account for', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: null, error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/unexpected state/);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(g2) zero-row final CAS with a follow-up lookup finding an unexpected status: throws, not a silent 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      doublePaidCas: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/unexpected state/);
+    // The refund DID run (the marker claimed a genuinely-pending row) — only
+    // the acknowledgement is withheld until the state converges.
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('(h) a non-23505 error on the pending→paid CAS keeps the unconditional throw', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      casUpdate: { data: null, error: { code: 'XX000', message: 'db down' } },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/markPaid orders update failed: db down/);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+});
+
 describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
@@ -1017,26 +1357,29 @@ describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () =
   });
 });
 
-describe('webhook ensureInvoiced failure (F5)', () => {
+describe('webhook ensureInvoiced failure (F5 + L-5)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(emailInvoiceFailedAlertToStudio).mockClear();
   });
 
-  it('captures the exception in Sentry when invoicing throws, and the route still responds 200', async () => {
-    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const invoiceFailOpts = () => ({
     // "Already processed" retry path: CAS matches nothing, fallback finds the paid
     // order. emailOrderSelect is left unset (defaults to a null row) so the email
     // block no-ops, keeping this test isolated to ensureInvoiced.
-    const { supabase } = makeSucceededSupabase({
-      casUpdate: { data: [], error: null },
-      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
-      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
-      soldCount: { count: 1, error: null },
-      ceramicCount: { count: 1, error: null },
-      variantRows: { data: [], error: null },
-    });
+    casUpdate: { data: [], error: null },
+    fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    soldCount: { count: 1, error: null },
+    ceramicCount: { count: 1, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('captures the exception in Sentry, fires the studio alert email (L-5), and the route still responds 200', async () => {
+    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
@@ -1044,7 +1387,169 @@ describe('webhook ensureInvoiced failure (F5)', () => {
     expect(res.status).toBe(200);
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalled();
+    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledTimes(1);
+    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledWith({
+      paymentIntentId: 'pi_1',
+      errorMessage: 'invoice api down',
+    });
     consoleErrorSpy.mockRestore();
+  });
+
+  it('a failing alert email is itself swallowed — Stripe must still get its 200 (invoicing is best-effort by design)', async () => {
+    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
+    vi.mocked(emailInvoiceFailedAlertToStudio).mockRejectedValueOnce(new Error('resend down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook markPaid post-processing silent catches upgraded to Sentry (L-7)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailNewOrderToStudio).mockReset();
+    vi.mocked(emailOrderConfirmationToCustomer).mockReset();
+  });
+
+  const freshSaleOpts = () => ({
+    casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    soldCount: { count: 1, error: null },
+    ceramicCount: { count: 1, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('(1) the post-processing catch (order/items load for emails) reports to Sentry, still 200', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: null, error: { message: 'load blew up' } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(2) an email-claim UPDATE failure alerts (the email is silently lost otherwise — the route 200s, so no redelivery)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unclaimed = {
+      id: 'o1', email: 'buyer@example.com', total: 10000, currency: 'pln',
+      delivery_method: 'paczkomat', receiver_first_name: 'Ann', receiver_last_name: 'K',
+      inpost_target_point: 'WAW01', locale: 'pl',
+      confirmation_email_sent_at: null, studio_email_sent_at: null,
+    };
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: unclaimed, error: null },
+      studioClaim: { data: null, error: { message: 'claim db down' } },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('email_claim_failed', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ order_id: 'o1', column: 'studio_email_sent_at' }),
+    }));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(3) a claim-release failure after 3 failed sends alerts (the stuck claim blocks every future retry)', async () => {
+    vi.mocked(emailNewOrderToStudio).mockRejectedValue(new Error('resend down'));
+    vi.mocked(emailOrderConfirmationToCustomer).mockRejectedValue(new Error('resend down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unclaimed = {
+      id: 'o1', email: 'buyer@example.com', total: 10000, currency: 'pln',
+      delivery_method: 'paczkomat', receiver_first_name: 'Ann', receiver_last_name: 'K',
+      inpost_target_point: 'WAW01', locale: 'pl',
+      confirmation_email_sent_at: null, studio_email_sent_at: null,
+    };
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: unclaimed, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+      claimRelease: { data: null, error: { message: 'release db down' } },
+    });
+    supabaseImpl = supabase;
+
+    vi.useFakeTimers();
+    let res!: Response;
+    try {
+      const resPromise = POST(succeededEventRequest());
+      await vi.runAllTimersAsync();
+      res = await resPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('email_claim_release_failed', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ order_id: 'o1' }),
+    }));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(4) a conversions-claim UPDATE failure alerts (the server-side conversion is silently lost otherwise)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+    try {
+      const { supabase } = makeSucceededSupabase({
+        ...freshSaleOpts(),
+        conversionsClaim: { data: null, error: { message: 'claim db down' } },
+      });
+      supabaseImpl = supabase;
+
+      const res = await POST(succeededEventRequest());
+
+      expect(res.status).toBe(200);
+      expect(Sentry.captureMessage).toHaveBeenCalledWith('conversions_claim_failed', expect.objectContaining({
+        level: 'error',
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1' }),
+      }));
+    } finally {
+      cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+      delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('(5) an unexpected throw inside trackPurchase reports to Sentry, still 200 (best-effort contract intact)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+    try {
+      const { supabase } = makeSucceededSupabase({
+        ...freshSaleOpts(),
+        conversionsClaimThrows: true,
+      });
+      supabaseImpl = supabase;
+
+      const res = await POST(succeededEventRequest());
+
+      expect(res.status).toBe(200);
+      expect(Sentry.captureException).toHaveBeenCalled();
+    } finally {
+      cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+      delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+      consoleErrorSpy.mockRestore();
+    }
   });
 });
 
@@ -1192,6 +1697,10 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
     expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
     expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+    // M-27: both claim-based sends carry a per-order Resend Idempotency-Key so
+    // a local retry after a timed-out-but-accepted request can't double-send.
+    expect(vi.mocked(emailNewOrderToStudio).mock.calls[0][0]).toMatchObject({ idempotencyKey: 'studio-new-order/o1' });
+    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ idempotencyKey: 'order-confirmation/o1' });
     // The claim must be ATOMIC: a plain update without the `.is(col, null)`
     // filter would let two overlapping redeliveries both claim and both send.
     expect(studioClaimWrites).toHaveLength(1);
@@ -1379,7 +1888,7 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     expect(enqueueProdigi).not.toHaveBeenCalled();
   });
 
-  it('in-flight `processing` lease within TTL: dedupes (concurrent double-processing guard)', async () => {
+  it('in-flight `processing` lease within TTL: 409 so Stripe redelivers after the lease (M-22 — never a dropping 200)', async () => {
     const { supabase } = makeSucceededSupabase({
       ...dedupOpts,
       webhookEvents: {
@@ -1389,11 +1898,100 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
+    const body = (await res.json()) as { received?: boolean; inFlight?: boolean };
+
+    // A 200 here would suppress the retry: if the in-flight winner dies, the
+    // event is dropped forever. 409 makes Stripe retry after the lease.
+    expect(res.status).toBe(409);
+    expect(body).toEqual({ received: false, inFlight: true });
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('seen-SELECT error: throws (5xx) instead of falling into the insert branch and a false dedupe-200 (M-21)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: { seen: { data: null, error: { message: 'select down' } } },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/webhook_events seen lookup failed: select down/);
+  });
+
+  it('claim-CAS lost race (another delivery reclaimed the stale lease): 409, not a dedupe-200 (M-22)', async () => {
+    const staleLease = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        seen: { data: { id: 'we_1', status: 'processing', processing_started_at: staleLease }, error: null },
+        claimCas: { data: null, error: null },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(409);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('insert-23505 race where the winning row is NOT done: 409 (M-22)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        insert: { error: { code: '23505', message: 'duplicate key' } },
+        seenAfterInsert: {
+          data: { id: 'we_1', status: 'processing', processing_started_at: new Date().toISOString() },
+          error: null,
+        },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(409);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('insert-23505 race where the winning row already reached done: dedupe-200 (the only 200 dedup case)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        insert: { error: { code: '23505', message: 'duplicate key' } },
+        seenAfterInsert: { data: { id: 'we_1', status: 'done', processing_started_at: null }, error: null },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
     const body = (await res.json()) as { deduped?: boolean };
 
     expect(res.status).toBe(200);
     expect(body.deduped).toBe(true);
-    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('done-write and lease release are scoped to OUR claim timestamp (L-4 — a stale releaser writes nothing)', async () => {
+    const inserts: Array<Record<string, unknown>> = [];
+    const updateCalls: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      webhookEvents: { inserts, updateCalls },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    const claimedAt = inserts[0]?.processing_started_at;
+    expect(typeof claimedAt).toBe('string');
+    const doneCall = updateCalls.find((c) => c.payload.status === 'done');
+    expect(doneCall).toBeDefined();
+    expect(doneCall!.filters).toContainEqual(['eq', ['processing_started_at', claimedAt]]);
   });
 
   it('fresh event: inserts the row, processes, and marks it done (no dedup)', async () => {
@@ -1433,12 +2031,14 @@ describe('webhook_events idempotency ledger (F-18)', () => {
 
   it('a mid-handler throw releases the lease (status=failed) so a retry reclaims immediately', async () => {
     const updates: Array<Record<string, unknown>> = [];
+    const inserts: Array<Record<string, unknown>> = [];
+    const updateCalls: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
     const { supabase } = makeSupabase({
       // refunded-CAS orders UPDATE errors ⇒ releaseSale throws out of handleStripeEvent.
       ordersUpdate: { data: null, error: { message: 'db down' } },
       ordersSelect: { data: null, error: null },
       pieceUpdate: { data: null, error: null },
-      webhookEvents: { updates },
+      webhookEvents: { updates, inserts, updateCalls },
     });
     supabaseImpl = supabase;
 
@@ -1447,5 +2047,12 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     // it immediately, regardless of whether the retry lands inside the 5-min lease.
     // Without this the retry would be deduped → fulfilment silently dropped.
     expect(updates).toContainEqual({ status: 'failed', processing_started_at: null });
+    // L-4: the release is CAS'd on OUR claim timestamp — a stale releaser whose
+    // lease was reclaimed by a newer delivery must write nothing.
+    const claimedAt = inserts[0]?.processing_started_at;
+    expect(typeof claimedAt).toBe('string');
+    const releaseCall = updateCalls.find((c) => c.payload.status === 'failed');
+    expect(releaseCall).toBeDefined();
+    expect(releaseCall!.filters).toContainEqual(['eq', ['processing_started_at', claimedAt]]);
   });
 });

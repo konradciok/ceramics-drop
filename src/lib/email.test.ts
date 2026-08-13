@@ -1,6 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
+
+// M-27 sender-level tests need a Workers env for the getCloudflareContext()-
+// based senders; the pure build* functions below never touch it.
+vi.mock('@opennextjs/cloudflare', () => ({
+  getCloudflareContext: () => ({
+    env: { RESEND_API_KEY: 're_test_key', STUDIO_NOTIFY_EMAIL: 'studio@test.example' },
+  }),
+}));
+
 import {
+  emailNewOrderToStudio,
+  emailOrderConfirmationToCustomer,
+  buildDisputeCreatedAlertEmail,
   buildLabelToStudioEmail,
   buildNewOrderToStudioEmail,
   buildOrderConfirmationEmail,
@@ -18,6 +30,88 @@ import {
 describe('transactional FROM address', () => {
   it('uses one Resend FROM for all transactional mail', () => {
     expect(EMAIL_FROM).toBe(`${EMAIL.shopFromDisplay} <${EMAIL.shopFrom}>`);
+  });
+});
+
+// ── M-27: Resend Idempotency-Key on claim-based sends ────────────────────────
+//
+// sendEmailOnceWithClaim retries a send up to 3× after claiming; a Resend
+// timeout on an accepted request + a local retry would double-send without a
+// provider-side key. Resend dedupes an Idempotency-Key for 24 h.
+describe('Resend Idempotency-Key (M-27)', () => {
+  type FetchInit = { headers: Record<string, string> };
+  const fetchMock = vi.fn<(url: string, init?: FetchInit) => Promise<{
+    ok: boolean;
+    json: () => Promise<{ id: string }>;
+    text: () => Promise<string>;
+  }>>(async () => ({
+    ok: true,
+    json: async () => ({ id: 'em_1' }),
+    text: async () => '',
+  }));
+
+  function headersOfLastCall(): Record<string, string> {
+    const init = fetchMock.mock.calls.at(-1)?.[1];
+    if (!init) throw new Error('fetch was not called');
+    return init.headers;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockClear();
+  });
+
+  const studioOrder = {
+    id: 'o1',
+    email: 'buyer@example.com',
+    total: 10000,
+    currency: 'pln',
+    delivery_method: 'paczkomat',
+    receiver_first_name: 'Ann',
+    receiver_last_name: 'K',
+    inpost_target_point: 'WAW01',
+    items: [],
+  };
+
+  it('sendResendHtml path (studio new-order): sends Idempotency-Key when a claim key is passed', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+
+    await emailNewOrderToStudio({ order: studioOrder, idempotencyKey: 'studio-new-order/o1' });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(headersOfLastCall()['Idempotency-Key']).toBe('studio-new-order/o1');
+  });
+
+  it('sendResendHtml path: omits the header when no key is passed', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+
+    await emailNewOrderToStudio({ order: studioOrder });
+
+    expect(headersOfLastCall()).not.toHaveProperty('Idempotency-Key');
+  });
+
+  it('sendResendTemplate path (order confirmation): sends Idempotency-Key when a claim key is passed', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+
+    await emailOrderConfirmationToCustomer({
+      order: { id: 'o1', email: 'buyer@example.com', receiver_first_name: 'Ann' },
+      locale: 'pl',
+      idempotencyKey: 'order-confirmation/o1',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(headersOfLastCall()['Idempotency-Key']).toBe('order-confirmation/o1');
+  });
+
+  it('sendResendTemplate path: omits the header when no key is passed (e.g. the admin manual re-send)', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+
+    await emailOrderConfirmationToCustomer({
+      order: { id: 'o1', email: 'buyer@example.com', receiver_first_name: 'Ann' },
+      locale: 'pl',
+    });
+
+    expect(headersOfLastCall()).not.toHaveProperty('Idempotency-Key');
   });
 });
 
@@ -108,6 +202,38 @@ describe('buildRefundFailedAlertEmail', () => {
       failureReason: null,
     });
     expect(subject).toBe('[Zwrot] Zwrot nie dotarł do klienta — re_456');
+    expect(mainContent).toContain('(nie znaleziono)');
+    expect(mainContent).toContain('(brak)');
+  });
+});
+
+describe('buildDisputeCreatedAlertEmail', () => {
+  it('is deadline-bearing: surfaces evidence_details.due_by in the subject and body (L-6)', () => {
+    const { subject, mainContent } = buildDisputeCreatedAlertEmail({
+      orderId: 'ord-dispute-1',
+      disputeId: 'dp_123',
+      amount: 13900,
+      currency: 'pln',
+      reason: 'fraudulent',
+      evidenceDueBy: 1767139200, // 2025-12-31T00:00:00Z
+    });
+    expect(subject).toBe('[Spór] Nowy spór Stripe — odpowiedz do 2025-12-31 — ord-dispute-1');
+    expect(mainContent).toContain('2025-12-31');
+    expect(mainContent).toContain('dp_123');
+    expect(mainContent).toContain('139.00 PLN');
+    expect(mainContent).toContain('fraudulent');
+  });
+
+  it('degrades cleanly with no order match and no due_by', () => {
+    const { subject, mainContent } = buildDisputeCreatedAlertEmail({
+      orderId: null,
+      disputeId: 'dp_456',
+      amount: 5000,
+      currency: 'eur',
+      reason: null,
+      evidenceDueBy: null,
+    });
+    expect(subject).toContain('dp_456');
     expect(mainContent).toContain('(nie znaleziono)');
     expect(mainContent).toContain('(brak)');
   });

@@ -8,7 +8,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -53,6 +53,12 @@ async function sendEmailOnceWithClaim(
     .select('id');
   if (claimErr) {
     console.error(`${column} claim failed for`, orderId, claimErr);
+    // L-7: the route still 200s, so no redelivery will retry this — without an
+    // alert the email is silently lost.
+    Sentry.captureMessage('email_claim_failed', {
+      level: 'error',
+      extra: { order_id: orderId, column, error: claimErr.message },
+    });
     return;
   }
   if (!claimed || claimed.length === 0) return;
@@ -102,6 +108,122 @@ async function sendEmailOnceWithClaim(
       .eq(column, claimAt);
     if (releaseErr) {
       console.error(`${column} claim release failed for`, orderId, releaseErr);
+      // L-7: a stuck claim blocks every future retry until a manual column
+      // reset — the operator must know which order to reset.
+      Sentry.captureMessage('email_claim_release_failed', {
+        level: 'error',
+        extra: { order_id: orderId, column, error: releaseErr.message },
+      });
+    }
+  }
+}
+
+/**
+ * M-5: the pending→paid CAS hit `private_sales_one_paid_order` (23505) —
+ * another order already holds this private sale's single paid slot, so this
+ * captured payment must be refunded and its order parked terminal `failed`
+ * (never left `pending`, which the abandoned-checkout cron and other pending
+ * flows would act on). Ordering is crash-safe and idempotent:
+ *   1. durable `refund_pending_at` marker CAS'd on status='pending' BEFORE any
+ *      money moves — while set, pending consumers (cron expiry, admin release)
+ *      refuse the order via their `refund_pending_at IS NULL` claim predicate.
+ *      A zero-row marker CAS means the order is no longer pending: classify
+ *      first, and NEVER refund a row we can't account for.
+ *   2. refund under the shared `refund_<pi>` idempotency key. Stripe keys
+ *      expire (~24h) inside the 3-day retry window, so a late crash-retry can
+ *      see `charge_already_refunded` — that IS success, continue.
+ *   3. converge any pieces still reserved to this order (private-sale target
+ *      `sold` — a lapsed `reserved` row would leak into public checkout).
+ *   4. CAS pending→failed clearing the marker. Zero rows → follow-up lookup:
+ *      only a documented safe terminal state (`failed`/`refunded`) acks 200;
+ *      anything else throws so Stripe retries.
+ * A crash anywhere re-enters through the same 23505 on redelivery; every step
+ * is CAS- or key-idempotent.
+ */
+async function handlePrivateSaleDoublePaid(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  stripe: ReturnType<typeof getStripe>,
+  pi: string,
+): Promise<void> {
+  const classify = async (): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, status, private_sale_id')
+      .eq('payment_intent_id', pi)
+      .maybeSingle();
+    if (error) throw new Error(`double-paid classification lookup failed for ${pi}: ${error.message}`);
+    return (data as { status: string } | null)?.status ?? null;
+  };
+
+  const { data: marked, error: markErr } = (await supabase
+    .from('orders')
+    .update({ refund_pending_at: new Date().toISOString() })
+    .eq('payment_intent_id', pi)
+    .eq('status', 'pending')
+    .select('id, private_sale_id')) as {
+      data: Array<{ id: string; private_sale_id: string | null }> | null;
+      error: { message: string } | null;
+    };
+  if (markErr) throw new Error(`double-paid marker CAS failed for ${pi}: ${markErr.message}`);
+  if (!marked || marked.length === 0) {
+    const status = await classify();
+    // `failed`/`refunded` are the documented safe terminal states — the refund
+    // already happened (or is another delivery's responsibility). Anything
+    // else (missing, paid, pending…) is unaccountable: throw, never refund.
+    if (status === 'failed' || status === 'refunded') return;
+    throw new Error(`double-paid order for ${pi} in unexpected state ${status ?? 'missing'}`);
+  }
+  const orderId = marked[0].id;
+  const privateSaleId = marked[0].private_sale_id;
+
+  try {
+    await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
+  } catch (err) {
+    const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: string }).code : null;
+    if (code !== 'charge_already_refunded') {
+      console.error('double-paid refund failed for', pi, err);
+      Sentry.captureException(err);
+      throw err;
+    }
+  }
+
+  // Throws on failure → 5xx → the retry re-enters via the same 23505, the
+  // marker CAS re-claims (still pending), the refund no-ops on its key.
+  await releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId });
+
+  // Alert BEFORE the terminal CAS: once the order is `failed`, a redelivery
+  // acks through the marker-zero-row branch without re-alerting, so an isolate
+  // death between the CAS and a post-CAS alert would silence the refund
+  // forever. Pre-CAS, a crash re-enters via the 23505 and re-alerts — the
+  // Resend Idempotency-Key dedupes the duplicate email. The email itself stays
+  // best-effort (Sentry already captured): a Resend outage must not block the
+  // state machine from converging.
+  Sentry.captureMessage('private_sale_double_paid', {
+    level: 'error',
+    extra: { payment_intent_id: pi, order_id: orderId, private_sale_id: privateSaleId },
+  });
+  try {
+    await emailPrivateSaleDoublePaidAlertToStudio({
+      orderId,
+      paymentIntentId: pi,
+      idempotencyKey: `double-paid-alert/${orderId}`,
+    });
+  } catch (err) {
+    console.error('double-paid studio alert email failed for', orderId, err);
+    Sentry.captureException(err);
+  }
+
+  const { data: failedRows, error: failErr } = (await supabase
+    .from('orders')
+    .update({ status: 'failed', refund_pending_at: null })
+    .eq('payment_intent_id', pi)
+    .eq('status', 'pending')
+    .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+  if (failErr) throw new Error(`double-paid pending→failed CAS failed for ${pi}: ${failErr.message}`);
+  if (!failedRows || failedRows.length === 0) {
+    const status = await classify();
+    if (status !== 'failed' && status !== 'refunded') {
+      throw new Error(`double-paid order for ${pi} in unexpected state ${status ?? 'missing'} after refund`);
     }
   }
 }
@@ -141,12 +263,24 @@ export async function POST(req: Request) {
   // CAS-idempotent steps as no-ops.
   const STRIPE_LEASE_MS = 5 * 60 * 1000;
   const claimedAt = new Date().toISOString();
-  const { data: seen } = await supabase
+  // M-22: dedupe-200 is reserved for a `done` row — EVERY claim loser answers
+  // 409 so Stripe retries later. A 200 from a losing delivery would suppress
+  // the redelivery that rescues the event if the in-flight winner dies mid-
+  // handler (isolate death leaves the row `processing` with nobody coming
+  // back). Stripe treats any non-2xx as retry-later; concurrent duplicates now
+  // show in the dashboard as failed attempts that later succeed — expected,
+  // do not "fix" the 409s back to 200.
+  const inFlight = () => NextResponse.json({ received: false, inFlight: true }, { status: 409 });
+  const { data: seen, error: seenErr } = await supabase
     .from('webhook_events')
     .select('id, status, processing_started_at')
     .eq('provider', 'stripe')
     .eq('provider_event_id', event.id)
     .maybeSingle();
+  // M-21: a failed lookup must not fall through to the insert branch — the
+  // 23505 there over an existing non-`done` row would read as "duplicate" and
+  // return a false dedupe-200, dropping a retryable event.
+  if (seenErr) throw new Error(`webhook_events seen lookup failed: ${seenErr.message}`);
   const seenRow = seen as { id: string; status: string; processing_started_at: string | null } | null;
 
   if (seenRow?.status === 'done') {
@@ -157,7 +291,7 @@ export async function POST(req: Request) {
     if (seenRow.status === 'processing' && seenRow.processing_started_at) {
       const age = Date.now() - new Date(seenRow.processing_started_at).getTime();
       if (age < STRIPE_LEASE_MS) {
-        return NextResponse.json({ received: true, deduped: true });
+        return inFlight();
       }
     }
     // Reclaim a stale lease with a compare-and-swap on the prior lease value so
@@ -172,7 +306,7 @@ export async function POST(req: Request) {
       : claimUpdate.eq('processing_started_at', seenRow.processing_started_at);
     const { data: claimed, error: casErr } = await claimCas.select('id').maybeSingle();
     if (casErr) throw new Error(`webhook_events claim failed: ${casErr.message}`);
-    if (!claimed) return NextResponse.json({ received: true, deduped: true });
+    if (!claimed) return inFlight();
   } else {
     const { error: insErr } = await supabase.from('webhook_events').insert({
       provider: 'stripe',
@@ -182,9 +316,21 @@ export async function POST(req: Request) {
       status: 'processing',
       processing_started_at: claimedAt,
     });
-    // Unique violation (23505) = a concurrent delivery claimed it first — let that one own it.
+    // Unique violation (23505) = a concurrent delivery inserted between our
+    // SELECT and INSERT. Re-read: only a row that already reached `done` may
+    // dedupe-200 — anything else is in flight (or failed) and must 409.
     if (insErr && (insErr as { code?: string }).code === '23505') {
-      return NextResponse.json({ received: true, deduped: true });
+      const { data: raced, error: racedErr } = await supabase
+        .from('webhook_events')
+        .select('status')
+        .eq('provider', 'stripe')
+        .eq('provider_event_id', event.id)
+        .maybeSingle();
+      if (racedErr) throw new Error(`webhook_events race lookup failed: ${racedErr.message}`);
+      if ((raced as { status: string } | null)?.status === 'done') {
+        return NextResponse.json({ received: true, deduped: true });
+      }
+      return inFlight();
     }
     if (insErr) throw new Error(`webhook_events insert failed: ${insErr.message}`);
   }
@@ -194,6 +340,8 @@ export async function POST(req: Request) {
   // as an in-flight `processing` row within STRIPE_LEASE_MS — which would silently
   // drop fulfilment for a retryable failure (e.g. createShipment re-throwing a
   // ShipX error). Mirrors releaseClaim in src/server/prodigi/callbacks.ts.
+  // L-4: CAS'd on OUR claim timestamp — a stale releaser whose lease was
+  // reclaimed by a newer delivery must not clobber that claimant's state.
   // Best-effort: if the release itself fails, the lease still expires after the TTL.
   const releaseLease = () =>
     supabase
@@ -201,6 +349,7 @@ export async function POST(req: Request) {
       .update({ status: 'failed', processing_started_at: null })
       .eq('provider', 'stripe')
       .eq('provider_event_id', event.id)
+      .eq('processing_started_at', claimedAt)
       .then(undefined, (e) => console.error('webhook_events lease release failed', event.id, e));
 
   await handleStripeEvent(event, {
@@ -212,10 +361,19 @@ export async function POST(req: Request) {
         .eq('status', 'pending')
         .select('id, private_sale_id')) as {
           data: Array<{ id: string; private_sale_id: string | null }> | null;
-          error: { message: string } | null;
+          error: { message: string; code?: string } | null;
         };
 
-      if (orderErr) throw new Error(`markPaid orders update failed: ${orderErr.message}`);
+      if (orderErr) {
+        // 23505 here can only come from `private_sales_one_paid_order` — the
+        // double-paid private sale (M-5). Refund-then-fail instead of a 3-day
+        // 5xx loop with captured money and no refund.
+        if (orderErr.code === '23505') {
+          await handlePrivateSaleDoublePaid(supabase, stripe, pi);
+          return false;
+        }
+        throw new Error(`markPaid orders update failed: ${orderErr.message}`);
+      }
 
       let orderId: string;
       // Fetched up front (not just in the newSale branch) so the single-use token is
@@ -272,11 +430,15 @@ export async function POST(req: Request) {
         privateSaleId = existing.private_sale_id;
       }
 
-      await supabase
+      // H-1: an unchecked failure here is asymmetric — the follow-up COUNT
+      // still succeeds, reads 0 sold rows, and the under-fulfilment branch
+      // below auto-refunds a legitimate payment. Throw → 5xx → Stripe retries.
+      const { error: soldErr } = await supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
         .eq('order_id', orderId)
         .eq('status', 'reserved');
+      if (soldErr) throw new Error(`markPaid piece_state sold update failed: ${soldErr.message}`);
 
       const { count: fulfilledCount, error: fulfilledErr } = await supabase
         .from('piece_state')
@@ -366,9 +528,14 @@ export async function POST(req: Request) {
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
           // (InPost webhook) remains the backstop.
+          // M-27: the per-order Idempotency-Key makes the in-claim retries (and
+          // a post-release redelivery within Resend's 24 h window) single-send
+          // even when a timed-out request was actually accepted. Residual: a
+          // redelivery >24 h after an accepted-but-timed-out send can still
+          // duplicate — accepted, see the Plan 06 PR / runbook note.
           if (!orderRowTyped.studio_email_sent_at) {
             await sendEmailOnceWithClaim(supabase, orderId, 'studio_email_sent_at', () =>
-              emailNewOrderToStudio(notifyOrder),
+              emailNewOrderToStudio({ ...notifyOrder, idempotencyKey: `studio-new-order/${orderId}` }),
             );
           }
 
@@ -379,6 +546,7 @@ export async function POST(req: Request) {
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
                 locale: orderRowTyped.locale ?? 'pl',
                 kind: isPrintOnlyOrder ? 'print' : 'ceramic',
+                idempotencyKey: `order-confirmation/${orderId}`,
               }),
               'resend_email_id',
             );
@@ -406,6 +574,10 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         console.error('order paid post-processing failed for', orderId, err);
+        // L-7: this swallow is deliberate (emails/notifications must not block
+        // fulfilment), but console-only meant a broken email path was invisible
+        // until a customer complained.
+        Sentry.captureException(err);
       }
 
       // Burn the single-use private-sale link now that the order is `paid`. Runs for
@@ -468,9 +640,12 @@ export async function POST(req: Request) {
       // at attempt 1 — but then attempt 1 would have flipped it first (both are
       // CAS on the same row). A failed/expired order (markPaid's own
       // under-fulfillment refund) matches none of the three and stays a no-op.
+      // Clears the M-5 marker/lease as it goes terminal: a charge.refunded
+      // racing the double-paid window (our own refund's event, or a Dashboard
+      // refund) must not leave refund_pending_at set forever on a refunded row.
       const { data: pendingData, error: pendingErr } = await supabase
         .from('orders')
-        .update({ status: 'refunded' })
+        .update({ status: 'refunded', refund_pending_at: null, expiry_claim_at: null })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
         .select('id, private_sale_id');
@@ -578,6 +753,18 @@ export async function POST(req: Request) {
       } catch (err) {
         console.error('createOrderInvoice failed for', pi, err);
         Sentry.captureException(err);
+        // L-5: invoicing stays best-effort (Stripe must get its 200, there is
+        // no retry/backfill machinery) — but the operator must hear about it
+        // the day it happens, not at the next manual reconcile. The alert
+        // itself is best-effort too: its failure must not 5xx the route.
+        try {
+          await emailInvoiceFailedAlertToStudio({
+            paymentIntentId: pi,
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        } catch (alertErr) {
+          console.error('invoice-failed alert email failed for', pi, alertErr);
+        }
       }
     },
     createShipment: async (pi) => {
@@ -729,6 +916,43 @@ export async function POST(req: Request) {
         failureReason: refund.failure_reason ?? null,
       });
     },
+    alertDisputeCreated: async (dispute) => {
+      const piId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id ?? null;
+      // Correlate to the order by payment_intent — id only, no customer PII in
+      // the alert. Best-effort: a lookup failure still alerts, with order unknown.
+      let orderId: string | null = null;
+      if (piId) {
+        const { data } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('payment_intent_id', piId)
+          .maybeSingle();
+        orderId = (data as { id: string } | null)?.id ?? null;
+      }
+      const evidenceDueBy = dispute.evidence_details?.due_by ?? null;
+      Sentry.captureMessage('stripe_dispute_created', {
+        level: 'error',
+        extra: {
+          payment_intent: piId,
+          dispute_id: dispute.id,
+          reason: dispute.reason ?? null,
+          amount: dispute.amount,
+          currency: dispute.currency,
+          evidence_due_by: evidenceDueBy,
+          order_id: orderId,
+        },
+      });
+      // Deliberately allowed to throw: a failed send 5xxes the route, the
+      // ledger lease is released, and Stripe's retry re-attempts the alert.
+      await emailDisputeCreatedAlertToStudio({
+        orderId,
+        disputeId: dispute.id,
+        amount: dispute.amount,
+        currency: dispute.currency,
+        reason: dispute.reason ?? null,
+        evidenceDueBy,
+      });
+    },
     revalidate: (tag) => revalidateTag(tag, 'max'),
     trackPurchase: async (pi) => {
       try {
@@ -766,6 +990,12 @@ export async function POST(req: Request) {
           .select('id');
         if (claimErr) {
           console.error('conversions_sent_at claim failed for', pi, claimErr);
+          // L-7: no redelivery will retry a 200'd route — a silent claim
+          // failure drops the server-side conversion with zero trace.
+          Sentry.captureMessage('conversions_claim_failed', {
+            level: 'error',
+            extra: { payment_intent_id: pi, error: claimErr.message },
+          });
           return;
         }
         if (!claimed || claimed.length === 0) return;
@@ -816,6 +1046,9 @@ export async function POST(req: Request) {
         );
       } catch (err) {
         console.error('trackPurchase failed for', pi, err);
+        // L-7: best-effort stays best-effort (never fail the webhook over
+        // conversions), but an unexpected throw here must be operator-visible.
+        Sentry.captureException(err);
       }
     },
   }).catch(async (err) => {
@@ -823,11 +1056,15 @@ export async function POST(req: Request) {
     throw err;
   });
 
+  // L-4: like releaseLease, scoped to OUR claim — if this delivery exceeded
+  // the lease and a newer claimant took over, the write matches nothing and
+  // the newer claimant (or a later retry) drives the row to `done`.
   const { error: doneErr } = await supabase
     .from('webhook_events')
     .update({ status: 'done', processed_at: new Date().toISOString() })
     .eq('provider', 'stripe')
-    .eq('provider_event_id', event.id);
+    .eq('provider_event_id', event.id)
+    .eq('processing_started_at', claimedAt);
   // Fail the request if the completion write errors (F-18): a 200 here would tell
   // Stripe we're done while the ledger row is stuck `processing`. Release the lease
   // and throw so the route 5xxes, Stripe retries, and the retry reclaims immediately

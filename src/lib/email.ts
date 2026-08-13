@@ -53,6 +53,8 @@ async function sendResendTemplate(params: {
   variables: Record<string, string>;
   attachments?: Array<{ filename: string; content: string }>;
   signal?: AbortSignal;
+  /** M-27: Resend dedupes this key for 24 h — pass from claim-based senders so a retry after a timed-out-but-accepted request can't double-send. */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
@@ -73,6 +75,7 @@ async function sendResendTemplate(params: {
     headers: {
       Authorization: `Bearer ${params.apiKey}`,
       'Content-Type': 'application/json',
+      ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
     },
     body: JSON.stringify(body),
     ...(params.signal ? { signal: params.signal } : {}),
@@ -93,6 +96,8 @@ async function sendResendHtml(params: {
   to: string[];
   subject: string;
   html: string;
+  /** M-27: Resend dedupes this key for 24 h — pass from claim-based senders so a retry after a timed-out-but-accepted request can't double-send. */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
@@ -107,7 +112,11 @@ async function sendResendHtml(params: {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${params.apiKey}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${params.apiKey}`,
+        'Content-Type': 'application/json',
+        ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -272,7 +281,11 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
 }
 
 /** Email the studio about a new paid order. Throws if Resend isn't configured (caller must catch). */
-export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder }): Promise<void> {
+export async function emailNewOrderToStudio(params: {
+  order: NewOrderEmailOrder;
+  /** M-27: pass `studio-new-order/<orderId>` from the claim-based webhook sender. */
+  idempotencyKey?: string;
+}): Promise<void> {
   const { env } = getCloudflareContext();
   const { order } = params;
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
@@ -280,7 +293,14 @@ export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder 
   }
   const { subject, mainContent } = buildNewOrderToStudioEmail({ order });
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
-  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+  await sendResendHtml({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [env.STUDIO_NOTIFY_EMAIL],
+    subject,
+    html,
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
+  });
 }
 
 // ── Studio showroom-interest notification ────────────────────────────────────
@@ -425,6 +445,168 @@ export async function emailRefundFailedAlertToStudio(params: RefundFailedAlert):
   const { subject, mainContent } = buildRefundFailedAlertEmail(params);
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
+// ── Studio invoice-failed alert ──────────────────────────────────────────────
+
+export type InvoiceFailedAlert = {
+  paymentIntentId: string;
+  errorMessage: string;
+};
+
+/** Pure function — subject + inner HTML for the "invoice creation failed" studio alert (L-5). */
+export function buildInvoiceFailedAlertEmail(params: InvoiceFailedAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'PaymentIntent', value: escapeHtml(params.paymentIntentId) },
+    { label: 'Błąd', value: escapeHtml(params.errorMessage.slice(0, 300)) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Nie udało się wystawić faktury za opłacone zamówienie.</strong>'),
+    emailParagraph(
+      'Zamówienie i wysyłka są zrealizowane normalnie — fakturowanie jest best-effort i nie jest ponawiane automatycznie. ' +
+        'Wystaw fakturę ręcznie w panelu Stripe albo ponów webhook dla tej płatności.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Faktura] Nie udało się wystawić faktury — ${params.paymentIntentId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that invoicing failed for a paid order. Throws if Resend isn't configured (caller must catch — the route must still 200). */
+export async function emailInvoiceFailedAlertToStudio(params: InvoiceFailedAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildInvoiceFailedAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
+// ── Studio dispute-created alert ─────────────────────────────────────────────
+
+export type DisputeCreatedAlert = {
+  /** Correlated order id, or null when the payment_intent matched no order. */
+  orderId: string | null;
+  disputeId: string;
+  /** Amount in minor units, with its currency, straight off the Stripe dispute. */
+  amount: number;
+  currency: string;
+  reason: string | null;
+  /** `evidence_details.due_by` — unix seconds; missing it means an automatic loss. */
+  evidenceDueBy: number | null;
+};
+
+/** Pure function — subject + inner HTML for the "dispute opened, response deadline running" studio alert (Stripe `charge.dispute.created`, L-6). */
+export function buildDisputeCreatedAlertEmail(params: DisputeCreatedAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const dueBy = params.evidenceDueBy !== null
+    ? new Date(params.evidenceDueBy * 1000).toISOString().slice(0, 10)
+    : '(brak)';
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
+    { label: 'Spór Stripe', value: escapeHtml(params.disputeId) },
+    { label: 'Kwota', value: escapeHtml(formatGrosze(params.amount, params.currency)) },
+    { label: 'Powód', value: escapeHtml(params.reason ?? '(brak)') },
+    { label: 'Termin odpowiedzi', value: escapeHtml(dueBy) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Klient otworzył spór (chargeback).</strong>'),
+    emailParagraph(
+      'Stripe zamroził środki i czeka na odpowiedź z dowodami. ' +
+        'Brak odpowiedzi przed terminem oznacza automatyczną przegraną — ' +
+        'odpowiedz w panelu Stripe (Płatności → Spory) jak najszybciej.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Spór] Nowy spór Stripe — odpowiedz do ${dueBy} — ${params.orderId ?? params.disputeId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that a dispute was opened (deadline-bearing). Throws if Resend isn't configured (caller must catch or let the webhook retry). */
+export async function emailDisputeCreatedAlertToStudio(params: DisputeCreatedAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildDisputeCreatedAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
+// ── Studio private-sale double-payment alert ─────────────────────────────────
+
+export type PrivateSaleDoublePaidAlert = {
+  orderId: string;
+  paymentIntentId: string;
+};
+
+/** Pure function — subject + inner HTML for the "private sale paid twice, second payment auto-refunded" studio alert (M-5). */
+export function buildPrivateSaleDoublePaidAlertEmail(params: PrivateSaleDoublePaidAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId) },
+    { label: 'PaymentIntent', value: escapeHtml(params.paymentIntentId) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Podwójna płatność za sprzedaż prywatną.</strong>'),
+    emailParagraph(
+      'Dwa zamówienia z tego samego linku sprzedaży prywatnej zostały opłacone. ' +
+        'Druga płatność została automatycznie zwrócona, a jej zamówienie oznaczone jako nieudane. ' +
+        'Zweryfikuj zwrot w panelu Stripe i skontaktuj się z kupującym.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Zwrot] Podwójna płatność — sprzedaż prywatna — zamówienie ${params.orderId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that a private sale was paid twice and the second payment was auto-refunded. Throws if Resend isn't configured (caller must catch). */
+export async function emailPrivateSaleDoublePaidAlertToStudio(
+  params: PrivateSaleDoublePaidAlert & {
+    /** M-27/M-5: the alert fires BEFORE the terminal CAS, so a crash-retry re-sends — the key dedupes it. */
+    idempotencyKey?: string;
+  },
+): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildPrivateSaleDoublePaidAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [env.STUDIO_NOTIFY_EMAIL],
+    subject,
+    html,
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
+  });
 }
 
 // ── Customer shipping-confirmation email ─────────────────────────────────────
@@ -909,6 +1091,12 @@ export async function emailOrderConfirmationToCustomer(params: {
   kind?: OrderEmailKind;
   /** Explicit env (e.g. from the orders CLI) — defaults to the current Workers env. */
   env?: CloudflareEnv;
+  /**
+   * M-27: pass `order-confirmation/<orderId>` from the claim-based webhook
+   * sender. Deliberate manual re-sends (admin/CLI) must NOT pass a key — the
+   * 24 h Resend dedupe would swallow them.
+   */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
@@ -930,6 +1118,7 @@ export async function emailOrderConfirmationToCustomer(params: {
       templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
       variables: { MAIN_CONTENT: mainContent },
       signal: controller.signal,
+      ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
     });
   } finally {
     clearTimeout(timer);
