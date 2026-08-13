@@ -23,6 +23,16 @@ import {
 
 export const DLQ_QUEUE_NAME = 'prodigi-fulfilment-dlq';
 
+/**
+ * Queue-name → DLQ routing predicate. Suffix-based (not exact-match) because
+ * queue names are account-unique: a preview/rehearsal worker's DLQ can never
+ * reuse the production name, so exact-match routing would silently feed DLQ
+ * messages back into processJob on any non-production deployment.
+ */
+export function isDlqQueue(queueName: string): boolean {
+  return queueName.endsWith('-dlq');
+}
+
 /** Max body chars retained in the log/Sentry snippet (keeps events small). */
 const BODY_SNIPPET_MAX = 200;
 /** Max per-message sections rendered in one batch email (rest are summarised). */
