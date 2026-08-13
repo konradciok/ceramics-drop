@@ -26,8 +26,8 @@ const { mockFrom, mockPostOrder, mockGetAssetForFulfilment, mockCaptureAlert, mo
   mockFrom: vi.fn(),
   mockPostOrder: vi.fn(),
   mockGetAssetForFulfilment: vi.fn(),
-  mockCaptureAlert: vi.fn(async () => {}),
-  mockStudioEmail: vi.fn(async () => {}),
+  mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
+  mockStudioEmail: vi.fn(async (...args: unknown[]) => { void args; }),
 }));
 
 // C-2 guard: the queue runs OUTSIDE the request ALS, so getSupabaseAdmin() (which

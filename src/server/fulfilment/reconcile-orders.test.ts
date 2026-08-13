@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { mockFrom, mockMerge, mockCaptureAlert, mockStudioEmail } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockMerge: vi.fn(),
-  mockCaptureAlert: vi.fn(async () => {}),
-  mockStudioEmail: vi.fn(async () => {}),
+  mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
+  mockStudioEmail: vi.fn(async (...args: unknown[]) => { void args; }),
 }));
 
 vi.mock('@/lib/supabase', () => ({ supabaseFromEnv: () => ({ from: mockFrom }) }));
