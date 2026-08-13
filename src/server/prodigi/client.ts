@@ -31,9 +31,12 @@ export class ProdigiError extends Error {
 }
 
 function baseUrl(env: CloudflareEnv): string {
-  return env.PRODIGI_ENV === 'live'
-    ? 'https://api.prodigi.com/v4.0'
-    : 'https://api.sandbox.prodigi.com/v4.0';
+  // Live mode returns unconditionally BEFORE the override is read: the
+  // rehearsal-only PRODIGI_API_BASE_URL knob (failure injection, Plan 05) can
+  // only ever replace the sandbox URL, never redirect production traffic.
+  if (env.PRODIGI_ENV === 'live') return 'https://api.prodigi.com/v4.0';
+  const override = env.PRODIGI_API_BASE_URL?.trim().replace(/\/+$/, '');
+  return override || 'https://api.sandbox.prodigi.com/v4.0';
 }
 
 function apiKey(env: CloudflareEnv): string {

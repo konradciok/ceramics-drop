@@ -8,7 +8,7 @@ import { default as handler } from './.open-next/worker.js';
 import { captureWorkerAlert, type WorkerAlertLevel } from './src/lib/worker-sentry';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
-import { buildDlqAlert, buildDlqBatchAlertEmail, DLQ_QUEUE_NAME } from './src/server/fulfilment/dlq';
+import { buildDlqAlert, buildDlqBatchAlertEmail, isDlqQueue } from './src/server/fulfilment/dlq';
 import {
   buildFailedActionAlert,
   type FailedActionJobInput,
@@ -62,7 +62,7 @@ export default {
     // Route on the queue name. The DLQ consumer is alert-only: it logs + fires
     // Sentry + emails the studio, then acks every message — it NEVER retries,
     // so a poison message cannot loop back through the system.
-    if (batch.queue === DLQ_QUEUE_NAME) {
+    if (isDlqQueue(batch.queue)) {
       await handleDlqBatch(batch, env, ctx);
       return;
     }

@@ -3,7 +3,23 @@ import {
   buildDlqAlert,
   buildDlqBatchAlertEmail,
   DLQ_QUEUE_NAME,
+  isDlqQueue,
 } from './dlq';
+
+describe('isDlqQueue', () => {
+  it('matches the production DLQ name', () => {
+    expect(isDlqQueue(DLQ_QUEUE_NAME)).toBe(true);
+  });
+
+  it('matches any -dlq-suffixed queue (preview/rehearsal deployments)', () => {
+    expect(isDlqQueue('prodigi-fulfilment-preview-dlq')).toBe(true);
+  });
+
+  it('never matches a primary fulfilment queue', () => {
+    expect(isDlqQueue('prodigi-fulfilment')).toBe(false);
+    expect(isDlqQueue('prodigi-fulfilment-preview')).toBe(false);
+  });
+});
 
 describe('buildDlqAlert', () => {
   it('reads orderId/jobId from a well-formed FulfilmentJobMessage body', () => {

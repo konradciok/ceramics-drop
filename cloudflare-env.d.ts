@@ -61,6 +61,9 @@ interface CloudflareEnv {
   PRODIGI_API_KEY_SANDBOX: string;
   PRODIGI_API_KEY_LIVE: string;
   PRODIGI_ENV: string;
+  /** Rehearsal-only sandbox base-URL override (failure injection, Plan 05).
+   *  Ignored whenever PRODIGI_ENV is 'live' — can never redirect production traffic. */
+  PRODIGI_API_BASE_URL?: string;
   PRODIGI_CALLBACK_TOKEN: string;
   PRINT_ASSET_TOKEN_SECRET: string;
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
