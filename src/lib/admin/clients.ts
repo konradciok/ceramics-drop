@@ -11,6 +11,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { STRIPE_API_VERSION } from '@/lib/stripe';
 
 /** Env widened so the optional ADMIN_* keys (absent from cloudflare-env.d.ts) read cleanly. */
 type AdminEnv = CloudflareEnv & Record<string, string | undefined>;
@@ -29,7 +30,10 @@ export function adminSupabaseFromEnv(url: string, key: string): SupabaseClient {
 }
 
 export function adminStripeFromEnv(key: string): Stripe {
-  return new Stripe(key, { httpClient: Stripe.createFetchHttpClient() });
+  // Same explicit pin as src/lib/stripe.ts: the SDK would pin its bundled
+  // version anyway, but the typed literal makes an SDK bump fail typecheck
+  // instead of silently moving the version.
+  return new Stripe(key, { apiVersion: STRIPE_API_VERSION, httpClient: Stripe.createFetchHttpClient() });
 }
 
 export function adminSupabase(): SupabaseClient {
