@@ -1,0 +1,11 @@
+-- M-10: dedup column for the "stranded fulfilment job" watchdog (jobs stuck in a
+-- pre-submission non-terminal state — queued / fulfilment_submitting /
+-- failed_retryable — for >2h). Kept SEPARATE from `alerted_at` (which the
+-- failed_action_required sweep owns) so the two watchdogs never suppress each
+-- other: a job can be stranded-alerted while `failed_retryable` and later still
+-- get the distinct failed_action_required alert when it transitions.
+--
+-- Additive + backward-compatible: nullable, no default, no backfill. Old code
+-- ignores it; only the new stranded sweep writes it. Auto-applies on merge.
+-- Rollback: `alter table fulfilment_jobs drop column stranded_alerted_at;`.
+alter table fulfilment_jobs add column if not exists stranded_alerted_at timestamptz;
