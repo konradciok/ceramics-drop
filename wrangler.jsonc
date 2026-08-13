@@ -67,5 +67,61 @@
       "persist": true,
       "head_sampling_rate": 0.25
     }
+  },
+  // Rehearsal/preview environment (backend-audit Plan 05): workers.dev deploy with
+  // DEDICATED queues so the real queue runtime can be exercised without touching
+  // production traffic. Deploy: `CLOUDFLARE_ENV=preview opennextjs-cloudflare build`
+  // then `... deploy -- --env=preview`. Secrets are set per-env (test/sandbox only).
+  "env": {
+    "preview": {
+      "name": "ceramics-drop-preview",
+      "workers_dev": true,
+      // CRITICAL: block inheritance of the top-level custom domains — without
+      // this, deploying the preview REASSIGNS anna-ciok.studio away from the
+      // production worker (verified the hard way during the Plan 05 rehearsal).
+      "routes": [],
+      "vars": {
+        "CATALOG_SOURCE": "db",
+        "PRODIGI_ENV": "sandbox"
+      },
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "assets": {
+        "directory": ".open-next/assets",
+        "binding": "ASSETS"
+      },
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "ceramics-drop-preview"
+        }
+      ],
+      "queues": {
+        "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment-preview" }],
+        "consumers": [{
+          "queue": "prodigi-fulfilment-preview",
+          "max_batch_size": 1,
+          // 3 (prod: 10) so the failure-injection drill reaches the DLQ in minutes,
+          // not hours — still exercises the same backoff → DLQ path.
+          "max_retries": 3,
+          "dead_letter_queue": "prodigi-fulfilment-preview-dlq"
+        }, {
+          "queue": "prodigi-fulfilment-preview-dlq",
+          "max_retries": 1
+        }]
+      },
+      "r2_buckets": [
+        { "binding": "PRINT_ASSETS", "bucket_name": "anna-ciok-print-assets" }
+      ],
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "persist": true,
+          "invocation_logs": true
+        }
+      }
+    }
   }
 }
