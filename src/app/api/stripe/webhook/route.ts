@@ -243,12 +243,24 @@ export async function POST(req: Request) {
   // CAS-idempotent steps as no-ops.
   const STRIPE_LEASE_MS = 5 * 60 * 1000;
   const claimedAt = new Date().toISOString();
-  const { data: seen } = await supabase
+  // M-22: dedupe-200 is reserved for a `done` row — EVERY claim loser answers
+  // 409 so Stripe retries later. A 200 from a losing delivery would suppress
+  // the redelivery that rescues the event if the in-flight winner dies mid-
+  // handler (isolate death leaves the row `processing` with nobody coming
+  // back). Stripe treats any non-2xx as retry-later; concurrent duplicates now
+  // show in the dashboard as failed attempts that later succeed — expected,
+  // do not "fix" the 409s back to 200.
+  const inFlight = () => NextResponse.json({ received: false, inFlight: true }, { status: 409 });
+  const { data: seen, error: seenErr } = await supabase
     .from('webhook_events')
     .select('id, status, processing_started_at')
     .eq('provider', 'stripe')
     .eq('provider_event_id', event.id)
     .maybeSingle();
+  // M-21: a failed lookup must not fall through to the insert branch — the
+  // 23505 there over an existing non-`done` row would read as "duplicate" and
+  // return a false dedupe-200, dropping a retryable event.
+  if (seenErr) throw new Error(`webhook_events seen lookup failed: ${seenErr.message}`);
   const seenRow = seen as { id: string; status: string; processing_started_at: string | null } | null;
 
   if (seenRow?.status === 'done') {
@@ -259,7 +271,7 @@ export async function POST(req: Request) {
     if (seenRow.status === 'processing' && seenRow.processing_started_at) {
       const age = Date.now() - new Date(seenRow.processing_started_at).getTime();
       if (age < STRIPE_LEASE_MS) {
-        return NextResponse.json({ received: true, deduped: true });
+        return inFlight();
       }
     }
     // Reclaim a stale lease with a compare-and-swap on the prior lease value so
@@ -274,7 +286,7 @@ export async function POST(req: Request) {
       : claimUpdate.eq('processing_started_at', seenRow.processing_started_at);
     const { data: claimed, error: casErr } = await claimCas.select('id').maybeSingle();
     if (casErr) throw new Error(`webhook_events claim failed: ${casErr.message}`);
-    if (!claimed) return NextResponse.json({ received: true, deduped: true });
+    if (!claimed) return inFlight();
   } else {
     const { error: insErr } = await supabase.from('webhook_events').insert({
       provider: 'stripe',
@@ -284,9 +296,21 @@ export async function POST(req: Request) {
       status: 'processing',
       processing_started_at: claimedAt,
     });
-    // Unique violation (23505) = a concurrent delivery claimed it first — let that one own it.
+    // Unique violation (23505) = a concurrent delivery inserted between our
+    // SELECT and INSERT. Re-read: only a row that already reached `done` may
+    // dedupe-200 — anything else is in flight (or failed) and must 409.
     if (insErr && (insErr as { code?: string }).code === '23505') {
-      return NextResponse.json({ received: true, deduped: true });
+      const { data: raced, error: racedErr } = await supabase
+        .from('webhook_events')
+        .select('status')
+        .eq('provider', 'stripe')
+        .eq('provider_event_id', event.id)
+        .maybeSingle();
+      if (racedErr) throw new Error(`webhook_events race lookup failed: ${racedErr.message}`);
+      if ((raced as { status: string } | null)?.status === 'done') {
+        return NextResponse.json({ received: true, deduped: true });
+      }
+      return inFlight();
     }
     if (insErr) throw new Error(`webhook_events insert failed: ${insErr.message}`);
   }
@@ -296,6 +320,8 @@ export async function POST(req: Request) {
   // as an in-flight `processing` row within STRIPE_LEASE_MS — which would silently
   // drop fulfilment for a retryable failure (e.g. createShipment re-throwing a
   // ShipX error). Mirrors releaseClaim in src/server/prodigi/callbacks.ts.
+  // L-4: CAS'd on OUR claim timestamp — a stale releaser whose lease was
+  // reclaimed by a newer delivery must not clobber that claimant's state.
   // Best-effort: if the release itself fails, the lease still expires after the TTL.
   const releaseLease = () =>
     supabase
@@ -303,6 +329,7 @@ export async function POST(req: Request) {
       .update({ status: 'failed', processing_started_at: null })
       .eq('provider', 'stripe')
       .eq('provider_event_id', event.id)
+      .eq('processing_started_at', claimedAt)
       .then(undefined, (e) => console.error('webhook_events lease release failed', event.id, e));
 
   await handleStripeEvent(event, {
@@ -938,11 +965,15 @@ export async function POST(req: Request) {
     throw err;
   });
 
+  // L-4: like releaseLease, scoped to OUR claim — if this delivery exceeded
+  // the lease and a newer claimant took over, the write matches nothing and
+  // the newer claimant (or a later retry) drives the row to `done`.
   const { error: doneErr } = await supabase
     .from('webhook_events')
     .update({ status: 'done', processed_at: new Date().toISOString() })
     .eq('provider', 'stripe')
-    .eq('provider_event_id', event.id);
+    .eq('provider_event_id', event.id)
+    .eq('processing_started_at', claimedAt);
   // Fail the request if the completion write errors (F-18): a 200 here would tell
   // Stripe we're done while the ledger row is stuck `processing`. Release the lease
   // and throw so the route 5xxes, Stripe retries, and the retry reclaims immediately

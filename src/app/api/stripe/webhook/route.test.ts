@@ -78,23 +78,29 @@ function chain(terminal: 'select' | 'maybeSingle', result: Result, onCall?: (met
 type WebhookEventsPlan = {
   /** initial `.select().eq().eq().maybeSingle()` — default fresh (no row). */
   seen?: QueryResult;
+  /** the re-SELECT after an insert-`23505` race (M-22) — defaults to `seen`. */
+  seenAfterInsert?: QueryResult;
   /** `.insert()` result — default success. */
   insert?: QueryResult;
   /** stale-lease reclaim `.update()…select('id').maybeSingle()` — default reclaimed. */
   claimCas?: QueryResult;
-  /** completion `.update({status:'done'}).eq().eq()` — default success. */
+  /** completion `.update({status:'done'}).eq().eq().eq()` — default success. */
   done?: QueryResult;
   /** records every `.update()` payload (assert lease release on throw). */
   updates?: Array<Record<string, unknown>>;
+  /** records every `.update()` payload + its chained filters (L-4 claim scoping). */
+  updateCalls?: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }>;
+  /** records `.insert()` payloads (recover the claimedAt lease token). */
+  inserts?: Array<Record<string, unknown>>;
 };
 
 /** Chain node for the webhook_events fake: `.eq()`/`.is()` return self,
  *  `.select().maybeSingle()` and `.maybeSingle()` resolve `result`, and the node
- *  is itself awaitable (the done-write awaits `.eq().eq()` directly). */
-function weChain(result: QueryResult): Record<string, unknown> {
+ *  is itself awaitable (the done-write awaits `.eq().eq().eq()` directly). */
+function weChain(result: QueryResult, onFilter?: (method: string, args: unknown[]) => void): Record<string, unknown> {
   const node: Record<string, unknown> = {
-    eq: () => node,
-    is: () => node,
+    eq: (...args: unknown[]) => { onFilter?.('eq', args); return node; },
+    is: (...args: unknown[]) => { onFilter?.('is', args); return node; },
     select: () => ({ maybeSingle: async () => result }),
     maybeSingle: async () => result,
     then: (resolve: (v: QueryResult) => unknown, reject?: (e: unknown) => unknown) =>
@@ -108,19 +114,30 @@ function weChain(result: QueryResult): Record<string, unknown> {
  * inserts and marks done cleanly, so the Stripe claim wrapper is transparent to
  * every pre-existing test. Override to exercise dedup: `seen` a done/processing
  * row, or make `done` an error. CAS vs done UPDATE are told apart by payload
- * status (`processing` = stale-lease reclaim, `done` = completion write).
+ * status (`processing` = stale-lease reclaim, `done`/`failed` = completion or
+ * lease release). The second `.select()` (the post-insert-race re-read) serves
+ * `seenAfterInsert` when provided.
  */
 function webhookEventsTable(plan: WebhookEventsPlan = {}) {
   const seen = plan.seen ?? { data: null, error: null };
   const insert = plan.insert ?? { error: null };
   const claimCas = plan.claimCas ?? { data: { id: 'we_1' }, error: null };
   const done = plan.done ?? { error: null };
+  let selects = 0;
   return {
-    select: () => weChain(seen),
-    insert: async () => insert,
+    select: () => {
+      selects += 1;
+      return weChain(selects === 1 ? seen : plan.seenAfterInsert ?? seen);
+    },
+    insert: async (payload: Record<string, unknown>) => {
+      plan.inserts?.push(payload);
+      return insert;
+    },
     update: (payload: Record<string, unknown>) => {
       plan.updates?.push(payload);
-      return weChain(payload.status === 'processing' ? claimCas : done);
+      const call = { payload, filters: [] as Array<[string, unknown[]]> };
+      plan.updateCalls?.push(call);
+      return weChain(payload.status === 'processing' ? claimCas : done, (method, args) => call.filters.push([method, args]));
     },
   };
 }
@@ -136,6 +153,9 @@ function webhookEventsTable(plan: WebhookEventsPlan = {}) {
  */
 function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result; webhookEvents?: WebhookEventsPlan }) {
   const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
+  // One ledger instance per fake — its select counter (seen vs seenAfterInsert)
+  // must survive across `.from()` calls.
+  const webhookEvents = webhookEventsTable(plan.webhookEvents);
   const calls = {
     pieceUpdatePayload: undefined as unknown,
     pieceUpdated: false,
@@ -159,7 +179,7 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
           },
         };
       }
-      if (table === 'webhook_events') return webhookEventsTable(plan.webhookEvents);
+      if (table === 'webhook_events') return webhookEvents;
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -638,6 +658,9 @@ function makeSucceededSupabase(opts: {
   // filter call, so tests can prove the atomic `.is(col, null)` guard is used.
   const studioClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
   const confirmClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
+  // One ledger instance per fake — its select counter (seen vs seenAfterInsert)
+  // must survive across `.from()` calls.
+  const webhookEvents = webhookEventsTable(opts.webhookEvents);
   // M-5: global operation sequence (marker CAS / final CAS / piece writes) —
   // tests append refund creation via a refundsCreate mockImplementation, so
   // ordering constraints (marker BEFORE refund) are assertable.
@@ -714,7 +737,7 @@ function makeSucceededSupabase(opts: {
           },
         };
       }
-      if (table === 'webhook_events') return webhookEventsTable(opts.webhookEvents);
+      if (table === 'webhook_events') return webhookEvents;
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -1568,7 +1591,7 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     expect(enqueueProdigi).not.toHaveBeenCalled();
   });
 
-  it('in-flight `processing` lease within TTL: dedupes (concurrent double-processing guard)', async () => {
+  it('in-flight `processing` lease within TTL: 409 so Stripe redelivers after the lease (M-22 — never a dropping 200)', async () => {
     const { supabase } = makeSucceededSupabase({
       ...dedupOpts,
       webhookEvents: {
@@ -1578,11 +1601,100 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
+    const body = (await res.json()) as { received?: boolean; inFlight?: boolean };
+
+    // A 200 here would suppress the retry: if the in-flight winner dies, the
+    // event is dropped forever. 409 makes Stripe retry after the lease.
+    expect(res.status).toBe(409);
+    expect(body).toEqual({ received: false, inFlight: true });
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('seen-SELECT error: throws (5xx) instead of falling into the insert branch and a false dedupe-200 (M-21)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: { seen: { data: null, error: { message: 'select down' } } },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/webhook_events seen lookup failed: select down/);
+  });
+
+  it('claim-CAS lost race (another delivery reclaimed the stale lease): 409, not a dedupe-200 (M-22)', async () => {
+    const staleLease = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        seen: { data: { id: 'we_1', status: 'processing', processing_started_at: staleLease }, error: null },
+        claimCas: { data: null, error: null },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(409);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('insert-23505 race where the winning row is NOT done: 409 (M-22)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        insert: { error: { code: '23505', message: 'duplicate key' } },
+        seenAfterInsert: {
+          data: { id: 'we_1', status: 'processing', processing_started_at: new Date().toISOString() },
+          error: null,
+        },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(409);
+    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('insert-23505 race where the winning row already reached done: dedupe-200 (the only 200 dedup case)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...dedupOpts,
+      webhookEvents: {
+        insert: { error: { code: '23505', message: 'duplicate key' } },
+        seenAfterInsert: { data: { id: 'we_1', status: 'done', processing_started_at: null }, error: null },
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
     const body = (await res.json()) as { deduped?: boolean };
 
     expect(res.status).toBe(200);
     expect(body.deduped).toBe(true);
-    expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('done-write and lease release are scoped to OUR claim timestamp (L-4 — a stale releaser writes nothing)', async () => {
+    const inserts: Array<Record<string, unknown>> = [];
+    const updateCalls: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
+    const { supabase } = makeSucceededSupabase({
+      casUpdate: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      variantRows: { data: [], error: null },
+      webhookEvents: { inserts, updateCalls },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    const claimedAt = inserts[0]?.processing_started_at;
+    expect(typeof claimedAt).toBe('string');
+    const doneCall = updateCalls.find((c) => c.payload.status === 'done');
+    expect(doneCall).toBeDefined();
+    expect(doneCall!.filters).toContainEqual(['eq', ['processing_started_at', claimedAt]]);
   });
 
   it('fresh event: inserts the row, processes, and marks it done (no dedup)', async () => {
@@ -1622,12 +1734,14 @@ describe('webhook_events idempotency ledger (F-18)', () => {
 
   it('a mid-handler throw releases the lease (status=failed) so a retry reclaims immediately', async () => {
     const updates: Array<Record<string, unknown>> = [];
+    const inserts: Array<Record<string, unknown>> = [];
+    const updateCalls: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
     const { supabase } = makeSupabase({
       // refunded-CAS orders UPDATE errors ⇒ releaseSale throws out of handleStripeEvent.
       ordersUpdate: { data: null, error: { message: 'db down' } },
       ordersSelect: { data: null, error: null },
       pieceUpdate: { data: null, error: null },
-      webhookEvents: { updates },
+      webhookEvents: { updates, inserts, updateCalls },
     });
     supabaseImpl = supabase;
 
@@ -1636,5 +1750,12 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     // it immediately, regardless of whether the retry lands inside the 5-min lease.
     // Without this the retry would be deduped → fulfilment silently dropped.
     expect(updates).toContainEqual({ status: 'failed', processing_started_at: null });
+    // L-4: the release is CAS'd on OUR claim timestamp — a stale releaser whose
+    // lease was reclaimed by a newer delivery must write nothing.
+    const claimedAt = inserts[0]?.processing_started_at;
+    expect(typeof claimedAt).toBe('string');
+    const releaseCall = updateCalls.find((c) => c.payload.status === 'failed');
+    expect(releaseCall).toBeDefined();
+    expect(releaseCall!.filters).toContainEqual(['eq', ['processing_started_at', claimedAt]]);
   });
 });
