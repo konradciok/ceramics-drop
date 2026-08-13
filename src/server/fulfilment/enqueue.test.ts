@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFrom, processJob } = vi.hoisted(() => ({
+const { mockFrom, processJob, mockCaptureAlert } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   processJob: vi.fn(async () => {}),
+  mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
 }));
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
 vi.mock('./process-job', () => ({ processJob }));
+vi.mock('@/lib/worker-sentry', () => ({ captureWorkerAlert: mockCaptureAlert }));
 
 import { enqueueProdigi, parseEnvFromIdempotencyKey } from './enqueue';
 
@@ -215,6 +217,31 @@ describe('enqueueProdigi', () => {
 
     await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).rejects.toThrow(/job upsert failed/);
     expect(calls.updates).toHaveLength(0);
+  });
+
+  it('a delivered job (shipped) on env flip is NEVER rewritten — alert only, no park, no throw', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      upsertError: ORDER_UNIQUE_ERROR,
+      activeRow: {
+        id: 'job-old',
+        status: 'shipped',
+        prodigi_env: 'sandbox',
+        idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      },
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(enqueueProdigi('ord-1', env, {} as ExecutionContext)).resolves.toBeUndefined();
+
+    expect(calls.updates).toHaveLength(0); // history untouched, unique slot NOT freed
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert.mock.calls[0][1]).toMatchObject({
+      message: 'fulfilment_env_flip_conflict_delivered_job',
+    });
+    consoleErrorSpy.mockRestore();
   });
 
   it('parseEnvFromIdempotencyKey: full-format match only', () => {

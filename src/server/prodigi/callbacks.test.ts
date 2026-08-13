@@ -155,6 +155,8 @@ describe('handleProdigiCallback — print shipping email (Finding 6)', () => {
       order: { id: 'o1', email: 'buyer@example.com', receiver_first_name: 'Anna', locale: 'en' },
       tracking: { number: 'TRK123', url: 'https://track.example.com/TRK123', carrier: 'dpd' },
       locale: 'en',
+      // Injected so the sender also works from the cron sweep (no request ALS).
+      env: ENV,
     });
   });
 
@@ -334,6 +336,25 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
     });
 
     await handleProdigiCallback({ ...callbackBody(), id: 'evt-progress' }, ENV);
+
+    expect(calls.poUpserts[0]).toHaveProperty('updated_at');
+  });
+
+  it('a details sub-status change counts as progress even when the coarse stage is unchanged', async () => {
+    const order = prodigiOrder('Complete').order;
+    mockGetOrder.mockResolvedValue({
+      order: { ...order, status: { stage: 'Complete', details: { shipping: 'Complete' } } },
+    });
+    const calls = setup({
+      poRow: {
+        ...STORED,
+        prodigi_status_stage: 'Complete',
+        prodigi_raw_json: { status: { stage: 'Complete', details: { shipping: 'InProgress' } } },
+      },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-details' }, ENV);
 
     expect(calls.poUpserts[0]).toHaveProperty('updated_at');
   });

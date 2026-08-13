@@ -152,6 +152,20 @@ describe('sweepStaleProdigiOrders (M-12)', () => {
     expect(result.errors).toBe(1);
   });
 
+  it('a permanent-class 4xx (403) alerts prodigi_reconcile_refetch_denied and bumps the poll clock', async () => {
+    const calls = setup([staleRow()]);
+    mockMerge.mockResolvedValueOnce({
+      ok: false, reason: 'refetch_failed', message: 'Prodigi 403: forbidden', status: 403,
+    });
+
+    const result = await sweepStaleProdigiOrders(ENV);
+
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert.mock.calls[0][1]).toMatchObject({ message: 'prodigi_reconcile_refetch_denied' });
+    expect(calls.updates).toHaveLength(1); // bounded re-alerts at sweep cadence
+    expect(result.errors).toBe(1);
+  });
+
   it('a transient re-fetch failure only logs — no clock bump, next tick retries', async () => {
     const calls = setup([staleRow()]);
     mockMerge.mockResolvedValueOnce({

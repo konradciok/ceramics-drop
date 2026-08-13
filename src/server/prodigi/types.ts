@@ -72,7 +72,13 @@ export interface ProdigiOrderResponse {
   order: {
     id: string;
     merchantReference?: string;
-    status: { stage: string; issues?: ProdigiOrderIssue[] };
+    /**
+     * Top-level `stage` is coarse (Draft/InProgress/Complete/Cancelled — §6.11);
+     * granular production progress lives in `details` sub-statuses
+     * (downloadAssets, printReadyAssetsPrepared, allocateProductionLocation,
+     * inProduction, shipping), each NotStarted/InProgress/Complete.
+     */
+    status: { stage: string; issues?: ProdigiOrderIssue[]; details?: Record<string, unknown> };
     items: Array<{ id: string; sku: string; status: { detail: string } }>;
     shipments?: ProdigiShipment[];
     recipient?: ProdigiRecipient;

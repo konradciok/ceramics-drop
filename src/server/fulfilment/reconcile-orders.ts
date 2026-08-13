@@ -29,8 +29,16 @@ import { fetchAndMergeProdigiOrder } from '../prodigi/merge';
 export const RECONCILE_STALE_HOURS = 6;
 /** Batch cap per cron run — bounds Prodigi calls; the backlog drains next tick. */
 export const RECONCILE_BATCH_LIMIT = 10;
-/** Consecutive no-progress polls before the stalled alert fires. */
-export const STALLED_POLL_ALERT_THRESHOLD = 2;
+/**
+ * Consecutive no-progress polls before the stalled alert fires. Progress is
+ * measured down to `status.details` sub-statuses (see merge.ts), but a real
+ * order can legitimately sit for a day-plus with nothing moving (e.g. shipping
+ * booked, carrier pickup pending) — the plan's original threshold of 2
+ * (~12–18 h) would have alerted on virtually every normal order given how
+ * coarse Prodigi's stages are. 8 polls ≈ 48 h of ZERO movement, which is a
+ * genuine anomaly worth a human look.
+ */
+export const STALLED_POLL_ALERT_THRESHOLD = 8;
 /** Prodigi top-level stages that never progress further — the sweep skips them. */
 export const PRODIGI_TERMINAL_STAGES = ['Complete', 'Cancelled'] as const;
 
@@ -149,8 +157,31 @@ export async function sweepStaleProdigiOrders(env: CloudflareEnv): Promise<Recon
         await markPolled(supabase, row.id, (row.stalled_poll_count ?? 0) + 1);
         continue;
       }
-      // Transient (Prodigi 5xx/timeout, DB hiccup): log; the next tick retries.
-      // Deliberately no last_reconciled_at bump — a transient error is not a poll.
+      if (
+        merged.reason === 'refetch_failed' &&
+        merged.status !== null && merged.status >= 400 && merged.status < 500 && merged.status !== 429
+      ) {
+        // Permanent-class 4xx (401/403/400…): retrying every 15 min can never
+        // succeed and would silently disable the M-12 backstop (e.g. broken
+        // API key). Alert and advance the poll clock so re-alerts stay bounded
+        // to the sweep cadence.
+        result.errors++;
+        console.error(JSON.stringify({
+          event: 'prodigi_reconcile_refetch_denied',
+          orderId: row.order_id,
+          prodigiOrderId: row.prodigi_order_id,
+          status: merged.status,
+        }));
+        await captureWorkerAlert(env, {
+          message: 'prodigi_reconcile_refetch_denied',
+          level: 'error',
+          extra: { orderId: row.order_id, prodigiOrderId: row.prodigi_order_id, status: merged.status },
+        });
+        await markPolled(supabase, row.id, (row.stalled_poll_count ?? 0) + 1);
+        continue;
+      }
+      // Transient (Prodigi 5xx/429/timeout, DB hiccup): log; the next tick
+      // retries. Deliberately no last_reconciled_at bump — not a real poll.
       result.errors++;
       console.error(JSON.stringify({
         event: 'prodigi_reconcile_row_error',

@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { captureWorkerAlert } from '@/lib/worker-sentry';
 import type { FulfilmentJobMessage } from '../prodigi/types';
 
 const PG_UNIQUE_VIOLATION = '23505';
@@ -123,6 +124,27 @@ async function parkEnvFlipConflict(
   const row = active as { id: string; status: string; prodigi_env: string | null; idempotency_key: string | null };
   const rowEnv = row.prodigi_env ?? parseEnvFromIdempotencyKey(row.idempotency_key);
   if (!rowEnv || rowEnv === env.PRODIGI_ENV) return false;
+
+  // A job that already reached a delivered state must NOT be rewritten: parking
+  // it would erase real history AND free the per-order unique slot, letting a
+  // later enqueue create a duplicate submission. Alert and stop instead — a
+  // human decides what a cross-env re-enqueue of a delivered order means.
+  if (row.status === 'shipped' || row.status === 'completed') {
+    console.error(JSON.stringify({
+      event: 'fulfilment_env_flip_conflict',
+      orderId,
+      jobId: row.id,
+      rowEnv,
+      currentEnv: env.PRODIGI_ENV,
+      note: `existing job already ${row.status}; left untouched`,
+    }));
+    await captureWorkerAlert(env, {
+      message: 'fulfilment_env_flip_conflict_delivered_job',
+      level: 'error',
+      extra: { orderId, jobId: row.id, rowEnv, currentEnv: env.PRODIGI_ENV, status: row.status },
+    });
+    return true;
+  }
 
   const lastError = `env_flip_conflict: job enqueued under PRODIGI_ENV=${rowEnv}, current env is ${env.PRODIGI_ENV} — resolve manually (the stale-env job will not be retried)`;
   // CAS on the observed status so a job that advanced concurrently isn't clobbered.

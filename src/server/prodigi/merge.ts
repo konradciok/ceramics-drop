@@ -56,7 +56,7 @@ export async function fetchAndMergeProdigiOrder(
   // along for the monotonic merge below.
   const { data: existingData, error: poErr } = await supabase
     .from('prodigi_orders')
-    .select('order_id, prodigi_status_stage, carrier, tracking_number, tracking_url, shipped_at')
+    .select('order_id, prodigi_status_stage, prodigi_raw_json, carrier, tracking_number, tracking_url, shipped_at')
     .eq('prodigi_order_id', prodigiOrderId)
     .maybeSingle();
   if (poErr) {
@@ -65,6 +65,7 @@ export async function fetchAndMergeProdigiOrder(
   const existingPO = existingData as {
     order_id: string | null;
     prodigi_status_stage: string | null;
+    prodigi_raw_json: { status?: { details?: unknown } } | null;
     carrier: string | null;
     tracking_number: string | null;
     tracking_url: string | null;
@@ -112,39 +113,33 @@ export async function fetchAndMergeProdigiOrder(
     shipped_at: parseShippedAt(shipment?.dispatchDate) ?? existingPO?.shipped_at ?? null,
   };
 
-  // Meaningful provider progress = stage change or any tracking-field change.
-  // Only that bumps updated_at (see module doc — the M-12 clock separation).
+  // Meaningful provider progress = stage change, any tracking-field change, or
+  // a `status.details` sub-status change (the top-level stage is coarse —
+  // §6.11 — so during days-long production only `details` moves). Only that
+  // bumps updated_at (see module doc — the M-12 clock separation).
   // shipped_at compares as a TIME VALUE: Postgres echoes timestamptz as
   // `+00:00` while parseShippedAt emits `…Z`, so string equality would call
   // every poll of a dispatched order "progress" and never let it stall.
   const timeEquals = (a: string | null, b: string | null) =>
     a === b || (a !== null && b !== null && Date.parse(a) === Date.parse(b));
+  const detailsChanged =
+    JSON.stringify(prodigiOrder.status?.details ?? null) !==
+    JSON.stringify(existingPO?.prodigi_raw_json?.status?.details ?? null);
   const progressed =
     !existingPO ||
     newStage !== (existingPO.prodigi_status_stage ?? null) ||
+    detailsChanged ||
     merged.carrier !== (existingPO.carrier ?? null) ||
     merged.tracking_number !== (existingPO.tracking_number ?? null) ||
     merged.tracking_url !== (httpsUrlOrNull(existingPO.tracking_url) ?? null) ||
     !timeEquals(merged.shipped_at, existingPO.shipped_at ?? null);
 
-  const { error: upErr } = await supabase.from('prodigi_orders').upsert(
-    {
-      order_id: orderId,
-      prodigi_order_id: prodigiOrderId,
-      prodigi_status_stage: newStage,
-      // M-14: the re-fetched order echoes the signed asset URLs — redact before persisting.
-      prodigi_raw_json: deepRedactSignedUrls(prodigiOrder),
-      ...merged,
-      ...(progressed ? { updated_at: new Date().toISOString() } : {}),
-    },
-    { onConflict: 'prodigi_order_id' },
-  );
-  if (upErr) {
-    return { ok: false, reason: 'db_error', message: 'DB error on prodigi_orders upsert', status: null };
-  }
-
-  // 3. Update the order's current (latest) fulfilment job — history may hold
-  // cancelled/failed rows, so never assume a single row per order.
+  // 3. Advance the order's current (latest) fulfilment job FIRST — history may
+  // hold cancelled/failed rows, so never assume a single row per order. Doing
+  // the job before the prodigi_orders upsert means a crash between the two
+  // leaves the STAGE stale (row stays sweep-selectable and converges next
+  // poll) instead of the job stale under a terminal stage (which nothing would
+  // ever revisit).
   const { data: job } = await supabase
     .from('fulfilment_jobs')
     .select('id, status')
@@ -162,10 +157,27 @@ export async function fetchAndMergeProdigiOrder(
     }
   }
 
+  const { error: upErr } = await supabase.from('prodigi_orders').upsert(
+    {
+      order_id: orderId,
+      prodigi_order_id: prodigiOrderId,
+      prodigi_status_stage: newStage,
+      // M-14: the re-fetched order echoes the signed asset URLs — redact before persisting.
+      prodigi_raw_json: deepRedactSignedUrls(prodigiOrder),
+      ...merged,
+      ...(progressed ? { updated_at: new Date().toISOString() } : {}),
+    },
+    { onConflict: 'prodigi_order_id' },
+  );
+  if (upErr) {
+    return { ok: false, reason: 'db_error', message: 'DB error on prodigi_orders upsert', status: null };
+  }
+
   // 4. Shipped → email the customer their tracking, exactly once (reusing the
-  // same primary shipment the columns above persisted).
+  // same primary shipment the columns above persisted). `env` rides along so
+  // the sender works from the cron sweep too (no request ALS there).
   if (localStatus === 'shipped') {
-    await sendPrintShippingEmailOnce(supabase, prodigiOrderId, orderId, shipment);
+    await sendPrintShippingEmailOnce(supabase, env, prodigiOrderId, orderId, shipment);
   }
 
   return { ok: true, orderId, newStage, localStatus, progressed };
@@ -187,6 +199,7 @@ function parseShippedAt(dispatchDate: string | undefined): string | null {
  */
 async function sendPrintShippingEmailOnce(
   supabase: SupabaseClient,
+  env: CloudflareEnv,
   prodigiOrderId: string,
   orderId: string,
   shipment: ProdigiShipment | undefined,
@@ -223,6 +236,7 @@ async function sendPrintShippingEmailOnce(
       carrier: shipment?.carrier?.name ?? null,
     },
     locale: orderRow.locale ?? 'pl',
+    env, // cron-context safe: the sender must not resolve getCloudflareContext()
   };
 
   let sent = false;

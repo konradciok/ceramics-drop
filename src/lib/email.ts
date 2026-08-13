@@ -610,13 +610,19 @@ export function buildPrintShippingConfirmation(params: {
  * Send the print shipping-confirmation via Resend. Throws when config or the
  * recipient email is missing (the Prodigi callback treats the send as
  * best-effort and releases its claim on failure).
+ *
+ * `env` is injectable because this is also reached from the M-12 cron
+ * reconciliation sweep, which runs OUTSIDE the request AsyncLocalStorage —
+ * `getCloudflareContext()` throws there (same C-2 class of bug as the queue
+ * consumer). Request-path callers may omit it.
  */
 export async function emailPrintShippingConfirmationToCustomer(params: {
   order: PrintShippingOrder;
   tracking: PrintTracking;
   locale: string;
+  env?: CloudflareEnv;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
 
   if (!env.RESEND_API_KEY) {
