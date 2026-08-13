@@ -518,7 +518,7 @@ export function buildDisputeCreatedAlertEmail(params: DisputeCreatedAlert): {
   const rows: Array<{ label: string; value: string }> = [
     { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
     { label: 'Spór Stripe', value: escapeHtml(params.disputeId) },
-    { label: 'Kwota', value: escapeHtml(`${(params.amount / 100).toFixed(2)} ${params.currency.toUpperCase()}`) },
+    { label: 'Kwota', value: escapeHtml(formatGrosze(params.amount, params.currency)) },
     { label: 'Powód', value: escapeHtml(params.reason ?? '(brak)') },
     { label: 'Termin odpowiedzi', value: escapeHtml(dueBy) },
   ];

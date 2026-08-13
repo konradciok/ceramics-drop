@@ -170,6 +170,29 @@ export async function releaseExpiryLease(
 }
 
 /**
+ * The terminal pending→expired CAS, fenced to the claimant's own lease token —
+ * the single definition both consumers (cron `finalizeExpiry`, admin
+ * `releaseReservation`) share, so the fencing predicates cannot drift.
+ * Zero rows is not an error: the row was already handled, or ownership moved
+ * to a newer claimant who must not be overwritten.
+ */
+export async function expirePendingFenced(
+  supabase: SupabaseClient,
+  orderId: string,
+  claimToken: string,
+): Promise<{ expired: boolean; error: string | null }> {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'expired', expiry_claim_at: null })
+    .eq('id', orderId)
+    .eq('status', 'pending')
+    .eq('expiry_claim_at', claimToken)
+    .select('id');
+  if (error) return { expired: false, error: error.message };
+  return { expired: ((data as unknown[] | null) ?? []).length > 0, error: null };
+}
+
+/**
  * Finish an expiry AFTER the PI cancel succeeded: free the order's reserved
  * pieces FIRST (private-sale pieces converge to `sold`, never `available`),
  * THEN run the terminal pending→expired CAS fenced to the claimant's own
@@ -190,13 +213,7 @@ export async function finalizeExpiry(
   claimToken: string,
 ): Promise<boolean> {
   await releaseReservedPieces(supabase, order);
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status: 'expired', expiry_claim_at: null })
-    .eq('id', order.id)
-    .eq('status', 'pending')
-    .eq('expiry_claim_at', claimToken)
-    .select('id');
-  if (error) throw new Error(`finalizeExpiry update failed for ${order.id}: ${error.message}`);
-  return ((data as unknown[] | null) ?? []).length > 0;
+  const { expired, error } = await expirePendingFenced(supabase, order.id, claimToken);
+  if (error) throw new Error(`finalizeExpiry update failed for ${order.id}: ${error}`);
+  return expired;
 }

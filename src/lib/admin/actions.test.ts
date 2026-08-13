@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   releaseReservedPieces: vi.fn(),
   claimExpiryLease: vi.fn(),
   releaseExpiryLease: vi.fn(),
+  expirePendingFenced: vi.fn(),
 }));
 
 vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: mocks.cancelPrintFulfilment }));
@@ -17,6 +18,7 @@ vi.mock('@/lib/piece-release', () => ({ releaseReservedPieces: mocks.releaseRese
 vi.mock('@/lib/expire-orders', () => ({
   claimExpiryLease: mocks.claimExpiryLease,
   releaseExpiryLease: mocks.releaseExpiryLease,
+  expirePendingFenced: mocks.expirePendingFenced,
 }));
 
 import { refundOrder, releaseReservation, resendOrderConfirmation, createShipmentForOrder } from './actions';
@@ -155,6 +157,7 @@ describe('releaseReservation', () => {
     // Default: the expiry lease is granted; individual tests deny it.
     mocks.claimExpiryLease.mockResolvedValue('claim-1');
     mocks.releaseExpiryLease.mockResolvedValue(undefined);
+    mocks.expirePendingFenced.mockResolvedValue({ expired: true, error: null });
   });
 
   function stripeWith(cancel: ReturnType<typeof vi.fn>, retrieve: ReturnType<typeof vi.fn> = vi.fn()) {
@@ -188,7 +191,7 @@ describe('releaseReservation', () => {
     expect(mocks.releaseExpiryLease).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
   });
 
-  it('cancels the PI, frees pieces, and expires a pending order via the lease-fenced CAS', async () => {
+  it('cancels the PI, frees pieces, and expires a pending order via the shared lease-fenced CAS', async () => {
     const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
     const cancel = vi.fn().mockResolvedValue(undefined);
     mocks.releaseReservedPieces.mockResolvedValue(['k01', 'k02']);
@@ -197,11 +200,10 @@ describe('releaseReservation', () => {
 
     expect(result).toEqual({ status: 200, body: { message: 'Zwolniono 2 prac(e).' } });
     expect(cancel).toHaveBeenCalledWith('pi_1');
-    // Terminal write clears the lease and is fenced to OUR claim token, so a
-    // late finisher can never overwrite a newer claimant's state (M-5 / d4).
-    expect(supabase.update).toHaveBeenCalledWith({ status: 'expired', expiry_claim_at: null });
-    expect(supabase.updateFilters).toContainEqual(['eq', ['expiry_claim_at', 'claim-1']]);
-    expect(supabase.updateFilters).toContainEqual(['eq', ['status', 'pending']]);
+    // Terminal write goes through the SHARED fenced CAS (single definition
+    // with the cron's finalizeExpiry — its payload + predicates are pinned in
+    // expire-orders.test.ts), scoped to OUR claim token (M-5 / d4).
+    expect(mocks.expirePendingFenced).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
   });
 
   // M-5 pending-consumer guard: the claim happens AFTER the initial read, so a
@@ -248,13 +250,10 @@ describe('releaseReservation', () => {
   });
 
   it('terminal-CAS DB error after the claim: 500 AND the lease is handed back (immediate retry unblocked)', async () => {
-    const supabase = supabaseForOrder(
-      { status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' },
-      null,
-      { data: null, error: { message: 'orders down' } },
-    );
+    const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
     const cancel = vi.fn().mockResolvedValue(undefined);
     mocks.releaseReservedPieces.mockResolvedValue(['k01']);
+    mocks.expirePendingFenced.mockResolvedValueOnce({ expired: false, error: 'orders down' });
 
     const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
 

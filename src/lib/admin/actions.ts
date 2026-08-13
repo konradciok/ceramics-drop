@@ -21,7 +21,7 @@ import { ShipxApiError } from '@/lib/shipx-errors';
 import { needsShipment, type OrderForShipment } from '@/lib/shipx';
 import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import { releaseReservedPieces } from '@/lib/piece-release';
-import { claimExpiryLease, releaseExpiryLease, type CancelOutcome } from '@/lib/expire-orders';
+import { claimExpiryLease, releaseExpiryLease, expirePendingFenced, type CancelOutcome } from '@/lib/expire-orders';
 import type { DeliveryMethod } from '@/lib/pricing';
 
 export type ActionResult = {
@@ -167,23 +167,19 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
   }
 
   const count = freed.length;
-  if (count > 0 && order.status === 'pending') {
-    // Terminal pending→expired, fenced to OUR lease token: a late finisher
-    // whose lease was reclaimed writes nothing and must not overwrite the
-    // newer claimant's state. Zero rows is therefore not an error.
-    const { error: expireErr } = await supabase
-      .from('orders')
-      .update({ status: 'expired', expiry_claim_at: null })
-      .eq('id', orderId)
-      .eq('status', 'pending')
-      .eq('expiry_claim_at', claimToken);
+  if (count > 0 && claimToken) {
+    // Terminal pending→expired, fenced to OUR lease token (the shared CAS with
+    // the cron's finalizeExpiry, so the fencing predicates cannot drift): a
+    // late finisher whose lease was reclaimed writes nothing and must not
+    // overwrite the newer claimant's state. Zero rows is therefore not an error.
+    const { error: expireErr } = await expirePendingFenced(supabase, orderId, claimToken);
     if (expireErr) {
       // Hand the lease back like every other failure exit — otherwise the
       // promised immediate retry is 409-blocked for the full lease TTL.
       // (If the ambiguous failed UPDATE actually committed, the order is
       // already terminal and the CAS'd release is a harmless no-op.)
-      if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
-      return fail(500, expireErr.message);
+      await releaseExpiryLease(supabase, orderId, claimToken);
+      return fail(500, expireErr);
     }
   } else if (claimToken) {
     // Nothing to expire — hand the lease back so the cron isn't blocked.
