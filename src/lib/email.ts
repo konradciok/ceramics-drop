@@ -53,6 +53,8 @@ async function sendResendTemplate(params: {
   variables: Record<string, string>;
   attachments?: Array<{ filename: string; content: string }>;
   signal?: AbortSignal;
+  /** M-27: Resend dedupes this key for 24 h — pass from claim-based senders so a retry after a timed-out-but-accepted request can't double-send. */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
@@ -73,6 +75,7 @@ async function sendResendTemplate(params: {
     headers: {
       Authorization: `Bearer ${params.apiKey}`,
       'Content-Type': 'application/json',
+      ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
     },
     body: JSON.stringify(body),
     ...(params.signal ? { signal: params.signal } : {}),
@@ -93,6 +96,8 @@ async function sendResendHtml(params: {
   to: string[];
   subject: string;
   html: string;
+  /** M-27: Resend dedupes this key for 24 h — pass from claim-based senders so a retry after a timed-out-but-accepted request can't double-send. */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const body: ResendSendBody = {
     from: params.from,
@@ -107,7 +112,11 @@ async function sendResendHtml(params: {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${params.apiKey}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${params.apiKey}`,
+        'Content-Type': 'application/json',
+        ...(params.idempotencyKey ? { 'Idempotency-Key': params.idempotencyKey } : {}),
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -272,7 +281,11 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
 }
 
 /** Email the studio about a new paid order. Throws if Resend isn't configured (caller must catch). */
-export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder }): Promise<void> {
+export async function emailNewOrderToStudio(params: {
+  order: NewOrderEmailOrder;
+  /** M-27: pass `studio-new-order/<orderId>` from the claim-based webhook sender. */
+  idempotencyKey?: string;
+}): Promise<void> {
   const { env } = getCloudflareContext();
   const { order } = params;
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
@@ -280,7 +293,14 @@ export async function emailNewOrderToStudio(params: { order: NewOrderEmailOrder 
   }
   const { subject, mainContent } = buildNewOrderToStudioEmail({ order });
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
-  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+  await sendResendHtml({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [env.STUDIO_NOTIFY_EMAIL],
+    subject,
+    html,
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
+  });
 }
 
 // ── Studio showroom-interest notification ────────────────────────────────────
@@ -1059,6 +1079,12 @@ export async function emailOrderConfirmationToCustomer(params: {
   kind?: OrderEmailKind;
   /** Explicit env (e.g. from the orders CLI) — defaults to the current Workers env. */
   env?: CloudflareEnv;
+  /**
+   * M-27: pass `order-confirmation/<orderId>` from the claim-based webhook
+   * sender. Deliberate manual re-sends (admin/CLI) must NOT pass a key — the
+   * 24 h Resend dedupe would swallow them.
+   */
+  idempotencyKey?: string;
 }): Promise<{ id: string | null }> {
   const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
@@ -1080,6 +1106,7 @@ export async function emailOrderConfirmationToCustomer(params: {
       templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
       variables: { MAIN_CONTENT: mainContent },
       signal: controller.signal,
+      ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
     });
   } finally {
     clearTimeout(timer);

@@ -1648,6 +1648,10 @@ describe('webhook email idempotency on retry (F1)', () => {
     expect(emailNewOrderToStudio).toHaveBeenCalledTimes(1);
     expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
     expect(sendPurchasedEvent).toHaveBeenCalledTimes(1);
+    // M-27: both claim-based sends carry a per-order Resend Idempotency-Key so
+    // a local retry after a timed-out-but-accepted request can't double-send.
+    expect(vi.mocked(emailNewOrderToStudio).mock.calls[0][0]).toMatchObject({ idempotencyKey: 'studio-new-order/o1' });
+    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ idempotencyKey: 'order-confirmation/o1' });
     // The claim must be ATOMIC: a plain update without the `.is(col, null)`
     // filter would let two overlapping redeliveries both claim and both send.
     expect(studioClaimWrites).toHaveLength(1);

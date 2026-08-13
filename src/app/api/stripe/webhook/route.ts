@@ -520,9 +520,14 @@ export async function POST(req: Request) {
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
           // (InPost webhook) remains the backstop.
+          // M-27: the per-order Idempotency-Key makes the in-claim retries (and
+          // a post-release redelivery within Resend's 24 h window) single-send
+          // even when a timed-out request was actually accepted. Residual: a
+          // redelivery >24 h after an accepted-but-timed-out send can still
+          // duplicate — accepted, see the Plan 06 PR / runbook note.
           if (!orderRowTyped.studio_email_sent_at) {
             await sendEmailOnceWithClaim(supabase, orderId, 'studio_email_sent_at', () =>
-              emailNewOrderToStudio(notifyOrder),
+              emailNewOrderToStudio({ ...notifyOrder, idempotencyKey: `studio-new-order/${orderId}` }),
             );
           }
 
@@ -533,6 +538,7 @@ export async function POST(req: Request) {
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
                 locale: orderRowTyped.locale ?? 'pl',
                 kind: isPrintOnlyOrder ? 'print' : 'ceramic',
+                idempotencyKey: `order-confirmation/${orderId}`,
               }),
               'resend_email_id',
             );
