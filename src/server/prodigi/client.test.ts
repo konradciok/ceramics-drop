@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ProdigiError, prodigiClient } from './client';
+import { PRODIGI_TIMEOUT_MS, ProdigiError, prodigiClient } from './client';
 import type {
   ProdigiOrderRequest,
   ProdigiQuoteRequest,
@@ -71,6 +71,7 @@ describe('prodigiClient', () => {
         method: 'POST',
         headers: { 'X-API-Key': 'sandbox-secret', 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: expect.any(AbortSignal),
       },
     ]);
   });
@@ -84,6 +85,7 @@ describe('prodigiClient', () => {
         method: 'GET',
         headers: { 'X-API-Key': 'live-secret', 'Content-Type': 'application/json' },
         body: undefined,
+        signal: expect.any(AbortSignal),
       },
     ]);
   });
@@ -270,6 +272,51 @@ describe('PRODIGI_API_BASE_URL override (rehearsal failure injection)', () => {
     const blankEnv = { ...sandboxEnv, PRODIGI_API_BASE_URL: '   ' } as CloudflareEnv;
     await prodigiClient(blankEnv).getOrder('ord-1');
     expect(lastRequest()[0]).toBe('https://api.sandbox.prodigi.com/v4.0/orders/ord-1');
+  });
+});
+
+describe('request timeout (M-11)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('a hung endpoint rejects with a RETRYABLE ProdigiError at PRODIGI_TIMEOUT_MS', async () => {
+    // fetch never resolves on its own — only the abort signal can end it,
+    // mirroring real fetch semantics (reject with the signal's reason).
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason ?? new DOMException('The operation was aborted', 'AbortError')),
+          );
+        }),
+    ));
+
+    const pending = prodigiClient(sandboxEnv).getOrder('ord-1');
+    // Attach the rejection matcher BEFORE advancing time so the rejection is
+    // never unhandled. The timeout MUST map to the retryable branch — an
+    // unmapped AbortError acked as non-retryable would silently drop the job.
+    const assertion = expect(pending).rejects.toMatchObject({
+      name: 'ProdigiError',
+      status: null,
+      retryable: true,
+      message: expect.stringContaining('timeout'),
+    });
+    await vi.advanceTimersByTimeAsync(PRODIGI_TIMEOUT_MS);
+    await assertion;
+  });
+
+  it('a fast response clears the pending abort timer (no timer leak)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse()));
+
+    await prodigiClient(sandboxEnv).getOrder('ord-1');
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

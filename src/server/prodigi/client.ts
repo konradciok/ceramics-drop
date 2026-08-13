@@ -45,37 +45,64 @@ function apiKey(env: CloudflareEnv): string {
     : env.PRODIGI_API_KEY_SANDBOX;
 }
 
+/**
+ * M-11: a hung Prodigi endpoint must become a bounded, RETRYABLE failure
+ * (→ queue backoff / DLQ / callback 500-with-released-claim), never an
+ * indefinitely stalled consumer. AbortController + setTimeout is the repo's
+ * proven timeout pattern (worker.ts Resend sends).
+ */
+export const PRODIGI_TIMEOUT_MS = 15_000;
+
 async function request<T>(
   env: CloudflareEnv,
   method: string,
   path: string,
   body?: unknown,
 ): Promise<T> {
-  let res: Response;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PRODIGI_TIMEOUT_MS);
   try {
-    res = await fetch(`${baseUrl(env)}${path}`, {
-      method,
-      headers: {
-        'X-API-Key': apiKey(env),
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch (e) {
-    throw new ProdigiError(`Network error: ${String(e)}`, null, true);
-  }
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl(env)}${path}`, {
+        method,
+        headers: {
+          'X-API-Key': apiKey(env),
+          'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new ProdigiError(`Prodigi timeout after ${PRODIGI_TIMEOUT_MS} ms: ${method} ${path}`, null, true);
+      }
+      throw new ProdigiError(`Network error: ${String(e)}`, null, true);
+    }
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    // 409 from Prodigi means idempotencyKey duplicate — processJob recovers the
-    // existing order id from `body` instead of failing the job.
-    let parsed: unknown = null;
-    try { parsed = JSON.parse(text); } catch { /* non-JSON error body */ }
-    const retryable = res.status >= 500 || res.status === 429;
-    throw new ProdigiError(`Prodigi ${res.status}: ${text}`, res.status, retryable, parsed);
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      // 409 from Prodigi means idempotencyKey duplicate — processJob recovers the
+      // existing order id from `body` instead of failing the job.
+      let parsed: unknown = null;
+      try { parsed = JSON.parse(text); } catch { /* non-JSON error body */ }
+      const retryable = res.status >= 500 || res.status === 429;
+      throw new ProdigiError(`Prodigi ${res.status}: ${text}`, res.status, retryable, parsed);
+    }
 
-  return res.json() as Promise<T>;
+    // Awaited inside the try so the abort timer also bounds the body read; an
+    // abort mid-body still surfaces via the signal, not as a silent hang.
+    try {
+      return await (res.json() as Promise<T>);
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new ProdigiError(`Prodigi timeout after ${PRODIGI_TIMEOUT_MS} ms: ${method} ${path}`, null, true);
+      }
+      throw e;
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function orderListPath(params: ProdigiOrderListParams = {}): string {
