@@ -21,7 +21,7 @@ import { ShipxApiError } from '@/lib/shipx-errors';
 import { needsShipment, type OrderForShipment } from '@/lib/shipx';
 import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import { releaseReservedPieces } from '@/lib/piece-release';
-import type { CancelOutcome } from '@/lib/expire-orders';
+import { claimExpiryLease, releaseExpiryLease, type CancelOutcome } from '@/lib/expire-orders';
 import type { DeliveryMethod } from '@/lib/pricing';
 
 export type ActionResult = {
@@ -110,6 +110,13 @@ async function cancelIntent(stripe: Stripe, pi: string): Promise<CancelOutcome> 
  * whose hold never expired), relisting them as available. Cancels the
  * PaymentIntent first when the order is still pending — mirrors
  * `expireAbandonedOrders`'s cancel-then-release ordering.
+ *
+ * M-5 guard: for a pending order the recoverable expiry lease is taken BEFORE
+ * the irreversible side effects (PI cancel, piece release). The claim is
+ * denied while `refund_pending_at` is set (the webhook's double-paid refund
+ * window) or while another consumer holds an active lease. On any failure
+ * after the claim the order stays `pending` and our lease is handed back, so
+ * an immediate admin retry (or the next cron sweep) completes the release.
  */
 export async function releaseReservation(deps: ReleaseReservationDeps, orderId: string): Promise<ActionResult> {
   const { supabase, stripe } = deps;
@@ -124,12 +131,26 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
     return fail(409, 'Zamówienie opłacone — użyj zwrotu, nie zwalniaj rezerwacji.');
   }
 
+  let claimToken: string | null = null;
+  if (order.status === 'pending') {
+    try {
+      claimToken = await claimExpiryLease(supabase, orderId);
+    } catch (e) {
+      return fail(500, e instanceof Error ? e.message : 'Nie udało się zablokować zamówienia.');
+    }
+    if (!claimToken) {
+      return fail(409, 'Zamówienie jest właśnie przetwarzane (zwrot lub wygaszanie w toku) — spróbuj ponownie.');
+    }
+  }
+
   if (order.status === 'pending' && order.payment_intent_id) {
     const outcome = await cancelIntent(stripe, order.payment_intent_id);
     if (outcome === 'paid') {
+      if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
       return fail(409, 'Płatność w toku lub zakończona — nie można zwolnić rezerwacji.');
     }
     if (outcome === 'error') {
+      if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
       return fail(502, 'Nie udało się anulować PaymentIntent w Stripe.');
     }
   }
@@ -139,17 +160,27 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
   try {
     freed = await releaseReservedPieces(supabase, { id: orderId, private_sale_id: order.private_sale_id });
   } catch (e) {
+    // Never terminal on failure: the order stays pending; the lease is handed
+    // back so the retry isn't blocked for the lease TTL.
+    if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
     return fail(500, e instanceof Error ? e.message : 'Zwolnienie rezerwacji nie powiodło się.');
   }
 
   const count = freed.length;
   if (count > 0 && order.status === 'pending') {
+    // Terminal pending→expired, fenced to OUR lease token: a late finisher
+    // whose lease was reclaimed writes nothing and must not overwrite the
+    // newer claimant's state. Zero rows is therefore not an error.
     const { error: expireErr } = await supabase
       .from('orders')
-      .update({ status: 'expired' })
+      .update({ status: 'expired', expiry_claim_at: null })
       .eq('id', orderId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .eq('expiry_claim_at', claimToken);
     if (expireErr) return fail(500, expireErr.message);
+  } else if (claimToken) {
+    // Nothing to expire — hand the lease back so the cron isn't blocked.
+    await releaseExpiryLease(supabase, orderId, claimToken);
   }
 
   return ok(count ? `Zwolniono ${count} prac(e).` : 'Brak zarezerwowanych prac do zwolnienia.');

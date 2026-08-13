@@ -66,6 +66,11 @@ export function customerOrderStatus(input: CustomerStatusInput): CustomerStatusR
   // Refunds override everything — no tracking block on a refunded order.
   if (input.status === 'refunded') return { status: 'refunded', tracking: null };
 
+  // A `failed` order is terminal and possibly a captured-then-refunded payment
+  // (M-5's private-sale double-paid path). Account queries already exclude it,
+  // but the mapper must not degrade it into a normal delivery state.
+  if (input.status === 'failed') return { status: 'cancelled', tracking: null };
+
   // Studio pickup has no shipment at all.
   if (input.fulfilmentType === 'pickup' || input.deliveryMethod === 'odbior') {
     return { status: 'awaitingPickup', tracking: null };

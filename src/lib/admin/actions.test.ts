@@ -6,12 +6,18 @@ const mocks = vi.hoisted(() => ({
   emailOrderConfirmationToCustomer: vi.fn(),
   createOrderShipment: vi.fn(),
   releaseReservedPieces: vi.fn(),
+  claimExpiryLease: vi.fn(),
+  releaseExpiryLease: vi.fn(),
 }));
 
 vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: mocks.cancelPrintFulfilment }));
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: mocks.emailOrderConfirmationToCustomer }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
 vi.mock('@/lib/piece-release', () => ({ releaseReservedPieces: mocks.releaseReservedPieces }));
+vi.mock('@/lib/expire-orders', () => ({
+  claimExpiryLease: mocks.claimExpiryLease,
+  releaseExpiryLease: mocks.releaseExpiryLease,
+}));
 
 import { refundOrder, releaseReservation, resendOrderConfirmation, createShipmentForOrder } from './actions';
 
@@ -26,10 +32,19 @@ function supabaseForOrder(
   const maybeSingle = vi.fn().mockResolvedValue({ data: order, error: readError });
   const eq = vi.fn(() => ({ maybeSingle }));
   const select = vi.fn(() => ({ eq }));
-  const updateEq2 = vi.fn().mockResolvedValue({ error: null });
-  const updateEq1 = vi.fn(() => ({ eq: updateEq2 }));
-  const update = vi.fn(() => ({ eq: updateEq1 }));
-  return { from: vi.fn(() => ({ select, update })), update, updateEq1, updateEq2 };
+  // UPDATE chains resolve at any `.eq()` depth and record every filter, so
+  // tests can assert the fenced terminal CAS (`.eq('expiry_claim_at', token)`).
+  const updateFilters: Array<[string, unknown[]]> = [];
+  const updateNode: Record<string, unknown> = {
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+      Promise.resolve({ data: [], error: null }).then(resolve, reject),
+  };
+  updateNode.eq = (...args: unknown[]) => {
+    updateFilters.push(['eq', args]);
+    return updateNode;
+  };
+  const update = vi.fn(() => updateNode);
+  return { from: vi.fn(() => ({ select, update })), update, updateFilters };
 }
 
 describe('refundOrder', () => {
@@ -136,6 +151,9 @@ describe('refundOrder', () => {
 describe('releaseReservation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: the expiry lease is granted; individual tests deny it.
+    mocks.claimExpiryLease.mockResolvedValue('claim-1');
+    mocks.releaseExpiryLease.mockResolvedValue(undefined);
   });
 
   function stripeWith(cancel: ReturnType<typeof vi.fn>, retrieve: ReturnType<typeof vi.fn> = vi.fn()) {
@@ -147,26 +165,29 @@ describe('releaseReservation', () => {
     const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(vi.fn()) }, ORDER_ID);
     expect(result).toEqual({ status: 409, body: { error: 'Zamówienie opłacone — użyj zwrotu, nie zwalniaj rezerwacji.' } });
     expect(mocks.releaseReservedPieces).not.toHaveBeenCalled();
+    expect(mocks.claimExpiryLease).not.toHaveBeenCalled();
   });
 
-  it('returns 409 when the PaymentIntent turns out to be paid/processing', async () => {
+  it('returns 409 when the PaymentIntent turns out to be paid/processing — and hands its lease back', async () => {
     const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
     const cancel = vi.fn().mockRejectedValue(new Error('cannot cancel'));
     const retrieve = vi.fn().mockResolvedValue({ status: 'succeeded' });
     const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel, retrieve) }, ORDER_ID);
     expect(result.status).toBe(409);
     expect(mocks.releaseReservedPieces).not.toHaveBeenCalled();
+    expect(mocks.releaseExpiryLease).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
   });
 
-  it('returns 502 when Stripe cancellation errors out entirely', async () => {
+  it('returns 502 when Stripe cancellation errors out entirely — and hands its lease back', async () => {
     const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
     const cancel = vi.fn().mockRejectedValue(new Error('cannot cancel'));
     const retrieve = vi.fn().mockRejectedValue(new Error('cannot retrieve'));
     const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel, retrieve) }, ORDER_ID);
     expect(result).toEqual({ status: 502, body: { error: 'Nie udało się anulować PaymentIntent w Stripe.' } });
+    expect(mocks.releaseExpiryLease).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
   });
 
-  it('cancels the PI, frees pieces, and expires a pending order', async () => {
+  it('cancels the PI, frees pieces, and expires a pending order via the lease-fenced CAS', async () => {
     const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
     const cancel = vi.fn().mockResolvedValue(undefined);
     mocks.releaseReservedPieces.mockResolvedValue(['k01', 'k02']);
@@ -175,7 +196,65 @@ describe('releaseReservation', () => {
 
     expect(result).toEqual({ status: 200, body: { message: 'Zwolniono 2 prac(e).' } });
     expect(cancel).toHaveBeenCalledWith('pi_1');
-    expect(supabase.update).toHaveBeenCalledWith({ status: 'expired' });
+    // Terminal write clears the lease and is fenced to OUR claim token, so a
+    // late finisher can never overwrite a newer claimant's state (M-5 / d4).
+    expect(supabase.update).toHaveBeenCalledWith({ status: 'expired', expiry_claim_at: null });
+    expect(supabase.updateFilters).toContainEqual(['eq', ['expiry_claim_at', 'claim-1']]);
+    expect(supabase.updateFilters).toContainEqual(['eq', ['status', 'pending']]);
+  });
+
+  // M-5 pending-consumer guard: the claim happens AFTER the initial read, so a
+  // refund-pending marker that landed in between still denies the claim — the
+  // interleaving a predicate on the final update alone would miss.
+  it('claim denied (refund-pending or concurrently claimed): 409, PI cancel and piece release never run', async () => {
+    const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
+    const cancel = vi.fn();
+    mocks.claimExpiryLease.mockResolvedValue(null);
+
+    const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+
+    expect(result.status).toBe(409);
+    expect(cancel).not.toHaveBeenCalled();
+    expect(mocks.releaseReservedPieces).not.toHaveBeenCalled();
+    expect(supabase.update).not.toHaveBeenCalled();
+  });
+
+  it('takes the claim BEFORE cancelling the PaymentIntent (the irreversible mutation)', async () => {
+    const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mocks.releaseReservedPieces.mockResolvedValue([]);
+
+    await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+
+    expect(mocks.claimExpiryLease.mock.invocationCallOrder[0]).toBeLessThan(cancel.mock.invocationCallOrder[0]);
+  });
+
+  // Recovery (plan c3): a piece-release failure after the claim leaves the
+  // order pending AND returns the lease, so an immediate admin retry completes.
+  it('piece-release failure after the claim: 500, order stays pending, lease handed back — the retry completes', async () => {
+    const supabase = supabaseForOrder({ status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' });
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mocks.releaseReservedPieces.mockRejectedValueOnce(new Error('piece_state locked'));
+
+    const first = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+    expect(first).toEqual({ status: 500, body: { error: 'piece_state locked' } });
+    expect(supabase.update).not.toHaveBeenCalled(); // never terminal on failure
+    expect(mocks.releaseExpiryLease).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
+
+    mocks.releaseReservedPieces.mockResolvedValueOnce(['k01']);
+    const second = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+    expect(second).toEqual({ status: 200, body: { message: 'Zwolniono 1 prac(e).' } });
+  });
+
+  it('non-pending orders skip the claim entirely (no PI cancel, no expiry) and just free stuck pieces', async () => {
+    const supabase = supabaseForOrder({ status: 'expired', private_sale_id: null, payment_intent_id: null });
+    mocks.releaseReservedPieces.mockResolvedValue(['k01']);
+
+    const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(vi.fn()) }, ORDER_ID);
+
+    expect(result.status).toBe(200);
+    expect(mocks.claimExpiryLease).not.toHaveBeenCalled();
+    expect(supabase.update).not.toHaveBeenCalled();
   });
 
   it('forwards the private_sale_id so freed pieces return to sold, not available', async () => {

@@ -41,6 +41,7 @@ vi.mock('@/lib/email', () => ({
   emailNewOrderToStudio: vi.fn(),
   emailOrderConfirmationToCustomer: vi.fn(),
   emailRefundFailedAlertToStudio: vi.fn(async () => {}),
+  emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
@@ -57,7 +58,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -607,6 +608,10 @@ function makeSucceededSupabase(opts: {
   shipmentLookup: QueryResult;
   /** Result of the reserved→sold piece_state UPDATE (H-1). Defaults to success. */
   pieceSoldUpdate?: QueryResult;
+  /** M-5: result of the `refund_pending_at` marker CAS (no `status` in payload). */
+  markerClaim?: QueryResult;
+  /** M-5: result of the `{ status: 'failed', refund_pending_at: null }` CAS. */
+  doublePaidCas?: QueryResult;
   soldCount?: QueryResult;
   ceramicCount?: QueryResult;
   variantRows?: QueryResult;
@@ -633,16 +638,33 @@ function makeSucceededSupabase(opts: {
   // filter call, so tests can prove the atomic `.is(col, null)` guard is used.
   const studioClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
   const confirmClaimWrites: Array<{ value: unknown; filters: Array<[string, unknown[]]> }> = [];
+  // M-5: global operation sequence (marker CAS / final CAS / piece writes) —
+  // tests append refund creation via a refundsCreate mockImplementation, so
+  // ordering constraints (marker BEFORE refund) are assertable.
+  const seq: string[] = [];
+  const markerWrites: Array<Record<string, unknown>> = [];
+  const doublePaidWrites: Array<Record<string, unknown>> = [];
+  const pieceWrites: Array<Record<string, unknown>> = [];
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
         return {
           update: (payload: Record<string, unknown>) => {
             if (payload.status === 'paid') return proxyChain(opts.casUpdate);
+            if (payload.status === 'failed' && 'refund_pending_at' in payload) {
+              seq.push('double_paid_cas');
+              doublePaidWrites.push(payload);
+              return proxyChain(opts.doublePaidCas ?? { data: [{ id: 'o1' }], error: null });
+            }
             if (payload.status === 'failed') {
               return proxyChain({ data: null, error: null }, (method, args) => {
                 if (method === 'eq') failedUpdateEqArgs.push(args);
               });
+            }
+            if ('refund_pending_at' in payload) {
+              seq.push('marker');
+              markerWrites.push(payload);
+              return proxyChain(opts.markerClaim ?? { data: [{ id: 'o1', private_sale_id: 'ps_1' }], error: null });
             }
             if ('studio_email_sent_at' in payload) {
               const write = { value: payload.studio_email_sent_at, filters: [] as Array<[string, unknown[]]> };
@@ -676,7 +698,11 @@ function makeSucceededSupabase(opts: {
       }
       if (table === 'piece_state') {
         return {
-          update: () => proxyChain(opts.pieceSoldUpdate ?? { data: null, error: null }),
+          update: (payload: Record<string, unknown>) => {
+            seq.push('piece_update');
+            pieceWrites.push(payload);
+            return proxyChain(opts.pieceSoldUpdate ?? { data: null, error: null });
+          },
           select: () => proxyChain(opts.soldCount ?? { count: 0, error: null }),
         };
       }
@@ -692,7 +718,7 @@ function makeSucceededSupabase(opts: {
       throw new Error(`unexpected table: ${table}`);
     },
   };
-  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites };
+  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites };
 }
 
 describe('webhook markPaid unknown payment_intent (F9b)', () => {
@@ -968,6 +994,141 @@ describe('webhook markPaid reserved→sold update failure (H-1)', () => {
     await expect(POST(succeededEventRequest())).rejects.toThrow(/piece_state sold update failed/);
     expect(refundsCreate).not.toHaveBeenCalled();
     expect(failedUpdateEqArgs).toEqual([]);
+  });
+});
+
+describe('webhook markPaid private-sale double-payment (M-5)', () => {
+  // The pending→paid CAS violating private_sales_one_paid_order — Postgres
+  // unique-violation code 23505 — is the double-paid signal.
+  const uniqueViolation = {
+    code: '23505',
+    message: 'duplicate key value violates unique constraint "private_sales_one_paid_order"',
+  };
+
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockReset();
+    refundsCreate.mockResolvedValue({});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mockClear();
+  });
+
+  const doublePaidOpts = () => ({
+    casUpdate: { data: null, error: uniqueViolation },
+    shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('(a) sets the refund_pending_at marker BEFORE refunds.create, which runs once with the shared refund key', async () => {
+    const { supabase, seq, markerWrites } = makeSucceededSupabase(doublePaidOpts());
+    refundsCreate.mockImplementation(async () => {
+      seq.push('refund');
+      return {};
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+    expect(refundsCreate).toHaveBeenCalledWith({ payment_intent: 'pi_1' }, { idempotencyKey: 'refund_pi_1' });
+    expect(markerWrites).toHaveLength(1);
+    expect(typeof markerWrites[0].refund_pending_at).toBe('string');
+    // The durable marker must exist before money moves — the crash-window guard.
+    expect(seq.indexOf('marker')).toBeLessThan(seq.indexOf('refund'));
+  });
+
+  it('(b) terminal state: pending→failed CAS clears the marker, pieces converge to sold, 200 + Sentry + studio alert', async () => {
+    const { supabase, doublePaidWrites, pieceWrites, seq } = makeSucceededSupabase(doublePaidOpts());
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(doublePaidWrites).toEqual([{ status: 'failed', refund_pending_at: null }]);
+    // Order B's still-reserved private-sale pieces must not strand `reserved`
+    // (a lapsed reservation would leak into public reserve_pieces()) — they
+    // converge to the private-sale terminal state before the final CAS.
+    expect(pieceWrites).toContainEqual({ status: 'sold', reserved_until: null, order_id: null });
+    expect(seq.indexOf('piece_update')).toBeLessThan(seq.indexOf('double_paid_cas'));
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('private_sale_double_paid', expect.objectContaining({ level: 'error' }));
+    expect(emailPrivateSaleDoublePaidAlertToStudio).toHaveBeenCalledTimes(1);
+  });
+
+  it('(e) already-refunded error after idempotency-key expiry: treated as success, CAS still proceeds to failed', async () => {
+    refundsCreate.mockRejectedValue({ code: 'charge_already_refunded', message: 'Charge ch_1 has already been refunded.' });
+    const { supabase, doublePaidWrites } = makeSucceededSupabase(doublePaidOpts());
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(doublePaidWrites).toEqual([{ status: 'failed', refund_pending_at: null }]);
+  });
+
+  it('(f) zero-row marker CAS with the order already failed: NO refunds.create, ack 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(f2) zero-row marker CAS with the order already refunded: NO refunds.create, ack 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'refunded', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(g) zero-row marker CAS with the order missing: throws (5xx → Stripe retry), never refunds a row it cannot account for', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [], error: null },
+      fallbackSelect: { data: null, error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/unexpected state/);
+    expect(refundsCreate).not.toHaveBeenCalled();
+  });
+
+  it('(g2) zero-row final CAS with a follow-up lookup finding an unexpected status: throws, not a silent 200', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      doublePaidCas: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/unexpected state/);
+    // The refund DID run (the marker claimed a genuinely-pending row) — only
+    // the acknowledgement is withheld until the state converges.
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('(h) a non-23505 error on the pending→paid CAS keeps the unconditional throw', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      casUpdate: { data: null, error: { code: 'XX000', message: 'db down' } },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/markPaid orders update failed: db down/);
+    expect(refundsCreate).not.toHaveBeenCalled();
   });
 });
 

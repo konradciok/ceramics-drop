@@ -427,6 +427,52 @@ export async function emailRefundFailedAlertToStudio(params: RefundFailedAlert):
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio private-sale double-payment alert ─────────────────────────────────
+
+export type PrivateSaleDoublePaidAlert = {
+  orderId: string;
+  paymentIntentId: string;
+};
+
+/** Pure function — subject + inner HTML for the "private sale paid twice, second payment auto-refunded" studio alert (M-5). */
+export function buildPrivateSaleDoublePaidAlertEmail(params: PrivateSaleDoublePaidAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId) },
+    { label: 'PaymentIntent', value: escapeHtml(params.paymentIntentId) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Podwójna płatność za sprzedaż prywatną.</strong>'),
+    emailParagraph(
+      'Dwa zamówienia z tego samego linku sprzedaży prywatnej zostały opłacone. ' +
+        'Druga płatność została automatycznie zwrócona, a jej zamówienie oznaczone jako nieudane. ' +
+        'Zweryfikuj zwrot w panelu Stripe i skontaktuj się z kupującym.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Zwrot] Podwójna płatność — sprzedaż prywatna — zamówienie ${params.orderId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that a private sale was paid twice and the second payment was auto-refunded. Throws if Resend isn't configured (caller must catch). */
+export async function emailPrivateSaleDoublePaidAlertToStudio(params: PrivateSaleDoublePaidAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildPrivateSaleDoublePaidAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Customer shipping-confirmation email ─────────────────────────────────────
 
 export type CustomerShippingOrder = {

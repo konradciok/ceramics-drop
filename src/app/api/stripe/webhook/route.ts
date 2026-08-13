@@ -8,7 +8,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -103,6 +103,108 @@ async function sendEmailOnceWithClaim(
     if (releaseErr) {
       console.error(`${column} claim release failed for`, orderId, releaseErr);
     }
+  }
+}
+
+/**
+ * M-5: the pending→paid CAS hit `private_sales_one_paid_order` (23505) —
+ * another order already holds this private sale's single paid slot, so this
+ * captured payment must be refunded and its order parked terminal `failed`
+ * (never left `pending`, which the abandoned-checkout cron and other pending
+ * flows would act on). Ordering is crash-safe and idempotent:
+ *   1. durable `refund_pending_at` marker CAS'd on status='pending' BEFORE any
+ *      money moves — while set, pending consumers (cron expiry, admin release)
+ *      refuse the order via their `refund_pending_at IS NULL` claim predicate.
+ *      A zero-row marker CAS means the order is no longer pending: classify
+ *      first, and NEVER refund a row we can't account for.
+ *   2. refund under the shared `refund_<pi>` idempotency key. Stripe keys
+ *      expire (~24h) inside the 3-day retry window, so a late crash-retry can
+ *      see `charge_already_refunded` — that IS success, continue.
+ *   3. converge any pieces still reserved to this order (private-sale target
+ *      `sold` — a lapsed `reserved` row would leak into public checkout).
+ *   4. CAS pending→failed clearing the marker. Zero rows → follow-up lookup:
+ *      only a documented safe terminal state (`failed`/`refunded`) acks 200;
+ *      anything else throws so Stripe retries.
+ * A crash anywhere re-enters through the same 23505 on redelivery; every step
+ * is CAS- or key-idempotent.
+ */
+async function handlePrivateSaleDoublePaid(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  stripe: ReturnType<typeof getStripe>,
+  pi: string,
+): Promise<void> {
+  const classify = async (): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, status, private_sale_id')
+      .eq('payment_intent_id', pi)
+      .maybeSingle();
+    if (error) throw new Error(`double-paid classification lookup failed for ${pi}: ${error.message}`);
+    return (data as { status: string } | null)?.status ?? null;
+  };
+
+  const { data: marked, error: markErr } = (await supabase
+    .from('orders')
+    .update({ refund_pending_at: new Date().toISOString() })
+    .eq('payment_intent_id', pi)
+    .eq('status', 'pending')
+    .select('id, private_sale_id')) as {
+      data: Array<{ id: string; private_sale_id: string | null }> | null;
+      error: { message: string } | null;
+    };
+  if (markErr) throw new Error(`double-paid marker CAS failed for ${pi}: ${markErr.message}`);
+  if (!marked || marked.length === 0) {
+    const status = await classify();
+    // `failed`/`refunded` are the documented safe terminal states — the refund
+    // already happened (or is another delivery's responsibility). Anything
+    // else (missing, paid, pending…) is unaccountable: throw, never refund.
+    if (status === 'failed' || status === 'refunded') return;
+    throw new Error(`double-paid order for ${pi} in unexpected state ${status ?? 'missing'}`);
+  }
+  const orderId = marked[0].id;
+  const privateSaleId = marked[0].private_sale_id;
+
+  try {
+    await stripe.refunds.create({ payment_intent: pi }, { idempotencyKey: `refund_${pi}` });
+  } catch (err) {
+    const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: string }).code : null;
+    if (code !== 'charge_already_refunded') {
+      console.error('double-paid refund failed for', pi, err);
+      Sentry.captureException(err);
+      throw err;
+    }
+  }
+
+  // Throws on failure → 5xx → the retry re-enters via the same 23505, the
+  // marker CAS re-claims (still pending), the refund no-ops on its key.
+  await releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId });
+
+  const { data: failedRows, error: failErr } = (await supabase
+    .from('orders')
+    .update({ status: 'failed', refund_pending_at: null })
+    .eq('payment_intent_id', pi)
+    .eq('status', 'pending')
+    .select('id')) as { data: Array<{ id: string }> | null; error: { message: string } | null };
+  if (failErr) throw new Error(`double-paid pending→failed CAS failed for ${pi}: ${failErr.message}`);
+  if (!failedRows || failedRows.length === 0) {
+    const status = await classify();
+    if (status !== 'failed' && status !== 'refunded') {
+      throw new Error(`double-paid order for ${pi} in unexpected state ${status ?? 'missing'} after refund`);
+    }
+  }
+
+  Sentry.captureMessage('private_sale_double_paid', {
+    level: 'error',
+    extra: { payment_intent_id: pi, order_id: orderId, private_sale_id: privateSaleId },
+  });
+  // Best-effort: the refund and the state transition are already durable, and
+  // a rethrow here would make Stripe retry into the "already failed → ack"
+  // branch, which never re-alerts — so a failed send must not fail the route.
+  try {
+    await emailPrivateSaleDoublePaidAlertToStudio({ orderId, paymentIntentId: pi });
+  } catch (err) {
+    console.error('double-paid studio alert email failed for', orderId, err);
+    Sentry.captureException(err);
   }
 }
 
@@ -212,10 +314,19 @@ export async function POST(req: Request) {
         .eq('status', 'pending')
         .select('id, private_sale_id')) as {
           data: Array<{ id: string; private_sale_id: string | null }> | null;
-          error: { message: string } | null;
+          error: { message: string; code?: string } | null;
         };
 
-      if (orderErr) throw new Error(`markPaid orders update failed: ${orderErr.message}`);
+      if (orderErr) {
+        // 23505 here can only come from `private_sales_one_paid_order` — the
+        // double-paid private sale (M-5). Refund-then-fail instead of a 3-day
+        // 5xx loop with captured money and no refund.
+        if (orderErr.code === '23505') {
+          await handlePrivateSaleDoublePaid(supabase, stripe, pi);
+          return false;
+        }
+        throw new Error(`markPaid orders update failed: ${orderErr.message}`);
+      }
 
       let orderId: string;
       // Fetched up front (not just in the newSale branch) so the single-use token is

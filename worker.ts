@@ -22,7 +22,7 @@ import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-order
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
-import { expireAbandonedOrders, type CancelOutcome } from './src/lib/expire-orders';
+import { expireAbandonedOrders, claimExpiryLease, type CancelOutcome } from './src/lib/expire-orders';
 import { releaseTargetStatus } from './src/lib/piece-release';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
@@ -263,6 +263,12 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
       if (error) throw new Error(`loadAbandoned failed: ${error.message}`);
       return (data ?? []) as Array<{ id: string; payment_intent_id: string }>;
     },
+    // M-5 guard: the recoverable lease runs BEFORE cancelIntent (the
+    // irreversible mutation), so a refund-pending order — even one whose
+    // marker landed after loadAbandoned read it — is never PI-canceled here.
+    // On failure after the claim the order stays pending and the lease goes
+    // stale, so the next 15-min tick reclaims and retries.
+    claimExpiry: (orderId) => claimExpiryLease(supabase, orderId),
     cancelIntent: async (pi): Promise<CancelOutcome> => {
       try {
         await stripe.paymentIntents.cancel(pi);
@@ -282,12 +288,17 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         }
       }
     },
-    expireOrder: async (orderId) => {
+    expireOrder: async (orderId, claimToken) => {
+      // Fenced to OUR lease token: if the lease went stale mid-flight and a
+      // newer claimant took over, this matches zero rows and we stop — never
+      // overwriting the newer claimant's state (same discipline as the
+      // webhook_events claim-scoped release).
       const { data, error } = await supabase
         .from('orders')
-        .update({ status: 'expired' })
+        .update({ status: 'expired', expiry_claim_at: null })
         .eq('id', orderId)
         .eq('status', 'pending')
+        .eq('expiry_claim_at', claimToken)
         .select('id, private_sale_id');
       if (error) throw new Error(`expireOrder update failed for ${orderId}: ${error.message}`);
       const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;

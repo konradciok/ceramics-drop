@@ -39,6 +39,19 @@ describe('customerOrderStatus — overrides', () => {
     expect(customerOrderStatus(input({ fulfilmentType: null, deliveryMethod: 'odbior' })).status)
       .toBe('awaitingPickup');
   });
+
+  // M-5: a `failed` order can be a captured-then-refunded payment (the
+  // private-sale double-paid path). It must never render as a normal delivery
+  // state — the mapper stays total even though account queries exclude it.
+  it('failed overrides delivery state: cancelled, no tracking (M-5 contract)', () => {
+    expect(customerOrderStatus(input({ status: 'failed', deliveryStatus: 'delivered', inpostTrackingNumber: '520' })))
+      .toEqual({ status: 'cancelled', tracking: null });
+    expect(customerOrderStatus(input({ ...PRINT, status: 'failed', latestJobStatus: 'shipped' })))
+      .toEqual({ status: 'cancelled', tracking: null });
+    // Even a pickup order: failed is terminal, not "awaiting pickup".
+    expect(customerOrderStatus(input({ status: 'failed', fulfilmentType: 'pickup', deliveryMethod: 'odbior' })).status)
+      .toBe('cancelled');
+  });
 });
 
 describe('customerOrderStatus — prints (fulfilment_jobs driven)', () => {
