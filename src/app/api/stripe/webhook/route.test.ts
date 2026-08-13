@@ -162,13 +162,16 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
     pieceUpdatePayload: undefined as unknown,
     pieceUpdated: false,
     pieceFilters: [] as Array<{ method: string; args: unknown[] }>,
+    ordersUpdatePayloads: [] as Array<Record<string, unknown>>,
   };
   const supabase = {
     from(table: string) {
       if (table === 'orders') {
         return {
-          update: () =>
-            chain('select', ordersUpdates.length > 1 ? (ordersUpdates.shift() as Result) : ordersUpdates[0]),
+          update: (payload: Record<string, unknown>) => {
+            calls.ordersUpdatePayloads.push(payload);
+            return chain('select', ordersUpdates.length > 1 ? (ordersUpdates.shift() as Result) : ordersUpdates[0]);
+          },
           select: () => chain('maybeSingle', plan.ordersSelect),
         };
       }
@@ -480,6 +483,10 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
     expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
     // fulfilment never enqueues for a never-paid order — nothing to cancel
     expect(cancelPrintFulfilment).not.toHaveBeenCalled();
+    // The pending→refunded CAS clears the M-5 marker/lease as it goes terminal:
+    // a charge.refunded racing the double-paid window must not leave
+    // refund_pending_at set forever on a refunded row.
+    expect(calls.ordersUpdatePayloads[0]).toEqual({ status: 'refunded', refund_pending_at: null, expiry_claim_at: null });
   });
 
   it('lost dispute before succeeded: same parking behaviour as a refund', async () => {
@@ -669,10 +676,12 @@ function makeSucceededSupabase(opts: {
   const webhookEvents = webhookEventsTable(opts.webhookEvents);
   // M-5: global operation sequence (marker CAS / final CAS / piece writes) —
   // tests append refund creation via a refundsCreate mockImplementation, so
-  // ordering constraints (marker BEFORE refund) are assertable.
+  // ordering constraints (marker BEFORE refund) are assertable. Both CAS
+  // writes also record their filter chains, so the `.eq('status','pending')`
+  // predicates are pinned (not just the payload shape).
   const seq: string[] = [];
-  const markerWrites: Array<Record<string, unknown>> = [];
-  const doublePaidWrites: Array<Record<string, unknown>> = [];
+  const markerWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
+  const doublePaidWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
   const pieceWrites: Array<Record<string, unknown>> = [];
   const supabase = {
     from(table: string) {
@@ -682,8 +691,12 @@ function makeSucceededSupabase(opts: {
             if (payload.status === 'paid') return proxyChain(opts.casUpdate);
             if (payload.status === 'failed' && 'refund_pending_at' in payload) {
               seq.push('double_paid_cas');
-              doublePaidWrites.push(payload);
-              return proxyChain(opts.doublePaidCas ?? { data: [{ id: 'o1' }], error: null });
+              const write = { payload, filters: [] as Array<[string, unknown[]]> };
+              doublePaidWrites.push(write);
+              return proxyChain(
+                opts.doublePaidCas ?? { data: [{ id: 'o1' }], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
             }
             if (payload.status === 'failed') {
               return proxyChain({ data: null, error: null }, (method, args) => {
@@ -692,8 +705,12 @@ function makeSucceededSupabase(opts: {
             }
             if ('refund_pending_at' in payload) {
               seq.push('marker');
-              markerWrites.push(payload);
-              return proxyChain(opts.markerClaim ?? { data: [{ id: 'o1', private_sale_id: 'ps_1' }], error: null });
+              const write = { payload, filters: [] as Array<[string, unknown[]]> };
+              markerWrites.push(write);
+              return proxyChain(
+                opts.markerClaim ?? { data: [{ id: 'o1', private_sale_id: 'ps_1' }], error: null },
+                (method, args) => write.filters.push([method, args]),
+              );
             }
             if ('studio_email_sent_at' in payload) {
               const write = { value: payload.studio_email_sent_at, filters: [] as Array<[string, unknown[]]> };
@@ -1135,19 +1152,29 @@ describe('webhook markPaid private-sale double-payment (M-5)', () => {
     expect(refundsCreate).toHaveBeenCalledTimes(1);
     expect(refundsCreate).toHaveBeenCalledWith({ payment_intent: 'pi_1' }, { idempotencyKey: 'refund_pi_1' });
     expect(markerWrites).toHaveLength(1);
-    expect(typeof markerWrites[0].refund_pending_at).toBe('string');
+    expect(typeof markerWrites[0].payload.refund_pending_at).toBe('string');
+    // The marker CAS must be scoped — an unfiltered UPDATE would stamp every order.
+    expect(markerWrites[0].filters).toContainEqual(['eq', ['payment_intent_id', 'pi_1']]);
+    expect(markerWrites[0].filters).toContainEqual(['eq', ['status', 'pending']]);
     // The durable marker must exist before money moves — the crash-window guard.
     expect(seq.indexOf('marker')).toBeLessThan(seq.indexOf('refund'));
   });
 
   it('(b) terminal state: pending→failed CAS clears the marker, pieces converge to sold, 200 + Sentry + studio alert', async () => {
     const { supabase, doublePaidWrites, pieceWrites, seq } = makeSucceededSupabase(doublePaidOpts());
+    vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mockImplementationOnce(async () => {
+      seq.push('alert');
+    });
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
 
     expect(res.status).toBe(200);
-    expect(doublePaidWrites).toEqual([{ status: 'failed', refund_pending_at: null }]);
+    expect(doublePaidWrites).toHaveLength(1);
+    expect(doublePaidWrites[0].payload).toEqual({ status: 'failed', refund_pending_at: null });
+    // The final CAS is scoped like the marker CAS.
+    expect(doublePaidWrites[0].filters).toContainEqual(['eq', ['payment_intent_id', 'pi_1']]);
+    expect(doublePaidWrites[0].filters).toContainEqual(['eq', ['status', 'pending']]);
     // Order B's still-reserved private-sale pieces must not strand `reserved`
     // (a lapsed reservation would leak into public reserve_pieces()) — they
     // converge to the private-sale terminal state before the final CAS.
@@ -1155,6 +1182,12 @@ describe('webhook markPaid private-sale double-payment (M-5)', () => {
     expect(seq.indexOf('piece_update')).toBeLessThan(seq.indexOf('double_paid_cas'));
     expect(Sentry.captureMessage).toHaveBeenCalledWith('private_sale_double_paid', expect.objectContaining({ level: 'error' }));
     expect(emailPrivateSaleDoublePaidAlertToStudio).toHaveBeenCalledTimes(1);
+    // Alert BEFORE the terminal CAS (an isolate death after the CAS would ack
+    // without re-alerting), deduped across crash-retries by the Resend key.
+    expect(seq.indexOf('alert')).toBeLessThan(seq.indexOf('double_paid_cas'));
+    expect(vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mock.calls[0][0]).toMatchObject({
+      idempotencyKey: 'double-paid-alert/o1',
+    });
   });
 
   it('(e) already-refunded error after idempotency-key expiry: treated as success, CAS still proceeds to failed', async () => {
@@ -1165,7 +1198,23 @@ describe('webhook markPaid private-sale double-payment (M-5)', () => {
     const res = await POST(succeededEventRequest());
 
     expect(res.status).toBe(200);
-    expect(doublePaidWrites).toEqual([{ status: 'failed', refund_pending_at: null }]);
+    expect(doublePaidWrites).toHaveLength(1);
+    expect(doublePaidWrites[0].payload).toEqual({ status: 'failed', refund_pending_at: null });
+  });
+
+  it('(g3) zero-row final CAS with a follow-up lookup finding a safe terminal state: acks 200 (no retry loop on a benign convergence race)', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      doublePaidCas: { data: [], error: null },
+      fallbackSelect: { data: { id: 'o1', status: 'failed', private_sale_id: 'ps_1' }, error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('private_sale_double_paid', expect.objectContaining({ level: 'error' }));
   });
 
   it('(f) zero-row marker CAS with the order already failed: NO refunds.create, ack 200', async () => {

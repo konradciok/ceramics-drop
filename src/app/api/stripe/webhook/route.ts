@@ -191,6 +191,28 @@ async function handlePrivateSaleDoublePaid(
   // marker CAS re-claims (still pending), the refund no-ops on its key.
   await releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId });
 
+  // Alert BEFORE the terminal CAS: once the order is `failed`, a redelivery
+  // acks through the marker-zero-row branch without re-alerting, so an isolate
+  // death between the CAS and a post-CAS alert would silence the refund
+  // forever. Pre-CAS, a crash re-enters via the 23505 and re-alerts — the
+  // Resend Idempotency-Key dedupes the duplicate email. The email itself stays
+  // best-effort (Sentry already captured): a Resend outage must not block the
+  // state machine from converging.
+  Sentry.captureMessage('private_sale_double_paid', {
+    level: 'error',
+    extra: { payment_intent_id: pi, order_id: orderId, private_sale_id: privateSaleId },
+  });
+  try {
+    await emailPrivateSaleDoublePaidAlertToStudio({
+      orderId,
+      paymentIntentId: pi,
+      idempotencyKey: `double-paid-alert/${orderId}`,
+    });
+  } catch (err) {
+    console.error('double-paid studio alert email failed for', orderId, err);
+    Sentry.captureException(err);
+  }
+
   const { data: failedRows, error: failErr } = (await supabase
     .from('orders')
     .update({ status: 'failed', refund_pending_at: null })
@@ -203,20 +225,6 @@ async function handlePrivateSaleDoublePaid(
     if (status !== 'failed' && status !== 'refunded') {
       throw new Error(`double-paid order for ${pi} in unexpected state ${status ?? 'missing'} after refund`);
     }
-  }
-
-  Sentry.captureMessage('private_sale_double_paid', {
-    level: 'error',
-    extra: { payment_intent_id: pi, order_id: orderId, private_sale_id: privateSaleId },
-  });
-  // Best-effort: the refund and the state transition are already durable, and
-  // a rethrow here would make Stripe retry into the "already failed → ack"
-  // branch, which never re-alerts — so a failed send must not fail the route.
-  try {
-    await emailPrivateSaleDoublePaidAlertToStudio({ orderId, paymentIntentId: pi });
-  } catch (err) {
-    console.error('double-paid studio alert email failed for', orderId, err);
-    Sentry.captureException(err);
   }
 }
 
@@ -632,9 +640,12 @@ export async function POST(req: Request) {
       // at attempt 1 — but then attempt 1 would have flipped it first (both are
       // CAS on the same row). A failed/expired order (markPaid's own
       // under-fulfillment refund) matches none of the three and stays a no-op.
+      // Clears the M-5 marker/lease as it goes terminal: a charge.refunded
+      // racing the double-paid window (our own refund's event, or a Dashboard
+      // refund) must not leave refund_pending_at set forever on a refunded row.
       const { data: pendingData, error: pendingErr } = await supabase
         .from('orders')
-        .update({ status: 'refunded' })
+        .update({ status: 'refunded', refund_pending_at: null, expiry_claim_at: null })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
         .select('id, private_sale_id');

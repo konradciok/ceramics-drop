@@ -587,14 +587,26 @@ export function buildPrivateSaleDoublePaidAlertEmail(params: PrivateSaleDoublePa
 }
 
 /** Alert the studio that a private sale was paid twice and the second payment was auto-refunded. Throws if Resend isn't configured (caller must catch). */
-export async function emailPrivateSaleDoublePaidAlertToStudio(params: PrivateSaleDoublePaidAlert): Promise<void> {
+export async function emailPrivateSaleDoublePaidAlertToStudio(
+  params: PrivateSaleDoublePaidAlert & {
+    /** M-27/M-5: the alert fires BEFORE the terminal CAS, so a crash-retry re-sends — the key dedupes it. */
+    idempotencyKey?: string;
+  },
+): Promise<void> {
   const { env } = getCloudflareContext();
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
     throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
   }
   const { subject, mainContent } = buildPrivateSaleDoublePaidAlertEmail(params);
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
-  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+  await sendResendHtml({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [env.STUDIO_NOTIFY_EMAIL],
+    subject,
+    html,
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
+  });
 }
 
 // ── Customer shipping-confirmation email ─────────────────────────────────────

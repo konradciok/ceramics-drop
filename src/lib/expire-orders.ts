@@ -1,6 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { releaseReservedPieces } from '@/lib/piece-release';
 
-export type AbandonedOrder = { id: string; payment_intent_id: string };
+export type AbandonedOrder = {
+  id: string;
+  payment_intent_id: string;
+  /** Routes freed pieces: private-sale orders converge to `sold`, never `available`. */
+  private_sale_id?: string | null;
+  /** M-5 double-paid refund window marker — a set value denies the expiry claim. */
+  refund_pending_at?: string | null;
+};
 
 /** Result of trying to cancel an order's PaymentIntent. */
 export type CancelOutcome =
@@ -22,24 +30,38 @@ export type ExpireOrdersDeps = {
   /** Cancel the PI (see CancelOutcome). Must NOT throw — translate Stripe errors into 'error'/'paid'. */
   cancelIntent: (paymentIntentId: string) => Promise<CancelOutcome>;
   /**
-   * Terminal pending→expired CAS, fenced to the claimant's own lease token
-   * (`expiry_claim_at = claimToken`), then free the order's reserved pieces.
-   * Returns true if a row was expired; false when nothing matched (already
+   * Free the order's reserved pieces FIRST, then run the terminal
+   * pending→expired CAS fenced to the claimant's own lease token
+   * (`expiry_claim_at = claimToken`) — see {@link finalizeExpiry}. Returns true
+   * if a row was expired; false when the fenced CAS matched nothing (already
    * handled, or ownership lost to a newer claimant — must NOT overwrite).
+   * Throws on a piece-release failure, leaving the order `pending` (never
+   * terminal) so the next sweep reclaims the stale lease and retries.
    */
-  expireOrder: (orderId: string, claimToken: string) => Promise<boolean>;
+  expireOrder: (order: AbandonedOrder, claimToken: string) => Promise<boolean>;
   /** Structured log for observability (e.g. a paid PI found on a pending order). */
   warn: (msg: string, meta: Record<string, unknown>) => void;
   /**
-   * M-15: alert (email + Sentry) that a paid/processing PI was found on a still-
-   * pending order (a likely-missed `payment_intent.succeeded`). Must be
-   * de-duplicated (at most once per order) and must NOT throw — a Resend/Sentry
-   * outage cannot break the sweep.
+   * M-15: alert (email + Sentry) that a captured/processing payment sits on a
+   * still-pending order needing manual intervention — a likely-missed
+   * `payment_intent.succeeded`, or a stale M-5 refund-pending marker whose
+   * Stripe retries ran out. Must be de-duplicated (at most once per order) and
+   * must NOT throw — a Resend/Sentry outage cannot break the sweep.
    */
   alertPaidOnPending: (orderId: string) => Promise<void>;
 };
 
 export type ExpireOrdersResult = { scanned: number; skipped: number; expired: number; stillActive: number; errors: number };
+
+/**
+ * An M-5 `refund_pending_at` marker older than this is considered stranded:
+ * Stripe retries a failing delivery for ~3 days, but a marker that has sat for
+ * a full day with the order still `pending` means the refund leg keeps failing
+ * (or the retries are exhausted) — captured, unrefunded money that no consumer
+ * may touch. The sweep alerts (at-most-once via the M-15 claim) instead of
+ * skipping silently forever.
+ */
+export const STALE_REFUND_PENDING_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Oversell-safe sweep of abandoned checkout orders. For each pending order past
@@ -60,11 +82,21 @@ export async function expireAbandonedOrders(deps: ExpireOrdersDeps): Promise<Exp
     const claimToken = await deps.claimExpiry(order.id);
     if (claimToken === null) {
       result.skipped += 1;
+      // A stale refund-pending marker is captured, unrefunded money the webhook
+      // stopped converging (Stripe retries exhausted) — every consumer is
+      // locked out by design, so silence here would strand it forever. Reuse
+      // the M-15 alert (same semantics, at-most-once via its own claim).
+      if (
+        order.refund_pending_at &&
+        Date.parse(order.refund_pending_at) < Date.now() - STALE_REFUND_PENDING_MS
+      ) {
+        await deps.alertPaidOnPending(order.id);
+      }
       continue;
     }
     const outcome = await deps.cancelIntent(order.payment_intent_id);
     if (outcome === 'canceled') {
-      const didExpire = await deps.expireOrder(order.id, claimToken);
+      const didExpire = await deps.expireOrder(order, claimToken);
       if (didExpire) result.expired += 1;
     } else if (outcome === 'paid') {
       result.stillActive += 1;
@@ -135,4 +167,36 @@ export async function releaseExpiryLease(
     .eq('id', orderId)
     .eq('expiry_claim_at', claimToken);
   if (error) console.error(`expiry-claim release failed for ${orderId}:`, error.message);
+}
+
+/**
+ * Finish an expiry AFTER the PI cancel succeeded: free the order's reserved
+ * pieces FIRST (private-sale pieces converge to `sold`, never `available`),
+ * THEN run the terminal pending→expired CAS fenced to the claimant's own
+ * lease token. The ordering is the plan's Task-2 contract: terminal `expired`
+ * only after BOTH side effects — a piece-release failure throws and leaves
+ * the order `pending` (lease goes stale → the next sweep reclaims and
+ * retries), instead of a terminal order with pieces stranded `reserved`
+ * (which no sweep would ever revisit, and whose lapsed reservation
+ * `reserve_pieces()` would hand to a public checkout).
+ *
+ * @returns true when the fenced CAS expired the row; false when it matched
+ * nothing (already handled, or ownership lost to a newer claimant — the
+ * piece release above was idempotent, and the new owner converges the order).
+ */
+export async function finalizeExpiry(
+  supabase: SupabaseClient,
+  order: { id: string; private_sale_id?: string | null },
+  claimToken: string,
+): Promise<boolean> {
+  await releaseReservedPieces(supabase, order);
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'expired', expiry_claim_at: null })
+    .eq('id', order.id)
+    .eq('status', 'pending')
+    .eq('expiry_claim_at', claimToken)
+    .select('id');
+  if (error) throw new Error(`finalizeExpiry update failed for ${order.id}: ${error.message}`);
+  return ((data as unknown[] | null) ?? []).length > 0;
 }

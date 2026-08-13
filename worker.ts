@@ -22,8 +22,7 @@ import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-order
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
-import { expireAbandonedOrders, claimExpiryLease, type CancelOutcome } from './src/lib/expire-orders';
-import { releaseTargetStatus } from './src/lib/piece-release';
+import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
@@ -254,14 +253,21 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
 
   const result = await expireAbandonedOrders({
     loadAbandoned: async () => {
+      // private_sale_id routes the piece release (finalizeExpiry);
+      // refund_pending_at drives the stale-marker alert on a denied claim.
       const { data, error } = await supabase
         .from('orders')
-        .select('id, payment_intent_id')
+        .select('id, payment_intent_id, private_sale_id, refund_pending_at')
         .eq('status', 'pending')
         .lt('created_at', cutoff)
         .limit(BATCH_LIMIT);
       if (error) throw new Error(`loadAbandoned failed: ${error.message}`);
-      return (data ?? []) as Array<{ id: string; payment_intent_id: string }>;
+      return (data ?? []) as Array<{
+        id: string;
+        payment_intent_id: string;
+        private_sale_id: string | null;
+        refund_pending_at: string | null;
+      }>;
     },
     // M-5 guard: the recoverable lease runs BEFORE cancelIntent (the
     // irreversible mutation), so a refund-pending order — even one whose
@@ -288,30 +294,10 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         }
       }
     },
-    expireOrder: async (orderId, claimToken) => {
-      // Fenced to OUR lease token: if the lease went stale mid-flight and a
-      // newer claimant took over, this matches zero rows and we stop — never
-      // overwriting the newer claimant's state (same discipline as the
-      // webhook_events claim-scoped release).
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status: 'expired', expiry_claim_at: null })
-        .eq('id', orderId)
-        .eq('status', 'pending')
-        .eq('expiry_claim_at', claimToken)
-        .select('id, private_sale_id');
-      if (error) throw new Error(`expireOrder update failed for ${orderId}: ${error.message}`);
-      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
-      if (!rows || rows.length === 0) return false;
-      // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
-      const { error: pieceErr } = await supabase
-        .from('piece_state')
-        .update({ status: releaseTargetStatus(rows[0]), reserved_until: null, order_id: null })
-        .eq('order_id', orderId)
-        .eq('status', 'reserved');
-      if (pieceErr) throw new Error(`expireOrder piece release failed for ${orderId}: ${pieceErr.message}`);
-      return true;
-    },
+    // Pieces first, lease-fenced terminal CAS last (the plan's terminal-only-
+    // after-side-effects contract) — a piece-release failure throws, the order
+    // stays `pending`, the lease goes stale, and the next tick reclaims.
+    expireOrder: (order, claimToken) => finalizeExpiry(supabase, order, claimToken),
     warn: (msg, meta) => console.warn(JSON.stringify({ event: 'abandoned_sweep_warn', msg, ...meta })),
     alertPaidOnPending: async (orderId) => {
       // M-15: durable at-most-once claim — only alert if we win the CAS on the

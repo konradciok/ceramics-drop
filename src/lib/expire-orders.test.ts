@@ -3,7 +3,9 @@ import {
   expireAbandonedOrders,
   claimExpiryLease,
   releaseExpiryLease,
+  finalizeExpiry,
   EXPIRY_CLAIM_LEASE_MS,
+  STALE_REFUND_PENDING_MS,
   type AbandonedOrder,
   type CancelOutcome,
   type ExpireOrdersDeps,
@@ -33,7 +35,7 @@ describe('expireAbandonedOrders', () => {
       expireOrder: vi.fn().mockResolvedValue(true),
     });
     const result = await expireAbandonedOrders(d);
-    expect(d.expireOrder).toHaveBeenCalledWith('a', 'claim-1');
+    expect(d.expireOrder).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }), 'claim-1');
     expect(result).toEqual({ scanned: 1, skipped: 0, expired: 1, stillActive: 0, errors: 0 });
     expect(d.warn).not.toHaveBeenCalled();
   });
@@ -45,7 +47,7 @@ describe('expireAbandonedOrders', () => {
       expireOrder: vi.fn().mockResolvedValue(false),
     });
     const result = await expireAbandonedOrders(d);
-    expect(d.expireOrder).toHaveBeenCalledWith('a', 'claim-1');
+    expect(d.expireOrder).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }), 'claim-1');
     expect(result).toEqual({ scanned: 1, skipped: 0, expired: 0, stillActive: 0, errors: 0 });
   });
 
@@ -89,7 +91,7 @@ describe('expireAbandonedOrders', () => {
       loadAbandoned: vi.fn().mockResolvedValue(batch),
       cancelIntent: vi.fn().mockImplementation((pi: string) => Promise.resolve(outcomes[pi])),
       // 'a' and 'e' actually expire; 'b' was already gone (false).
-      expireOrder: vi.fn().mockImplementation((id: string) => Promise.resolve(id !== 'b')),
+      expireOrder: vi.fn().mockImplementation((o: AbandonedOrder) => Promise.resolve(o.id !== 'b')),
     });
     const result = await expireAbandonedOrders(d);
     expect(result).toEqual({ scanned: 5, skipped: 0, expired: 2, stillActive: 1, errors: 1 });
@@ -135,6 +137,40 @@ describe('expireAbandonedOrders', () => {
     expect(seq).toEqual(['claim', 'cancel']);
   });
 
+  // A refund-pending order whose Stripe retries ran out is captured money no
+  // consumer may touch — the sweep must alert on a STALE marker (at-most-once
+  // via the M-15 claim), never skip it silently forever.
+  it('claim denied with a STALE refund_pending_at marker: fires alertPaidOnPending (still counted skipped)', async () => {
+    const stale = new Date(Date.now() - STALE_REFUND_PENDING_MS - 60 * 1000).toISOString();
+    const d = deps({
+      loadAbandoned: vi.fn().mockResolvedValue([{ ...order('a'), refund_pending_at: stale }]),
+      claimExpiry: vi.fn().mockResolvedValue(null),
+    });
+    const result = await expireAbandonedOrders(d);
+    expect(d.alertPaidOnPending).toHaveBeenCalledTimes(1);
+    expect(d.alertPaidOnPending).toHaveBeenCalledWith('a');
+    expect(result.skipped).toBe(1);
+  });
+
+  it('claim denied with a FRESH refund_pending_at marker: no alert (the webhook is still converging it)', async () => {
+    const fresh = new Date(Date.now() - 60 * 1000).toISOString();
+    const d = deps({
+      loadAbandoned: vi.fn().mockResolvedValue([{ ...order('a'), refund_pending_at: fresh }]),
+      claimExpiry: vi.fn().mockResolvedValue(null),
+    });
+    await expireAbandonedOrders(d);
+    expect(d.alertPaidOnPending).not.toHaveBeenCalled();
+  });
+
+  it('claim denied without a marker (plain concurrent lease): no alert', async () => {
+    const d = deps({
+      loadAbandoned: vi.fn().mockResolvedValue([order('a')]),
+      claimExpiry: vi.fn().mockResolvedValue(null),
+    });
+    await expireAbandonedOrders(d);
+    expect(d.alertPaidOnPending).not.toHaveBeenCalled();
+  });
+
   // Recovery (plan c2): a cancelIntent failure after the claim leaves the order
   // pending (never terminal); the next sweep reclaims (stale lease) and succeeds.
   it('cancelIntent failure after the claim: no terminal write; the next sweep reclaims and completes', async () => {
@@ -157,7 +193,7 @@ describe('expireAbandonedOrders', () => {
       cancelIntent: vi.fn().mockResolvedValue('canceled' as CancelOutcome),
       expireOrder,
     }));
-    expect(expireOrder).toHaveBeenCalledWith('a', 'claim-2');
+    expect(expireOrder).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }), 'claim-2');
     expect(second.expired).toBe(1);
   });
 });
@@ -210,6 +246,92 @@ describe('claimExpiryLease', () => {
   it('throws on a CAS error (the sweep alert path handles it)', async () => {
     const { supabase } = fakeOrdersUpdate({ data: null, error: { message: 'db down' } });
     await expect(claimExpiryLease(supabase as never, 'o1')).rejects.toThrow(/db down/);
+  });
+});
+
+// ── finalizeExpiry (pieces first, lease-fenced terminal CAS last) ─────────────
+
+function fakeFinalizeSupabase(opts: {
+  pieceResult?: { data: unknown; error: { message: string } | null };
+  ordersResult?: { data: unknown; error: { message: string } | null };
+}) {
+  const seq: string[] = [];
+  const ordersFilters: Filter[] = [];
+  const piecePayloads: Array<Record<string, unknown>> = [];
+  const ordersPayloads: Array<Record<string, unknown>> = [];
+  const mkNode = (result: { data: unknown; error: { message: string } | null }, filters?: Filter[]) => {
+    const node: Record<string, unknown> = {
+      select: () => Promise.resolve(result),
+      then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+        Promise.resolve(result).then(resolve, reject),
+    };
+    node.eq = (...args: unknown[]) => { filters?.push({ method: 'eq', args }); return node; };
+    return node;
+  };
+  const supabase = {
+    from: (table: string) => ({
+      update: (payload: Record<string, unknown>) => {
+        seq.push(table);
+        if (table === 'piece_state') {
+          piecePayloads.push(payload);
+          return mkNode(opts.pieceResult ?? { data: [{ product_id: 'k01' }], error: null });
+        }
+        ordersPayloads.push(payload);
+        return mkNode(opts.ordersResult ?? { data: [{ id: 'o1' }], error: null }, ordersFilters);
+      },
+    }),
+  };
+  return { supabase, seq, ordersFilters, piecePayloads, ordersPayloads };
+}
+
+describe('finalizeExpiry', () => {
+  it('releases pieces FIRST, then runs the terminal CAS fenced to the claim token (plan Task-2 ordering)', async () => {
+    const { supabase, seq, ordersFilters, ordersPayloads } = fakeFinalizeSupabase({});
+
+    const expired = await finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1');
+
+    expect(expired).toBe(true);
+    expect(seq).toEqual(['piece_state', 'orders']);
+    expect(ordersPayloads).toEqual([{ status: 'expired', expiry_claim_at: null }]);
+    expect(ordersFilters).toContainEqual({ method: 'eq', args: ['status', 'pending'] });
+    expect(ordersFilters).toContainEqual({ method: 'eq', args: ['expiry_claim_at', 'claim-1'] });
+  });
+
+  it('routes private-sale pieces to sold, never available', async () => {
+    const { supabase, piecePayloads } = fakeFinalizeSupabase({});
+
+    await finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: 'ps_1' }, 'claim-1');
+
+    expect(piecePayloads[0]).toMatchObject({ status: 'sold' });
+  });
+
+  // Plan c3 (cron leg): a piece-release failure must throw BEFORE any terminal
+  // write — the order stays pending, the lease goes stale, the next sweep
+  // retries. Terminal-first would strand reserved pieces forever (and leak
+  // lapsed private-sale reservations into public checkout).
+  it('piece-release failure: throws, terminal CAS never runs (order stays pending, next sweep retries)', async () => {
+    const { supabase, seq } = fakeFinalizeSupabase({
+      pieceResult: { data: null, error: { message: 'piece_state down' } },
+    });
+
+    await expect(finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1'))
+      .rejects.toThrow(/piece_state down/);
+    expect(seq).toEqual(['piece_state']);
+  });
+
+  it('fenced CAS matches nothing (ownership lost / already handled): returns false, never overwrites', async () => {
+    const { supabase } = fakeFinalizeSupabase({ ordersResult: { data: [], error: null } });
+
+    const expired = await finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1');
+
+    expect(expired).toBe(false);
+  });
+
+  it('throws on a terminal-CAS error (sweep alert path handles it; retry converges)', async () => {
+    const { supabase } = fakeFinalizeSupabase({ ordersResult: { data: null, error: { message: 'orders down' } } });
+
+    await expect(finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1'))
+      .rejects.toThrow(/orders down/);
   });
 });
 

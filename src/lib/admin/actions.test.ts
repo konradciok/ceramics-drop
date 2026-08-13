@@ -28,6 +28,7 @@ const ENV = { fake: 'env' } as unknown as CloudflareEnv;
 function supabaseForOrder(
   order: Record<string, unknown> | null,
   readError: { message: string } | null = null,
+  updateResult: { data: unknown; error: { message: string } | null } = { data: [], error: null },
 ) {
   const maybeSingle = vi.fn().mockResolvedValue({ data: order, error: readError });
   const eq = vi.fn(() => ({ maybeSingle }));
@@ -37,7 +38,7 @@ function supabaseForOrder(
   const updateFilters: Array<[string, unknown[]]> = [];
   const updateNode: Record<string, unknown> = {
     then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
-      Promise.resolve({ data: [], error: null }).then(resolve, reject),
+      Promise.resolve(updateResult).then(resolve, reject),
   };
   updateNode.eq = (...args: unknown[]) => {
     updateFilters.push(['eq', args]);
@@ -244,6 +245,23 @@ describe('releaseReservation', () => {
     mocks.releaseReservedPieces.mockResolvedValueOnce(['k01']);
     const second = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
     expect(second).toEqual({ status: 200, body: { message: 'Zwolniono 1 prac(e).' } });
+  });
+
+  it('terminal-CAS DB error after the claim: 500 AND the lease is handed back (immediate retry unblocked)', async () => {
+    const supabase = supabaseForOrder(
+      { status: 'pending', private_sale_id: null, payment_intent_id: 'pi_1' },
+      null,
+      { data: null, error: { message: 'orders down' } },
+    );
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mocks.releaseReservedPieces.mockResolvedValue(['k01']);
+
+    const result = await releaseReservation({ supabase: supabase as never, stripe: stripeWith(cancel) }, ORDER_ID);
+
+    expect(result).toEqual({ status: 500, body: { error: 'orders down' } });
+    // Without the hand-back, claimExpiryLease 409-blocks the promised
+    // immediate retry for the full 10-min lease TTL.
+    expect(mocks.releaseExpiryLease).toHaveBeenCalledWith(supabase, ORDER_ID, 'claim-1');
   });
 
   it('non-pending orders skip the claim entirely (no PI cancel, no expiry) and just free stuck pieces', async () => {

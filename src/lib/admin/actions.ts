@@ -177,7 +177,14 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
       .eq('id', orderId)
       .eq('status', 'pending')
       .eq('expiry_claim_at', claimToken);
-    if (expireErr) return fail(500, expireErr.message);
+    if (expireErr) {
+      // Hand the lease back like every other failure exit — otherwise the
+      // promised immediate retry is 409-blocked for the full lease TTL.
+      // (If the ambiguous failed UPDATE actually committed, the order is
+      // already terminal and the CAS'd release is a harmless no-op.)
+      if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
+      return fail(500, expireErr.message);
+    }
   } else if (claimToken) {
     // Nothing to expire — hand the lease back so the cron isn't blocked.
     await releaseExpiryLease(supabase, orderId, claimToken);
