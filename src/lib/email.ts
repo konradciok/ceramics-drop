@@ -427,6 +427,51 @@ export async function emailRefundFailedAlertToStudio(params: RefundFailedAlert):
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio invoice-failed alert ──────────────────────────────────────────────
+
+export type InvoiceFailedAlert = {
+  paymentIntentId: string;
+  errorMessage: string;
+};
+
+/** Pure function — subject + inner HTML for the "invoice creation failed" studio alert (L-5). */
+export function buildInvoiceFailedAlertEmail(params: InvoiceFailedAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'PaymentIntent', value: escapeHtml(params.paymentIntentId) },
+    { label: 'Błąd', value: escapeHtml(params.errorMessage.slice(0, 300)) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Nie udało się wystawić faktury za opłacone zamówienie.</strong>'),
+    emailParagraph(
+      'Zamówienie i wysyłka są zrealizowane normalnie — fakturowanie jest best-effort i nie jest ponawiane automatycznie. ' +
+        'Wystaw fakturę ręcznie w panelu Stripe albo ponów webhook dla tej płatności.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Faktura] Nie udało się wystawić faktury — ${params.paymentIntentId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that invoicing failed for a paid order. Throws if Resend isn't configured (caller must catch — the route must still 200). */
+export async function emailInvoiceFailedAlertToStudio(params: InvoiceFailedAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildInvoiceFailedAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Studio dispute-created alert ─────────────────────────────────────────────
 
 export type DisputeCreatedAlert = {

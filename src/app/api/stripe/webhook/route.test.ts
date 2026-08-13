@@ -43,6 +43,7 @@ vi.mock('@/lib/email', () => ({
   emailRefundFailedAlertToStudio: vi.fn(async () => {}),
   emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
   emailDisputeCreatedAlertToStudio: vi.fn(async () => {}),
+  emailInvoiceFailedAlertToStudio: vi.fn(async () => {}),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
@@ -59,7 +60,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -642,6 +643,10 @@ function makeSucceededSupabase(opts: {
   studioClaim?: QueryResult;
   /** Result of the atomic `confirmation_email_sent_at IS NULL` claim UPDATE. */
   confirmClaim?: QueryResult;
+  /** Result of a `*_sent_at` claim RELEASE write (payload value null) — default success (L-7). */
+  claimRelease?: QueryResult;
+  /** Make the conversions-claim UPDATE throw synchronously (L-7 outer-catch test). */
+  conversionsClaimThrows?: boolean;
   /** The conversions `loadOrder` select (`id, payment_intent_id, status, subtotal, ...`). */
   conversionsOrderSelect?: QueryResult;
   /**
@@ -694,7 +699,9 @@ function makeSucceededSupabase(opts: {
               const write = { value: payload.studio_email_sent_at, filters: [] as Array<[string, unknown[]]> };
               studioClaimWrites.push(write);
               return proxyChain(
-                payload.studio_email_sent_at === null ? { data: [], error: null } : opts.studioClaim ?? { data: [], error: null },
+                payload.studio_email_sent_at === null
+                  ? opts.claimRelease ?? { data: [], error: null }
+                  : opts.studioClaim ?? { data: [], error: null },
                 (method, args) => write.filters.push([method, args]),
               );
             }
@@ -702,11 +709,14 @@ function makeSucceededSupabase(opts: {
               const write = { value: payload.confirmation_email_sent_at, filters: [] as Array<[string, unknown[]]> };
               confirmClaimWrites.push(write);
               return proxyChain(
-                payload.confirmation_email_sent_at === null ? { data: [], error: null } : opts.confirmClaim ?? { data: [], error: null },
+                payload.confirmation_email_sent_at === null
+                  ? opts.claimRelease ?? { data: [], error: null }
+                  : opts.confirmClaim ?? { data: [], error: null },
                 (method, args) => write.filters.push([method, args]),
               );
             }
             if ('conversions_sent_at' in payload) {
+              if (opts.conversionsClaimThrows) throw new Error('conversions claim blew up');
               return proxyChain(opts.conversionsClaim ?? { data: [{ id: 'o1' }], error: null });
             }
             throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
@@ -1298,26 +1308,29 @@ describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () =
   });
 });
 
-describe('webhook ensureInvoiced failure (F5)', () => {
+describe('webhook ensureInvoiced failure (F5 + L-5)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(emailInvoiceFailedAlertToStudio).mockClear();
   });
 
-  it('captures the exception in Sentry when invoicing throws, and the route still responds 200', async () => {
-    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const invoiceFailOpts = () => ({
     // "Already processed" retry path: CAS matches nothing, fallback finds the paid
     // order. emailOrderSelect is left unset (defaults to a null row) so the email
     // block no-ops, keeping this test isolated to ensureInvoiced.
-    const { supabase } = makeSucceededSupabase({
-      casUpdate: { data: [], error: null },
-      fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
-      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
-      soldCount: { count: 1, error: null },
-      ceramicCount: { count: 1, error: null },
-      variantRows: { data: [], error: null },
-    });
+    casUpdate: { data: [], error: null },
+    fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    soldCount: { count: 1, error: null },
+    ceramicCount: { count: 1, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('captures the exception in Sentry, fires the studio alert email (L-5), and the route still responds 200', async () => {
+    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
     supabaseImpl = supabase;
 
     const res = await POST(succeededEventRequest());
@@ -1325,7 +1338,169 @@ describe('webhook ensureInvoiced failure (F5)', () => {
     expect(res.status).toBe(200);
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalled();
+    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledTimes(1);
+    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledWith({
+      paymentIntentId: 'pi_1',
+      errorMessage: 'invoice api down',
+    });
     consoleErrorSpy.mockRestore();
+  });
+
+  it('a failing alert email is itself swallowed — Stripe must still get its 200 (invoicing is best-effort by design)', async () => {
+    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
+    vi.mocked(emailInvoiceFailedAlertToStudio).mockRejectedValueOnce(new Error('resend down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook markPaid post-processing silent catches upgraded to Sentry (L-7)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailNewOrderToStudio).mockReset();
+    vi.mocked(emailOrderConfirmationToCustomer).mockReset();
+  });
+
+  const freshSaleOpts = () => ({
+    casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    soldCount: { count: 1, error: null },
+    ceramicCount: { count: 1, error: null },
+    variantRows: { data: [], error: null },
+  });
+
+  it('(1) the post-processing catch (order/items load for emails) reports to Sentry, still 200', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: null, error: { message: 'load blew up' } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(2) an email-claim UPDATE failure alerts (the email is silently lost otherwise — the route 200s, so no redelivery)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unclaimed = {
+      id: 'o1', email: 'buyer@example.com', total: 10000, currency: 'pln',
+      delivery_method: 'paczkomat', receiver_first_name: 'Ann', receiver_last_name: 'K',
+      inpost_target_point: 'WAW01', locale: 'pl',
+      confirmation_email_sent_at: null, studio_email_sent_at: null,
+    };
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: unclaimed, error: null },
+      studioClaim: { data: null, error: { message: 'claim db down' } },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(emailNewOrderToStudio).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('email_claim_failed', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ order_id: 'o1', column: 'studio_email_sent_at' }),
+    }));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(3) a claim-release failure after 3 failed sends alerts (the stuck claim blocks every future retry)', async () => {
+    vi.mocked(emailNewOrderToStudio).mockRejectedValue(new Error('resend down'));
+    vi.mocked(emailOrderConfirmationToCustomer).mockRejectedValue(new Error('resend down'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unclaimed = {
+      id: 'o1', email: 'buyer@example.com', total: 10000, currency: 'pln',
+      delivery_method: 'paczkomat', receiver_first_name: 'Ann', receiver_last_name: 'K',
+      inpost_target_point: 'WAW01', locale: 'pl',
+      confirmation_email_sent_at: null, studio_email_sent_at: null,
+    };
+    const { supabase } = makeSucceededSupabase({
+      ...freshSaleOpts(),
+      emailOrderSelect: { data: unclaimed, error: null },
+      studioClaim: { data: [{ id: 'o1' }], error: null },
+      confirmClaim: { data: [{ id: 'o1' }], error: null },
+      claimRelease: { data: null, error: { message: 'release db down' } },
+    });
+    supabaseImpl = supabase;
+
+    vi.useFakeTimers();
+    let res!: Response;
+    try {
+      const resPromise = POST(succeededEventRequest());
+      await vi.runAllTimersAsync();
+      res = await resPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('email_claim_release_failed', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ order_id: 'o1' }),
+    }));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('(4) a conversions-claim UPDATE failure alerts (the server-side conversion is silently lost otherwise)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+    try {
+      const { supabase } = makeSucceededSupabase({
+        ...freshSaleOpts(),
+        conversionsClaim: { data: null, error: { message: 'claim db down' } },
+      });
+      supabaseImpl = supabase;
+
+      const res = await POST(succeededEventRequest());
+
+      expect(res.status).toBe(200);
+      expect(Sentry.captureMessage).toHaveBeenCalledWith('conversions_claim_failed', expect.objectContaining({
+        level: 'error',
+        extra: expect.objectContaining({ payment_intent_id: 'pi_1' }),
+      }));
+    } finally {
+      cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+      delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('(5) an unexpected throw inside trackPurchase reports to Sentry, still 200 (best-effort contract intact)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test', GA4_API_SECRET: 'ga4_secret_test' };
+    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = 'G-TEST';
+    try {
+      const { supabase } = makeSucceededSupabase({
+        ...freshSaleOpts(),
+        conversionsClaimThrows: true,
+      });
+      supabaseImpl = supabase;
+
+      const res = await POST(succeededEventRequest());
+
+      expect(res.status).toBe(200);
+      expect(Sentry.captureException).toHaveBeenCalled();
+    } finally {
+      cfEnv = { STRIPE_WEBHOOK_SECRET: 'whsec_test' };
+      delete process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+      consoleErrorSpy.mockRestore();
+    }
   });
 });
 

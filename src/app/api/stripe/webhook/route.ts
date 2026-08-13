@@ -8,7 +8,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -53,6 +53,12 @@ async function sendEmailOnceWithClaim(
     .select('id');
   if (claimErr) {
     console.error(`${column} claim failed for`, orderId, claimErr);
+    // L-7: the route still 200s, so no redelivery will retry this — without an
+    // alert the email is silently lost.
+    Sentry.captureMessage('email_claim_failed', {
+      level: 'error',
+      extra: { order_id: orderId, column, error: claimErr.message },
+    });
     return;
   }
   if (!claimed || claimed.length === 0) return;
@@ -102,6 +108,12 @@ async function sendEmailOnceWithClaim(
       .eq(column, claimAt);
     if (releaseErr) {
       console.error(`${column} claim release failed for`, orderId, releaseErr);
+      // L-7: a stuck claim blocks every future retry until a manual column
+      // reset — the operator must know which order to reset.
+      Sentry.captureMessage('email_claim_release_failed', {
+        level: 'error',
+        extra: { order_id: orderId, column, error: releaseErr.message },
+      });
     }
   }
 }
@@ -548,6 +560,10 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         console.error('order paid post-processing failed for', orderId, err);
+        // L-7: this swallow is deliberate (emails/notifications must not block
+        // fulfilment), but console-only meant a broken email path was invisible
+        // until a customer complained.
+        Sentry.captureException(err);
       }
 
       // Burn the single-use private-sale link now that the order is `paid`. Runs for
@@ -720,6 +736,18 @@ export async function POST(req: Request) {
       } catch (err) {
         console.error('createOrderInvoice failed for', pi, err);
         Sentry.captureException(err);
+        // L-5: invoicing stays best-effort (Stripe must get its 200, there is
+        // no retry/backfill machinery) — but the operator must hear about it
+        // the day it happens, not at the next manual reconcile. The alert
+        // itself is best-effort too: its failure must not 5xx the route.
+        try {
+          await emailInvoiceFailedAlertToStudio({
+            paymentIntentId: pi,
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        } catch (alertErr) {
+          console.error('invoice-failed alert email failed for', pi, alertErr);
+        }
       }
     },
     createShipment: async (pi) => {
@@ -945,6 +973,12 @@ export async function POST(req: Request) {
           .select('id');
         if (claimErr) {
           console.error('conversions_sent_at claim failed for', pi, claimErr);
+          // L-7: no redelivery will retry a 200'd route — a silent claim
+          // failure drops the server-side conversion with zero trace.
+          Sentry.captureMessage('conversions_claim_failed', {
+            level: 'error',
+            extra: { payment_intent_id: pi, error: claimErr.message },
+          });
           return;
         }
         if (!claimed || claimed.length === 0) return;
@@ -995,6 +1029,9 @@ export async function POST(req: Request) {
         );
       } catch (err) {
         console.error('trackPurchase failed for', pi, err);
+        // L-7: best-effort stays best-effort (never fail the webhook over
+        // conversions), but an unexpected throw here must be operator-visible.
+        Sentry.captureException(err);
       }
     },
   }).catch(async (err) => {
