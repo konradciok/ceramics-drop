@@ -7,7 +7,12 @@ const { mockFrom, mockGetOrder, mockShipEmail } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
-vi.mock('./client', () => ({ prodigiClient: vi.fn(() => ({ getOrder: mockGetOrder })) }));
+vi.mock('./client', async (importOriginal) => {
+  // Spread the real module so ProdigiError stays the real class (merge.ts
+  // instanceof-checks it when classifying re-fetch failures).
+  const actual = await importOriginal<typeof import('./client')>();
+  return { ...actual, prodigiClient: vi.fn(() => ({ getOrder: mockGetOrder })) };
+});
 vi.mock('@/lib/email', () => ({ emailPrintShippingConfirmationToCustomer: mockShipEmail }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
@@ -277,6 +282,35 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
       tracking_url: 'https://track.example.com/TRK123', // …absent fields keep the stored values
       shipped_at: '2026-07-20T10:00:00.000Z',
     });
+  });
+
+  it('a no-op merge (same stage, same tracking) does NOT refresh updated_at — the M-12 clock separation', async () => {
+    // Stored row already matches everything the re-fetched order carries: the
+    // upsert must omit updated_at, or a reconciliation poll would keep resetting
+    // the very progress clock the sweep predicate falls back on.
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'Complete' },
+      claimRows: [],
+    });
+
+    const res = await handleProdigiCallback({ ...callbackBody(), id: 'evt-noop' }, ENV);
+
+    expect(res.status).toBe(200);
+    expect(calls.poUpserts).toHaveLength(1);
+    expect(calls.poUpserts[0]).not.toHaveProperty('updated_at');
+  });
+
+  it('a stage change DOES refresh updated_at (meaningful provider progress)', async () => {
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    const calls = setup({
+      poRow: { ...STORED, prodigi_status_stage: 'InProgress' },
+      claimRows: [],
+    });
+
+    await handleProdigiCallback({ ...callbackBody(), id: 'evt-progress' }, ENV);
+
+    expect(calls.poUpserts[0]).toHaveProperty('updated_at');
   });
 
   it('never re-persists a non-https stored tracking_url, even as the fallback', async () => {

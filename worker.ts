@@ -18,6 +18,7 @@ import {
   STRANDED_STATUSES,
   type StrandedJobInput,
 } from './src/server/fulfilment/stranded-job-alert';
+import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-orders';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
@@ -137,6 +138,20 @@ export default {
         console.error(JSON.stringify({ event: 'stranded_sweep_error', error: String(err) }));
         await captureWorkerAlert(env, {
           message: 'stranded_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
+    );
+    // M-12: reconciliation for POST-submission orders whose callbacks were lost
+    // — re-polls stale non-terminal prodigi_orders and re-runs the callback
+    // merge, alerting when an order stops progressing. Complements M-10 (which
+    // deliberately ignores fulfilment_submitted/in_production).
+    ctx.waitUntil(
+      sweepStaleProdigiOrders(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'prodigi_reconcile_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'prodigi_reconcile_sweep_error',
           level: 'error',
           extra: { error: String(err) },
         });
