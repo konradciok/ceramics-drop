@@ -44,7 +44,7 @@ a replay after full completion is a no-op.
 | Invoice missing on a paid order             | `node scripts/reconcile-orders.mjs --dry-run --invoices`     | Workbench → resend that order's `payment_intent.succeeded`                                    |
 | InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- order create-shipment <id> --confirm <id>`                |
 | Prodigi print job stuck                     | `npm run print-fulfilment:check-jobs`; Cloudflare Queue DLQ  | Workbench → resend the order's `payment_intent.succeeded` (re-enqueues the job idempotently); if it keeps failing, escalate to Prodigi support with the `prodigi_orders` id |
-| Order refunded but piece not back in shop   | `npm run orders -- order get <id>` (pieces still `sold`)          | Workbench → resend the `charge.refunded` event (release resumes) — private-sale pieces stay `sold` by design (never relisted publicly)              |
+| Order refunded but piece not back in shop   | `npm run orders -- reconcile-refunds` (dry-run; sweeps all full refunds), or `order get <id>` (pieces still `sold`) | Workbench → resend the `charge.refunded` event (release resumes) — private-sale pieces stay `sold` by design (never relisted publicly). Offline fallback: `reconcile-refunds --confirm <id>` (see `docs/orders-cli.md`) |
 | Payment succeeded but order still `pending` | Workbench shows failed `payment_intent.succeeded` deliveries | fix the cause (check Sentry), then resend the event                                           |
 
 
@@ -55,6 +55,16 @@ Issue refunds from the admin panel or `npm run orders -- order refund <id> --con
 `charge.refunded` webhook performs the relist; do not hand-edit `piece_state`.
 Private-sale orders are the exception: on refund their pieces converge to
 `sold`, never back to the public shop.
+
+A refund can also **fail later** (`refund.failed`, up to ~30 days — closed
+account / expired card): the money returns to the Stripe balance, the order
+stays `refunded`, and the webhook alerts the studio (email + Sentry
+`stripe_refund_failed`). Re-issue the refund another way (e.g. bank transfer)
+and keep the order `refunded`.
+
+Periodic safety net: `npm run orders -- reconcile-refunds` (dry-run) lists any
+fully-refunded payment whose order has not fully converged — run it after any
+webhook outage or when in doubt.
 
 ## Webhook config drift guard
 

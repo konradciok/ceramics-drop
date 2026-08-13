@@ -19,6 +19,7 @@ order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
 order create-shipment <uuid> [--recreate] --confirm <uuid>
 webhook-config-check
+reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]
 ```
 
 `--compact` prints single-line JSON. Output is redacted (email, name, phone, address) by default; use `--show-pii` only when full personal data is operationally necessary.
@@ -74,6 +75,8 @@ Mutations are additionally blocked unless the loaded `SUPABASE_URL` resolves to 
 - `order release-reservation <uuid> --confirm <uuid>` — cancels the order's PaymentIntent if still pending, then frees any pieces stuck in `reserved` (private-sale orders return to `sold`, never relisted publicly).
 - `order resend-confirmation <uuid> --confirm <uuid>` — re-sends the customer order-confirmation email.
 - `order create-shipment <uuid> [--recreate] --confirm <uuid>` — (re)creates the InPost shipment for a paid ceramic order; idempotent unless `--recreate` is passed. Print-only orders are rejected (Prodigi ships those, not InPost).
+- `reconcile-refunds [--since ISO8601]` — **dry-run by default** (no writes). Sweeps Stripe for succeeded refunds since `--since` (default `2026-06-01`, the ledger epoch), keeps only **fully** refunded charges (`amount_refunded === amount` — partial refunds never reconcile), joins to `orders` by `payment_intent_id`, and reports every order that is **not fully converged**: status ≠ `refunded`/`failed`, or `piece_state` rows still `sold` (non-private-sale only), or an active `prodigi_orders`/`fulfilment_jobs` row, or (`followUps`) a recorded GA4 purchase whose revenue was never reversed. An order drops off only when every detectable side effect is done — the report never reads empty while a refunded order still has an active Prodigi job. Refunds with no matching order are surfaced as `no_order_for_payment_intent`.
+- `reconcile-refunds --confirm <uuid> [--skip-relist]` — converges ONE order with the same CAS predicates as the webhook's `releaseSale`: order `paid`/`pending`→`refunded`, pieces relisted `sold`/`reserved`→`available` scoped to `order_id` (private-sale orders converge `reserved`→`sold`, never relisted publicly). Refuses unless Stripe confirms the payment is fully refunded **right now**. Side effects the CLI cannot do offline are emitted as an explicit `requiredFollowUps` block — **Prodigi cancel** (replay the `charge.refunded` event from Workbench, or cancel in the Prodigi dashboard) and **GA4 revenue reversal** — and the order stays partially-converged (`converged: false`, still listed by the next dry-run) until they're done. `--skip-relist` leaves `piece_state` untouched as a deliberate, logged operator decision (e.g. damaged-in-transit must NOT return to sale). Prefer replaying the `charge.refunded` event when the webhook is subscribed and healthy — this command is the bounded offline repair, not a `releaseSale` replacement.
 
 ## Output and exit codes
 
