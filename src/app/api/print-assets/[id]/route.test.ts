@@ -183,19 +183,29 @@ describe('GET /api/print-assets/[id]', () => {
     expect(await res.json()).toEqual({ error: 'unavailable' });
   });
 
-  it('streams the object body and sets the headers from httpMetadata', async () => {
+  it('streams the object body; the DB-validated content-type wins over httpMetadata (L-24)', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object({ contentType: 'image/png', size: 4096 }));
     const { exp, sig } = await mintSig(ASSET_ID, SECRET);
     const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
     expect(res.status).toBe(200);
     expect(await res.text()).toBe('print-master-payload');
-    expect(res.headers.get('content-type')).toBe('image/png');
+    // DB record says image/jpeg; R2 httpMetadata (unvalidated) says image/png.
+    expect(res.headers.get('content-type')).toBe('image/jpeg');
     expect(res.headers.get('content-length')).toBe('4096');
     expect(res.headers.get('etag')).toBe(ETAG);
     expect(res.headers.get('cache-control')).toBe('private, no-store');
   });
 
-  it('falls back to the asset record content-type when httpMetadata is absent', async () => {
+  it('falls back to R2 httpMetadata only when the DB column is null (L-24)', async () => {
+    mockResolveAssetR2Key.mockResolvedValueOnce({ ...FOUND_ASSET, contentType: null });
+    ENV.mockGet.mockResolvedValue(fakeR2Object({ contentType: 'image/png' }));
+    const { exp, sig } = await mintSig(ASSET_ID, SECRET);
+    const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('image/png');
+  });
+
+  it('serves the DB content-type when httpMetadata is absent', async () => {
     ENV.mockGet.mockResolvedValue(fakeR2Object());
     const { exp, sig } = await mintSig(ASSET_ID, SECRET);
     const res = await GET(buildRequest(ASSET_ID, { exp, sig }), params(ASSET_ID));
