@@ -84,12 +84,17 @@ export async function captureWorkerAlert(env: CloudflareEnv, alert: WorkerAlert)
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-sentry-envelope' },
       body,
       signal: controller.signal,
     });
+    // fetch() resolves for 4xx/5xx — an ingest rejection (429 rate-limit, 5xx)
+    // must still be logged, or the alert silently vanishes (the very M-16 no-op).
+    if (!res.ok) {
+      console.error(JSON.stringify({ event: 'worker_sentry_send_failed', status: res.status }));
+    }
   } catch (e) {
     console.error(JSON.stringify({ event: 'worker_sentry_send_failed', error: String(e) }));
   } finally {

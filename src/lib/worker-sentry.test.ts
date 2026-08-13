@@ -80,6 +80,21 @@ describe('captureWorkerAlert', () => {
     expect(String(init.body).split('\n')).toHaveLength(3);
   });
 
+  it('logs worker_sentry_send_failed on a 4xx/5xx ingest rejection (fetch resolves, still fail-soft)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 500 })) as never;
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(
+      captureWorkerAlert(
+        { SENTRY_DSN: 'https://abc123@o42.ingest.sentry.io/98765' } as CloudflareEnv,
+        { message: 'x' },
+      ),
+    ).resolves.toBeUndefined();
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"event":"worker_sentry_send_failed"'),
+    );
+    expect(errSpy.mock.calls.some((c) => String(c[0]).includes('"status":500'))).toBe(true);
+  });
+
   it('swallows a fetch error (never throws — must not block the ack/mark)', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('network')) as never;
     await expect(
