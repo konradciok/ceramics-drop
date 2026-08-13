@@ -13,6 +13,11 @@ import {
   buildFailedActionAlert,
   type FailedActionJobInput,
 } from './src/server/fulfilment/failed-action-alert';
+import {
+  buildStrandedJobAlert,
+  STRANDED_STATUSES,
+  type StrandedJobInput,
+} from './src/server/fulfilment/stranded-job-alert';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
@@ -23,6 +28,7 @@ import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
+const STRANDED_AFTER_MS = 2 * 60 * 60 * 1000; // 2h — a normal job leaves the pre-submission states in seconds; >2h means stuck
 const BATCH_LIMIT = 100;
 
 export default {
@@ -95,17 +101,43 @@ export default {
     // waitUntil discards rejections silently, so catch + log here — otherwise a
     // Supabase/Stripe failure mid-sweep would vanish with no signal that the cron ran.
     ctx.waitUntil(
-      sweepAbandoned(env).catch((err) =>
-        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) })),
-      ),
+      sweepAbandoned(env).catch(async (err) => {
+        // M-15: a dead sweep must alert, not just log — Cron Past Events shows the
+        // invocation green regardless, so a silent throw here goes unnoticed.
+        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'abandoned_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
     );
     // Alert sweep for failed_action_required fulfilment jobs. Idempotent: rows
     // are only marked alerted_at after the studio email sends, so a re-run with
     // no new failed jobs (or a transient email failure) sends/marks nothing.
     ctx.waitUntil(
-      sweepFailedActionJobs(env).catch((err) =>
-        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) })),
-      ),
+      sweepFailedActionJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'failed_action_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
+    );
+    // M-10: watchdog for jobs stranded in a pre-submission non-terminal state
+    // (queued / fulfilment_submitting / failed_retryable) for >2h — the symptom
+    // the failed_action_required sweep does not cover (e.g. a queue that never
+    // delivered the message). Idempotent via its own `stranded_alerted_at`.
+    ctx.waitUntil(
+      sweepStrandedJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'stranded_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'stranded_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
     );
   },
 } satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
@@ -252,9 +284,72 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
       return true;
     },
     warn: (msg, meta) => console.warn(JSON.stringify({ event: 'abandoned_sweep_warn', msg, ...meta })),
+    alertPaidOnPending: async (orderId) => {
+      // M-15: durable at-most-once claim — only alert if we win the CAS on the
+      // `paid_on_pending_alerted_at` column, so a persistently-stuck order can't
+      // emit a duplicate alert every 15-min cron tick.
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ paid_on_pending_alerted_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .is('paid_on_pending_alerted_at', null)
+        .select('id');
+      if (error) {
+        console.error(JSON.stringify({ event: 'paid_on_pending_claim_failed', orderId, error: error.message }));
+        return;
+      }
+      if (!data || data.length === 0) return; // already alerted for this order — no-op.
+      await captureWorkerAlert(env, {
+        message:
+          'paid_on_pending_order: a paid/processing PaymentIntent was found on a still-pending order (likely a missed payment_intent.succeeded)',
+        level: 'error',
+        extra: { orderId },
+      });
+      // Best-effort studio email — never throw (must not break the sweep).
+      await sendPaidOnPendingEmail(env, orderId).catch((e) =>
+        console.error(JSON.stringify({ event: 'paid_on_pending_email_failed', orderId, error: String(e) })),
+      );
+    },
   });
 
   console.log(JSON.stringify({ event: 'abandoned_sweep_done', ...result }));
+}
+
+/**
+ * Best-effort studio email for a paid-on-pending order (M-15). Skips silently
+ * when Resend/notify config is absent (the Sentry alert still fired). Uses `env`
+ * directly (no request context in the cron).
+ */
+async function sendPaidOnPendingEmail(env: CloudflareEnv, orderId: string): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    console.warn(JSON.stringify({ event: 'paid_on_pending_email_skipped', reason: 'RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing' }));
+    return;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [env.STUDIO_NOTIFY_EMAIL],
+        reply_to: EMAIL.contact,
+        subject: `⚠️ Paid PaymentIntent on a pending order (${orderId})`,
+        html: `<p>The abandoned-checkout cron found a <strong>paid/processing</strong> PaymentIntent on order <code>${orderId}</code>, which is still <code>pending</code> — a likely <strong>missed <code>payment_intent.succeeded</code></strong> webhook.</p><p>Reconcile the order manually (e.g. <code>npm run reconcile:orders</code>) and check the Stripe webhook delivery log.</p>`,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -312,7 +407,7 @@ async function sweepFailedActionJobs(env: CloudflareEnv): Promise<void> {
 
   // Email THROWS on failure (missing config or Resend error) — we only mark
   // alerted_at after a successful send, so a failure retries next tick.
-  await sendFailedActionAlertEmail(env, alert.email);
+  await sendStudioAlertEmail(env, alert.email, 'failed_action_required jobs');
 
   // Mark alerted only after the email succeeded. The `.is('alerted_at', null)`
   // guard makes this idempotent: a concurrent/re-run sweep can't double-mark.
@@ -327,17 +422,79 @@ async function sweepFailedActionJobs(env: CloudflareEnv): Promise<void> {
 }
 
 /**
- * Send the failed_action_required studio alert via Resend. Uses `env` directly
- * (the scheduled handler has no request context). THROWS on missing config or a
- * Resend failure — the caller only marks `alerted_at` once this resolves, so a
- * throw correctly leaves the rows unalerted for the next cron tick.
+ * M-10: sweep for jobs stranded in a pre-submission non-terminal state
+ * (queued / fulfilment_submitting / failed_retryable) older than 2h. Mirrors
+ * sweepFailedActionJobs: query unalerted rows → log + Sentry (warning) + email →
+ * mark `stranded_alerted_at` only AFTER the email succeeds (once-only guard).
+ *
+ * Predicate keys on `created_at`, not `updated_at`: a `failed_retryable` job's
+ * `updated_at` is bumped on every retry, so an updated_at threshold could miss a
+ * job that has been failing for hours. `created_at < now()-2h` on these states
+ * means "existed >2h and still never reached submitted/terminal" = stuck.
  */
-async function sendFailedActionAlertEmail(
+async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
+  const supabase = supabaseFromEnv(env);
+  const cutoff = new Date(Date.now() - STRANDED_AFTER_MS).toISOString();
+
+  const { data, error } = await supabase
+    .from('fulfilment_jobs')
+    .select('id, order_id, status, attempts, created_at')
+    .in('status', STRANDED_STATUSES as unknown as string[])
+    .lt('created_at', cutoff)
+    .is('stranded_alerted_at', null)
+    .limit(BATCH_LIMIT);
+  if (error) throw new Error(`sweepStrandedJobs query failed: ${error.message}`);
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    order_id: string;
+    status: string;
+    attempts: number;
+    created_at: string;
+  }>;
+  const inputs: StrandedJobInput[] = rows.map((r) => ({
+    id: r.id,
+    orderId: r.order_id,
+    status: r.status,
+    attempts: r.attempts,
+    createdAt: r.created_at,
+  }));
+  if (inputs.length === 0) return; // nothing stranded — re-run alerts nothing.
+
+  const alert = buildStrandedJobAlert(inputs);
+  console.error(JSON.stringify(alert.log));
+  await captureWorkerAlert(env, {
+    message: alert.sentry.message,
+    level: alert.sentry.level,
+    extra: alert.sentry.extra,
+  });
+  // Email THROWS on failure — we mark stranded_alerted_at only after it succeeds,
+  // so a failure retries next tick (own column: never collides with alerted_at).
+  await sendStudioAlertEmail(env, alert.email, 'stranded fulfilment jobs');
+
+  const { error: markErr } = await supabase
+    .from('fulfilment_jobs')
+    .update({ stranded_alerted_at: new Date().toISOString() })
+    .in('id', inputs.map((j) => j.id))
+    .is('stranded_alerted_at', null);
+  if (markErr) throw new Error(`sweepStrandedJobs mark failed: ${markErr.message}`);
+
+  console.log(JSON.stringify({ event: 'fulfilment_job_stranded_alerted', count: inputs.length }));
+}
+
+/**
+ * Send a studio alert email via Resend. Uses `env` directly (the scheduled
+ * handler has no request context). THROWS on missing config or a Resend failure
+ * — the caller only marks its `*_alerted_at` once this resolves, so a throw
+ * correctly leaves the rows unalerted for the next cron tick.
+ */
+async function sendStudioAlertEmail(
   env: CloudflareEnv,
   email: { subject: string; html: string },
+  context: string,
 ): Promise<void> {
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
-    throw new Error('RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing — cannot alert failed_action_required jobs');
+    throw new Error(`RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing — cannot alert: ${context}`);
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);

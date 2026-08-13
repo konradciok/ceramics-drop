@@ -1,0 +1,12 @@
+-- M-15: durable at-most-once claim for the "paid/processing PaymentIntent found
+-- on a still-pending order" alert (a likely-missed payment_intent.succeeded).
+--
+-- The abandoned-checkout cron CAS-claims this column before sending the studio
+-- email + Sentry alert, so a persistently-stuck pending order cannot emit an
+-- unbounded stream of duplicate alerts every 15 minutes.
+--
+-- Additive + backward-compatible: nullable, no default, no backfill. Old code
+-- ignores it; only the new cron writes it. Auto-applies on merge to main.
+-- Rollback: `alter table orders drop column paid_on_pending_alerted_at;` (only
+-- after all references are removed from code).
+alter table orders add column if not exists paid_on_pending_alerted_at timestamptz;

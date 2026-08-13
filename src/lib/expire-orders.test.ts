@@ -16,6 +16,7 @@ function deps(overrides: Partial<ExpireOrdersDeps> = {}): ExpireOrdersDeps {
     cancelIntent: vi.fn().mockResolvedValue('canceled' as CancelOutcome),
     expireOrder: vi.fn().mockResolvedValue(true),
     warn: vi.fn(),
+    alertPaidOnPending: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -53,6 +54,10 @@ describe('expireAbandonedOrders', () => {
     expect(d.expireOrder).not.toHaveBeenCalled();
     expect(d.warn).toHaveBeenCalledTimes(1);
     expect(d.warn).toHaveBeenCalledWith(expect.any(String), { orderId: 'a', paymentIntentId: 'pi_a' });
+    // M-15: a paid/processing PI on a pending order (likely a missed webhook) must
+    // ALERT, not just warn to logs.
+    expect(d.alertPaidOnPending).toHaveBeenCalledTimes(1);
+    expect(d.alertPaidOnPending).toHaveBeenCalledWith('a');
     expect(result).toEqual({ scanned: 1, expired: 0, stillActive: 1, errors: 0 });
   });
 
