@@ -133,6 +133,7 @@ Executed 2026-08-13 ~13:50–13:55 UTC:
 - Sandbox order `ord_1167165`: cancel attempted → `ActionNotAvailable` (sandbox auto-ran to `Complete`); no cost, nothing ships from sandbox. Second drill order never reached Prodigi (injection active).
 - `PRODIGI_API_BASE_URL` removed from the preview before teardown; then the **entire preview worker deleted** (its secrets, incl. the preview `FULFILMENT_DEBUG_TOKEN` and prod-DB service key, died with it), both preview queues deleted, the test-mode Stripe webhook endpoint `we_1U3yZQ…` deleted. Verified: preview URL → Cloudflare 1042; prod domains on `ceramics-drop`; prod `/api/inventory` 200. Re-rehearsal is cheap: the `env.preview` config remains in `wrangler.jsonc`.
 - Prod secret sweep cross-check (Plan 04 T6): `FULFILMENT_DEBUG_TOKEN` confirmed **absent** from prod — unchanged.
+- **Post-rehearsal (operator-approved):** the 5 Sentry issues raised by the rehearsal (`…-1G/1H/1J/1K/1M`) resolved with explanatory comments, and the **legacy test-mode Stripe endpoint `we_1Tebsm…` deleted** — it pointed at the prod URL, so every test-mode event bounced off the live signing secret as `stripe_webhook_bad_signature` noise (7 events during the rehearsal; the fail-safe itself worked). §15.1's test-mode endpoint inventory is now: none.
 
 ### Go / No-Go
 
