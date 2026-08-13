@@ -12,6 +12,7 @@ export const HANDLED_STRIPE_EVENTS = [
   'payment_intent.payment_failed',
   'charge.refunded',
   'charge.dispute.closed',
+  'charge.dispute.created',
   'refund.failed',
 ] as const;
 
@@ -49,6 +50,13 @@ export type WebhookDeps = {
    * Allowed to throw so the webhook 5xxes and Stripe retries the delivery.
    */
   alertRefundFailed: (refund: Stripe.Refund) => Promise<void>;
+  /**
+   * L-6: alert the studio that a dispute was OPENED — the evidence-response
+   * deadline (`evidence_details.due_by`) starts ticking at creation, and a
+   * missed deadline is an automatic loss. No state change (that happens on
+   * `charge.dispute.closed`); allowed to throw so Stripe retries the alert.
+   */
+  alertDisputeCreated: (dispute: Stripe.Dispute) => Promise<void>;
 };
 
 /** Extract a payment-intent id from a field that Stripe may expand or leave as a string. */
@@ -105,6 +113,13 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       if (!piId) return;
       const relisted = await deps.releaseSale(piId);
       if (relisted) deps.revalidate('inventory');
+      return;
+    }
+    case 'charge.dispute.created': {
+      const dispute = event.data.object as Stripe.Dispute;
+      // Alert-only: money is frozen and a response clock is running, but no
+      // order state changes until the dispute closes.
+      await deps.alertDisputeCreated(dispute);
       return;
     }
     case 'refund.failed': {

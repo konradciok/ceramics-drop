@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import {
+  buildDisputeCreatedAlertEmail,
   buildLabelToStudioEmail,
   buildNewOrderToStudioEmail,
   buildOrderConfirmationEmail,
@@ -108,6 +109,38 @@ describe('buildRefundFailedAlertEmail', () => {
       failureReason: null,
     });
     expect(subject).toBe('[Zwrot] Zwrot nie dotarł do klienta — re_456');
+    expect(mainContent).toContain('(nie znaleziono)');
+    expect(mainContent).toContain('(brak)');
+  });
+});
+
+describe('buildDisputeCreatedAlertEmail', () => {
+  it('is deadline-bearing: surfaces evidence_details.due_by in the subject and body (L-6)', () => {
+    const { subject, mainContent } = buildDisputeCreatedAlertEmail({
+      orderId: 'ord-dispute-1',
+      disputeId: 'dp_123',
+      amount: 13900,
+      currency: 'pln',
+      reason: 'fraudulent',
+      evidenceDueBy: 1767139200, // 2025-12-31T00:00:00Z
+    });
+    expect(subject).toBe('[Spór] Nowy spór Stripe — odpowiedz do 2025-12-31 — ord-dispute-1');
+    expect(mainContent).toContain('2025-12-31');
+    expect(mainContent).toContain('dp_123');
+    expect(mainContent).toContain('139.00 PLN');
+    expect(mainContent).toContain('fraudulent');
+  });
+
+  it('degrades cleanly with no order match and no due_by', () => {
+    const { subject, mainContent } = buildDisputeCreatedAlertEmail({
+      orderId: null,
+      disputeId: 'dp_456',
+      amount: 5000,
+      currency: 'eur',
+      reason: null,
+      evidenceDueBy: null,
+    });
+    expect(subject).toContain('dp_456');
     expect(mainContent).toContain('(nie znaleziono)');
     expect(mainContent).toContain('(brak)');
   });

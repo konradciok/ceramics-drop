@@ -427,6 +427,65 @@ export async function emailRefundFailedAlertToStudio(params: RefundFailedAlert):
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
 
+// ── Studio dispute-created alert ─────────────────────────────────────────────
+
+export type DisputeCreatedAlert = {
+  /** Correlated order id, or null when the payment_intent matched no order. */
+  orderId: string | null;
+  disputeId: string;
+  /** Amount in minor units, with its currency, straight off the Stripe dispute. */
+  amount: number;
+  currency: string;
+  reason: string | null;
+  /** `evidence_details.due_by` — unix seconds; missing it means an automatic loss. */
+  evidenceDueBy: number | null;
+};
+
+/** Pure function — subject + inner HTML for the "dispute opened, response deadline running" studio alert (Stripe `charge.dispute.created`, L-6). */
+export function buildDisputeCreatedAlertEmail(params: DisputeCreatedAlert): {
+  subject: string;
+  html: string;
+  mainContent: string;
+} {
+  const dueBy = params.evidenceDueBy !== null
+    ? new Date(params.evidenceDueBy * 1000).toISOString().slice(0, 10)
+    : '(brak)';
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
+    { label: 'Spór Stripe', value: escapeHtml(params.disputeId) },
+    { label: 'Kwota', value: escapeHtml(`${(params.amount / 100).toFixed(2)} ${params.currency.toUpperCase()}`) },
+    { label: 'Powód', value: escapeHtml(params.reason ?? '(brak)') },
+    { label: 'Termin odpowiedzi', value: escapeHtml(dueBy) },
+  ];
+
+  const mainContent = [
+    emailParagraph('<strong>Klient otworzył spór (chargeback).</strong>'),
+    emailParagraph(
+      'Stripe zamroził środki i czeka na odpowiedź z dowodami. ' +
+        'Brak odpowiedzi przed terminem oznacza automatyczną przegraną — ' +
+        'odpowiedz w panelu Stripe (Płatności → Spory) jak najszybciej.',
+    ),
+    emailDetailTable(rows),
+  ].join('');
+
+  return {
+    subject: `[Spór] Nowy spór Stripe — odpowiedz do ${dueBy} — ${params.orderId ?? params.disputeId}`,
+    html: mainContent,
+    mainContent,
+  };
+}
+
+/** Alert the studio that a dispute was opened (deadline-bearing). Throws if Resend isn't configured (caller must catch or let the webhook retry). */
+export async function emailDisputeCreatedAlertToStudio(params: DisputeCreatedAlert): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
+    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
+  }
+  const { subject, mainContent } = buildDisputeCreatedAlertEmail(params);
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
+}
+
 // ── Studio private-sale double-payment alert ─────────────────────────────────
 
 export type PrivateSaleDoublePaidAlert = {

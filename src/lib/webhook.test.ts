@@ -12,6 +12,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     revalidate: vi.fn(),
     trackPurchase: vi.fn().mockResolvedValue(undefined),
     alertRefundFailed: vi.fn().mockResolvedValue(undefined),
+    alertDisputeCreated: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -204,6 +205,21 @@ describe('handleStripeEvent', () => {
     });
   });
 
+  // charge.dispute.created (L-6)
+  describe('charge.dispute.created', () => {
+    it('alerts the studio exactly once with the dispute and mutates no order state', async () => {
+      const d = deps();
+      const dp = dispute({ status: 'needs_response' });
+      await handleStripeEvent({ type: 'charge.dispute.created', data: { object: dp } } as unknown as Stripe.Event, d);
+      expect(d.alertDisputeCreated).toHaveBeenCalledTimes(1);
+      expect(d.alertDisputeCreated).toHaveBeenCalledWith(dp);
+      expect(d.releaseSale).not.toHaveBeenCalled();
+      expect(d.markPaid).not.toHaveBeenCalled();
+      expect(d.releaseHold).not.toHaveBeenCalled();
+      expect(d.revalidate).not.toHaveBeenCalled();
+    });
+  });
+
   // refund.failed
   describe('refund.failed', () => {
     it('alerts the studio exactly once and mutates no order state', async () => {
@@ -232,6 +248,7 @@ describe('handleStripeEvent', () => {
       'payment_intent.payment_failed': { object: pi(), dep: null },
       'charge.refunded': { object: charge(), dep: 'releaseSale' },
       'charge.dispute.closed': { object: dispute(), dep: 'releaseSale' },
+      'charge.dispute.created': { object: dispute({ status: 'needs_response' }), dep: 'alertDisputeCreated' },
       'refund.failed': { object: refund(), dep: 'alertRefundFailed' },
     };
 

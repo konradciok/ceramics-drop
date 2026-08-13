@@ -8,7 +8,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -869,6 +869,43 @@ export async function POST(req: Request) {
         orderId,
         refundId: refund.id,
         failureReason: refund.failure_reason ?? null,
+      });
+    },
+    alertDisputeCreated: async (dispute) => {
+      const piId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id ?? null;
+      // Correlate to the order by payment_intent — id only, no customer PII in
+      // the alert. Best-effort: a lookup failure still alerts, with order unknown.
+      let orderId: string | null = null;
+      if (piId) {
+        const { data } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('payment_intent_id', piId)
+          .maybeSingle();
+        orderId = (data as { id: string } | null)?.id ?? null;
+      }
+      const evidenceDueBy = dispute.evidence_details?.due_by ?? null;
+      Sentry.captureMessage('stripe_dispute_created', {
+        level: 'error',
+        extra: {
+          payment_intent: piId,
+          dispute_id: dispute.id,
+          reason: dispute.reason ?? null,
+          amount: dispute.amount,
+          currency: dispute.currency,
+          evidence_due_by: evidenceDueBy,
+          order_id: orderId,
+        },
+      });
+      // Deliberately allowed to throw: a failed send 5xxes the route, the
+      // ledger lease is released, and Stripe's retry re-attempts the alert.
+      await emailDisputeCreatedAlertToStudio({
+        orderId,
+        disputeId: dispute.id,
+        amount: dispute.amount,
+        currency: dispute.currency,
+        reason: dispute.reason ?? null,
+        evidenceDueBy,
       });
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),

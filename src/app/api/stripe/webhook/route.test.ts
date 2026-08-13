@@ -42,6 +42,7 @@ vi.mock('@/lib/email', () => ({
   emailOrderConfirmationToCustomer: vi.fn(),
   emailRefundFailedAlertToStudio: vi.fn(async () => {}),
   emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
+  emailDisputeCreatedAlertToStudio: vi.fn(async () => {}),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
@@ -58,7 +59,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -1017,6 +1018,74 @@ describe('webhook markPaid reserved→sold update failure (H-1)', () => {
     await expect(POST(succeededEventRequest())).rejects.toThrow(/piece_state sold update failed/);
     expect(refundsCreate).not.toHaveBeenCalled();
     expect(failedUpdateEqArgs).toEqual([]);
+  });
+});
+
+describe('webhook charge.dispute.created alert (L-6)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailDisputeCreatedAlertToStudio).mockClear();
+  });
+
+  function disputeCreatedRequest() {
+    constructEventAsync.mockResolvedValue({
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_1',
+          payment_intent: 'pi_1',
+          status: 'needs_response',
+          reason: 'fraudulent',
+          amount: 13900,
+          currency: 'pln',
+          evidence_details: { due_by: 1767139200 }, // 2025-12-31T00:00:00Z
+        },
+      },
+    });
+    return new Request('http://localhost/api/stripe/webhook', {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig_test' },
+      body: '{}',
+    });
+  }
+
+  it('fires the deadline-bearing studio alert + Sentry, correlated to the order by payment_intent', async () => {
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(disputeCreatedRequest());
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_dispute_created', expect.objectContaining({
+      level: 'error',
+      extra: expect.objectContaining({ dispute_id: 'dp_1', evidence_due_by: 1767139200, order_id: 'o1' }),
+    }));
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledTimes(1);
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith({
+      orderId: 'o1',
+      disputeId: 'dp_1',
+      amount: 13900,
+      currency: 'pln',
+      reason: 'fraudulent',
+      evidenceDueBy: 1767139200,
+    });
+  });
+
+  it('a failed alert send throws (5xx) so Stripe retries the delivery — a dispute alert must not be droppable', async () => {
+    vi.mocked(emailDisputeCreatedAlertToStudio).mockRejectedValueOnce(new Error('resend down'));
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: { id: 'o1', private_sale_id: null }, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(disputeCreatedRequest())).rejects.toThrow(/resend down/);
   });
 });
 
