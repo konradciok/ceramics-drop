@@ -37,7 +37,10 @@ const nullableText = (max: number) =>
 export const productUpdateSchema = z
   .object({
     num: z.string().trim().min(1).max(16).optional(),
-    price_pln: z.number().int().nonnegative().max(1_000_000).optional(),
+    // .positive(), not .nonnegative(): 0 was never a legitimate ceramic price
+    // (M-4 — see src/lib/catalog/read-schemas.ts for the read-side half of
+    // this fix, which guards against a 0/NULL price already in the DB).
+    price_pln: z.number().int().positive().max(1_000_000).optional(),
     measure: z.string().trim().max(200).optional(),
     seo_title: nullableText(160),
     seo_description: nullableText(320),

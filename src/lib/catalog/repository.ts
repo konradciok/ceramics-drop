@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
+import { parseProductRow, parseProductRows } from './read-schemas';
 import type { MediaSeedRow, ProductSeedRow, ProductStatus, VariantSeedRow } from './types';
 import type { ProductUpdateInput } from './schemas';
 
@@ -30,8 +31,15 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
   ]);
   if (productsRes.error) throw new Error(`list products: ${productsRes.error.message}`);
   if (variantsRes.error) throw new Error(`list variants: ${variantsRes.error.message}`);
+  // Admin-only reader: validate + report a bad row (Sentry) but do NOT withhold
+  // it — see read-schemas.ts's parseProductRow doc comment for why. Dropping a
+  // row here would shrink dbRows.products.length below the registry count and
+  // trip listProducts()'s completeness fallback (catalog-list.ts), hiding the
+  // ENTIRE admin product list behind the stale registry over one bad row.
+  const rawProducts = (productsRes.data ?? []) as ProductSeedRow[];
+  for (const row of rawProducts) parseProductRow(row);
   return {
-    products: (productsRes.data ?? []) as ProductSeedRow[],
+    products: rawProducts,
     variants: (variantsRes.data ?? []) as VariantSeedRow[],
   };
 }
@@ -96,7 +104,10 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
   const productsRes = await supabase.from('products').select('*').eq('type', 'ceramic');
   if (productsRes.error) throw new Error(`read products: ${productsRes.error.message}`);
 
-  const rows = sortCeramicProductRows((productsRes.data ?? []) as ProductSeedRow[]);
+  // Customer-facing reader: SKIP an invalid ceramic row (never render/sell at
+  // 0 zł) — this is the actual M-4 fix. See read-schemas.ts's parseProductRow
+  // doc comment for why this differs from the admin-only readers below.
+  const rows = sortCeramicProductRows(parseProductRows(productsRes.data ?? []));
   const ids = rows.map((r) => r.id);
   if (ids.length === 0) return [];
   const mediaRes = await supabase.from('product_media').select('*').in('product_id', ids);
@@ -120,7 +131,8 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
     .order('num', { ascending: true });
   if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
 
-  const ids = (productsRes.data ?? []).map((r) => r.id);
+  const rawProducts = productsRes.data ?? [];
+  const ids = rawProducts.map((r) => r.id);
   if (ids.length === 0) return [];
 
   const [variantsRes, mediaRes] = await Promise.all([
@@ -130,8 +142,12 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
   if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
   if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);
 
+  // Customer-facing reader: run through the same shared guard as
+  // readCeramicProducts. In practice a `type='print'` query never returns a
+  // ceramic row to skip, but applying the guard here anyway keeps the "no
+  // reader can bypass validation" property uniform across all readers.
   return mapPrintDesigns(
-    (productsRes.data ?? []) as ProductSeedRow[],
+    parseProductRows(rawProducts),
     (variantsRes.data ?? []) as VariantSeedRow[],
     (mediaRes.data ?? []) as MediaSeedRow[],
   );
@@ -168,6 +184,11 @@ export async function readProductRow(
   if (variantsRes.error) throw new Error(`read variants: ${variantsRes.error.message}`);
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
+  // Admin-only reader: validate + report (Sentry) but do NOT withhold the row.
+  // getProductEditorState() (catalog-list.ts) already falls back to a stale
+  // registry seed when this returns null — the one screen whose purpose is
+  // inspecting/fixing exactly this kind of bad row must not go blind to it.
+  parseProductRow(productRes.data);
   return {
     product: productRes.data as ProductSeedRow,
     variants: (variantsRes.data ?? []) as VariantSeedRow[],
@@ -221,6 +242,11 @@ export async function updateProductMeta(
     before: before.data,
     after: res.data,
   });
+  // Admin-only write result: validate + report (Sentry) but do NOT withhold —
+  // same posture as readProductRow/listCatalogRows (see parseProductRow's doc
+  // comment). The admin editor patched this row and needs to see exactly what
+  // was written, bad price included, not a silently swapped-in fallback.
+  parseProductRow(res.data);
   return res.data as ProductSeedRow;
 }
 

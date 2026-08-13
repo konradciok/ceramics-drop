@@ -59,7 +59,15 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       num: row.num,
       image: primary?.url ?? '',
       ...(gallery.length ? { gallery } : {}),
-      price: row.price_pln ?? 0,
+      // INVARIANT: every production caller (readCeramicProducts in
+      // repository.ts) filters rows through read-schemas.ts's
+      // parseProductRow(s) before calling this mapper, which enforces
+      // price_pln > 0 for every ceramic row — so it is runtime-guaranteed
+      // non-null here. Deliberately NOT `row.price_pln ?? 0`: a fallback to 0
+      // would let a future caller that skips the guard silently sell a piece
+      // at 0 zł (the exact bug this guard exists to prevent, M-4) instead of
+      // failing loudly with a visibly broken price.
+      price: row.price_pln!,
       measure: row.measure,
       sold: false,
       dropId: row.drop_id ?? '',
