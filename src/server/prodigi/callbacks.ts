@@ -28,14 +28,21 @@ export async function handleProdigiCallback(
   // 1. Parse CloudEvents shape.
   if (
     typeof body !== 'object' || body === null ||
-    !('id' in body) || !('type' in body) || !('data' in body)
+    !('id' in body) || !('type' in body)
   ) {
+    rejectLog(body, 'invalid CloudEvents shape');
     return { status: 400, message: 'Invalid CloudEvents shape' };
   }
-  const event = body as { id: string; type: string; data: Record<string, unknown> };
-  const prodigiOrderId = event.data?.prodigiOrderId as string | undefined;
+  const event = body as {
+    id: string;
+    type: string;
+    subject?: unknown;
+    data?: Record<string, unknown>;
+  };
+  const prodigiOrderId = extractProdigiOrderId(event);
   if (!prodigiOrderId) {
-    return { status: 400, message: 'Missing data.prodigiOrderId' };
+    rejectLog(body, 'no Prodigi order id in data.order.id / data.prodigiOrderId / subject');
+    return { status: 400, message: 'Missing Prodigi order id' };
   }
 
   const supabase = getSupabaseAdmin();
@@ -210,6 +217,42 @@ export async function handleProdigiCallback(
     .eq('provider_event_id', event.id);
 
   return { status: 200, message: 'OK' };
+}
+
+/**
+ * F-1: real Prodigi CloudEvents carry the complete order object in `data.order`
+ * (id inside) and repeat the order id in `subject` — NOT the `data.prodigiOrderId`
+ * the first implementation expected (every real callback 400'd during the Plan 05
+ * rehearsal). Accept, in order: `data.order.id` (documented v4 shape), the legacy
+ * `data.prodigiOrderId`, then the CloudEvents `subject`.
+ */
+function extractProdigiOrderId(event: {
+  subject?: unknown;
+  data?: Record<string, unknown>;
+}): string | null {
+  const order = event.data?.order as { id?: unknown } | undefined;
+  if (typeof order?.id === 'string' && order.id) return order.id;
+  const legacy = event.data?.prodigiOrderId;
+  if (typeof legacy === 'string' && legacy) return legacy;
+  if (typeof event.subject === 'string' && event.subject) return event.subject;
+  return null;
+}
+
+/**
+ * A rejected callback previously left ZERO trace (no ledger row, no log) — the
+ * exact failure mode that hid F-1. Log a structured, bounded line so shape
+ * drift is visible in Workers Logs; the reconciliation sweep (M-12) is the
+ * alerting backstop for orders whose callbacks keep bouncing.
+ */
+function rejectLog(body: unknown, reason: string): void {
+  let snippet: string;
+  try {
+    snippet = JSON.stringify(body) ?? String(body);
+  } catch {
+    snippet = String(body);
+  }
+  if (snippet.length > 300) snippet = snippet.slice(0, 300) + '…';
+  console.error(JSON.stringify({ event: 'prodigi_callback_rejected', reason, bodySnippet: snippet }));
 }
 
 /** Prodigi dispatchDate → ISO timestamp, or null when absent/unparsable. */

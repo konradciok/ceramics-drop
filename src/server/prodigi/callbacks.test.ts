@@ -290,6 +290,72 @@ describe('handleProdigiCallback — monotonic tracking persistence (PR #186 P2)'
   });
 });
 
+describe('handleProdigiCallback — real Prodigi CloudEvents shape (F-1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetOrder.mockResolvedValue(prodigiOrder('Complete'));
+    mockShipEmail.mockResolvedValue(undefined);
+  });
+
+  /** The shape Prodigi actually sends (Plan 05 rehearsal + v4 docs): the order
+   *  object rides in `data.order`, and `subject` carries the order id. */
+  function realCallbackBody(stage = 'Complete') {
+    return {
+      specversion: '1.0',
+      id: 'evt-real-1',
+      type: 'com.prodigi.order.status.stage#changed',
+      source: 'http://api.prodigi.com/v4.0/Orders/',
+      subject: 'pr_1',
+      time: '2026-08-13T13:28:05Z',
+      datacontenttype: 'application/json',
+      data: {
+        order: {
+          id: 'pr_1',
+          merchantReference: 'o1',
+          status: { stage },
+          items: [],
+        },
+      },
+    };
+  }
+
+  it('accepts data.order (real shape) and processes to done', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(realCallbackBody(), ENV);
+
+    expect(res.status).toBe(200);
+    expect(mockGetOrder).toHaveBeenCalledExactlyOnceWith('pr_1');
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
+  it('falls back to the CloudEvents subject when data carries no order id', async () => {
+    const calls = setup();
+
+    const res = await handleProdigiCallback(
+      { ...realCallbackBody(), data: { unexpected: true } },
+      ENV,
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockGetOrder).toHaveBeenCalledExactlyOnceWith('pr_1');
+    expect(calls.eventUpdates.at(-1)).toMatchObject({ status: 'done' });
+  });
+
+  it('a rejected callback leaves a structured log trace (no more silent 400s)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup();
+
+    const res = await handleProdigiCallback({ id: 'evt-x', type: 't', data: {} }, ENV);
+
+    expect(res.status).toBe(400);
+    const logged = consoleErrorSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toContain('prodigi_callback_rejected');
+    expect(logged).toContain('evt-x');
+    consoleErrorSpy.mockRestore();
+  });
+});
+
 describe('handleProdigiCallback — dedup, mapping, error paths (Finding 11)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
