@@ -66,6 +66,11 @@ function listSourceFiles(dir: string): string[] {
   return out;
 }
 
+// KNOWN LIMITATION: matches only `env.NAME` / `process.env.NAME` property
+// access — a destructured read (`const { FOO } = process.env`) would slip
+// past this scan uncaught. No such destructuring exists anywhere in the
+// codebase today (checked); if that pattern is ever introduced, this guard
+// needs a matching case before it can be trusted for that variable.
 const ENV_READ_PATTERN = /\benv\.([A-Z][A-Z0-9_]*)\b|\bprocess\.env\.([A-Z][A-Z0-9_]*)\b/g;
 
 /** Every `env.NAME` / `process.env.NAME` name referenced across the given files. */
