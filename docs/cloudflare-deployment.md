@@ -214,6 +214,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (return labels, shipping confirmations); Resend template aliases are wired in `src/lib/email-layout.ts`.
 - `RESEND_WEBHOOK_SECRET` — Svix signing secret for `/api/resend/webhook`; get from the Resend dashboard → Webhooks → signing secret. **Required after deploying PR #44** or the endpoint returns `500`.
 - `NEWSLETTER_CONFIRM_SECRET` — HMAC secret signing the newsletter double-opt-in confirm links (`openssl rand -hex 32`). Dedicated, fail-closed: `/api/newsletter` and `/api/newsletter/confirm` return `503` while unset. Optional `RESEND_NEWSLETTER_AUDIENCE_ID` only for Resend accounts still on legacy Audiences.
+- `CMS_PREVIEW_SECRET` — dedicated HMAC secret for admin draft-preview links (`openssl rand -hex 32`). Minting a preview link throws while unset; a PDP preview read fails closed to published/messages copy instead of 500ing.
 - `STUDIO_RETURN_FIRST_NAME` / `_LAST_NAME` / `_PHONE` / `_ADDRESS_STREET` / `_BUILDING` / `_CITY` / `_POSTAL` / `_POINT` — the InPost return receiver. **All required**, or `POST /api/returns` returns `503`. `STUDIO_RETURN_EMAIL` defaults to `STUDIO_NOTIFY_EMAIL` when unset.
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
