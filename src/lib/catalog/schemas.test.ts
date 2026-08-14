@@ -30,6 +30,10 @@ describe('productUpdateSchema', () => {
     expect(productUpdateSchema.safeParse({ price_pln: -5 }).success).toBe(false);
     expect(productUpdateSchema.safeParse({ price_pln: 9.5 }).success).toBe(false);
   });
+
+  it('rejects a 0 price — 0 was never a legitimate ceramic price (M-4)', () => {
+    expect(productUpdateSchema.safeParse({ price_pln: 0 }).success).toBe(false);
+  });
 });
 
 describe('productStatusSchema', () => {

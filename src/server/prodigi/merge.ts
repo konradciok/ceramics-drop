@@ -8,6 +8,18 @@ import { isTerminalStatus, mapProdigiStage } from '../fulfilment/status-map';
 import type { ProdigiShipment } from './types';
 
 /**
+ * Mirrors the `prodigi_status_stage_check` CHECK constraint's value list
+ * (migration `20260813170000_harden_rpc_and_catalog.sql`, block 6/L-13).
+ * Prodigi's `status.stage` is an external free-text field — a value outside
+ * this set must be clamped to 'Unknown' (not persisted verbatim) or the
+ * upsert below hits a 23514 CHECK violation, which surfaces as a `db_error`
+ * MergeResult that the M-12 reconciliation sweep deliberately does NOT count
+ * as a poll (so `stalled_poll_count` never advances and the alert can never
+ * fire) — silently freezing the order instead of erroring loudly.
+ */
+const KNOWN_PRODIGI_STAGES = new Set(['Draft', 'InProgress', 'Complete', 'Cancelled']);
+
+/**
  * The re-fetch-and-merge core shared by the Prodigi callback handler and the
  * M-12 cron reconciliation sweep (a lost callback must not freeze an order —
  * the sweep re-runs exactly this logic on stale rows instead of duplicating it).
@@ -47,7 +59,14 @@ export async function fetchAndMergeProdigiOrder(
     };
   }
 
-  const newStage = prodigiOrder.status?.stage ?? 'Unknown';
+  const rawStage = prodigiOrder.status?.stage;
+  const newStage = rawStage && KNOWN_PRODIGI_STAGES.has(rawStage) ? rawStage : 'Unknown';
+  if (rawStage && !KNOWN_PRODIGI_STAGES.has(rawStage)) {
+    Sentry.captureMessage('prodigi order returned an unrecognised status stage', {
+      level: 'warning',
+      extra: { prodigiOrderId, rawStage },
+    });
+  }
   const localStatus = mapProdigiStage(newStage);
 
   // 2. Resolve the local order. If the prodigi_orders mapping is missing (callback
