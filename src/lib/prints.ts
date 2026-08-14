@@ -1,8 +1,9 @@
 import type { PrintDesign, PrintVariantSelection } from './types';
 import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
+import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
 
-export const PRINT_DESIGNS: PrintDesign[] = [
+const RAW_PRINT_DESIGNS: PrintDesign[] = [
   // fap01–fap03 (legacy ceramic-motif posters) withdrawn 2026-08-06: the
   // storefront sells only pipeline-backed production designs (fap005+).
   // fap02/fap03 never had fulfilment assets (checkout failed closed on every
@@ -590,6 +591,23 @@ export const PRINT_DESIGNS: PrintDesign[] = [
     mockups: true,
   },
 ];
+
+/**
+ * Ungated designs — authored truth, mount included. Seed-only: the catalog
+ * backfill (`src/lib/catalog/seed.ts`) must keep emitting every structurally
+ * valid variant row so a run during the mount-disabled window reproduces the
+ * existing DB exactly. Storefront/checkout readers use `PRINT_DESIGNS`.
+ */
+export const PRINT_DESIGNS_RAW: PrintDesign[] = RAW_PRINT_DESIGNS;
+
+/**
+ * The registry every read path sees. While `MOUNT_TEMPORARILY_DISABLED` is on,
+ * passe-partout is withdrawn from every design (see print-availability.ts) —
+ * the per-design `mountAvailable: true` literals above stay as authored truth.
+ */
+export const PRINT_DESIGNS: PrintDesign[] = MOUNT_TEMPORARILY_DISABLED
+  ? RAW_PRINT_DESIGNS.map((d) => (d.mountAvailable ? { ...d, mountAvailable: false } : d))
+  : RAW_PRINT_DESIGNS;
 
 const BY_ID = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
 

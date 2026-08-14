@@ -8,6 +8,7 @@
    ============================================================ */
 import { CATEGORY_ORDER } from '../products';
 import { PRINT_FRAME_COLOURS } from '../print-cart';
+import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
 import type { CategorySlug, PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
 import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
 
@@ -148,7 +149,10 @@ export function mapPrintDesigns(
     ).filter((c): c is PrintFrameColour =>
       (PRINT_FRAME_COLOURS as readonly string[]).includes(c),
     );
-    const mountAvailable = axes.some((a) => a.mount);
+    // Mount rows stay ACTIVE in product_variants — passe-partout is withdrawn at
+    // read time only (print-availability.ts), so flipping the switch back restores
+    // availability with no DB write. Mirrors the same gate on PRINT_DESIGNS.
+    const mountAvailable = !MOUNT_TEMPORARILY_DISABLED && axes.some((a) => a.mount);
 
     out.push({
       id: row.id,

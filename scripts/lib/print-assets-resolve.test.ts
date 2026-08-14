@@ -14,6 +14,7 @@ import {
   resolveLatestReadyByProfile,
   type ReadyAssetRow,
 } from './print-assets-resolve';
+import { MOUNT_TEMPORARILY_DISABLED } from '../../src/lib/print-availability';
 
 beforeEach(() => {
   mocks.loadSupabaseClient.mockReset();
@@ -118,33 +119,40 @@ describe('latestReadyByProfile', () => {
 });
 
 describe('buildSandboxMatrix', () => {
-  it('covers six distinct asset profiles (30x40 black-framed shares the unframed asset, decision #6)', () => {
+  // The three CFPM (mounted) profiles drop out while passe-partout is temporarily
+  // withdrawn (src/lib/print-availability.ts) — nothing can be ordered against
+  // them, so the matrix must not place sandbox orders for them either.
+  const EXPECTED_PROFILES = MOUNT_TEMPORARILY_DISABLED
+    ? ['3600x4800', '6000x8400', '8400x12000']
+    : ['2400x3600', '3600x4800', '4800x7200', '6000x8400', '7200x10800', '8400x12000'];
+  const EXPECTED_SKUS = MOUNT_TEMPORARILY_DISABLED
+    ? ['GLOBAL-FAP-12X16', 'GLOBAL-FAP-20X28', 'GLOBAL-FAP-28X40']
+    : [
+        'GLOBAL-CFPM-12X16',
+        'GLOBAL-CFPM-20X28',
+        'GLOBAL-CFPM-28X40',
+        'GLOBAL-FAP-12X16',
+        'GLOBAL-FAP-20X28',
+        'GLOBAL-FAP-28X40',
+      ];
+
+  it('covers every distinct sellable asset profile (30x40 black-framed shares the unframed asset, decision #6)', () => {
     const matrix = buildSandboxMatrix();
-    expect(matrix).toHaveLength(6);
-    expect(new Set(matrix.map((r) => r.profileKey)).size).toBe(6);
-    expect(matrix.map((r) => r.profileKey).sort()).toEqual([
-      '2400x3600',
-      '3600x4800',
-      '4800x7200',
-      '6000x8400',
-      '7200x10800',
-      '8400x12000',
-    ]);
+    expect(matrix).toHaveLength(EXPECTED_PROFILES.length);
+    expect(new Set(matrix.map((r) => r.profileKey)).size).toBe(EXPECTED_PROFILES.length);
+    expect(matrix.map((r) => r.profileKey).sort()).toEqual(EXPECTED_PROFILES);
   });
 
   it('matches the asset-contract SKU set (no GLOBAL-CFP-* — those profiles collapse into the FAP/CFPM ones)', () => {
     const matrix = buildSandboxMatrix();
-    expect(matrix.map((r) => r.sku).sort()).toEqual([
-      'GLOBAL-CFPM-12X16',
-      'GLOBAL-CFPM-20X28',
-      'GLOBAL-CFPM-28X40',
-      'GLOBAL-FAP-12X16',
-      'GLOBAL-FAP-20X28',
-      'GLOBAL-FAP-28X40',
-    ]);
+    expect(matrix.map((r) => r.sku).sort()).toEqual(EXPECTED_SKUS);
   });
 
-  it('builds mount attributes for mounted framed rows', () => {
+  it.runIf(MOUNT_TEMPORARILY_DISABLED)('places no sandbox order for a mounted variant', () => {
+    expect(buildSandboxMatrix().some((r) => r.variantKey.split(':')[2] === 'true')).toBe(false);
+  });
+
+  it.runIf(!MOUNT_TEMPORARILY_DISABLED)('builds mount attributes for mounted framed rows', () => {
     const mounted = buildSandboxMatrix().find((r) => r.variantKey === '30x40:true:true:black');
     expect(mounted?.attributes).toEqual({
       color: 'black',

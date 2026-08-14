@@ -15,6 +15,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PRODIGI_SKU_MAP } from '../../src/lib/print-cart';
+import { MOUNT_TEMPORARILY_DISABLED } from '../../src/lib/print-availability';
 import type { VariantDimension } from '../../src/lib/print-assets-prepare';
 
 /** Row shape of `products.status` (migration `20260709140000_catalog_shadow`). */
@@ -59,11 +60,18 @@ export async function activeVariantDimensions(
     throw new Error(`Active variant lookup failed for "${productId}": ${variants.error.message}`);
   }
 
-  const rows = (variants.data ?? []) as Array<{
+  let rows = (variants.data ?? []) as Array<{
     variant_key: string;
     print_area_width_px: number | null;
     print_area_height_px: number | null;
   }>;
+  // Passe-partout is temporarily unsellable (print-availability.ts) but its DB
+  // rows stay active, so filter mount variants here — otherwise prepare would
+  // keep producing (and publish would keep requiring) CFPM derivatives nothing
+  // can be ordered against. `variant_key` = size:framed:mount:frameColour.
+  if (MOUNT_TEMPORARILY_DISABLED) {
+    rows = rows.filter((r) => r.variant_key.split(':')[2] !== 'true');
+  }
   if (rows.length === 0) {
     throw new Error(`Product "${productId}" has no active variants in product_variants.`);
   }

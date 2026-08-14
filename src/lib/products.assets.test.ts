@@ -19,7 +19,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { registryProducts } from './products';
-import { PRINT_DESIGNS } from './prints';
+import { PRINT_DESIGNS, PRINT_DESIGNS_RAW } from './prints';
 import { designMockupStates, mockupSrc } from './print-mockups';
 import { IMG_WIDTHS } from './images';
 import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
@@ -53,7 +53,11 @@ function registryImagePaths(): string[] {
     paths.push(p.image);
     for (const g of p.gallery ?? []) paths.push(g);
   }
-  for (const d of PRINT_DESIGNS) {
+  // Mockup states come off the RAW registry: passe-partout is temporarily
+  // withdrawn from sale (print-availability.ts) but the `mock-mount-*` WebPs stay
+  // in the bundle so the switch flips back without re-rendering them. Enumerating
+  // the gated registry here would orphan them below AND stop checking they exist.
+  for (const d of PRINT_DESIGNS_RAW) {
     for (const state of designMockupStates(d)) {
       const src = mockupSrc(d, state);
       if (src) paths.push(src);

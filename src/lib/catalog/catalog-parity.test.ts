@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { registryProducts } from '../products';
-import { PRINT_DESIGNS, isVariantAvailable, registryPrintById } from '../prints';
+import { PRINT_DESIGNS, PRINT_DESIGNS_RAW, isVariantAvailable, registryPrintById } from '../prints';
+import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
 import { withRegistryMockups } from '../print-mockups';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant } from '../print-pricing';
@@ -143,7 +144,12 @@ describe('catalog seed ↔ registry parity', () => {
     for (const v of publishedVariants) {
       const design = byId.get(v.product_id)!;
       // Matches the exact sellability rule checkout.ts / cart-lines.ts enforce.
-      expect(isVariantAvailable(design, v.axes!), v.variant_key).toBe(true);
+      // While passe-partout is temporarily withdrawn (print-availability.ts) the
+      // seed still emits mount rows — deliberately seeded-but-unsellable, so the
+      // DB is unchanged and the switch flips back with no backfill.
+      expect(isVariantAvailable(design, v.axes!), v.variant_key).toBe(
+        MOUNT_TEMPORARILY_DISABLED ? !v.axes!.mount : true,
+      );
       // Seed prices derive from DEFAULT_PRINT_PRICING (buildCatalogSeed's default
       // arg) and must stay in lockstep with it. These shadow columns are read by
       // nobody at runtime — live pricing comes from getPrintPricingConfig().
@@ -155,9 +161,19 @@ describe('catalog seed ↔ registry parity', () => {
 
   it('enumerates the expected variant count per design', () => {
     // Full-axes policy (2026-08-03): every print design offers every variant —
-    // 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21.
-    for (const d of PRINT_DESIGNS) {
+    // 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21. The seed reads the
+    // RAW registry, so this contract survives the temporary mount withdrawal.
+    for (const d of PRINT_DESIGNS_RAW) {
       expect(enumeratePrintVariants(d), d.id).toHaveLength(21);
+    }
+  });
+
+  it.runIf(MOUNT_TEMPORARILY_DISABLED)('enumerates 12 mount-free variants off the gated registry', () => {
+    // The storefront-facing registry drops the 9 mounted variants per design:
+    // 3 sizes × (1 unframed + 3 colours) = 12. Proves the gate reaches the shared
+    // enumerator, and that only the seed is exempt from it.
+    for (const d of PRINT_DESIGNS) {
+      expect(enumeratePrintVariants(d), d.id).toHaveLength(12);
     }
   });
 
