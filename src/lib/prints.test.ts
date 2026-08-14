@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { getPrintById, getPrintDesigns, isVariantAvailable } from './prints';
+import { getPrintById, getPrintDesigns, isVariantAvailable, registryPrintDesigns } from './prints';
+import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
 import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant } from './print-pricing';
 import type { PrintDesign, PrintVariantSelection } from './types';
@@ -43,7 +44,11 @@ describe('isVariantAvailable', () => {
     expect(isVariantAvailable(fap005, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(true);
   });
   it('accepts valid framed+mount variant', () => {
-    expect(isVariantAvailable(fap005, { size: '50x70', framed: true, mount: true, frameColour: 'natural' })).toBe(true);
+    // fap005's own mount axis is withdrawn while MOUNT_TEMPORARILY_DISABLED is on
+    // (print-availability.ts), so the accept branch runs against a synthetic
+    // mount-capable design — same pattern as the `noMount` fixture below.
+    const withMount: PrintDesign = { ...fap005, mountAvailable: true };
+    expect(isVariantAvailable(withMount, { size: '50x70', framed: true, mount: true, frameColour: 'natural' })).toBe(true);
   });
   it('rejects unpublished design', async () => {
     const fap04 = (await getPrintById('fap04'))!;
@@ -67,6 +72,25 @@ describe('isVariantAvailable', () => {
   it('rejects framed=false with non-none colour', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(isVariantAvailable(fap005, { size: '30x40', framed: false, mount: false, frameColour: 'black' } as any)).toBe(false);
+  });
+});
+
+/* Temporary (2026-08): passe-partout withdrawn from sale — Prodigi's mount
+   execution is unsatisfactory. These canaries pin the withdrawal at both catalog
+   read roots and at the exact gate checkout uses; they disappear with the flag. */
+describe('temporary passe-partout withdrawal', () => {
+  it.runIf(MOUNT_TEMPORARILY_DISABLED)('withdraws mount from every design on both registry roots', async () => {
+    const designs = await getPrintDesigns();
+    expect(designs.length).toBeGreaterThan(0);
+    for (const d of designs) expect(d.mountAvailable, d.id).toBe(false);
+    for (const d of registryPrintDesigns()) expect(d.mountAvailable, d.id).toBe(false);
+  });
+
+  it.runIf(MOUNT_TEMPORARILY_DISABLED)('rejects a mounted variant at the exact checkout gate', async () => {
+    const fap005 = (await getPrintById('fap005'))!;
+    expect(
+      isVariantAvailable(fap005, { size: '50x70', framed: true, mount: true, frameColour: 'natural' }),
+    ).toBe(false);
   });
 });
 

@@ -21,7 +21,7 @@ test.describe('fine-art print configurator @ci', () => {
     await expect(page.getByTestId('opt-mount-false')).not.toBeVisible();
   });
 
-  test('styles selector controls and updates mounted variant price', async ({ page }) => {
+  test('styles selector controls and updates framed variant price', async ({ page }) => {
     await page.goto('/fine-art-prints/fap005');
 
     await expect(page.locator('.print-axis').first()).toHaveCSS('border-width', '0px');
@@ -32,14 +32,18 @@ test.describe('fine-art print configurator @ci', () => {
     await expect(page.getByTestId('opt-size-70x100')).toHaveAttribute('aria-checked', 'true');
     await page.getByTestId('opt-framed-true').click();
     await page.getByTestId('opt-colour-natural').click();
-    await page.getByTestId('opt-mount-true').click();
 
-    await expect(page.getByTestId('opt-mount-true')).toHaveAttribute('aria-checked', 'true');
-    // 575 zł = 70x100 base 320 + frame 150 + mount 105, derived from
-    // DEFAULT_PRINT_PRICING (75/35/25 EUR × 4.25, rounded to 5 zł per component).
+    // Passe-partout temporarily withdrawn (src/lib/print-availability.ts): the
+    // mount fieldset must stay hidden even in the framed state — the key
+    // regression signal if the gate is ever bypassed on a read path.
+    await expect(page.getByTestId('opt-mount-false')).not.toBeVisible();
+    await expect(page.getByTestId('opt-mount-true')).not.toBeVisible();
+
+    // 470 zł = 70x100 base 320 + frame 150 (no mount surcharge), derived from
+    // DEFAULT_PRINT_PRICING (75/35 EUR × 4.25, rounded to 5 zł per component).
     // Pinned literal: update here when the pricing seed/defaults change — the
     // hermetic E2E runs in CATALOG_SOURCE=code, so defaults are what renders.
-    await expect(page.getByTestId('print-price')).toHaveText('575 zł');
+    await expect(page.getByTestId('print-price')).toHaveText('470 zł');
   });
 
   test('hero mockup follows configurator selection', async ({ page }) => {
@@ -54,11 +58,10 @@ test.describe('fine-art print configurator @ci', () => {
     await page.getByTestId('opt-framed-true').click();
     await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-black.webp');
 
-    await page.getByTestId('opt-mount-true').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-mount-black.webp');
-
+    // The mount-* hero states are unreachable while passe-partout is withdrawn
+    // (src/lib/print-availability.ts) — only the framed-* states remain.
     await page.getByTestId('opt-colour-natural').click();
-    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-mount-natural.webp');
+    await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-natural.webp');
 
     await page.getByTestId('opt-framed-false').click();
     await expect(hero).toHaveAttribute('src', '/uploads/fap-005.webp');

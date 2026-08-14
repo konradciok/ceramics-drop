@@ -13,7 +13,10 @@
    ============================================================ */
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../types';
 import { registryProducts } from '../products';
-import { PRINT_DESIGNS } from '../prints';
+// Ungated on purpose: the backfill must keep seeding every structurally valid
+// variant (incl. mount) while passe-partout is temporarily withdrawn from sale,
+// so a run during the disabled window reproduces the existing DB exactly.
+import { PRINT_DESIGNS_RAW as PRINT_DESIGNS } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant, type PrintPricingConfig } from '../print-pricing';

@@ -2,6 +2,7 @@
  * Shared fulfilment-asset resolution for print-asset operator scripts.
  */
 import { PRODIGI_SKU_MAP, assetPxFor, parseVariantKey } from '../../src/lib/print-cart';
+import { MOUNT_TEMPORARILY_DISABLED } from '../../src/lib/print-availability';
 import { buildProdigiAttributes } from '../../src/lib/print-prodigi-attributes';
 import { profileKeyFromPx } from '../../src/lib/print-assets-prepare';
 import { loadSupabaseClient } from './script-env';
@@ -145,6 +146,9 @@ export function buildSandboxMatrix(): SandboxMatrixRow[] {
   const byProfile = new Map<string, { variantKey: string; sku: string }>();
 
   for (const [variantKey, entry] of entries) {
+    // Passe-partout is temporarily unsellable (print-availability.ts) — don't
+    // place sandbox orders for profiles nothing can be bought against.
+    if (MOUNT_TEMPORARILY_DISABLED && parseVariantKey(variantKey).mount) continue;
     const px = assetPxFor(entry);
     const profileKey = profileKeyFromPx(px.w, px.h);
     if (byProfile.has(profileKey)) continue;
