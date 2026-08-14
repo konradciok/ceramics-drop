@@ -226,6 +226,56 @@ Branch `fix/stripe-webhook-hardening-plan06` (off `main` @ `4827afb`, Plans 01�
 
 ---
 
+## Plan 07 — Supabase data-API & schema hardening (M-2 / M-3 / M-4 / L-10 / L-12 / L-13) — executed 2026-08-14
+
+Branch `fix/supabase-hardening-plan07` (off `main` @ `e71d519`, Plan 06 merged — 52 migrations at start, `20260813160000` the latest). **No external system was mutated** during implementation — this plan's only production mutation is the migration itself, which auto-applies on merge (the merge is the gate, per AGENTS.md; not run by hand). L-9/L-11/L-17/L-20 stay **DEFERRED** exactly as the plan specified — not touched.
+
+### Tooling gap discovered (shapes both rulings below)
+
+The connected Supabase MCP server exposed only a log-query tool in this session — no `execute_sql`/`list_tables`/`get_advisors`. No Supabase CLI access token, no direct Postgres connection string in local env; PostgREST doesn't expose `pg_catalog`. Result: Task 0's `pg_policy` read (exact live `piece_state` policy names) could not be done. Everything else in Task 0 (data checks, status enumeration) **was** done — those are normal `public`-schema reads, reachable via the existing service-role Supabase JS client, same access class as `npm run orders`/`npm run prodigi`.
+
+### What landed (per finding)
+
+| Finding | Change | Evidence (tests) |
+|---|---|---|
+| **M-2** | `revoke all/execute ... grant ... to service_role` (house 3-line idiom) on all four RPCs: `reserve_pieces`, `reserve_private_sale_pieces`, `publish_cms_version`, `publish_print_asset_revision` (4-arg — the only live signature). Every caller verified against source, not trusted: all four go through `service_role` clients. | pgTAP `has_function_privilege` × 12 (anon/authenticated deny, service_role allow) |
+| **M-3** | `piece_state`'s two out-of-band anon-SELECT policies (advisor 0006, present live, in **zero** migrations) dropped via a dynamic `DO $$` block enumerating and dropping whatever policies actually exist — **not** hardcoded names (see Ruling below), schema-qualified to `public.piece_state` after task review. | pgTAP policy-count = 0 (vacuous on a fresh DB — only a post-merge live read proves the drop; see Post-merge below) |
+| **L-10** | `p_ttl_secs := least(greatest(coalesce(p_ttl_secs, 900), 60), 3600)` added as the first statement in both `reserve_pieces`/`reserve_private_sale_pieces`, restated in full via `CREATE OR REPLACE` — diffed byte-identical against source migrations apart from the clamp line. | pgTAP: `-5` clamps to 60s, `999999` clamps to 3600s |
+| **M-4 (DB)** | `products_ceramic_price_positive` (`> 0`) **and** `products_ceramic_price_present` (not-null) CHECKs, both `NOT VALID`→`VALIDATE`, guarded to `type = 'ceramic'` only. Live read confirmed **0** of 125 ceramic rows have a NULL/0 price before shipping the NOT-NULL half. | pgTAP: 0-priced + NULL-priced ceramic both rejected (`23514`); NULL-priced print accepted |
+| **M-4 (app)** | New `src/lib/catalog/read-schemas.ts` (`parseProductRow`/`parseProductRows`) routes all five raw-row sites in `src/lib/catalog/repository.ts` through one shared ceramic-only-positive-price guard, replacing bare `as ProductSeedRow` casts. **Two-tier by audience** (Ruling below): storefront readers (`readCeramicProducts`, `readPrintDesigns`) skip+exclude a bad row; admin readers (`listCatalogRows`, `readProductRow`, `updateProductMeta`, `updateProductStatus`) validate+report (Sentry) but keep it. `mapCeramicProducts`'s `?? 0` fallback removed. Admin write schema tightened `.nonnegative()`→`.positive()`. | `src/lib/catalog/`: 55+ tests, all 5 reader paths + print-row pass-through covered |
+| **L-12** | Three FK indexes: `product_media_variant_idx`, `products_drop_idx`, `prodigi_orders_order_idx` | idempotent `create index if not exists`, no test needed |
+| **L-13** | `fulfilment_jobs_status_check` (8 values, from a full code enumeration across `src/server/fulfilment/`+`worker.ts`, cross-checked against live data: 2 live rows, both in the list; `in_production` deliberately excluded as confirmed-dead code) and `prodigi_status_stage_check` (5 values incl. code's own `'Unknown'` fallback, cross-checked against live data: 3 rows, both stages in the list). **`src/server/prodigi/merge.ts` now clamps any unrecognised upstream Prodigi stage to `'Unknown'` before persisting** (final-review fix — see below) so the CHECK and the code agree on vocabulary. | pgTAP: typo'd `'canceled'` rejected on both columns; `merge.test.ts` covers the clamp + Sentry alert + known-stage passthrough |
+
+### Rulings (both driven by the tooling gap, both carried prominently into the migration's own comments — not buried)
+
+1. **M-3 dynamic policy drop, not hardcoded names.** A wrong `DROP POLICY IF EXISTS "<guessed-name>"` is a silent no-op — worst possible failure mode, no error, false confidence. The `DO $$` block is the live enumeration and the drop in one statement; provably correct regardless of actual names, matches the acceptance criterion exactly, safe no-op on shadow/CI DBs.
+2. **Catalog-read guard is two-tier, not the plan's literal uniform "skip".** Traced actual callers in `src/lib/admin/catalog-list.ts`: `listProducts()` falls back to the **entire** code-registry snapshot the moment the DB row count looks short (`dbRows.products.length >= registry.products.length`), and `getProductEditorState()` silently substitutes stale registry-seed data on a null row. A uniform skip would have hidden the whole admin product list over one bad row, and blinded the one screen built to fix it. Storefront readers skip (the actual M-4 fix); admin readers validate+report-but-keep.
+
+### Adversarial review (this PR)
+
+A dedicated task review ran after each of the two implementation dispatches (migration+pgTAP; catalog mapper), both **Approved** with zero unresolved Critical/Important findings. A separate **final whole-branch review** (looking at cross-commit composition, not just each diff in isolation) then found:
+- **1 Critical** — the new price CHECKs broke two **pre-existing** pgTAP fixtures (`guarded_product_status.sql`, `print_fulfilment_assets.sql`) that inserted ceramic rows with no price — `db.yml` would have gone red on this PR. Fixed: both fixtures given a positive price.
+- **1 Important** — `prodigi_status_stage_check` constrained a column `merge.ts` writes verbatim from Prodigi's API; an unrecognised future stage would have hit `23514`, which `reconcile-orders.ts` classifies as `db_error` and deliberately does **not** count as a poll — silently disarming the M-12 stalled-order alert on exactly the order that needed it. Fixed: `merge.ts` now clamps to the known vocabulary + `Sentry.captureMessage`s on an unrecognised value.
+
+Both fixed and re-reviewed clean (scoped re-review, no new Critical/Important breakage). Full ledger with rulings, all task-review findings, and parked minors: session's SDD workspace (not committed — ephemeral per-plan working notes).
+
+### Verification
+
+- `npm run lint` ✅ · `npm run typecheck` ✅ (app + worker tsconfig)
+- `npx vitest run src/lib/catalog/ src/server/prodigi/ src/server/fulfilment/`: all green
+- Full `npm test`: 2035/2038 — 3 known pre-existing Windows-local failures (`orders-cli`/`prodigi-cli` env-loading), confirmed **untouched** by this branch's diff; CI is the oracle
+- **Local `supabase test db` never ran** — Docker Desktop's backend process runs but its API socket never responds in this environment (reproduced independently, hung `docker.exe` client processes killed). All SQL was reviewed manually (byte-diffed RPC bodies against source, hand-traced pgTAP fixtures against every table's real constraints) but **CI's `db.yml` (path-filtered on `supabase/**`) is the first real execution** — watch it closely on this PR, do not treat a green PR merge as optional confirmation.
+
+### Post-merge operator steps
+
+1. Watch `db.yml` on this PR — it is the first time this SQL has ever executed anywhere.
+2. Migration auto-applies ~1 min after merge, ~6 min before the Workers deploy — old code runs against the hardened DB in between (verified safe per-block in the migration's own header comment).
+3. **Live read-only checks** (genuinely read-only, safe to run any time post-merge): `select has_function_privilege('anon','reserve_pieces(text[],uuid,integer)','execute');` → expect `f` (repeat for the other 3 RPCs); `select count(*) from pg_policies where tablename='piece_state';` → expect `0`; re-run advisors → expect 0006 gone.
+4. **Stop signals:** checkout 5xx spike right after the migration applies (RPC/TTL-clamp regression — rollback = `CREATE OR REPLACE` back to the prior bodies, in the migration's own header comment); collection pages missing products (mapper too aggressive — check Sentry for `catalog row failed validation` skip-reports, which should be zero given the live price check found 0 bad rows); a Prodigi callback repeatedly failing for one order (check for an unrecognised stage — should now be impossible given the `merge.ts` clamp, but if seen, check the new `Sentry.captureMessage('prodigi order returned an unrecognised status stage', ...)`).
+5. A live test-mode checkout (reserve→PI) is optional confirmation that `reserve_pieces` still works post-migration — not required before merge (state-changing, out of scope for this read-only verification pass; piggybacks Plan 05's rehearsal pattern if desired).
+
+---
+
 ## Remaining gates — not yet checked (non-Cloudflare)
 
 | Gate | Finding / §15 | Where it's checked | Status |
