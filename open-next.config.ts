@@ -1,7 +1,9 @@
 import { defineCloudflareConfig } from '@opennextjs/cloudflare';
-import staticAssetsIncrementalCache from '@opennextjs/cloudflare/overrides/incremental-cache/static-assets-incremental-cache';
+// Relative import (no `@/` alias) — this file is bundled by OpenNext's own
+// esbuild config, which doesn't know the app tsconfig paths.
+import quietStaticAssetsIncrementalCache from './src/server/cache/quiet-static-assets-incremental-cache';
 
 export default defineCloudflareConfig({
-  incrementalCache: staticAssetsIncrementalCache,
+  incrementalCache: quietStaticAssetsIncrementalCache,
   enableCacheInterception: true,
 });
