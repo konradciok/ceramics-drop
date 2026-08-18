@@ -15,9 +15,10 @@ import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
 // `fap001`/`fap002`/`fap003`/`fap025`/`fap032`/`fap033` were all held back
 // for the same reason (undersized + off-ratio `_70x100`) but got corrected
 // re-exports 2026-08-17 (all now ≥8400x12000 at ~7:10) — published:true.
-// `noteIndex` is 0-based, matching array position directly (no
-// notes["fine-art-prints"] entries exist yet — placeholder copy pending the
-// Notion i18n content pass, see docs/notion-i18n.md).
+// `noteIndex` is 0-based, matching array position directly. The 41
+// notes["fine-art-prints"] entries in messages/*.json are clearly-marked
+// PLACEHOLDER text — real copy is pending the Notion i18n content pass, see
+// docs/notion-i18n.md.
 const RAW_PRINT_DESIGNS: PrintDesign[] = [
   {
     id: 'fap001',

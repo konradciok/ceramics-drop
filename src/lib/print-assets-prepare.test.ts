@@ -632,6 +632,15 @@ describe('validateNoUpscale', () => {
     const errors = validateNoUpscale(FULL_BLEED_LAYOUT, { w: 3600, h: 4800 }, { w: 3400, h: 4533 }, false);
     expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
   });
+
+  it('accepts exactly at the 1.02x tolerance boundary, rejects just past it', () => {
+    // scale = target / artwork. 10200/10000 = 1.02 exactly (accept);
+    // 10201/10000 = 1.0201 (reject) — pins the boundary against a future
+    // accidental change to UPSCALE_TOLERANCE.
+    expect(validateNoUpscale(FULL_BLEED_LAYOUT, { w: 10200, h: 10200 }, { w: 10000, h: 10000 }, false)).toEqual([]);
+    const errors = validateNoUpscale(FULL_BLEED_LAYOUT, { w: 10201, h: 10201 }, { w: 10000, h: 10000 }, false);
+    expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
+  });
 });
 
 // ── ratioForProfile (full-bleed) ────────────────────────────────────────────
