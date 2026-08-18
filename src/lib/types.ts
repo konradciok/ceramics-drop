@@ -97,9 +97,9 @@ export interface PrintVariantSelection {
 
 /** A fine-art print design (open edition, configurable). */
 export interface PrintDesign {
-  id: string;                        // e.g. 'fap01'
+  id: string;                        // e.g. 'fap001'
   category: 'fine-art-prints';
-  num: string;                       // display number, e.g. '01'
+  num: string;                       // display number, unpadded, e.g. '1'
   image: string;
   gallery?: string[];
   noteIndex: number;

@@ -185,16 +185,16 @@ describe('recommendPacking', () => {
     expect(plan.notes.some((n) => n.includes('Prodigi'))).toBe(true);
   });
 
-  it('excludes persisted print design ids (order_items store fap01, not the token)', () => {
-    const plan = recommendPacking(['fap01', 'k01']);
+  it('excludes persisted print design ids (order_items store fap005, not the token)', () => {
+    const plan = recommendPacking(['fap005', 'k01']);
     expect(plan.planLabel).toBe('B');
     expect(packedIds(plan)).toEqual(['k01']);
     expect(plan.manualReview).toBe(false);
-    expect(plan.notes.some((n) => n.includes('fap01') && n.includes('Prodigi'))).toBe(true);
+    expect(plan.notes.some((n) => n.includes('fap005') && n.includes('Prodigi'))).toBe(true);
   });
 
   it('emits a single Prodigi note for multiple print lines', () => {
-    const plan = recommendPacking(['fap01', 'fap02', 'fap03']);
+    const plan = recommendPacking(['fap005', 'fap006', 'fap007']);
     expect(plan.packages).toEqual([]);
     expect(plan.manualReview).toBe(false);
     expect(plan.notes.filter((n) => n.includes('Prodigi'))).toHaveLength(1);

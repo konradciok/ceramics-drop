@@ -59,8 +59,12 @@ describe('catalog seed ↔ registry parity', () => {
     const rebuilt = mapPrintDesigns(seed.products, variants, seed.media);
     const fap005 = rebuilt.find((d) => d.id === 'fap005');
     expect(fap005?.sizes).toEqual(['30x40', '50x70']);
-    const fap04 = rebuilt.find((d) => d.id === 'fap04');
-    expect(fap04).toEqual(PRINT_DESIGNS.find((d) => d.id === 'fap04'));
+    // mockups is code-bundle truth, never DB truth (see the round-trip test
+    // above) — strip it before comparing the mapper's reconstruction.
+    const fap033 = rebuilt.find((d) => d.id === 'fap033');
+    const registryFap033 = { ...PRINT_DESIGNS.find((d) => d.id === 'fap033') };
+    delete registryFap033.mockups;
+    expect(fap033).toEqual(registryFap033);
   });
 
   it('emits one product row per ceramic piece (the 125-count contract)', () => {
@@ -72,10 +76,13 @@ describe('catalog seed ↔ registry parity', () => {
   it('emits one product row per print design (published and draft)', () => {
     const prints = seed.products.filter((p) => p.type === 'print');
     expect(prints).toHaveLength(PRINT_DESIGNS.length);
-    // Unpublished designs land as drafts, published as active.
-    expect(prints.find((p) => p.id === 'fap04')?.status).toBe('draft');
-    // fap01-03 withdrawn 2026-08-06 — land as drafts like fap04.
-    expect(prints.find((p) => p.id === 'fap01')?.status).toBe('draft');
+    // Unpublished designs land as drafts, published as active. All 41 current
+    // designs are published (the 6 initially held back 2026-08-17 for
+    // undersized/off-ratio 70x100 sources all got corrected re-exports the
+    // same day), so there's no live draft fixture right now — this seed-level
+    // mapping is a one-line ternary (`d.published ? 'active' : 'draft'`,
+    // src/lib/catalog/seed.ts) exercised structurally by every design here.
+    expect(prints.every((p) => p.status === 'active')).toBe(true);
     expect(prints.find((p) => p.id === 'fap005')?.status).toBe('active');
   });
 
@@ -160,11 +167,12 @@ describe('catalog seed ↔ registry parity', () => {
   });
 
   it('enumerates the expected variant count per design', () => {
-    // Full-axes policy (2026-08-03): every print design offers every variant —
-    // 3 sizes × (1 unframed + 3 colours × 2 mount states) = 21. The seed reads the
-    // RAW registry, so this contract survives the temporary mount withdrawal.
+    // The 2026-08-17 print-001..041 batch has no mount-crop source at all, so
+    // mountAvailable is false as RAW truth (not just read-gated) for every
+    // design — unlike the full-axes policy the prior batch's registry carried.
+    // 3 sizes × (1 unframed + 3 colours × 1 no-mount state) = 12.
     for (const d of PRINT_DESIGNS_RAW) {
-      expect(enumeratePrintVariants(d), d.id).toHaveLength(21);
+      expect(enumeratePrintVariants(d), d.id).toHaveLength(12);
     }
   });
 
