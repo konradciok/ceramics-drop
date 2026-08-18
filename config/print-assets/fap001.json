@@ -1,0 +1,12 @@
+{
+  "_comment": "Full-bleed painting 001 — 2026-08-17 batch reset, sourced from design/uploads/master-images-prints/print-001/",
+  "product": "fap001",
+  "mode": "fullBleed",
+  "format": "jpg",
+  "sources": {
+    "3x4": "design/uploads/master-images-prints/print-001/print-001__3x4.jpg",
+    "5x7": "design/uploads/master-images-prints/print-001/print-001__5x7.jpg",
+    "7x10": "design/uploads/master-images-prints/print-001/print-001__7x10.jpg",
+    "2x3": "design/uploads/master-images-prints/print-001/NO_MOUNT_SOURCE_2026-08-17.jpg"
+  }
+}

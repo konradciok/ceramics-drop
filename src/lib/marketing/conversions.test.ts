@@ -101,7 +101,7 @@ describe('sendPurchaseConversions', () => {
           total: 45800,
           items: [
             { product_id: 'k01', unit_price: 9000 },
-            { product_id: 'fap01', unit_price: 35000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-20X28' } },
+            { product_id: 'fap005', unit_price: 35000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-20X28' } },
           ],
         }),
       ),
@@ -109,10 +109,10 @@ describe('sendPurchaseConversions', () => {
     await sendPurchaseConversions('pi_1', d);
 
     const ga4Input = d.sendGa4.mock.calls[0][1];
-    const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap01');
+    const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap005');
     expect(printItem).toMatchObject({
-      item_id: 'fap01',
-      item_name: 'Print Nº 01',
+      item_id: 'fap005',
+      item_name: 'Print Nº 5',
       item_category: 'fine-art-prints',
       item_variant: '50×70 cm · frame black',
       price: 350,
@@ -123,7 +123,7 @@ describe('sendPurchaseConversions', () => {
     const metaInput = d.sendMeta.mock.calls[0][1];
     expect(metaInput.value).toBe(458); // total grosze → PLN
     expect(metaInput.numItems).toBe(2);
-    expect(metaInput.contents.map((c: { id: string }) => c.id)).toContain('fap01');
+    expect(metaInput.contents.map((c: { id: string }) => c.id)).toContain('fap005');
   });
 
   it('uses order_items.unit_price for Meta contents item_price (not catalogue price)', async () => {

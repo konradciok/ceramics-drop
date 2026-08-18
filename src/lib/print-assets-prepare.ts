@@ -51,6 +51,21 @@ const RATIO_VALUE: Record<PrintRatio, number> = {
 export const RATIO_TOLERANCE = 0.005;
 
 /**
+ * Allowed contain-fit upscale beyond 1.0x before `validateNoUpscale` fails
+ * closed. Exists for exactly one documented reason: Prodigi's "30x40"/"50x70"
+ * cm labels round up to a larger real sheet size (30x40 → 3600x4800px target,
+ * i.e. an actual 30x41cm sheet; 50x70 → 6000x8400px, an actual 51x71cm sheet —
+ * see docs/prodigi-sku-catalog.md), so a master exported at the literal
+ * label-cm × 300dpi size (3543x4724 / 5906x8268) is ~1.57% short of the true
+ * target on both axes. The 2026-08 `print-001`..`print-041` batch was
+ * delivered at exactly that literal size across all 41 designs — accepted as
+ * a one-time tolerance (2026-08-17) rather than re-exporting 82 files. Do not
+ * raise this further without a fresh, deliberate decision — it exists to
+ * cover one known, measured gap, not as a general safety margin.
+ */
+export const UPSCALE_TOLERANCE = 0.02;
+
+/**
  * Map a pixel width/height to one of the four named print ratios by aspect,
  * within `RATIO_TOLERANCE` (0.5% relative). Fails closed: throws when no
  * ratio matches, so an unrecognized future profile shape breaks loudly
@@ -283,11 +298,12 @@ export function validateNoUpscale(
   hasSignature: boolean,
 ): string[] {
   const placement = resolvePlacement(layout, target, artwork, hasSignature);
-  if (placement.scale > 1) {
+  if (placement.scale > 1 + UPSCALE_TOLERANCE) {
     return [
       `Cannot upscale artwork ${artwork.w}x${artwork.h} into box ` +
         `${placement.artworkBox.width}x${placement.artworkBox.height} on canvas ` +
-        `${target.w}x${target.h} (scale ${placement.scale.toFixed(4)})`,
+        `${target.w}x${target.h} (scale ${placement.scale.toFixed(4)}, ` +
+        `exceeds the ${(UPSCALE_TOLERANCE * 100).toFixed(0)}% tolerance)`,
     ];
   }
   return [];

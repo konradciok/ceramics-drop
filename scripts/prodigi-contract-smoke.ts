@@ -3,7 +3,7 @@
  * (create → getOrder → actions → mapProdigiStage → cancel) through the production
  * mapper + client, proving the contract round-trips. Sandbox-only, self-cleaning.
  *
- *   npm run prodigi:contract-smoke -- [--product fap01] [--strict] [--json] [--env-file PATH]
+ *   npm run prodigi:contract-smoke -- [--product fap005] [--strict] [--json] [--env-file PATH]
  *
  * Requires PRODIGI_API_KEY_SANDBOX + PRINT_ASSET_TOKEN_SECRET + SUPABASE_*.
  * --strict: fail (exit 1) when no usable print asset exists; without it, that case
@@ -32,7 +32,7 @@ type ReadyAssetFull = {
 
 function parseArgs(): { product: string; strict: boolean; json: boolean } {
   const argv = process.argv.slice(2);
-  let product = 'fap01';
+  let product = 'fap005';
   let strict = false;
   let json = false;
   for (let i = 0; i < argv.length; i++) {
@@ -40,7 +40,7 @@ function parseArgs(): { product: string; strict: boolean; json: boolean } {
     else if (argv[i] === '--strict') strict = true;
     else if (argv[i] === '--json') json = true;
     else if (argv[i] === '--help' || argv[i] === '-h') {
-      console.log('Usage: npm run prodigi:contract-smoke -- [--product fap01] [--strict] [--json] [--env-file PATH]');
+      console.log('Usage: npm run prodigi:contract-smoke -- [--product fap005] [--strict] [--json] [--env-file PATH]');
       process.exit(0);
     }
   }

@@ -4,7 +4,6 @@ import { PRINT_DESIGNS, registryPrintDesigns } from './prints';
 import {
   PRINT_COLLECTIONS,
   UNASSIGNED_COLLECTION,
-  collectionOf,
   groupPrintDesigns,
 } from './print-collections';
 import type { PrintDesign } from './types';
@@ -30,33 +29,24 @@ describe('PRINT_COLLECTIONS integrity', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it('covers all 43 full-bleed designs (fap005–fap047)', () => {
-    const fullBleed = PRINT_DESIGNS.filter((d) => /^fap0\d\d$/.test(d.id));
-    expect(fullBleed).toHaveLength(43);
-    for (const d of fullBleed) {
-      expect(collectionOf(d.id), `${d.id} must be assigned`).toBeDefined();
-    }
+  // The 2026-08-06 curation (fap005–fap047) was retired with the 2026-08-17
+  // registry reset. PRINT_COLLECTIONS is deliberately empty pending a real
+  // curatorial pass over the new fap001–fap041 batch — see print-collections.ts.
+  it('is empty pending re-curation of the 2026-08-17 batch', () => {
+    expect(PRINT_COLLECTIONS).toEqual([]);
   });
 });
 
 describe('groupPrintDesigns', () => {
   const published = registryPrintDesigns().filter((d) => d.published);
 
-  it('covers every published design exactly once, in collection order', () => {
+  it('with no collections curated yet, every published design falls into the inne fallback', () => {
     const groups = groupPrintDesigns(published);
-    // fap01-03 withdrawn 2026-08-06: every published design is curated, so
-    // the 'inne' fallback bucket is empty and dropped.
-    expect(groups.map((g) => g.slug)).toEqual(PRINT_COLLECTIONS.map((c) => c.slug));
-    const flat = groups.flatMap((g) => g.designs.map((d) => d.id));
+    expect(groups).toHaveLength(1);
+    expect(groups[0].slug).toBe(UNASSIGNED_COLLECTION);
+    const flat = groups[0].designs.map((d) => d.id);
     expect(new Set(flat).size).toBe(flat.length);
     expect(flat.sort()).toEqual(published.map((d) => d.id).sort());
-  });
-
-  it('withdrawn fap01–fap03 are unpublished and stay unassigned (fallback would catch them)', () => {
-    for (const id of ['fap01', 'fap02', 'fap03']) {
-      expect(PRINT_DESIGNS.find((d) => d.id === id)?.published, id).toBe(false);
-      expect(collectionOf(id), id).toBeUndefined();
-    }
   });
 
   it('unknown ids fall back to inne; empty groups are dropped', () => {

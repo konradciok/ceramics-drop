@@ -8,8 +8,8 @@ import {
 } from './print-assets-sandbox-matrix';
 
 describe('parseSandboxArgs', () => {
-  it('defaults to product fap01, no run-id, dryRun/help false', () => {
-    expect(parseSandboxArgs([])).toEqual({ product: 'fap01', runId: undefined, dryRun: false, help: false });
+  it('defaults to product fap005, no run-id, dryRun/help false', () => {
+    expect(parseSandboxArgs([])).toEqual({ product: 'fap005', runId: undefined, dryRun: false, help: false });
   });
 
   it('parses explicit --product, --run-id, --dry-run, and --help', () => {

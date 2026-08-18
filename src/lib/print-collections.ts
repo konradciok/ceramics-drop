@@ -6,8 +6,12 @@
    from DB rows, so a registry-only field would be silently dropped
    (and would break the catalog-parity round-trip). Grouping whatever
    getPrintDesigns() returns keeps code and db mode identical.
-   Curated 2026-08-06 from the 43 full-bleed paintings (fap005–fap047):
-   palette family first, motif second.
+   The 2026-08-06 curation (fap005–fap047, palette family first, motif
+   second) was retired with the 2026-08-17 registry reset — those ids no
+   longer exist. PRINT_COLLECTIONS is deliberately empty until the new
+   fap001–fap041 batch gets a real curatorial pass; every published design
+   falls into the UNASSIGNED_COLLECTION ('inne') fallback bucket in the
+   meantime, which groupPrintDesigns already handles (see its tests).
    ============================================================ */
 import type { PrintDesign } from './types';
 
@@ -27,33 +31,7 @@ export const UNASSIGNED_COLLECTION: PrintCollectionSlug = 'inne';
 export const PRINT_COLLECTIONS: ReadonlyArray<{
   slug: PrintCollectionSlug;
   designIds: readonly string[];
-}> = [
-  {
-    // Periwinkle & cobalt blues — vivid rings and pebble forms.
-    slug: 'ultramaryna',
-    designIds: ['fap029', 'fap033', 'fap037', 'fap036', 'fap038', 'fap027', 'fap045', 'fap039', 'fap014'],
-  },
-  {
-    // Rust/copper stitched ribbons coiling over slate-grey washes.
-    slug: 'miedz',
-    designIds: ['fap016', 'fap030', 'fap020', 'fap043', 'fap018', 'fap015', 'fap035', 'fap042'],
-  },
-  {
-    // Geode/mineral forms — navy, peach, terracotta, gold leaf.
-    slug: 'agat',
-    designIds: ['fap009', 'fap010', 'fap008', 'fap007', 'fap019', 'fap011', 'fap012', 'fap031', 'fap034'],
-  },
-  {
-    // Olive/sage greens with pale blue and golden ochre.
-    slug: 'szalwia',
-    designIds: ['fap005', 'fap006', 'fap026', 'fap041', 'fap024', 'fap021'],
-  },
-  {
-    // Smoky neutrals, sepia washes, moody horizons.
-    slug: 'nokturn',
-    designIds: ['fap017', 'fap013', 'fap025', 'fap022', 'fap040', 'fap046', 'fap023', 'fap028', 'fap032', 'fap044', 'fap047'],
-  },
-];
+}> = [];
 
 const COLLECTION_BY_ID: ReadonlyMap<string, PrintCollectionSlug> = new Map(
   PRINT_COLLECTIONS.flatMap((c) => c.designIds.map((id) => [id, c.slug] as const)),

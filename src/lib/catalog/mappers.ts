@@ -109,9 +109,10 @@ function distinctInOrder<T>(values: T[]): T[] {
  *
  * NOTE (Stage 3a): `unavailable` and per-size `prices` overrides are NOT stored
  * as such in the shadow tables (variants are the flattened form), so they are
- * left unset here. The current registry designs (fap01–fap04) use neither, so
- * the round-trip is exact for today's data; proper storage of those fields lands
- * with print CRUD (Stage 5). `variants`/`media` must be passed in `position` order.
+ * left unset here. No design in the current registry (fap001–fap041) uses
+ * either field, so the round-trip is exact for today's data; proper storage
+ * of those fields lands with print CRUD (Stage 5). `variants`/`media` must be
+ * passed in `position` order.
  */
 export function mapPrintDesigns(
   products: ProductSeedRow[],
