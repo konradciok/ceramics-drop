@@ -106,13 +106,21 @@ describe('assembleProductRows', () => {
 
   it('marks prints as POD with many variants and a "from" price', () => {
     const rows = assembleProductRows(catalog, new Map());
-    const fap01 = rows.find((r) => r.id === 'fap01')!;
-    expect(fap01.type).toBe('print');
-    expect(fap01.stockLabel).toBe('POD');
-    expect(fap01.variantCount).toBe(21);
-    expect(fap01.priceLabel).toMatch(/^od \d+ zł$/);
-    // An unpublished design lands as a draft.
-    expect(rows.find((r) => r.id === 'fap04')!.status).toBe('draft');
+    const fap005 = rows.find((r) => r.id === 'fap005')!;
+    expect(fap005.type).toBe('print');
+    expect(fap005.stockLabel).toBe('POD');
+    // No mount source in the 2026-08-17 batch (mountAvailable: false as raw
+    // truth): 3 sizes × (1 unframed + 3 colours) = 12.
+    expect(fap005.variantCount).toBe(12);
+    expect(fap005.priceLabel).toMatch(/^od \d+ zł$/);
+    // An unpublished design lands as a draft. All 41 current designs are
+    // published (2026-08-17) — synthesize a draft row rather than depending
+    // on a real one existing.
+    const withDraft = {
+      products: catalog.products.map((p) => (p.id === 'fap005' ? { ...p, status: 'draft' as const } : p)),
+      variants: catalog.variants,
+    };
+    expect(assembleProductRows(withDraft, new Map()).find((r) => r.id === 'fap005')!.status).toBe('draft');
   });
 
   it('sorts by category order then display number, prints last', () => {
@@ -125,14 +133,10 @@ describe('assembleProductRows', () => {
   it('sorts prints numerically by num, not lexicographically', () => {
     const rows = assembleProductRows(catalog, new Map());
     const printRows = rows.filter((r) => r.category === 'fine-art-prints');
-    // A string sort would put fap005 (num '005') before fap01 (num '01').
+    // A string sort would put fap010 (num '10') before fap002 (num '2').
     // Numeric sort never regresses: each row's num is >= the previous row's.
     for (let i = 1; i < printRows.length; i++) {
       expect(Number(printRows[i].num)).toBeGreaterThanOrEqual(Number(printRows[i - 1].num));
     }
-    // fap01 (num '01' -> 1) and fap005 (num '1' -> 1) tie numerically — a stable
-    // sort keeps fap01 first (registry order), never fap005 before it.
-    const printIds = printRows.map((r) => r.id);
-    expect(printIds.indexOf('fap01')).toBeLessThan(printIds.indexOf('fap005'));
   });
 });

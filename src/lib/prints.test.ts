@@ -9,26 +9,16 @@ describe('getPrintDesigns', () => {
   it('returns only published designs', async () => {
     const designs = await getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
-    expect(designs.map(d => d.id)).toEqual([
-      'fap005', 'fap006', 'fap007', 'fap008', 'fap009', 'fap010',
-      'fap011', 'fap012', 'fap013', 'fap014', 'fap015', 'fap016',
-      'fap017', 'fap018', 'fap019', 'fap020', 'fap021', 'fap022',
-      'fap023', 'fap024', 'fap025', 'fap026', 'fap027', 'fap028',
-      'fap029', 'fap030', 'fap031', 'fap032', 'fap033', 'fap034',
-      'fap035', 'fap036', 'fap037', 'fap038', 'fap039', 'fap040',
-      'fap041', 'fap042', 'fap043', 'fap044', 'fap045', 'fap046',
-      'fap047',
-    ]);
-    expect(designs.find(d => d.id === 'fap04')).toBeUndefined();
-    // fap01-03 withdrawn 2026-08-06 — production (pipeline-backed) designs only.
-    expect(designs.find(d => d.id === 'fap01')).toBeUndefined();
+    // All 41 designs (fap001–fap041) are published as of 2026-08-17: the 6
+    // initially held back for undersized/off-ratio 70x100 sources (fap001/
+    // 002/003/025/032/033) all received corrected re-exports the same day.
+    expect(designs.map(d => d.id)).toEqual(
+      Array.from({ length: 41 }, (_, i) => `fap${String(i + 1).padStart(3, '0')}`),
+    );
   });
 });
 
 describe('getPrintById', () => {
-  it('resolves unpublished designs (so checkout can reject them)', async () => {
-    expect((await getPrintById('fap04'))?.published).toBe(false);
-  });
   it('returns undefined for unknown id', async () => {
     expect(await getPrintById('unknown')).toBeUndefined();
   });
@@ -44,18 +34,20 @@ describe('isVariantAvailable', () => {
     expect(isVariantAvailable(fap005, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(true);
   });
   it('accepts valid framed+mount variant', () => {
-    // fap005's own mount axis is withdrawn while MOUNT_TEMPORARILY_DISABLED is on
-    // (print-availability.ts), so the accept branch runs against a synthetic
-    // mount-capable design — same pattern as the `noMount` fixture below.
+    // fap005's mountAvailable is stored false (2026-08-17 batch has no mount
+    // source at all — see registry header), so the accept branch runs against
+    // a synthetic mount-capable design — same pattern as the `noMount` fixture
+    // below.
     const withMount: PrintDesign = { ...fap005, mountAvailable: true };
     expect(isVariantAvailable(withMount, { size: '50x70', framed: true, mount: true, frameColour: 'natural' })).toBe(true);
   });
-  it('rejects unpublished design', async () => {
-    const fap04 = (await getPrintById('fap04'))!;
-    expect(isVariantAvailable(fap04, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
+  it('rejects unpublished design', () => {
+    // No design in the live registry is currently unpublished (all 41
+    // corrected and re-published 2026-08-17) — synthesize one to exercise
+    // the gate directly rather than depending on a real draft existing.
+    const unpublished: PrintDesign = { ...fap005, published: false };
+    expect(isVariantAvailable(unpublished, { size: '30x40', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
-  // 2026-08-03: fap02 widened to full axes (every print offers every variant),
-  // so the narrow-axes rejection paths are covered with synthetic shapes.
   it('rejects mount when design does not offer it', () => {
     const noMount: PrintDesign = { ...fap005, mountAvailable: false };
     expect(isVariantAvailable(noMount, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(false);
@@ -64,10 +56,10 @@ describe('isVariantAvailable', () => {
     const small: PrintDesign = { ...fap005, sizes: ['30x40', '50x70'] };
     expect(isVariantAvailable(small, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
-  it('rejects withdrawn (unpublished) fap02 even for its formerly valid variants', async () => {
-    const fap02 = (await getPrintById('fap02'))!;
-    expect(isVariantAvailable(fap02, { size: '30x40', framed: true, mount: true, frameColour: 'black' })).toBe(false);
-    expect(isVariantAvailable(fap02, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
+  it('rejects an unpublished design for every variant', () => {
+    const unpublished: PrintDesign = { ...fap005, published: false };
+    expect(isVariantAvailable(unpublished, { size: '30x40', framed: true, mount: false, frameColour: 'black' })).toBe(false);
+    expect(isVariantAvailable(unpublished, { size: '70x100', framed: false, mount: false, frameColour: 'none' })).toBe(false);
   });
   it('rejects framed=false with non-none colour', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

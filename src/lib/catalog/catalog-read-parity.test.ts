@@ -134,7 +134,12 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
       }),
     );
     // getPrintById resolves drafts too (checkout needs to reject hidden vs unknown).
-    expect((await getPrintById('fap04'))?.published).toBe(false);
+    // No design in the live registry is currently unpublished (all 41
+    // corrected and re-published 2026-08-17) — synthesize a draft row rather
+    // than depending on a real one existing.
+    const withDraft = dbPrints.map((d, i) => (i === 0 ? { ...d, published: false } : d));
+    vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(withDraft);
+    expect((await getPrintById(withDraft[0].id))?.published).toBe(false);
     expect(await getPrintById('unknown')).toBeUndefined();
     expect(loadPrintDesignsFromDb).toHaveBeenCalled();
   });

@@ -620,6 +620,18 @@ describe('validateNoUpscale', () => {
     const errors = validateNoUpscale(LAYOUT, { w: 1000, h: 1000 }, { w: 50, h: 50 }, true);
     expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
   });
+
+  it('accepts the documented ~1.6% shortfall from the 2026-08 print-001..041 batch', () => {
+    // Real measured dims: masters exported at label-cm x 300dpi fall short of
+    // Prodigi's true (larger) print-area target by ~1.57% on both axes.
+    expect(validateNoUpscale(FULL_BLEED_LAYOUT, { w: 3600, h: 4800 }, { w: 3543, h: 4724 }, false)).toEqual([]);
+    expect(validateNoUpscale(FULL_BLEED_LAYOUT, { w: 6000, h: 8400 }, { w: 5906, h: 8268 }, false)).toEqual([]);
+  });
+
+  it('still rejects a shortfall beyond the tolerance', () => {
+    const errors = validateNoUpscale(FULL_BLEED_LAYOUT, { w: 3600, h: 4800 }, { w: 3400, h: 4533 }, false);
+    expect(errors.some((e) => /upscale|enlarge/i.test(e))).toBe(true);
+  });
 });
 
 // ── ratioForProfile (full-bleed) ────────────────────────────────────────────

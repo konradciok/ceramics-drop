@@ -463,8 +463,8 @@ describe('previously-untested builders', () => {
   it('analyticsItemForId drops a print token with no priceOverride', () => {
     // Real 6-part token format `print:<design>:<size>:<framed>:<mount>:<frameColour>`
     // (the plan's illustrative `a3:satin:oak` would fail decodePrintToken).
-    expect(analyticsItemForId('print:fap01:50x70:true:false:black')).toBeNull();
-    expect(analyticsItemForId('print:fap01:50x70:true:false:black', 220)?.item_id).toBe('fap01');
+    expect(analyticsItemForId('print:fap005:50x70:true:false:black')).toBeNull();
+    expect(analyticsItemForId('print:fap005:50x70:true:false:black', 220)?.item_id).toBe('fap005');
   });
   it('login / sign_up carry method + user_id and no ecommerce', () => {
     const l = buildLoginEvent('google', 'u-123');
