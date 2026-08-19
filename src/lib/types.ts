@@ -102,6 +102,13 @@ export interface PrintDesign {
   num: string;                       // display number, unpadded, e.g. '1'
   image: string;
   gallery?: string[];
+  /** PDP-only static slides shown after the configurator hero — deliberately
+      excluded from merchant feeds (buildPrintFeedItems reads only `gallery`)
+      because these are lifestyle/staging shots, not the product itself. Not
+      surfaced by collection cards, the "more from this collection" strip, or
+      /gallery. Ship the 3 generated WebPs in the same PR as this field
+      (print-assets:editorial). */
+  editorialGallery?: string[];
   noteIndex: number;
   sizes: PrintSize[];
   frameColours: PrintFrameColour[];  // colours offered; empty means unframed-only

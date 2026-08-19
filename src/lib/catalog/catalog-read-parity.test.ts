@@ -124,12 +124,14 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(dbPrints);
 
     // getPrintDesigns filters to published, in num order — must equal the registry
-    // helper modulo `mockups`, which is code-bundle truth the DB path never carries
-    // (PrintProductScreen re-merges it from the code registry).
+    // helper modulo `mockups` and `editorialGallery`, which are code-bundle truth
+    // the DB path never carries (PrintProductScreen re-merges both from the code
+    // registry).
     expect(await getPrintDesigns()).toEqual(
       registryPrintDesigns().map((d) => {
         const design = { ...d };
         delete design.mockups;
+        delete design.editorialGallery;
         return design;
       }),
     );

@@ -51,7 +51,14 @@ export async function PrintProductScreen({
   const rawNotes = t.raw(`notes.${SLUG}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
   const note = noteOverride ?? fallbackNote;
-  const images = [design.image, ...(design.gallery ?? [])];
+
+  // Under CATALOG_SOURCE=db, `design` comes from mapPrintDesigns() (catalog
+  // shadow tables), which doesn't carry `mockups` / `editorialGallery` —
+  // merge them from the code registry so the live-mockup hero and the
+  // editorial slides are visible in production, not just in `code` mode
+  // (image-drift guard + rationale in withRegistryMockups).
+  const purchaseDesign = withRegistryMockups(design, registryPrintById(design.id));
+  const images = [purchaseDesign.image, ...(purchaseDesign.editorialGallery ?? [])];
 
   // Size dimensions the design offers, e.g. "A4 · 21 × 29,7 cm".
   const sizeLines = design.sizes.map((s) => `${t(`print.size.${s}`)} · ${t(`print.sizeHint.${s}`)}`).join(' / ');
@@ -59,12 +66,6 @@ export async function PrintProductScreen({
   const siblings = (await getPrintDesigns())
     .filter((d) => d.id !== design.id)
     .slice(0, 4);
-
-  // Under CATALOG_SOURCE=db, `design` comes from mapPrintDesigns() (catalog
-  // shadow tables), which doesn't carry `mockups` — merge it from the code
-  // registry so the live-mockup hero is visible in production, not just in
-  // `code` mode (image-drift guard + rationale in withRegistryMockups).
-  const purchaseDesign = withRegistryMockups(design, registryPrintById(design.id));
 
   return (
     <>

@@ -25,14 +25,15 @@ describe('catalog seed ↔ registry parity', () => {
 
   it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {
     const rebuilt = mapPrintDesigns(seed.products, seed.variants, seed.media);
-    // `mockups` is code-bundle truth, never DB truth: the WebPs ship in the
-    // bundle, the mapper doesn't carry the flag, and PrintProductScreen
-    // re-merges it from the code registry (guarded on image parity). The DB
-    // round-trip is therefore exact modulo that one flag.
+    // `mockups` and `editorialGallery` are code-bundle truth, never DB truth:
+    // the WebPs ship in the bundle, the mapper doesn't carry either field, and
+    // PrintProductScreen re-merges both from the code registry (guarded on
+    // image parity). The DB round-trip is therefore exact modulo those two.
     expect(rebuilt).toEqual(
       PRINT_DESIGNS.map((d) => {
         const design = { ...d };
         delete design.mockups;
+        delete design.editorialGallery;
         return design;
       }),
     );
@@ -59,11 +60,13 @@ describe('catalog seed ↔ registry parity', () => {
     const rebuilt = mapPrintDesigns(seed.products, variants, seed.media);
     const fap005 = rebuilt.find((d) => d.id === 'fap005');
     expect(fap005?.sizes).toEqual(['30x40', '50x70']);
-    // mockups is code-bundle truth, never DB truth (see the round-trip test
-    // above) — strip it before comparing the mapper's reconstruction.
+    // mockups + editorialGallery are code-bundle truth, never DB truth (see
+    // the round-trip test above) — strip them before comparing the mapper's
+    // reconstruction.
     const fap033 = rebuilt.find((d) => d.id === 'fap033');
     const registryFap033 = { ...PRINT_DESIGNS.find((d) => d.id === 'fap033') };
     delete registryFap033.mockups;
+    delete registryFap033.editorialGallery;
     expect(fap033).toEqual(registryFap033);
   });
 

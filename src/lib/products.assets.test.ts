@@ -52,6 +52,11 @@ function registryImagePaths(): string[] {
   for (const p of [...registryProducts(), ...PRINT_DESIGNS]) {
     paths.push(p.image);
     for (const g of p.gallery ?? []) paths.push(g);
+    // editorialGallery only exists on PrintDesign (ceramic Product has no such
+    // field) — narrow the union so the loop stays shared across both types.
+    if ('editorialGallery' in p) {
+      for (const g of p.editorialGallery ?? []) paths.push(g);
+    }
   }
   // Mockup states come off the RAW registry: passe-partout is temporarily
   // withdrawn from sale (print-availability.ts) but the `mock-mount-*` WebPs stay
