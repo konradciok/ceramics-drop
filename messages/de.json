@@ -371,6 +371,7 @@
     "plOnly": "Keramik wird nur an Adressen in Polen versandt.",
     "line1": "Straße und Hausnummer",
     "line2": "Wohnung, Etage usw. (optional)",
+    "suggestionsLabel": "Adressvorschläge",
     "errors": {
       "required": "Dieses Feld ist erforderlich.",
       "email": "Gib eine gültige E-Mail-Adresse ein.",

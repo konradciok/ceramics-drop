@@ -9,7 +9,9 @@ import {
   type PrintDeliveryContact,
   type PrintShippingAddress,
 } from '@/lib/print-delivery';
-import type { PrintCountry } from '@/lib/print-shipping';
+import { isPrintCountry, type PrintCountry } from '@/lib/print-shipping';
+import { AddressAutocomplete } from './AddressAutocomplete';
+import type { ParsedPlaceAddress } from '@/lib/google-places';
 
 export const PRINT_DELIVERY_FORM_ID = 'print-delivery-form';
 
@@ -86,16 +88,19 @@ export function PrintDeliveryForm({
     onCountryChange(draft.address.country_code);
   }, [draft, onCountryChange]);
 
-  function parsed() {
+  // `snapshot` defaults to the current `draft` closure, but callers that
+  // just wrote fresh state via `setDraft` (e.g. autocomplete selection) can
+  // pass the just-computed draft so validation doesn't run against stale data.
+  function parsed(snapshot: Draft = draft) {
     return {
-      contact: printDeliveryContactSchema(draft.address.country_code).safeParse(draft.contact),
-      address: printShippingAddressSchema.safeParse(draft.address),
+      contact: printDeliveryContactSchema(snapshot.address.country_code).safeParse(snapshot.contact),
+      address: printShippingAddressSchema.safeParse(snapshot.address),
     };
   }
 
-  function collectErrors(only?: FieldName): Partial<Record<FieldName, string>> {
+  function collectErrors(only?: FieldName, snapshot: Draft = draft): Partial<Record<FieldName, string>> {
     const next: Partial<Record<FieldName, string>> = {};
-    const result = parsed();
+    const result = parsed(snapshot);
     for (const parseResult of [result.contact, result.address]) {
       if (parseResult.success) continue;
       for (const issue of parseResult.error.issues) {
@@ -108,12 +113,29 @@ export function PrintDeliveryForm({
     return next;
   }
 
-  function validateField(field: FieldName) {
+  function validateField(field: FieldName, snapshot: Draft = draft) {
     setErrors((current) => {
       const next = { ...current };
       delete next[field];
-      return { ...next, ...collectErrors(field) };
+      return { ...next, ...collectErrors(field, snapshot) };
     });
+  }
+
+  // Selecting an autocomplete suggestion (KTD: AddressAutocomplete is
+  // controlled — it hands us the parsed place, we own draft/errors).
+  function handleSelectPlace(parsedAddress: ParsedPlaceAddress) {
+    const nextAddress = {
+      ...draft.address,
+      line1: parsedAddress.line1 || draft.address.line1,
+      city: parsedAddress.city || draft.address.city,
+      post_code: parsedAddress.post_code || draft.address.post_code,
+      country_code: isPrintCountry(parsedAddress.country_code)
+        ? parsedAddress.country_code
+        : draft.address.country_code,
+    };
+    setDraft((d) => ({ ...d, address: nextAddress }));
+    const snapshot: Draft = { ...draft, address: nextAddress };
+    (['line1', 'city', 'post_code', 'country_code'] as const).forEach((field) => validateField(field, snapshot));
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -187,8 +209,10 @@ export function PrintDeliveryForm({
       </label>
       <label className="field">
         <span>{t('line1')}</span>
-        <input name="address.line1" required autoComplete="section-print shipping address-line1"
-          value={draft.address.line1} onChange={(e) => setDraft((d) => ({ ...d, address: { ...d.address, line1: e.target.value } }))}
+        <AddressAutocomplete name="address.line1" required autoComplete="section-print shipping address-line1"
+          value={draft.address.line1} onChange={(line1) => setDraft((d) => ({ ...d, address: { ...d.address, line1 } }))}
+          onSelectPlace={handleSelectPlace} countryCode={draft.address.country_code}
+          suggestionsLabel={t('suggestionsLabel')}
           onBlur={() => validateField('line1')} {...aria('line1')} />
         {fieldError('line1')}
       </label>

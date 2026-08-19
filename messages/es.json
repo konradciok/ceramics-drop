@@ -371,6 +371,7 @@
     "plOnly": "La cerámica se envía únicamente a direcciones en Polonia.",
     "line1": "Calle y número",
     "line2": "Piso, planta, etc. (opcional)",
+    "suggestionsLabel": "Sugerencias de dirección",
     "errors": {
       "required": "Este campo es obligatorio.",
       "email": "Introduce un correo electrónico válido.",
