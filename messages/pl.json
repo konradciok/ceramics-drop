@@ -372,6 +372,7 @@
     "line1": "Ulica i numer budynku",
     "line2": "Lokal, piętro itp. (opcjonalnie)",
     "suggestionsLabel": "Sugestie adresu",
+    "googleAttribution": "Powered by Google",
     "errors": {
       "required": "To pole jest wymagane.",
       "email": "Wpisz poprawny adres e-mail.",

@@ -90,10 +90,15 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
     let cancelled = false;
     let succeeded = false;
     let inFlight = false;
+    // Set on a denied/withdrawn consent event so a load that was already
+    // in flight can't resolve into `ready` after the fact — otherwise a
+    // shopper who revokes consent mid-load would still get an active
+    // autocomplete field sending queries to Google.
+    let withdrawn = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
     function attempt(consentCookie: string) {
-      if (succeeded || inFlight || !shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
+      if (succeeded || inFlight || withdrawn || !shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
       inFlight = true;
       timeout = setTimeout(() => {
         if (!cancelled) setFailed(true);
@@ -101,13 +106,16 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
 
       runGooglePlacesLoader(consentCookie, API_KEY, document)
         .then(() => {
-          if (cancelled) return;
+          if (cancelled || withdrawn) return;
           succeeded = true;
           clearTimeout(timeout);
+          // A prior attempt's timeout may have already set `failed` before
+          // this later success — clear it so the field actually activates.
+          setFailed(false);
           setReady(true);
         })
         .catch(() => {
-          if (cancelled) return;
+          if (cancelled || withdrawn) return;
           clearTimeout(timeout);
           setFailed(true);
         })
@@ -119,7 +127,19 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
     attempt(document.cookie);
 
     function handleConsentChange() {
-      attempt(document.cookie);
+      if (readConsent(document.cookie) === 'granted') {
+        withdrawn = false;
+        attempt(document.cookie);
+        return;
+      }
+      // Denied (or any other non-granted value) after having been granted —
+      // deactivate immediately, even if a load already succeeded, so no
+      // further autocomplete queries reach Google post-withdrawal.
+      withdrawn = true;
+      succeeded = false;
+      clearTimeout(timeout);
+      setReady(false);
+      setFailed(false);
     }
     window.addEventListener(CONSENT_CHANGE_EVENT, handleConsentChange);
 

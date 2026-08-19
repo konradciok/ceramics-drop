@@ -82,11 +82,26 @@ export function PrintDeliveryForm({
   const [draft, setDraft] = useState<Draft>(() => readDraft(initialCountry));
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
   const formRef = useRef<HTMLFormElement>(null);
+  // Fields to re-validate once an autocomplete-driven `draft` update commits
+  // (see `handleSelectPlace`) — kept out of the `setDraft` updater itself so
+  // the updater stays pure (React may invoke it more than once).
+  const pendingPlaceValidationRef = useRef<FieldName[] | null>(null);
 
   useEffect(() => {
     sessionStorage.setItem(PRINT_DELIVERY_DRAFT_KEY, JSON.stringify(draft));
     onCountryChange(draft.address.country_code);
   }, [draft, onCountryChange]);
+
+  useEffect(() => {
+    const fields = pendingPlaceValidationRef.current;
+    if (!fields) return;
+    pendingPlaceValidationRef.current = null;
+    fields.forEach((field) => validateField(field));
+    // `validateField` reads the committed `draft` via its default snapshot
+    // param, and this effect only runs after `draft` commits, so it never
+    // sees a stale value — this is why the flag+effect indirection exists.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
 
   // `snapshot` defaults to the current `draft` closure, but callers that
   // just wrote fresh state via `setDraft` (e.g. autocomplete selection) can
@@ -122,14 +137,17 @@ export function PrintDeliveryForm({
   }
 
   // Selecting an autocomplete suggestion (KTD: AddressAutocomplete is
-  // controlled — it hands us the parsed place, we own draft/errors).
-  // Builds `nextAddress` from the functional updater's own `d` (not the
-  // outer `draft` closure) so a field edited while the async place-details
-  // fetch was in flight isn't silently reverted by a stale merge.
+  // controlled — it hands us the parsed place, we own draft/errors). The
+  // `setDraft` updater reads its own `d` (not the outer `draft` closure) so
+  // a field edited while the async place-details fetch was in flight isn't
+  // silently reverted by a stale merge — and, since React may invoke an
+  // updater more than once, it stays a pure computation with no side
+  // effects of its own; the pending-validation flag + effect above run the
+  // validation once the update has actually committed.
   function handleSelectPlace(parsedAddress: ParsedPlaceAddress) {
-    let snapshot!: Draft;
-    setDraft((d) => {
-      const nextAddress = {
+    setDraft((d) => ({
+      ...d,
+      address: {
         ...d.address,
         line1: parsedAddress.line1 || d.address.line1,
         city: parsedAddress.city || d.address.city,
@@ -137,12 +155,9 @@ export function PrintDeliveryForm({
         country_code: isPrintCountry(parsedAddress.country_code)
           ? parsedAddress.country_code
           : d.address.country_code,
-      };
-      const next = { ...d, address: nextAddress };
-      snapshot = next;
-      return next;
-    });
-    (['line1', 'city', 'post_code', 'country_code'] as const).forEach((field) => validateField(field, snapshot));
+      },
+    }));
+    pendingPlaceValidationRef.current = ['line1', 'city', 'post_code', 'country_code'];
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -219,7 +234,7 @@ export function PrintDeliveryForm({
         <AddressAutocomplete name="address.line1" required autoComplete="section-print shipping address-line1"
           value={draft.address.line1} onChange={(line1) => setDraft((d) => ({ ...d, address: { ...d.address, line1 } }))}
           onSelectPlace={handleSelectPlace} countryCode={draft.address.country_code}
-          suggestionsLabel={t('suggestionsLabel')}
+          suggestionsLabel={t('suggestionsLabel')} attributionLabel={t('googleAttribution')}
           onBlur={() => validateField('line1')} {...aria('line1')} />
         {fieldError('line1')}
       </label>

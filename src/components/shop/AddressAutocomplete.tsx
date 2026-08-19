@@ -39,6 +39,7 @@ export function AddressAutocomplete({
   required,
   autoComplete,
   suggestionsLabel,
+  attributionLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: {
@@ -51,6 +52,7 @@ export function AddressAutocomplete({
   required?: boolean;
   autoComplete?: string;
   suggestionsLabel: string;
+  attributionLabel: string;
   'aria-invalid'?: true | undefined;
   'aria-describedby'?: string | undefined;
 }) {
@@ -59,6 +61,16 @@ export function AddressAutocomplete({
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Which country the current `suggestions` were fetched for — state, not a
+  // ref, because it gates the panel's visibility during render (this
+  // repo's lint config forbids reading `.current` during render). The
+  // panel simply stops rendering the instant `countryCode` no longer
+  // matches, without an effect having to imperatively clear anything
+  // (synchronous setState inside an effect body is also blocked) — closing
+  // a stale-country window a code review flagged, where a shopper could
+  // otherwise select an address from the previous country for the
+  // debounce duration.
+  const [suggestionsCountry, setSuggestionsCountry] = useState<PrintCountry | null>(null);
 
   // Session tokens are Google's billing-grouping mechanism (KTD): one per
   // typing session, minted lazily on first fetch and refreshed after a
@@ -104,6 +116,7 @@ export function AddressAutocomplete({
         // listbox, same as the R10 country-mismatch case (post-fetch, not
         // pre-fetch, trigger).
         const next = response.suggestions ?? [];
+        setSuggestionsCountry(country);
         setSuggestions(next);
         setOpen(next.length > 0);
         setActiveIndex(null);
@@ -228,7 +241,7 @@ export function AddressAutocomplete({
         aria-autocomplete={isActive ? 'list' : undefined}
         aria-activedescendant={isActive && activeIndex !== null ? optionId(activeIndex) : undefined}
       />
-      {isActive && open && suggestions.length > 0 && (
+      {isActive && open && suggestions.length > 0 && suggestionsCountry === countryCode && (
         <div className="addr-suggestions-panel">
           <ul className="addr-suggestions" role="listbox" id={listboxId} aria-label={suggestionsLabel}>
             {suggestions.map((suggestion, index) => {
@@ -254,7 +267,7 @@ export function AddressAutocomplete({
             })}
           </ul>
           {/* Required attribution (R9) — shown exactly when suggestions are visible. */}
-          <p className="addr-attribution">Powered by Google</p>
+          <p className="addr-attribution">{attributionLabel}</p>
         </div>
       )}
     </div>
