@@ -68,21 +68,29 @@ test.describe('fine-art print configurator @ci', () => {
 
     // syncKey snap-back: from another slide, a visual-state change must return
     // the gallery to slide 0 (exercisable once fap005 ships a second gallery slide).
-    if (design?.gallery?.length) {
+    if (design?.editorialGallery?.length) {
       await page.getByTestId('opt-framed-true').click();
       await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-black.webp');
       await page.locator('.pdp-img-dot').nth(1).click();
-      await expect(hero).toHaveAttribute('src', design.gallery[0]);
+      await expect(hero).toHaveAttribute('src', design.editorialGallery[0]);
       await page.getByTestId('opt-colour-brown').click();
       await expect(hero).toHaveAttribute('src', '/uploads/fap-005-mock-framed-brown.webp');
     }
   });
 
+  test('design with mockups and 3 editorial slides renders 4 dots (1 hero + 3 static)', async ({ page }) => {
+    const design = PRINT_DESIGNS.find((d) => d.published && d.mockups && (d.editorialGallery?.length ?? 0) === 3);
+    test.skip(!design, 'no published mockups design with 3 editorial slides');
+
+    await page.goto(`/fine-art-prints/${design!.id}`);
+    await expect(page.locator('.pdp-img-dot')).toHaveCount(4);
+  });
+
   test('design without mockups keeps a static hero', async ({ page }) => {
     const design = PRINT_DESIGNS.find(
-      (d) => d.published && !d.mockups && d.frameColours.length > 0 && (d.gallery?.length ?? 0) > 0,
+      (d) => d.published && !d.mockups && d.frameColours.length > 0 && (d.editorialGallery?.length ?? 0) > 0,
     );
-    test.skip(!design, 'no published mockup-less design with a gallery slide');
+    test.skip(!design, 'no published mockup-less design with an editorial gallery slide');
 
     await page.goto(`/fine-art-prints/${design!.id}`);
     const hero = page.locator('.pdp-img-main img');
@@ -93,9 +101,9 @@ test.describe('fine-art print configurator @ci', () => {
     // syncKey no-op half (live today): with a static hero the visual state
     // never changes, so browsing to another slide must survive option clicks.
     await page.locator('.pdp-img-dot').nth(1).click();
-    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
+    await expect(hero).toHaveAttribute('src', design!.editorialGallery![0]);
     await page.getByTestId('opt-colour-natural').click();
-    await expect(hero).toHaveAttribute('src', design!.gallery![0]);
+    await expect(hero).toHaveAttribute('src', design!.editorialGallery![0]);
   });
 
   test('fires the print funnel: list → select → view → add → remove', async ({ page }) => {

@@ -140,4 +140,26 @@ describe('withRegistryMockups', () => {
     expect(withRegistryMockups(dbDesign, { ...design })).toBe(dbDesign);
     expect(withRegistryMockups(dbDesign, undefined)).toBe(dbDesign);
   });
+
+  const editorialGallery = [
+    '/uploads/fap-01-life-01.webp',
+    '/uploads/fap-01-life-02.webp',
+    '/uploads/fap-01-life-03.webp',
+  ];
+  const registryWithGallery: PrintDesign = { ...design, editorialGallery };
+
+  it('merges editorialGallery from the registry design when images match', () => {
+    expect(withRegistryMockups(dbDesign, registryWithGallery)).toEqual({ ...dbDesign, editorialGallery });
+  });
+
+  it('does not merge editorialGallery when the DB image drifts from the registry stem', () => {
+    const drifted = { ...dbDesign, image: '/uploads/fap-01-v2.webp' };
+    expect(withRegistryMockups(drifted, registryWithGallery)).toBe(drifted);
+  });
+
+  it('does not mutate its input when merging editorialGallery', () => {
+    const input = { ...dbDesign };
+    withRegistryMockups(input, registryWithGallery);
+    expect(input.editorialGallery).toBeUndefined();
+  });
 });

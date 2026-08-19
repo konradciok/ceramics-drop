@@ -86,6 +86,27 @@ describe('temporary passe-partout withdrawal', () => {
   });
 });
 
+describe('editorialGallery registry self-consistency', () => {
+  it('every published design\'s editorialGallery references only its own fap-{NNN}-life-0N images, in order', async () => {
+    let checked = 0;
+    for (const design of await getPrintDesigns()) {
+      if (!design.editorialGallery) continue;
+      const match = /^fap(\d{3})$/.exec(design.id);
+      expect(match, design.id).not.toBeNull();
+      const num3 = match![1];
+      expect(design.editorialGallery, design.id).toEqual([
+        `/uploads/fap-${num3}-life-01.webp`,
+        `/uploads/fap-${num3}-life-02.webp`,
+        `/uploads/fap-${num3}-life-03.webp`,
+      ]);
+      checked++;
+    }
+    // Guard against a silent green pass if editorialGallery is ever removed
+    // from every design.
+    expect(checked).toBeGreaterThan(0);
+  });
+});
+
 describe('published print variant coverage', () => {
   it('has SKU and pricing coverage for every sellable variant', async () => {
     let checked = 0;

@@ -36,20 +36,27 @@ export function mockupHeroSrc(design: PrintDesign, sel: PrintVariantSelection): 
 }
 
 /**
- * Merge the code registry's `mockups` flag into a DB-sourced design
- * (CATALOG_SOURCE=db). The flag is code-bundle truth, never DB truth: the
- * WebPs ship in the bundle and the catalog mapper doesn't carry the flag.
- * Guarded on image parity — mock filenames derive from the REGISTRY image
- * stem, so if the DB media row ever drifts from it, degrade to the static
- * hero (the designed dormant mode) instead of 404ing mockupSrc.
+ * Merge the code registry's `mockups` flag and `editorialGallery` slides into
+ * a DB-sourced design (CATALOG_SOURCE=db). Both are code-bundle truth, never
+ * DB truth: the WebPs ship in the bundle and the catalog mapper doesn't carry
+ * either field. Guarded on image parity — mock filenames and editorial slide
+ * paths derive from the REGISTRY image stem, so if the DB media row ever
+ * drifts from it, degrade to the static hero / no extra slides (the designed
+ * dormant mode) instead of 404ing mockupSrc or rendering mismatched slides.
  */
 export function withRegistryMockups(
   design: PrintDesign,
   registryDesign: PrintDesign | undefined,
 ): PrintDesign {
-  return registryDesign?.mockups && registryDesign.image === design.image
-    ? { ...design, mockups: true }
-    : design;
+  if (!registryDesign || registryDesign.image !== design.image) return design;
+  // No-op (same reference) when there is nothing to merge, matching the
+  // original ternary's identity semantics for callers/tests that rely on it.
+  if (!registryDesign.mockups && !registryDesign.editorialGallery) return design;
+  return {
+    ...design,
+    ...(registryDesign.mockups ? { mockups: true } : {}),
+    ...(registryDesign.editorialGallery ? { editorialGallery: registryDesign.editorialGallery } : {}),
+  };
 }
 
 /**
