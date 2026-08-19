@@ -116,6 +116,10 @@ const UNTYPED_ALLOWLIST = new Set([
   'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
   'NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN',
   'NEXT_PUBLIC_INPOST_GEOWIDGET_ENV',
+  // Same reasoning as the InPost token above: the print checkout address
+  // autocomplete loader hook reads this via direct `process.env` property
+  // access, not a typed CloudflareEnv binding.
+  'NEXT_PUBLIC_GOOGLE_PLACES_API_KEY',
   // Build-time-only Workers Build env vars, read via `process.env` at build/
   // module-init time (next.config.ts source-map upload; sentry-options.ts
   // module init) — never part of the per-request `env` binding CloudflareEnv.
