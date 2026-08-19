@@ -9,7 +9,9 @@ import {
   type PrintDeliveryContact,
   type PrintShippingAddress,
 } from '@/lib/print-delivery';
-import type { PrintCountry } from '@/lib/print-shipping';
+import { isPrintCountry, type PrintCountry } from '@/lib/print-shipping';
+import { AddressAutocomplete } from './AddressAutocomplete';
+import type { ParsedPlaceAddress } from '@/lib/google-places';
 
 export const PRINT_DELIVERY_FORM_ID = 'print-delivery-form';
 
@@ -80,22 +82,40 @@ export function PrintDeliveryForm({
   const [draft, setDraft] = useState<Draft>(() => readDraft(initialCountry));
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
   const formRef = useRef<HTMLFormElement>(null);
+  // Fields to re-validate once an autocomplete-driven `draft` update commits
+  // (see `handleSelectPlace`) — kept out of the `setDraft` updater itself so
+  // the updater stays pure (React may invoke it more than once).
+  const pendingPlaceValidationRef = useRef<FieldName[] | null>(null);
 
   useEffect(() => {
     sessionStorage.setItem(PRINT_DELIVERY_DRAFT_KEY, JSON.stringify(draft));
     onCountryChange(draft.address.country_code);
   }, [draft, onCountryChange]);
 
-  function parsed() {
+  useEffect(() => {
+    const fields = pendingPlaceValidationRef.current;
+    if (!fields) return;
+    pendingPlaceValidationRef.current = null;
+    fields.forEach((field) => validateField(field));
+    // `validateField` reads the committed `draft` via its default snapshot
+    // param, and this effect only runs after `draft` commits, so it never
+    // sees a stale value — this is why the flag+effect indirection exists.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+
+  // `snapshot` defaults to the current `draft` closure, but callers that
+  // just wrote fresh state via `setDraft` (e.g. autocomplete selection) can
+  // pass the just-computed draft so validation doesn't run against stale data.
+  function parsed(snapshot: Draft = draft) {
     return {
-      contact: printDeliveryContactSchema(draft.address.country_code).safeParse(draft.contact),
-      address: printShippingAddressSchema.safeParse(draft.address),
+      contact: printDeliveryContactSchema(snapshot.address.country_code).safeParse(snapshot.contact),
+      address: printShippingAddressSchema.safeParse(snapshot.address),
     };
   }
 
-  function collectErrors(only?: FieldName): Partial<Record<FieldName, string>> {
+  function collectErrors(only?: FieldName, snapshot: Draft = draft): Partial<Record<FieldName, string>> {
     const next: Partial<Record<FieldName, string>> = {};
-    const result = parsed();
+    const result = parsed(snapshot);
     for (const parseResult of [result.contact, result.address]) {
       if (parseResult.success) continue;
       for (const issue of parseResult.error.issues) {
@@ -108,12 +128,36 @@ export function PrintDeliveryForm({
     return next;
   }
 
-  function validateField(field: FieldName) {
+  function validateField(field: FieldName, snapshot: Draft = draft) {
     setErrors((current) => {
       const next = { ...current };
       delete next[field];
-      return { ...next, ...collectErrors(field) };
+      return { ...next, ...collectErrors(field, snapshot) };
     });
+  }
+
+  // Selecting an autocomplete suggestion (KTD: AddressAutocomplete is
+  // controlled — it hands us the parsed place, we own draft/errors). The
+  // `setDraft` updater reads its own `d` (not the outer `draft` closure) so
+  // a field edited while the async place-details fetch was in flight isn't
+  // silently reverted by a stale merge — and, since React may invoke an
+  // updater more than once, it stays a pure computation with no side
+  // effects of its own; the pending-validation flag + effect above run the
+  // validation once the update has actually committed.
+  function handleSelectPlace(parsedAddress: ParsedPlaceAddress) {
+    setDraft((d) => ({
+      ...d,
+      address: {
+        ...d.address,
+        line1: parsedAddress.line1 || d.address.line1,
+        city: parsedAddress.city || d.address.city,
+        post_code: parsedAddress.post_code || d.address.post_code,
+        country_code: isPrintCountry(parsedAddress.country_code)
+          ? parsedAddress.country_code
+          : d.address.country_code,
+      },
+    }));
+    pendingPlaceValidationRef.current = ['line1', 'city', 'post_code', 'country_code'];
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -187,8 +231,10 @@ export function PrintDeliveryForm({
       </label>
       <label className="field">
         <span>{t('line1')}</span>
-        <input name="address.line1" required autoComplete="section-print shipping address-line1"
-          value={draft.address.line1} onChange={(e) => setDraft((d) => ({ ...d, address: { ...d.address, line1: e.target.value } }))}
+        <AddressAutocomplete name="address.line1" required autoComplete="section-print shipping address-line1"
+          value={draft.address.line1} onChange={(line1) => setDraft((d) => ({ ...d, address: { ...d.address, line1 } }))}
+          onSelectPlace={handleSelectPlace} countryCode={draft.address.country_code}
+          suggestionsLabel={t('suggestionsLabel')} attributionLabel={t('googleAttribution')}
           onBlur={() => validateField('line1')} {...aria('line1')} />
         {fieldError('line1')}
       </label>

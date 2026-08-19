@@ -371,6 +371,8 @@
     "plOnly": "Ceramics ship to addresses in Poland only.",
     "line1": "Street and house number",
     "line2": "Apartment, floor, etc. (optional)",
+    "suggestionsLabel": "Address suggestions",
+    "googleAttribution": "Powered by Google",
     "errors": {
       "required": "This field is required.",
       "email": "Enter a valid email address.",

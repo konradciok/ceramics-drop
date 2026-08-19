@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { defaultConsentSnippet, COOKIE_NAME, readConsent, setConsent } from './consent-mode';
+import { defaultConsentSnippet, COOKIE_NAME, CONSENT_CHANGE_EVENT, readConsent, setConsent } from './consent-mode';
 
 describe('consent mode', () => {
   it('default snippet denies analytics/ad storage', () => {
@@ -24,17 +24,19 @@ describe('consent mode', () => {
 describe('setConsent', () => {
   function stubWindowAndDocument() {
     const gtagCalls: unknown[][] = [];
+    const dispatchedEvents: Event[] = [];
     const cookieStore = { cookie: '' };
     vi.stubGlobal('document', cookieStore);
     vi.stubGlobal('window', {
       dataLayer: [],
       gtag: (...args: unknown[]) => { gtagCalls.push(args); },
+      dispatchEvent: (event: Event) => { dispatchedEvents.push(event); return true; },
     });
-    return { gtagCalls, cookieStore };
+    return { gtagCalls, cookieStore, dispatchedEvents };
   }
 
   it('granted: writes the cookie, updates gtag consent, and pushes consent_update', () => {
-    const { gtagCalls, cookieStore } = stubWindowAndDocument();
+    const { gtagCalls, cookieStore, dispatchedEvents } = stubWindowAndDocument();
 
     setConsent('granted');
 
@@ -50,10 +52,15 @@ describe('setConsent', () => {
     expect(window.dataLayer).toEqual([
       { event: 'consent_update', consent_state: 'granted' },
     ]);
+    // useGooglePlacesLoader (and any future same-page-view consumer) listens
+    // for this to react to a consent change without a reload.
+    expect(dispatchedEvents).toHaveLength(1);
+    expect(dispatchedEvents[0]?.type).toBe(CONSENT_CHANGE_EVENT);
+    expect((dispatchedEvents[0] as CustomEvent).detail).toEqual({ value: 'granted' });
   });
 
   it('denied: writes the cookie, updates gtag consent, and pushes consent_update', () => {
-    const { gtagCalls, cookieStore } = stubWindowAndDocument();
+    const { gtagCalls, cookieStore, dispatchedEvents } = stubWindowAndDocument();
 
     setConsent('denied');
 
@@ -69,5 +76,8 @@ describe('setConsent', () => {
     expect(window.dataLayer).toEqual([
       { event: 'consent_update', consent_state: 'denied' },
     ]);
+    expect(dispatchedEvents).toHaveLength(1);
+    expect(dispatchedEvents[0]?.type).toBe(CONSENT_CHANGE_EVENT);
+    expect((dispatchedEvents[0] as CustomEvent).detail).toEqual({ value: 'denied' });
   });
 });

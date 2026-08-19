@@ -2,6 +2,14 @@ export const COOKIE_NAME = 'ciok_consent';
 export type ConsentValue = 'granted' | 'denied';
 
 /**
+ * Dispatched on `window` whenever `setConsent()` runs, so a component that
+ * gated something at mount time (e.g. `useGooglePlacesLoader`) can react to
+ * a later consent change in the same page view instead of requiring a
+ * reload.
+ */
+export const CONSENT_CHANGE_EVENT = 'ciok-consent-change';
+
+/**
  * Inline script string: must run BEFORE GTM so defaults register first. It also
  * restores a returning visitor's stored consent in the SAME beforeInteractive
  * block — otherwise GTM would load with everything denied even after the user
@@ -59,4 +67,5 @@ export function setConsent(value: ConsentValue): void {
   // file, including server-side readConsent callers like the checkout route.
   window.dataLayer = window.dataLayer ?? [];
   window.dataLayer.push({ event: 'consent_update', consent_state: state });
+  window.dispatchEvent(new CustomEvent(CONSENT_CHANGE_EVENT, { detail: { value } }));
 }
