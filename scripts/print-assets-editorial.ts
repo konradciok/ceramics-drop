@@ -24,7 +24,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { registryPrintById, registryPrintDesigns } from '../src/lib/prints';
+import { PRINT_DESIGNS, registryPrintById } from '../src/lib/prints';
 import type { PrintDesign } from '../src/lib/types';
 import { parseScriptArgs, PRINT_ASSET_ARG_SPECS, ROOT } from './lib/print-assets-cli';
 import { generateWebpSet } from './lib/print-assets-storefront';
@@ -199,7 +199,10 @@ async function main(): Promise<void> {
     let plans: DesignPlan[];
 
     if (all) {
-      const designs = registryPrintDesigns();
+      // Unfiltered registry (includes drafts) — a draft design's source folder
+      // is still legitimate and must not be reported as an orphan just because
+      // the design isn't published yet.
+      const designs = PRINT_DESIGNS;
       console.log(`Validating ${designs.length} design(s) against ${path.relative(ROOT, SOURCE_ROOT)}...`);
       const { plans: validPlans, designFailures, orphanFailures } = validateAll(designs);
 

@@ -480,3 +480,34 @@ Ship in ONE PR: the generated `public/uploads/*-mock-*.webp` files **and**
 `mockups: true` on the design in `src/lib/prints.ts` (the PDP only swaps the
 hero when the flag is set). Re-run after every new fulfilment revision, like
 `print-assets:gallery`.
+
+## Editorial gallery (`print-assets:editorial`)
+
+Static lifestyle/editorial photos shown alongside the print product gallery
+(3 slides per design) — unrelated to the fulfilment pipeline: source PNGs
+come from `design/uploads/master-images-prints/print-{NNN}/`, named
+`print-{NNN}_mockup-0{1,2,3}.png`, not from an R2 derivative.
+
+```bash
+npm run print-assets:editorial -- --product fap001 --dry-run   # inspect one design
+npm run print-assets:editorial -- --product fap001             # convert one design
+npm run print-assets:editorial -- --all --dry-run              # validate + inspect every design
+npm run print-assets:editorial -- --all                        # convert every design
+```
+
+`--all` validates every registry design's source folder (including drafts —
+unpublished designs still own a legitimate folder) before converting
+anything; missing files, a wrong slide count, stray `_mockup-0N` variants,
+or an orphan `print-XXX` folder with no matching registry id all fail the
+whole run.
+
+Output is `public/uploads/fap-{NNN}-life-0{1,2,3}.webp` + 400/800/1600w
+srcset variants, mirrored to `public/uploads/` only — **no R2 upload** in
+this initial version, since these are static storefront assets rather than
+fulfilment derivatives. A successful non-dry-run `--all` run also writes a
+paste-ready `editorialGallery: [...]` snippet per design to
+`.superpowers/sdd/print-editorial-gallery-plan/generated-registry-snippets.txt`.
+
+Ship in ONE PR: the generated `public/uploads/fap-*-life-*.webp` files
+**and** the corresponding `editorialGallery` array on each design in
+`src/lib/prints.ts`.
