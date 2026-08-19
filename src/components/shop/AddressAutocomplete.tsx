@@ -178,7 +178,13 @@ export function AddressAutocomplete({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!ready || !open || suggestions.length === 0) return;
+    // Same country-match guard as the panel's render condition: `open`/
+    // `suggestions`/`activeIndex` retain their pre-change values until the
+    // re-scoped fetch resolves, so without this a keyboard user could
+    // Enter/Tab-select a suggestion from the previous country even though
+    // the panel is no longer visibly rendered for mouse users (follow-up
+    // code review finding).
+    if (!ready || !open || suggestions.length === 0 || suggestionsCountry !== countryCode) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setActiveIndex((current) => (current === null ? 0 : Math.min(current + 1, suggestions.length - 1)));
@@ -215,6 +221,7 @@ export function AddressAutocomplete({
   // mount), dropping focus and cursor position out from under a shopper
   // who's already typing.
   const isActive = ready && !failed;
+  const hasCurrentSuggestions = open && suggestions.length > 0 && suggestionsCountry === countryCode;
 
   return (
     <div className="addr-autocomplete">
@@ -236,12 +243,12 @@ export function AddressAutocomplete({
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
         role={isActive ? 'combobox' : undefined}
-        aria-expanded={isActive ? open : undefined}
+        aria-expanded={isActive ? hasCurrentSuggestions : undefined}
         aria-controls={isActive ? listboxId : undefined}
         aria-autocomplete={isActive ? 'list' : undefined}
-        aria-activedescendant={isActive && activeIndex !== null ? optionId(activeIndex) : undefined}
+        aria-activedescendant={isActive && hasCurrentSuggestions && activeIndex !== null ? optionId(activeIndex) : undefined}
       />
-      {isActive && open && suggestions.length > 0 && suggestionsCountry === countryCode && (
+      {isActive && hasCurrentSuggestions && (
         <div className="addr-suggestions-panel">
           <ul className="addr-suggestions" role="listbox" id={listboxId} aria-label={suggestionsLabel}>
             {suggestions.map((suggestion, index) => {
