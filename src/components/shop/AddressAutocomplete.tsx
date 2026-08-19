@@ -145,6 +145,10 @@ export function AddressAutocomplete({
       const { place: fetchedPlace } = await place.fetchFields({ fields: ['addressComponents'] });
       const parsedAddress = parseAddressComponents(fetchedPlace.addressComponents ?? []);
       onSelectPlace(parsedAddress);
+    } catch {
+      // fetchFields can reject (network hiccup, revoked key mid-session) —
+      // fail open and leave the shopper's typed text as-is rather than an
+      // unhandled rejection (call sites invoke this via `void`).
     } finally {
       // A new session begins after a place is selected (KTD) — reusing the
       // spent token would bill every keystroke of the next address as a
@@ -189,20 +193,15 @@ export function AddressAutocomplete({
   const listboxId = `${name}-listbox`;
   const optionId = (index: number) => `${name}-option-${index}`;
 
-  if (!ready || failed) {
-    return (
-      <input
-        name={name}
-        required={required}
-        autoComplete={autoComplete}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        aria-invalid={ariaInvalid}
-        aria-describedby={ariaDescribedBy}
-      />
-    );
-  }
+  // A single <input> element covers both states (KTD: fail-open means the
+  // unchanged plain input). Keeping it one element — rather than two
+  // separate top-level returns for the ready/not-ready branches — matters
+  // beyond DRY: React reconciles by element identity, so two different
+  // top-level <input> elements would unmount/remount the DOM node the
+  // instant `ready`/`failed` flips (e.g. the loader resolving right after
+  // mount), dropping focus and cursor position out from under a shopper
+  // who's already typing.
+  const isActive = ready && !failed;
 
   return (
     <div className="addr-autocomplete">
@@ -211,21 +210,25 @@ export function AddressAutocomplete({
         required={required}
         autoComplete={autoComplete}
         value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onBlur={() => {
-          closeList();
-          onBlur();
-        }}
+        onChange={isActive ? handleChange : (e) => onChange(e.target.value)}
+        onKeyDown={isActive ? handleKeyDown : undefined}
+        onBlur={
+          isActive
+            ? () => {
+                closeList();
+                onBlur();
+              }
+            : onBlur
+        }
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listboxId}
-        aria-autocomplete="list"
-        aria-activedescendant={activeIndex !== null ? optionId(activeIndex) : undefined}
+        role={isActive ? 'combobox' : undefined}
+        aria-expanded={isActive ? open : undefined}
+        aria-controls={isActive ? listboxId : undefined}
+        aria-autocomplete={isActive ? 'list' : undefined}
+        aria-activedescendant={isActive && activeIndex !== null ? optionId(activeIndex) : undefined}
       />
-      {open && suggestions.length > 0 && (
+      {isActive && open && suggestions.length > 0 && (
         <div className="addr-suggestions-panel">
           <ul className="addr-suggestions" role="listbox" id={listboxId} aria-label={suggestionsLabel}>
             {suggestions.map((suggestion, index) => {

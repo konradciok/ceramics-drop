@@ -123,18 +123,25 @@ export function PrintDeliveryForm({
 
   // Selecting an autocomplete suggestion (KTD: AddressAutocomplete is
   // controlled — it hands us the parsed place, we own draft/errors).
+  // Builds `nextAddress` from the functional updater's own `d` (not the
+  // outer `draft` closure) so a field edited while the async place-details
+  // fetch was in flight isn't silently reverted by a stale merge.
   function handleSelectPlace(parsedAddress: ParsedPlaceAddress) {
-    const nextAddress = {
-      ...draft.address,
-      line1: parsedAddress.line1 || draft.address.line1,
-      city: parsedAddress.city || draft.address.city,
-      post_code: parsedAddress.post_code || draft.address.post_code,
-      country_code: isPrintCountry(parsedAddress.country_code)
-        ? parsedAddress.country_code
-        : draft.address.country_code,
-    };
-    setDraft((d) => ({ ...d, address: nextAddress }));
-    const snapshot: Draft = { ...draft, address: nextAddress };
+    let snapshot!: Draft;
+    setDraft((d) => {
+      const nextAddress = {
+        ...d.address,
+        line1: parsedAddress.line1 || d.address.line1,
+        city: parsedAddress.city || d.address.city,
+        post_code: parsedAddress.post_code || d.address.post_code,
+        country_code: isPrintCountry(parsedAddress.country_code)
+          ? parsedAddress.country_code
+          : d.address.country_code,
+      };
+      const next = { ...d, address: nextAddress };
+      snapshot = next;
+      return next;
+    });
     (['line1', 'city', 'post_code', 'country_code'] as const).forEach((field) => validateField(field, snapshot));
   }
 

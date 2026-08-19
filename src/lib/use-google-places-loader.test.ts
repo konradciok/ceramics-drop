@@ -35,20 +35,20 @@ describe('shouldLoadGooglePlaces', () => {
  * `environment: 'node'` — see use-strip-url-token.test.ts for the precedent).
  */
 function stubDocument() {
-  const appendedScripts: Array<{ attrs: Record<string, string> }> = [];
-  const headAppendChild = vi.fn((el: { attrs: Record<string, string> }) => {
+  const appendedScripts: Array<{ attrs: Record<string, string>; textContent: string }> = [];
+  const headAppendChild = vi.fn((el: { attrs: Record<string, string>; textContent: string }) => {
     appendedScripts.push(el);
   });
   const querySelector = vi.fn(() => null);
   const createElement = vi.fn(() => {
-    const attrs: Record<string, string> = {};
-    return {
-      attrs,
-      setAttribute: (name: string, value: string) => {
-        attrs[name] = value;
+    const el = {
+      attrs: {} as Record<string, string>,
+      textContent: '',
+      setAttribute(name: string, value: string) {
+        el.attrs[name] = value;
       },
-      set textContent(_v: string) {},
     };
+    return el;
   });
   const doc = {
     querySelector,
@@ -114,7 +114,20 @@ describe('runGooglePlacesLoader (enforcement — gate must actually block the DO
 
     expect(headAppendChild).toHaveBeenCalledTimes(1);
     expect(appendedScripts[0]?.attrs['data-google-places']).toBe('');
+    // A broken key embed would pass every other assertion in this file, so
+    // pin the exact serialized form Google's key/v params expect.
+    expect(appendedScripts[0]?.textContent).toContain('key:"a-key"');
     expect(importLibrary).toHaveBeenCalledWith('places');
+  });
+
+  it('propagates rejection when importLibrary fails to load', async () => {
+    const importLibrary = vi.fn().mockRejectedValue(new Error('blocked'));
+    vi.stubGlobal('google', { maps: { importLibrary } });
+    const { doc } = stubDocument();
+
+    await expect(
+      runGooglePlacesLoader('ciok_consent=granted', 'a-key', doc as unknown as Document),
+    ).rejects.toThrow('blocked');
   });
 
   it('does not append a second script when one is already present', async () => {
