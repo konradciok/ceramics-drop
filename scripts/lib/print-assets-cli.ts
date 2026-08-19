@@ -42,6 +42,7 @@ export const PRINT_ASSET_ARG_SPECS = {
   publish: { strings: ['product', 'revision', 'confirm', 'actor'], booleans: ['dry-run'] },
   gallery: { strings: ['product', 'slot', 'revision'], booleans: ['dry-run'] },
   mockups: { strings: ['product', 'state', 'revision'], booleans: ['dry-run'] },
+  editorial: { strings: ['product'], booleans: ['all', 'dry-run'] },
   onboard: { strings: ['manifest'], booleans: ['dry-run', 'force'] },
 } as const;
 
