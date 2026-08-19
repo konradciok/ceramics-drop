@@ -89,7 +89,6 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
 
     let cancelled = false;
     let succeeded = false;
-    let inFlight = false;
     // Set on a denied/withdrawn consent event so a load that was already
     // in flight can't resolve into `ready` after the fact — otherwise a
     // shopper who revokes consent mid-load would still get an active
@@ -97,30 +96,46 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
     let withdrawn = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
+    // `attemptId` distinguishes a still-relevant attempt from a superseded
+    // one; `awaitingResult` gates whether a *new* attempt is allowed to
+    // start. These are deliberately separate: the load timeout clears
+    // `awaitingResult` (so a later consent event can retry even if
+    // `importLibrary()` never settles at all) without touching
+    // `attemptCounter`, so a late success/failure from the original,
+    // still-outstanding promise is honored if nothing else has retried
+    // since, and ignored if a newer attempt has.
+    let attemptCounter = 0;
+    let currentAttemptId = 0;
+    let awaitingResult = false;
+
     function attempt(consentCookie: string) {
-      if (succeeded || inFlight || withdrawn || !shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
-      inFlight = true;
+      if (succeeded || withdrawn || awaitingResult || !shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
+      const attemptId = ++attemptCounter;
+      currentAttemptId = attemptId;
+      awaitingResult = true;
       timeout = setTimeout(() => {
-        if (!cancelled) setFailed(true);
+        if (cancelled) return;
+        awaitingResult = false;
+        setFailed(true);
       }, LOAD_TIMEOUT_MS);
 
       runGooglePlacesLoader(consentCookie, API_KEY, document)
         .then(() => {
-          if (cancelled || withdrawn) return;
+          if (cancelled || withdrawn || attemptId !== currentAttemptId) return; // superseded by a retry
           succeeded = true;
+          awaitingResult = false;
           clearTimeout(timeout);
-          // A prior attempt's timeout may have already set `failed` before
-          // this later success — clear it so the field actually activates.
+          // A prior timeout on this same attempt may have already set
+          // `failed` before this later success — clear it so the field
+          // actually activates.
           setFailed(false);
           setReady(true);
         })
         .catch(() => {
-          if (cancelled || withdrawn) return;
+          if (cancelled || withdrawn || attemptId !== currentAttemptId) return;
+          awaitingResult = false;
           clearTimeout(timeout);
           setFailed(true);
-        })
-        .finally(() => {
-          inFlight = false;
         });
     }
 
@@ -134,9 +149,14 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
       }
       // Denied (or any other non-granted value) after having been granted —
       // deactivate immediately, even if a load already succeeded, so no
-      // further autocomplete queries reach Google post-withdrawal.
+      // further autocomplete queries reach Google post-withdrawal. Also
+      // release the in-flight lock so a later re-grant can retry rather
+      // than waiting on a promise that may be revoked mid-load and never
+      // settle; the `attemptId !== currentAttemptId` check above still
+      // discards that stale completion if it eventually does.
       withdrawn = true;
       succeeded = false;
+      awaitingResult = false;
       clearTimeout(timeout);
       setReady(false);
       setFailed(false);
