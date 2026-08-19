@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { readConsent } from '@/components/consent/consent-mode';
+import { CONSENT_CHANGE_EVENT, readConsent } from '@/components/consent/consent-mode';
 
 /**
  * Consent-gated loader for the Google Maps JavaScript API's dynamic library
@@ -74,6 +74,11 @@ const LOAD_TIMEOUT_MS = 8000;
  * GeowidgetPicker.tsx's timeout-fallback shape: if loading never resolves
  * (blocked, offline, misconfigured), `failed` flips to true after 8s so
  * callers can fall back to plain text address fields.
+ *
+ * Re-attempts on `CONSENT_CHANGE_EVENT` (dispatched by `setConsent()`) so a
+ * shopper who accepts the cookie banner while already focused on the
+ * address field gets autocomplete without a page reload, not just visitors
+ * who had already granted consent before this component mounted.
  */
 export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
   const [ready, setReady] = useState(false);
@@ -81,31 +86,48 @@ export function useGooglePlacesLoader(): { ready: boolean; failed: boolean } {
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const consentCookie = document.cookie;
-    if (!shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
 
     let cancelled = false;
-    const timeout = setTimeout(() => {
-      if (!cancelled) setFailed(true);
-    }, LOAD_TIMEOUT_MS);
+    let succeeded = false;
+    let inFlight = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
-    runGooglePlacesLoader(consentCookie, API_KEY, document)
-      .then(() => {
-        if (cancelled) return;
-        clearTimeout(timeout);
-        setReady(true);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        clearTimeout(timeout);
-        setFailed(true);
-      });
+    function attempt(consentCookie: string) {
+      if (succeeded || inFlight || !shouldLoadGooglePlaces(consentCookie, API_KEY)) return;
+      inFlight = true;
+      timeout = setTimeout(() => {
+        if (!cancelled) setFailed(true);
+      }, LOAD_TIMEOUT_MS);
+
+      runGooglePlacesLoader(consentCookie, API_KEY, document)
+        .then(() => {
+          if (cancelled) return;
+          succeeded = true;
+          clearTimeout(timeout);
+          setReady(true);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          clearTimeout(timeout);
+          setFailed(true);
+        })
+        .finally(() => {
+          inFlight = false;
+        });
+    }
+
+    attempt(document.cookie);
+
+    function handleConsentChange() {
+      attempt(document.cookie);
+    }
+    window.addEventListener(CONSENT_CHANGE_EVENT, handleConsentChange);
 
     return () => {
       cancelled = true;
       clearTimeout(timeout);
+      window.removeEventListener(CONSENT_CHANGE_EVENT, handleConsentChange);
     };
-     
   }, []);
 
   return { ready, failed };
