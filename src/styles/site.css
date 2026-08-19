@@ -1218,6 +1218,28 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-img-main img {
   width:100%; height:auto; display:block; object-fit:contain;
 }
+.pdp-img-main:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:2px; }
+.pdp-img-zoomable { cursor:zoom-in; touch-action:pan-y; }
+.pdp-img-expand {
+  position:absolute; top:14px; right:14px; z-index:2; width:40px; height:40px;
+  border-radius:50%; background:rgba(250,246,236,.9); display:flex;
+  align-items:center; justify-content:center; transition:background .2s;
+}
+.pdp-img-expand:hover { background:var(--c-paper); }
+.pdp-img-expand svg { width:18px; height:18px; stroke:var(--c-espresso); stroke-width:1.8; }
+/* Chevron click-nav: desktop only — touch devices use swipe instead. */
+.pdp-img-nav { display:none; }
+@media (min-width:861px) {
+  .pdp-img-nav { display:flex; }
+}
+.lb-nav:disabled, .pdp-img-expand:disabled { opacity:.35; pointer-events:none; }
+/* Image-only lightbox variant (GalleryLightbox): no product-info column. */
+.lb-card-image-only { grid-template-columns:1fr; }
+.lb-card-image-only .lb-img { aspect-ratio:auto; min-height:60vh; }
+@media (min-width:861px) {
+  .lb-card-image-only { max-width:min(94vw, 1100px); }
+  .lb-card-image-only .lb-img { min-height:74vh; }
+}
 .pdp-img-dots {
   display:flex; justify-content:center; gap:8px; margin-top:14px;
 }
