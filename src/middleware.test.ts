@@ -21,6 +21,12 @@ describe('middleware security headers', () => {
     // report-uri check while silently disabling the Reporting-Endpoints integration.
     expect(csp).toContain('report-to csp');
     expect(res.headers.get('Reporting-Endpoints')).toContain('/api/csp-report');
+    // Google Maps Platform (print checkout address autocomplete) must be allowlisted
+    // in both script-src (Places JS bootstrap) and connect-src (Places Data API calls).
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src')) ?? '';
+    const connectSrc = csp.split(';').find((d) => d.trim().startsWith('connect-src')) ?? '';
+    expect(scriptSrc).toContain('https://maps.googleapis.com');
+    expect(connectSrc).toContain('https://maps.googleapis.com');
   });
 });
 
