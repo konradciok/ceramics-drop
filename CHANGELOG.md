@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.14.0](https://github.com/konradciok/ceramics-drop/compare/v0.13.0...v0.14.0) (2026-08-20)
+
+
+### Features
+
+* **admin/products:** list navigation, editor safety, audit timeline ([#234](https://github.com/konradciok/ceramics-drop/issues/234)) ([392bbdf](https://github.com/konradciok/ceramics-drop/commit/392bbdf097c0cb6aae467d3934dd40a6232a4a50))
+* **notes:** support fine-art prints in notes:generate ([#230](https://github.com/konradciok/ceramics-drop/issues/230)) ([e2d8acf](https://github.com/konradciok/ceramics-drop/commit/e2d8acfcc1903e83bd5c411c049bd6a9639ed257))
+* **print-checkout:** add Google Places address autocomplete ([#257](https://github.com/konradciok/ceramics-drop/issues/257)) ([8a524de](https://github.com/konradciok/ceramics-drop/commit/8a524de3f11ae24ac93327261f36b200eab7e589))
+* **prints:** add editorial gallery batch conversion script ([6f34b7b](https://github.com/konradciok/ceramics-drop/commit/6f34b7b3f3369ad153b514f36e7491eea75ba020))
+* **prints:** add editorial gallery slides to fine-art-print PDPs ([#258](https://github.com/konradciok/ceramics-drop/issues/258)) ([ea4be84](https://github.com/konradciok/ceramics-drop/commit/ea4be848eb0fc4fa96ddad89f297f2f7e568715d))
+* **prints:** admin-managed print PDP sections (accordions, about-artist, expandable note) ([#237](https://github.com/konradciok/ceramics-drop/issues/237)) ([97a17f5](https://github.com/konradciok/ceramics-drop/commit/97a17f54d4775552a2db4f4853928fb6e08413e4))
+* **prints:** default listing tiles to the framed-natural mockup ([#236](https://github.com/konradciok/ceramics-drop/issues/236)) ([5fe292c](https://github.com/konradciok/ceramics-drop/commit/5fe292c48a86f9040f94ceb92ecf64c0f642aecd))
+* **prints:** generate editorial gallery WebPs for fap001-fap041 ([507b0cd](https://github.com/konradciok/ceramics-drop/commit/507b0cd6e97a15ad1b7e8367253c2ed2ad4e4447))
+* **prints:** global admin-managed print price list (EUR-canonical) ([#235](https://github.com/konradciok/ceramics-drop/issues/235)) ([d0f9006](https://github.com/konradciok/ceramics-drop/commit/d0f90062cf884904ae33ef8119a9f20044d7e82c))
+* **prints:** real Polish notes for all 43 production designs ([#232](https://github.com/konradciok/ceramics-drop/issues/232)) ([0de2151](https://github.com/konradciok/ceramics-drop/commit/0de21518513530e0f2d10600d168212f58d36fa4))
+* **prints:** reset fine-art-print catalog to a fresh 41-painting batch ([ee6d208](https://github.com/konradciok/ceramics-drop/commit/ee6d208d8bdb3590bffb108966e9d6c5e6e46b7e))
+* **prints:** reset fine-art-print catalog to a fresh 41-painting batch (code) ([83a6f9a](https://github.com/konradciok/ceramics-drop/commit/83a6f9ad46d31aaf7038b9259ed9864dc7a7ff7b))
+* **prints:** show editorial gallery slides on print PDPs ([a8dc027](https://github.com/konradciok/ceramics-drop/commit/a8dc027da4739e1e704e461f181866af144b5ee6))
+* **prints:** translate the 43 print notes into en/es/de ([#233](https://github.com/konradciok/ceramics-drop/issues/233)) ([0fd93d8](https://github.com/konradciok/ceramics-drop/commit/0fd93d8471780878c2e7dbadaf2bfc07caa9c165))
+* **shop:** add swipe/arrow navigation and a lightbox to the product gallery ([26fb858](https://github.com/konradciok/ceramics-drop/commit/26fb8581cd244f7d53117082be8d19e4e5e69183))
+* **shop:** add swipe/arrow navigation and a lightbox to the product gallery ([e64334d](https://github.com/konradciok/ceramics-drop/commit/e64334d381da99572d9e20dbb31cd4118296dc28))
+
+
+### Bug Fixes
+
+* **admin:** repair print PDP editor layout ([#239](https://github.com/konradciok/ceramics-drop/issues/239)) ([ed3fc7c](https://github.com/konradciok/ceramics-drop/commit/ed3fc7ceddef191125e40da80716683f2ee6a297))
+* **db,catalog:** Supabase data-API & schema hardening — Plan 07 (M-2/M-3/M-4/L-10/L-12/L-13) ([#249](https://github.com/konradciok/ceramics-drop/issues/249)) ([a47368a](https://github.com/konradciok/ceramics-drop/commit/a47368a39c2ac57489d977afa55eefa20c235e53))
+* **env:** document required checkout/CMS secrets in .env.example + completeness guard (M-17) ([#250](https://github.com/konradciok/ceramics-drop/issues/250)) ([5169f77](https://github.com/konradciok/ceramics-drop/commit/5169f778b7a003a5294d8b15d75f145d6119258b))
+* **fulfilment:** print-pipeline rehearsal (Plan 05) — DLQ routing fix, failure-injection override, rehearsal log ([#246](https://github.com/konradciok/ceramics-drop/issues/246)) ([9b3b006](https://github.com/konradciok/ceramics-drop/commit/9b3b0060aa4c6094dd70b725409994ccc66d1d28))
+* **fulfilment:** queue-context Supabase client (C-2) + queue logging/backoff + regression guard ([#241](https://github.com/konradciok/ceramics-drop/issues/241)) ([5d9200b](https://github.com/konradciok/ceramics-drop/commit/5d9200b42a7eb419bf4c73ca22e2b8084c50e584))
+* **observability:** silence read-only incremental-cache write errors ([#251](https://github.com/konradciok/ceramics-drop/issues/251)) ([500a48d](https://github.com/konradciok/ceramics-drop/commit/500a48db1d7725f28bd2958914ecd30fc501ca6e))
+* **prints:** address CodeRabbit nitpicks on the catalog-reset PR ([d05bb8f](https://github.com/konradciok/ceramics-drop/commit/d05bb8fb7c6dc02decaa6380a3b3a919feb09b56))
+* **prints:** address final review findings on editorial gallery script ([b96b0b2](https://github.com/konradciok/ceramics-drop/commit/b96b0b291f07891c62def0efeb6742cc9b0f2e95))
+* **prints:** temporarily withdraw passe-partout (mount) from sale ([#252](https://github.com/konradciok/ceramics-drop/issues/252)) ([45e20df](https://github.com/konradciok/ceramics-drop/commit/45e20dfbb49d9a6b76ed207630b19f099f4c1e38))
+* **prodigi:** Plan 11 — callback shape (F-1), timeouts, outcome branch, reconciliation sweep, URL hygiene ([#247](https://github.com/konradciok/ceramics-drop/issues/247)) ([4827afb](https://github.com/konradciok/ceramics-drop/commit/4827afb51ad4eada17d9a2ddc6b82cf714bce88e))
+* **stripe:** refund reconciliation — subscribe-gap fix, refund.failed alert, drift guard + reconcile CLI (C-1/H-3/M-28) ([#245](https://github.com/konradciok/ceramics-drop/issues/245)) ([bd41732](https://github.com/konradciok/ceramics-drop/commit/bd417324cccef6d203b3b58abc4606bbbec0b87e))
+* **stripe:** webhook hardening — Plan 06 (H-1, M-5, M-21/22/27, L-4/5/6/7) ([#248](https://github.com/konradciok/ceramics-drop/issues/248)) ([e71d519](https://github.com/konradciok/ceramics-drop/commit/e71d519df75dda3831e83c627f65c4004978c9bc))
+* **worker:** cron alerting — paid-on-pending (M-15) + stranded-job watchdog (M-10) ([#244](https://github.com/konradciok/ceramics-drop/issues/244)) ([63439e2](https://github.com/konradciok/ceramics-drop/commit/63439e258db6c240fb1986d18d4a469a14da4cfa))
+* **worker:** deliver Sentry alerts from queue/scheduled contexts (M-16) ([#243](https://github.com/konradciok/ceramics-drop/issues/243)) ([8a37f1b](https://github.com/konradciok/ceramics-drop/commit/8a37f1bd584f1b47601994676352b73069633ad2))
+
 ## [0.13.0](https://github.com/konradciok/ceramics-drop/compare/v0.12.0...v0.13.0) (2026-08-07)
 
 
