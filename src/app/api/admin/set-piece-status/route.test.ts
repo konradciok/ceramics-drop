@@ -93,6 +93,15 @@ describe('POST /api/admin/set-piece-status', () => {
     expect(res.status).toBe(400);
   });
 
+  it('rejects a missing or non-boolean sold value instead of defaulting to false', async () => {
+    const res = await POST(req({ productIds: ['k01'] }));
+    const body = (await res.json()) as { error: string };
+
+    expect(res.status).toBe(400);
+    expect(body.error).toContain('boolean');
+    expect(mocks.adminSupabase).not.toHaveBeenCalled();
+  });
+
   it('returns a Supabase error as a 500', async () => {
     const select = vi.fn().mockResolvedValue({ data: null, error: { message: 'db down' } });
     const eq = vi.fn(() => ({ select, is: vi.fn(() => ({ select })) }));

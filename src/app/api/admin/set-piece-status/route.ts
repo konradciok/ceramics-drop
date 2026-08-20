@@ -24,11 +24,14 @@ export async function POST(req: NextRequest) {
   const productIds = Array.isArray(body.productIds)
     ? [...new Set(body.productIds.filter((s): s is string => typeof s === 'string'))]
     : [];
-  const sold = body.sold === true;
 
   if (productIds.length === 0) {
     return NextResponse.json({ error: 'productIds required' }, { status: 400 });
   }
+  if (typeof body.sold !== 'boolean') {
+    return NextResponse.json({ error: 'sold must be a boolean' }, { status: 400 });
+  }
+  const sold = body.sold;
   const unknown = productIds.filter((id) => !registryProductById(id));
   if (unknown.length > 0) {
     return NextResponse.json({ error: `Unknown product id(s): ${unknown.join(', ')}` }, { status: 400 });
