@@ -84,6 +84,8 @@ export function InventoryManager({ rows, drops }: { rows: InventoryRow[]; drops:
 
   const setShowroom = (productIds: string[], showroom: boolean) =>
     void post('/api/admin/toggle-showroom', { productIds, showroom });
+  const setSold = (productIds: string[], sold: boolean) =>
+    void post('/api/admin/set-piece-status', { productIds, sold });
   const endDrop = (dropId: string) => void post('/api/admin/end-drop', { dropId });
 
   const selectedIds = [...selected];
@@ -118,6 +120,12 @@ export function InventoryManager({ rows, drops }: { rows: InventoryRow[]; drops:
             </button>
             <button className="adm-btn" disabled={busy} onClick={() => setShowroom(selectedIds, false)}>
               Usuń z showroomu
+            </button>
+            <button className="adm-btn" disabled={busy} onClick={() => setSold(selectedIds, true)}>
+              Oznacz jako sprzedane
+            </button>
+            <button className="adm-btn" disabled={busy} onClick={() => setSold(selectedIds, false)}>
+              Przywróć dostępność
             </button>
           </>
         )}
@@ -203,6 +211,26 @@ export function InventoryManager({ rows, drops }: { rows: InventoryRow[]; drops:
                   >
                     {r.showroom ? 'Usuń z showroomu' : 'Do showroomu'}
                   </button>
+                  {r.status === 'available' && (
+                    <button
+                      className="adm-btn"
+                      disabled={busy}
+                      onClick={() => setSold([r.productId], true)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      Oznacz jako sprzedane
+                    </button>
+                  )}
+                  {r.status === 'sold' && !r.orderId && (
+                    <button
+                      className="adm-btn"
+                      disabled={busy}
+                      onClick={() => setSold([r.productId], false)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      Przywróć dostępność
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
