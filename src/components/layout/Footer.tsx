@@ -1,5 +1,5 @@
 /* ============================================================
-   Footer — 5-column layout (brand + shop + studio + info + contact).
+   Footer — 5-column layout (brand + ceramics + painting + studio + info).
    Server component; translated via next-intl getTranslations.
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
@@ -23,7 +23,7 @@ export async function Footer() {
             <FooterNewsletterForm />
           </div>
 
-          {/* Shop column */}
+          {/* Ceramics column */}
           <div className="footer-col">
             <h5>{t('footer.hShop')}</h5>
             <ul>
@@ -32,6 +32,19 @@ export async function Footer() {
                   <Link href={`/${slug}`}>{t(CATEGORIES[slug].nameKey)}</Link>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Painting / prints column */}
+          <div className="footer-col">
+            <h5>{t('footer.hArt')}</h5>
+            <ul>
+              <li>
+                <Link href="/fine-art-prints">{t('nav.fineArtPrints')}</Link>
+              </li>
+              <li>
+                <Link href="/gallery">{t('nav.gallery')}</Link>
+              </li>
               <li>
                 <Link href="/koszyk">{t('footer.koszyk')}</Link>
               </li>
@@ -46,13 +59,13 @@ export async function Footer() {
                 <Link href="/o-studiu">{t('footer.oArtystce')}</Link>
               </li>
               <li>
-                <Link href="/gallery">{t('nav.gallery')}</Link>
-              </li>
-              <li>
                 <Link href="/o-studiu#proces">{t('footer.proces')}</Link>
               </li>
               <li>
                 <Link href="/kontakt">{t('nav.kontakt')}</Link>
+              </li>
+              <li>
+                <a href={`mailto:${EMAIL.contact}`}>{EMAIL.contact}</a>
               </li>
             </ul>
           </div>
@@ -69,16 +82,6 @@ export async function Footer() {
               </li>
               <li>
                 <Link href="/polityka-prywatnosci">{t('footer.polityka')}</Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Kontakt column */}
-          <div className="footer-col">
-            <h5>{t('footer.hKontakt')}</h5>
-            <ul>
-              <li>
-                <a href={`mailto:${EMAIL.contact}`}>{EMAIL.contact}</a>
               </li>
               <li>
                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">

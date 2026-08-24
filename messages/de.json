@@ -59,7 +59,7 @@
       "cancelled": "Storniert"
     }
   },
-  "announce": "Juni-2026-Drop — 125 Stücke, jedes ein Unikat",
+  "announce": "Ein Studio — Keramik aus dem Juni-Drop und Malerei als Fine-Art-Drucke",
   "title": {
     "home": "Anna Ciok Ceramics — Juni-2026-Drop",
     "kubki": "Tassen",
@@ -117,8 +117,9 @@
   },
   "footer": {
     "tagline": "Langsam bemalt, Stück für Stück.",
-    "blurb": "Anna Cioks kleines Keramik-Studio. Jedes Motiv wird einzeln entworfen, von Hand bemalt und glasiert.",
-    "hShop": "Shop",
+    "blurb": "Anna Cioks kleines Studio — von Hand bemalte Keramik und Gemälde in Fine-Art-Edition.",
+    "hShop": "Keramik",
+    "hArt": "Malerei",
     "hStudio": "Studio",
     "hInfo": "Informationen",
     "hKontakt": "Kontakt",
@@ -128,7 +129,7 @@
     "dostawa": "Versand & Rücksendungen",
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
-    "copy": "© 2026 Anna Ciok Ceramics — jedes Stück ein Unikat"
+    "copy": "© 2026 Anna Ciok — Keramik und Malerei, jedes Stück von einer Hand"
   },
   "product": {
     "mug": "Tasse",
@@ -393,22 +394,27 @@
     "account": "Bestellung im Konto verfolgen"
   },
   "home": {
-    "heroEyebrow": "Juni-2026-Drop — Nº 01",
-    "heroTitle": "Ein Stück, ein Original, <em>eine Handspur.</em>",
-    "heroSub": "{count} Keramikstücke aus Anna Cioks kleinem Studio: Tassen, kleine, mittlere und große Vasen, kleine Schälchen, große Teller, große Schüsseln und Schüsseln mit Wellenrand. Jedes Stück wird einzeln von Hand bemalt und glasiert, damit du genau das wählst, das auf dem Foto zu sehen ist.",
-    "heroCta1": "Alle Stücke durchstöbern",
-    "heroBeatCap": "Jedes Stück entsteht vollständig von Hand — von der Drehscheibe bis zum letzten Pinselstrich.",
-    "heroBeatAlt": "Nahaufnahme der Glasur",
+    "heroEyebrow": "Anna Cioks Studio — Keramik und Malerei",
+    "heroTitle": "Ich male — auf Keramik <em>und auf Papier.</em>",
+    "heroSub": "{count} von Hand bemalte Keramikstücke und {printCount} Gemälde in Fine-Art-Edition — alles aus einem kleinen Studio. Jedes Keramikstück ist ein Unikat; Gemälde bestellst du als Druck in Größe und Rahmung deiner Wahl.",
+    "heroCta1": "Keramik entdecken",
+    "heroCta2": "Fine-Art-Drucke ansehen",
+    "heroBadgeCeramic": "Keramik — ein Unikat",
+    "heroBadgePrint": "Druck — ab {price}",
+    "heroPrintMeta": "{sizes, plural, one {# Größe} other {# Größen}} · {frames, plural, one {# Rahmen} other {# Rahmen}}",
+    "heroBeatCap": "Im selben Studio entstehen Gemälde — Tusche und Aquarell auf Papier. Jedes der {count} ist als Fine-Art-Druck erhältlich, mit oder ohne Rahmen.",
+    "heroBeatAlt": "Gemälde — Tusche und Aquarell auf Papier",
     "heroMetaName": "Tasse Nº 02",
     "heroMetaDesc": "Blaue Palme",
     "marquee": [
       "von Hand bemalt",
-      "ein Unikat",
-      "einzeln glasiert",
+      "ein Stück nach dem anderen",
+      "Gemälde als Fine-Art-Drucke",
       "direkt aus dem Studio"
     ],
-    "colEyebrow": "Juni-Drop",
+    "colEyebrow": "Keramik — Juni-Drop",
     "colTitle": "Neun Kategorien, <em>sechsundneunzig Geschichten.</em>",
+    "colAllCta": "Alle Kategorien im Shop",
     "colLead": "Stöbere wie in einer Galerie, markiere die Stücke, die du liebst, und gehe zur Kasse, wenn deine Auswahl sich richtig anfühlt.",
     "card": {
       "mug": {
@@ -457,34 +463,47 @@
         "cta": "Schüssel wählen"
       }
     },
+    "printsEyebrow": "Malerei",
+    "printsTitle": "Gemälde in <em>Fine-Art-Edition.</em>",
+    "printsLead": "{count} Gemälde — Tusche und Aquarell auf Papier. Wähle Größe und Rahmung, wir drucken ihn und schicken ihn dir.",
+    "printsCta": "Alle Drucke ansehen",
+    "printsFacts": [
+      "Druck auf Bestellung",
+      "Fine-Art-Papier 200 g/m²",
+      "Rahmen: Schwarz, helles oder dunkles Braun",
+      "Lieferung in ganz Europa · 5–10 Tage"
+    ],
     "storyImageAlt": "Anna Ciok in ihrem Keramik-Studio",
     "editorialImageAlt": "Handbemalte Anna Ciok Keramik im Sonnenlicht",
     "storyEyebrow": "Über die Künstlerin",
     "storyTitle": "Zuerst kam die Malerei, <em>jetzt Keramik.</em>",
     "storyP1": "Ich bin Anna. Ich bemale Leinwände und Keramik, und beide Welten begegnen sich im selben Studio. Ich behandle eine Tasse, einen Teller oder eine Vase wie ein kleines funktionales Gemälde: etwas, das man halten, auf den Tisch stellen und ohne besonderen Anlass benutzen kann.",
-    "storyP2": "Ich arbeite allein und langsam, Stück für Stück. Die Hand hinterlässt ihre Spur in der Pinselllinie, in einer ungleichmäßigen Palme und in einem Streifen, der nicht vorgibt, perfekt zu sein. Dort bekommt jedes Stück seinen Charakter.",
-    "storyP3": "Der Juni-Drop umfasst hundertfünfundzwanzig Stücke, die diesen Frühling entstanden sind. Wenn eines ein Zuhause findet, verlässt es den Shop für immer.",
-    "storyCta1": "Stück wählen",
-    "storyCta2": "Schreib mir",
+    "storyP2": "Gemälde auf Papier erscheinen in Fine-Art-Editionen — dieselbe Komposition kannst du dir als Druck an die Wand hängen. Keramik dagegen gibt es nur einmal: Findet ein Stück sein Zuhause, verlässt es den Shop für immer.",
+    "storyCta1": "Keramik wählen",
+    "storyCta2": "Drucke ansehen",
     "craftEyebrow": "So funktioniert es",
-    "craftTitle": "Vom Vorschaubild <em>zu deinem Regal.</em>",
+    "craftTitle": "Vom Studio <em>zu deinem Regal.</em>",
     "craft1H": "Du wählst <em>deine Favoriten</em>",
     "craft1P": "Klicke in der Galerie auf die Stücke, die dich ansprechen. Jedes ausgewählte Vorschaubild landet in der Leiste am unteren Bildschirmrand, damit du leicht zu deiner Wahl zurückfinden kannst.",
     "craft2H": "Du gehst <em>zur Kasse</em>",
-    "craft2P": "Im Warenkorb siehst du deine Stücke, wählst ein Paketfach oder Kurierlieferung und schließt die Bestellung ab. Die Zahlung wird über Stripe abgewickelt: Karte oder Przelewy24.",
-    "craft3H": "Ich packe <em>und versende</em>",
-    "craft3P": "Ich wickle jedes Stück von Hand ein und versende innerhalb von 1–3 Werktagen. Da es von jedem Stück nur eines gibt, wird es beim Kauf aus dem Shop entfernt — niemand kauft dasselbe nochmal.",
+    "craft2P": "Du prüfst deine gewählten Stücke und schließt die Bestellung ab. Die Zahlung wird über Stripe abgewickelt: Karte, BLIK oder Przelewy24.",
+    "craft3H": "Wir packen <em>und versenden</em>",
+    "craft3P": "Keramik wickle ich von Hand ein und versende in 1–3 Tagen. Drucke entstehen auf Bestellung und erreichen dich in 5–10 Tagen — ein verkauftes Keramikstück wird nie wiederholt.",
+    "lgCeramicH": "Keramik — Lieferung in Polen",
+    "lgCeramicP": "InPost-Paketfach oder Kurier. Jedes Stück wird von Hand verpackt und in 1–3 Werktagen versendet. Persönliche Abholung in Warschau möglich.",
+    "lgPrintsH": "Drucke — Lieferung in Europa",
+    "lgPrintsP": "Drucke entstehen auf Bestellung und werden per Kurier an deine Adresse in ganz Europa geliefert — in der Regel in 5–10 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
-    "ctP": "Möchtest du ein Stück sehen oder etwas für einen besonderen Anlass bestellen? Schreib mir — der schnellste Weg, mich zu erreichen, ist per E-Mail oder auf Instagram.",
+    "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
     "ctBtn": "Nachricht schreiben",
     "ctLEmail": "E-Mail",
     "ctLIg": "Instagram",
     "ctVIg": "@ania.ciok.art",
-    "ctLStudio": "Abholung",
-    "ctVStudio": "Warschau — Abholung nach Vereinbarung",
-    "ctLShip": "Versand",
-    "ctVShip": "Polen · Versand in 1–3 Werktagen"
+    "ctLShip": "Versand Keramik",
+    "ctVShip": "Polen · Versand in 1–3 Werktagen",
+    "ctLShipPrints": "Versand Drucke",
+    "ctVShipPrints": "Ganz Europa · 5–10 Werktage"
   },
   "printCollections": {
     "ultramaryna": "Ultramarin",
