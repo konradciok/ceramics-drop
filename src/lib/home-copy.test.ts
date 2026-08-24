@@ -33,10 +33,19 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     expect(out).toContain('95 zł');
   });
 
-  test('heroSub renders the derived catalogue count', () => {
+  test('heroSub renders the derived catalogue counts (ceramics + prints)', () => {
     expect(messages.home.heroSub).toContain('{count');
-    const out = t('home.heroSub' as never, { count: 125 } as never);
+    expect(messages.home.heroSub).toContain('{printCount');
+    const out = t('home.heroSub' as never, { count: 125, printCount: 41 } as never);
     expect(out).toContain('125');
+    expect(out).toContain('41');
+  });
+
+  test('print copy renders the derived design count', () => {
+    expect(messages.home.printsLead).toContain('{count');
+    expect(t('home.printsLead' as never, { count: 41 } as never)).toContain('41');
+    expect(messages.home.heroBeatCap).toContain('{count');
+    expect(t('home.heroBeatCap' as never, { count: 41 } as never)).toContain('41');
   });
 
   test('delivery notice is evergreen (no month-specific dates)', () => {
