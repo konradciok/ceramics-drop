@@ -471,7 +471,7 @@
       "Impresión bajo pedido",
       "Papel fine art de 200 g/m²",
       "Marco: negro, marrón claro u oscuro",
-      "Envío a toda Europa · 5–10 días"
+      "Envío a la UE y Reino Unido · 5–10 días"
     ],
     "storyImageAlt": "Anna Ciok en su estudio de cerámica",
     "editorialImageAlt": "Cerámica pintada a mano por Anna Ciok a la luz del sol",
@@ -491,8 +491,8 @@
     "craft3P": "La cerámica la envuelvo a mano y la envío en 1–3 días. Las impresiones se hacen bajo pedido y llegan en 5–10 días — una pieza de cerámica vendida no se repite jamás.",
     "lgCeramicH": "Cerámica — envío en Polonia",
     "lgCeramicP": "Paczkomat o mensajería InPost. Envuelvo cada pieza a mano y la envío en 1–3 días laborables. Recogida en persona posible en Varsovia.",
-    "lgPrintsH": "Impresiones — envío en Europa",
-    "lgPrintsP": "Las impresiones se hacen bajo pedido y se envían por mensajería a tu dirección en toda Europa — normalmente en 5–10 días laborables.",
+    "lgPrintsH": "Impresiones — envío a la UE y Reino Unido",
+    "lgPrintsP": "Las impresiones se hacen bajo pedido y se envían por mensajería a tu dirección en la Unión Europea y el Reino Unido — normalmente en 5–10 días laborables.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
     "ctP": "¿Quieres ver una pieza en persona, preguntar por una impresión en otro tamaño o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
@@ -503,7 +503,7 @@
     "ctLShip": "Envío de cerámica",
     "ctVShip": "Polonia · envío en 1–3 días laborables",
     "ctLShipPrints": "Envío de impresiones",
-    "ctVShipPrints": "Toda Europa · 5–10 días laborables"
+    "ctVShipPrints": "UE y Reino Unido · 5–10 días laborables"
   },
   "printCollections": {
     "ultramaryna": "Ultramar",
