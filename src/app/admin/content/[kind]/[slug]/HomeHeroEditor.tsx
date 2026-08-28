@@ -6,7 +6,13 @@ import type { CMS_LOCALES, CmsLocale, HeroMediaSlot, HomePagePayload } from '@/l
 import type { ContentEditorState } from '@/lib/admin/content';
 import { siteMediaUrl } from '@/lib/site-media';
 import { postJson, type FieldErrors } from './editor-shared';
-import { buildFanOutPayloads, partitionSettled } from './home-hero-fanout';
+import {
+  buildFanOutPayloads,
+  mediaEqual,
+  partitionSettled,
+  type EditableHeroMediaSlot,
+  type EditableMedia,
+} from './home-hero-fanout';
 
 const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 
@@ -19,18 +25,6 @@ const TEXT_FIELDS: { key: keyof HomeCopy; label: string; rows: number }[] = [
   { key: 'ctaLabel', label: 'Przycisk CTA — etykieta', rows: 1 },
   { key: 'heroAlt', label: 'Tekst alternatywny obrazu/wideo (opcjonalny)', rows: 2 },
 ];
-
-/** A slot mid-edit: a video may exist with its poster not yet uploaded, which
-    `HeroMediaSlot` (the published payload shape) cannot represent — the
-    schema requires a poster on every video. Slots stay in this wider shape
-    until save time, when an incomplete video blocks saving instead of being
-    silently dropped. */
-type EditableHeroMediaSlot =
-  | { kind: 'image'; key: string; width: number; height: number }
-  | { kind: 'video'; key: string; poster: { key: string; width: number; height: number } | null }
-  | null;
-
-type EditableMedia = { desktop: EditableHeroMediaSlot; mobile: EditableHeroMediaSlot };
 
 type SlotTarget = 'desktop' | 'mobile';
 
@@ -60,10 +54,6 @@ function asEditableMedia(raw: unknown): EditableMedia {
 
 function isSlotIncomplete(slot: EditableHeroMediaSlot): boolean {
   return slot !== null && slot.kind === 'video' && slot.poster === null;
-}
-
-function mediaEqual(a: EditableMedia, b: EditableMedia): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /** Reads a File's intrinsic pixel dimensions via a transient object URL —
