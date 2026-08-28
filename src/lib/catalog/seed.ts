@@ -17,6 +17,7 @@ import { registryProducts } from '../products';
 // variant (incl. mount) while passe-partout is temporarily withdrawn from sale,
 // so a run during the disabled window reproduces the existing DB exactly.
 import { PRINT_DESIGNS_RAW as PRINT_DESIGNS } from '../prints';
+import { catalogStatusForPrint } from '../print-curation';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant, type PrintPricingConfig } from '../print-pricing';
@@ -120,7 +121,7 @@ function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
       sale_price_eur: null,
       sale_price_gbp: null,
       measure: '',
-      status: d.published ? 'active' : 'draft',
+      status: catalogStatusForPrint(d.id),
       seo_title: null,
       seo_description: null,
       drop_id: null,
