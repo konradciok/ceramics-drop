@@ -224,16 +224,36 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
         // Media is a shared panel across locales — fan the new media out to
         // every locale's draft. The active locale gets its edited copy; every
         // other locale keeps its own last-saved copy with only media swapped.
-        const results = await Promise.all(
+        // Promise.allSettled (not Promise.all): one locale's request can fail
+        // server-side (e.g. a stale copy that no longer passes validation)
+        // while the other three still land. The admin needs to know exactly
+        // which locales saved and which didn't, not one opaque failure that
+        // hides three real writes — and dirty-tracking must reflect that per
+        // locale (via the router.refresh() below, not by guessing locally).
+        const settled = await Promise.allSettled(
           LOCALES.map((locale) => {
             const localeCopy = locale === activeLocale ? copy : asCopy(state.locales[locale].payload);
             const payload: HomePagePayload = { ...localeCopy, media: finalMedia };
             return postJson('/api/admin/content/draft', { kind: state.kind, slug: state.slug, locale, payload });
           }),
         );
-        const own = results[LOCALES.indexOf(activeLocale)];
-        setMediaFannedOut(true);
-        setMessage({ ok: true, text: `Szkic zapisany dla wszystkich 4 jezykow (media) — ta wersja: ${own.version?.version ?? ''}.` });
+        const succeeded: CmsLocale[] = [];
+        const failed: { locale: CmsLocale; reason: string }[] = [];
+        settled.forEach((result, i) => {
+          const locale = LOCALES[i];
+          if (result.status === 'fulfilled') succeeded.push(locale);
+          else failed.push({ locale, reason: result.reason instanceof Error ? result.reason.message : 'Blad zapisu.' });
+        });
+        setMediaFannedOut(failed.length === 0);
+        if (failed.length === 0) {
+          const ownResult = settled[LOCALES.indexOf(activeLocale)];
+          const ownVersion = ownResult.status === 'fulfilled' ? ownResult.value.version?.version : undefined;
+          setMessage({ ok: true, text: `Szkic zapisany dla wszystkich 4 jezykow (media) — ta wersja: ${ownVersion ?? ''}.` });
+        } else {
+          const okText = succeeded.length > 0 ? `Zapisano dla: ${succeeded.join(', ')}. ` : '';
+          const failText = failed.map((f) => `${f.locale} (${f.reason})`).join('; ');
+          setMessage({ ok: false, text: `${okText}Niepowodzenie dla: ${failText}.` });
+        }
       } else {
         const payload: HomePagePayload = { ...copy, media: finalMedia };
         const data = await postJson('/api/admin/content/draft', {
