@@ -93,59 +93,41 @@ describe('updateProductStatus guarded RPC', () => {
   });
 });
 
-function supabaseForBackfill(
-  existingPrints: Array<{ id: string; status: ProductSeedRow['status'] }> = [],
-) {
-  const selectExisting = vi.fn().mockReturnValue({
-    in: vi.fn().mockResolvedValue({ data: existingPrints, error: null }),
-  });
-  const upsertProducts = vi.fn().mockResolvedValue({ error: null });
-  const deleteRows = () => ({
-    in: vi.fn().mockResolvedValue({ error: null }),
-  });
-  const insertRows = vi.fn().mockResolvedValue({ error: null });
-  const from = vi.fn((table: string) => {
-    if (table === 'products') {
-      return { select: selectExisting, upsert: upsertProducts };
-    }
-    if (table === 'product_variants' || table === 'product_media') {
-      return { delete: deleteRows, insert: insertRows };
-    }
-    throw new Error(`unexpected table ${table}`);
-  });
-
-  return {
-    supabase: { from } as unknown as SupabaseClient,
-    upsertProducts,
-  };
+function supabaseForBackfill(error: { message: string } | null = null) {
+  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+  return { supabase: { rpc } as unknown as SupabaseClient, rpc };
 }
 
 describe('backfillCatalog print publication safety', () => {
-  it('stages new curated prints as non-active while retaining retired rows', async () => {
-    const { supabase, upsertProducts } = supabaseForBackfill();
+  it('sends the complete structural seed through one atomic database RPC', async () => {
+    const { supabase, rpc } = supabaseForBackfill();
 
     await backfillCatalog(supabase);
 
-    const rows = upsertProducts.mock.calls[0]?.[0] as ProductSeedRow[];
-    expect(rows.filter((row) => row.type === 'print' && row.status === 'active')).toEqual([]);
-    expect(rows.find((row) => row.id === 'fap001')?.status).toBe('draft');
-    expect(rows.find((row) => row.id === 'fap029')?.status).toBe('archived');
-    expect(rows.find((row) => row.id === 'k01')?.status).toBe('active');
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith('backfill_catalog', {
+      p_products: expect.arrayContaining([
+        expect.objectContaining({ id: 'fap001', type: 'print', status: 'active' }),
+        expect.objectContaining({ id: 'fap029', type: 'print', status: 'archived' }),
+        expect.objectContaining({ id: 'k01', type: 'ceramic', status: 'active' }),
+      ]),
+      p_variants: expect.arrayContaining([
+        expect.objectContaining({ product_id: 'fap001' }),
+        expect.objectContaining({ product_id: 'k01', variant_key: 'default' }),
+      ]),
+      p_media: expect.arrayContaining([
+        expect.objectContaining({ product_id: 'fap001' }),
+        expect.objectContaining({ product_id: 'k01' }),
+      ]),
+    });
   });
 
-  it('preserves every existing non-active print status and never demotes an active print', async () => {
-    const { supabase, upsertProducts } = supabaseForBackfill([
-      { id: 'fap001', status: 'active' },
-      { id: 'fap002', status: 'hidden' },
-      { id: 'fap003', status: 'archived' },
-    ]);
+  it('surfaces an atomic backfill RPC failure', async () => {
+    const { supabase } = supabaseForBackfill({ message: 'duplicate key' });
 
-    await backfillCatalog(supabase);
-
-    const rows = upsertProducts.mock.calls[0]?.[0] as ProductSeedRow[];
-    expect(rows.find((row) => row.id === 'fap001')?.status).toBe('active');
-    expect(rows.find((row) => row.id === 'fap002')?.status).toBe('hidden');
-    expect(rows.find((row) => row.id === 'fap003')?.status).toBe('archived');
+    await expect(backfillCatalog(supabase)).rejects.toThrow(
+      'atomic catalog backfill: duplicate key',
+    );
   });
 });
 

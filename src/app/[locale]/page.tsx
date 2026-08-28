@@ -21,6 +21,11 @@ import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
 import { HOME_EDITORIAL_IMAGE, HOME_HERO_BEAT_IMAGE, HOME_STORY_IMAGE } from '@/lib/editorial-images';
 
+// Catalog visibility and print pricing are database-owned in production. Keep
+// the locale route server-rendered so a deploy can never freeze code-mode build
+// data into the homepage indefinitely.
+export const dynamic = 'force-dynamic';
+
 type Props = { params: Promise<{ locale: string }> };
 
 const COVER: Record<CategorySlug, string> = {

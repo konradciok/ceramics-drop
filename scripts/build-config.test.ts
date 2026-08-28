@@ -26,6 +26,12 @@ describe('build configuration (Cloudflare Workers safety)', () => {
     expect(pkg.scripts.dev).toContain('--webpack');
   });
 
+  it('runs the catalog runtime-route manifest contract after every production build', () => {
+    expect(pkg.scripts.postbuild).toBe(
+      'vitest run scripts/catalog-runtime-routes.build.test.ts',
+    );
+  });
+
   it('no script invokes Turbopack', () => {
     for (const [name, command] of Object.entries(pkg.scripts)) {
       expect(command, `script "${name}" must not use Turbopack`).not.toMatch(

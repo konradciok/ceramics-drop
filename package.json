@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "postbuild": "vitest run scripts/catalog-runtime-routes.build.test.ts",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",

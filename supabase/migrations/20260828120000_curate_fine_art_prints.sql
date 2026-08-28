@@ -363,11 +363,203 @@ create trigger products_guard_print_activation
 before insert or update on products
 for each row execute function guard_print_product_activation();
 
+-- The registry backfill replaces variants/media, so it must be one database
+-- transaction now that the catalog is a live read path. Products are proposed
+-- with insert-safe statuses (new registry-active prints become draft), then
+-- existing registry-active prints retain their current DB status during the
+-- structural update. Any insertion failure or post-replacement readiness
+-- failure rolls the products, variants, and media back together.
+create or replace function backfill_catalog(
+  p_products jsonb,
+  p_variants jsonb,
+  p_media jsonb
+) returns void
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  v_products products[];
+  v_variants product_variants[];
+  v_media product_media[];
+  v_active_print_ids text[];
+begin
+  if coalesce(jsonb_typeof(p_products), 'null') <> 'array'
+      or coalesce(jsonb_typeof(p_variants), 'null') <> 'array'
+      or coalesce(jsonb_typeof(p_media), 'null') <> 'array' then
+    raise exception 'catalog_backfill_arrays_required';
+  end if;
+
+  -- Typed row arrays keep the complete input in this transaction without
+  -- runtime-created relations, so PostgreSQL can statically validate every
+  -- statement in the function.
+  select coalesce(array_agg(input), '{}'::products[])
+    into v_products
+    from jsonb_populate_recordset(null::products, p_products) input;
+
+  select coalesce(array_agg(input), '{}'::product_variants[])
+    into v_variants
+    from jsonb_populate_recordset(null::product_variants, p_variants) input;
+
+  select coalesce(array_agg(input), '{}'::product_media[])
+    into v_media
+    from jsonb_populate_recordset(null::product_media, p_media) input;
+
+  if coalesce(cardinality(v_products), 0) = 0
+      or exists (
+        select 1 from unnest(v_products) input
+        where id is null or type is null or status is null
+      ) then
+    raise exception 'catalog_backfill_products_required';
+  end if;
+
+  -- Serialise status changes and asset revision publication for every existing
+  -- seeded product before any structural mutation.
+  perform p.id
+    from products p
+    join unnest(v_products) input on input.id = p.id
+   order by p.id
+   for update of p;
+
+  -- BEFORE INSERT fires before ON CONFLICT resolution. Always propose draft
+  -- for registry-active prints so an existing active print does not trip the
+  -- insert guard merely because its row already exists.
+  insert into products (
+    id,
+    type,
+    category_slug,
+    num,
+    slug,
+    price_pln,
+    price_eur,
+    price_gbp,
+    sale_price_pln,
+    sale_price_eur,
+    sale_price_gbp,
+    measure,
+    status,
+    seo_title,
+    seo_description,
+    drop_id,
+    note_index
+  )
+  select
+    id,
+    type,
+    category_slug,
+    num,
+    slug,
+    price_pln,
+    price_eur,
+    price_gbp,
+    sale_price_pln,
+    sale_price_eur,
+    sale_price_gbp,
+    measure,
+    case when type = 'print' and status = 'active' then 'draft' else status end,
+    seo_title,
+    seo_description,
+    drop_id,
+    note_index
+  from unnest(v_products)
+  on conflict (id) do nothing;
+
+  update products p
+     set type = input.type,
+         category_slug = input.category_slug,
+         num = input.num,
+         slug = input.slug,
+         price_pln = input.price_pln,
+         price_eur = input.price_eur,
+         price_gbp = input.price_gbp,
+         sale_price_pln = input.sale_price_pln,
+         sale_price_eur = input.sale_price_eur,
+         sale_price_gbp = input.sale_price_gbp,
+         measure = input.measure,
+         status = case
+           when input.type = 'print' and input.status = 'active' then p.status
+           else input.status
+         end,
+         seo_title = input.seo_title,
+         seo_description = input.seo_description,
+         drop_id = input.drop_id,
+         note_index = input.note_index,
+         updated_at = now()
+    from unnest(v_products) input
+   where p.id = input.id;
+
+  -- Media references replaceable variant ids, so clear it before variants.
+  delete from product_media media
+   using unnest(v_products) input
+   where media.product_id = input.id;
+
+  delete from product_variants variant
+   using unnest(v_products) input
+   where variant.product_id = input.id;
+
+  insert into product_variants (
+    product_id,
+    variant_key,
+    sku,
+    axes,
+    price_pln,
+    price_eur,
+    price_gbp,
+    is_default,
+    active,
+    position,
+    track_inventory,
+    stock_quantity,
+    allow_backorder,
+    low_stock_threshold,
+    print_area_width_px,
+    print_area_height_px
+  )
+  select
+    product_id,
+    variant_key,
+    sku,
+    axes,
+    price_pln,
+    price_eur,
+    price_gbp,
+    is_default,
+    active,
+    position,
+    track_inventory,
+    stock_quantity,
+    allow_backorder,
+    low_stock_threshold,
+    print_area_width_px,
+    print_area_height_px
+  from unnest(v_variants);
+
+  insert into product_media (product_id, url, alt, position, is_primary)
+  select product_id, url, alt, position, is_primary
+  from unnest(v_media);
+
+  select array_agg(p.id order by p.id)
+    into v_active_print_ids
+    from products p
+    join unnest(v_products) input on input.id = p.id
+   where p.type = 'print' and p.status = 'active';
+
+  if coalesce(cardinality(v_active_print_ids), 0) > 0 then
+    perform assert_print_assets_ready(v_active_print_ids);
+  end if;
+
+end;
+$$;
+
+revoke all on function public.backfill_catalog(jsonb, jsonb, jsonb) from public;
+revoke execute on function public.backfill_catalog(jsonb, jsonb, jsonb) from anon, authenticated;
+grant execute on function public.backfill_catalog(jsonb, jsonb, jsonb) to service_role;
+
 commit;
 
 -- Rollback (manual): restore the prior products.num/status snapshot and prior
 -- update_product_status_guarded body; drop products_guard_print_activation,
--- guard_print_product_activation(), assert_print_assets_ready(text[]), and
--- print_asset_readiness_missing(text[]); restore products.status default
+-- guard_print_product_activation(), backfill_catalog(jsonb,jsonb,jsonb),
+-- assert_print_assets_ready(text[]), and print_asset_readiness_missing(text[]);
+-- restore products.status default
 -- 'active'. Never delete retained assets, assignments, variants, media, or
 -- historical fulfilment rows.

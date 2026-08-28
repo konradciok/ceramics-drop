@@ -4,7 +4,13 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(8);
+select plan(13);
+
+select throws_like(
+  $$ select backfill_catalog(null, '[]'::jsonb, '[]'::jsonb) $$,
+  'catalog_backfill_arrays_required',
+  'catalog backfill guard: atomic RPC rejects null structural payloads'
+);
 
 insert into products (id, type, category_slug, num)
 values ('tap_backfill_default', 'print', 'fine-art-prints', '90');
@@ -35,6 +41,20 @@ select is(
   (select status from products where id = 'tap_backfill_candidate'),
   'draft',
   'catalog backfill guard: rejected direct activation leaves the print draft'
+);
+
+select throws_like(
+  $$ insert into products (id, type, category_slug, num, status)
+     values ('tap_backfill_candidate', 'print', 'fine-art-prints', '91', 'active')
+     on conflict (id) do update set status = excluded.status $$,
+  'print_assets_incomplete:%tap_backfill_candidate:<no_active_variants>%',
+  'catalog backfill guard: direct upsert cannot bypass inactive-to-active readiness'
+);
+
+select is(
+  (select status from products where id = 'tap_backfill_candidate'),
+  'draft',
+  'catalog backfill guard: rejected direct upsert leaves the print draft'
 );
 
 select is(
@@ -98,6 +118,22 @@ select is(
   (select status from products where id = 'tap_backfill_candidate'),
   'active',
   'catalog backfill guard: successful guarded activation writes active status'
+);
+
+insert into products (id, type, category_slug, num, price_pln, status)
+values ('tap_backfill_ceramic', 'ceramic', 'kubki', '93', 100, 'active');
+
+select lives_ok(
+  $$ insert into products (id, type, category_slug, num, price_pln, status)
+     values ('tap_backfill_ceramic', 'ceramic', 'kubki', '93', 100, 'active')
+     on conflict (id) do update set status = excluded.status $$,
+  'catalog backfill guard: active ceramic upserts remain allowed'
+);
+
+select is(
+  (select status from products where id = 'tap_backfill_ceramic'),
+  'active',
+  'catalog backfill guard: ceramic upsert preserves active status'
 );
 
 select * from finish();

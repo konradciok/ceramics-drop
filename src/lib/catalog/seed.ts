@@ -6,9 +6,10 @@
    `products` / `product_variants` / `product_media` row shapes.
 
    This is the SINGLE structural source of the backfill. `backfillCatalog()`
-   stages new registry-active prints as draft, preserves existing DB status for
-   registry-active prints, and keeps registry-retired prints archived, then
-   upserts every other field from these rows. The parity test
+   passes this projection to one transaction-scoped RPC, which stages new
+   registry-active prints as draft, preserves existing DB status for
+   registry-active prints, keeps registry-retired prints archived, and replaces
+   variants/media before rechecking any active prints. The parity test
    round-trips this desired projection through the mappers. No variant business
    rule is re-implemented here — print validity reuses the existing axis rules
    from `prints.ts` / `print-cart.ts`.

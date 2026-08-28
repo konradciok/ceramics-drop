@@ -47,82 +47,29 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
 /**
  * Idempotently mirror the code registry into the catalog tables.
  *
- * Products upsert on `id` (never deleted — a stable id may be referenced by
- * historical order_items even after the registry drops it). Variants and media
- * are REPLACED for the seeded products: blindly upserting them is fragile because
- * the `product_media_one_primary` / `product_variants_one_default` partial unique
- * indexes conflict when a primary image path or variant set changes between runs.
- * Deleting first (scoped to the seeded ids) makes re-runs converge cleanly.
+ * `backfill_catalog()` owns the complete operation in one PostgreSQL transaction.
+ * Product ids are never deleted (historical order_items may reference them),
+ * while variants and media are replaced for the seeded ids so partial unique
+ * indexes converge cleanly. Any failed insert/readiness check rolls every
+ * product, variant, and media mutation back together.
  *
- * The three writes are not wrapped in a single transaction, but the whole op is
- * idempotent and a mid-way failure is healed by re-running. Publication remains
- * fail-closed: new prints are drafted and existing status is preserved, while
- * Postgres guards any inactive -> active upsert. This does NOT touch piece_state
- * or orders — stock and sale state stay in their dedicated tables.
+ * Publication remains fail-closed inside the RPC: new registry-active prints
+ * are drafted, existing registry-active prints preserve their DB status, and
+ * every preserved active print is rechecked after variant replacement. This
+ * does NOT touch piece_state or orders — stock and sale state stay in their
+ * dedicated tables.
  *
- * Requires migration 20260709130000 (seeds the `drop-1` row) to have run, since
- * ceramic product rows carry a `drop_id` FK to `drops`.
+ * Requires migration 20260828120000 (atomic RPC/publication guard) plus
+ * 20260709130000 (the `drop-1` row referenced by ceramic product rows).
  */
 export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
   const seed = buildCatalogSeed();
-  const productIds = seed.products.map((p) => p.id);
-  const printIds = seed.products.filter((p) => p.type === 'print').map((p) => p.id);
-
-  // Publication status is DB-owned once a print row exists. A fresh row whose
-  // registry target is active is staged as draft; an existing row keeps its
-  // current active/draft/hidden/archived state. This prevents the structural
-  // seed from bypassing update_product_status_guarded before variants/assets
-  // exist, while an idempotent production backfill never demotes a live print.
-  // Retired registry targets remain authoritative and are still archived.
-  const existingPrints = await supabase
-    .from('products')
-    .select('id,status')
-    .in('id', printIds);
-  if (existingPrints.error) {
-    throw new Error(`backfill read print statuses: ${existingPrints.error.message}`);
-  }
-  const existingPrintStatus = new Map(
-    ((existingPrints.data ?? []) as Array<Pick<ProductSeedRow, 'id' | 'status'>>).map((row) => [
-      row.id,
-      row.status,
-    ]),
-  );
-  const productsForBackfill = seed.products.map((product) => {
-    if (product.type !== 'print' || product.status !== 'active') return product;
-    return {
-      ...product,
-      status: existingPrintStatus.get(product.id) ?? 'draft',
-    } satisfies ProductSeedRow;
+  const { error } = await supabase.rpc('backfill_catalog', {
+    p_products: seed.products,
+    p_variants: seed.variants,
+    p_media: seed.media,
   });
-
-  // Replace variants + media for the seeded products (media first — it FKs variants).
-  // NOTE: this delete+reinsert of product_variants is safe for the print-asset
-  // pipeline. print_variant_asset_assignments is deliberately NOT FK'd to the
-  // surrogate product_variants.id — it keys on the natural (product_id, variant_key)
-  // and FKs products(id) (migration 20260711120000, lines 53–55), precisely because
-  // the variant row is replaceable. print_fulfilment_assets FKs products(id) too.
-  // So neither asset table is touched or orphaned here: product rows survive (they
-  // upsert on id), and the natural key a variant is re-inserted under is unchanged.
-  // Backfill never references print_fulfilment_assets / print_variant_asset_assignments.
-  const delMedia = await supabase.from('product_media').delete().in('product_id', productIds);
-  if (delMedia.error) throw new Error(`backfill clear media: ${delMedia.error.message}`);
-
-  const delVariants = await supabase
-    .from('product_variants')
-    .delete()
-    .in('product_id', productIds);
-  if (delVariants.error) throw new Error(`backfill clear variants: ${delVariants.error.message}`);
-
-  const products = await supabase
-    .from('products')
-    .upsert(productsForBackfill, { onConflict: 'id' });
-  if (products.error) throw new Error(`backfill products: ${products.error.message}`);
-
-  const variants = await supabase.from('product_variants').insert(seed.variants);
-  if (variants.error) throw new Error(`backfill variants: ${variants.error.message}`);
-
-  const media = await supabase.from('product_media').insert(seed.media);
-  if (media.error) throw new Error(`backfill media: ${media.error.message}`);
+  if (error) throw new Error(`atomic catalog backfill: ${error.message}`);
 }
 
 /**

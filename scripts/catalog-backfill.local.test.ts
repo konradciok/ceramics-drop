@@ -44,7 +44,7 @@ describeLocal('fresh local catalog backfill publication gate', () => {
     assertQuery('cleanup products', products);
   });
 
-  it('keeps every print non-active, then activates one only after valid fixtures exist', async () => {
+  it('keeps fresh prints non-active and safely reruns after guarded activation', async () => {
     await backfillCatalog(supabase);
 
     const backfilled = await supabase
@@ -109,5 +109,88 @@ describeLocal('fresh local catalog backfill publication gate', () => {
       .eq('status', 'active');
     assertQuery('read activated prints', activated);
     expect(activated.data).toEqual([{ id: productId, status: 'active' }]);
+
+    await expect(backfillCatalog(supabase)).resolves.toBeUndefined();
+
+    const rerunProduct = await supabase
+      .from('products')
+      .select('id,status')
+      .eq('id', productId)
+      .single();
+    assertQuery('read rerun active print', rerunProduct);
+    expect(rerunProduct.data).toEqual({ id: productId, status: 'active' });
+
+    const expectedVariants = seed.variants
+      .filter((variant) => variant.product_id === productId)
+      .map(({ variant_key, active, print_area_width_px, print_area_height_px }) => ({
+        variant_key,
+        active,
+        print_area_width_px,
+        print_area_height_px,
+      }))
+      .sort((a, b) => a.variant_key.localeCompare(b.variant_key));
+    const rerunVariants = await supabase
+      .from('product_variants')
+      .select('variant_key,active,print_area_width_px,print_area_height_px')
+      .eq('product_id', productId)
+      .order('variant_key');
+    assertQuery('read rerun print variants', rerunVariants);
+    expect(rerunVariants.data).toEqual(expectedVariants);
+
+    const expectedMedia = seed.media
+      .filter((media) => media.product_id === productId)
+      .map(({ url, position, is_primary }) => ({ url, position, is_primary }))
+      .sort((a, b) => a.position - b.position);
+    const rerunMedia = await supabase
+      .from('product_media')
+      .select('url,position,is_primary')
+      .eq('product_id', productId)
+      .order('position');
+    assertQuery('read rerun print media', rerunMedia);
+    expect(rerunMedia.data).toEqual(expectedMedia);
+
+    const ceramic = await supabase
+      .from('products')
+      .select('id,status')
+      .eq('id', 'k01')
+      .single();
+    assertQuery('read rerun ceramic', ceramic);
+    expect(ceramic.data).toEqual({ id: 'k01', status: 'active' });
+    const ceramicVariants = await supabase
+      .from('product_variants')
+      .select('variant_key,active')
+      .eq('product_id', 'k01');
+    assertQuery('read rerun ceramic variants', ceramicVariants);
+    expect(ceramicVariants.data).toEqual([{ variant_key: 'default', active: true }]);
+
+    const duplicateVariantSeed = [...seed.variants, seed.variants[0]];
+    const failedAtomicRerun = await supabase.rpc('backfill_catalog', {
+      p_products: seed.products,
+      p_variants: duplicateVariantSeed,
+      p_media: seed.media,
+    });
+    expect(failedAtomicRerun.error?.message).toMatch(/duplicate key|unique constraint/i);
+
+    const afterFailedVariants = await supabase
+      .from('product_variants')
+      .select('variant_key,active,print_area_width_px,print_area_height_px')
+      .eq('product_id', productId)
+      .order('variant_key');
+    assertQuery('read variants after failed atomic rerun', afterFailedVariants);
+    expect(afterFailedVariants.data).toEqual(expectedVariants);
+    const afterFailedMedia = await supabase
+      .from('product_media')
+      .select('url,position,is_primary')
+      .eq('product_id', productId)
+      .order('position');
+    assertQuery('read media after failed atomic rerun', afterFailedMedia);
+    expect(afterFailedMedia.data).toEqual(expectedMedia);
+    const afterFailedProduct = await supabase
+      .from('products')
+      .select('id,status')
+      .eq('id', productId)
+      .single();
+    assertQuery('read product after failed atomic rerun', afterFailedProduct);
+    expect(afterFailedProduct.data).toEqual({ id: productId, status: 'active' });
   }, 30_000);
 });

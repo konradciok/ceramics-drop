@@ -56,8 +56,11 @@ an invalidation call into this procedure.
 ### 2. Deploy the code before changing data
 
 Deploy the commit containing the curation mapping, guarded migration, and
-direct (uncached) catalog/print-pricing DB loaders. Confirm the Worker deployment
-is healthy while the checkout block remains active. Do not apply the migration
+direct (uncached) catalog/print-pricing DB loaders and runtime-rendered catalog
+routes. The build's postbuild manifest check must pass, proving no catalog
+consumer (including home, fine-art-print collection, or sitemap) was emitted as
+prerendered output. Confirm the Worker deployment is healthy while the checkout
+block remains active. Do not apply the migration
 before this deploy: the prior build still wraps these reads in a five-minute
 Next data cache whose deployed dummy tag cache cannot invalidate it reliably.
 
@@ -163,8 +166,10 @@ the first product update, projects numbers/statuses, and checks its post-state
 in one transaction. It then changes the product-status default to `draft` and
 installs the same readiness predicate behind both the guarded status RPC and a
 table trigger, so a later direct insert/upsert cannot activate an unready print.
-`catalog:backfill` also stages new registry-active prints as draft and preserves
-every existing print status; activation remains a separate guarded action.
+`catalog:backfill` calls the transaction-scoped `backfill_catalog()` RPC. It
+stages new registry-active prints as draft, preserves every existing print
+status, replaces variants/media, and rechecks each preserved active print before
+one atomic commit; activation remains a separate guarded action.
 
 If it raises `print_assets_incomplete` or any postcondition error, the whole
 transaction (including every number/status write) is rolled back. Keep checkout
@@ -179,9 +184,12 @@ the catalog and print-pricing loaders bypass `unstable_cache` entirely. The
 removed `/api/admin/catalog-cache` route must remain absent: a successful
 invalidation response from that route would be a false operational signal.
 
-From DevTools, issue a new request to the force-dynamic, `no-store` merchant
-feed. This crosses the same DB-backed print accessor used by storefront and
-checkout, and the response makes the active stable-ID set machine-checkable:
+The home page, fine-art-print collection, product/collection routes, cart,
+merchant feeds, and sitemap are runtime routes; the build manifest contract
+guards this boundary. From DevTools, issue a new request to the force-dynamic,
+`no-store` merchant feed. This crosses the same DB-backed print accessor used by
+storefront and checkout, and the response makes the active stable-ID set
+machine-checkable:
 
 ```js
 const response = await fetch('/api/feed/google?locale=en', { cache: 'no-store' });

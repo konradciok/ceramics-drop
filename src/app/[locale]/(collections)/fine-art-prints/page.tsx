@@ -8,6 +8,11 @@ import { getProductNotes } from '@/lib/cms/messages';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import type { Locale } from '@/i18n/routing';
 
+// Published designs and global pricing are mutable database state. This route
+// must invoke their runtime loaders instead of shipping an immutable code-mode
+// prerender produced during the Worker build.
+export const dynamic = 'force-dynamic';
+
 const PRINTS_SLUG = 'fine-art-prints';
 
 type Props = { params: Promise<{ locale: string }> };
