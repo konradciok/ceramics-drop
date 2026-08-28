@@ -394,6 +394,11 @@
     "account": "Sigue este pedido en tu cuenta"
   },
   "home": {
+    "heroLine1": "Pintado a mano,",
+    "heroLine2": "una pieza a la vez.",
+    "heroTagline": "ESTUDIO ANNA CIOK — CERÁMICA Y ARTE",
+    "heroCta": "Ver la tienda",
+    "heroAlt": "Piezas de cerámica pintadas a mano sobre una mesa de madera en el estudio de Anna Ciok",
     "heroEyebrow": "El estudio de Anna Ciok — cerámica y pintura",
     "heroTitle": "Pinto — sobre cerámica <em>y sobre papel.</em>",
     "heroSub": "{count} piezas de cerámica pintadas a mano y {printCount} pinturas en edición fine art — todo de un pequeño estudio. Cada pieza de cerámica es un ejemplar único; las pinturas se piden como impresión en el tamaño y marco que elijas.",

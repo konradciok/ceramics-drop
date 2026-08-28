@@ -394,6 +394,11 @@
     "account": "Śledź zamówienie na koncie"
   },
   "home": {
+    "heroLine1": "Ręcznie malowane,",
+    "heroLine2": "jedna sztuka naraz.",
+    "heroTagline": "PRACOWNIA ANNY CIOK — CERAMIKA I FINE ART",
+    "heroCta": "Przeglądaj sklep",
+    "heroAlt": "Ręcznie malowane naczynia ceramiczne na drewnianym stole w pracowni Anny Ciok",
     "heroEyebrow": "Pracownia Anny Ciok — ceramika i malarstwo",
     "heroTitle": "Maluję — na ceramice <em>i na papierze.</em>",
     "heroSub": "{count, plural, one {# ręcznie malowana praca ceramiczna} few {# ręcznie malowane prace ceramiczne} other {# ręcznie malowanych prac ceramicznych}} i {printCount, plural, one {# obraz} few {# obrazy} other {# obrazów}} w edycji fine art — wszystko z jednej małej pracowni. Ceramika istnieje w pojedynczych egzemplarzach; obrazy zamówisz jako odbitkę w wybranym rozmiarze i oprawie.",

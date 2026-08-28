@@ -48,7 +48,31 @@ export type PrintPdpPayload = {
   };
 };
 
-export type CmsPayload = ProductNotesPayload | CollectionCopyPayload | PrintPdpPayload | Record<string, unknown>;
+export const HOME_PAGE_SLUG = 'home';
+
+/** A single hero media slot: a static image, a video with its poster image, or
+    absent (null — the storefront falls back to a static default). */
+export type HeroMediaSlot =
+  | { kind: 'image'; key: string; width: number; height: number }
+  | { kind: 'video'; key: string; poster: { key: string; width: number; height: number } }
+  | null;
+
+/** Fixed-shape content for the homepage hero. */
+export type HomePagePayload = {
+  heroLine1: string;
+  heroLine2: string;
+  heroTagline: string;
+  ctaLabel: string;
+  heroAlt: string;
+  media: { desktop: HeroMediaSlot; mobile: HeroMediaSlot };
+};
+
+export type CmsPayload =
+  | ProductNotesPayload
+  | CollectionCopyPayload
+  | PrintPdpPayload
+  | HomePagePayload
+  | Record<string, unknown>;
 
 export type CmsDocumentRef = {
   kind: CmsDocumentKind;

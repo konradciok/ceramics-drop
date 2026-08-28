@@ -394,6 +394,11 @@
     "account": "Track this order in your account"
   },
   "home": {
+    "heroLine1": "Hand-painted,",
+    "heroLine2": "one piece at a time.",
+    "heroTagline": "ANNA CIOK STUDIO — CERAMICS & FINE ART PRINTS",
+    "heroCta": "Browse the shop",
+    "heroAlt": "Hand-painted ceramic pieces on a wooden table in Anna Ciok's studio",
     "heroEyebrow": "Anna Ciok’s studio — ceramics and painting",
     "heroTitle": "I paint — on ceramics <em>and on paper.</em>",
     "heroSub": "{count} hand-painted ceramic pieces and {printCount} paintings in fine art editions — all from one small studio. Each ceramic piece exists as a single copy; paintings can be ordered as a print in the size and frame you choose.",
