@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import {
   SITE_MEDIA_PREFIX,
@@ -8,9 +9,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-/** Empty-body response for the small set of non-2xx outcomes this route needs. */
-function empty(status: number, extraHeaders?: HeadersInit): Response {
-  return new Response(null, { status, headers: extraHeaders });
+/** JSON error response for the non-2xx outcomes this route needs — matches
+    the print-assets template's `{ error }` convention. */
+function errorResponse(
+  error: string,
+  status: number,
+  headers?: HeadersInit,
+): NextResponse {
+  return NextResponse.json({ error }, { status, headers });
 }
 
 /** Streams a public, unauthenticated CMS site-media asset (homepage hero
@@ -22,7 +28,7 @@ export async function GET(
   const { env } = getCloudflareContext();
   const { key } = await params;
 
-  if (!SITE_MEDIA_KEY_RE.test(key)) return empty(404);
+  if (!SITE_MEDIA_KEY_RE.test(key)) return errorResponse('not_found', 404);
 
   const r2Key = SITE_MEDIA_PREFIX + key;
   const rangeHeader = req.headers.get('range');
@@ -32,13 +38,15 @@ export async function GET(
     try {
       head = await env.PRINT_ASSETS.head(r2Key);
     } catch {
-      return empty(503);
+      return errorResponse('storage_unavailable', 503);
     }
-    if (!head) return empty(404);
+    if (!head) return errorResponse('not_found', 404);
 
     const range = parseRangeHeader(rangeHeader, head.size);
     if (range === 'invalid') {
-      return empty(416, { 'content-range': `bytes */${head.size}` });
+      return errorResponse('range_not_satisfiable', 416, {
+        'content-range': `bytes */${head.size}`,
+      });
     }
 
     if (range) {
@@ -48,9 +56,9 @@ export async function GET(
           range: { offset: range.start, length: range.end - range.start + 1 },
         });
       } catch {
-        return empty(503);
+        return errorResponse('storage_unavailable', 503);
       }
-      if (!obj) return empty(404);
+      if (!obj) return errorResponse('not_found', 404);
 
       return new Response(obj.body, {
         status: 206,
@@ -65,14 +73,15 @@ export async function GET(
   try {
     obj = await env.PRINT_ASSETS.get(r2Key);
   } catch {
-    return empty(503);
+    return errorResponse('storage_unavailable', 503);
   }
-  if (!obj) return empty(404);
+  if (!obj) return errorResponse('not_found', 404);
 
   return new Response(obj.body, { headers: siteMediaHeaders(obj, key) });
 }
 
-/** Metadata-only probe (no body) — same validation and headers as GET. */
+/** Metadata-only probe (no body on success) — same validation and headers
+    as GET; error paths share the JSON `{ error }` convention with GET. */
 export async function HEAD(
   _req: Request,
   { params }: { params: Promise<{ key: string }> },
@@ -80,7 +89,7 @@ export async function HEAD(
   const { env } = getCloudflareContext();
   const { key } = await params;
 
-  if (!SITE_MEDIA_KEY_RE.test(key)) return empty(404);
+  if (!SITE_MEDIA_KEY_RE.test(key)) return errorResponse('not_found', 404);
 
   const r2Key = SITE_MEDIA_PREFIX + key;
 
@@ -88,9 +97,9 @@ export async function HEAD(
   try {
     obj = await env.PRINT_ASSETS.head(r2Key);
   } catch {
-    return empty(503);
+    return errorResponse('storage_unavailable', 503);
   }
-  if (!obj) return empty(404);
+  if (!obj) return errorResponse('not_found', 404);
 
   return new Response(null, { headers: siteMediaHeaders(obj, key) });
 }
