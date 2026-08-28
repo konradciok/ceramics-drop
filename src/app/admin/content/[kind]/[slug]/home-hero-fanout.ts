@@ -10,6 +10,45 @@ export type HomeCopy = Pick<HomePagePayload, 'heroLine1' | 'heroLine2' | 'heroTa
 
 export type SharedHeroMedia = { desktop: HeroMediaSlot; mobile: HeroMediaSlot };
 
+/** A slot mid-edit: a video may exist with its poster not yet uploaded, which
+    `HeroMediaSlot` (the published payload shape) cannot represent — the
+    schema requires a poster on every video. Slots stay in this wider shape
+    until save time, when an incomplete video blocks saving instead of being
+    silently dropped. */
+export type EditableHeroMediaSlot =
+  | { kind: 'image'; key: string; width: number; height: number }
+  | { kind: 'video'; key: string; poster: { key: string; width: number; height: number } | null }
+  | null;
+
+export type EditableMedia = { desktop: EditableHeroMediaSlot; mobile: EditableHeroMediaSlot };
+
+function slotEqual(a: EditableHeroMediaSlot, b: EditableHeroMediaSlot): boolean {
+  if (a === null || b === null) return a === b;
+  if (a.kind === 'image' && b.kind === 'image') {
+    return a.key === b.key && a.width === b.width && a.height === b.height;
+  }
+  if (a.kind === 'video' && b.kind === 'video') {
+    if (a.key !== b.key) return false;
+    if (a.poster === null || b.poster === null) return a.poster === b.poster;
+    return a.poster.key === b.poster.key && a.poster.width === b.poster.width && a.poster.height === b.poster.height;
+  }
+  return false;
+}
+
+/**
+ * Structural (field-by-field) media equality for the editor's dirty check.
+ * MUST NOT be a serialization compare: the editor builds slots in
+ * `{ kind, key, ... }` insertion order while Postgres JSONB canonicalises
+ * object keys (shortest first), so a just-saved slot comes back from
+ * `cms_document_versions.payload` as `{ key, kind, ... }`. A
+ * `JSON.stringify` comparison saw those as different, leaving the editor
+ * permanently "dirty" after every media save — which disabled
+ * preview/publish behind the unsaved-changes banner.
+ */
+export function mediaEqual(a: EditableMedia, b: EditableMedia): boolean {
+  return slotEqual(a.desktop, b.desktop) && slotEqual(a.mobile, b.mobile);
+}
+
 /**
  * Builds the per-locale payload to save when the shared media panel is
  * dirty. Every locale gets its OWN in-memory copy (`copies[locale]` — which
