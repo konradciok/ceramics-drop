@@ -5,11 +5,13 @@
    (src/lib/products.ts + src/lib/prints.ts + pricing) into the
    `products` / `product_variants` / `product_media` row shapes.
 
-   This is the SINGLE source of the backfill: `backfillCatalog()` upserts
-   exactly these rows, and the parity test round-trips them back through the
-   mappers to prove `DB == registry` before any storefront flip. No business
-   rule is re-implemented here — print variant validity reuses the existing
-   axis rules from `prints.ts` / `print-cart.ts`.
+   This is the SINGLE structural source of the backfill. `backfillCatalog()`
+   stages new registry-active prints as draft, preserves existing DB status for
+   registry-active prints, and keeps registry-retired prints archived, then
+   upserts every other field from these rows. The parity test
+   round-trips this desired projection through the mappers. No variant business
+   rule is re-implemented here — print validity reuses the existing axis rules
+   from `prints.ts` / `print-cart.ts`.
    ============================================================ */
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../types';
 import { registryProducts } from '../products';

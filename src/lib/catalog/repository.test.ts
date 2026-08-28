@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  backfillCatalog,
   updateProductStatus,
   listCatalogRows,
   readCeramicProducts,
@@ -89,6 +90,62 @@ describe('updateProductStatus guarded RPC', () => {
     await expect(updateProductStatus(supabase, 'fap01', 'active', null)).rejects.toThrow(
       'empty RPC response',
     );
+  });
+});
+
+function supabaseForBackfill(
+  existingPrints: Array<{ id: string; status: ProductSeedRow['status'] }> = [],
+) {
+  const selectExisting = vi.fn().mockReturnValue({
+    in: vi.fn().mockResolvedValue({ data: existingPrints, error: null }),
+  });
+  const upsertProducts = vi.fn().mockResolvedValue({ error: null });
+  const deleteRows = () => ({
+    in: vi.fn().mockResolvedValue({ error: null }),
+  });
+  const insertRows = vi.fn().mockResolvedValue({ error: null });
+  const from = vi.fn((table: string) => {
+    if (table === 'products') {
+      return { select: selectExisting, upsert: upsertProducts };
+    }
+    if (table === 'product_variants' || table === 'product_media') {
+      return { delete: deleteRows, insert: insertRows };
+    }
+    throw new Error(`unexpected table ${table}`);
+  });
+
+  return {
+    supabase: { from } as unknown as SupabaseClient,
+    upsertProducts,
+  };
+}
+
+describe('backfillCatalog print publication safety', () => {
+  it('stages new curated prints as non-active while retaining retired rows', async () => {
+    const { supabase, upsertProducts } = supabaseForBackfill();
+
+    await backfillCatalog(supabase);
+
+    const rows = upsertProducts.mock.calls[0]?.[0] as ProductSeedRow[];
+    expect(rows.filter((row) => row.type === 'print' && row.status === 'active')).toEqual([]);
+    expect(rows.find((row) => row.id === 'fap001')?.status).toBe('draft');
+    expect(rows.find((row) => row.id === 'fap029')?.status).toBe('archived');
+    expect(rows.find((row) => row.id === 'k01')?.status).toBe('active');
+  });
+
+  it('preserves every existing non-active print status and never demotes an active print', async () => {
+    const { supabase, upsertProducts } = supabaseForBackfill([
+      { id: 'fap001', status: 'active' },
+      { id: 'fap002', status: 'hidden' },
+      { id: 'fap003', status: 'archived' },
+    ]);
+
+    await backfillCatalog(supabase);
+
+    const rows = upsertProducts.mock.calls[0]?.[0] as ProductSeedRow[];
+    expect(rows.find((row) => row.id === 'fap001')?.status).toBe('active');
+    expect(rows.find((row) => row.id === 'fap002')?.status).toBe('hidden');
+    expect(rows.find((row) => row.id === 'fap003')?.status).toBe('archived');
   });
 });
 

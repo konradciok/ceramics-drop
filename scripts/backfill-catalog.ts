@@ -1,7 +1,10 @@
 /**
  * Backfill the shadow catalog tables (products / product_variants / product_media)
  * from the static code registry. Idempotent — safe to re-run after a catalogue
- * change; see backfillCatalog() in src/lib/catalog/repository.ts.
+ * change; see backfillCatalog() in src/lib/catalog/repository.ts. New prints
+ * whose registry target is active are staged as draft until the guarded status
+ * RPC verifies fulfilment readiness; existing registry-active print statuses
+ * are preserved and registry-retired prints remain archived.
  *
  * Usage:
  *   npm run catalog:backfill

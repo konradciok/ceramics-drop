@@ -90,9 +90,10 @@ select lives_ok(
   'print curation readiness: a ready, assigned, dimension-matched active variant passes'
 );
 
-select lives_ok(
+select throws_like(
   $$ select assert_print_assets_ready(array['tap_curation_inactive']) $$,
-  'print curation readiness: inactive variants do not require an assignment'
+  'print_assets_incomplete:%tap_curation_inactive:<no_active_variants>%',
+  'print curation readiness: a print with no active variants fails closed'
 );
 
 select throws_like(

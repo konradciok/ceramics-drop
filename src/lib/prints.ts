@@ -533,7 +533,7 @@ export function registryPrintById(id: string): PrintDesign | undefined {
 
 /**
  * Async catalog core — 'code' returns the registry designs; 'db' reads the
- * catalog shadow tables (cached, Stage 3a) including drafts. Dynamic import of
+ * catalog shadow tables directly (including drafts). Dynamic import of
  * the DB path keeps Cloudflare-only code out of the default 'code' flag and
  * breaks the load → repository → seed → prints import cycle.
  */

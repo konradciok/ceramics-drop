@@ -37,8 +37,9 @@ or reprinted. Do not run asset cleanup as part of catalog curation.
 
 This procedure is for `20260828120000_curate_fine_art_prints.sql`. It is a
 coordinated release, not an ordinary unattended migration: production remains
-on the prior catalogue until every step below succeeds. Never replace hard
-invalidation with a 300-second wait.
+on the prior catalogue until every step below succeeds. Catalog and print-price
+DB loaders are deliberately uncached; do not reintroduce a tagged-cache wait or
+an invalidation call into this procedure.
 
 ### 1. Freeze catalogue mutation and checkout
 
@@ -50,14 +51,15 @@ invalidation with a 300-second wait.
   and reschedule the migration.
 - Record the rule ID, start time, operator, and rollback owner in the release
   log. This freeze prevents a buyer or asset publish from racing the database
-  projection/cache cutover.
+  projection and runtime verification window.
 
 ### 2. Deploy the code before changing data
 
 Deploy the commit containing the curation mapping, guarded migration, and
-`/api/admin/catalog-cache`. Confirm the Worker deployment is healthy while the
-checkout block remains active. Do not apply the migration before this deploy:
-old code does not provide the hard-invalidation/proof endpoint.
+direct (uncached) catalog/print-pricing DB loaders. Confirm the Worker deployment
+is healthy while the checkout block remains active. Do not apply the migration
+before this deploy: the prior build still wraps these reads in a five-minute
+Next data cache whose deployed dummy tag cache cannot invalidate it reliably.
 
 ### 3. Capture the pre-migration snapshot
 
@@ -106,7 +108,21 @@ with targets as (
   from products p
   where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
     and p.id not in ('fap029', 'fap037')
+), active_variants as (
+  select pv.*
+  from targets t
+  join product_variants pv on pv.product_id = t.id and pv.active
 ), violations as (
+  select t.id as product_id,
+         '<none>'::text as variant_key,
+         'no_active_variants'::text as reason
+  from targets t
+  where not exists (
+    select 1 from active_variants pv where pv.product_id = t.id
+  )
+
+  union all
+
   select pv.product_id,
          pv.variant_key,
          case
@@ -117,8 +133,7 @@ with targets as (
            when pfa.width_px is distinct from pv.print_area_width_px
              or pfa.height_px is distinct from pv.print_area_height_px then 'dimension_mismatch'
          end as reason
-  from targets t
-  join product_variants pv on pv.product_id = t.id and pv.active
+  from active_variants pv
   left join print_variant_asset_assignments paa
     on paa.product_id = pv.product_id and paa.variant_key = pv.variant_key
   left join print_fulfilment_assets pfa on pfa.id = paa.asset_id
@@ -145,58 +160,54 @@ and `20260828120000` is the only pending migration being released in this
 window. Then run `npx supabase db push`. The migration locks the mapped product,
 variant, assignment, and asset rows, calls `assert_print_assets_ready` before
 the first product update, projects numbers/statuses, and checks its post-state
-in one transaction.
+in one transaction. It then changes the product-status default to `draft` and
+installs the same readiness predicate behind both the guarded status RPC and a
+table trigger, so a later direct insert/upsert cannot activate an unready print.
+`catalog:backfill` also stages new registry-active prints as draft and preserves
+every existing print status; activation remains a separate guarded action.
 
 If it raises `print_assets_incomplete` or any postcondition error, the whole
 transaction (including every number/status write) is rolled back. Keep checkout
 frozen; fix the underlying readiness issue or roll back the code deploy. Never
 mark the failed migration applied and never bypass its assertion.
 
-### 6. Hard-invalidate, then prove the first cached read
+### 6. Prove the first uncached runtime read
 
-From DevTools on an already Cloudflare-Access-authenticated `/admin` tab, run
-the POST and wait for its success response:
+There is no invalidation request in this design. OpenNext's deployed tag cache
+is a dummy and its configured incremental cache is read-only static assets, so
+the catalog and print-pricing loaders bypass `unstable_cache` entirely. The
+removed `/api/admin/catalog-cache` route must remain absent: a successful
+invalidation response from that route would be a false operational signal.
 
-```js
-const invalidation = await fetch('/api/admin/catalog-cache', {
-  method: 'POST',
-  credentials: 'same-origin',
-});
-if (!invalidation.ok) throw new Error(await invalidation.text());
-console.log(await invalidation.json()); // { invalidated: true, tag: 'catalog' }
-```
-
-This endpoint is protected by the existing `/api/admin` Access JWT gate. Do
-not expose it under a public path or bypass Access. It uses Next 16's Route
-Handler-compatible `revalidateTag('catalog', { expire: 0 })`; the normal
-`'max'` profile is stale-while-revalidate and is not sufficient for this
-cutover.
-
-In a **separate request**, prove the tagged loader's first read matches the new
-database state:
+From DevTools, issue a new request to the force-dynamic, `no-store` merchant
+feed. This crosses the same DB-backed print accessor used by storefront and
+checkout, and the response makes the active stable-ID set machine-checkable:
 
 ```js
-const response = await fetch('/api/admin/catalog-cache', {
-  credentials: 'same-origin',
-  cache: 'no-store',
-});
+const response = await fetch('/api/feed/google?locale=en', { cache: 'no-store' });
 if (!response.ok) throw new Error(await response.text());
-const { prints } = await response.json();
-const active = prints.filter((print) => print.published);
-const expectedNumbers = Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0'));
-if (active.length !== 39 || active.map((print) => print.num).join() !== expectedNumbers.join()) {
-  throw new Error('fresh catalog projection mismatch');
+if (!response.headers.get('cache-control')?.includes('no-store')) {
+  throw new Error('feed response is not no-store');
 }
-for (const id of ['fap029', 'fap037']) {
-  if (prints.find((print) => print.id === id)?.published !== false) {
-    throw new Error(`${id} is not archived in the fresh catalog read`);
-  }
+const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
+if (xml.querySelector('parsererror')) throw new Error('invalid feed XML');
+const google = 'http://base.google.com/ns/1.0';
+const actual = [...xml.getElementsByTagName('item')]
+  .map((item) => item.getElementsByTagNameNS(google, 'id')[0]?.textContent ?? '')
+  .filter((id) => /^fap\d{3}$/.test(id))
+  .sort();
+const expected = Array.from({ length: 41 }, (_, index) =>
+  `fap${String(index + 1).padStart(3, '0')}`
+).filter((id) => id !== 'fap029' && id !== 'fap037');
+if (actual.join() !== expected.join()) {
+  throw new Error(`fresh catalog projection mismatch: ${actual.join(',')}`);
 }
-console.table(active);
+console.table(actual);
 ```
 
-Save both responses. A successful POST without the separate GET proof is not a
-completed cache cutover.
+Save the response headers/body and console result. This must be the first Worker
+catalog read after the migration; SQL and storefront checks in Step 7 prove the
+new display-number order separately.
 
 ### 7. Verify SQL, UI, checkout, and admin
 
@@ -452,8 +463,9 @@ colour-managed into an embedded sRGB profile so the artwork and configured RGB
 background share a declared colour space.
 
 Activation uses the `update_product_status_guarded` RPC. It locks the product,
-active variants, assignments, and assigned asset rows, revalidates complete
-ready/dimension-matched coverage, then updates status and writes the audit row
+all variants, assignments, and assigned asset rows, requires at least one active
+variant, revalidates complete ready/dimension-matched coverage, then updates
+status and writes the audit row
 in the same transaction. Concurrent revision publication is serialized on the
 product lock; a concurrent asset revoke completes either before the check or
 after activation as a distinct emergency action.

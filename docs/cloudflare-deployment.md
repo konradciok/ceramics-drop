@@ -17,12 +17,12 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 | Service | Role |
 | --- | --- |
 | Cloudflare Workers | Next.js runtime (OpenNext worker at `.open-next/worker.js`) |
-| Workers Static Assets | `public/`, `_next/static`, prerendered HTML cache |
+| Workers Static Assets | `public/`, `_next/static`, and reads of prerendered assets through the configured OpenNext incremental-cache adapter |
 | Wrangler | Local preview and deploy |
 | R2 (`PRINT_ASSETS`) | Immutable print fulfilment masters (`anna-ciok-print-assets`) |
 | Queues (`FULFILMENT_QUEUE`) | Async Prodigi order submission (`prodigi-fulfilment` + DLQ) |
 
-**Not provisioned:** D1, KV, Durable Objects (beyond OpenNext cache DOs), Hyperdrive, Cloudflare Images.
+**Not provisioned:** D1, KV, a persistent OpenNext data/tag cache, Hyperdrive, Cloudflare Images. The worker still re-exports OpenNext's generated cache Durable Object classes because its bundle requires them; the current `open-next.config.ts` selects a read-only static-assets incremental-cache adapter and the `dummy` tag-cache adapter, so those exports do not provide application tag invalidation.
 
 > **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
 > `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy.
@@ -174,7 +174,7 @@ Redeploy after changing observability settings: `npm run deploy:cf` or `npx wran
 | File | Purpose |
 | --- | --- |
 | `wrangler.jsonc` | Worker name, `nodejs_compat`, static assets binding, self-reference service, observability |
-| `open-next.config.ts` | SSG static-assets incremental cache |
+| `open-next.config.ts` | Read-only SSG/static-assets incremental-cache adapter; no persistent tag cache |
 | `next.config.ts` | `initOpenNextCloudflareForDev()` for local dev |
 | `public/_headers` | Long-cache for static assets; security headers; `noindex` on `workers.dev` |
 | `src/app/robots.ts` · `src/app/sitemap.ts` | SEO (`metadataBase` → `https://anna-ciok.studio`) |
@@ -219,7 +219,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
-- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables); `code` (the unset default) reads the static registry and is the local/test fallback. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
+- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables directly on each loader invocation); `code` (the unset default) reads the static registry and is the local/test fallback. These DB reads deliberately bypass Next's persistent data cache because this deployment has no functional tag-cache adapter. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` — Stripe payment-method configuration (`pmc_…`, Dashboard → Settings → Payment methods; enables BLIK/P24/Bizum/cards). Mode-specific — test and live ids differ. Checkout **fails closed** (502 `stripe_failed`) without it, so set the secret **before** deploying this code (`wrangler secret put STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`).
 
 ### Sentry environment isolation (preview)

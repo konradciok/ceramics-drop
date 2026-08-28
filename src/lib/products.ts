@@ -301,8 +301,8 @@ export function registryResolveCartProducts(ids: string[]): Product[] {
    Async catalog core — the single source the public accessors delegate to.
    ------------------------------------------------------------------
    'code' → the prebuilt registry structures (wrapped in a resolved promise,
-   effectively zero-cost). 'db' → the cached DB read (loadCeramicProductsFromDb,
-   Stage 3a), from which the same id/category groupings are rebuilt with the
+   effectively zero-cost). 'db' → the direct DB read (loadCeramicProductsFromDb),
+   from which the same id/category groupings are rebuilt with the
    same logic. The db branch is a DYNAMIC import so the Cloudflare-only DB code
    never loads in node/tests under the default 'code' flag, and to avoid a
    static import cycle (load → repository → seed → products). */
