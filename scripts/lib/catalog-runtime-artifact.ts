@@ -26,6 +26,7 @@ const catalogAppEntries = [
 ];
 
 const localeSegment = '(?:pl|en|es|de)';
+const optionalLocalePrefix = `(?:${localeSegment}/)?`;
 const ceramicSegment =
   '(?:kubki|wazony|wazony-srednie|wazony-duze|talerzyki|talerze-srednie|talerze-duze|duze-michy|miski-falowane)';
 const catalogPrerenderTemplates = new Set([
@@ -37,12 +38,12 @@ const catalogPrerenderTemplates = new Set([
   '/[locale]/koszyk',
 ]);
 const catalogPrerenderPatterns = [
-  new RegExp(`^/${localeSegment}$`),
-  new RegExp(`^/${localeSegment}/fine-art-prints$`),
-  new RegExp(`^/${localeSegment}/sklep$`),
-  new RegExp(`^/${localeSegment}/koszyk$`),
-  new RegExp(`^/${localeSegment}/${ceramicSegment}$`),
-  new RegExp(`^/${localeSegment}/(?:fine-art-prints|${ceramicSegment})/[^/]+$`),
+  new RegExp(`^/(?:${localeSegment})?$`),
+  new RegExp(`^/${optionalLocalePrefix}fine-art-prints$`),
+  new RegExp(`^/${optionalLocalePrefix}sklep$`),
+  new RegExp(`^/${optionalLocalePrefix}koszyk$`),
+  new RegExp(`^/${optionalLocalePrefix}${ceramicSegment}$`),
+  new RegExp(`^/${optionalLocalePrefix}(?:fine-art-prints|${ceramicSegment})/[^/]+$`),
   /^\/api\/feed\/(?:google|meta)$/,
   /^\/sitemap\.xml$/,
 ];

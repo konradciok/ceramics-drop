@@ -185,6 +185,25 @@ describe('catalog runtime artifact verifier', () => {
     );
   });
 
+  it.each([
+    '/',
+    '/fine-art-prints',
+    '/sklep',
+    '/koszyk',
+    '/kubki',
+    '/fine-art-prints/fap01',
+    '/kubki/k01',
+  ])('rejects unprefixed Polish catalog route %s', (route) => {
+    const root = tempRoot();
+    writeArtifact(root, 'next', {
+      prerender: prerenderManifest({ [route]: { initialRevalidateSeconds: false } }),
+    });
+
+    expect(() => verifyCatalogRuntimeArtifact({ repositoryRoot: root, artifact: 'next' })).toThrow(
+      `Next artifact prerenders catalog routes: ${route}`,
+    );
+  });
+
   it('rejects a catalog prerender in the final copied OpenNext artifact', () => {
     const root = tempRoot();
     writeArtifact(root, 'next');

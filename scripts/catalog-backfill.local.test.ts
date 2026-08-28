@@ -40,6 +40,16 @@ describeLocal('fresh local catalog backfill publication gate', () => {
     if (!supabase) return;
     const audit = await supabase.from('catalog_audit_log').delete().in('product_id', seededIds);
     assertQuery('cleanup audit', audit);
+    const assignments = await supabase
+      .from('print_variant_asset_assignments')
+      .delete()
+      .in('product_id', seededIds);
+    assertQuery('cleanup print assignments', assignments);
+    const assets = await supabase
+      .from('print_fulfilment_assets')
+      .delete()
+      .in('product_id', seededIds);
+    assertQuery('cleanup print assets', assets);
     const products = await supabase.from('products').delete().in('id', seededIds);
     assertQuery('cleanup products', products);
   });
