@@ -33,6 +33,221 @@ not delete or renumber its stable identity. Retain retired source files,
 fulfilment assets, and R2 objects so historical orders can still be fulfilled
 or reprinted. Do not run asset cleanup as part of catalog curation.
 
+## Pending 39-design catalog-curation rollout
+
+This procedure is for `20260828120000_curate_fine_art_prints.sql`. It is a
+coordinated release, not an ordinary unattended migration: production remains
+on the prior catalogue until every step below succeeds. Never replace hard
+invalidation with a 300-second wait.
+
+### 1. Freeze catalogue mutation and checkout
+
+- Nominate one operator and pause `/admin` product/status edits plus every
+  `catalog:backfill` and `print-assets:publish` command for the window.
+- Add a temporary Cloudflare WAF custom rule that blocks
+  `POST /api/checkout`. Keep the rule until Step 8; when the checkout canary is
+  due, exempt only the operator's fixed IP. If checkout cannot be frozen, stop
+  and reschedule the migration.
+- Record the rule ID, start time, operator, and rollback owner in the release
+  log. This freeze prevents a buyer or asset publish from racing the database
+  projection/cache cutover.
+
+### 2. Deploy the code before changing data
+
+Deploy the commit containing the curation mapping, guarded migration, and
+`/api/admin/catalog-cache`. Confirm the Worker deployment is healthy while the
+checkout block remains active. Do not apply the migration before this deploy:
+old code does not provide the hard-invalidation/proof endpoint.
+
+### 3. Capture the pre-migration snapshot
+
+Confirm the targeted Supabase project ref, then save the complete result sets
+below (CSV or release-log attachment). The regex is exactly stable IDs
+`fap001`–`fap041`; it does not include older short IDs such as `fap01`.
+
+```sql
+begin transaction isolation level repeatable read, read only;
+
+select id, num, status, updated_at
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+order by id;
+
+select p.id,
+       count(distinct pv.id) as variants,
+       count(distinct pm.id) as media,
+       count(distinct paa.variant_key) as assignments,
+       count(distinct pfa.id) as assets
+from products p
+left join product_variants pv on pv.product_id = p.id
+left join product_media pm on pm.product_id = p.id
+left join print_variant_asset_assignments paa on paa.product_id = p.id
+left join print_fulfilment_assets pfa on pfa.product_id = p.id
+where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+group by p.id
+order by p.id;
+
+commit;
+```
+
+Stop unless the first result contains exactly 41 rows. The second result is
+the preservation baseline: the curation migration must not change variants,
+media, assignments, or assets.
+
+### 4. Prove readiness before applying the migration
+
+Run this read-only projection while the freeze is active. It is the same
+active-variant/assignment/ready-status/ownership/dimension predicate that the
+migration re-runs under row locks.
+
+```sql
+with targets as (
+  select p.id
+  from products p
+  where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+    and p.id not in ('fap029', 'fap037')
+), violations as (
+  select pv.product_id,
+         pv.variant_key,
+         case
+           when paa.asset_id is null then 'assignment_missing'
+           when pfa.id is null or pfa.product_id is distinct from pv.product_id then 'wrong_product'
+           when pfa.status <> 'ready' then 'asset_not_ready'
+           when pv.print_area_width_px is null or pv.print_area_height_px is null then 'variant_dimensions_missing'
+           when pfa.width_px is distinct from pv.print_area_width_px
+             or pfa.height_px is distinct from pv.print_area_height_px then 'dimension_mismatch'
+         end as reason
+  from targets t
+  join product_variants pv on pv.product_id = t.id and pv.active
+  left join print_variant_asset_assignments paa
+    on paa.product_id = pv.product_id and paa.variant_key = pv.variant_key
+  left join print_fulfilment_assets pfa on pfa.id = paa.asset_id
+  where paa.asset_id is null
+     or pfa.id is null
+     or pfa.product_id is distinct from pv.product_id
+     or pfa.status <> 'ready'
+     or pv.print_area_width_px is null
+     or pv.print_area_height_px is null
+     or pfa.width_px is distinct from pv.print_area_width_px
+     or pfa.height_px is distinct from pv.print_area_height_px
+)
+select * from violations order by product_id, variant_key;
+```
+
+Required result: zero rows. Any row is a stop condition; repair it through the
+normal prepare/upload/verify/publish pipeline, then restart from the snapshot.
+Do not weaken the predicate or edit asset/assignment rows by hand.
+
+### 5. Apply only the curation migration
+
+Run `npx supabase migration list` and stop unless the target project is correct
+and `20260828120000` is the only pending migration being released in this
+window. Then run `npx supabase db push`. The migration locks the mapped product,
+variant, assignment, and asset rows, calls `assert_print_assets_ready` before
+the first product update, projects numbers/statuses, and checks its post-state
+in one transaction.
+
+If it raises `print_assets_incomplete` or any postcondition error, the whole
+transaction (including every number/status write) is rolled back. Keep checkout
+frozen; fix the underlying readiness issue or roll back the code deploy. Never
+mark the failed migration applied and never bypass its assertion.
+
+### 6. Hard-invalidate, then prove the first cached read
+
+From DevTools on an already Cloudflare-Access-authenticated `/admin` tab, run
+the POST and wait for its success response:
+
+```js
+const invalidation = await fetch('/api/admin/catalog-cache', {
+  method: 'POST',
+  credentials: 'same-origin',
+});
+if (!invalidation.ok) throw new Error(await invalidation.text());
+console.log(await invalidation.json()); // { invalidated: true, tag: 'catalog' }
+```
+
+This endpoint is protected by the existing `/api/admin` Access JWT gate. Do
+not expose it under a public path or bypass Access. It uses Next 16's Route
+Handler-compatible `revalidateTag('catalog', { expire: 0 })`; the normal
+`'max'` profile is stale-while-revalidate and is not sufficient for this
+cutover.
+
+In a **separate request**, prove the tagged loader's first read matches the new
+database state:
+
+```js
+const response = await fetch('/api/admin/catalog-cache', {
+  credentials: 'same-origin',
+  cache: 'no-store',
+});
+if (!response.ok) throw new Error(await response.text());
+const { prints } = await response.json();
+const active = prints.filter((print) => print.published);
+const expectedNumbers = Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0'));
+if (active.length !== 39 || active.map((print) => print.num).join() !== expectedNumbers.join()) {
+  throw new Error('fresh catalog projection mismatch');
+}
+for (const id of ['fap029', 'fap037']) {
+  if (prints.find((print) => print.id === id)?.published !== false) {
+    throw new Error(`${id} is not archived in the fresh catalog read`);
+  }
+}
+console.table(active);
+```
+
+Save both responses. A successful POST without the separate GET proof is not a
+completed cache cutover.
+
+### 7. Verify SQL, UI, checkout, and admin
+
+Run and save the SQL result:
+
+```sql
+select count(*) as active_count,
+       count(distinct num) as unique_active_numbers,
+       min(num) as first_number,
+       max(num) as last_number
+from products
+where type = 'print' and status = 'active';
+-- required: 39 | 39 | 01 | 39
+
+select id, num, status
+from products
+where id in ('fap029', 'fap037')
+order by id;
+-- required: archived, with stable IDs retained
+
+select assert_print_assets_ready(array_agg(id order by id))
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+  and id not in ('fap029', 'fap037');
+-- required: one void result, no exception
+```
+
+Compare variant/media/assignment/asset counts to Step 3. Then verify:
+
+- storefront: nine sections in the configured order, identical fixed names in
+  two locales, numbers `01`–`39`, `fap041` as Nº 13 in Linea, and no public
+  PDP/tile for `fap029` or `fap037`;
+- admin: both archived stable IDs remain inspectable with their retained media,
+  variants, assignments, and assets;
+- checkout: temporarily exempt only the operator IP from the WAF rule, start a
+  checkout for one active print through PaymentElement without completing a
+  charge, confirm the expected stable ID/variant/price, then cancel the pending
+  PaymentIntent and verify the normal cancellation webhook/hold cleanup. Restore
+  the block immediately after the canary.
+
+Any discrepancy keeps the freeze in place and triggers rollback/investigation;
+do not wait for the five-minute TTL and hope the catalogue converges.
+
+### 8. Unfreeze and close the release
+
+Only after every Step 7 check passes: remove the checkout WAF rule, resume admin
+and asset-publish mutations, watch the first real checkout, and record the end
+time. Update `docs/STATUS.md` to present-tense 39-design/nine-collection live
+state in a follow-up commit only after this production gate has actually
+succeeded.
+
 ## Manifest compatibility (schema v2 vs legacy)
 
 Every `manifest.json` `prepare` writes declares `schemaVersion: 2`. Two

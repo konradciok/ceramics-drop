@@ -3,8 +3,9 @@
    ------------------------------------------------------------
    Thin cached wrappers over the repository readers, returning the exact
    `Product[]` / `PrintDesign[]` shapes the registry produces. Cached under the
-   `catalog` tag so admin catalog writes can revalidate it via
-   `revalidateTag('catalog', 'max')` (match the `inventory` / webhook pattern).
+   `catalog` tag so ordinary admin writes can revalidate it with the `max` SWR
+   profile, while coordinated out-of-band migrations can hard-expire it through
+   the Cloudflare Access-gated `/api/admin/catalog-cache` route.
 
    Production runs CATALOG_SOURCE=db, so getProducts()/getPrintDesigns()/… and
    the other public accessors call these loaders at runtime (dynamic import from
