@@ -6,7 +6,9 @@ import {
   RETIRED_PRINT_CURATION,
   catalogStatusForPrint,
   curationForProduct,
+  validatePrintCuration,
 } from './print-curation';
+import source from '../../config/print-catalog-curation.json';
 
 describe('fine-art print curation map', () => {
   it('preserves the authored collection and numbering invariants', () => {
@@ -37,5 +39,19 @@ describe('fine-art print curation map', () => {
     expect(catalogStatusForPrint('fap041')).toBe('active');
     expect(catalogStatusForPrint('fap029')).toBe('archived');
     expect(() => catalogStatusForPrint('unknown')).toThrow(/unknown print/i);
+  });
+
+  it('fails descriptively when exact authored invariants are malformed', () => {
+    const names = structuredClone(source);
+    names.collections[0].name = 'Wrong';
+    expect(() => validatePrintCuration(names)).toThrow(/collection names must be exactly/i);
+
+    const retired = structuredClone(source);
+    retired.retired[0].productId = 'fap040';
+    expect(() => validatePrintCuration(retired)).toThrow(/retired IDs must be exactly/i);
+
+    const universe = structuredClone(source);
+    universe.collections[0].prints[0].productId = 'fap999';
+    expect(() => validatePrintCuration(universe)).toThrow(/product ID universe must be fap001 through fap041/i);
   });
 });
