@@ -85,9 +85,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 /**
- * Home — "one studio, two media": hero diptych (ceramic + framed print),
- * painting-reveal beat, marquee, ceramic collections, fine-art-print rail,
- * studio story, "how it works", split logistics band, contact.
+ * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
+ * messages fallback), painting-reveal beat, marquee, ceramic collections,
+ * fine-art-print rail, studio story, "how it works", split logistics band,
+ * contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
   const { locale } = await params;

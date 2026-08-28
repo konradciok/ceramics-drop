@@ -26,13 +26,21 @@ export async function getHomeContent(
   locale: CmsLocale,
   previewToken?: string | null,
 ): Promise<HomePagePayload> {
-  const preview = await getPreviewContent<HomePagePayload>(previewToken, {
-    kind: 'page',
-    slug: HOME_PAGE_SLUG,
-    locale,
-  });
-  if (preview) return preview;
+  try {
+    const preview = await getPreviewContent<HomePagePayload>(previewToken, {
+      kind: 'page',
+      slug: HOME_PAGE_SLUG,
+      locale,
+    });
+    if (preview) return preview;
 
-  const published = await getPublishedContent<HomePagePayload>('page', HOME_PAGE_SLUG, locale);
-  return published ?? fallbackHomePayload(locale);
+    const published = await getPublishedContent<HomePagePayload>('page', HOME_PAGE_SLUG, locale);
+    return published ?? fallbackHomePayload(locale);
+  } catch (err) {
+    // Belt-and-braces: getPreviewContent/getPublishedContent already catch
+    // their own errors, but a future regression in the shared CMS layer must
+    // never be able to break the homepage.
+    console.error('CMS home content read failed; falling back to messages', { locale, err });
+    return fallbackHomePayload(locale);
+  }
 }

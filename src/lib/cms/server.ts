@@ -62,9 +62,13 @@ export async function verifyPreviewToken(token: string | null | undefined): Prom
   if (!token) return null;
   const [body, signature] = token.split('.');
   if (!body || !signature) return null;
-  const ok = await crypto.subtle.verify('HMAC', await key(), arrayBuffer(fromBase64Url(signature)), new TextEncoder().encode(body));
-  if (!ok) return null;
+  // Everything below can throw on a malformed token (invalid base64 in
+  // fromBase64Url → atob, a missing/misshapen secret in key(), a bad
+  // signature length in crypto.subtle.verify, or invalid JSON) — a crafted
+  // ?preview= value must fail closed to null, never 500 the page.
   try {
+    const ok = await crypto.subtle.verify('HMAC', await key(), arrayBuffer(fromBase64Url(signature)), new TextEncoder().encode(body));
+    if (!ok) return null;
     const parsed = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as PreviewPayload;
     if (!parsed.kind || !parsed.slug || !parsed.locale || !parsed.version || !parsed.exp) return null;
     if (parsed.exp < Math.floor(Date.now() / 1000)) return null;

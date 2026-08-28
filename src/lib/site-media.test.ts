@@ -188,6 +188,7 @@ describe('siteMediaHeaders', () => {
     expect(headers.get('etag')).toBe('"abc123"');
     expect(headers.get('accept-ranges')).toBe('bytes');
     expect(headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    expect(headers.get('x-content-type-options')).toBe('nosniff');
     expect(headers.get('content-length')).toBe('2048');
     expect(headers.get('content-range')).toBeNull();
   });

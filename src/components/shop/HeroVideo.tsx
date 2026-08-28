@@ -60,6 +60,7 @@ export function HeroVideo({ desktop, mobile }: Props) {
       preload="metadata"
       poster={active.poster.src}
       src={active.src}
+      aria-hidden="true"
     />
   );
 }

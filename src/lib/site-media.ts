@@ -102,6 +102,7 @@ export function siteMediaHeaders(
     etag: obj.httpEtag,
     'accept-ranges': 'bytes',
     'cache-control': 'public, max-age=31536000, immutable',
+    'x-content-type-options': 'nosniff',
   });
 
   if (range) {

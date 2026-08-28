@@ -67,10 +67,11 @@ export function HomeHero({ content, fallbackImage }: Props) {
   return (
     <section className="hero">
       <picture className="hero-media">
-        <source media="(min-width:861px)" srcSet={desktop.srcSet ?? desktop.imgSrc} />
+        <source media="(min-width:861px)" srcSet={desktop.srcSet ?? desktop.imgSrc} sizes="100vw" />
         <img
           src={mobile.imgSrc}
           srcSet={mobile.srcSet}
+          sizes="100vw"
           alt={content.heroAlt ?? ''}
           width={mobile.width}
           height={mobile.height}
@@ -81,7 +82,7 @@ export function HomeHero({ content, fallbackImage }: Props) {
       <div className="hero-scrim" aria-hidden="true" />
       <div className="hero-overlay">
         <h1 className="hero-title">
-          <span className="hero-line1">{content.heroLine1}</span>
+          <span className="hero-line1">{content.heroLine1}</span>{' '}
           <span className="hero-line2">{content.heroLine2}</span>
         </h1>
         {content.heroTagline && <p className="hero-tagline">{content.heroTagline}</p>}

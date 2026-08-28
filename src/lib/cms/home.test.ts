@@ -63,4 +63,11 @@ describe('getHomeContent', () => {
 
     await expect(getHomeContent('de')).resolves.toEqual(fallbackHomePayload('de'));
   });
+
+  it('falls back to the messages payload when a reader throws (belt-and-braces — a CMS outage must never break the homepage)', async () => {
+    vi.mocked(getPreviewContent).mockRejectedValue(new Error('boom'));
+    vi.mocked(getPublishedContent).mockResolvedValue(makePayload('published'));
+
+    await expect(getHomeContent('es', 'tok')).resolves.toEqual(fallbackHomePayload('es'));
+  });
 });

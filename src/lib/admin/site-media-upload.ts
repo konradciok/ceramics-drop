@@ -144,13 +144,15 @@ export function validateUpload(input: ValidateUploadInput): ValidateUploadResult
  * produce the same key, matching `SITE_MEDIA_KEY_RE` in `src/lib/site-media.ts`.
  */
 export async function uploadKeyFor(bytes: UploadBytes, ext: string): Promise<string> {
-  // Copy into a fresh, plain-ArrayBuffer-backed view: `crypto.subtle.digest`
-  // types its input as `BufferSource`, which (per current TS DOM lib) excludes
-  // a `Uint8Array` whose `buffer` is only known as `ArrayBufferLike` (i.e.
-  // possibly a `SharedArrayBuffer`) — as `bytes instanceof Uint8Array` is
-  // typed here. The copy is cheap and also normalizes both input shapes.
-  const view = new Uint8Array(toUint8Array(bytes));
-  const digest = await crypto.subtle.digest('SHA-256', view);
+  // No byte copy: an ArrayBuffer is already a valid BufferSource, and a
+  // Uint8Array view is passed as-is (cast only — `crypto.subtle.digest`
+  // types its input as `BufferSource`, which per current TS DOM lib excludes
+  // a `Uint8Array` whose `buffer` is only known as `ArrayBufferLike`, i.e.
+  // possibly a `SharedArrayBuffer` — that's a type-level mismatch only, not a
+  // real runtime concern here). A prior copy-into-fresh-buffer step doubled
+  // peak memory for large video uploads (a 50 MB video ~100 MB peak of the
+  // Worker's 128 MB) for no functional benefit.
+  const digest = await crypto.subtle.digest('SHA-256', toUint8Array(bytes) as BufferSource);
   const hex = Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
 import { IMAGE_KEY_RE, VIDEO_KEY_RE } from '@/lib/site-media';
-import { CMS_DOCUMENT_KINDS, CMS_LOCALES, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
+import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
 
 const PRINTS_SLUG = 'fine-art-prints';
@@ -135,7 +135,7 @@ export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload:
       return collectionCopySchema.parse(payload);
     case 'page':
       if (slug === PRINT_PDP_SLUG) return printPdpSchema.parse(payload);
-      if (slug === 'home') return homePageSchema.parse(payload);
+      if (slug === HOME_PAGE_SLUG) return homePageSchema.parse(payload);
       if (slug === 'studio') return studioPageSchema.parse(payload);
       if (slug === 'gallery') return galleryPageSchema.parse(payload);
       throw new Error(`Unsupported page document: ${slug}`);
