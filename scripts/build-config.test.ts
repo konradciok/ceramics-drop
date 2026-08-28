@@ -17,6 +17,7 @@ const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ) as { scripts: Record<string, string> };
 const wranglerConfig = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+const dbWorkflow = readFileSync(new URL('../.github/workflows/db.yml', import.meta.url), 'utf8');
 
 describe('build configuration (Cloudflare Workers safety)', () => {
   it('build script is exactly `next build --webpack`', () => {
@@ -58,5 +59,17 @@ describe('build configuration (Cloudflare Workers safety)', () => {
         /--turbo\b|turbopack/i,
       );
     }
+  });
+
+  it('runs the fresh-schema catalog backfill rehearsal in database CI', () => {
+    expect(dbWorkflow).toContain('supabase start');
+    expect(dbWorkflow).toContain('supabase test db');
+    expect(dbWorkflow).toContain('npm ci');
+    expect(dbWorkflow).toContain('supabase status --output json');
+    expect(dbWorkflow).toContain('LOCAL_SUPABASE_URL');
+    expect(dbWorkflow).toContain('LOCAL_SUPABASE_SERVICE_ROLE_KEY');
+    expect(dbWorkflow).toContain(
+      'npx vitest run scripts/catalog-backfill.local.test.ts',
+    );
   });
 });

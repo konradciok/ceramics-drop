@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   ACTIVE_PRINT_CURATION,
@@ -11,6 +12,36 @@ import {
 import source from '../../config/print-catalog-curation.json';
 
 describe('fine-art print curation map', () => {
+  it('keeps the migration rollout snapshot aligned with the authored curation', () => {
+    const migration = readFileSync(
+      new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),
+      'utf8',
+    );
+    const valuesBlock = migration.match(
+      /insert into print_curation_map \(id, num, status\)\s*values\s*([\s\S]*?);/,
+    );
+    expect(valuesBlock, 'print_curation_map INSERT must remain present').not.toBeNull();
+
+    const migrationRows = Array.from(
+      valuesBlock![1].matchAll(/\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g),
+      ([, id, num, status]) => ({ id, num, status }),
+    );
+    const authoredRows = [
+      ...source.collections.flatMap(({ prints }) => prints.map(({ productId, number }) => ({
+        id: productId,
+        num: number,
+        status: 'active',
+      }))),
+      ...source.retired.map(({ productId, sourceNumber }) => ({
+        id: productId,
+        num: sourceNumber,
+        status: 'archived',
+      })),
+    ];
+
+    expect(migrationRows).toEqual(authoredRows);
+  });
+
   it('preserves the authored collection and numbering invariants', () => {
     expect(PRINT_COLLECTION_DEFINITIONS.map(({ name }) => name)).toEqual([
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
