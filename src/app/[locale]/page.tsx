@@ -6,6 +6,7 @@ import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { HomeHero } from '@/components/shop/HomeHero';
+import { PrintCard } from '@/components/shop/PrintCard';
 import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getPublicProducts } from '@/lib/products';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
@@ -17,11 +18,12 @@ import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { fromPriceOf } from '@/lib/print-pricing';
 import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } from '@/lib/print-mockups';
+import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
-import { HOME_EDITORIAL_IMAGE, HOME_HERO_BEAT_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
+import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
 
@@ -53,7 +55,6 @@ const COVER: Record<CategorySlug, string> = {
    colours vary on purpose — the rail hints at the configurator. Every pick
    degrades gracefully: a missing/unpublished id is skipped and backfilled
    from registry order, so a catalog edit can never blank the section. */
-const BEAT_PRINT_ID = 'fap001';
 const PRINT_RAIL: { id: string; state: MockupState }[] = [
   { id: 'fap001', state: 'framed-natural' },
   { id: 'fap002', state: 'framed-natural' },
@@ -123,7 +124,6 @@ export default async function HomePage({ params, searchParams }: Props) {
   const printCurrency = toChargeableCurrency(currency);
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
   const printById = new Map(printDesigns.map((d) => [d.id, d]));
-  const beatPrint = printById.get(BEAT_PRINT_ID) ?? printDesigns[0];
   const railPicked = PRINT_RAIL.flatMap(({ id, state }) => {
     const d = printById.get(id);
     return d ? [{ design: d, image: railImage(d, state) }] : [];
@@ -135,21 +135,35 @@ export default async function HomePage({ params, searchParams }: Props) {
   const railPrints = [...railPicked, ...railFill];
   const printName = (d: PrintDesign) => `${t('product.print')} Nº ${d.num}`;
 
+  // Hero-beat carousel: 5 daily-rotated prints, never overlapping the curated
+  // rail below. For the statically-prerendered `pl` tree the date is captured
+  // at build time, so its set rotates per deploy rather than per day — accepted.
+  const railIds = new Set(railPrints.map((r) => r.design.id));
+  const heroBeatPrints = pickDaily(printDesigns, { count: 5, dateKey: dateKey(), exclude: railIds })
+    .map((d) => ({ design: d, image: railImage(d, 'framed-natural') }));
+
   return (
     <main>
       <StripUrlToken names={['preview']} />
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <HomeHero content={heroContent} fallbackImage={HOME_HERO_FALLBACK_IMAGE} />
 
-      {/* ── HERO BEAT 2 — painting reveal ────────────────────────── */}
+      {/* ── HERO BEAT 2 — daily-rotated print tiles ──────────────── */}
       <section className="hero-beat">
         <div className="hero-beat-inner">
-          {beatPrint ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img className="reveal reveal--scale hero-beat-painting" src={beatPrint.image} srcSet={srcSet(beatPrint.image)} sizes="(min-width:861px) 540px, 100vw" alt={t('home.heroBeatAlt')} width={700} height={1000} loading="lazy" />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img className="reveal reveal--scale" src={HOME_HERO_BEAT_IMAGE.src} srcSet={srcSet(HOME_HERO_BEAT_IMAGE.src)} sizes="(min-width:861px) 60vw, 100vw" alt={t('home.heroBeatAlt')} width={HOME_HERO_BEAT_IMAGE.width} height={HOME_HERO_BEAT_IMAGE.height} />
+          {heroBeatPrints.length > 0 && (
+            <div className="hero-beat-grid reveal">
+              {heroBeatPrints.map(({ design: d, image }) => (
+                <PrintCard
+                  key={d.id}
+                  id={d.id}
+                  image={image}
+                  name={printName(d)}
+                  priceLabel={t('print.from', { price: fmtPrint(fromPriceOf(d, printCurrency, printPricing)) })}
+                  sizes="(min-width:861px) 20vw, 60vw"
+                />
+              ))}
+            </div>
           )}
           <p className="hero-beat-cap reveal">{t('home.heroBeatCap', { count: printDesigns.length })}</p>
         </div>
@@ -224,14 +238,14 @@ export default async function HomePage({ params, searchParams }: Props) {
             />
             <div className="prints-home-grid">
               {railPrints.map(({ design: d, image }) => (
-                <Link key={d.id} className="prints-home-card" href={`/fine-art-prints/${d.id}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} srcSet={srcSet(image)} sizes="(min-width:861px) 25vw, 60vw" alt={printName(d)} loading="lazy" width={700} height={1000} />
-                  <span className="prints-home-meta">
-                    <span className="nm">{printName(d)}</span>
-                    <span className="pr">{t('print.from', { price: fmtPrint(fromPriceOf(d, printCurrency, printPricing)) })}</span>
-                  </span>
-                </Link>
+                <PrintCard
+                  key={d.id}
+                  id={d.id}
+                  image={image}
+                  name={printName(d)}
+                  priceLabel={t('print.from', { price: fmtPrint(fromPriceOf(d, printCurrency, printPricing)) })}
+                  sizes="(min-width:861px) 25vw, 60vw"
+                />
               ))}
             </div>
             <div className="prints-home-facts">
