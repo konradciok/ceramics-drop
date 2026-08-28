@@ -22,7 +22,7 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 | R2 (`PRINT_ASSETS`) | Immutable print fulfilment masters (`anna-ciok-print-assets`) |
 | Queues (`FULFILMENT_QUEUE`) | Async Prodigi order submission (`prodigi-fulfilment` + DLQ) |
 
-**Not provisioned:** D1, KV, a persistent OpenNext data/tag cache, Hyperdrive, Cloudflare Images. The worker still re-exports OpenNext's generated cache Durable Object classes because its bundle requires them; the current `open-next.config.ts` selects a read-only static-assets incremental-cache adapter and the `dummy` tag-cache adapter, so those exports do not provide application tag invalidation. Catalog and print-pricing reads therefore run on demand, and the postbuild manifest contract fails a build if any catalog-consuming public route or sitemap is emitted as prerendered output.
+**Not provisioned:** D1, KV, a persistent OpenNext data/tag cache, Hyperdrive, Cloudflare Images. The worker still re-exports OpenNext's generated cache Durable Object classes because its bundle requires them; the current `open-next.config.ts` selects a read-only static-assets incremental-cache adapter and the `dummy` tag-cache adapter, so those exports do not provide application tag invalidation. Catalog and print-pricing reads therefore run on demand. Next postbuild fails closed on missing/unsafe `.next` manifests; the guarded OpenNext build separately checks the copied manifests and build ID under `.open-next` before preview or deploy.
 
 > **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
 > `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy.
@@ -194,7 +194,7 @@ GitHub repo `konradciok/ceramics-drop` is connected to worker **ceramics-drop**.
 | **Deploy command** | `npm run deploy:cf` |
 | **Node.js version** | 22 (Workers Builds default; keep `package-lock.json` on npm 10.9.x) |
 
-`deploy:cf` runs `opennextjs-cloudflare build` (Next.js + OpenNext bundle) then `opennextjs-cloudflare deploy`. Do **not** use `npm run build` alone in CI — that only produces `.next/`, not `.open-next/`.
+`deploy:cf` runs the guarded `build:opennext` script (Next.js + OpenNext bundle + final copied-artifact verification) before `opennextjs-cloudflare deploy`. `preview:cf` and Wrangler's custom build use the same gate. Do **not** use `npm run build` alone in CI — that only produces and verifies `.next/`, not `.open-next/`.
 
 ### Variables and secrets
 
@@ -219,7 +219,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
-- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables directly on each loader invocation); `code` (the unset default) reads the static registry and is the local/test fallback. These DB reads deliberately bypass Next's persistent data cache because this deployment has no functional tag-cache adapter. The home page, fine-art-print collection, and sitemap are explicitly dynamic, and `npm run build` inspects the actual Next manifests after compilation to keep all catalog-consuming public routes out of prerender output. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
+- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables directly on each loader invocation); `code` (the unset default) reads the static registry and is the local/test fallback. These DB reads deliberately bypass Next's persistent data cache because this deployment has no functional tag-cache adapter. The home page, fine-art-print collection, and sitemap are explicitly dynamic. `npm run build` fail-closed verifies the actual Next manifests; `npm run build:opennext` then verifies the final copied OpenNext manifests and matching build ID. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` — Stripe payment-method configuration (`pmc_…`, Dashboard → Settings → Payment methods; enables BLIK/P24/Bizum/cards). Mode-specific — test and live ids differ. Checkout **fails closed** (502 `stripe_failed`) without it, so set the secret **before** deploying this code (`wrangler secret put STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`).
 
 ### Sentry environment isolation (preview)
@@ -271,7 +271,7 @@ OpenNext warns that Windows is not fully supported. For local deploy on Windows:
 1. Enable **Developer Mode** (Settings → For developers) so OpenNext can create symlinks during the bundle step.
 2. Stop `preview:cf` / `workerd` before deploy if you hit `EBUSY` or `EPERM` deleting `.open-next`.
 3. Use `npx wrangler` (not bare `wrangler`) unless Wrangler is installed globally.
-4. `wrangler.jsonc` uses `npx opennextjs-cloudflare build` (not `node_modules/.bin/...`) so Wrangler’s custom build works in cmd/PowerShell.
+4. `wrangler.jsonc` uses `npm run build:opennext`, so Wrangler's custom build and its final artifact guard work in cmd/PowerShell.
 
 Prefer WSL if symlink or file-lock errors persist.
 

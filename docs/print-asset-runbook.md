@@ -57,12 +57,13 @@ an invalidation call into this procedure.
 
 Deploy the commit containing the curation mapping, guarded migration, and
 direct (uncached) catalog/print-pricing DB loaders and runtime-rendered catalog
-routes. The build's postbuild manifest check must pass, proving no catalog
-consumer (including home, fine-art-print collection, or sitemap) was emitted as
-prerendered output. Confirm the Worker deployment is healthy while the checkout
-block remains active. Do not apply the migration
-before this deploy: the prior build still wraps these reads in a five-minute
-Next data cache whose deployed dummy tag cache cannot invalidate it reliably.
+routes. The fail-closed Next postbuild and final copied-OpenNext manifest checks
+must both pass, proving no catalog consumer (including home, fine-art-print
+collection, or sitemap) was emitted as prerendered output. Confirm the Worker
+deployment is healthy while the checkout block remains active. Do not apply the
+migration before this deploy: the prior build still wraps these reads in a
+five-minute Next data cache whose deployed dummy tag cache cannot invalidate it
+reliably.
 
 ### 3. Capture the pre-migration snapshot
 
@@ -185,11 +186,11 @@ removed `/api/admin/catalog-cache` route must remain absent: a successful
 invalidation response from that route would be a false operational signal.
 
 The home page, fine-art-print collection, product/collection routes, cart,
-merchant feeds, and sitemap are runtime routes; the build manifest contract
-guards this boundary. From DevTools, issue a new request to the force-dynamic,
-`no-store` merchant feed. This crosses the same DB-backed print accessor used by
-storefront and checkout, and the response makes the active stable-ID set
-machine-checkable:
+merchant feeds, and sitemap are runtime routes; both the Next and copied
+OpenNext manifest contracts guard this boundary. From DevTools, issue a new
+request to the force-dynamic, `no-store` merchant feed. This crosses the same
+DB-backed print accessor used by storefront and checkout, and the response makes
+the active stable-ID set machine-checkable:
 
 ```js
 const response = await fetch('/api/feed/google?locale=en', { cache: 'no-store' });

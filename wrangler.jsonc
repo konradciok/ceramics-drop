@@ -4,7 +4,7 @@
   "workers_dev": false,
   "main": "./worker.ts",
   "build": {
-    "command": "npx opennextjs-cloudflare build"
+    "command": "npm run build:opennext"
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -70,8 +70,9 @@
   },
   // Rehearsal/preview environment (backend-audit Plan 05): workers.dev deploy with
   // DEDICATED queues so the real queue runtime can be exercised without touching
-  // production traffic. Deploy: `CLOUDFLARE_ENV=preview opennextjs-cloudflare build`
-  // then `... deploy -- --env=preview`. Secrets are set per-env (test/sandbox only).
+  // production traffic. Set CLOUDFLARE_ENV=preview in the process, run the guarded
+  // `npm run build:opennext`, then `opennextjs-cloudflare deploy -- --env=preview`.
+  // Secrets are set per-env (test/sandbox only).
   "env": {
     "preview": {
       "name": "ceramics-drop-preview",

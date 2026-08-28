@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ) as { scripts: Record<string, string> };
+const wranglerConfig = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
 
 describe('build configuration (Cloudflare Workers safety)', () => {
   it('build script is exactly `next build --webpack`', () => {
@@ -26,9 +27,28 @@ describe('build configuration (Cloudflare Workers safety)', () => {
     expect(pkg.scripts.dev).toContain('--webpack');
   });
 
-  it('runs the catalog runtime-route manifest contract after every production build', () => {
-    expect(pkg.scripts.postbuild).toBe(
-      'vitest run scripts/catalog-runtime-routes.build.test.ts',
+  it('fails closed on the Next manifests after every production build', () => {
+    expect(pkg.scripts.postbuild).toBe('npm run verify:catalog-runtime:next');
+    expect(pkg.scripts['verify:catalog-runtime:next']).toBe(
+      'tsx scripts/verify-catalog-runtime-artifact.ts --artifact next',
+    );
+  });
+
+  it('gates every OpenNext preview/deploy path on the copied artifact', () => {
+    expect(pkg.scripts['verify:catalog-runtime:opennext']).toBe(
+      'tsx scripts/verify-catalog-runtime-artifact.ts --artifact opennext',
+    );
+    expect(pkg.scripts['build:opennext']).toBe(
+      'opennextjs-cloudflare build && npm run verify:catalog-runtime:opennext',
+    );
+    expect(pkg.scripts['preview:cf']).toBe(
+      'npm run build:opennext && opennextjs-cloudflare preview',
+    );
+    expect(pkg.scripts['deploy:cf']).toBe(
+      'npm run build:opennext && opennextjs-cloudflare deploy',
+    );
+    expect(wranglerConfig).toMatch(
+      /"build"\s*:\s*\{\s*"command"\s*:\s*"npm run build:opennext"\s*\}/,
     );
   });
 
