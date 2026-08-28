@@ -416,46 +416,84 @@ ul { list-style:none; padding:0; margin:0; }
 .contact-row .lbl { font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-terracotta); }
 .contact-row .val { font-family:var(--f-display); font-weight:300; font-size:22px; }
 
-/* ─── FOOTER ──────────────────────────────────────────── */
+/* ─── FOOTER — PSTR-style: logo row, newsletter + social left, four
+   link sections (static columns ≥861px, collapsed accordions below) ── */
 .footer { background:var(--c-espresso); color:var(--c-paper); padding:clamp(64px,8vw,108px) var(--gut) 30px; }
 .footer-inner { max-width:var(--max); margin:0 auto; }
-.footer-top { display:grid; grid-template-columns:1fr; gap:clamp(24px,4vw,60px); padding-bottom:56px; border-bottom:1px solid rgba(244,237,224,.2); }
-@media (min-width:561px) {
-  .footer-top { grid-template-columns:1fr 1fr; }
-}
-@media (min-width:861px) {
-  .footer-top { grid-template-columns:1.5fr repeat(3,1fr); }
-}
-.footer-brand .flogo { width:64px; height:64px; margin-bottom:20px; }
-.footer-brand h4 { font-family:var(--f-display); font-weight:300; font-style:italic; font-size:26px; margin:0 0 12px; line-height:1.1; max-width:18ch; }
-.footer-brand p { font-size:14px; line-height:1.6; opacity:.7; max-width:32ch; margin:0; }
-.footer-col h5 { font-family:var(--f-cond); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0 0 18px; color:var(--c-butter); }
-.footer-col ul { display:flex; flex-direction:column; gap:11px; }
-.footer-col a { font-size:14px; opacity:.85; transition:opacity .2s,color .2s; }
-.footer-col a:hover { color:var(--c-periwinkle); opacity:1; }
-.footer-bot { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding-top:28px; font-family:var(--f-cond); font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.6; }
-.footer-bot .pay { display:flex; gap:10px; align-items:center; }
-.footer-bot .pay span { padding:4px 8px; border:1px solid rgba(244,237,224,.3); border-radius:3px; font-size:10px; letter-spacing:.1em; }
+.footer-head { margin-bottom:clamp(28px,4vw,48px); }
+.footer-head .flogo { width:64px; height:64px; }
 
-/* footer newsletter — compact double-opt-in signup in the brand column.
-   Dark-surface variants on purpose: the footer is espresso, so the light
-   .field/.btn-primary styles would be invisible here. Paragraph rules are
-   element-qualified to out-cascade `.footer-brand p` above. */
-.footer-newsletter { margin-top:24px; display:flex; flex-direction:column; gap:10px; max-width:340px; }
-.footer-newsletter h5 { font-family:var(--f-cond); font-size:12px; letter-spacing:.22em; text-transform:uppercase; margin:0; color:var(--c-butter); }
+.footer-top { display:flex; flex-direction:column; }
+.footer-news { margin-bottom:32px; }
+/* negative margin keeps the 44px hit area while the glyph aligns to the gutter */
+.footer-social { display:flex; gap:12px; margin-top:28px; }
+.footer-social a { display:flex; align-items:center; justify-content:center; width:44px; height:44px; margin-left:-11px; opacity:.85; transition:opacity .2s,color .2s; }
+.footer-social a:hover { color:var(--c-periwinkle); opacity:1; }
+.footer-social a:focus-visible { outline:2px solid var(--c-butter); outline-offset:2px; }
+
+/* accordion sections (facc) — button + collapsible panel on mobile */
+.facc { border-top:1px solid rgba(244,237,224,.2); }
+.facc:last-of-type { border-bottom:1px solid rgba(244,237,224,.2); }
+.facc-head { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:48px; margin:0; padding:0; color:var(--c-butter); font-family:var(--f-cond); font-size:12px; letter-spacing:.22em; text-transform:uppercase; text-align:left; }
+.facc-head:focus-visible { outline:2px solid var(--c-butter); outline-offset:2px; }
+.facc-icon { position:relative; width:12px; height:12px; flex:none; }
+.facc-icon::before,.facc-icon::after { content:""; position:absolute; inset:0; margin:auto; background:currentColor; transition:transform .25s var(--ease); }
+.facc-icon::before { width:12px; height:1.5px; }
+.facc-icon::after { width:1.5px; height:12px; }
+.facc-head[aria-expanded="true"] .facc-icon::after { transform:scaleY(0); }
+/* 0fr→1fr grid trick animates to auto height; the delayed visibility flip
+   drops collapsed links out of the tab order and the AT tree */
+.facc-panel { display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s var(--ease); }
+.facc-panel[data-open="true"] { grid-template-rows:1fr; }
+.facc-panel-inner { min-height:0; overflow:hidden; visibility:hidden; transition:visibility 0s .3s; }
+.facc-panel[data-open="true"] .facc-panel-inner { visibility:visible; transition:visibility 0s; }
+.facc ul { display:flex; flex-direction:column; gap:11px; padding-bottom:20px; }
+.facc a { font-size:14px; opacity:.85; transition:opacity .2s,color .2s; }
+.facc a:hover { color:var(--c-periwinkle); opacity:1; }
+
+@media (min-width:861px) {
+  .footer-top { display:grid; grid-template-columns:1.4fr repeat(4,1fr); grid-template-rows:auto 1fr; gap:clamp(24px,4vw,60px); padding-bottom:56px; border-bottom:1px solid rgba(244,237,224,.2); }
+  .footer-news { grid-column:1; grid-row:1; margin-bottom:0; }
+  .footer-social { grid-column:1; grid-row:2; align-self:start; margin-top:0; }
+  .facc,.facc:last-of-type { grid-row:1 / span 2; border:0; }
+  .facc-head { min-height:0; margin:0 0 18px; cursor:default; }
+  .facc-icon { display:none; }
+  /* [data-open] out-specifies the mobile [data-open="true"] rules either way */
+  .facc-panel,.facc-panel[data-open] { grid-template-rows:1fr; }
+  .facc-panel .facc-panel-inner { visibility:visible; overflow:visible; }
+  .facc ul { padding-bottom:0; }
+}
+
+.footer-bot { display:flex; flex-direction:column; align-items:flex-start; gap:16px; padding-top:28px; font-family:var(--f-cond); font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.6; }
+.footer-pay { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.footer-pay .chip { padding:4px 8px; border:1px solid rgba(244,237,224,.3); border-radius:3px; font-size:10px; letter-spacing:.1em; }
+.footer-legal a { text-decoration:underline; }
+@media (min-width:861px) {
+  .footer-bot { flex-direction:row; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+}
+
+/* footer newsletter — compact double-opt-in signup, now the footer's left
+   block. Dark-surface variants on purpose: the footer is espresso, so the
+   light .field/.btn-primary styles would be invisible here. Paragraph rules
+   stay element-qualified (historic cascade guard, harmless now). */
+.footer-newsletter { display:flex; flex-direction:column; gap:10px; }
+.footer-newsletter h5 { font-family:var(--f-display); font-weight:300; font-style:italic; font-size:clamp(22px,2.2vw,30px); line-height:1.15; margin:0 0 2px; color:var(--c-paper); }
+@media (min-width:861px) {
+  .footer-newsletter { max-width:420px; }
+}
 .footer-newsletter p { margin:0; max-width:none; }
 .footer-newsletter p.footer-newsletter-blurb { font-size:13px; line-height:1.5; opacity:.7; }
 .footer-newsletter-row { display:flex; gap:8px; }
 .footer-newsletter input[type="email"] {
-  flex:1; min-width:0; font:inherit; font-size:14px; padding:10px 12px;
+  flex:1; min-width:0; font:inherit; font-size:14px; padding:10px 16px;
   background:rgba(244,237,224,.07); border:1px solid rgba(244,237,224,.28);
-  border-radius:var(--r-sharp); color:var(--c-paper);
+  border-radius:var(--r-pill); color:var(--c-paper);
 }
 .footer-newsletter input::placeholder { color:var(--c-paper); opacity:.45; }
 .footer-newsletter input:focus-visible { outline:0; border-color:var(--c-butter); }
 .footer-newsletter-btn {
   font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
-  padding:10px 18px; border:1px solid transparent; border-radius:var(--r-sharp);
+  padding:10px 20px; border:1px solid transparent; border-radius:var(--r-pill);
   background:var(--c-butter); color:var(--c-espresso); cursor:pointer;
   transition:background .25s var(--ease); flex:none;
 }
@@ -465,15 +503,6 @@ ul { list-style:none; padding:0; margin:0; }
 .footer-newsletter-privacy .inline { color:inherit; text-decoration:underline; }
 .footer-newsletter p.footer-newsletter-thanks { font-size:13px; line-height:1.5; opacity:.85; }
 .footer-newsletter p.footer-newsletter-err { font-size:13px; line-height:1.5; color:var(--c-butter); opacity:1; }
-
-/* footer: 5 kolumn gdy są strony informacyjne */
-.footer-top.cols-5 { grid-template-columns:1fr; }
-@media (min-width:561px) {
-  .footer-top.cols-5 { grid-template-columns:1fr 1fr; }
-}
-@media (min-width:861px) {
-  .footer-top.cols-5 { grid-template-columns:1.4fr repeat(4,1fr); }
-}
 
 /* ============================================================
    GALERIA — wybór jak w Google Photos

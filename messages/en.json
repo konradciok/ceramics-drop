@@ -116,13 +116,11 @@
     "skipToContent": "Skip to main content"
   },
   "footer": {
-    "tagline": "Painted slowly, one piece at a time.",
-    "blurb": "Anna Ciok’s small studio — hand-painted ceramics and paintings in fine art editions.",
     "hShop": "Ceramics",
     "hArt": "Painting",
     "hStudio": "Studio",
     "hInfo": "Information",
-    "hKontakt": "Contact",
+    "payAria": "Accepted payment methods",
     "koszyk": "Cart",
     "oArtystce": "About the artist",
     "proces": "How it’s made",
