@@ -6,6 +6,7 @@ import type { CMS_LOCALES, CmsLocale, HeroMediaSlot, HomePagePayload } from '@/l
 import type { ContentEditorState } from '@/lib/admin/content';
 import { siteMediaUrl } from '@/lib/site-media';
 import { postJson, type FieldErrors } from './editor-shared';
+import { buildFanOutPayloads, partitionSettled } from './home-hero-fanout';
 
 const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 
@@ -135,16 +136,21 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
   const [copies, setCopies] = useState<Record<CmsLocale, HomeCopy>>(() =>
     Object.fromEntries(LOCALES.map((locale) => [locale, asCopy(state.locales[locale].payload)])) as Record<CmsLocale, HomeCopy>,
   );
+  // Media is canonical-shared across all 4 locales (seeded from `pl`, but any
+  // locale's saved payload is an equally valid source of truth once synced).
   const [media, setMedia] = useState<EditableMedia>(() => asEditableMedia(state.locales.pl.payload));
 
   const copy = copies[activeLocale];
   const current = state.locales[activeLocale];
   const latestVersion = current.latestDraft?.version ?? current.published?.version ?? null;
   const savedCopy = asCopy(current.payload);
-  const savedMedia = asEditableMedia(current.payload);
 
   const textDirty = TEXT_FIELDS.some((f) => (copy[f.key] ?? '').trim() !== (savedCopy[f.key] ?? '').trim());
-  const mediaDirty = !mediaEqual(media, savedMedia);
+  // Dirty iff the panel's media differs from ANY locale's saved media — a
+  // single active-locale comparison would miss a partial fan-out failure (or
+  // a pre-fan-out draft) where locales have genuinely diverged, and a save
+  // from here repairs exactly that divergence by re-fanning to all 4.
+  const mediaDirty = LOCALES.some((locale) => !mediaEqual(media, asEditableMedia(state.locales[locale].payload)));
   const isDirty = textDirty || mediaDirty;
   const mediaIncomplete = isSlotIncomplete(media.desktop) || isSlotIncomplete(media.mobile);
   const anySlotBusy = Object.values(slotBusy).some(Boolean);
@@ -222,28 +228,23 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
     try {
       if (mediaDirty) {
         // Media is a shared panel across locales — fan the new media out to
-        // every locale's draft. The active locale gets its edited copy; every
-        // other locale keeps its own last-saved copy with only media swapped.
+        // every locale's draft. Each locale gets its OWN in-memory copy (from
+        // `copies`, which reflects any unsaved edit made on that locale's tab)
+        // paired with the one shared media selection — never a stale
+        // last-saved copy, which would silently drop unsaved text edits.
         // Promise.allSettled (not Promise.all): one locale's request can fail
         // server-side (e.g. a stale copy that no longer passes validation)
         // while the other three still land. The admin needs to know exactly
         // which locales saved and which didn't, not one opaque failure that
         // hides three real writes — and dirty-tracking must reflect that per
         // locale (via the router.refresh() below, not by guessing locally).
+        const payloads = buildFanOutPayloads(copies, finalMedia, LOCALES);
         const settled = await Promise.allSettled(
-          LOCALES.map((locale) => {
-            const localeCopy = locale === activeLocale ? copy : asCopy(state.locales[locale].payload);
-            const payload: HomePagePayload = { ...localeCopy, media: finalMedia };
-            return postJson('/api/admin/content/draft', { kind: state.kind, slug: state.slug, locale, payload });
-          }),
+          LOCALES.map((locale) =>
+            postJson('/api/admin/content/draft', { kind: state.kind, slug: state.slug, locale, payload: payloads[locale] }),
+          ),
         );
-        const succeeded: CmsLocale[] = [];
-        const failed: { locale: CmsLocale; reason: string }[] = [];
-        settled.forEach((result, i) => {
-          const locale = LOCALES[i];
-          if (result.status === 'fulfilled') succeeded.push(locale);
-          else failed.push({ locale, reason: result.reason instanceof Error ? result.reason.message : 'Blad zapisu.' });
-        });
+        const { succeeded, failed } = partitionSettled(LOCALES, settled);
         setMediaFannedOut(failed.length === 0);
         if (failed.length === 0) {
           const ownResult = settled[LOCALES.indexOf(activeLocale)];

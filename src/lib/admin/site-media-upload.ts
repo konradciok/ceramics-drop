@@ -44,8 +44,8 @@ const CONTENT_TYPE_EXT: Record<string, string> = {
 
 const IMAGE_CONTENT_TYPES = new Set(['image/webp', 'image/jpeg', 'image/png']);
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
 const MAX_DIMENSION = 10000;
 
 function toUint8Array(bytes: UploadBytes): Uint8Array {

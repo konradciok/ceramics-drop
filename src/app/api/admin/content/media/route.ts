@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { validateUpload, uploadKeyFor } from '@/lib/admin/site-media-upload';
+import { validateUpload, uploadKeyFor, MAX_VIDEO_BYTES } from '@/lib/admin/site-media-upload';
 import { SITE_MEDIA_PREFIX, siteMediaUrl } from '@/lib/site-media';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +20,15 @@ export async function POST(req: Request) {
   const width = Number(url.searchParams.get('width'));
   const height = Number(url.searchParams.get('height'));
   const contentType = req.headers.get('content-type') ?? '';
+
+  // Reject an oversized body BEFORE buffering it into memory — the
+  // content-length header can lie, so `validateUpload`'s buffered size check
+  // below still stands as the authoritative gate, but a huge declared size
+  // should never reach `req.arrayBuffer()` in the first place.
+  const declaredLength = Number(req.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_VIDEO_BYTES) {
+    return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
+  }
 
   const buf = await req.arrayBuffer();
 

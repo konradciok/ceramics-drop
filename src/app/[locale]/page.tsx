@@ -32,7 +32,7 @@ const HOME_HERO_FALLBACK_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams?: Promise<{ preview?: string }>;
+  searchParams?: Promise<{ preview?: string | string[] }>;
 };
 
 const COVER: Record<CategorySlug, string> = {
@@ -71,7 +71,7 @@ function railImage(design: PrintDesign, state: MockupState): string {
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const preview = (await searchParams)?.preview;
+  const previewParam = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
   // "%s — Anna Ciok Ceramics" template to avoid doubling it.
@@ -79,8 +79,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
     // Any ?preview= URL is an admin-only draft view — never indexable, even
-    // if the token is invalid (the body would just fall back to published copy).
-    robots: preview ? { index: false, follow: false } : undefined,
+    // if the token is invalid (the body would just fall back to published copy),
+    // and even if Next.js delivered it as an array (repeated ?preview= keys).
+    robots: previewParam !== undefined ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -92,7 +93,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
  */
 export default async function HomePage({ params, searchParams }: Props) {
   const { locale } = await params;
-  const preview = (await searchParams)?.preview;
+  const previewParam = (await searchParams)?.preview;
+  const previewToken = typeof previewParam === 'string' ? previewParam : undefined;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
@@ -108,7 +110,7 @@ export default async function HomePage({ params, searchParams }: Props) {
     getPublicProducts(),
     getPrintDesigns(),
     getPrintPricingConfig(),
-    getHomeContent(locale as CmsLocale, preview),
+    getHomeContent(locale as CmsLocale, previewToken),
   ]);
   const byCategory = new Map<CategorySlug, Product[]>();
   for (const p of products) {

@@ -146,7 +146,7 @@ ul { list-style:none; padding:0; margin:0; }
 .hero-video { z-index:1; }
 .hero-scrim {
   position:absolute; inset:0; z-index:2; pointer-events:none;
-  background:linear-gradient(180deg, transparent 42%, rgba(20,14,9,.72) 100%);
+  background:linear-gradient(180deg, transparent 42%, var(--c-hero-scrim) 100%);
 }
 .hero-overlay {
   position:absolute; left:0; right:0; bottom:0; z-index:3; color:var(--c-paper);
