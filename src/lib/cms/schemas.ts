@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
-import { CMS_DOCUMENT_KINDS, CMS_LOCALES, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
+import { IMAGE_KEY_RE, VIDEO_KEY_RE } from '@/lib/site-media';
+import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
 
 const PRINTS_SLUG = 'fine-art-prints';
@@ -32,7 +33,8 @@ export const collectionCopySchema = z.object({
 });
 
 // Unlike plainText above, empty is legal here: publishing an empty field is
-// how the admin disables a PDP section.
+// how the admin disables a PDP section (or, for the home hero, omits an
+// optional field like the tagline/alt text).
 const optionalPlainText = z.string().trim().refine((value) => !/[<>]/.test(value), {
   message: 'To pole obsługuje tylko zwykły tekst',
 });
@@ -46,11 +48,21 @@ export const printPdpSchema = z.object({
   }),
 });
 
+const dim = z.number().int().positive();
+const imageKey = z.string().regex(IMAGE_KEY_RE, 'Nieprawidłowy klucz obrazu');
+const videoKey = z.string().regex(VIDEO_KEY_RE, 'Nieprawidłowy klucz wideo');
+
+const heroImage = z.object({ kind: z.literal('image'), key: imageKey, width: dim, height: dim });
+const heroVideo = z.object({ kind: z.literal('video'), key: videoKey, poster: heroImage.omit({ kind: true }) });
+const heroSlot = z.discriminatedUnion('kind', [heroImage, heroVideo]).nullable();
+
 export const homePageSchema = z.object({
-  heroEyebrow: plainText,
-  heroTitle: titleWithEm,
-  heroLead: plainText,
+  heroLine1: plainText,
+  heroLine2: plainText,
+  heroTagline: optionalPlainText,
   ctaLabel: plainText,
+  heroAlt: optionalPlainText,
+  media: z.object({ desktop: heroSlot, mobile: heroSlot }),
 });
 
 export const studioPageSchema = z.object({
@@ -123,7 +135,7 @@ export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload:
       return collectionCopySchema.parse(payload);
     case 'page':
       if (slug === PRINT_PDP_SLUG) return printPdpSchema.parse(payload);
-      if (slug === 'home') return homePageSchema.parse(payload);
+      if (slug === HOME_PAGE_SLUG) return homePageSchema.parse(payload);
       if (slug === 'studio') return studioPageSchema.parse(payload);
       if (slug === 'gallery') return galleryPageSchema.parse(payload);
       throw new Error(`Unsupported page document: ${slug}`);

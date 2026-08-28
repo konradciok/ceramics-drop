@@ -33,12 +33,11 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     expect(out).toContain('95 zł');
   });
 
-  test('heroSub renders the derived catalogue counts (ceramics + prints)', () => {
-    expect(messages.home.heroSub).toContain('{count');
-    expect(messages.home.heroSub).toContain('{printCount');
-    const out = t('home.heroSub' as never, { count: 125, printCount: 41 } as never);
-    expect(out).toContain('125');
-    expect(out).toContain('41');
+  test('hero copy keys are present and non-empty (CMS fallback payload)', () => {
+    for (const key of ['heroLine1', 'heroLine2', 'heroTagline', 'heroCta', 'heroAlt'] as const) {
+      expect(typeof messages.home[key]).toBe('string');
+      expect((messages.home[key] as string).length).toBeGreaterThan(0);
+    }
   });
 
   test('print copy renders the derived design count', () => {

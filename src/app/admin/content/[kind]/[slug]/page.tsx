@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getContentEditorState } from '@/lib/admin/content';
 import { isCmsKind } from '@/lib/cms/schemas';
-import { PRINT_PDP_SLUG } from '@/lib/cms/types';
+import { HOME_PAGE_SLUG, PRINT_PDP_SLUG } from '@/lib/cms/types';
 import { ContentEditor } from './ContentEditor';
 import { PrintPdpEditor } from './PrintPdpEditor';
+import { HomeHeroEditor } from './HomeHeroEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,8 @@ export default async function ContentEditorPage({ params }: Props) {
   const state = await getContentEditorState(kind, slug);
   if (!state) notFound();
   const isPrintPdp = state.kind === 'page' && state.slug === PRINT_PDP_SLUG;
+  const isHome = state.kind === 'page' && state.slug === HOME_PAGE_SLUG;
+  const isFixedFields = isPrintPdp || isHome;
 
   const content = (
     <>
@@ -36,11 +39,13 @@ export default async function ContentEditorPage({ params }: Props) {
 
       {isPrintPdp ? (
         <PrintPdpEditor state={state} />
+      ) : isHome ? (
+        <HomeHeroEditor state={state} />
       ) : (
         <ContentEditor state={state} />
       )}
     </>
   );
 
-  return isPrintPdp ? <div className="adm-content-page--fixed-fields">{content}</div> : content;
+  return isFixedFields ? <div className="adm-content-page--fixed-fields">{content}</div> : content;
 }

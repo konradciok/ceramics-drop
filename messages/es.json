@@ -394,18 +394,13 @@
     "account": "Sigue este pedido en tu cuenta"
   },
   "home": {
-    "heroEyebrow": "El estudio de Anna Ciok — cerámica y pintura",
-    "heroTitle": "Pinto — sobre cerámica <em>y sobre papel.</em>",
-    "heroSub": "{count} piezas de cerámica pintadas a mano y {printCount} pinturas en edición fine art — todo de un pequeño estudio. Cada pieza de cerámica es un ejemplar único; las pinturas se piden como impresión en el tamaño y marco que elijas.",
-    "heroCta1": "Ver la cerámica",
-    "heroCta2": "Ver impresiones fine art",
-    "heroBadgeCeramic": "Cerámica — ejemplar único",
-    "heroBadgePrint": "Impresión — desde {price}",
-    "heroPrintMeta": "{sizes, plural, one {# tamaño} other {# tamaños}} · {frames, plural, one {# marco} other {# marcos}}",
+    "heroLine1": "Pintado a mano,",
+    "heroLine2": "una pieza a la vez.",
+    "heroTagline": "ESTUDIO ANNA CIOK — CERÁMICA Y ARTE",
+    "heroCta": "Ver la tienda",
+    "heroAlt": "Piezas de cerámica pintadas a mano sobre una mesa de madera en el estudio de Anna Ciok",
     "heroBeatCap": "En el mismo estudio nacen las pinturas — tinta y acuarela sobre papel. Cada una de las {count} está disponible como impresión fine art, con o sin marco.",
     "heroBeatAlt": "Pintura — tinta y acuarela sobre papel",
-    "heroMetaName": "Taza Nº 02",
-    "heroMetaDesc": "Palmera azul",
     "marquee": [
       "pintado a mano",
       "una pieza a la vez",
