@@ -28,8 +28,17 @@ interface R2ObjectBody extends R2Object {
   readonly body: ReadableStream;
 }
 
+type R2Range =
+  | { offset: number; length?: number }
+  | { offset?: number; length: number }
+  | { suffix: number };
+
+interface R2GetOptions {
+  range?: R2Range;
+}
+
 interface R2Bucket {
-  get(key: string): Promise<R2ObjectBody | null>;
+  get(key: string, options?: R2GetOptions): Promise<R2ObjectBody | null>;
   head(key: string): Promise<R2Object | null>;
 }
 
