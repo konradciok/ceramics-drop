@@ -73,14 +73,21 @@ export const deliveryNoticeSchema = z.object({
   p3: plainText,
 });
 
-/** Live ids whose notes a payload must cover, in catalogue order (null = unknown slug). */
-export function productNoteIds(slug: string): string[] | null {
-  if (slug === PRINTS_SLUG) return registryPrintDesigns().map((design) => design.id);
+export type ProductNoteEntry = { id: string; noteIndex: number };
+
+/** Live note identities in catalogue order (null = unknown slug). */
+export function productNoteEntries(slug: string): ProductNoteEntry[] | null {
+  if (slug === PRINTS_SLUG) return registryPrintDesigns().map(({ id, noteIndex }) => ({ id, noteIndex }));
   try {
-    return registryProductsByCategory(slug as CategorySlug).map((product) => product.id);
+    return registryProductsByCategory(slug as CategorySlug).map(({ id, noteIndex }) => ({ id, noteIndex }));
   } catch {
     return null;
   }
+}
+
+/** Live ids whose notes a payload must cover, in catalogue order (null = unknown slug). */
+export function productNoteIds(slug: string): string[] | null {
+  return productNoteEntries(slug)?.map(({ id }) => id) ?? null;
 }
 
 export function validateProductNotesPayload(slug: string, payload: unknown): ProductNotesPayload {
