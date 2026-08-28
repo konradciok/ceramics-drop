@@ -22,6 +22,15 @@ const requiredAppPaths = [
   '/sitemap.xml/route',
 ];
 
+const catalogDynamicRouteTemplates = [
+  '/[locale]',
+  '/[locale]/[slug]',
+  '/[locale]/fine-art-prints',
+  '/[locale]/sklep',
+  '/[locale]/[slug]/[id]',
+  '/[locale]/koszyk',
+];
+
 const roots: string[] = [];
 
 function tempRoot(): string {
@@ -41,7 +50,7 @@ function appPaths(): Record<string, string> {
 
 function prerenderManifest(
   routes: Record<string, unknown> = { '/robots.txt': {} },
-  dynamicRoutes: Record<string, unknown> = {},
+  dynamicRoutes: unknown = {},
 ): Record<string, unknown> {
   return { version: 4, routes, dynamicRoutes, notFoundRoutes: [] };
 }
@@ -103,6 +112,66 @@ describe('catalog runtime artifact verifier', () => {
     expect(() =>
       verifyCatalogRuntimeArtifact({ repositoryRoot: root, artifact: 'opennext' }),
     ).toThrow(new RegExp(`Missing required OpenNext ${label}`));
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['non-object', []],
+  ])('rejects a %s dynamicRoutes value', (_case, dynamicRoutes) => {
+    const root = tempRoot();
+    const prerender = prerenderManifest();
+    if (dynamicRoutes === undefined) {
+      delete prerender.dynamicRoutes;
+    } else {
+      prerender.dynamicRoutes = dynamicRoutes;
+    }
+    writeArtifact(root, 'next', { prerender });
+
+    expect(() => verifyCatalogRuntimeArtifact({ repositoryRoot: root, artifact: 'next' })).toThrow(
+      /Invalid Next prerender manifest: dynamicRoutes must be an object/,
+    );
+  });
+
+  describe.each(['next', 'opennext'] as const)('%s template dynamic routes', (artifact) => {
+    it.each(catalogDynamicRouteTemplates)('rejects catalog template %s', (template) => {
+      const root = tempRoot();
+      const unsafePrerender = prerenderManifest(
+        { '/robots.txt': {} },
+        { [template]: { fallback: null } },
+      );
+
+      writeArtifact(root, 'next', { prerender: unsafePrerender });
+      if (artifact === 'opennext') {
+        writeArtifact(root, 'opennext', { prerender: unsafePrerender });
+      }
+
+      const label = artifact === 'next' ? 'Next' : 'OpenNext';
+      expect(() => verifyCatalogRuntimeArtifact({ repositoryRoot: root, artifact })).toThrow(
+        `${label} artifact prerenders catalog routes: ${template}`,
+      );
+    });
+
+    it('allows unrelated template routes', () => {
+      const root = tempRoot();
+      const unrelatedPrerender = prerenderManifest(
+        { '/robots.txt': {} },
+        {
+          '/[locale]/gallery': { fallback: null },
+          '/[locale]/konto/zamowienia/[id]': { fallback: null },
+          '/admin/orders/[id]': { fallback: null },
+          '/api/auth/[provider]': { fallback: null },
+        },
+      );
+
+      writeArtifact(root, 'next', { prerender: unrelatedPrerender });
+      if (artifact === 'opennext') {
+        writeArtifact(root, 'opennext', { prerender: unrelatedPrerender });
+      }
+
+      expect(() =>
+        verifyCatalogRuntimeArtifact({ repositoryRoot: root, artifact }),
+      ).not.toThrow();
+    });
   });
 
   it('rejects a catalog prerender in the Next artifact', () => {

@@ -28,6 +28,14 @@ const catalogAppEntries = [
 const localeSegment = '(?:pl|en|es|de)';
 const ceramicSegment =
   '(?:kubki|wazony|wazony-srednie|wazony-duze|talerzyki|talerze-srednie|talerze-duze|duze-michy|miski-falowane)';
+const catalogPrerenderTemplates = new Set([
+  '/[locale]',
+  '/[locale]/[slug]',
+  '/[locale]/fine-art-prints',
+  '/[locale]/sklep',
+  '/[locale]/[slug]/[id]',
+  '/[locale]/koszyk',
+]);
 const catalogPrerenderPatterns = [
   new RegExp(`^/${localeSegment}$`),
   new RegExp(`^/${localeSegment}/fine-art-prints$`),
@@ -79,6 +87,9 @@ function readManifestSet(
   if (!isRecord(prerenderValue) || !isRecord(prerenderValue.routes)) {
     throw new Error(`Invalid ${label} prerender manifest: routes must be an object`);
   }
+  if (!isRecord(prerenderValue.dynamicRoutes)) {
+    throw new Error(`Invalid ${label} prerender manifest: dynamicRoutes must be an object`);
+  }
   if (!isRecord(appPathsValue)) {
     throw new Error(`Invalid ${label} app-paths manifest: expected an object`);
   }
@@ -87,9 +98,7 @@ function readManifestSet(
     appPaths: appPathsValue as Record<string, string>,
     prerender: {
       routes: prerenderValue.routes,
-      dynamicRoutes: isRecord(prerenderValue.dynamicRoutes)
-        ? prerenderValue.dynamicRoutes
-        : {},
+      dynamicRoutes: prerenderValue.dynamicRoutes,
     },
     buildId,
   };
@@ -106,7 +115,11 @@ function verifyManifestSet(manifests: ManifestSet, artifact: CatalogRuntimeArtif
     ...Object.keys(manifests.prerender.routes),
     ...Object.keys(manifests.prerender.dynamicRoutes),
   ]
-    .filter((route) => catalogPrerenderPatterns.some((pattern) => pattern.test(route)))
+    .filter(
+      (route) =>
+        catalogPrerenderTemplates.has(route) ||
+        catalogPrerenderPatterns.some((pattern) => pattern.test(route)),
+    )
     .sort();
   if (prerenderedCatalogRoutes.length > 0) {
     throw new Error(
