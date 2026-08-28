@@ -5,6 +5,8 @@ import { Marquee } from '@/components/ui/Marquee';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
+import { HomeHero } from '@/components/shop/HomeHero';
+import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER, getPublicProducts } from '@/lib/products';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
 import { currencyFormatter } from '@/lib/format';
@@ -19,9 +21,19 @@ import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
-import { HOME_EDITORIAL_IMAGE, HOME_HERO_BEAT_IMAGE, HOME_STORY_IMAGE } from '@/lib/editorial-images';
+import { HOME_EDITORIAL_IMAGE, HOME_HERO_BEAT_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
+import { getHomeContent } from '@/lib/cms/home';
+import type { CmsLocale } from '@/lib/cms/types';
 
-type Props = { params: Promise<{ locale: string }> };
+/** Committed static default for either hero slot when the CMS has no media
+    published — a warm studio-workspace shot, distinct from the editorial and
+    story photos used further down this page. */
+const HOME_HERO_FALLBACK_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
+
+type Props = {
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ preview?: string }>;
+};
 
 const COVER: Record<CategorySlug, string> = {
   kubki: '/uploads/kubek-12.webp',
@@ -41,7 +53,6 @@ const COVER: Record<CategorySlug, string> = {
    colours vary on purpose — the rail hints at the configurator. Every pick
    degrades gracefully: a missing/unpublished id is skipped and backfilled
    from registry order, so a catalog edit can never blank the section. */
-const HERO_PRINT_ID = 'fap007';
 const BEAT_PRINT_ID = 'fap001';
 const PRINT_RAIL: { id: string; state: MockupState }[] = [
   { id: 'fap001', state: 'framed-natural' },
@@ -58,14 +69,18 @@ function railImage(design: PrintDesign, state: MockupState): string {
 }
 
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { locale } = await params;
+  const preview = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
   // "%s — Anna Ciok Ceramics" template to avoid doubling it.
   return {
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
+    // Any ?preview= URL is an admin-only draft view — never indexable, even
+    // if the token is invalid (the body would just fall back to published copy).
+    robots: preview ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -74,8 +89,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * painting-reveal beat, marquee, ceramic collections, fine-art-print rail,
  * studio story, "how it works", split logistics band, contact.
  */
-export default async function HomePage({ params }: Props) {
+export default async function HomePage({ params, searchParams }: Props) {
   const { locale } = await params;
+  const preview = (await searchParams)?.preview;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
@@ -87,10 +103,11 @@ export default async function HomePage({ params }: Props) {
   // Counts are the archival drop size per category (sold/showroom included).
   const currency = await getCurrency(locale);
   const { fmt } = currencyFormatter(currency);
-  const [products, printDesigns, printPricing] = await Promise.all([
+  const [products, printDesigns, printPricing, heroContent] = await Promise.all([
     getPublicProducts(),
     getPrintDesigns(),
     getPrintPricingConfig(),
+    getHomeContent(locale as CmsLocale, preview),
   ]);
   const byCategory = new Map<CategorySlug, Product[]>();
   for (const p of products) {
@@ -98,13 +115,11 @@ export default async function HomePage({ params }: Props) {
     list.push(p);
     byCategory.set(p.category, list);
   }
-  const heroMug = byCategory.get('kubki')?.[0];
 
   // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
   const printById = new Map(printDesigns.map((d) => [d.id, d]));
-  const heroPrint = printById.get(HERO_PRINT_ID) ?? printDesigns[0];
   const beatPrint = printById.get(BEAT_PRINT_ID) ?? printDesigns[0];
   const railPicked = PRINT_RAIL.flatMap(({ id, state }) => {
     const d = printById.get(id);
@@ -119,56 +134,9 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <main>
+      <StripUrlToken names={['preview']} />
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="hero">
-        <div className="hero-inner">
-          <div className="hero-copy">
-            <div className="eyebrow hero-eyebrow">{t('home.heroEyebrow')}</div>
-            <h1 className="hero-title">{t.rich('home.heroTitle', richTags)}</h1>
-            <p className="hero-sub">{t('home.heroSub', { count: products.length, printCount: printDesigns.length })}</p>
-            <div className="hero-actions">
-              <Link className="btn btn-primary" href="/sklep">
-                <span>{t('home.heroCta1')}</span> <Icon name="arrow" className="btn-arrow" />
-              </Link>
-              <Link className="btn btn-ghost" href="/fine-art-prints">
-                {t('home.heroCta2')}
-              </Link>
-            </div>
-          </div>
-          {/* Diptych: one-of-a-kind ceramic + framed print mockup — the two
-              sales models announced from the first viewport. */}
-          <div className="hero-duo">
-            <div className="hero-art">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/uploads/kubek-2.webp" srcSet={srcSet('/uploads/kubek-2.webp')} sizes="(min-width:861px) 30vw, 80vw" alt="" width={1600} height={2000} fetchPriority="high" />
-              <span className="hero-badge">{t('home.heroBadgeCeramic')}</span>
-              <div className="hero-art-meta">
-                <span className="left">
-                  <span className="mt">{t('home.heroMetaName')}</span>
-                  <br />
-                  <span>{t('home.heroMetaDesc')}</span>
-                </span>
-                {heroMug && <span className="right">{fmt(priceOfCurrency(heroMug, currency))}</span>}
-              </div>
-            </div>
-            {heroPrint && (
-              <div className="hero-print">
-                <div className="hero-print-frame">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={railImage(heroPrint, 'framed-natural')} srcSet={srcSet(railImage(heroPrint, 'framed-natural'))} sizes="(min-width:861px) 288px, 200px" alt={printName(heroPrint)} width={700} height={1000} fetchPriority="high" />
-                  <span className="hero-badge hero-badge--dark">
-                    {t('home.heroBadgePrint', { price: fmtPrint(fromPriceOf(heroPrint, printCurrency, printPricing)) })}
-                  </span>
-                </div>
-                <div className="hero-print-meta">
-                  <span className="mt">{printName(heroPrint)}</span>
-                  <span className="vr">{t('home.heroPrintMeta', { sizes: heroPrint.sizes.length, frames: heroPrint.frameColours.length })}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <HomeHero content={heroContent} fallbackImage={HOME_HERO_FALLBACK_IMAGE} />
 
       {/* ── HERO BEAT 2 — painting reveal ────────────────────────── */}
       <section className="hero-beat">

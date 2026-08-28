@@ -35,3 +35,8 @@ test('@ci hero beat caption renders and is visible under reduced motion', async 
   await page.goto('/');
   await expect(page.locator('.hero-beat-cap')).toBeVisible();
 });
+
+test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.hero-media img')).toBeVisible();
+});
