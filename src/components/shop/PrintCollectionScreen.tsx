@@ -68,7 +68,7 @@ export async function PrintCollectionScreen({
           <div className="shop-switch">
             {groups.map((g) => (
               <a key={g.slug} href={`#${g.slug}`}>
-                {t(`printCollections.${g.slug}`)}
+                {g.name ?? t(`printCollections.${g.slug}`)}
               </a>
             ))}
           </div>
@@ -83,7 +83,7 @@ export async function PrintCollectionScreen({
       >
         {groups.map((g) => (
           <section key={g.slug} id={g.slug} className="gallery-group">
-            <h2 className="gallery-group-head">{t(`printCollections.${g.slug}`)}</h2>
+            <h2 className="gallery-group-head">{g.name ?? t(`printCollections.${g.slug}`)}</h2>
             <div className="gallery" data-count={g.designs.length}>
               {g.designs.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));

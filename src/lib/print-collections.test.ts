@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import de from '../../messages/de.json';
+import en from '../../messages/en.json';
+import es from '../../messages/es.json';
 import pl from '../../messages/pl.json';
 import { PRINT_DESIGNS, registryPrintDesigns } from './prints';
 import {
@@ -29,39 +32,40 @@ describe('PRINT_COLLECTIONS integrity', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  // The 2026-08-06 curation (fap005–fap047) was retired with the 2026-08-17
-  // registry reset. PRINT_COLLECTIONS is deliberately empty pending a real
-  // curatorial pass over the new fap001–fap041 batch — see print-collections.ts.
-  it('is empty pending re-curation of the 2026-08-17 batch', () => {
-    expect(PRINT_COLLECTIONS).toEqual([]);
+  it('derives its ordered members from the curation map', () => {
+    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 4, 4, 5, 5, 4, 4, 4, 4]);
   });
 });
 
 describe('groupPrintDesigns', () => {
-  const published = registryPrintDesigns().filter((d) => d.published);
+  const published = registryPrintDesigns();
 
-  it('with no collections curated yet, every published design falls into the inne fallback', () => {
+  it('groups every mapped registry design under its fixed curation name and display number', () => {
     const groups = groupPrintDesigns(published);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].slug).toBe(UNASSIGNED_COLLECTION);
-    const flat = groups[0].designs.map((d) => d.id);
-    expect(new Set(flat).size).toBe(flat.length);
-    expect(flat.sort()).toEqual(published.map((d) => d.id).sort());
+    expect(groups.map(({ name }) => name)).toEqual([
+      'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
+      'Signs', 'Ciala', 'Balance', 'Verticles',
+    ]);
+    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 4, 4, 5, 5, 4, 4, 4, 4]);
+    expect(groups.flatMap(({ designs }) => designs.map(({ num }) => num))).toEqual(
+      Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
+    );
+    expect(groups.some(({ slug }) => slug === UNASSIGNED_COLLECTION)).toBe(false);
   });
 
-  it('unknown ids fall back to inne; empty groups are dropped', () => {
+  it('keeps an unknown DB-created design in the localized fallback group', () => {
     const synthetic: PrintDesign = { ...published[0], id: 'fap999' };
     const groups = groupPrintDesigns([synthetic]);
-    expect(groups).toEqual([{ slug: UNASSIGNED_COLLECTION, designs: [synthetic] }]);
+    expect(groups).toEqual([{ slug: UNASSIGNED_COLLECTION, name: undefined, designs: [synthetic] }]);
   });
 });
 
 describe('i18n coverage', () => {
-  it('pl has a non-empty printCollections name for every slug + fallback', () => {
-    const names = (pl as Record<string, unknown>).printCollections as Record<string, string>;
-    for (const slug of [...PRINT_COLLECTIONS.map((c) => c.slug), UNASSIGNED_COLLECTION]) {
-      expect(typeof names?.[slug], `printCollections.${slug} missing in pl.json`).toBe('string');
-      expect(names[slug].length).toBeGreaterThan(0);
+  it('keeps only the localized fallback name in every locale', () => {
+    for (const messages of [pl, en, es, de]) {
+      const names = (messages as Record<string, unknown>).printCollections as Record<string, string>;
+      expect(Object.keys(names)).toEqual([UNASSIGNED_COLLECTION]);
+      expect(names[UNASSIGNED_COLLECTION].length).toBeGreaterThan(0);
     }
   });
 });
