@@ -12,7 +12,7 @@ describe('productRef', () => {
   it('resolves print products with variant label', () => {
     const ref = productRef('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(ref.known).toBe(true);
-    expect(ref.label).toContain('Druk artystyczny Nº5');
+    expect(ref.label).toContain('Druk artystyczny Nº14');
     expect(ref.label).toContain('50×70 cm');
     expect(ref.category).toBe('fine-art-prints');
   });

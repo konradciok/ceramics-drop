@@ -15,6 +15,24 @@
 
 See `docs/plans/print-asset-pipeline.md` for the full design.
 
+## Catalog identity and storefront numbering
+
+Source folders, stable operational product IDs, and storefront display numbers
+are separate identities. They no longer have to contain the same number.
+`config/print-catalog-curation.json` is the source of truth that maps each
+`sourceNumber` to its stable `productId` and current storefront `number`.
+
+All asset and fulfilment commands continue to accept the stable product ID,
+for example `--product fap041`, even when the storefront shows that design as
+`Nº 13`. When translating a storefront number back to a source folder or
+product ID, consult the curation mapping first; do not infer either identity
+from the display number.
+
+Archiving a duplicate design withdraws it from new storefront sales but does
+not delete or renumber its stable identity. Retain retired source files,
+fulfilment assets, and R2 objects so historical orders can still be fulfilled
+or reprinted. Do not run asset cleanup as part of catalog curation.
+
 ## Manifest compatibility (schema v2 vs legacy)
 
 Every `manifest.json` `prepare` writes declares `schemaVersion: 2`. Two
