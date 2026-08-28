@@ -37,9 +37,18 @@ interface R2GetOptions {
   range?: R2Range;
 }
 
+interface R2PutOptions {
+  httpMetadata?: R2HTTPMetadata;
+}
+
 interface R2Bucket {
   get(key: string, options?: R2GetOptions): Promise<R2ObjectBody | null>;
   head(key: string): Promise<R2Object | null>;
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | ArrayBufferView | string | null,
+    options?: R2PutOptions,
+  ): Promise<R2Object | null>;
 }
 
 interface Service<_T = unknown> {
