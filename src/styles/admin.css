@@ -473,6 +473,64 @@
 .adm-note-body textarea.has-error { border-color: #a23b2e; }
 .adm-field-error { margin: 2px 0 0; color: #a23b2e; font-size: 12.5px; }
 
+/* ---- Content CMS: home hero media panel -------------------------------- */
+.adm-media-panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--c-line-soft); }
+.adm-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.adm-media-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--c-line-soft);
+  border-radius: var(--r-sharp);
+  background: var(--c-paper);
+  align-content: start;
+}
+.adm-media-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.adm-media-card-title { font-size: 13px; font-weight: 600; color: var(--c-espresso); }
+.adm-media-preview { display: grid; gap: 6px; }
+.adm-media-preview img,
+.adm-media-preview video {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--r-sharp);
+  background: var(--c-bone);
+}
+.adm-media-dims { font-size: 12px; color: rgba(58, 40, 24, .6); }
+.adm-media-dims--warn { color: #a23b2e; }
+.adm-media-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 1px dashed var(--c-line);
+  border-radius: var(--r-sharp);
+  background: var(--c-bone);
+  color: rgba(58, 40, 24, .5);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 12px;
+}
+.adm-media-upload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sharp);
+  padding: 8px 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.adm-media-upload input[type='file'] { max-width: 60%; font-size: 12px; }
+.adm-btn--sm { padding: 4px 10px; font-size: 12px; min-height: 30px; }
+
 /* ---- Fulfillment ------------------------------------------------------ */
 .adm-fulfillment-table th:nth-child(3),
 .adm-fulfillment-table td:nth-child(3) { min-width: 260px; }

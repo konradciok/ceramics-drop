@@ -3,7 +3,8 @@ import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/pr
 import { registryPrintDesigns } from '@/lib/prints';
 import { fallbackProductNotes } from '@/lib/cms/messages';
 import { fallbackPrintPdpPayload } from '@/lib/cms/print-pdp';
-import { CMS_LOCALES, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type CmsPayload, type CmsVersionRow } from '@/lib/cms/types';
+import { fallbackHomePayload } from '@/lib/cms/home';
+import { CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type CmsPayload, type CmsVersionRow } from '@/lib/cms/types';
 import { validateCmsPayload } from '@/lib/cms/schemas';
 import type { CategorySlug } from '@/lib/types';
 
@@ -36,8 +37,15 @@ export const PRINT_PDP_DOCUMENT: EditableContentDocument = {
   publicPath: '/fine-art-prints',
 };
 
+export const HOME_PAGE_DOCUMENT: EditableContentDocument = {
+  kind: 'page',
+  slug: HOME_PAGE_SLUG,
+  label: 'Strona główna — hero',
+  publicPath: '/',
+};
+
 /** Every document the admin CMS list/editor exposes. */
-export const EDITABLE_DOCUMENTS: EditableContentDocument[] = [...PRODUCT_NOTE_DOCUMENTS, PRINT_PDP_DOCUMENT];
+export const EDITABLE_DOCUMENTS: EditableContentDocument[] = [...PRODUCT_NOTE_DOCUMENTS, PRINT_PDP_DOCUMENT, HOME_PAGE_DOCUMENT];
 
 export type ContentSummary = EditableContentDocument & {
   documentId: string | null;
@@ -83,6 +91,7 @@ export function editableDocument(kind: string, slug: string): EditableContentDoc
 
 export function contentItems(slug: string): ContentItem[] {
   if (slug === PRINT_PDP_SLUG) return [];
+  if (slug === HOME_PAGE_SLUG) return [];
   if (slug === 'fine-art-prints') {
     return registryPrintDesigns().map((design) => ({
       id: design.id,
@@ -99,6 +108,7 @@ export function contentItems(slug: string): ContentItem[] {
 
 function defaultPayload(kind: CmsDocumentKind, slug: string, locale: CmsLocale): CmsPayload {
   if (kind === 'page' && slug === PRINT_PDP_SLUG) return fallbackPrintPdpPayload(locale);
+  if (kind === 'page' && slug === HOME_PAGE_SLUG) return fallbackHomePayload(locale);
   return { notes: fallbackProductNotes(slug, locale) };
 }
 
