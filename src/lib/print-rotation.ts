@@ -43,6 +43,9 @@ export function pickDaily<T extends { id: string }>(
   pool: readonly T[],
   opts: { count: number; dateKey: string; exclude?: ReadonlySet<string> },
 ): T[] {
+  if (!Number.isSafeInteger(opts.count) || opts.count < 0) {
+    throw new RangeError('count must be a non-negative integer');
+  }
   const candidates = pool.filter((item) => !opts.exclude?.has(item.id));
   const rand = mulberry32(fnv1a(opts.dateKey));
   for (let i = candidates.length - 1; i > 0; i--) {

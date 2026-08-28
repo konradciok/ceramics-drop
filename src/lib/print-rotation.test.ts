@@ -57,6 +57,12 @@ describe('pickDaily', () => {
     expect(pickDaily([], { count: 5, dateKey: '2026-08-28' })).toEqual([]);
   });
 
+  it('rejects a negative or fractional count', () => {
+    expect(() => pickDaily(pool, { count: -1, dateKey: '2026-08-28' })).toThrow(RangeError);
+    expect(() => pickDaily(pool, { count: 2.5, dateKey: '2026-08-28' })).toThrow(RangeError);
+    expect(pickDaily(pool, { count: 0, dateKey: '2026-08-28' })).toEqual([]);
+  });
+
   it('does not mutate the input pool', () => {
     const copy = pool.map((d) => ({ ...d }));
     pickDaily(pool, { count: 5, dateKey: '2026-08-28' });
