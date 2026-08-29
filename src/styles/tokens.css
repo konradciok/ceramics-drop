@@ -11,6 +11,10 @@
   --c-cream:#F4EDE0; --c-paper:#FAF6EC; --c-bone:#ECE4D2;
   --c-espresso-muted:rgba(58,40,24,.74);
   --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);
+  /* Paper alphas for dark (espresso) surfaces — rgba twins of --c-paper's
+     cream family, used by the footer. */
+  --c-paper-line:rgba(244,237,224,.2); --c-paper-line-strong:rgba(244,237,224,.3);
+  --c-paper-veil:rgba(244,237,224,.07);
   --c-success:#2f6b3f; --c-danger:#a23b2e;
   --c-success-border:rgba(47,107,63,.3); --c-danger-border:rgba(162,59,46,.35);
   /* Exact value chosen for text contrast over the hero media — do not alter. */

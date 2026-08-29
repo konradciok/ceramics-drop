@@ -116,13 +116,11 @@
     "skipToContent": "Saltar al contenido"
   },
   "footer": {
-    "tagline": "Pintado despacio, una pieza a la vez.",
-    "blurb": "El pequeño estudio de Anna Ciok — cerámica pintada a mano y pinturas en edición fine art.",
     "hShop": "Cerámica",
     "hArt": "Pintura",
     "hStudio": "Estudio",
     "hInfo": "Información",
-    "hKontakt": "Contacto",
+    "payAria": "Métodos de pago aceptados",
     "koszyk": "Carrito",
     "oArtystce": "Sobre la artista",
     "proces": "Cómo se hace",
