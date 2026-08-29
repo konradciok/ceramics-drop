@@ -578,6 +578,12 @@ ul { list-style:none; padding:0; margin:0; }
   .tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.42875); }
 }
 .tile-print img { position:static; height:auto; }
+/* Print tiles: caption sits below the image — the mockups are light, so the
+   ceramic overlay gradient has no contrast to work against. */
+.tile-print .tile-meta {
+  position:static; background:none; color:var(--c-espresso);
+  padding:10px 2px 2px;
+}
 
 /* znacznik wyboru (kółko / checkmark) */
 .tile .check {
