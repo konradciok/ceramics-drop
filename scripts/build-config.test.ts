@@ -65,9 +65,11 @@ describe('build configuration (Cloudflare Workers safety)', () => {
     expect(dbWorkflow).toContain('supabase start');
     expect(dbWorkflow).toContain('supabase test db');
     expect(dbWorkflow).toContain('npm ci');
-    expect(dbWorkflow).toContain('supabase status --output json');
+    expect(dbWorkflow).toContain('supabase status --output env');
+    expect(dbWorkflow).not.toMatch(/supabase start[^\n]*\bgotrue\b/);
     expect(dbWorkflow).toContain('LOCAL_SUPABASE_URL');
     expect(dbWorkflow).toContain('LOCAL_SUPABASE_SERVICE_ROLE_KEY');
+    expect(dbWorkflow).toContain("IFS='.' read -r jwt_header jwt_payload jwt_signature jwt_extra");
     expect(dbWorkflow).toContain(
       'npx vitest run scripts/catalog-backfill.local.test.ts',
     );

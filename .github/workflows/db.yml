@@ -56,7 +56,7 @@ jobs:
 
       - name: Start local stack and run pgTAP
         run: |
-          supabase start -x gotrue,realtime,storage-api,imgproxy,postgres-meta,studio,mailpit,edge-runtime,logflare,vector,supavisor
+          supabase start -x realtime,storage-api,imgproxy,postgres-meta,studio,mailpit,edge-runtime,logflare,vector,supavisor
           supabase test db
         env:
           OPENAI_API_KEY: local-test
@@ -70,7 +70,17 @@ jobs:
       - name: Run fresh-schema catalog backfill rehearsal
         shell: bash
         run: |
-          local_status="$(supabase status --output json)"
-          export LOCAL_SUPABASE_URL="$(jq -er '.API_URL' <<<"$local_status")"
-          export LOCAL_SUPABASE_SERVICE_ROLE_KEY="$(jq -er '.SERVICE_ROLE_KEY' <<<"$local_status")"
+          local_status="$(supabase status --output env)"
+          LOCAL_SUPABASE_URL="$(sed -n 's/^API_URL="\(.*\)"$/\1/p' <<<"$local_status")"
+          LOCAL_SUPABASE_SERVICE_ROLE_KEY="$(sed -n 's/^SERVICE_ROLE_KEY="\(.*\)"$/\1/p' <<<"$local_status")"
+          if [[ -z "$LOCAL_SUPABASE_URL" ]]; then
+            echo "::error::Supabase status did not export API_URL"
+            exit 1
+          fi
+          IFS='.' read -r jwt_header jwt_payload jwt_signature jwt_extra <<<"$LOCAL_SUPABASE_SERVICE_ROLE_KEY"
+          if [[ -z "$jwt_header" || -z "$jwt_payload" || -z "$jwt_signature" || -n "${jwt_extra:-}" ]]; then
+            echo "::error::Supabase status did not export a three-part service-role JWT"
+            exit 1
+          fi
+          export LOCAL_SUPABASE_URL LOCAL_SUPABASE_SERVICE_ROLE_KEY
           npx vitest run scripts/catalog-backfill.local.test.ts

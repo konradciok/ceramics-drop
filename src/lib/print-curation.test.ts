@@ -12,6 +12,18 @@ import {
 import source from '../../config/print-catalog-curation.json';
 
 describe('fine-art print curation map', () => {
+  it('only runs migration rollout gates when mapped product IDs exist', () => {
+    const migration = readFileSync(
+      new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),
+      'utf8',
+    );
+    const mappedPrintPresence = String.raw`exists\s*\(\s*select 1\s+from products\s+p\s+join print_curation_map\s+mapped\s+on mapped\.id = p\.id\s*\)`;
+
+    expect(migration).toMatch(new RegExp(`if ${mappedPrintPresence} then`));
+    expect(migration).toMatch(new RegExp(`if not ${mappedPrintPresence} then\\s+return;`));
+    expect(migration).not.toMatch(/if (?:not )?exists \(select 1 from products\)/);
+  });
+
   it('keeps the migration rollout snapshot aligned with the authored curation', () => {
     const migration = readFileSync(
       new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),

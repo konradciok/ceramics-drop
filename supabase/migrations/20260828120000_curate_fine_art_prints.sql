@@ -169,14 +169,19 @@ values
 
 -- Fail before the first product mutation. An exception aborts this transaction,
 -- leaving every status, number, variant, assignment, asset, and media row as-is.
--- A completely empty catalog is the fresh-schema CI/dev case: there is no data
--- to curate, and the later catalog backfill already projects this same mapping.
--- Any nonempty catalog (including production) must pass the full gate below.
+-- A catalog with no mapped product rows is the fresh-schema/ceramics-only case:
+-- there is no print data to curate, and a later catalog backfill projects this
+-- same mapping. Once even one mapped ID exists, the full gate fails closed;
+-- readiness also rejects a mapped row whose type is not `print`.
 do $$
 declare
   active_ids text[];
 begin
-  if exists (select 1 from products) then
+  if exists (
+    select 1
+    from products p
+    join print_curation_map mapped on mapped.id = p.id
+  ) then
     select array_agg(id order by id)
       into active_ids
       from print_curation_map
@@ -200,9 +205,13 @@ declare
   active_number_count integer;
   missing_count integer;
 begin
-  -- Schema-only environments intentionally have no catalog rows until
-  -- `catalog:backfill`; production is nonempty and cannot take this branch.
-  if not exists (select 1 from products) then
+  -- Schema-only and ceramics-only environments intentionally have no mapped
+  -- product rows until `catalog:backfill` and therefore have nothing to verify.
+  if not exists (
+    select 1
+    from products p
+    join print_curation_map mapped on mapped.id = p.id
+  ) then
     return;
   end if;
 
