@@ -18,9 +18,8 @@ import { ACTIVE_PRINT_CURATION, RETIRED_PRINT_CURATION, curationForProduct } fro
 // re-exports 2026-08-17 (all now ≥8400x12000 at ~7:10). Publication and
 // display order are now applied exclusively from print-curation.ts.
 // `noteIndex` is 0-based, matching array position directly. The 41
-// notes["fine-art-prints"] entries in messages/*.json are clearly-marked
-// PLACEHOLDER text — real copy is pending the Notion i18n content pass, see
-// docs/notion-i18n.md.
+// notes["fine-art-prints"] entries in messages/*.json contain the localized
+// customer-facing descriptions, aligned to this registry by `noteIndex`.
 type PrintSourceDesign = Omit<PrintDesign, 'num' | 'published'>;
 
 const SOURCE_PRINT_DESIGNS: PrintSourceDesign[] = [
