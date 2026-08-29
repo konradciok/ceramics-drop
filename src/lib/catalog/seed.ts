@@ -5,11 +5,14 @@
    (src/lib/products.ts + src/lib/prints.ts + pricing) into the
    `products` / `product_variants` / `product_media` row shapes.
 
-   This is the SINGLE source of the backfill: `backfillCatalog()` upserts
-   exactly these rows, and the parity test round-trips them back through the
-   mappers to prove `DB == registry` before any storefront flip. No business
-   rule is re-implemented here — print variant validity reuses the existing
-   axis rules from `prints.ts` / `print-cart.ts`.
+   This is the SINGLE structural source of the backfill. `backfillCatalog()`
+   passes this projection to one transaction-scoped RPC, which stages new
+   registry-active prints as draft, preserves existing DB status for
+   registry-active prints, keeps registry-retired prints archived, and replaces
+   variants/media before rechecking any active prints. The parity test
+   round-trips this desired projection through the mappers. No variant business
+   rule is re-implemented here — print validity reuses the existing axis rules
+   from `prints.ts` / `print-cart.ts`.
    ============================================================ */
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../types';
 import { registryProducts } from '../products';
@@ -17,6 +20,7 @@ import { registryProducts } from '../products';
 // variant (incl. mount) while passe-partout is temporarily withdrawn from sale,
 // so a run during the disabled window reproduces the existing DB exactly.
 import { PRINT_DESIGNS_RAW as PRINT_DESIGNS } from '../prints';
+import { catalogStatusForPrint } from '../print-curation';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant, type PrintPricingConfig } from '../print-pricing';
@@ -120,7 +124,7 @@ function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
       sale_price_eur: null,
       sale_price_gbp: null,
       measure: '',
-      status: d.published ? 'active' : 'draft',
+      status: catalogStatusForPrint(d.id),
       seo_title: null,
       seo_description: null,
       drop_id: null,

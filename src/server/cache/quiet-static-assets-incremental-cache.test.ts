@@ -43,4 +43,9 @@ describe('open-next.config wiring', () => {
     const cache = await (resolve as () => unknown | Promise<unknown>)();
     expect(cache).toBe(quietStaticAssetsIncrementalCache);
   });
+
+  it('exposes the deployed dummy tag cache instead of claiming persistent invalidation', async () => {
+    const config = (await import('../../../open-next.config')).default;
+    expect(config.default?.override?.tagCache).toBe('dummy');
+  });
 });

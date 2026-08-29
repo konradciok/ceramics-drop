@@ -5,8 +5,11 @@ import { NOINDEX_PATHS, SITE_PATHS } from '@/lib/site';
 import { getPublicProducts } from '@/lib/products';
 import { getPrintDesigns } from '@/lib/prints';
 
-/** Stable per-build timestamp — avoids churning every entry's lastmod on each request. */
-const LAST_MODIFIED = new Date();
+// Product visibility is database-owned in production. Generate the sitemap on
+// request so archived/activated catalog rows are reflected without a rebuild.
+// Omit lastModified until each source exposes a truthful change timestamp;
+// request/isolate time would falsely report that every URL changed together.
+export const dynamic = 'force-dynamic';
 
 /** Generates all site URLs for search-engine crawlers: category pages + individual product pages (ceramics + fine-art prints) across all locales. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -17,7 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const locale of routing.locales) {
       entries.push({
         url: absoluteUrl(locale, path),
-        lastModified: LAST_MODIFIED,
         alternates: { languages: languageAlternates(path) },
       });
     }
@@ -28,7 +30,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const locale of routing.locales) {
       entries.push({
         url: absoluteUrl(locale, path),
-        lastModified: LAST_MODIFIED,
         alternates: { languages: languageAlternates(path) },
       });
     }
@@ -39,7 +40,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const locale of routing.locales) {
       entries.push({
         url: absoluteUrl(locale, path),
-        lastModified: LAST_MODIFIED,
         alternates: { languages: languageAlternates(path) },
       });
     }

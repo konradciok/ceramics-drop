@@ -4,8 +4,6 @@ import { POST } from './route';
 
 const mocks = vi.hoisted(() => ({ adminSupabase: vi.fn() }));
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
-vi.mock('next/cache', () => ({ revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
-import { revalidatePath, revalidateTag } from 'next/cache';
 
 const ROW = {
   id: true,
@@ -51,7 +49,7 @@ const VALID = { ...DEFAULT_PRINT_PRICING, baseEur: { ...DEFAULT_PRINT_PRICING.ba
 describe('POST /api/admin/print-pricing', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('saves the config, writes an audit row, revalidates catalog + feeds → 200', async () => {
+  it('saves the config and writes an audit row → 200', async () => {
     const { supabase: sb, auditInsert } = supabase();
     mocks.adminSupabase.mockReturnValue(sb);
 
@@ -62,9 +60,6 @@ describe('POST /api/admin/print-pricing', () => {
     expect(auditInsert).toHaveBeenCalledWith(
       expect.objectContaining({ product_id: 'print-pricing', actor_email: 'anna@studio.pl', action: 'pricing:update' }),
     );
-    expect(revalidateTag).toHaveBeenCalledWith('catalog', 'max');
-    expect(revalidatePath).toHaveBeenCalledWith('/api/feed/google');
-    expect(revalidatePath).toHaveBeenCalledWith('/api/feed/meta');
   });
 
   it.each([
@@ -82,7 +77,6 @@ describe('POST /api/admin/print-pricing', () => {
     expect(json.error).toBe('validation_failed');
     expect(json.fields).toBeDefined();
     expect(mocks.adminSupabase).not.toHaveBeenCalled();
-    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it('missing seed row (migration not applied) → 404 print_pricing_missing', async () => {
@@ -90,7 +84,6 @@ describe('POST /api/admin/print-pricing', () => {
     const res = await POST(req(VALID));
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe('print_pricing_missing');
-    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it('DB failure → 500 pricing_write_failed without leaking detail', async () => {

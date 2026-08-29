@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "collections": [
+    {
+      "slug": "ostrea",
+      "name": "Ostrea",
+      "prints": [
+        { "sourceNumber": "001", "productId": "fap001", "number": "01" },
+        { "sourceNumber": "002", "productId": "fap002", "number": "02" },
+        { "sourceNumber": "003", "productId": "fap003", "number": "03" },
+        { "sourceNumber": "006", "productId": "fap006", "number": "04" },
+        { "sourceNumber": "007", "productId": "fap007", "number": "05" }
+      ]
+    },
+    {
+      "slug": "gestures",
+      "name": "Gestures",
+      "prints": [
+        { "sourceNumber": "010", "productId": "fap010", "number": "06" },
+        { "sourceNumber": "012", "productId": "fap012", "number": "07" },
+        { "sourceNumber": "014", "productId": "fap014", "number": "08" },
+        { "sourceNumber": "016", "productId": "fap016", "number": "09" }
+      ]
+    },
+    {
+      "slug": "linea",
+      "name": "Linea",
+      "prints": [
+        { "sourceNumber": "011", "productId": "fap011", "number": "10" },
+        { "sourceNumber": "018", "productId": "fap018", "number": "11" },
+        { "sourceNumber": "036", "productId": "fap036", "number": "12" },
+        { "sourceNumber": "041", "productId": "fap041", "number": "13" }
+      ]
+    },
+    {
+      "slug": "horizons",
+      "name": "Horizons",
+      "prints": [
+        { "sourceNumber": "005", "productId": "fap005", "number": "14" },
+        { "sourceNumber": "023", "productId": "fap023", "number": "15" },
+        { "sourceNumber": "026", "productId": "fap026", "number": "16" },
+        { "sourceNumber": "038", "productId": "fap038", "number": "17" },
+        { "sourceNumber": "039", "productId": "fap039", "number": "18" }
+      ]
+    },
+    {
+      "slug": "portals",
+      "name": "Portals",
+      "prints": [
+        { "sourceNumber": "024", "productId": "fap024", "number": "19" },
+        { "sourceNumber": "027", "productId": "fap027", "number": "20" },
+        { "sourceNumber": "030", "productId": "fap030", "number": "21" },
+        { "sourceNumber": "031", "productId": "fap031", "number": "22" },
+        { "sourceNumber": "032", "productId": "fap032", "number": "23" }
+      ]
+    },
+    {
+      "slug": "signs",
+      "name": "Signs",
+      "prints": [
+        { "sourceNumber": "004", "productId": "fap004", "number": "24" },
+        { "sourceNumber": "008", "productId": "fap008", "number": "25" },
+        { "sourceNumber": "025", "productId": "fap025", "number": "26" },
+        { "sourceNumber": "033", "productId": "fap033", "number": "27" }
+      ]
+    },
+    {
+      "slug": "ciala",
+      "name": "Ciala",
+      "prints": [
+        { "sourceNumber": "019", "productId": "fap019", "number": "28" },
+        { "sourceNumber": "020", "productId": "fap020", "number": "29" },
+        { "sourceNumber": "021", "productId": "fap021", "number": "30" },
+        { "sourceNumber": "034", "productId": "fap034", "number": "31" }
+      ]
+    },
+    {
+      "slug": "balance",
+      "name": "Balance",
+      "prints": [
+        { "sourceNumber": "015", "productId": "fap015", "number": "32" },
+        { "sourceNumber": "028", "productId": "fap028", "number": "33" },
+        { "sourceNumber": "035", "productId": "fap035", "number": "34" },
+        { "sourceNumber": "040", "productId": "fap040", "number": "35" }
+      ]
+    },
+    {
+      "slug": "verticles",
+      "name": "Verticles",
+      "prints": [
+        { "sourceNumber": "009", "productId": "fap009", "number": "36" },
+        { "sourceNumber": "013", "productId": "fap013", "number": "37" },
+        { "sourceNumber": "017", "productId": "fap017", "number": "38" },
+        { "sourceNumber": "022", "productId": "fap022", "number": "39" }
+      ]
+    }
+  ],
+  "retired": [
+    {
+      "sourceNumber": "029",
+      "productId": "fap029",
+      "duplicateOf": "fap011",
+      "reason": "near-duplicate composition"
+    },
+    {
+      "sourceNumber": "037",
+      "productId": "fap037",
+      "duplicateOf": "fap016",
+      "reason": "near-duplicate composition"
+    }
+  ]
+}

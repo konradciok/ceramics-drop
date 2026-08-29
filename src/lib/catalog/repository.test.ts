@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  backfillCatalog,
   updateProductStatus,
   listCatalogRows,
   readCeramicProducts,
@@ -88,6 +89,44 @@ describe('updateProductStatus guarded RPC', () => {
 
     await expect(updateProductStatus(supabase, 'fap01', 'active', null)).rejects.toThrow(
       'empty RPC response',
+    );
+  });
+});
+
+function supabaseForBackfill(error: { message: string } | null = null) {
+  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+  return { supabase: { rpc } as unknown as SupabaseClient, rpc };
+}
+
+describe('backfillCatalog print publication safety', () => {
+  it('sends the complete structural seed through one atomic database RPC', async () => {
+    const { supabase, rpc } = supabaseForBackfill();
+
+    await backfillCatalog(supabase);
+
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith('backfill_catalog', {
+      p_products: expect.arrayContaining([
+        expect.objectContaining({ id: 'fap001', type: 'print', status: 'active' }),
+        expect.objectContaining({ id: 'fap029', type: 'print', status: 'archived' }),
+        expect.objectContaining({ id: 'k01', type: 'ceramic', status: 'active' }),
+      ]),
+      p_variants: expect.arrayContaining([
+        expect.objectContaining({ product_id: 'fap001' }),
+        expect.objectContaining({ product_id: 'k01', variant_key: 'default' }),
+      ]),
+      p_media: expect.arrayContaining([
+        expect.objectContaining({ product_id: 'fap001' }),
+        expect.objectContaining({ product_id: 'k01' }),
+      ]),
+    });
+  });
+
+  it('surfaces an atomic backfill RPC failure', async () => {
+    const { supabase } = supabaseForBackfill({ message: 'duplicate key' });
+
+    await expect(backfillCatalog(supabase)).rejects.toThrow(
+      'atomic catalog backfill: duplicate key',
     );
   });
 });

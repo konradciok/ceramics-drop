@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { updateProductStatus } from '@/lib/catalog/repository';
 import { productStatusSchema } from '@/lib/catalog/schemas';
-import { actorEmail, parseJson, productError, revalidateCatalog } from '@/lib/admin/product-routes';
+import { actorEmail, parseJson, productError } from '@/lib/admin/product-routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.ok) return parsed.res;
   try {
     const product = await updateProductStatus(adminSupabase(), id, parsed.data.status, actorEmail(req));
-    revalidateCatalog();
     return NextResponse.json({ product });
   } catch (err) {
     return productError(err);

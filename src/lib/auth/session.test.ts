@@ -207,6 +207,8 @@ describe('readSessionFromCookieHeader', () => {
 });
 
 describe('resolveSessionWithRefresh — refresh deadline (checkout must never stall)', () => {
+  const NETWORK_STALL_TEST_TIMEOUT_MS = 500;
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -235,7 +237,10 @@ describe('resolveSessionWithRefresh — refresh deadline (checkout must never st
       sessionFor(await signToken({}, { expiresInSeconds: -120 }), 'rt_test', nowSecs - 120),
     );
     const started = Date.now();
-    const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
+    const result = await resolveSessionWithRefresh(header, {
+      jwks,
+      refreshTimeoutMs: NETWORK_STALL_TEST_TIMEOUT_MS,
+    });
     expect(Date.now() - started).toBeLessThan(1500);
     expect(result).toEqual({ user: null, setCookies: [] });
     // The refresh must actually have been attempted (and stalled) — otherwise
@@ -252,7 +257,10 @@ describe('resolveSessionWithRefresh — refresh deadline (checkout must never st
     const header = cookieHeaderFor(
       sessionFor(await signToken({}, { expiresInSeconds: 30 }), 'rt_test', nowSecs + 30),
     );
-    const result = await resolveSessionWithRefresh(header, { jwks, refreshTimeoutMs: 50 });
+    const result = await resolveSessionWithRefresh(header, {
+      jwks,
+      refreshTimeoutMs: NETWORK_STALL_TEST_TIMEOUT_MS,
+    });
     expect(result.user?.id).toBe(USER_ID);
     expect(result.setCookies).toEqual([]);
     expect(hangingFetch).toHaveBeenCalled();

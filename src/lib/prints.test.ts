@@ -1,19 +1,29 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { getPrintById, getPrintDesigns, isVariantAvailable, registryPrintDesigns } from './prints';
+import { getPrintById, getPrintDesigns, isVariantAvailable, PRINT_DESIGNS_RAW, registryPrintDesigns } from './prints';
+import { ACTIVE_PRINT_CURATION, PRINT_CURATION } from './print-curation';
 import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
 import { PRINT_FRAME_COLOURS, PRODIGI_SKU_MAP, variantKey } from './print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant } from './print-pricing';
 import type { PrintDesign, PrintVariantSelection } from './types';
 
 describe('getPrintDesigns', () => {
-  it('returns only published designs', async () => {
+  it('projects active designs in approved curation order with padded display numbers', async () => {
     const designs = await getPrintDesigns();
     expect(designs.every(d => d.published)).toBe(true);
-    // All 41 designs (fap001–fap041) are published as of 2026-08-17: the 6
-    // initially held back for undersized/off-ratio 70x100 sources (fap001/
-    // 002/003/025/032/033) all received corrected re-exports the same day.
-    expect(designs.map(d => d.id)).toEqual(
-      Array.from({ length: 41 }, (_, i) => `fap${String(i + 1).padStart(3, '0')}`),
+    const expectedIds = ACTIVE_PRINT_CURATION.map(({ productId }) => productId);
+    expect(designs.map(({ id }) => id)).toEqual(expectedIds);
+    expect(designs.map(({ num }) => num)).toEqual(
+      Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
+    );
+    expect(await getPrintById('fap029')).toMatchObject({ published: false });
+    expect(await getPrintById('fap037')).toMatchObject({ published: false });
+  });
+
+  it('retains every curated stable ID in raw metadata while exposing only active designs', () => {
+    const expectedIds = PRINT_CURATION.map(({ productId }) => productId).sort();
+    expect(PRINT_DESIGNS_RAW.map(({ id }) => id).sort()).toEqual(expectedIds);
+    expect(registryPrintDesigns().map(({ id }) => id)).toEqual(
+      ACTIVE_PRINT_CURATION.map(({ productId }) => productId),
     );
   });
 });

@@ -15,6 +15,259 @@
 
 See `docs/plans/print-asset-pipeline.md` for the full design.
 
+## Catalog identity and storefront numbering
+
+Source folders, stable operational product IDs, and storefront display numbers
+are separate identities. They no longer have to contain the same number.
+`config/print-catalog-curation.json` is the source of truth that maps each
+`sourceNumber` to its stable `productId` and current storefront `number`.
+
+All asset and fulfilment commands continue to accept the stable product ID,
+for example `--product fap041`, even when the storefront shows that design as
+`Nº 13`. When translating a storefront number back to a source folder or
+product ID, consult the curation mapping first; do not infer either identity
+from the display number.
+
+Archiving a duplicate design withdraws it from new storefront sales but does
+not delete or renumber its stable identity. Retain retired source files,
+fulfilment assets, and R2 objects so historical orders can still be fulfilled
+or reprinted. Do not run asset cleanup as part of catalog curation.
+
+## Pending 39-design catalog-curation rollout
+
+This procedure is for `20260828120000_curate_fine_art_prints.sql`. It is a
+coordinated release, not an ordinary unattended migration: production remains
+on the prior catalogue until every step below succeeds. Catalog and print-price
+DB loaders are deliberately uncached; do not reintroduce a tagged-cache wait or
+an invalidation call into this procedure.
+
+### 1. Freeze catalogue mutation and checkout
+
+- Nominate one operator and pause `/admin` product/status edits plus every
+  `catalog:backfill` and `print-assets:publish` command for the window.
+- Add a temporary Cloudflare WAF custom rule that blocks
+  `POST /api/checkout`. Keep the rule until Step 8; when the checkout canary is
+  due, exempt only the operator's fixed IP. If checkout cannot be frozen, stop
+  and reschedule the migration.
+- Record the rule ID, start time, operator, and rollback owner in the release
+  log. This freeze prevents a buyer or asset publish from racing the database
+  projection and runtime verification window.
+
+### 2. Deploy the code before changing data
+
+Deploy the commit containing the curation mapping, guarded migration, and
+direct (uncached) catalog/print-pricing DB loaders and runtime-rendered catalog
+routes. The fail-closed Next postbuild and final copied-OpenNext manifest checks
+must both pass, proving no catalog consumer (including home, fine-art-print
+collection, or sitemap) was emitted as prerendered output. Confirm the Worker
+deployment is healthy while the checkout block remains active. Do not apply the
+migration before this deploy: the prior build still wraps these reads in a
+five-minute Next data cache whose deployed dummy tag cache cannot invalidate it
+reliably.
+
+### 3. Capture the pre-migration snapshot
+
+Confirm the targeted Supabase project ref, then save the complete result sets
+below (CSV or release-log attachment). The regex is exactly stable IDs
+`fap001`–`fap041`; it does not include older short IDs such as `fap01`.
+
+```sql
+begin transaction isolation level repeatable read, read only;
+
+select id, num, status, updated_at
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+order by id;
+
+select p.id,
+       count(distinct pv.id) as variants,
+       count(distinct pm.id) as media,
+       count(distinct paa.variant_key) as assignments,
+       count(distinct pfa.id) as assets
+from products p
+left join product_variants pv on pv.product_id = p.id
+left join product_media pm on pm.product_id = p.id
+left join print_variant_asset_assignments paa on paa.product_id = p.id
+left join print_fulfilment_assets pfa on pfa.product_id = p.id
+where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+group by p.id
+order by p.id;
+
+commit;
+```
+
+Stop unless the first result contains exactly 41 rows. The second result is
+the preservation baseline: the curation migration must not change variants,
+media, assignments, or assets.
+
+### 4. Prove readiness before applying the migration
+
+Run this read-only projection while the freeze is active. It is the same
+active-variant/assignment/ready-status/ownership/dimension predicate that the
+migration re-runs under row locks.
+
+```sql
+with targets as (
+  select p.id
+  from products p
+  where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+    and p.id not in ('fap029', 'fap037')
+), active_variants as (
+  select pv.*
+  from targets t
+  join product_variants pv on pv.product_id = t.id and pv.active
+), violations as (
+  select t.id as product_id,
+         '<none>'::text as variant_key,
+         'no_active_variants'::text as reason
+  from targets t
+  where not exists (
+    select 1 from active_variants pv where pv.product_id = t.id
+  )
+
+  union all
+
+  select pv.product_id,
+         pv.variant_key,
+         case
+           when paa.asset_id is null then 'assignment_missing'
+           when pfa.id is null or pfa.product_id is distinct from pv.product_id then 'wrong_product'
+           when pfa.status <> 'ready' then 'asset_not_ready'
+           when pv.print_area_width_px is null or pv.print_area_height_px is null then 'variant_dimensions_missing'
+           when pfa.width_px is distinct from pv.print_area_width_px
+             or pfa.height_px is distinct from pv.print_area_height_px then 'dimension_mismatch'
+         end as reason
+  from active_variants pv
+  left join print_variant_asset_assignments paa
+    on paa.product_id = pv.product_id and paa.variant_key = pv.variant_key
+  left join print_fulfilment_assets pfa on pfa.id = paa.asset_id
+  where paa.asset_id is null
+     or pfa.id is null
+     or pfa.product_id is distinct from pv.product_id
+     or pfa.status <> 'ready'
+     or pv.print_area_width_px is null
+     or pv.print_area_height_px is null
+     or pfa.width_px is distinct from pv.print_area_width_px
+     or pfa.height_px is distinct from pv.print_area_height_px
+)
+select * from violations order by product_id, variant_key;
+```
+
+Required result: zero rows. Any row is a stop condition; repair it through the
+normal prepare/upload/verify/publish pipeline, then restart from the snapshot.
+Do not weaken the predicate or edit asset/assignment rows by hand.
+
+### 5. Apply only the curation migration
+
+Run `npx supabase migration list` and stop unless the target project is correct
+and `20260828120000` is the only pending migration being released in this
+window. Then run `npx supabase db push`. The migration locks the mapped product,
+variant, assignment, and asset rows, calls `assert_print_assets_ready` before
+the first product update, projects numbers/statuses, and checks its post-state
+in one transaction. It then changes the product-status default to `draft` and
+installs the same readiness predicate behind both the guarded status RPC and a
+table trigger, so a later direct insert/upsert cannot activate an unready print.
+`catalog:backfill` calls the transaction-scoped `backfill_catalog()` RPC. It
+stages new registry-active prints as draft, preserves every existing print
+status, replaces variants/media, and rechecks each preserved active print before
+one atomic commit; activation remains a separate guarded action.
+
+If it raises `print_assets_incomplete` or any postcondition error, the whole
+transaction (including every number/status write) is rolled back. Keep checkout
+frozen; fix the underlying readiness issue or roll back the code deploy. Never
+mark the failed migration applied and never bypass its assertion.
+
+### 6. Prove the first uncached runtime read
+
+There is no invalidation request in this design. OpenNext's deployed tag cache
+is a dummy and its configured incremental cache is read-only static assets, so
+the catalog and print-pricing loaders bypass `unstable_cache` entirely. The
+removed `/api/admin/catalog-cache` route must remain absent: a successful
+invalidation response from that route would be a false operational signal.
+
+The home page, fine-art-print collection, product/collection routes, cart,
+merchant feeds, and sitemap are runtime routes; both the Next and copied
+OpenNext manifest contracts guard this boundary. From DevTools, issue a new
+request to the force-dynamic, `no-store` merchant feed. This crosses the same
+DB-backed print accessor used by storefront and checkout, and the response makes
+the active stable-ID set machine-checkable:
+
+```js
+const response = await fetch('/api/feed/google?locale=en', { cache: 'no-store' });
+if (!response.ok) throw new Error(await response.text());
+if (!response.headers.get('cache-control')?.includes('no-store')) {
+  throw new Error('feed response is not no-store');
+}
+const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
+if (xml.querySelector('parsererror')) throw new Error('invalid feed XML');
+const google = 'http://base.google.com/ns/1.0';
+const actual = [...xml.getElementsByTagName('item')]
+  .map((item) => item.getElementsByTagNameNS(google, 'id')[0]?.textContent ?? '')
+  .filter((id) => /^fap\d{3}$/.test(id))
+  .sort();
+const expected = Array.from({ length: 41 }, (_, index) =>
+  `fap${String(index + 1).padStart(3, '0')}`
+).filter((id) => id !== 'fap029' && id !== 'fap037');
+if (actual.join() !== expected.join()) {
+  throw new Error(`fresh catalog projection mismatch: ${actual.join(',')}`);
+}
+console.table(actual);
+```
+
+Save the response headers/body and console result. This must be the first Worker
+catalog read after the migration; SQL and storefront checks in Step 7 prove the
+new display-number order separately.
+
+### 7. Verify SQL, UI, checkout, and admin
+
+Run and save the SQL result:
+
+```sql
+select count(*) as active_count,
+       count(distinct num) as unique_active_numbers,
+       min(num) as first_number,
+       max(num) as last_number
+from products
+where type = 'print' and status = 'active';
+-- required: 39 | 39 | 01 | 39
+
+select id, num, status
+from products
+where id in ('fap029', 'fap037')
+order by id;
+-- required: archived, with stable IDs retained
+
+select assert_print_assets_ready(array_agg(id order by id))
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+  and id not in ('fap029', 'fap037');
+-- required: one void result, no exception
+```
+
+Compare variant/media/assignment/asset counts to Step 3. Then verify:
+
+- storefront: nine sections in the configured order, identical fixed names in
+  two locales, numbers `01`–`39`, `fap041` as Nº 13 in Linea, and no public
+  PDP/tile for `fap029` or `fap037`;
+- admin: both archived stable IDs remain inspectable with their retained media,
+  variants, assignments, and assets;
+- checkout: temporarily exempt only the operator IP from the WAF rule, start a
+  checkout for one active print through PaymentElement without completing a
+  charge, confirm the expected stable ID/variant/price, then cancel the pending
+  PaymentIntent and verify the normal cancellation webhook/hold cleanup. Restore
+  the block immediately after the canary.
+
+Any discrepancy keeps the freeze in place and triggers rollback/investigation;
+do not wait for the five-minute TTL and hope the catalogue converges.
+
+### 8. Unfreeze and close the release
+
+Only after every Step 7 check passes: remove the checkout WAF rule, resume admin
+and asset-publish mutations, watch the first real checkout, and record the end
+time. Update `docs/STATUS.md` to present-tense 39-design/nine-collection live
+state in a follow-up commit only after this production gate has actually
+succeeded.
+
 ## Manifest compatibility (schema v2 vs legacy)
 
 Every `manifest.json` `prepare` writes declares `schemaVersion: 2`. Two
@@ -219,8 +472,9 @@ colour-managed into an embedded sRGB profile so the artwork and configured RGB
 background share a declared colour space.
 
 Activation uses the `update_product_status_guarded` RPC. It locks the product,
-active variants, assignments, and assigned asset rows, revalidates complete
-ready/dimension-matched coverage, then updates status and writes the audit row
+all variants, assignments, and assigned asset rows, requires at least one active
+variant, revalidates complete ready/dimension-matched coverage, then updates
+status and writes the audit row
 in the same transaction. Concurrent revision publication is serialized on the
 product lock; a concurrent asset revoke completes either before the check or
 after activation as a distinct emergency action.

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { registryProducts } from '../products';
-import { PRINT_DESIGNS, PRINT_DESIGNS_RAW, isVariantAvailable, registryPrintById } from '../prints';
+import {
+  PRINT_DESIGNS,
+  PRINT_DESIGNS_RAW,
+  isVariantAvailable,
+  registryPrintById,
+  registryPrintDesigns,
+} from '../prints';
 import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
 import { withRegistryMockups } from '../print-mockups';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
@@ -76,17 +82,31 @@ describe('catalog seed ↔ registry parity', () => {
     expect(ceramics).toHaveLength(registryProducts().length);
   });
 
-  it('emits one product row per print design (published and draft)', () => {
-    const prints = seed.products.filter((p) => p.type === 'print');
-    expect(prints).toHaveLength(PRINT_DESIGNS.length);
-    // Unpublished designs land as drafts, published as active. All 41 current
-    // designs are published (the 6 initially held back 2026-08-17 for
-    // undersized/off-ratio 70x100 sources all got corrected re-exports the
-    // same day), so there's no live draft fixture right now — this seed-level
-    // mapping is a one-line ternary (`d.published ? 'active' : 'draft'`,
-    // src/lib/catalog/seed.ts) exercised structurally by every design here.
-    expect(prints.every((p) => p.status === 'active')).toBe(true);
-    expect(prints.find((p) => p.id === 'fap005')?.status).toBe('active');
+  it('projects all 41 stable print rows into the approved active and archived catalogue state', () => {
+    const printRows = seed.products.filter((p) => p.type === 'print');
+    const printRowsById = new Map(printRows.map((row) => [row.id, row]));
+    const activeRows = printRows
+      .filter((row) => row.status === 'active')
+      .sort((a, b) => a.num.localeCompare(b.num));
+
+    expect(printRows).toHaveLength(41);
+    expect(activeRows).toHaveLength(39);
+    expect(activeRows.map((row) => row.num)).toEqual(
+      Array.from({ length: 39 }, (_, index) => String(index + 1).padStart(2, '0')),
+    );
+    expect(printRowsById.get('fap029')).toMatchObject({ num: '029', status: 'archived' });
+    expect(printRowsById.get('fap037')).toMatchObject({ num: '037', status: 'archived' });
+    for (const archivedId of ['fap029', 'fap037']) {
+      const variants = seed.variants.filter((variant) => variant.product_id === archivedId);
+      expect(variants.length, archivedId).toBeGreaterThan(0);
+      expect(variants.every((variant) => !variant.active), archivedId).toBe(true);
+      expect(seed.media.some((media) => media.product_id === archivedId && media.is_primary), archivedId).toBe(true);
+    }
+
+    const rebuiltActive = mapPrintDesigns(activeRows, seed.variants, seed.media);
+    expect(rebuiltActive.map((design) => design.id)).toEqual(
+      registryPrintDesigns().map((design) => design.id),
+    );
   });
 
   it('gives every ceramic a single default variant tracked at qty 1', () => {

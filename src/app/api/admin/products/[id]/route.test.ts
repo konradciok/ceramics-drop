@@ -3,8 +3,6 @@ import { POST } from './route';
 
 const mocks = vi.hoisted(() => ({ adminSupabase: vi.fn() }));
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
-vi.mock('next/cache', () => ({ revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
-import { revalidateTag } from 'next/cache';
 
 const ROW = { id: 'k01', type: 'ceramic', category_slug: 'kubki', status: 'active', price_pln: 95, published_at: null };
 
@@ -42,7 +40,7 @@ const ctx = (id = 'k01') => ({ params: Promise.resolve({ id }) }) as Parameters<
 describe('POST /api/admin/products/[id]', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('updates metadata, writes an audit row, revalidates the catalog → 200', async () => {
+  it('updates metadata and writes an audit row → 200', async () => {
     const { supabase: sb, auditInsert } = supabase();
     mocks.adminSupabase.mockReturnValue(sb);
 
@@ -53,7 +51,6 @@ describe('POST /api/admin/products/[id]', () => {
     expect(auditInsert).toHaveBeenCalledWith(
       expect.objectContaining({ product_id: 'k01', actor_email: 'anna@studio.pl', action: 'update' }),
     );
-    expect(revalidateTag).toHaveBeenCalledWith('catalog', 'max');
   });
 
   it('rejects an unknown field (strict Zod) → 400, before touching the DB', async () => {
@@ -69,7 +66,6 @@ describe('POST /api/admin/products/[id]', () => {
     const res = await POST(req({ price_pln: 120 }), ctx('zz99'));
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe('product_not_found');
-    expect(revalidateTag).not.toHaveBeenCalled();
   });
 
   it('slug collision (unique violation) → 409 slug_taken', async () => {

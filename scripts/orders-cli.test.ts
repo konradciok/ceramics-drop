@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { resolve } from 'node:path';
 
 const mocks = vi.hoisted(() => ({
   getOrder: vi.fn(),
@@ -43,6 +44,7 @@ const ORDER_ID = '00000000-0000-0000-0000-000000000001';
 const OTHER_ID = '00000000-0000-0000-0000-000000000002';
 const PROD_URL = 'https://wnlysejenowymjdxlnaq.supabase.co';
 const NONPROD_URL = 'https://some-other-project.supabase.co';
+const TEST_CWD = resolve('/repo');
 
 function harness(options: {
   env?: Record<string, string | undefined>;
@@ -56,7 +58,7 @@ function harness(options: {
   const fakeSupabase = { tag: 'supabase' };
   const fakeStripe = { tag: 'stripe' };
   const fakeInpost = { tag: 'inpost' };
-  const cwd = '/repo';
+  const cwd = TEST_CWD;
   const files = options.files ?? {};
   const deps: Partial<CliDependencies> = {
     cwd,
@@ -108,9 +110,9 @@ describe('orders-cli env loading', () => {
     const h = harness({
       env: { SUPABASE_URL: 'process-value' },
       files: {
-        '/repo/.env.local': 'SUPABASE_URL=local\nLOCAL_ONLY=yes',
-        '/repo/.dev.vars': 'SUPABASE_URL=dev',
-        '/repo/custom.env': 'SUPABASE_URL=explicit',
+        [resolve(TEST_CWD, '.env.local')]: 'SUPABASE_URL=local\nLOCAL_ONLY=yes',
+        [resolve(TEST_CWD, '.dev.vars')]: 'SUPABASE_URL=dev',
+        [resolve(TEST_CWD, 'custom.env')]: 'SUPABASE_URL=explicit',
       },
     });
     const env = await loadCliEnv('custom.env', h.deps);

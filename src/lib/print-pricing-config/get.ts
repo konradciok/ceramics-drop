@@ -1,10 +1,10 @@
 /* ============================================================
    Public accessor for the global print pricing config.
    Mirrors loadPrintCatalog (src/lib/prints.ts): CATALOG_SOURCE=code (local/
-   tests) returns the code default; 'db' (production) reads the cached DB row
+   tests) returns the code default; 'db' (production) reads the current DB row
    and degrades to the default on failure so pricing never hard-fails a page
    or checkout. The dynamic import keeps Cloudflare-only code (supabase admin
-   client, unstable_cache) out of the code-mode path and any client bundle.
+   client) out of the code-mode path and any client bundle.
    ============================================================ */
 import { catalogSource } from '../catalog/source';
 import { DEFAULT_PRINT_PRICING, type PrintPricingConfig } from '../print-pricing';
