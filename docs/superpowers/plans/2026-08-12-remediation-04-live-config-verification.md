@@ -76,7 +76,7 @@ Each step records: command/screen, output, chosen branch.
 ### Task 3 — M-25: Supabase key format
 
 - [x] In the Supabase dashboard (project `wnlysejenowymjdxlnaq`) → Settings → API keys: record whether the service key in use is legacy JWT (`eyJ…`) or new-format `sb_secret_…`, and whether `SUPABASE_PUBLISHABLE_KEY` (customer accounts) is `sb_publishable_…`. **Done — operator-verified 2026-08-14 (see verification log).**
-- [x] Branch: **resolved clean — M-25 closed, no rotation triggered** (operator confirmation, 2026-08-14).
+- [x] Branch: **legacy-JWT branch** — `SUPABASE_PUBLISHABLE_KEY` is new-format `sb_publishable_…`, `SUPABASE_SERVICE_ROLE_KEY` is legacy JWT `eyJ…` (operator read 2026-08-14; classifications recorded 2026-08-29). Verification closed; outcome per the plan's own branch: a dedicated service-role **rotation runbook task before the end-2026 deprecation** (gated live mutations — `wrangler secret put`, `.dev.vars`, CI — not run within this plan).
 
 ### Task 4 — L-25: R2 bucket posture
 
@@ -125,7 +125,7 @@ None (no code changes). The deliverable is the evidence log.
 
 ## Verification
 
-The plan **is** verification. Completion = the log file exists with all eight items resolved to a branch, each with recorded output. Any item that cannot be completed for access reasons is recorded as blocked-with-reason, not skipped silently.
+The plan **is** verification. Completion = the log file exists with all eight items resolved to a branch, each with recorded output. Any item that cannot be completed for access reasons is recorded as blocked-with-reason — and an item the operator deliberately holds open is recorded as held-with-reason — not skipped silently.
 
 ## Rollout / recovery
 
@@ -133,8 +133,8 @@ N/A — read-only. The only rollback is deleting the log file.
 
 ## Acceptance criteria
 
-- [x] `docs/audits/backend-audit-2026-08-12-verification.md` committed with all 8 items resolved or explicitly blocked. **7/8 resolved as of 2026-08-14; Task 5 (H-2) explicitly held open, not blocked — operator choice, see verification log.**
-- [x] H-4, M-6, M-25, L-25, L-40 each have a recorded branch outcome (all resolved-clean/benign, no escalation). **H-2 intentionally still pending** — operator declined an agent-run preview deploy; no branch outcome yet.
+- [x] `docs/audits/backend-audit-2026-08-12-verification.md` committed with all 8 items resolved, explicitly blocked, or deliberately held open with the decision recorded. **7/8 resolved as of 2026-08-14; Task 5 (H-2) deliberately held open — operator choice, see verification log.**
+- [x] H-4, M-6, M-25, L-25, L-40 each have a recorded branch outcome (H-4 benign; M-6/L-25/L-40 clean; M-25 legacy-JWT service-role key → rotation runbook follow-up; no escalation). **H-2 intentionally still pending** — operator declined an agent-run preview deploy; no branch outcome yet.
 - [ ] Downstream plans (01 Task 5, 03 Task 3, 09) reference the recorded outcomes instead of assumptions.
 - [x] Zero mutations performed (assert this explicitly in the log) — every check across Tasks 1–4/6/7 was read-only (MCP reads, dashboard reads, or local `.dev.vars` prefix inspection); Task 5 remains unexecuted, so nothing was deployed either.
 

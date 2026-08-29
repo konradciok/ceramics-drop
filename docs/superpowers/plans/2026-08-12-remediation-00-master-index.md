@@ -10,7 +10,7 @@
 
 ## Execution order & plan roster
 
-**Status as of 2026-08-14:** 8 of 14 plans merged to `main` (01, 02, 03, 05, 06, 07, 08, 11). Plan 04 is all but done (Cloudflare-side gates, H-4, M-25, L-25 T4b and L-40 closed — the last three operator-verified against the dashboards on 2026-08-14; only the H-2 preview probe remains, deliberately held for a manual operator run). Plans 09, 10, 12, 13, 14 have not been started — no branch or PR exists for any of them.
+**Status as of 2026-08-14:** 8 of 14 plans merged to `main` (01, 02, 03, 05, 06, 07, 08, 11). Plan 04 is all but done (Cloudflare-side gates, H-4, M-25, L-25 T4b and L-40 closed — the last three operator-verified against the dashboards on 2026-08-14, with M-25 resolving onto its legacy branch — the service-role key is still a legacy JWT, so a rotation runbook task is pending before the end-2026 deprecation; only the H-2 preview probe remains, deliberately held for a manual operator run). Plans 09, 10, 12, 13, 14 have not been started — no branch or PR exists for any of them.
 
 | # | Plan file | Status | Priority | Findings covered | Live/external gate? | Depends on |
 |---|---|---|---|---|---|---|
@@ -93,7 +93,7 @@ Every finding ID from the audit, with its status. Original triage statuses: **PL
 | M-22 | ✅ **MERGED** PR #248 | 06 |
 | M-23 | ✅ **MERGED** PR #241 | 02 |
 | M-24 | PLANNED (adopt-or-remove spike) — not started | 14 |
-| M-25 | ✅ **CLOSED** 2026-08-14 — operator-verified clean branch (dashboard read, no rotation triggered); see verification log | 04 |
+| M-25 | ✅ **VERIFIED** 2026-08-29 — publishable key new-format, **service-role key legacy JWT** (the plan's legacy branch) → dedicated rotation runbook task before the end-2026 deprecation (gated follow-up, backlog); see verification log | 04 |
 | M-26 | ✅ **MERGED** PR #247 | 11 |
 | M-27 | ✅ **MERGED** PR #248 | 06 |
 | M-28 | ✅ **MERGED** PR #245 | 01 |
@@ -190,7 +190,7 @@ Grounded opportunities that **close or guard a specific finding** are folded int
 | 15.3 | H-2 admin-gate variant probes | 04 (Task 5) | ⬜ OPEN — not yet run |
 | 15.4 | H-4 admin-editor error host | 04 (Task 1) | ✅ CLOSED 2026-08-14, resolved-as-benign |
 | 15.5 | M-6 Access-policy breadth + allowlist presence | 04 (Task 2) | ✅ CLOSED — PR #242, stays LOW |
-| 15.6 | M-25 Supabase key format | 04 (Task 3) | ✅ CLOSED 2026-08-14 — operator-verified clean |
+| 15.6 | M-25 Supabase key format | 04 (Task 3) | ✅ CLOSED 2026-08-29 — verified: service-role key legacy JWT → rotation runbook follow-up |
 | 15.7 | L-25 R2 bucket posture | 04 (Task 4) | ✅ CLOSED — direct-exposure (T4a) PR #242; token scope (T4b) operator-verified 2026-08-14 |
 | 15.8 | Whole pipeline rehearsal + alert channels | 05 | ✅ CLOSED — PR #246, cleared by Plan 11 PR #247 |
 | 15.9 | Prod secret-name presence | 04 (Task 6) + 03 (Task 3) | ✅ CLOSED — PR #242 |
@@ -223,7 +223,7 @@ Read-only inspection at HEAD `3da7ee0` confirmed every finding but corrected fou
 
 **Development status as of 2026-08-14** (superseding the counts above — see the roster and per-severity ledgers for the item-by-item breakdown):
 
-- **MERGED:** 30 of the 47 originally-PLANNED findings, across Plans 01, 02, 03, 05, 06, 07, 08, 11 (all 8 merged plans) — C-1, C-2, H-1, H-3, M-2, M-3, M-4, M-5, M-10, M-11, M-12, M-14, M-15, M-16, M-17, M-21, M-22, M-23, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-19, L-24. Plus 9 of the original 11 REQUIRES-VERIFICATION items settled and closed: H-4 (resolved-as-benign), M-6 (verified, stays LOW, its code-hardening half re-filed under Plan 09), L-15 (rehearsed), L-22 (documented, no fix needed), L-39 (confirmed absent in prod), §6.11 (dead stage mapping removed), and M-25 / L-25 / L-40 (operator dashboard pass 2026-08-14, all clean).
+- **MERGED:** 30 of the 47 originally-PLANNED findings, across Plans 01, 02, 03, 05, 06, 07, 08, 11 (all 8 merged plans) — C-1, C-2, H-1, H-3, M-2, M-3, M-4, M-5, M-10, M-11, M-12, M-14, M-15, M-16, M-17, M-21, M-22, M-23, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-19, L-24. Plus 9 of the original 11 REQUIRES-VERIFICATION items settled and closed: H-4 (resolved-as-benign), M-6 (verified, stays LOW, its code-hardening half re-filed under Plan 09), L-15 (rehearsed), L-22 (documented, no fix needed), L-39 (confirmed absent in prod), §6.11 (dead stage mapping removed), and M-25 / L-25 / L-40 (operator dashboard pass — L-25/L-40 clean; M-25 verified 2026-08-29 onto its legacy branch: service-role key still legacy JWT → rotation runbook task before end-2026).
 - **STILL PLANNED, not started:** 17 findings, all in Plans 09/10/12/13/14 — M-1, M-7, M-8, M-9, M-13, M-18, M-19, M-24, L-14, L-26, L-27, L-29, L-30, L-32, L-33, L-34, L-35.
 - **REQUIRES-VERIFICATION, still open:** 2 — H-2 (Plan 04 Task 5 preview probe, deliberately held for a manual operator run) and §6.3. M-25, L-25 and L-40 closed 2026-08-14 via the operator dashboard pass (see the verification log).
 - **DEFERRED (with rationale):** unchanged — 19 detailed + the undetailed-range set — M-20, L-1, L-8, L-9, L-11, L-16, L-17, L-18, L-20, L-23, L-31, L-38, plus §6 features 4/5(wire)/6/7/10/12/13, Opp-5/9/16-23, and the un-enumerated L-2/L-3/L-28/L-36/L-37 (backlog, pending the audit's full master ledger).

@@ -306,9 +306,9 @@ Branch per the plan's Task 1 decision tree: `request.url` host is `127.0.0.1:310
 
 ### Operator dashboard pass — M-25 / L-25 T4b / L-40 (2026-08-14)
 
-The three gates the connected MCP tooling structurally could not reach (see the tooling-gap note below) were checked directly by the operator against the Supabase and Cloudflare dashboards on 2026-08-14. Operator confirmed all three resolve to their **clean branch** — no escalation needed, no rotation/mutation required:
+The three gates the connected MCP tooling structurally could not reach (see the tooling-gap note below) were checked directly by the operator against the Supabase and Cloudflare dashboards on 2026-08-14. The operator initially reported all three as resolving clean; a 2026-08-29 re-read of the Supabase keys corrected the M-25 outcome (see bullet). No escalation needed, and no mutation was performed within this plan:
 
-- **M-25** — key format confirmed OK by the operator; no rotation triggered.
+- **M-25** — classifications recorded 2026-08-29 from an operator re-read: `SUPABASE_PUBLISHABLE_KEY` is new-format `sb_publishable_…` ✅, but `SUPABASE_SERVICE_ROLE_KEY` is **legacy JWT (`eyJ…`)** — the plan's **legacy branch**, not the clean one, matching the local `.dev.vars` directional evidence below. Verification is closed (formats recorded, no key material); per the plan's branch, a **dedicated service-role rotation runbook task is required before the end-2026 deprecation** (key rotation touches `wrangler secret put`, `.dev.vars`, CI — gated live mutations, explicitly NOT run within this plan). The 2026-08-14 "confirmed OK" meant no immediate emergency, not the clean branch.
 - **L-25 T4b** — R2-scoped API token confirmed OK by the operator; no over-broad scope found.
 - **L-40** — price-parity SQL confirmed OK by the operator; no charge-vs-display mismatch found.
 
