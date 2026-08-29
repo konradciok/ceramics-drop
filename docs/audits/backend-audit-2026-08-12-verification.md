@@ -276,16 +276,53 @@ Both fixed and re-reviewed clean (scoped re-review, no new Critical/Important br
 
 ---
 
+## Plan 04 T1 — H-4 (Sentry admin-editor `supabaseUrl is required.`) — verified 2026-08-14
+
+Checked via the Sentry MCP connector (org `y9608071l-anna-ciok`, project `ceramics-drop`) — both grouped issues for the error string.
+
+| Issue | Culprit | Events | First/last seen | `request.url` | `environment` | `release` |
+|---|---|---|---|---|---|---|
+| `CERAMICS-DROP-1E` | Page Server Component (`/admin/content/[kind]/[slug]`) | 4 | 2026-08-11 13:26:05 → 13:38:10 UTC | `http://127.0.0.1:3100/admin/content/page/print-pdp` | `development` | `0.13.0` |
+| `CERAMICS-DROP-1F` | `/admin/content/:kind/:slug` (client error boundary, same root cause) | 2 | 2026-08-11 13:26:06 → 13:38:08 UTC | `http://127.0.0.1:3100/admin/content/page/print-pdp` | `development` | `0.13.0` |
+
+Branch per the plan's Task 1 decision tree: `request.url` host is `127.0.0.1:3100` — an explicit non-prod host on every event (not "no request context" — an actual localhost host is recorded), corroborated by `browser: curl 8.21.0` / `HeadlessChrome 151.0.0`, `server_name: PC`, `os: Windows`, `environment: development`. No event carries `anna-ciok.studio`. Stack trace resolves to `src/lib/admin/clients.ts:28` (`adminSupabaseFromEnv`) called from the `/admin/content/page/print-pdp` CMS editor route — consistent with local testing of the Print PDP CMS section (PR #237, merged the same day) on a dev server started without `SUPABASE_URL` loaded. Zero users impacted, zero events since 2026-08-11 13:38 UTC (checked 2026-08-14, no recurrence in the intervening 3 days).
+
+**Outcome: resolved-as-benign**, per the plan's own branch ("Preview/build host → benign build/route-collection noise"). Both issues marked `resolved` in Sentry with an explanatory comment. No prod `SUPABASE_URL` binding regression — no escalation, no live mutation.
+
+*Optional backlog item noted by the plan but not filed as a separate task*: fail-soft the admin CMS editor page on a missing Supabase client the way `/konto` does, so a misconfigured local dev server 500s gracefully instead of throwing — cosmetic, no active defect.
+
+---
+
 ## Remaining gates — not yet checked (non-Cloudflare)
 
 | Gate | Finding / §15 | Where it's checked | Status |
 |---|---|---|---|
-| Plan 04 T1 | **H-4** (admin-editor `supabaseUrl is required.`) | Sentry — read the issue's newest event host + release/env + timing | OPEN |
-| Plan 04 T3 | **M-25** (Supabase key format) | Supabase dashboard — legacy JWT vs `sb_secret_`/`sb_publishable_` | OPEN |
-| Plan 04 T5 | **H-2** (admin-gate encoded-path probes) | `curl` against a **preview** deploy (never prod) | OPEN |
-| Plan 04 T7 | **L-40** (ceramic EUR/GBP display-vs-charge parity) | read-only SQL vs `PRICE_EUR`/`PRICE_GBP` constants | OPEN |
+| Plan 04 T1 | **H-4** (admin-editor `supabaseUrl is required.`) | Sentry — read the issue's newest event host + release/env + timing | **CLOSED** — see section above |
+| Plan 04 T3 | **M-25** (Supabase key format) | Supabase dashboard — legacy JWT vs `sb_secret_`/`sb_publishable_` | **CLOSED** — operator-verified 2026-08-14, see below |
+| Plan 04 T4b | **L-25** (R2 S3-token scope) | Cloudflare dashboard — confirm operator token scoped to this bucket only | **CLOSED** — operator-verified 2026-08-14, see below |
+| Plan 04 T5 | **H-2** (admin-gate encoded-path probes) | `curl` against a **preview** deploy (never prod) | **OPEN** — deliberately left for the operator (preview-deploy risk), see below |
+| Plan 04 T7 | **L-40** (ceramic EUR/GBP display-vs-charge parity) | read-only SQL vs `PRICE_EUR`/`PRICE_GBP` constants | **CLOSED** — operator-verified 2026-08-14, see below |
 | §15.1 | Stripe **v2 Event Destinations** | Stripe Dashboard / `GET /v2/core/event_destinations` (folded into Plan 01 T5) | **CLOSED** — see Plan 01 section above |
+
+### Operator dashboard pass — M-25 / L-25 T4b / L-40 (2026-08-14)
+
+The three gates the connected MCP tooling structurally could not reach (see the tooling-gap note below) were checked directly by the operator (konrad.ciok@gmail.com) against the Supabase and Cloudflare dashboards on 2026-08-14. Operator confirmed all three resolve to their **clean branch** — no escalation needed, no rotation/mutation required:
+
+- **M-25** — key format confirmed OK by the operator; no rotation triggered.
+- **L-25 T4b** — R2-scoped API token confirmed OK by the operator; no over-broad scope found.
+- **L-40** — price-parity SQL confirmed OK by the operator; no charge-vs-display mismatch found.
+
+Raw values were not shared back into this log (consistent with the plan's own redaction posture — these are exactly the fields that shouldn't be pasted verbatim). This closes Plan 04 Task 3, Task 4 (in full — T4a was already closed, T4b now closes it), and Task 7. **H-2 (Task 5) is intentionally left open** — the operator has not yet run the preview-deploy probe and it is not being auto-scheduled.
+
+### Tooling gap discovered this session (2026-08-14) — attempted via MCP/CLI before falling back to dashboard
+
+Before writing off the four remaining gates as dashboard-only, each was actually attempted through the connected Sentry MCP, Cloudflare API MCP, and Supabase MCP:
+
+- **M-25 (Supabase key format):** the connected Supabase MCP exposes only `query_logs` (ClickHouse over the log stream) — no Management API access to `GET /v1/projects/{ref}/api-keys`, the only read-only way to get key *format* without the value. **Directional-only local evidence collected instead:** `.dev.vars` on this machine shows `SUPABASE_SERVICE_ROLE_KEY=eyJhbG...` (legacy JWT format) and `SUPABASE_PUBLISHABLE_KEY=sb_pub...` (new format) — masked prefixes only. **Not proof of the prod value** — prod secrets are set independently via `wrangler secret put` and may have been rotated separately from local. Still needs the Supabase dashboard (Settings → API keys) for the authoritative prod read.
+- **L-25 T4b (R2 API token scope):** `GET /accounts/{account_id}/tokens` and `GET /user/tokens` both returned `9109: Unauthorized to access requested resource` via the Cloudflare API MCP — the connected credential lacks token-management read scope (same class of gap as the `wrangler` OAuth token's missing `access` scope, noted above). **Re-confirmed T4a as a bonus**, directly via the Cloudflare API rather than `wrangler` CLI: `GET /accounts/{id}/r2/buckets/anna-ciok-print-assets/domains/custom` → `{"domains":[]}`; `GET .../domains/managed` → `{"enabled":false,"domain":"pub-d86ba0d2ee0d4d03b6f50e5e79733ba7.r2.dev"}` — matches the prior CLI evidence exactly, independent confirmation. T4b (token scope) itself remains dashboard-only.
+- **L-40 (price parity SQL):** no `execute_sql`/Postgres-query tool is exposed by the connected Supabase MCP — the same gap Plan 07 hit (`query_logs` queries the log stream, not app tables, so it cannot run `SELECT ... FROM products`). Needs the Supabase SQL editor.
+- **H-2 (preview curl probes):** technically executable from this session — `wrangler deploy --env preview` is available via Bash and the `env.preview` block (with the `routes: []` guard added after the Plan 05 incident) is already in `wrangler.jsonc`. **Not run without asking first**: it is a real deploy to the shared Cloudflare account, and the one prior time this exact preview config was deployed it briefly reassigned the production custom domain for ~5–7 minutes before being caught and reverted (Plan 05 incident). Held for explicit operator go-ahead before executing.
 
 ---
 
-*Prepared read-only. Entries are added as their owning plan (04/09/01/…) reaches the corresponding gate.*
+*Prepared read-only where automatable via MCP/CLI (2026-08-14 pass); dashboard-only items recorded with the specific reason no available tool could reach them.*
