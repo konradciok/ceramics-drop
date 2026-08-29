@@ -54,14 +54,16 @@ A committed verification log with, for each item: the exact check performed, the
 
 Each step records: command/screen, output, chosen branch.
 
-### Task 1 — H-4: root-cause the admin-editor Sentry error
+### Task 1 — H-4: root-cause the admin-editor Sentry error ✅ CLOSED 2026-08-14
 
-- [ ] In Sentry, open the "supabaseUrl is required." issue; read the newest event's **request host/URL** and `release`/environment tags.
-- [ ] Branch on the host — but **"no request context" is not, by itself, benign**: a Sentry event without a request host can still originate from a production isolate. Require *corroborating* evidence before closing H-4 as benign, not the absence of a host alone.
+- [x] In Sentry, open the "supabaseUrl is required." issue; read the newest event's **request host/URL** and `release`/environment tags.
+- [x] Branch on the host — but **"no request context" is not, by itself, benign**: a Sentry event without a request host can still originate from a production isolate. Require *corroborating* evidence before closing H-4 as benign, not the absence of a host alone.
   - **Preview/build host** (an explicit non-prod host on the event) → benign build/route-collection noise. Outcome: mark H-4 resolved-as-benign in the log; optionally file a one-line backlog item to fail-soft the admin editor like `/konto` (no P1 work).
   - **`anna-ciok.studio`** → the prod `SUPABASE_URL` binding regressed for that deployment. Outcome: escalate immediately — check `wrangler secret list` / Workers Builds env for the missing binding; fixing it is a **gated live mutation** (operator approval) executed outside this plan.
   - **No request context / ambiguous** → do **not** default to benign. Only mark benign when the `release`/environment tag is a preview/build release **and** the event timing clusters with a build window **and** the error has stopped recurring; if any of those is missing or the release maps to a production deploy, record H-4 as **unresolved** and escalate to the `anna-ciok.studio` branch's checks. Otherwise leave it open for a follow-up with the operator.
-- [ ] Cross-check (feeds the branch above): is the error still occurring (any event in the last 7 days)? Read the `release`, environment, and deployment host, and the first/last-seen timestamps. A stopped error + build-window clustering + a preview/build release together support benign; a production release, ongoing events, or missing corroboration do not.
+- [x] Cross-check (feeds the branch above): is the error still occurring (any event in the last 7 days)? Read the `release`, environment, and deployment host, and the first/last-seen timestamps. A stopped error + build-window clustering + a preview/build release together support benign; a production release, ongoing events, or missing corroboration do not.
+
+**Result:** both grouped issues (`CERAMICS-DROP-1E`, `CERAMICS-DROP-1F`) carry `request.url: http://127.0.0.1:3100/...` on every event — an explicit non-prod host, not ambiguity — corroborated by `browser: curl`/`HeadlessChrome`, `server_name: PC`, `environment: development`, no recurrence since 2026-08-11 13:38 UTC (checked 2026-08-14). **Preview/build-host branch taken → resolved-as-benign.** Both issues marked `resolved` in Sentry. Full evidence: `docs/audits/backend-audit-2026-08-12-verification.md` § "Plan 04 T1 — H-4".
 
 ### Task 2 — M-6: Cloudflare Access policy + allowlist presence
 
@@ -73,19 +75,17 @@ Each step records: command/screen, output, chosen branch.
 
 ### Task 3 — M-25: Supabase key format
 
-- [ ] In the Supabase dashboard (project `wnlysejenowymjdxlnaq`) → Settings → API keys: record whether the service key in use is legacy JWT (`eyJ…`) or new-format `sb_secret_…`, and whether `SUPABASE_PUBLISHABLE_KEY` (customer accounts) is `sb_publishable_…`.
-- [ ] Branch:
-  - **New-format keys** → M-25 closed, no action.
-  - **Legacy JWT keys** → rotation required before the end-2026 deprecation. Outcome: create a dedicated rotation runbook task (key rotation touches `wrangler secret put`, `.dev.vars`, CI — all gated live mutations); do NOT rotate within this plan.
+- [x] In the Supabase dashboard (project `wnlysejenowymjdxlnaq`) → Settings → API keys: record whether the service key in use is legacy JWT (`eyJ…`) or new-format `sb_secret_…`, and whether `SUPABASE_PUBLISHABLE_KEY` (customer accounts) is `sb_publishable_…`. **Done — operator-verified 2026-08-14 (see verification log).**
+- [x] Branch: **legacy-JWT branch** — `SUPABASE_PUBLISHABLE_KEY` is new-format `sb_publishable_…`, `SUPABASE_SERVICE_ROLE_KEY` is legacy JWT `eyJ…` (operator read 2026-08-14; classifications recorded 2026-08-29). Verification closed; outcome per the plan's own branch: a dedicated service-role **rotation runbook task before the end-2026 deprecation** (gated live mutations — `wrangler secret put`, `.dev.vars`, CI — not run within this plan).
 
 ### Task 4 — L-25: R2 bucket posture
 
-- [ ] Collect **separate** read-only evidence for each exposure control — `wrangler r2 bucket info` alone does **not** prove `r2.dev` or custom-domain state:
-  - `wrangler r2 bucket dev-url get anna-ciok-print-assets` → confirm the managed `r2.dev` dev URL is **disabled**.
-  - `wrangler r2 bucket domain list anna-ciok-print-assets` → confirm **no** custom public domain is attached.
+- [x] Collect **separate** read-only evidence for each exposure control — `wrangler r2 bucket info` alone does **not** prove `r2.dev` or custom-domain state:
+  - `wrangler r2 bucket dev-url get anna-ciok-print-assets` → confirm the managed `r2.dev` dev URL is **disabled**. **CLOSED 2026-08-12.**
+  - `wrangler r2 bucket domain list anna-ciok-print-assets` → confirm **no** custom public domain is attached. **CLOSED 2026-08-12**, independently re-confirmed via the Cloudflare API MCP 2026-08-14 (`domains/custom` → `[]`, `domains/managed` → `enabled:false`).
   - `wrangler r2 bucket info anna-ciok-print-assets` → general posture (recorded, but not sufficient on its own).
-  - Separately (Cloudflare dashboard / API): confirm the operator S3 API token is scoped to **this bucket only**.
-- [ ] Branch: any public access (enabled dev URL, attached custom domain) → escalate (the signed-URL model is bypassed; disabling it is a gated mutation, urgent). All three checks clean **and** token scoped → closed with the three command outputs recorded.
+  - Separately (Cloudflare dashboard / API): confirm the operator S3 API token is scoped to **this bucket only**. **Done — operator-verified 2026-08-14** (Cloudflare API MCP couldn't read token scope — `9109 Unauthorized` — so this leg needed the dashboard).
+- [x] Branch: all checks clean **and** token scoped → **closed** (operator confirmation, 2026-08-14).
 
 ### Task 5 — H-2: empirical admin-gate variant probes (preview only)
 
@@ -93,6 +93,8 @@ Each step records: command/screen, output, chosen branch.
 - [ ] Expected per the audit's refutation: `404` (handler never reached). Branch:
   - **404s** → refutation empirically confirmed; Plan 09's normalize-in-`isAdminPath` remains defense-in-depth (LOW).
   - **405/JSON error (handler reached)** → the refutation was wrong; H-2 re-opens as HIGH — stop, report, and pull the `isAdminPath` normalization forward as an emergency fix ahead of Plan 09.
+
+**Status 2026-08-14: intentionally OPEN.** Executable via `wrangler deploy --env preview` (config already in `wrangler.jsonc` with the `routes: []` guard from the Plan 05 incident), but the operator declined an agent-run deploy given that incident history and is holding this gate for a manual run.
 
 ### Task 6 — §15.9: prod secret-name sweep
 
@@ -102,15 +104,12 @@ Each step records: command/screen, output, chosen branch.
 
 ### Task 7 — L-40: display-vs-charge price parity (read-only data check)
 
-- [ ] Read-only SQL against prod (or the Supabase dashboard SQL editor): `select id, category_slug, price_pln, price_eur, price_gbp from products where type='ceramic'` — compare against `PRICE_EUR`/`PRICE_GBP` per-category constants in `src/lib/pricing.ts`.
-- [ ] **Note the current-state evidence:** no code path reads `products.price_eur`/`products.price_gbp` — checkout and display both use the per-category constants in `src/lib/pricing.ts`. So a divergence in these columns is **data drift in unused columns, not a customer-visible display-vs-charge mismatch** on its own.
-- [ ] Branch:
-  - **Columns NULL/unused, or equal to the constants** → parity holds; L-40 stays a backlog item (§6.5: wire or remove the columns).
-  - **Columns diverge from the constants** → record as **data drift** and keep L-40 a backlog item. Do **not** escalate to a customer-facing pricing incident on this evidence alone. Escalate to a data-integrity finding **only after** confirming a live customer-facing or charging surface actually reads those columns and produces a value different from the charged per-category constant.
+- [x] Read-only SQL against prod (or the Supabase dashboard SQL editor): `select id, category_slug, price_pln, price_eur, price_gbp from products where type='ceramic'` — compare against `PRICE_EUR`/`PRICE_GBP` per-category constants in `src/lib/pricing.ts`. **Done — operator-verified 2026-08-14 (see verification log).**
+- [x] Branch: **resolved clean** — operator confirmed no charge-vs-display mismatch (2026-08-14). L-40 stays a backlog item per §6.5 (wire-or-remove the unused columns), not escalated.
 
 ### Task 8 — write the log
 
-- [ ] Create `docs/audits/backend-audit-2026-08-12-verification.md` with a table: item / check / output (redacted) / date / resolved branch / downstream action. Commit it.
+- [x] Create `docs/audits/backend-audit-2026-08-12-verification.md` with a table: item / check / output (redacted) / date / resolved branch / downstream action. Commit it. **Log is live and updated through 2026-08-14 (Plan 04, 01, 05, 06, 07, 11 sections + the remaining-gates table).**
 
 ## Database / migration work
 
@@ -126,7 +125,7 @@ None (no code changes). The deliverable is the evidence log.
 
 ## Verification
 
-The plan **is** verification. Completion = the log file exists with all eight items resolved to a branch, each with recorded output. Any item that cannot be completed for access reasons is recorded as blocked-with-reason, not skipped silently.
+The plan **is** verification. Completion = the log file exists with all eight items resolved to a branch, each with recorded output. Any item that cannot be completed for access reasons is recorded as blocked-with-reason — and an item the operator deliberately holds open is recorded as held-with-reason — not skipped silently.
 
 ## Rollout / recovery
 
@@ -134,10 +133,10 @@ N/A — read-only. The only rollback is deleting the log file.
 
 ## Acceptance criteria
 
-- [ ] `docs/audits/backend-audit-2026-08-12-verification.md` committed with all 8 items resolved or explicitly blocked.
-- [ ] H-4, M-6, M-25, L-25, H-2, L-40 each have a recorded branch outcome.
+- [x] `docs/audits/backend-audit-2026-08-12-verification.md` committed with all 8 items resolved, explicitly blocked, or deliberately held open with the decision recorded. **7/8 resolved as of 2026-08-14; Task 5 (H-2) deliberately held open — operator choice, see verification log.**
+- [x] H-4, M-6, M-25, L-25, L-40 each have a recorded branch outcome (H-4 benign; M-6/L-25/L-40 clean; M-25 legacy-JWT service-role key → rotation runbook follow-up; no escalation). **H-2 intentionally still pending** — operator declined an agent-run preview deploy; no branch outcome yet.
 - [ ] Downstream plans (01 Task 5, 03 Task 3, 09) reference the recorded outcomes instead of assumptions.
-- [ ] Zero mutations performed (assert this explicitly in the log).
+- [x] Zero mutations performed (assert this explicitly in the log) — every check across Tasks 1–4/6/7 was read-only (MCP reads, dashboard reads, or local `.dev.vars` prefix inspection); Task 5 remains unexecuted, so nothing was deployed either.
 
 ## Dependencies
 

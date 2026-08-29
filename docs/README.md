@@ -46,8 +46,9 @@ Trust chain for cleanup work: **`cleaning-instructions.md` is authoritative**;
 | [`cleaning-instructions.md`](cleaning-instructions.md) | active | Actionable cleanup tasks + agent rules (read before cleanup work) |
 | [`pony-audit.md`](pony-audit.md) | reference | Over-engineering audit feeding the above |
 | [`github-actions-audit.md`](github-actions-audit.md) | reference | 2026-07-23 CI audit + operator checklist |
-| [`audits/`](audits/) | reference | Domain audits (analytics, event system, …) |
+| [`audits/`](audits/) | reference | Domain audits (analytics, event system, …) — incl. `backend-audit-2026-08-12.md` (the Aug-2026 backend audit) + its `-verification.md` live-gate log |
 | [`audit-ceramics-prints-separation.md`](audit-ceramics-prints-separation.md) | reference | Ceramics/prints separation audit |
+| [`superpowers/plans/2026-08-12-remediation-00-master-index.md`](superpowers/plans/2026-08-12-remediation-00-master-index.md) | active | Backend-audit remediation master index (14 plans, execution order, live-gate status — the entry point for the Aug-2026 audit follow-up work) |
 
 ## Plans & specs
 
