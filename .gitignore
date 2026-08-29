@@ -88,3 +88,6 @@ pr-review/
 # staging area for files pending manual deletion (sandboxed tools can move but
 # not delete) — empty it whenever you like
 /_to_delete/
+prompt.md
+docs/workers-logs-14.08.2026.json
+docs/archive/image.png
