@@ -51,21 +51,6 @@
   @keyframes hdr-logo { to { transform: scale(.78); } }
 }
 
-/* Subtle hero-art parallax (Spec D). Baked scale keeps edges covered while it
-   translates. Reduced-motion off via Spec A's reset. */
-@supports (animation-timeline: view()) {
-  .hero-art img {
-    animation: hero-par linear both;
-    animation-duration: 1ms;
-    animation-timeline: view();
-    animation-range: cover;
-  }
-  @keyframes hero-par {
-    from { transform: scale(1.06) translateY(-3%); }
-    to   { transform: scale(1.06) translateY(3%); }
-  }
-}
-
 /* Generated grain for tactile warmth. Desaturated noise behind content,
    non-interactive, static, faint. Dial via --grain-opacity; set 0 to disable. */
 .surface-grain { position: relative; isolation: isolate; }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
-import { collectionCopySchema, printPdpSchema, productNoteIds, validateCmsPayload, validateProductNotesPayload } from './schemas';
+import { collectionCopySchema, homePageSchema, printPdpSchema, productNoteIds, validateCmsPayload, validateProductNotesPayload } from './schemas';
 
 function notesFor(ids: string[], fill = 'Opis'): Record<string, string> {
   return Object.fromEntries(ids.map((id) => [id, fill]));
@@ -96,5 +96,58 @@ describe('CMS print PDP schema', () => {
 
   it('rejects a payload missing the accordions object', () => {
     expect(() => printPdpSchema.parse({ artist: full.artist })).toThrow();
+  });
+});
+
+describe('CMS home page schema', () => {
+  const imageKey = `${'a'.repeat(64)}.webp`;
+  const videoKey = `${'b'.repeat(64)}.mp4`;
+  const posterKey = `${'c'.repeat(64)}.jpg`;
+
+  const base = {
+    heroLine1: 'Ręcznie malowane,',
+    heroLine2: 'jedna sztuka naraz.',
+    heroTagline: 'PRACOWNIA ANNY CIOK',
+    ctaLabel: 'Przeglądaj sklep',
+    heroAlt: 'Ręcznie malowane naczynia ceramiczne',
+  };
+
+  it('accepts null media slots', () => {
+    expect(() => homePageSchema.parse({ ...base, media: { desktop: null, mobile: null } })).not.toThrow();
+  });
+
+  it('accepts a valid image slot', () => {
+    const media = { desktop: { kind: 'image', key: imageKey, width: 1600, height: 900 }, mobile: null };
+    expect(homePageSchema.parse({ ...base, media }).media.desktop).toEqual(media.desktop);
+  });
+
+  it('accepts a valid video slot with a poster image', () => {
+    const media = {
+      desktop: { kind: 'video', key: videoKey, poster: { key: posterKey, width: 1600, height: 900 } },
+      mobile: null,
+    };
+    expect(() => homePageSchema.parse({ ...base, media })).not.toThrow();
+  });
+
+  it('rejects a video slot missing its poster', () => {
+    const media = { desktop: { kind: 'video', key: videoKey }, mobile: null };
+    expect(() => homePageSchema.parse({ ...base, media })).toThrow();
+  });
+
+  it('rejects a malformed media key', () => {
+    const media = { desktop: { kind: 'image', key: 'not-a-valid-key.webp', width: 1600, height: 900 }, mobile: null };
+    expect(() => homePageSchema.parse({ ...base, media })).toThrow();
+  });
+
+  it('rejects markup/script content in copy fields', () => {
+    const media = { desktop: null, mobile: null };
+    expect(() => homePageSchema.parse({ ...base, heroLine1: '<script>alert(1)</script>', media })).toThrow(
+      'To pole obsługuje tylko zwykły tekst',
+    );
+  });
+
+  it('is reachable through validateCmsPayload under page:home', () => {
+    const media = { desktop: null, mobile: null };
+    expect(() => validateCmsPayload('page', 'home', { ...base, media })).not.toThrow();
   });
 });

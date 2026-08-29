@@ -35,3 +35,15 @@ test('@ci hero beat caption renders and is visible under reduced motion', async 
   await page.goto('/');
   await expect(page.locator('.hero-beat-cap')).toBeVisible();
 });
+
+test('@ci hero beat renders 5 print tiles linking to print PDPs', async ({ page }) => {
+  await page.goto('/');
+  const tiles = page.locator('.hero-beat .prints-home-card');
+  await expect(tiles).toHaveCount(5);
+  await expect(tiles.first()).toHaveAttribute('href', /fine-art-prints\//);
+});
+
+test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.hero-media img')).toBeVisible();
+});

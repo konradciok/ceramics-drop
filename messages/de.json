@@ -394,18 +394,12 @@
     "account": "Bestellung im Konto verfolgen"
   },
   "home": {
-    "heroEyebrow": "Anna Cioks Studio — Keramik und Malerei",
-    "heroTitle": "Ich male — auf Keramik <em>und auf Papier.</em>",
-    "heroSub": "{count} von Hand bemalte Keramikstücke und {printCount} Gemälde in Fine-Art-Edition — alles aus einem kleinen Studio. Jedes Keramikstück ist ein Unikat; Gemälde bestellst du als Druck in Größe und Rahmung deiner Wahl.",
-    "heroCta1": "Keramik entdecken",
-    "heroCta2": "Fine-Art-Drucke ansehen",
-    "heroBadgeCeramic": "Keramik — ein Unikat",
-    "heroBadgePrint": "Druck — ab {price}",
-    "heroPrintMeta": "{sizes, plural, one {# Größe} other {# Größen}} · {frames, plural, one {# Rahmen} other {# Rahmen}}",
+    "heroLine1": "Handbemalt,",
+    "heroLine2": "Stück für Stück einzigartig.",
+    "heroTagline": "ATELIER ANNA CIOK — KERAMIK & KUNSTDRUCKE",
+    "heroCta": "Shop entdecken",
+    "heroAlt": "Handbemalte Keramikstücke auf einem Holztisch im Atelier von Anna Ciok",
     "heroBeatCap": "Im selben Studio entstehen Gemälde — Tusche und Aquarell auf Papier. Jedes der {count} ist als Fine-Art-Druck erhältlich, mit oder ohne Rahmen.",
-    "heroBeatAlt": "Gemälde — Tusche und Aquarell auf Papier",
-    "heroMetaName": "Tasse Nº 02",
-    "heroMetaDesc": "Blaue Palme",
     "marquee": [
       "von Hand bemalt",
       "ein Stück nach dem anderen",

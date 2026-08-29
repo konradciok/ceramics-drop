@@ -13,6 +13,8 @@
   --c-line:rgba(58,40,24,.16); --c-line-soft:rgba(58,40,24,.08);
   --c-success:#2f6b3f; --c-danger:#a23b2e;
   --c-success-border:rgba(47,107,63,.3); --c-danger-border:rgba(162,59,46,.35);
+  /* Exact value chosen for text contrast over the hero media — do not alter. */
+  --c-hero-scrim:rgba(20,14,9,.72);
   --f-display:'Jost','Helvetica Neue',Arial,sans-serif;
   --f-cond:'Jost','Helvetica Neue',Arial,sans-serif;
   --f-body:'Jost','Helvetica Neue',Arial,sans-serif;
