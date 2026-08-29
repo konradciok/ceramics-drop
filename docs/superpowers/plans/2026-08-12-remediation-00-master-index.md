@@ -10,12 +10,12 @@
 
 ## Execution order & plan roster
 
-**Status as of 2026-08-14:** 8 of 14 plans merged to `main` (01, 02, 03, 05, 06, 07, 08, 11). Plan 04 is partially done (Cloudflare-side gates + H-4 closed; M-25/H-2/L-40 and the R2 app-mediated-access half of L-25 remain open). Plans 09, 10, 12, 13, 14 have not been started — no branch or PR exists for any of them.
+**Status as of 2026-08-14:** 8 of 14 plans merged to `main` (01, 02, 03, 05, 06, 07, 08, 11). Plan 04 is all but done (Cloudflare-side gates, H-4, M-25, L-25 T4b and L-40 closed — the last three operator-verified against the dashboards on 2026-08-14; only the H-2 preview probe remains, deliberately held for a manual operator run). Plans 09, 10, 12, 13, 14 have not been started — no branch or PR exists for any of them.
 
 | # | Plan file | Status | Priority | Findings covered | Live/external gate? | Depends on |
 |---|---|---|---|---|---|---|
 | 00 | `…-00-master-index.md` (this) | — | — | ledger | — | — |
-| 04 | `…-04-live-config-verification.md` | 🟡 **PARTIAL** — PR [#242](https://github.com/konradciok/ceramics-drop/pull/242) (Cloudflare gates: M-6, L-25 T4a, §15.9) + H-4 closed 2026-08-14 (uncommitted doc update, this session). Open: M-25 (T3), H-2 (T5), L-40 (T7), L-25 T4b | **P0** (read-only, run first) | H-4 ✅, M-6* ✅, M-25 ⬜, L-25 🟡, H-2* ⬜, L-40 ⬜, §15.1/.9 ✅ | Read-only dashboard/CLI access | none |
+| 04 | `…-04-live-config-verification.md` | 🟡 **PARTIAL** — PR [#242](https://github.com/konradciok/ceramics-drop/pull/242) (Cloudflare gates: M-6, L-25 T4a, §15.9) + H-4, M-25, L-25 T4b, L-40 closed 2026-08-14 (Sentry + operator dashboard pass, see verification log). Open: H-2 (T5) only | **P0** (read-only, run first) | H-4 ✅, M-6* ✅, M-25 ✅, L-25 ✅, H-2* ⬜, L-40 ✅, §15.1/.9 ✅ | Read-only dashboard/CLI access | none |
 | 01 | `…-01-stripe-refund-reconciliation.md` | ✅ **MERGED** PR [#245](https://github.com/konradciok/ceramics-drop/pull/245) (2026-08-13) | **P0** | C-1, H-3, M-28, Opp-2, Opp-3 | **YES** — Stripe `enabled_events` + prod backfill — **executed live**, both gates run (see verification log) | none (folds §15.1) |
 | 02 | `…-02-queue-context-fix.md` | ✅ **MERGED** PR [#241](https://github.com/konradciok/ceramics-drop/pull/241) (2026-08-12) + PR [#244](https://github.com/konradciok/ceramics-drop/pull/244) (M-10 combined w/ Plan 03) | **P0** | C-2, M-10, M-23, L-21, Opp-6 | Preview rehearsal is the exit gate — **passed** (Plan 05 rehearsal, zero `fulfilment_inline_fallback` warns) | 03 (alerts) — Plan 05 is 02's runtime **exit gate**, not an upstream dependency |
 | 03 | `…-03-worker-sentry-cron-alerting.md` | ✅ **MERGED** PR [#243](https://github.com/konradciok/ceramics-drop/pull/243) (M-16) + PR [#244](https://github.com/konradciok/ceramics-drop/pull/244) (M-15) (2026-08-13) | **P0** | M-16, M-15, §15.9(partial) | `wrangler secret list` (read) — done, all present; DSN was already set | none |
@@ -34,7 +34,7 @@
 
 ### Recommended sequencing
 
-1. ~~**First wave (parallel):** Plan 04 (read-only verification — feeds several downstream plans), Plan 08 (env, trivial, independent), Plan 03 (worker Sentry — prerequisite for 02/05 alerts).~~ **DONE** — Plan 03 and Plan 08 merged; Plan 04 partially done (Cloudflare gates + H-4; M-25/H-2/L-40/L-25-T4b remain).
+1. ~~**First wave (parallel):** Plan 04 (read-only verification — feeds several downstream plans), Plan 08 (env, trivial, independent), Plan 03 (worker Sentry — prerequisite for 02/05 alerts).~~ **DONE** — Plan 03 and Plan 08 merged; Plan 04 all but done (Cloudflare gates + H-4 + M-25 + L-25 T4b + L-40 closed; only the H-2 preview probe remains).
 2. ~~**P0 money/fulfilment core:** Plan 01 (refunds) → Plan 02 (queue fix) → Plan 05 (rehearsal, gates prints).~~ **DONE** — all three merged; Plan 05's conditional GO was cleared by Plan 11 (F-1 fix). Real print sales unblocked.
 3. ~~**P1 hardening:** Plan 06 (after 01 — shared files), Plan 07 (migration; independent), Plan 08 (any time).~~ **DONE** — Plans 06, 07, 08 all merged.
 4. **P2 (current front):** Plans 09 (after 04, 03 — **unblocked**), 10, 11 (after 02/05 — **done**, merged), 12 (after 02/03 — **unblocked**), 13, 14 — largely parallel; watch `worker.ts` merge contention between 09/10/12/13/14 (02/03/11 already landed there). **Not yet started: 09, 10, 12, 13, 14.**
@@ -93,7 +93,7 @@ Every finding ID from the audit, with its status. Original triage statuses: **PL
 | M-22 | ✅ **MERGED** PR #248 | 06 |
 | M-23 | ✅ **MERGED** PR #241 | 02 |
 | M-24 | PLANNED (adopt-or-remove spike) — not started | 14 |
-| M-25 | REQUIRES-VERIFICATION — **still open**, Plan 04 Task 3 not yet run | 04 (rotation = gated follow-up if legacy) |
+| M-25 | ✅ **CLOSED** 2026-08-14 — operator-verified clean branch (dashboard read, no rotation triggered); see verification log | 04 |
 | M-26 | ✅ **MERGED** PR #247 | 11 |
 | M-27 | ✅ **MERGED** PR #248 | 06 |
 | M-28 | ✅ **MERGED** PR #245 | 01 |
@@ -124,7 +124,7 @@ Every finding ID from the audit, with its status. Original triage statuses: **PL
 | L-22 | ✅ **CLOSED** (informational) — contract assumptions observed and documented in `types.ts`/`docs/orders-cli.md` (merchant-currency `recipientCost`); no code fix needed | 05 (input) → 11, PR #247 |
 | L-23 | DEFERRED — `PRINT_ASSET_TOKEN_SECRET` key-versioned rotation; audit §13-extended item, not a defect today. | 11 (noted) → backlog |
 | L-24 | ✅ **MERGED** PR #247 | 11 |
-| L-25 | 🟡 **PARTIAL** — direct-exposure check (T4a) CLOSED via PR #242 (r2.dev disabled, no custom domain); app-mediated-access + S3-token-scope check (T4b) still **OPEN** | 04 |
+| L-25 | ✅ **CLOSED** — direct-exposure check (T4a) via PR #242 (r2.dev disabled, no custom domain); S3-token-scope check (T4b) operator-verified clean 2026-08-14 | 04 |
 | L-26 | PLANNED — not started | 09 |
 | L-27 | PLANNED — not started | 09 |
 | L-29 | PLANNED — not started | 09 |
@@ -136,7 +136,7 @@ Every finding ID from the audit, with its status. Original triage statuses: **PL
 | L-35 | PLANNED — not started | 13 |
 | L-38 | DEFERRED — newsletter scanner auto-confirm; §6.12 product decision ("ship when scanner-confirms show up in practice"), already accepted-in-code. | backlog |
 | L-39 | ✅ **CLOSED** — `debug/fulfilment-status` safe only by never setting its token in prod; Plan 04 Task 6 (PR #242) confirmed `FULFILMENT_DEBUG_TOKEN` absent in prod. | 04 |
-| L-40 | REQUIRES-VERIFICATION — **still open**, Plan 04 Task 7 not yet run | 04 (Task 7) |
+| L-40 | ✅ **CLOSED** 2026-08-14 — price-parity SQL operator-verified clean (no charge-vs-display mismatch); see verification log | 04 (Task 7) |
 
 **Low IDs not individually enumerated in the audit body** (L-2, L-3, L-28, L-36, L-37): the audit compresses these into range notation ("L-32…L-40") and references a "master ledger §C" not present in the working tree. → **DEFERRED to backlog**, flagged for the operator to retrieve from the audit's full ledger before closing the audit. Not blockers for any P0–P2 remediation.
 
@@ -179,7 +179,7 @@ Grounded opportunities that **close or guard a specific finding** are folded int
 | Opp-13 (cache the merchant feeds) | PLANNED — not started | 14 (L-32) |
 | Opp-14 (security-header block in worker) | PLANNED — not started | 14 (L-33) |
 | Opp-15 (shorten TTL + redact asset URLs) | ✅ **MERGED** PR #247 | 11 (M-14) |
-| Opp-16…23 (extended ledger: HMAC rotation, status-vocabulary single-source, composite indexes, Resend svix-id dedup, per-market parity, …) | DEFERRED — partial coverage lands opportunistically (status vocab → 07 L-13, merged; parity → 04 L-40, still open; svix-id → adjacent to M-27, merged); the rest is backlog. | backlog |
+| Opp-16…23 (extended ledger: HMAC rotation, status-vocabulary single-source, composite indexes, Resend svix-id dedup, per-market parity, …) | DEFERRED — partial coverage lands opportunistically (status vocab → 07 L-13, merged; parity → 04 L-40, verified clean 2026-08-14; svix-id → adjacent to M-27, merged); the rest is backlog. | backlog |
 
 ### Verification gaps (§15) — ownership
 
@@ -190,8 +190,8 @@ Grounded opportunities that **close or guard a specific finding** are folded int
 | 15.3 | H-2 admin-gate variant probes | 04 (Task 5) | ⬜ OPEN — not yet run |
 | 15.4 | H-4 admin-editor error host | 04 (Task 1) | ✅ CLOSED 2026-08-14, resolved-as-benign |
 | 15.5 | M-6 Access-policy breadth + allowlist presence | 04 (Task 2) | ✅ CLOSED — PR #242, stays LOW |
-| 15.6 | M-25 Supabase key format | 04 (Task 3) | ⬜ OPEN — not yet run |
-| 15.7 | L-25 R2 bucket posture | 04 (Task 4) | 🟡 PARTIAL — direct-exposure (T4a) closed PR #242, app-mediated (T4b) open |
+| 15.6 | M-25 Supabase key format | 04 (Task 3) | ✅ CLOSED 2026-08-14 — operator-verified clean |
+| 15.7 | L-25 R2 bucket posture | 04 (Task 4) | ✅ CLOSED — direct-exposure (T4a) PR #242; token scope (T4b) operator-verified 2026-08-14 |
 | 15.8 | Whole pipeline rehearsal + alert channels | 05 | ✅ CLOSED — PR #246, cleared by Plan 11 PR #247 |
 | 15.9 | Prod secret-name presence | 04 (Task 6) + 03 (Task 3) | ✅ CLOSED — PR #242 |
 
@@ -223,9 +223,9 @@ Read-only inspection at HEAD `3da7ee0` confirmed every finding but corrected fou
 
 **Development status as of 2026-08-14** (superseding the counts above — see the roster and per-severity ledgers for the item-by-item breakdown):
 
-- **MERGED:** 30 of the 47 originally-PLANNED findings, across Plans 01, 02, 03, 05, 06, 07, 08, 11 (all 8 merged plans) — C-1, C-2, H-1, H-3, M-2, M-3, M-4, M-5, M-10, M-11, M-12, M-14, M-15, M-16, M-17, M-21, M-22, M-23, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-19, L-24. Plus 6 of the original 11 REQUIRES-VERIFICATION items settled and closed: H-4 (resolved-as-benign), M-6 (verified, stays LOW, its code-hardening half re-filed under Plan 09), L-15 (rehearsed), L-22 (documented, no fix needed), L-39 (confirmed absent in prod), §6.11 (dead stage mapping removed).
+- **MERGED:** 30 of the 47 originally-PLANNED findings, across Plans 01, 02, 03, 05, 06, 07, 08, 11 (all 8 merged plans) — C-1, C-2, H-1, H-3, M-2, M-3, M-4, M-5, M-10, M-11, M-12, M-14, M-15, M-16, M-17, M-21, M-22, M-23, M-26, M-27, M-28, L-4, L-5, L-6, L-7, L-10, L-12, L-13, L-19, L-24. Plus 9 of the original 11 REQUIRES-VERIFICATION items settled and closed: H-4 (resolved-as-benign), M-6 (verified, stays LOW, its code-hardening half re-filed under Plan 09), L-15 (rehearsed), L-22 (documented, no fix needed), L-39 (confirmed absent in prod), §6.11 (dead stage mapping removed), and M-25 / L-25 / L-40 (operator dashboard pass 2026-08-14, all clean).
 - **STILL PLANNED, not started:** 17 findings, all in Plans 09/10/12/13/14 — M-1, M-7, M-8, M-9, M-13, M-18, M-19, M-24, L-14, L-26, L-27, L-29, L-30, L-32, L-33, L-34, L-35.
-- **REQUIRES-VERIFICATION, still open:** 5 — H-2, M-25, L-25 (partial — direct-exposure half closed, app-mediated half open), L-40, §6.3. All owned by Plan 04, which has not been run to completion (only its Cloudflare-side tasks + H-4 are done).
+- **REQUIRES-VERIFICATION, still open:** 2 — H-2 (Plan 04 Task 5 preview probe, deliberately held for a manual operator run) and §6.3. M-25, L-25 and L-40 closed 2026-08-14 via the operator dashboard pass (see the verification log).
 - **DEFERRED (with rationale):** unchanged — 19 detailed + the undetailed-range set — M-20, L-1, L-8, L-9, L-11, L-16, L-17, L-18, L-20, L-23, L-31, L-38, plus §6 features 4/5(wire)/6/7/10/12/13, Opp-5/9/16-23, and the un-enumerated L-2/L-3/L-28/L-36/L-37 (backlog, pending the audit's full master ledger).
 - **STALE/ALREADY-RESOLVED:** 0 — every **non-refuted** finding remains applicable or requires verification at HEAD `3da7ee0`. (H-2 is `[REFUTED]` in the audit — not an active bypass; it carries only a residual defense-in-depth hardening item, tracked under REQUIRES-VERIFICATION / Plan 09, not yet started.)
 - **NEW FINDINGS:** 1 (NF-1, LOW — folded into Plan 09/L-30, not yet started).

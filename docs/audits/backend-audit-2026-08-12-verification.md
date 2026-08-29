@@ -8,7 +8,7 @@ Legend: **CLOSED** = settled, no action · **ACTION** = settled, feeds a downstr
 
 ## Cloudflare-side gates — verified 2026-08-12
 
-Access confirmed via `wrangler` OAuth (konrad.ciok@gmail.com, account `3ebc59b80b15b6b4850ae0734a24ce26`) and the Cloudflare API MCP (separate OAuth). Wrangler token covers workers/secrets/tail/queues/d1/zone-read + R2 reads; it does **not** carry an `access` scope, so the Zero Trust Access policy was read via the Cloudflare API MCP.
+Access confirmed via `wrangler` OAuth (the operator's account, account `3ebc59b80b15b6b4850ae0734a24ce26`) and the Cloudflare API MCP (separate OAuth). Wrangler token covers workers/secrets/tail/queues/d1/zone-read + R2 reads; it does **not** carry an `access` scope, so the Zero Trust Access policy was read via the Cloudflare API MCP.
 
 | Gate | Finding / §15 | Check | Result | Status |
 |---|---|---|---|---|
@@ -40,7 +40,7 @@ Read-only evidence gathered while implementing Plan 01 (branch `fix/stripe-refun
 
 ### Plan 01 live gates — EXECUTED 2026-08-13 (operator-approved)
 
-Operator (konrad.ciok@gmail.com) approved both gates and provided a live key (`STRIPE_SECRET_LIVE_KEY` in local `.dev.vars`); decision recorded: **`s15` does NOT return to sale**.
+The operator approved both gates and provided a live key (`STRIPE_SECRET_LIVE_KEY` in local `.dev.vars`); decision recorded: **`s15` does NOT return to sale**.
 
 | Gate | Mutation | Pre-state | Post-state | Result |
 |---|---|---|---|---|
@@ -53,7 +53,7 @@ Note: during gate 2 the original `--skip-relist` semantics ("leave `piece_state`
 
 ## Plan 05 — print-pipeline production rehearsal (L-15 / L-22 / §15.2 / §15.8) — executed 2026-08-13
 
-Branch `fix/print-pipeline-rehearsal-l15` (off `main` @ `bd41732`, Plans 01–03 all merged). Operator (konrad.ciok@gmail.com) **acknowledged the shared-Supabase gate** before any write: preview points at the production Supabase project; all rehearsal rows are test rows tracked in the cleanup list below. All times UTC.
+Branch `fix/print-pipeline-rehearsal-l15` (off `main` @ `bd41732`, Plans 01–03 all merged). The operator **acknowledged the shared-Supabase gate** before any write: preview points at the production Supabase project; all rehearsal rows are test rows tracked in the cleanup list below. All times UTC.
 
 ### Environment (Task 1)
 
@@ -143,7 +143,7 @@ GO evidence: every forward stage ran green in the **real queue runtime** (webhoo
 
 The blocking condition: **F-1 (Prodigi callbacks 400)** means that after a real sale the shop would take money, submit the order, and then go **blind** — no stage updates, no tracking, **no customer shipping email**, no trace of the rejected callbacks. That contradicts the audit's own no-go criterion ("any stage silently failed"). The stranded-job watchdog does NOT cover it (the job is already `fulfilment_submitted`, a terminal-enough status the sweep ignores). **Real print sales should wait for the Plan 11 callback-shape fix + a re-run of the callback leg of this rehearsal** (single sandbox order, ~15 min, config is in place). Everything else — checkout, payment, fulfilment submission, refunds, alerting — is proven and would not need re-testing.
 
-Signed: rehearsal executed 2026-08-13 by Claude (Opus 4.8) with operator konrad.ciok@gmail.com approving the gates (preview architecture, shared-Supabase test rows, secret provisioning).
+Signed: rehearsal executed 2026-08-13 by Claude (Opus 4.8) with the operator approving the gates (preview architecture, shared-Supabase test rows, secret provisioning).
 
 ---
 
@@ -187,7 +187,7 @@ Preview worker deleted (URL → 404; its secrets died with it), both preview que
 
 **Verdict: the Plan 05 blocking condition is cleared** — real print sales are unblocked once this PR merges (the money path was already GO).
 
-Signed: executed 2026-08-13 by Claude (Fable 5), operator konrad.ciok@gmail.com (standing gates from Plan 05: preview architecture, shared-Supabase test rows, sandbox mutations).
+Signed: executed 2026-08-13 by Claude (Fable 5), the operator (standing gates from Plan 05: preview architecture, shared-Supabase test rows, sandbox mutations).
 
 ---
 
@@ -287,13 +287,13 @@ Checked via the Sentry MCP connector (org `y9608071l-anna-ciok`, project `cerami
 
 Branch per the plan's Task 1 decision tree: `request.url` host is `127.0.0.1:3100` — an explicit non-prod host on every event (not "no request context" — an actual localhost host is recorded), corroborated by `browser: curl 8.21.0` / `HeadlessChrome 151.0.0`, `server_name: PC`, `os: Windows`, `environment: development`. No event carries `anna-ciok.studio`. Stack trace resolves to `src/lib/admin/clients.ts:28` (`adminSupabaseFromEnv`) called from the `/admin/content/page/print-pdp` CMS editor route — consistent with local testing of the Print PDP CMS section (PR #237, merged the same day) on a dev server started without `SUPABASE_URL` loaded. Zero users impacted, zero events since 2026-08-11 13:38 UTC (checked 2026-08-14, no recurrence in the intervening 3 days).
 
-**Outcome: resolved-as-benign**, per the plan's own branch ("Preview/build host → benign build/route-collection noise"). Both issues marked `resolved` in Sentry with an explanatory comment. No prod `SUPABASE_URL` binding regression — no escalation, no live mutation.
+**Outcome: resolved-as-benign**, per the plan's own branch ("Preview/build host → benign build/route-collection noise"). Both issues marked `resolved` in Sentry with an explanatory comment. No evidence of a prod `SUPABASE_URL` binding regression — every event carries an explicit localhost host and zero production-host events exist for this error — though this check alone does not independently prove the prod binding is set (the live storefront working is the corroborating signal). No escalation, no live mutation.
 
 *Optional backlog item noted by the plan but not filed as a separate task*: fail-soft the admin CMS editor page on a missing Supabase client the way `/konto` does, so a misconfigured local dev server 500s gracefully instead of throwing — cosmetic, no active defect.
 
 ---
 
-## Remaining gates — not yet checked (non-Cloudflare)
+## Non-Cloudflare gates — status ledger (closed and still open)
 
 | Gate | Finding / §15 | Where it's checked | Status |
 |---|---|---|---|
@@ -306,7 +306,7 @@ Branch per the plan's Task 1 decision tree: `request.url` host is `127.0.0.1:310
 
 ### Operator dashboard pass — M-25 / L-25 T4b / L-40 (2026-08-14)
 
-The three gates the connected MCP tooling structurally could not reach (see the tooling-gap note below) were checked directly by the operator (konrad.ciok@gmail.com) against the Supabase and Cloudflare dashboards on 2026-08-14. Operator confirmed all three resolve to their **clean branch** — no escalation needed, no rotation/mutation required:
+The three gates the connected MCP tooling structurally could not reach (see the tooling-gap note below) were checked directly by the operator against the Supabase and Cloudflare dashboards on 2026-08-14. Operator confirmed all three resolve to their **clean branch** — no escalation needed, no rotation/mutation required:
 
 - **M-25** — key format confirmed OK by the operator; no rotation triggered.
 - **L-25 T4b** — R2-scoped API token confirmed OK by the operator; no over-broad scope found.

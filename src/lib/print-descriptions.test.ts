@@ -22,7 +22,7 @@ describe('fine-art print descriptions', () => {
         expect(note, design.id).toBeTypeOf('string');
         expect(note.trim(), design.id).not.toBe('');
         expect(note, design.id).not.toMatch(placeholderPattern);
-        expect(note, design.id).toContain(design.num);
+        expect(note, design.id).toContain(design.num.padStart(3, '0'));
       }
     },
   );
