@@ -11,8 +11,7 @@ import { FooterNewsletterForm } from './FooterNewsletterForm';
 import { FooterAccordionSection } from './FooterAccordionSection';
 import { PaymentBadges } from './PaymentBadges';
 
-// Placeholder until the studio's real profile goes live.
-const INSTAGRAM_URL = 'https://instagram.com';
+const INSTAGRAM_URL = 'https://www.instagram.com/anna.ciok.art/';
 
 export async function Footer() {
   const t = await getTranslations();
