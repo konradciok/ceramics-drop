@@ -112,7 +112,7 @@ describe('sendPurchaseConversions', () => {
     const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap005');
     expect(printItem).toMatchObject({
       item_id: 'fap005',
-      item_name: 'Print Nº 5',
+      item_name: 'Print Nº 14',
       item_category: 'fine-art-prints',
       item_variant: '50×70 cm · frame black',
       price: 350,

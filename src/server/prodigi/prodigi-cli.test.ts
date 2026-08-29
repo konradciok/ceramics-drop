@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { resolve } from 'node:path';
 import { ProdigiError } from './client';
 import {
   loadCliEnv,
@@ -11,6 +12,8 @@ import {
 function missingFile(): NodeJS.ErrnoException {
   return Object.assign(new Error('missing'), { code: 'ENOENT' });
 }
+
+const TEST_CWD = resolve('/repo');
 
 function harness(options: {
   env?: Record<string, string | undefined>;
@@ -35,7 +38,7 @@ function harness(options: {
     updateMetadata: method('updateMetadata'), getProduct: method('getProduct'),
     postQuote: method('postQuote'), postSpine: method('postSpine'),
   };
-  const cwd = '/repo';
+  const cwd = TEST_CWD;
   const files = options.files ?? {};
   const deps: Partial<CliDependencies> = {
     cwd,
@@ -66,9 +69,9 @@ describe('Prodigi CLI', () => {
     const h = harness({
       env: { PRODIGI_API_KEY_SANDBOX: 'process' },
       files: {
-        '/repo/.env.local': 'PRODIGI_API_KEY_SANDBOX=local\nLOCAL_ONLY=yes',
-        '/repo/.dev.vars': 'PRODIGI_API_KEY_SANDBOX=dev',
-        '/repo/custom.env': 'PRODIGI_API_KEY_SANDBOX=explicit',
+        [resolve(TEST_CWD, '.env.local')]: 'PRODIGI_API_KEY_SANDBOX=local\nLOCAL_ONLY=yes',
+        [resolve(TEST_CWD, '.dev.vars')]: 'PRODIGI_API_KEY_SANDBOX=dev',
+        [resolve(TEST_CWD, 'custom.env')]: 'PRODIGI_API_KEY_SANDBOX=explicit',
       },
     });
     const env = await loadCliEnv('custom.env', { ...h.deps } as CliDependencies);
@@ -106,7 +109,7 @@ describe('Prodigi CLI', () => {
       destinationCountryCode: 'PL',
       numberOfPages: 50,
     };
-    const h = harness({ files: { '/repo/spine.json': JSON.stringify(payload) } });
+    const h = harness({ files: { [resolve(TEST_CWD, 'spine.json')]: JSON.stringify(payload) } });
     expect(await runCli(['product', 'spine', '--file', 'spine.json'], h.deps)).toBe(0);
     expect(h.calls[0]).toEqual({ method: 'postSpine', args: [payload] });
   });

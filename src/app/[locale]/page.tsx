@@ -27,6 +27,11 @@ import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
 
+// Catalog visibility and print pricing are database-owned in production. Keep
+// the locale route server-rendered so a deploy can never freeze code-mode build
+// data into the homepage indefinitely.
+export const dynamic = 'force-dynamic';
+
 /** Committed static default for either hero slot when the CMS has no media
     published — a warm studio-workspace shot, distinct from the editorial and
     story photos used further down this page. */
@@ -136,8 +141,7 @@ export default async function HomePage({ params, searchParams }: Props) {
   const printName = (d: PrintDesign) => `${t('product.print')} Nº ${d.num}`;
 
   // Hero-beat carousel: 5 daily-rotated prints, never overlapping the curated
-  // rail below. For the statically-prerendered `pl` tree the date is captured
-  // at build time, so its set rotates per deploy rather than per day — accepted.
+  // rail below. Dynamic catalog routes compute the date at request time.
   const railIds = new Set(railPrints.map((r) => r.design.id));
   const heroBeatPrints = pickDaily(printDesigns, { count: 5, dateKey: dateKey(), exclude: railIds })
     .map((d) => ({ design: d, image: railImage(d, 'framed-natural') }));

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { printPricingConfigSchema } from '@/lib/print-pricing-config/schema';
 import { updatePrintPricingConfig } from '@/lib/print-pricing-config/repository';
-import { actorEmail, parseJson, revalidateCatalog } from '@/lib/admin/product-routes';
+import { actorEmail, parseJson } from '@/lib/admin/product-routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,6 @@ export async function POST(req: Request) {
   if (!parsed.ok) return parsed.res;
   try {
     const config = await updatePrintPricingConfig(adminSupabase(), parsed.data, actorEmail(req));
-    revalidateCatalog();
     return NextResponse.json({ config });
   } catch (err) {
     return pricingError(err);

@@ -1,19 +1,28 @@
 name: DB
 
-# pgTAP against a local Supabase stack. Split out of ci.yml so it only runs
-# when the database layer actually changes — `supabase db start` pulls Docker
-# images and was burning ~4 min of Actions quota on every push/PR sync.
+# pgTAP and repository integration tests against a local Supabase stack. Split
+# out of ci.yml so Docker-backed checks only run when their inputs change.
 
 on:
   push:
     branches: [main]
     paths:
       - 'supabase/**'
+      - 'config/print-catalog-curation.json'
+      - 'scripts/catalog-backfill.local.test.ts'
+      - 'src/lib/catalog/**'
+      - 'src/lib/print-curation.ts'
+      - 'src/lib/prints.ts'
       - '.github/workflows/db.yml'
   pull_request:
     branches: [main]
     paths:
       - 'supabase/**'
+      - 'config/print-catalog-curation.json'
+      - 'scripts/catalog-backfill.local.test.ts'
+      - 'src/lib/catalog/**'
+      - 'src/lib/print-curation.ts'
+      - 'src/lib/prints.ts'
       - '.github/workflows/db.yml'
 
 permissions:
@@ -27,7 +36,7 @@ jobs:
   db-test:
     name: pgTAP (Supabase)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,5 +46,41 @@ jobs:
         with:
           version: latest
 
-      - name: Start local database and run pgTAP
-        run: supabase db start && supabase test db
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install (locked)
+        run: npm ci
+
+      - name: Start local stack and run pgTAP
+        run: |
+          supabase start -x realtime,storage-api,imgproxy,postgres-meta,studio,mailpit,edge-runtime,logflare,vector,supavisor
+          supabase test db
+        env:
+          OPENAI_API_KEY: local-test
+          SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: local-test
+          SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: local-test
+          S3_HOST: local-test.invalid
+          S3_REGION: local-test
+          S3_ACCESS_KEY: local-test
+          S3_SECRET_KEY: local-test
+
+      - name: Run fresh-schema catalog backfill rehearsal
+        shell: bash
+        run: |
+          local_status="$(supabase status --output env)"
+          LOCAL_SUPABASE_URL="$(sed -n 's/^API_URL="\(.*\)"$/\1/p' <<<"$local_status")"
+          LOCAL_SUPABASE_SERVICE_ROLE_KEY="$(sed -n 's/^SERVICE_ROLE_KEY="\(.*\)"$/\1/p' <<<"$local_status")"
+          if [[ -z "$LOCAL_SUPABASE_URL" ]]; then
+            echo "::error::Supabase status did not export API_URL"
+            exit 1
+          fi
+          IFS='.' read -r jwt_header jwt_payload jwt_signature jwt_extra <<<"$LOCAL_SUPABASE_SERVICE_ROLE_KEY"
+          if [[ -z "$jwt_header" || -z "$jwt_payload" || -z "$jwt_signature" || -n "${jwt_extra:-}" ]]; then
+            echo "::error::Supabase status did not export a three-part service-role JWT"
+            exit 1
+          fi
+          export LOCAL_SUPABASE_URL LOCAL_SUPABASE_SERVICE_ROLE_KEY
+          npx vitest run scripts/catalog-backfill.local.test.ts

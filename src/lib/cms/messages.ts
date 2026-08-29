@@ -1,5 +1,5 @@
 import { getPublishedContent, getPreviewContent } from './server';
-import { productNoteIds } from './schemas';
+import { productNoteEntries } from './schemas';
 import type { CmsLocale, ProductNotesPayload } from './types';
 
 import plMessages from '../../../messages/pl.json';
@@ -18,15 +18,14 @@ export const LOCALE_MESSAGES: Record<CmsLocale, Messages> = {
 
 /**
  * Fallback notes as id→text. messages.json stores them as a position array
- * (aligned to noteIndex); we zip that against the live registry ids here so the
- * fallback stays id-keyed like the CMS payload. Position↔id correspondence is
- * stable because both the array and the registry are regenerated together.
+ * aligned to stable source noteIndex values, so a display-order change cannot
+ * change which copy belongs to a product ID.
  */
 export function fallbackProductNotes(slug: string, locale: CmsLocale): Record<string, string> {
   const arr = (LOCALE_MESSAGES[locale].notes as Record<string, string[]>)[slug];
-  const ids = productNoteIds(slug) ?? [];
+  const entries = productNoteEntries(slug) ?? [];
   const out: Record<string, string> = {};
-  for (let i = 0; i < ids.length; i++) out[ids[i]] = Array.isArray(arr) ? arr[i] ?? '' : '';
+  for (const { id, noteIndex } of entries) out[id] = Array.isArray(arr) ? arr[noteIndex] ?? '' : '';
   return out;
 }
 

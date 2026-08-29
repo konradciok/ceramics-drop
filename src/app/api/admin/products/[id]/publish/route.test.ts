@@ -3,8 +3,6 @@ import { POST } from './route';
 
 const mocks = vi.hoisted(() => ({ adminSupabase: vi.fn() }));
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
-vi.mock('next/cache', () => ({ revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
-import { revalidateTag } from 'next/cache';
 
 const ROW = { id: 'k01', type: 'ceramic', category_slug: 'kubki', status: 'draft', published_at: null };
 
@@ -29,7 +27,7 @@ const ctx = (id = 'k01') => ({ params: Promise.resolve({ id }) }) as Parameters<
 describe('POST /api/admin/products/[id]/publish', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('activates a draft through the guarded RPC and revalidates → 200', async () => {
+  it('activates a draft through the guarded RPC → 200', async () => {
     const { supabase: sb, rpc } = supabase();
     mocks.adminSupabase.mockReturnValue(sb);
 
@@ -42,7 +40,6 @@ describe('POST /api/admin/products/[id]/publish', () => {
       p_status: 'active',
       p_actor_email: 'anna@studio.pl',
     });
-    expect(revalidateTag).toHaveBeenCalledWith('catalog', 'max');
   });
 
   it('passes non-active transitions through the same atomic RPC', async () => {

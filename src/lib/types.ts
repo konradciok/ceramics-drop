@@ -99,7 +99,7 @@ export interface PrintVariantSelection {
 export interface PrintDesign {
   id: string;                        // e.g. 'fap001'
   category: 'fine-art-prints';
-  num: string;                       // display number, unpadded, e.g. '1'
+  num: string;                       // active display number, two digits, e.g. '01'
   image: string;
   gallery?: string[];
   /** PDP-only static slides shown after the configurator hero — deliberately

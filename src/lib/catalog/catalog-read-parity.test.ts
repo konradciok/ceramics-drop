@@ -123,6 +123,10 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     process.env.CATALOG_SOURCE = 'db';
     vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(dbPrints);
 
+    expect(dbPrints.filter((design) => design.published).map((design) => design.id)).toEqual(
+      registryPrintDesigns().map((design) => design.id),
+    );
+
     // getPrintDesigns filters to published, in num order — must equal the registry
     // helper modulo `mockups` and `editorialGallery`, which are code-bundle truth
     // the DB path never carries (PrintProductScreen re-merges both from the code
@@ -135,10 +139,9 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
         return design;
       }),
     );
-    // getPrintById resolves drafts too (checkout needs to reject hidden vs unknown).
-    // No design in the live registry is currently unpublished (all 41
-    // corrected and re-published 2026-08-17) — synthesize a draft row rather
-    // than depending on a real one existing.
+    // getPrintById resolves unpublished designs too (checkout needs to reject
+    // hidden vs unknown). Synthesize a second unpublished row so this behavior
+    // does not depend only on the two archived fixtures.
     const withDraft = dbPrints.map((d, i) => (i === 0 ? { ...d, published: false } : d));
     vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(withDraft);
     expect((await getPrintById(withDraft[0].id))?.published).toBe(false);
