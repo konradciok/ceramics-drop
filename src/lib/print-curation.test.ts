@@ -21,7 +21,9 @@ describe('fine-art print curation map', () => {
 
     expect(migration).toMatch(new RegExp(`if ${mappedPrintPresence} then`));
     expect(migration).toMatch(new RegExp(`if not ${mappedPrintPresence} then\\s+return;`));
-    expect(migration).not.toMatch(/if (?:not )?exists \(select 1 from products\)/);
+    expect(migration).not.toMatch(
+      /if\s+(?:not\s+)?exists\s*\(\s*select\s+1\s+from\s+products\s*\)/i,
+    );
   });
 
   it('keeps the migration rollout snapshot aligned with the authored curation', () => {
