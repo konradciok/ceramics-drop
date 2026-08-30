@@ -15,6 +15,12 @@ export const sel = {
   checkoutButton: '[data-testid="checkout-button"]',
   paymentSubmit: '[data-testid="payment-submit"]',
   checkoutSuccess: '[data-testid="checkout-success"]',
+  promoToggle: '[data-testid="promo-toggle"]',
+  promoInput: '[data-testid="promo-input"]',
+  promoApply: '[data-testid="promo-apply"]',
+  promoError: '[data-testid="promo-error"]',
+  promoDiscountRow: '[data-testid="promo-discount-row"]',
+  promoRemove: '[data-testid="promo-remove"]',
 } as const;
 
 /**
@@ -35,10 +41,12 @@ export async function resetCart(page: Page): Promise<void> {
 
 export interface PickedProduct { id: string | null; category: string; price: number; }
 
-/** Add the first unsold tile from a category page and record its metadata. */
+/** Add the first purchasable tile from a category page and record its metadata.
+ *  Excludes showroom pieces too: they render without data-sold but their
+ *  add-to-cart button is disabled (notForSale), so picking one hangs the click. */
 export async function addFirstUnsoldFromCategory(page: Page, category: string): Promise<PickedProduct> {
   await page.goto(`/${category}`);
-  const tile = page.locator(`${sel.productTile}:not([data-sold="true"])`).first();
+  const tile = page.locator(`${sel.productTile}:not([data-sold="true"]):not([data-showroom="true"])`).first();
   await expect(tile, `no unsold tile in category ${category}`).toBeVisible();
   const id = await tile.getAttribute('data-product-id');
   const price = Number(await tile.getAttribute('data-price'));

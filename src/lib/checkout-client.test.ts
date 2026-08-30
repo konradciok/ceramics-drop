@@ -1,9 +1,39 @@
 import { describe, it, expect } from 'vitest';
 import {
+  attemptIdentityKey,
   checkoutPreBodyError,
   shouldKeepAttemptIdOnCatch,
   CHECKOUT_KEEP_ATTEMPT_STATUSES,
 } from './checkout-client';
+
+describe('attemptIdentityKey (promo hard gate)', () => {
+  // The Stripe idempotency key `pi_create_<orderId>` is amount-sensitive and
+  // claim_promo_redemption rejects a reused order id carrying a DIFFERENT
+  // promo — so applying, removing, or changing a code MUST change the attempt
+  // identity (which regenerates attemptId), exactly like a cart change does.
+  it('changes when a promo is applied, removed, or swapped', () => {
+    const bare = attemptIdentityKey('k01|k02', null);
+    const withPromo = attemptIdentityKey('k01|k02', 'WELCOME10');
+    const withOther = attemptIdentityKey('k01|k02', 'ART10');
+    expect(withPromo).not.toBe(bare);
+    expect(withOther).not.toBe(withPromo);
+  });
+
+  it('is stable for the same cart + same code', () => {
+    expect(attemptIdentityKey('k01', 'WELCOME10')).toBe(attemptIdentityKey('k01', 'WELCOME10'));
+    expect(attemptIdentityKey('k01', null)).toBe(attemptIdentityKey('k01', null));
+  });
+
+  it('still changes when the cart changes', () => {
+    expect(attemptIdentityKey('k01', 'WELCOME10')).not.toBe(attemptIdentityKey('k02', 'WELCOME10'));
+  });
+
+  it('a promo code cannot collide with a cart-only identity (delimiter is unambiguous)', () => {
+    // A cart key never contains the reserved delimiter, so no (cartKey, promo)
+    // pair can alias a different pair's identity.
+    expect(attemptIdentityKey('k01', 'X')).not.toBe(attemptIdentityKey('k01|promo:X', null));
+  });
+});
 
 describe('checkoutPreBodyError', () => {
   it('maps 503 + print_asset_error to a keep-attemptId recovery path', () => {
