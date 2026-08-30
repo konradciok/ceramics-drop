@@ -61,8 +61,11 @@ export function computePromoDiscountMinor(
 ): number
 // percent: floor(subtotalMinor * percent / 100); fixed: amount_<currency> ?? 0.
 // Clamp 1: never exceeds subtotalMinor.
-// Clamp 2: if subtotalMinor - d + shippingMinor < STRIPE_MIN_MINOR[currency],
-//          reduce d so the charge equals the minimum (floor at 0).
+// Clamp 2 (Stripe minimum): d = min(d, max(0, subtotalMinor + shippingMinor
+//          - STRIPE_MIN_MINOR[currency])) — the max discount is the amount by
+//          which the undiscounted charge exceeds the minimum, floored at 0.
+//          An undersized cart already below the minimum with d = 0 stays at 0
+//          (never a negative discount, never a rejection from this function).
 // Always returns an integer >= 0.
 
 export async function fetchPromoByCode(
@@ -112,7 +115,10 @@ create table promo_codes (
   updated_by text,
   check (kind <> 'percent' or percent is not null),
   check (kind <> 'fixed'
-         or (amount_pln is not null and amount_eur is not null and amount_gbp is not null))
+         or (amount_pln is not null and amount_eur is not null and amount_gbp is not null)),
+  -- Schedule-window invariant (mirrored by the Phase 4 zod refinement): a
+  -- window with both ends set must be non-empty, or it can never be eligible.
+  check (starts_at is null or expires_at is null or starts_at < expires_at)
 );
 
 -- At most one ACTIVE newsletter-welcome promo at a time.
@@ -139,8 +145,16 @@ alter table promo_codes enable row level security;
 alter table promo_redemptions enable row level security;
 -- service-role only, like every other table: no policies added.
 
--- Atomic claim: enforces max_redemptions under concurrency; re-entrant per order
--- (checkout replays with the same attemptId/order id must not double-count).
+-- Atomic claim: enforces max_redemptions under concurrency; re-entrant per
+-- order+promo (checkout replays with the same attemptId/order id must not
+-- double-count); rejects a claim when the order already holds a live claim
+-- for a DIFFERENT promo (one code per order). Returns true ONLY when, on
+-- exit, p_order_id holds a live claim for p_promo_id.
+-- Ordering matters: the promo-row FOR UPDATE lock is taken FIRST, so two
+-- concurrent claims for the same promo serialize before the re-entrancy /
+-- capacity checks — the loser of the lock re-reads state the winner already
+-- committed (a pre-lock existence check would let a concurrent max-1 re-entry
+-- falsely return false).
 create or replace function claim_promo_redemption(p_promo_id uuid, p_order_id uuid)
 returns boolean
 language plpgsql
@@ -150,17 +164,27 @@ declare
   v_max integer;
   v_used integer;
 begin
-  -- Re-entry: this order already holds a live claim.
+  -- Lock first: serialize all claims for this promo.
+  select max_redemptions into v_max
+    from promo_codes where id = p_promo_id and active
+    for update;
+  if not found then
+    return false;
+  end if;
+
+  -- Re-entry (checked AFTER the lock): this order already holds a live claim
+  -- for THIS promo — a checkout replay, success.
   if exists (select 1 from promo_redemptions
              where order_id = p_order_id and promo_id = p_promo_id
                and status in ('pending', 'redeemed')) then
     return true;
   end if;
 
-  select max_redemptions into v_max
-    from promo_codes where id = p_promo_id and active
-    for update;                      -- serialize concurrent claims per promo
-  if not found then
+  -- Conflicting claim: the order holds a live claim for a DIFFERENT promo.
+  -- One code per order — reject; the caller must not treat this as claimed.
+  if exists (select 1 from promo_redemptions
+             where order_id = p_order_id and promo_id <> p_promo_id
+               and status in ('pending', 'redeemed')) then
     return false;
   end if;
 
@@ -177,17 +201,36 @@ begin
   on conflict (order_id) do update
     set promo_id = excluded.promo_id, status = 'pending', settled_at = null
     where promo_redemptions.status = 'released';
-  return true;
+
+  -- Post-condition: success iff the requested promo is actually held now.
+  -- Guards the race the pre-checks can't cover (a concurrent claim for a
+  -- different promo locks a different promo_codes row, so it is NOT
+  -- serialized by our lock; its committed live row makes the conditional
+  -- ON CONFLICT update above touch zero rows).
+  return exists (select 1 from promo_redemptions
+                 where order_id = p_order_id and promo_id = p_promo_id
+                   and status = 'pending');
 end;
 $$;
 
--- Settle: markPaid -> 'redeemed'; releaseHold / cron expiry -> 'released'.
--- Idempotent: settling an already-settled row is a no-op returning true.
+-- Settle: markPaid -> 'redeemed'; releaseHold / cron expiry / pending-refund
+-- -> 'released'. The boolean reflects whether the requested terminal state IS
+-- recorded on exit: true when this call transitioned pending -> p_status OR
+-- the row already sits at p_status (idempotent retry); false when the row is
+-- missing or sits at the OTHER terminal state. A blanket `return true` would
+-- let a delayed markPaid webhook report success after the expiry cron already
+-- released the row — silently never recording 'redeemed' and freeing
+-- max_redemptions capacity that a paid order actually consumed. On false for
+-- 'redeemed', the caller reconciles: re-claim via claim_promo_redemption
+-- (which re-claims 'released' rows for the same order when capacity allows),
+-- settle again, and Sentry-alert if capacity is gone (see Phase 2 Task 2).
 create or replace function settle_promo_redemption(p_order_id uuid, p_status text)
 returns boolean
 language plpgsql
 set search_path = public, pg_temp
 as $$
+declare
+  v_updated integer;
 begin
   if p_status not in ('redeemed', 'released') then
     raise exception 'invalid settle status %', p_status;
@@ -195,7 +238,13 @@ begin
   update promo_redemptions
      set status = p_status, settled_at = now()
    where order_id = p_order_id and status = 'pending';
-  return true;
+  get diagnostics v_updated = row_count;
+  if v_updated > 0 then
+    return true;
+  end if;
+  -- No pending row: true only if the row already carries the requested state.
+  return exists (select 1 from promo_redemptions
+                 where order_id = p_order_id and status = p_status);
 end;
 $$;
 
@@ -216,7 +265,7 @@ grant execute on function settle_promo_redemption(uuid, text) to service_role;
   - `computePromoDiscountMinor`:
     - percent 10 on subtotal 57500 (575 zł) → 5750; floor check: 15% of 999 → 149.
     - fixed: `amount_eur: 1000` at `currency:'eur'` → 1000; clamps to subtotal when `amount > subtotal`.
-    - Stripe-minimum clamp: percent 100 on subtotal 5000, shipping 0, `'pln'` → 4800 (charge = 200); percent 100 with shipping 2000 → 5000 (shipping already ≥ min, full discount stands); tiny order where even 0 discount is below min is not promo's problem — discount just floors at 0.
+    - Stripe-minimum clamp (max discount = `max(0, subtotalMinor + shippingMinor − STRIPE_MIN_MINOR[currency])`): percent 100 on subtotal 5000, shipping 0, `'pln'` → 4800 (charge = 200); percent 100 with shipping 2000 → 5000 (shipping already ≥ min, full discount stands); undersized cart already below the minimum: fixed `amount_pln: 1000` on subtotal 150, shipping 0, `'pln'` → 0 (max discount is `max(0, 150 − 200) = 0`; the discount floors at 0, never goes negative, and the function never rejects — a cart Stripe can't charge is not the promo's problem).
     - always integer, never negative.
 - [ ] **Step 2: Run** `npx vitest run src/lib/promo.test.ts` — expect FAIL (module missing).
 - [ ] **Step 3: Implement `src/lib/promo.ts`** exactly per the interface block. `fetchPromoByCode` does two queries via the injected client: `from('promo_codes').select('*').eq('code', code).maybeSingle()`, then (if found) `from('promo_redemptions').select('id', { count: 'exact', head: true }).eq('promo_id', promo.id).in('status', ['pending','redeemed'])`; cast rows inline (`as PromoCode | null`) per house style. Keep the module dependency-free apart from the Supabase client type import — everything else is pure.
@@ -227,7 +276,9 @@ grant execute on function settle_promo_redemption(uuid, text) to service_role;
 
 - [ ] Migration is purely additive; no existing table/RPC altered beyond `orders` column adds with defaults (backward-compatible with running prod code — see master's auto-apply warning).
 - [ ] RPCs match house style: invoker rights, search_path pinned, revoke/grant block present, `for update` serializes the max-redemption check.
-- [ ] `claim_promo_redemption` is re-entrant for the same order id and can re-claim after a `released` settle (retry after failed payment on the same order).
+- [ ] `claim_promo_redemption`: the promo-row lock is taken BEFORE the re-entrancy check; re-entrant for the same order+promo; can re-claim after a `released` settle (retry after failed payment on the same order); returns `false` when the order holds a live claim for a different promo; the final exists post-condition guarantees `true` ⇒ the requested promo is held.
+- [ ] `settle_promo_redemption` returns whether the requested terminal state is recorded — never `true` for a missing row or a row at the other terminal state (the late-markPaid-after-expiry case must be detectable by the caller).
+- [ ] Migration enforces `starts_at < expires_at` (NULL-tolerant CHECK) alongside the kind/amount checks.
 - [ ] Discount math: integers only, subtotal-only, both clamps covered by tests, `STRIPE_MIN_MINOR` values `{pln:200, eur:50, gbp:30}`.
 - [ ] `npm run lint && npm run typecheck && npm run test` green (modulo the known pre-existing Windows-local failures — diff against baseline).
 - [ ] No route/UI/webhook files touched.

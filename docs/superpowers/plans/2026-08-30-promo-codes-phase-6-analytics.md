@@ -13,10 +13,10 @@
 - Modify (small): `e2e/analytics-funnel.spec.ts` if it asserts a closed dataLayer contract that the new fields would break — extend, don't fork.
 
 **Event contract produced (document verbatim in Phase 7's runbook):**
-- `site_engagement` / `engagement_type: 'promo_apply'`, properties: `{ result: 'valid' | PromoIneligibleReason | 'network_error', code: string, track: 'ceramics' | 'prints' }` — fired on every apply attempt outcome in CartView (via `buildEngagementEvent` + `pushDataLayer`; no dedup needed, attempts are legitimately repeatable).
+- `site_engagement` / `engagement_type: 'promo_apply'`, properties: `{ result: 'valid' | PromoIneligibleReason | 'network_error', code: string, track: 'ceramics' | 'prints' }` — fired on **apply attempts only** (every outcome of an apply attempt) in CartView (via `buildEngagementEvent` + `pushDataLayer`; no dedup needed, attempts are legitimately repeatable). Removing an applied code fires **no** event — the `result` enum has no removal value, and a removal is observable anyway as a subsequent `begin_checkout` without `coupon`.
 - `begin_checkout`: event-level `coupon: <CODE>` when applied; `value` stays as currently built (verify what it is today — if it's subtotal-based, subtract the discount for consistency with purchase; encode whichever rule keeps client and server `value` semantics identical and write it down).
 - `purchase` (client + server MP): event-level `coupon: <CODE>`; server `value = (order.subtotal − order.discount)/100`; client value from the snapshot's discounted figure. `transaction_id`/event ids unchanged.
-- GA4 `refund` event (`sendRefundConversion`): value derives from order fields — verify it uses `total` or `subtotal`; if subtotal-based, apply the same `− discount` correction so a refunded discounted order reverses the right revenue.
+- GA4 `refund` event (`sendRefundConversion`): **verified subtotal-based (2026-08-30)** — `src/lib/marketing/conversions.ts` sets `Ga4RefundInput.value = order.subtotal / 100` and `buildGa4RefundPayload` forwards it unchanged, while the `charge.refunded` paid→refunded select in the webhook route (`'id, private_sale_id, subtotal, shipping, currency, marketing'`) does not select `discount`. Required change: add `discount: number` to the `RefundOrder` type, add `discount` to that select, pass it through the `sendRefundConversion` call, and compute `value = (order.subtotal − order.discount) / 100` so a refunded discounted order reverses exactly the revenue the purchase recorded. Test with a discounted fixture asserting `(subtotal − discount)/100`, plus a `discount: 0` fixture asserting the value is unchanged vs. today.
 
 ---
 
@@ -28,13 +28,13 @@
 
 ## Task 2: CartView wiring
 
-- [ ] **Step 1:** In the Phase 3 apply/remove handlers, fire `promo_apply` engagement events for every outcome (valid/each reason/network error). In `handleCheckout`, pass the applied code into `pushCheckoutStartedItemsOnce` and include `coupon` + `discount` in the `rememberCheckoutForReturn` snapshot (use the **server-confirmed** `discount` from the checkout response where available, else the preview value).
+- [ ] **Step 1:** In the Phase 3 **apply handler only**, fire `promo_apply` engagement events for every apply-attempt outcome (valid/each reason/network error). The remove handler fires no event (per the contract above — no valid `result` value exists for removal). In `handleCheckout`, pass the applied code into `pushCheckoutStartedItemsOnce` and include `coupon` + `discount` in the `rememberCheckoutForReturn` snapshot (use the **server-confirmed** `discount` from the checkout response where available, else the preview value).
 - [ ] **Step 2:** Manual smoke on `npm run dev` with the GTM/dataLayer console (`window.dataLayer` inspection): apply a stubbed code, verify `site_engagement` and `begin_checkout.coupon` appear once each; refresh dedup still holds.
 - [ ] **Step 3: Commit** — `git commit -m "feat(promo): promo_apply engagement events and coupon plumbed through checkout analytics"`
 
 ## Task 3: Server MP + conversions (TDD)
 
-- [ ] **Step 1: Failing tests** — `buildGa4PurchasePayload` with `coupon`/`discountMinor` inputs emits `params.coupon` and `value = (subtotal − discount)/100`; without them, payload unchanged (regression). `sendPurchaseConversions` loads `promo_code`/`discount` on `ConversionOrder` (extend the type + the order select in `conversions.ts`) and forwards them; Meta CAPI payload asserted **unchanged** apart from nothing (value already `total/100`). Refund: per the contract above, correct `buildGa4RefundPayload`/`sendRefundConversion` value if and only if it's subtotal-based — write the test after reading the current implementation.
+- [ ] **Step 1: Failing tests** — `buildGa4PurchasePayload` with `coupon`/`discountMinor` inputs emits `params.coupon` and `value = (subtotal − discount)/100`; without them, payload unchanged (regression). `sendPurchaseConversions` loads `promo_code`/`discount` on `ConversionOrder` (extend the type + the order select in `conversions.ts`) and forwards them; Meta CAPI payload asserted **unchanged** apart from nothing (value already `total/100`). Refund: implement the contract above — extend `RefundOrder` with `discount`, add `discount` to the webhook's paid→refunded select, and set the GA4 refund `value = (subtotal − discount)/100`; tests for both the discounted and `discount: 0` fixtures (the latter proves non-promo refunds are byte-identical to today).
 - [ ] **Step 2: Implement**; run the marketing + webhook test files to green.
 - [ ] **Step 3: Commit** — `git commit -m "feat(promo): server GA4 MP coupon + discounted value; refund value aligned"`
 

@@ -17,6 +17,7 @@
 - Active display numbers are exactly `01` through `39`, with two digits and no gaps.
 - Keep `fap001` through `fap041` as stable operational product IDs; never renumber IDs, URLs, cart tokens, order items, Prodigi records, asset assignments, R2 keys, or config filenames.
 - Archive `fap029` and `fap037`; do not delete their rows, asset configs, uploaded assets, media, or historical references.
+- **Archived-number rule:** retired entries deliberately carry no authored `number` in the JSON. Their display/DB number is defined by one rule, not authored: an archived design's `num` is its three-digit `sourceNumber` (`fap029` → `029`, `fap037` → `037`). Three digits can never collide with the two-digit active range `01`–`39`. The TypeScript projection (`number ?? sourceNumber`), the catalog seed, and the SQL migration must all apply this same rule, and a test must pin it.
 - Keep every design's existing `noteIndex`; the new display order must not reassign translated/CMS copy.
 - Every active collection contains four or five prints. `fap041` moves from `Ciala` to `Linea` so the 39 active designs satisfy this rule after the two removals.
 - The mapping lands and is reviewed before any storefront or Supabase behavior changes.
@@ -201,6 +202,12 @@ expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(39);
 for (const retired of RETIRED_PRINT_CURATION) {
   expect(ACTIVE_PRINT_CURATION.some((item) => item.productId === retired.duplicateOf)).toBe(true);
 }
+// Archived-number rule: retired entries author no `number`; their num is the
+// three-digit sourceNumber, which cannot collide with the active 01–39 range.
+for (const retired of RETIRED_PRINT_CURATION) {
+  expect(retired).not.toHaveProperty('number');
+  expect(retired.sourceNumber).toMatch(/^\d{3}$/);
+}
 ```
 
 - [ ] **Step 3: Run the focused test and verify it fails**
@@ -259,8 +266,9 @@ expect((await getPrintDesigns()).map(({ id }) => id)).toEqual(expectedIds);
 expect((await getPrintDesigns()).map(({ num }) => num)).toEqual(
   Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
 );
-expect(await getPrintById('fap029')).toMatchObject({ published: false });
-expect(await getPrintById('fap037')).toMatchObject({ published: false });
+// Archived-number rule: retired projections carry their three-digit sourceNumber.
+expect(await getPrintById('fap029')).toMatchObject({ published: false, num: '029' });
+expect(await getPrintById('fap037')).toMatchObject({ published: false, num: '037' });
 ```
 
 Add a test that all 41 stable IDs still exist in `PRINT_DESIGNS_RAW`, while `registryPrintDesigns()` exposes only the 39 active IDs.
@@ -279,7 +287,7 @@ In `src/lib/prints.ts`, change the existing registry constant from `PrintDesign[
 type PrintSourceDesign = Omit<PrintDesign, 'num' | 'published'>;
 ```
 
-Rename the current `RAW_PRINT_DESIGNS` literal array to `SOURCE_PRINT_DESIGNS`, annotate it as `PrintSourceDesign[]`, and remove every hand-authored `num` and `published` property from those 41 literals. Materialize `PRINT_DESIGNS_RAW` by iterating the mapping, looking up each stable `productId`, applying its mapped `number`, and setting `published` from active/retired state. Throw if the mapping and source registry do not cover the same 41 IDs. Keep `id`, image paths, editorial galleries, `noteIndex`, variants, mockup flags, and asset configuration references unchanged.
+Rename the current `RAW_PRINT_DESIGNS` literal array to `SOURCE_PRINT_DESIGNS`, annotate it as `PrintSourceDesign[]`, and remove every hand-authored `num` and `published` property from those 41 literals. Materialize `PRINT_DESIGNS_RAW` by iterating the mapping, looking up each stable `productId`, applying the archived-number rule for `num` (`curation.number ?? curation.sourceNumber` — active rows use their mapped two-digit `number`, retired rows their three-digit `sourceNumber`), and setting `published` from active/retired state. Throw if the mapping and source registry do not cover the same 41 IDs. Keep `id`, image paths, editorial galleries, `noteIndex`, variants, mockup flags, and asset configuration references unchanged.
 
 - [ ] **Step 4: Update the display-number contract**
 
@@ -404,6 +412,7 @@ git commit -m "feat: curate fine art print collections"
 - Modify: `src/lib/catalog/seed.ts`
 - Modify: `src/lib/catalog/catalog-parity.test.ts`
 - Modify: `src/lib/catalog/catalog-read-parity.test.ts`
+- Modify: `src/lib/print-curation.test.ts` (migration-snapshot parity test)
 - Create: `supabase/migrations/20260828120000_curate_fine_art_prints.sql`
 
 **Interfaces:**
@@ -415,6 +424,7 @@ git commit -m "feat: curate fine art print collections"
 Add assertions that the print seed contains 41 stable product rows, exactly 39 `active` rows numbered `01`–`39`, and these archived rows:
 
 ```ts
+// Archived-number rule: seed rows for retired designs carry the three-digit sourceNumber.
 expect(printRowsById.get('fap029')).toMatchObject({ num: '029', status: 'archived' });
 expect(printRowsById.get('fap037')).toMatchObject({ num: '037', status: 'archived' });
 ```
@@ -444,8 +454,18 @@ Create `supabase/migrations/20260828120000_curate_fine_art_prints.sql` with this
 ```sql
 begin;
 
-with mapped(id, num, status) as (
-  values
+-- One list drives both the projection and every postcondition, so the update
+-- and its verification cannot drift onto different assignments inside this
+-- migration. The same list is pinned row-by-row against
+-- config/print-catalog-curation.json by a Vitest test (Step 5 below).
+create temporary table print_curation_map (
+  id text primary key,
+  num text not null,
+  status text not null check (status in ('active', 'archived'))
+) on commit drop;
+
+insert into print_curation_map (id, num, status)
+values
     ('fap001', '01', 'active'),
     ('fap002', '02', 'active'),
     ('fap003', '03', 'active'),
@@ -486,13 +506,13 @@ with mapped(id, num, status) as (
     ('fap017', '38', 'active'),
     ('fap022', '39', 'active'),
     ('fap029', '029', 'archived'),
-    ('fap037', '037', 'archived')
-)
+    ('fap037', '037', 'archived');
+
 update products as p
 set num = mapped.num,
     status = mapped.status,
     updated_at = now()
-from mapped
+from print_curation_map as mapped
 where p.id = mapped.id
   and p.type = 'print';
 
@@ -500,7 +520,7 @@ do $$
 declare
   active_count integer;
   active_number_count integer;
-  missing_count integer;
+  mismatch_count integer;
 begin
   select count(*), count(distinct num)
   into active_count, active_number_count
@@ -517,26 +537,19 @@ begin
     raise exception 'print curation expected active number range 01..39';
   end if;
 
-  if exists (
-    select 1 from products
-    where id in ('fap029', 'fap037') and status <> 'archived'
-  ) then
-    raise exception 'fap029 and fap037 must be archived';
-  end if;
-
-  select count(*) into missing_count
-  from unnest(array[
-    'fap001','fap002','fap003','fap004','fap005','fap006','fap007','fap008','fap009',
-    'fap010','fap011','fap012','fap013','fap014','fap015','fap016','fap017','fap018','fap019',
-    'fap020','fap021','fap022','fap023','fap024','fap025','fap026','fap027','fap028','fap029',
-    'fap030','fap031','fap032','fap033','fap034','fap035','fap036','fap037','fap038','fap039',
-    'fap040','fap041'
-  ]::text[]) as expected(id)
+  -- Exact per-ID verification, not just counts and range: every mapped row must
+  -- exist as a print and carry exactly its mapped num and status (this also
+  -- subsumes the fap029/fap037 archived check). A missing row, a swapped
+  -- assignment, or a partially applied update aborts the transaction.
+  select count(*) into mismatch_count
+  from print_curation_map as expected
   left join products p on p.id = expected.id and p.type = 'print'
-  where p.id is null;
+  where p.id is null
+     or p.num is distinct from expected.num
+     or p.status is distinct from expected.status;
 
-  if missing_count <> 0 then
-    raise exception 'print curation is missing % mapped product rows', missing_count;
+  if mismatch_count <> 0 then
+    raise exception 'print curation mismatch on % mapped product rows', mismatch_count;
   end if;
 end
 $$;
@@ -544,24 +557,53 @@ $$;
 commit;
 ```
 
-The migration must not update `order_items`, `fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `product_media`, `print_fulfilment_assets`, `print_variant_asset_assignments`, or R2 keys.
+The migration must not update `order_items`, `fulfilment_jobs`, `prodigi_orders`, `pod_variants` (the Prodigi SKU catalogue — a different table from the catalog's `product_variants`), `product_media`, `print_fulfilment_assets`, `print_variant_asset_assignments`, or R2 keys.
 
-- [ ] **Step 5: Run catalog tests**
+The migration also deliberately does not touch `product_variants` (the catalog variants table): variant `active` flags converge through the seed's `active: d.published` behavior from Step 3, so running `npm run catalog:backfill` immediately after applying this migration is a REQUIRED rollout step (enforced in Task 5). Until the backfill runs, the archived products' variant rows remain `active = true` but dormant — archived products are excluded from every public read path — and the rollout must not stop in that intermediate state.
 
-Run: `npx vitest run src/lib/catalog/catalog-parity.test.ts src/lib/catalog/catalog-read-parity.test.ts`
+- [ ] **Step 5: Pin the migration snapshot to the JSON source**
 
-Expected: PASS with code and DB projections in the same active order.
+Add a test to `src/lib/print-curation.test.ts` that parses the migration's `print_curation_map` VALUES block and compares it row-by-row — `(id, num, status)`, in order — against the projection derived from `config/print-catalog-curation.json` (active rows from `collections[].prints` with their `number`, then retired rows with their `sourceNumber` and `archived`). Because the DB update writes each row per-ID from that same verified list, a swapped or drifted assignment anywhere in the chain (JSON → migration → DB) fails `npm run test` before rollout, and the in-migration postcondition catches divergence at apply time:
 
-- [ ] **Step 6: Run the local Supabase test suite if available**
+```ts
+const migration = readFileSync(
+  new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),
+  'utf8',
+);
+const valuesBlock = migration.match(
+  /insert into print_curation_map \(id, num, status\)\s*values\s*([\s\S]*?);/,
+);
+const migrationRows = Array.from(
+  valuesBlock![1].matchAll(/\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g),
+  ([, id, num, status]) => ({ id, num, status }),
+);
+const authoredRows = [
+  ...source.collections.flatMap(({ prints }) => prints.map(({ productId, number }) => ({
+    id: productId, num: number, status: 'active',
+  }))),
+  ...source.retired.map(({ productId, sourceNumber }) => ({
+    id: productId, num: sourceNumber, status: 'archived',
+  })),
+];
+expect(migrationRows).toEqual(authoredRows);
+```
+
+- [ ] **Step 6: Run catalog and curation tests**
+
+Run: `npx vitest run src/lib/print-curation.test.ts src/lib/catalog/catalog-parity.test.ts src/lib/catalog/catalog-read-parity.test.ts`
+
+Expected: PASS with code and DB projections in the same active order, and the migration snapshot equal to the JSON projection.
+
+- [ ] **Step 7: Run the local Supabase test suite if available**
 
 Run: `supabase test db`
 
 Expected: all pgTAP tests pass. If Docker/local Supabase is unavailable, record that limitation and do not claim the migration was executed.
 
-- [ ] **Step 7: Commit the catalog projection**
+- [ ] **Step 8: Commit the catalog projection**
 
 ```bash
-git add src/lib/catalog/seed.ts src/lib/catalog/catalog-parity.test.ts src/lib/catalog/catalog-read-parity.test.ts supabase/migrations/20260828120000_curate_fine_art_prints.sql
+git add src/lib/catalog/seed.ts src/lib/catalog/catalog-parity.test.ts src/lib/catalog/catalog-read-parity.test.ts src/lib/print-curation.test.ts supabase/migrations/20260828120000_curate_fine_art_prints.sql
 git commit -m "feat: project print curation into catalog"
 ```
 
@@ -617,7 +659,7 @@ Run the local app and inspect `/fine-art-prints` plus one non-Polish locale. Con
 
 - [ ] **Step 6: Apply and verify Supabase in staging**
 
-Apply `20260828120000_curate_fine_art_prints.sql` to staging first. Verify with:
+Apply `20260828120000_curate_fine_art_prints.sql` to staging first, then run `npm run catalog:backfill` against staging — REQUIRED before any `CATALOG_SOURCE=db` verification, because the migration leaves `product_variants` untouched and the backfill is what converges archived designs' variants to `active = false`. Verify with:
 
 ```sql
 select id, num, status
@@ -631,17 +673,24 @@ select count(*) as active_count,
        max(num) as last_number
 from products
 where type = 'print' and status = 'active';
+
+select p.id, p.num, p.status,
+       count(*) filter (where v.active) as active_variants
+from products p
+left join product_variants v on v.product_id = p.id
+where p.type = 'print' and p.status = 'archived'
+group by p.id, p.num, p.status;
 ```
 
-Expected: `39 | 39 | 01 | 39`; `fap029` and `fap037` are `archived`.
+Expected: `39 | 39 | 01 | 39`; the first query's output matches `config/print-catalog-curation.json` **row for row** on `(id, num, status)` — compare each ID's number against the mapping, not just the counts; the third query returns exactly `fap029 | 029 | archived | 0` and `fap037 | 037 | archived | 0` (archived designs keep their variant rows, all inactive).
 
 - [ ] **Step 7: Verify DB catalog mode in staging**
 
-Run the staging storefront with `CATALOG_SOURCE=db` and repeat the checks from Step 5. Confirm checkout resolution for one active print and historical/admin lookup for each archived stable ID.
+Only after the Step 6 backfill has run, start the staging storefront with `CATALOG_SOURCE=db` and repeat the checks from Step 5. Confirm checkout resolution for one active print and historical/admin lookup for each archived stable ID.
 
 - [ ] **Step 8: Apply the same migration to production**
 
-Apply only after staging passes and after confirming the targeted Supabase project reference. Re-run the two verification queries immediately. Do not delete old assets or run any R2 cleanup as part of this release.
+Apply only after staging passes and after confirming the targeted Supabase project reference. Immediately run `npm run catalog:backfill` against production and re-run all three verification queries, including the archived-variant check. Do not delete old assets or run any R2 cleanup as part of this release.
 
 - [ ] **Step 9: Commit documentation**
 
@@ -656,5 +705,5 @@ git commit -m "docs: record print curation rollout"
 
 - **Spec coverage:** exact names, locale independence, sequential two-digit numbers, both removals, nine 4–5-item collections, mapping-first workflow, code registry, Supabase, notes, assets, and verification each have an explicit task.
 - **Identity safety:** stable IDs and `noteIndex` are explicitly preserved; no order, fulfilment, asset, URL, or cart rewrite is planned.
-- **Single-source discipline:** collection membership and numbering are authored only in `config/print-catalog-curation.json`; TypeScript and SQL are projections. The SQL migration is an immutable rollout snapshot, while future backfills continue to derive from the JSON-backed registry.
+- **Single-source discipline:** collection membership and numbering are authored only in `config/print-catalog-curation.json`; TypeScript and SQL are projections. The SQL migration is an immutable rollout snapshot pinned row-by-row to the JSON by the Task 4 parity test, while future backfills continue to derive from the JSON-backed registry.
 - **Known assumption requiring studio approval:** `fap041` moves from `Ciala` to `Linea` to keep every collection at four or five active prints after removing `fap029` and `fap037`.

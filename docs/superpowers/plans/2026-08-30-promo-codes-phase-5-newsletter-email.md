@@ -19,6 +19,8 @@
 export function buildNewsletterWelcomeEmail(params: {
   locale: 'pl' | 'en' | 'es' | 'de'
   promo: { code: string; kind: 'percent' | 'fixed'; percent: number | null;
+           // amount_* are RAW STORED MINOR UNITS (grosze / euro-cents / pence) —
+           // the builder converts to major units for the copy (5000 → "50 zł").
            amount_pln: number | null; amount_eur: number | null; amount_gbp: number | null }
 }): { subject: string; html: string }
 
@@ -31,7 +33,7 @@ export async function sendNewsletterWelcomeEmail(params: {
 
 ## Task 1: Welcome email builder (TDD)
 
-- [ ] **Step 1: Failing tests** — for each of the 4 locales, `buildNewsletterWelcomeEmail` returns a subject and html containing: the promo code verbatim (uppercase, visually prominent — assert the string appears), a human description of the value (percent: "−10%"-style; fixed: one sentence listing all three amounts "50 zł / 12 € / 10 £", since the email doesn't know the reader's display currency), and a shop link to `https://anna-ciok.studio` (localized path for non-PL). Follow the copy idiom of `buildNewsletterConfirmEmail`'s inline `I18N_CONFIRM`-style locale map; add `I18N_WELCOME` the same way. Keep issuance/selection OUT of the builder — it receives the promo, pure function (master requirement: selection logic separate from presentation).
+- [ ] **Step 1: Failing tests** — for each of the 4 locales, `buildNewsletterWelcomeEmail` returns a subject and html containing: the promo code verbatim (uppercase, visually prominent — assert the string appears), a human description of the value (percent: "−10%"-style; fixed: one sentence listing all three amounts "50 zł / 12 € / 10 £", since the email doesn't know the reader's display currency — the amounts are stored in MINOR units, so the builder must divide by 100 for the copy; the tests pass raw stored values and assert the major-unit rendering: `amount_pln: 5000` → "50 zł" (never "5000 zł"), `amount_eur: 1200` → "12 €", `amount_gbp: 1000` → "10 £"), and a shop link to `https://anna-ciok.studio` (localized path for non-PL). Follow the copy idiom of `buildNewsletterConfirmEmail`'s inline `I18N_CONFIRM`-style locale map; add `I18N_WELCOME` the same way. Keep issuance/selection OUT of the builder — it receives the promo, pure function (master requirement: selection logic separate from presentation).
 - [ ] **Step 2: Implement + run to green.** Reuse `resendTemplateHtml` + paragraph primitives; no new layout machinery.
 - [ ] **Step 3: Commit** — `git commit -m "feat(promo): newsletter welcome email builder with promo code (4 locales)"`
 
@@ -51,6 +53,7 @@ export async function sendNewsletterWelcomeEmail(params: {
 - [ ] With no flagged promo, the confirm route's behavior and response are exactly `main`'s (covered by regression test b).
 - [ ] Email failure can never break the opt-in redirect; promo lookup failure degrades to "no promo".
 - [ ] Builder is pure; selection lives in the route; both are separately tested.
+- [ ] Fixed amounts render in MAJOR units in every locale — minor→major conversion covered by tests fed raw stored minor-unit values for all three currencies (5000/1200/1000 → 50 zł / 12 € / 10 £).
 - [ ] No real email sent, no Resend config touched, no prod DB writes during this phase.
 - [ ] The interpretation note (typo → newsletter) is restated in the code as a short comment above the send block, and carried into the Phase 7 report as an open confirmation item.
 - [ ] `npm run lint && npm run typecheck && npm run test` green; adversarial diff re-read done.
