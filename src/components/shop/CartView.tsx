@@ -1011,18 +1011,23 @@ export function CartView({
           <div className="sum-row promo-row" data-testid="promo-discount-row">
             <span className="k">
               {t('cart.promo.discountRow', { code: promo.code })}
-              <button
-                type="button"
-                className="promo-remove"
-                data-testid="promo-remove"
-                onClick={removePromo}
-              >
-                {t('cart.promo.remove')}
-              </button>
+              {/* Once the PaymentIntent exists (clientSecret), its amount is
+                  locked — changing the code here could only desync the display
+                  from what Stripe will charge. */}
+              {!clientSecret && (
+                <button
+                  type="button"
+                  className="promo-remove"
+                  data-testid="promo-remove"
+                  onClick={removePromo}
+                >
+                  {t('cart.promo.remove')}
+                </button>
+              )}
             </span>
             <span className="v">-{fmt(promoDiscount)}</span>
           </div>
-        ) : (
+        ) : clientSecret ? null : (
           <div className="promo-entry">
             {promoOpen ? (
               <div className="promo-form">
