@@ -15,11 +15,15 @@ import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { routing } from '@/i18n/routing';
 import {
+  buildNewsletterWelcomeEmail,
   newsletterLandingPath,
+  sendNewsletterWelcomeEmail,
   subscribeNewsletterContact,
   verifyConfirmToken,
   type NewsletterConfirmStatus,
 } from '@/lib/newsletter';
+import { getActiveNewsletterPromo } from '@/lib/promo';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +83,25 @@ export async function GET(req: Request) {
     console.error('newsletter subscribe failed', err);
     // The token is still valid — re-clicking the same link retries cleanly.
     return redirectTo(verdict.locale, 'error');
+  }
+
+  // "new silter" resolution (master plan Requirement #4): the original brief's
+  // "new silter … inviting email" has zero repo prior art for invite/silter —
+  // the newsletter double opt-in is the only invitation-like flow, so a new
+  // subscriber gets the admin-flagged promo (at most one, newsletter_welcome
+  // AND active) in a welcome email sent here, best-effort. Inert while no
+  // promo carries the flag — confirm this reading with the operator before
+  // enabling it in production (Phase 7 open item).
+  try {
+    const promo = await getActiveNewsletterPromo(getSupabaseAdmin());
+    if (promo) {
+      const { subject, html } = buildNewsletterWelcomeEmail({ locale: verdict.locale, promo });
+      await sendNewsletterWelcomeEmail({ apiKey: env.RESEND_API_KEY, to: verdict.email, subject, html });
+    }
+  } catch (err) {
+    // Best-effort: a failed lookup or send must never break the opt-in the
+    // subscriber already completed above.
+    console.error('newsletter welcome email failed', err);
   }
 
   return redirectTo(verdict.locale, 'confirmed');
