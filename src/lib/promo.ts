@@ -123,6 +123,24 @@ export function computePromoDiscountMinor(
  * because capacity is enforced authoritatively by the atomic
  * `claim_promo_redemption` RPC at checkout, not by this read.
  */
+/**
+ * The single promo flagged for the newsletter welcome email (at most one can
+ * be `newsletter_welcome AND active` — partial unique index). Storefront-side
+ * (Phase 5 imports this from the confirm route); DB errors surface to the
+ * caller, which treats the welcome email as best-effort.
+ */
+export async function getActiveNewsletterPromo(supabase: SupabaseClient): Promise<PromoCode | null> {
+  const { data, error } = await supabase
+    .from('promo_codes')
+    .select('*')
+    .eq('newsletter_welcome', true)
+    .eq('active', true)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`newsletter promo lookup failed: ${error.message}`);
+  return (data as PromoCode | null) ?? null;
+}
+
 export async function fetchPromoByCode(
   supabase: SupabaseClient,
   code: string,

@@ -5,6 +5,7 @@ import {
   checkPromoEligibility,
   computePromoDiscountMinor,
   fetchPromoByCode,
+  getActiveNewsletterPromo,
   STRIPE_MIN_MINOR,
   type PromoCode,
 } from './promo';
@@ -241,5 +242,42 @@ describe('fetchPromoByCode', () => {
     const result = await fetchPromoByCode(client, 'NOPE99');
     expect(result).toEqual({ promo: null, redemptionCount: 0 });
     expect(from).not.toHaveBeenCalledWith('promo_redemptions');
+  });
+});
+
+/** Stub for getActiveNewsletterPromo's .select().eq().eq().limit().maybeSingle() chain. */
+function newsletterStub(result: { data: unknown; error: unknown }) {
+  const calls: Record<string, unknown> = {};
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn((col: string, val: unknown) => {
+      calls[`eq:${col}`] = val;
+      return chain;
+    }),
+    limit: vi.fn(() => chain),
+    maybeSingle: vi.fn(async () => result),
+  };
+  const from = vi.fn(() => chain);
+  return { client: { from } as unknown as SupabaseClient, from, calls };
+}
+
+describe('getActiveNewsletterPromo', () => {
+  it('returns the single active newsletter-flagged promo', async () => {
+    const row = mkPromo({ newsletter_welcome: true });
+    const { client, from, calls } = newsletterStub({ data: row, error: null });
+    expect(await getActiveNewsletterPromo(client)).toEqual(row);
+    expect(from).toHaveBeenCalledWith('promo_codes');
+    expect(calls['eq:newsletter_welcome']).toBe(true);
+    expect(calls['eq:active']).toBe(true);
+  });
+
+  it('returns null when none is flagged', async () => {
+    const { client } = newsletterStub({ data: null, error: null });
+    expect(await getActiveNewsletterPromo(client)).toBeNull();
+  });
+
+  it('surfaces DB errors to the caller', async () => {
+    const { client } = newsletterStub({ data: null, error: { message: 'db down' } });
+    await expect(getActiveNewsletterPromo(client)).rejects.toThrow(/db down/);
   });
 });
