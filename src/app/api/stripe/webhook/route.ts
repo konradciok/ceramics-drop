@@ -520,7 +520,7 @@ export async function POST(req: Request) {
       try {
         const { data: orderRow, error: loadErr } = await supabase
           .from('orders')
-          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at, studio_email_sent_at')
+          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, promo_code, discount, confirmation_email_sent_at, studio_email_sent_at')
           .eq('id', orderId)
           .single();
         if (loadErr) throw new Error(`load order failed for ${orderId}: ${loadErr.message}`);
@@ -534,7 +534,8 @@ export async function POST(req: Request) {
             id: string; email: string | null; total: number; currency: string;
             delivery_method: string; receiver_first_name: string | null;
             receiver_last_name: string | null; inpost_target_point: string | null;
-            locale: string | null; confirmation_email_sent_at: string | null;
+            locale: string | null; promo_code: string | null; discount: number | null;
+            confirmation_email_sent_at: string | null;
             studio_email_sent_at: string | null;
           };
 

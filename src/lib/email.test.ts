@@ -181,6 +181,19 @@ describe('buildNewOrderToStudioEmail', () => {
     expect(html).toContain('czarna'); // frame colour, PL studio copy
     expect(html).toContain('GLOBAL-CFP-20X28');
   });
+
+  it('renders a Rabat row with the promo code only when the order carries a discount', () => {
+    const discounted = buildNewOrderToStudioEmail({
+      order: { ...newOrder, promo_code: 'WELCOME10', discount: 900, total: 9600 },
+    });
+    expect(discounted.html).toContain('Rabat');
+    expect(discounted.html).toContain('WELCOME10');
+    expect(discounted.html).toContain('-9.00'); // discount rendered negative, major units
+    expect(discounted.html).toContain('96.00'); // total stays the charged amount
+
+    const plain = buildNewOrderToStudioEmail({ order: newOrder });
+    expect(plain.html).not.toContain('Rabat');
+  });
 });
 
 describe('buildRefundFailedAlertEmail', () => {
