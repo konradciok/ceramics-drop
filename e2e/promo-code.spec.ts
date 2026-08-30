@@ -64,6 +64,18 @@ test.describe('promo codes @ci', () => {
     await expect(row.locator('.v')).toContainText(/-.*57[,.]5/);
     await expect(page.locator('.sum-total .v')).not.toHaveText(totalBefore);
 
+    // Phase 6: every apply-attempt outcome fires promo_apply (site_engagement
+    // mirror — see analytics-funnel.spec.ts for why the debug buffer, not raw
+    // dataLayer, gives a deterministic per-event assertion).
+    const debugEvents = await page.evaluate(() => {
+      const raw = sessionStorage.getItem('acc_analytics_debug');
+      const buf = raw ? (JSON.parse(raw) as Array<{ event?: string; engagement_type?: string }>) : [];
+      return buf;
+    });
+    expect(debugEvents).toContainEqual(
+      expect.objectContaining({ event: 'site_engagement', engagement_type: 'promo_apply' }),
+    );
+
     // Cheapest path to an armed checkout button: studio pickup (no locker, no address).
     await page.locator('[data-testid="shipping-odbior"]').click();
     await fillContact(page);
@@ -83,6 +95,16 @@ test.describe('promo codes @ci', () => {
     await expect(page.getByText(/Nie udało się rozpocząć płatności/i)).toBeVisible();
     expect(checkoutBody, 'checkout POST captured').not.toBeNull();
     expect(checkoutBody!.promo_code).toBe('WELCOME10');
+
+    // begin_checkout (fired just before the POST, from the raw dataLayer since
+    // the debug mirror strips custom ecommerce fields) carries the GA4-standard
+    // coupon param — proves Phase 6's client wiring, not just the request body.
+    const beginCheckoutCoupon = await page.evaluate(() => {
+      const dl = (window as unknown as { dataLayer?: Array<{ event?: string; ecommerce?: { coupon?: string } }> }).dataLayer ?? [];
+      const entry = dl.find((e) => e.event === 'begin_checkout');
+      return entry?.ecommerce?.coupon ?? null;
+    });
+    expect(beginCheckoutCoupon).toBe('WELCOME10');
   });
 
   test('error state: an expired code shows the reason copy and no discount row', async ({ page }) => {
