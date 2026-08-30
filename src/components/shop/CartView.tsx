@@ -34,7 +34,7 @@ import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
-import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
+import { attemptIdentityKey, checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -194,6 +194,15 @@ export function CartView({
     setAttemptId(id);
   }
 
+  // Applied promo: server-validated preview `{ code, discount /* minor units */ }`.
+  // Display-only — checkout receives just the code string and re-validates.
+  const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoBusy, setPromoBusy] = useState(false);
+  // A PromoIneligibleReason from the server, or 'network' for transport failures.
+  const [promoError, setPromoError] = useState<string | null>(null);
+
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
     sessionStorage.setItem('acc_ship', shipChoice);
@@ -263,7 +272,9 @@ export function CartView({
   // Print carts charge Prodigi's shipping cost by destination country;
   // ceramic carts keep the InPost price list.
   const shipCost = hasPrints ? printShippingOf(country, hasFramed, printCurrency) : shippingOf(ship);
-  const total = subtotal + shipCost;
+  // Server preview is in minor units; the cart's own math is in major units.
+  const promoDiscount = promo ? promo.discount / 100 : 0;
+  const total = subtotal + shipCost - promoDiscount;
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
   const countryOptions = PRINT_COUNTRIES
@@ -271,17 +282,106 @@ export function CartView({
     .sort((a, b) => a.name.localeCompare(b.name, locale));
   const cartKey = lines.map((l) => l.id).join('|');
 
-  // The cart changing (add/remove) means this is a different purchase intent
-  // than whatever was persisted — regenerate so a stale attemptId is never
-  // reused across unrelated carts. Skips the initial mount (same attempt).
-  const attemptCartKey = useRef(cartKey);
+  // The cart changing (add/remove) — or the applied promo code changing — means
+  // this is a different purchase intent than whatever was persisted: the Stripe
+  // idempotency key is amount-sensitive and the redemption claim is
+  // promo-bound, so both are part of the attempt identity (hard Phase 3 gate,
+  // see attemptIdentityKey). Regenerate so a stale attemptId is never reused.
+  // Skips the initial mount (same attempt).
+  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null);
+  const attemptCartKey = useRef(attemptKey);
   useEffect(() => {
-    if (attemptCartKey.current === cartKey) return;
-    attemptCartKey.current = cartKey;
+    if (attemptCartKey.current === attemptKey) return;
+    attemptCartKey.current = attemptKey;
     const id = crypto.randomUUID();
     localStorage.setItem(ATTEMPT_ID_KEY, id);
     setAttemptId(id);
-  }, [cartKey]);
+  }, [attemptKey]);
+
+  // Keep an applied promo honest when its inputs change: the previewed discount
+  // was computed for a specific cart + currency, so a line add/remove or a
+  // currency switch re-validates it (and an emptied cart just drops it). On a
+  // network failure the code is kept — checkout remains the authority.
+  const promoSyncKey = `${cartKey}|${printCurrency}`;
+  const promoSyncRef = useRef(promoSyncKey);
+  useEffect(() => {
+    if (promoSyncRef.current === promoSyncKey) return;
+    promoSyncRef.current = promoSyncKey;
+    if (!promo) return;
+    const current = resolveCartLines(useCart.getState().ids);
+    // An emptied cart renders no promo UI at all; the next cart change lands
+    // back here and re-validates, so no synchronous state write is needed.
+    if (current.length === 0) return;
+    let cancelled = false;
+    fetch('/api/promo/validate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: promo.code, ids: current.map((l) => l.id), locale }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { ok: boolean; code?: string; discount?: number; reason?: string } | null) => {
+        if (cancelled || !data) return;
+        if (data.ok && typeof data.discount === 'number') {
+          setPromo({ code: data.code ?? promo.code, discount: data.discount });
+        } else if (!data.ok) {
+          setPromo(null);
+          setPromoError(data.reason ?? 'not_found');
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promoSyncKey]);
+
+  async function applyPromo() {
+    const raw = promoInput.trim();
+    if (!raw || promoBusy) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code: raw, ids: lines.map((l) => l.id), locale }),
+      });
+      if (!res.ok) {
+        // 400 (malformed) is indistinguishable from an unknown code for the
+        // buyer; 429/5xx are retryable transport problems.
+        setPromoError(res.status === 400 ? 'not_found' : 'network');
+        return;
+      }
+      const data = (await res.json()) as
+        | { ok: true; code: string; discount: number }
+        | { ok: false; reason: string };
+      if (data.ok) {
+        setPromo({ code: data.code, discount: data.discount });
+        setPromoInput('');
+      } else {
+        setPromoError(data.reason);
+      }
+    } catch {
+      setPromoError('network');
+    } finally {
+      setPromoBusy(false);
+    }
+  }
+
+  function removePromo() {
+    setPromo(null);
+    setPromoError(null);
+  }
+
+  /** Maps a validate/checkout promo failure reason to its cart.promo.* copy. */
+  const promoErrorKey = (reason: string) => {
+    const key =
+      reason === 'expired' ? 'expired'
+      : reason === 'not_started' ? 'notStarted'
+      : reason === 'wrong_track' ? (hasPrints ? 'wrongTrackPrints' : 'wrongTrackCeramics')
+      : reason === 'exhausted' ? 'exhausted'
+      : reason === 'network' ? 'networkError'
+      : 'invalid'; // not_found, inactive, anything unrecognised
+    return `cart.promo.${key}` as Parameters<typeof t>[0];
+  };
 
   useEffect(() => {
     if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
@@ -377,7 +477,7 @@ export function CartView({
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -405,6 +505,16 @@ export function CartView({
         if (conflict.error === 'print_asset_unavailable') {
           pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'print_asset_unavailable', status: 409 }));
           setCheckoutError(t('cart.printAssetUnavailable'));
+          return;
+        }
+        if (conflict.error === 'promo_exhausted') {
+          // The code's capacity ran out (or the claim raced away) — drop the
+          // code, keep the rest of the form. Removing it changes the attempt
+          // identity, so the next click starts a fresh attemptId (the server
+          // marked this attempt's order failed during rollback).
+          removePromo();
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'promo_exhausted', status: 409 }));
+          setCheckoutError(t('cart.promo.exhausted'));
           return;
         }
         const sold = conflict.sold ?? [];
@@ -441,10 +551,18 @@ export function CartView({
         let errorMessage = t('cart.checkoutError');
         if (res.status === 400) {
           try {
-            const body = (await res.json()) as { error?: string };
+            const body = (await res.json()) as { error?: string; reason?: string };
             if (body.error === 'private_sale_prints_unsupported') {
               reason = 'private_sale_prints_unsupported';
               errorMessage = t('cart.privateSalePrintsNotice');
+            }
+            if (body.error === 'invalid_promo') {
+              // The code stopped validating between apply and pay (operator
+              // deactivation, expiry). Fail closed server-side surfaces here:
+              // drop the code, keep the form.
+              removePromo();
+              reason = 'invalid_promo';
+              errorMessage = t(promoErrorKey(body.reason ?? 'not_found'));
             }
           } catch {
             // Unparseable body — keep generic copy.
@@ -454,7 +572,12 @@ export function CartView({
         setCheckoutError(errorMessage);
         return;
       }
-      const { client_secret } = (await res.json()) as { client_secret: string };
+      const { client_secret, discount } = (await res.json()) as { client_secret: string; discount?: number };
+      // Re-sync the preview with the authoritative figure (shipping-aware
+      // Stripe-minimum clamp can grant slightly more than the preview showed).
+      if (promo && typeof discount === 'number') {
+        setPromo({ code: promo.code, discount });
+      }
       // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
       // event for print-only and mixed carts (and never false-alarms a "purchase gap").
       rememberCheckoutForReturn(lines.map((l) => l.id), {
@@ -884,6 +1007,66 @@ export function CartView({
           <span className="k">{t('cart.delivery')}</span>
           <span className="v">{shipCost > 0 ? fmt(shipCost) : t('cart.free')}</span>
         </div>
+        {promo ? (
+          <div className="sum-row promo-row" data-testid="promo-discount-row">
+            <span className="k">
+              {t('cart.promo.discountRow', { code: promo.code })}
+              <button
+                type="button"
+                className="promo-remove"
+                data-testid="promo-remove"
+                onClick={removePromo}
+              >
+                {t('cart.promo.remove')}
+              </button>
+            </span>
+            <span className="v">-{fmt(promoDiscount)}</span>
+          </div>
+        ) : (
+          <div className="promo-entry">
+            {promoOpen ? (
+              <div className="promo-form">
+                <input
+                  data-testid="promo-input"
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value)}
+                  placeholder={t('cart.promo.placeholder')}
+                  aria-label={t('cart.promo.label')}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void applyPromo();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost promo-apply"
+                  data-testid="promo-apply"
+                  disabled={promoBusy || promoInput.trim() === ''}
+                  onClick={() => void applyPromo()}
+                >
+                  {t('cart.promo.apply')}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="promo-toggle"
+                data-testid="promo-toggle"
+                onClick={() => setPromoOpen(true)}
+              >
+                {t('cart.promo.have')}
+              </button>
+            )}
+            {promoError && (
+              <p className="promo-error" data-testid="promo-error">{t(promoErrorKey(promoError))}</p>
+            )}
+          </div>
+        )}
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
           <span className="v">{fmt(total)}</span>
