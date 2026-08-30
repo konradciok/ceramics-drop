@@ -32,6 +32,16 @@ describe('buildGa4PurchasePayload', () => {
     });
     expect(p.user_data).toEqual({ sha256_email_address: 'HASH_EM' });
   });
+
+  it('promo: includes the GA4-standard coupon param when the input carries one', () => {
+    const p = buildGa4PurchasePayload(input({ coupon: 'WELCOME10' }));
+    expect(p.events[0].params).toMatchObject({ coupon: 'WELCOME10' });
+  });
+
+  it('promo: omits coupon entirely (not coupon:undefined) when absent — regression', () => {
+    const p = buildGa4PurchasePayload(input());
+    expect(p.events[0].params).not.toHaveProperty('coupon');
+  });
 });
 
 describe('sendGa4Purchase', () => {

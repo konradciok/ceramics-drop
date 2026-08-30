@@ -16,6 +16,8 @@ const baseOrder = (over: Partial<ConversionOrder> = {}): ConversionOrder => ({
   shipping: 1800,
   total: 31800,
   currency: 'pln',
+  promo_code: null,
+  discount: 0,
   email: 'buyer@example.com',
   receiver_first_name: 'Anna',
   receiver_last_name: 'Nowak',
@@ -78,6 +80,26 @@ describe('sendPurchaseConversions', () => {
     expect(ga4Input.shipping).toBe(18);
     expect(ga4Input.appVersion).toBe('0.10.0');
     expect(ga4Input.appGitSha).toBe('8ae90a5');
+  });
+
+  it('promo: GA4 value is (subtotal - discount)/100 and coupon rides the payload; Meta value stays total/100 (unchanged)', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(baseOrder({ promo_code: 'WELCOME10', discount: 3000, total: 28800 })),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const metaInput = d.sendMeta.mock.calls[0][1];
+    expect(metaInput.value).toBe(288); // total/100 — Meta needs no change (already post-discount)
+    const ga4Input = d.sendGa4.mock.calls[0][1];
+    expect(ga4Input.value).toBe(270); // (30000-3000)/100
+    expect(ga4Input.coupon).toBe('WELCOME10');
+  });
+
+  it('promo: no discount (0) — GA4 value and payload shape are byte-identical to today (regression)', async () => {
+    const d = deps();
+    await sendPurchaseConversions('pi_1', d);
+    const ga4Input = d.sendGa4.mock.calls[0][1];
+    expect(ga4Input.value).toBe(300); // unchanged: subtotal/100
+    expect(ga4Input).not.toHaveProperty('coupon');
   });
 
   it('mirrors the client item_variant on the ceramic GA4 item (N-4 symmetry)', async () => {
@@ -277,6 +299,7 @@ describe('sendRefundConversion', () => {
     subtotal: 30000,
     shipping: 1800,
     currency: 'pln',
+    discount: 0,
     marketing: {
       consent: 'granted', fbp: null, fbc: null, ga_client_id: '111.222', ga_session_id: '999',
       ip: null, user_agent: null, event_source_url: null, captured_at: '2026-06-09T00:00:00Z',
@@ -287,6 +310,30 @@ describe('sendRefundConversion', () => {
   it('sends a GA4 refund event mirroring the purchase value/shipping', async () => {
     const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
     await sendRefundConversion(baseRefundOrder(), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).toHaveBeenCalledWith(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', sessionId: '999', transactionId: 'pi_1', value: 300, shipping: 18, currency: 'PLN' },
+    );
+  });
+
+  it('promo: value reverses exactly what the discounted purchase recorded — (subtotal-discount)/100', async () => {
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    await sendRefundConversion(baseRefundOrder({ discount: 3000 }), {
+      ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
+      sendGa4Refund: sendGa4RefundMock,
+    });
+    expect(sendGa4RefundMock).toHaveBeenCalledWith(
+      { measurementId: 'G-X', apiSecret: 'S' },
+      { clientId: '111.222', sessionId: '999', transactionId: 'pi_1', value: 270, shipping: 18, currency: 'PLN' },
+    );
+  });
+
+  it('promo: discount 0 — value is byte-identical to a non-promo refund (regression)', async () => {
+    const sendGa4RefundMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    await sendRefundConversion(baseRefundOrder({ discount: 0 }), {
       ga4Config: { measurementId: 'G-X', apiSecret: 'S' },
       sendGa4Refund: sendGa4RefundMock,
     });
