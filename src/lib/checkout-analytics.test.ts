@@ -176,6 +176,55 @@ describe('checkout analytics semantics', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  it('round-trips coupon + discountMinor through the snapshot into the purchase event', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+
+    rememberCheckoutForReturn(['k01', 'v01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      coupon: 'WELCOME10',
+      discountMinor: 3400,
+      storage: session,
+    });
+
+    const push = vi.fn();
+    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
+
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ecommerce: expect.objectContaining({ coupon: 'WELCOME10', value: 300 }),
+      }),
+    );
+  });
+
+  it('a snapshot with no coupon replays byte-identical to today (regression)', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+
+    rememberCheckoutForReturn(['k01', 'v01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      storage: session,
+    });
+
+    const push = vi.fn();
+    pushConfirmedPurchaseFromRememberedCheckout('pi_plain', 'ACC-plain', { push, storage: session });
+
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    expect(event.ecommerce).not.toHaveProperty('coupon');
+    expect(event.ecommerce?.value).toBe(334);
+  });
+
   it('stores EUR currency and itemPrices in the snapshot and replays with EUR', () => {
     const storage = new Map<string, string>();
     const session = {

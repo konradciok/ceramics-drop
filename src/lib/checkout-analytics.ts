@@ -19,6 +19,10 @@ type CheckoutStartOptions = {
   push?: (event: DataLayerEvent) => void;
   currency?: CurrencyCode;
   itemPrices?: number[];
+  /** Applied promo code — forwarded to the GA4-standard ecommerce.coupon param. */
+  coupon?: string;
+  /** Discount in MINOR units — the builder converts to major units. */
+  discountMinor?: number;
 };
 
 type ConfirmedPurchaseOptions = CheckoutStartOptions & {
@@ -42,6 +46,8 @@ type CheckoutSnapshot = {
   currency?: CurrencyCode;
   itemPrices?: number[];
   userData?: { em?: string };
+  coupon?: string;
+  discountMinor?: number;
 };
 
 export function pushCheckoutStarted(
@@ -62,9 +68,9 @@ export function pushCheckoutStarted(
 /** begin_checkout from pre-resolved AnalyticsItems (mixed ceramic + print carts). */
 export function pushCheckoutStartedItems(
   items: AnalyticsItem[],
-  { shippingCost, shippingMethod, userData, currency, push = pushDataLayer }: CheckoutStartOptions,
+  { shippingCost, shippingMethod, userData, currency, coupon, discountMinor, push = pushDataLayer }: CheckoutStartOptions,
 ): void {
-  push(buildBeginCheckoutEventFromItems(items, { shippingCost, shippingMethod, userData, currency }));
+  push(buildBeginCheckoutEventFromItems(items, { shippingCost, shippingMethod, userData, currency, coupon, discountMinor }));
 }
 
 /**
@@ -212,6 +218,8 @@ export function rememberCheckoutForReturn(
     ...(options.currency ? { currency: options.currency } : {}),
     ...(options.itemPrices ? { itemPrices: options.itemPrices } : {}),
     ...(options.userData ? { userData: options.userData } : {}),
+    ...(options.coupon ? { coupon: options.coupon } : {}),
+    ...(options.discountMinor !== undefined ? { discountMinor: options.discountMinor } : {}),
   };
   const json = JSON.stringify(snapshot);
   safeSetItem(storage, CHECKOUT_SNAPSHOT_KEY, json);
@@ -249,6 +257,8 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
     currency: snapshot.currency,
     itemPrices: snapshot.itemPrices,
     userData: snapshot.userData,
+    coupon: snapshot.coupon,
+    discountMinor: snapshot.discountMinor,
     push: options.push,
     storage,
   });
@@ -285,6 +295,12 @@ function parseSnapshotJson(raw: string): CheckoutSnapshot | null {
         parsed.userData !== null
           ? (parsed.userData as { em?: string })
           : undefined;
+      const coupon =
+        'coupon' in parsed && typeof parsed.coupon === 'string' ? parsed.coupon : undefined;
+      const discountMinor =
+        'discountMinor' in parsed && typeof parsed.discountMinor === 'number'
+          ? parsed.discountMinor
+          : undefined;
       return {
         ids: parsed.ids.filter((id): id is string => typeof id === 'string'),
         shippingCost: parsed.shippingCost,
@@ -292,6 +308,8 @@ function parseSnapshotJson(raw: string): CheckoutSnapshot | null {
         ...(currency ? { currency } : {}),
         ...(itemPrices ? { itemPrices } : {}),
         ...(userData ? { userData } : {}),
+        ...(coupon ? { coupon } : {}),
+        ...(discountMinor !== undefined ? { discountMinor } : {}),
       };
     }
   } catch {

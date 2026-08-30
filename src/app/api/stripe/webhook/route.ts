@@ -745,7 +745,7 @@ export async function POST(req: Request) {
         .update({ status: 'refunded' })
         .eq('payment_intent_id', pi)
         .eq('status', 'paid')
-        .select('id, private_sale_id, subtotal, shipping, currency, marketing');
+        .select('id, private_sale_id, subtotal, shipping, currency, discount, marketing');
       if (ordersErr) throw new Error(`releaseSale orders update failed: ${ordersErr.message}`);
       const rows = data as Array<{
         id: string;
@@ -753,6 +753,7 @@ export async function POST(req: Request) {
         subtotal: number;
         shipping: number;
         currency: string;
+        discount: number;
         marketing: MarketingContext | null;
       }> | null;
       if (rows && rows.length > 0) {
@@ -777,6 +778,7 @@ export async function POST(req: Request) {
               subtotal: rows[0].subtotal,
               shipping: rows[0].shipping,
               currency: rows[0].currency,
+              discount: rows[0].discount,
               marketing: rows[0].marketing,
             },
             { ga4Config: ga4Secret && measurementId ? { measurementId, apiSecret: ga4Secret } : undefined },
@@ -1096,7 +1098,7 @@ export async function POST(req: Request) {
               const { data, error } = await supabase
                 .from('orders')
                 .select(
-                  'id, payment_intent_id, status, subtotal, shipping, total, currency, email, ' +
+                  'id, payment_intent_id, status, subtotal, shipping, total, currency, promo_code, discount, email, ' +
                     'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
                 )
                 .eq('payment_intent_id', paymentIntentId)

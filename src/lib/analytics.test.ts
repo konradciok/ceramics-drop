@@ -265,6 +265,64 @@ describe('analytics ecommerce payloads', () => {
     });
   });
 
+  it('promo: coupon + discountMinor apply to begin_checkout ecommerce.value and checkout_total', () => {
+    const items = [product('k01'), product('v01')];
+    const event = buildBeginCheckoutEvent(items, {
+      eventId: 'evt-checkout-promo',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      coupon: 'WELCOME10',
+      discountMinor: 3400, // 34 zł
+    });
+
+    expect(event.ecommerce).toMatchObject({ value: 300, coupon: 'WELCOME10' });
+    expect(event.checkout_total).toBe(318);
+    expect(event.meta).toMatchObject({ value: 318 });
+  });
+
+  it('promo: with no coupon/discountMinor, begin_checkout is byte-identical to the no-promo build (regression)', () => {
+    const items = [product('k01'), product('v01')];
+    const base = { eventId: 'evt-checkout', shippingCost: 18, shippingMethod: 'kurier' };
+    const withPromoFieldsAbsent = buildBeginCheckoutEvent(items, base);
+    const legacy = buildBeginCheckoutEvent(items, base);
+    expect(withPromoFieldsAbsent).toEqual(legacy);
+    expect(withPromoFieldsAbsent.ecommerce).not.toHaveProperty('coupon');
+    expect(withPromoFieldsAbsent.ecommerce?.value).toBe(334);
+    expect(withPromoFieldsAbsent.checkout_total).toBe(352);
+  });
+
+  it('promo: coupon + discountMinor apply to purchase ecommerce.value, coupon rides shipping/transaction_id', () => {
+    const items = [product('k01'), product('v01')];
+    const event = buildPurchaseEvent(items, {
+      orderNo: 'ACC-1234',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      eventId: 'evt-purchase-promo',
+      coupon: 'WELCOME10',
+      discountMinor: 3400,
+    });
+
+    expect(event.ecommerce).toMatchObject({
+      transaction_id: 'ACC-1234',
+      value: 300,
+      shipping: 18,
+      coupon: 'WELCOME10',
+    });
+    expect(event.order_total).toBe(318);
+    expect(event.meta).toMatchObject({ value: 318, order_id: 'ACC-1234' });
+  });
+
+  it('promo: with no coupon/discountMinor, purchase is byte-identical to the no-promo build (regression)', () => {
+    const items = [product('k01'), product('v01')];
+    const base = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier', eventId: 'evt-purchase' };
+    const withPromoFieldsAbsent = buildPurchaseEvent(items, base);
+    const legacy = buildPurchaseEvent(items, base);
+    expect(withPromoFieldsAbsent).toEqual(legacy);
+    expect(withPromoFieldsAbsent.ecommerce).not.toHaveProperty('coupon');
+    expect(withPromoFieldsAbsent.ecommerce?.value).toBe(334);
+    expect(withPromoFieldsAbsent.order_total).toBe(352);
+  });
+
   it('default purchase event_id is deterministic from orderNo for browser/server dedup', () => {
     const items = [product('k01'), product('v01')];
     const options = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier' };

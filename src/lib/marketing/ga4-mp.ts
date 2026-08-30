@@ -12,13 +12,15 @@ export type Ga4PurchaseInput = {
   clientId: string | null;
   sessionId?: string | null;
   transactionId: string;
-  value: number;     // major units, item subtotal
+  value: number;     // major units, item subtotal MINUS any discount (caller's responsibility)
   shipping: number;  // major units
   currency: string;
   items: Ga4Item[];
   userData?: { sha256_email_address?: string };
   appVersion?: string;
   appGitSha?: string;
+  /** GA4-standard param — the applied promo code, when present. */
+  coupon?: string;
 };
 
 export type Ga4Config = { measurementId: string; apiSecret: string };
@@ -39,6 +41,7 @@ export function buildGa4PurchasePayload(input: Ga4PurchaseInput) {
           ...(input.sessionId ? { session_id: input.sessionId } : {}),
           ...(input.appVersion ? { app_version: input.appVersion } : {}),
           ...(input.appGitSha ? { app_git_sha: input.appGitSha } : {}),
+          ...(input.coupon ? { coupon: input.coupon } : {}),
           engagement_time_msec: 1,
         },
       },

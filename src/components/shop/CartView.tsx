@@ -338,6 +338,12 @@ export function CartView({
     if (!raw || promoBusy) return;
     setPromoBusy(true);
     setPromoError(null);
+    // Every apply-attempt outcome fires promo_apply — attempts are legitimately
+    // repeatable, so unlike checkout_error this needs no dedup. `result` is the
+    // GA4-facing outcome; `code` is the raw (unnormalized) input the buyer typed.
+    const track = hasPrints ? 'prints' : 'ceramics';
+    const fireApplyEvent = (result: string) =>
+      pushDataLayer(buildEngagementEvent('promo_apply', { result, code: raw, track }));
     try {
       const res = await fetch('/api/promo/validate', {
         method: 'POST',
@@ -347,7 +353,13 @@ export function CartView({
       if (!res.ok) {
         // 400 (malformed) is indistinguishable from an unknown code for the
         // buyer; 429/5xx are retryable transport problems.
-        setPromoError(res.status === 400 ? 'not_found' : 'network');
+        if (res.status === 400) {
+          setPromoError('not_found');
+          fireApplyEvent('not_found');
+        } else {
+          setPromoError('network');
+          fireApplyEvent('network_error');
+        }
         return;
       }
       const data = (await res.json()) as
@@ -356,11 +368,14 @@ export function CartView({
       if (data.ok) {
         setPromo({ code: data.code, discount: data.discount });
         setPromoInput('');
+        fireApplyEvent('valid');
       } else {
         setPromoError(data.reason);
+        fireApplyEvent(data.reason);
       }
     } catch {
       setPromoError('network');
+      fireApplyEvent('network_error');
     } finally {
       setPromoBusy(false);
     }
@@ -461,6 +476,9 @@ export function CartView({
       shippingMethod: ship,
       userData: em ? { em } : undefined,
       currency: analyticsCurrency,
+      // Preview figure — the server hasn't confirmed the discount yet at this point.
+      coupon: promo?.code,
+      discountMinor: promo?.discount,
     });
     // Tracks whether the server actually answered. On any received failure the
     // attemptId must be abandoned (Stripe caches the FIRST response — even an
@@ -586,6 +604,10 @@ export function CartView({
         currency: analyticsCurrency,
         itemPrices: lines.map(priceOfLine),
         userData: em ? { em } : undefined,
+        // Server-confirmed figure (just parsed above) — falls back to the
+        // preview when the response carried no promo (no code applied).
+        coupon: promo?.code,
+        discountMinor: typeof discount === 'number' ? discount : promo?.discount,
       });
       // A later, separate purchase must never reuse this attemptId.
       resetAttemptId();
