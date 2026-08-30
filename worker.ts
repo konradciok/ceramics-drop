@@ -23,6 +23,7 @@ import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
+import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
@@ -156,6 +157,21 @@ export default {
         });
       }),
     );
+    // Promo reconcile: converge stale `pending` promo_redemptions of terminal
+    // orders (every webhook 'released' settle is best-effort, so a transient
+    // failure would otherwise permanently over-count max_redemptions). A paid
+    // order found with a pending redemption is markPaid's miss — settle it
+    // redeemed AND alert.
+    ctx.waitUntil(
+      sweepPromoRedemptions(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'promo_reconcile_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'promo_reconcile_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
+    );
   },
 } satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
 
@@ -246,6 +262,25 @@ async function sendDlqAlertEmail(env: CloudflareEnv, sections: string[]): Promis
   }
 }
 
+/**
+ * Fifth cron sweep: converge stale pending promo redemptions (Phase 2 Task 2
+ * Step 4). The sweep logic lives in src/lib/promo-reconcile.ts; this wrapper
+ * supplies the client and turns a paid-order reconcile (markPaid's miss) into
+ * a Sentry warning.
+ */
+async function sweepPromoRedemptions(env: CloudflareEnv): Promise<void> {
+  const supabase = supabaseFromEnv(env);
+  const result = await sweepStalePromoRedemptions(supabase);
+  for (const orderId of result.paidReconciledOrderIds) {
+    await captureWorkerAlert(env, {
+      message: 'promo_reconcile_paid_pending: a paid order still had a pending promo redemption (markPaid should have settled it)',
+      level: 'warning',
+      extra: { orderId },
+    });
+  }
+  console.log(JSON.stringify({ event: 'promo_reconcile_sweep_done', ...result }));
+}
+
 async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
   const stripe = stripeFromEnv(env);
   const supabase = supabaseFromEnv(env);
@@ -254,10 +289,11 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
   const result = await expireAbandonedOrders({
     loadAbandoned: async () => {
       // private_sale_id routes the piece release (finalizeExpiry);
-      // refund_pending_at drives the stale-marker alert on a denied claim.
+      // refund_pending_at drives the stale-marker alert on a denied claim;
+      // promo_code lets finalizeExpiry release the promo redemption.
       const { data, error } = await supabase
         .from('orders')
-        .select('id, payment_intent_id, private_sale_id, refund_pending_at')
+        .select('id, payment_intent_id, private_sale_id, refund_pending_at, promo_code')
         .eq('status', 'pending')
         .lt('created_at', cutoff)
         .limit(BATCH_LIMIT);
@@ -267,6 +303,7 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         payment_intent_id: string;
         private_sale_id: string | null;
         refund_pending_at: string | null;
+        promo_code: string | null;
       }>;
     },
     // M-5 guard: the recoverable lease runs BEFORE cancelIntent (the
