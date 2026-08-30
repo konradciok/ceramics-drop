@@ -32,6 +32,8 @@ export type EcommercePayload = {
   items: AnalyticsItem[];
   transaction_id?: string;
   shipping?: number;
+  /** GA4-standard ecommerce parameter — the applied promo code, when present. */
+  coupon?: string;
 };
 
 export type MetaContent = { id: string; quantity: 1; item_price: number };
@@ -73,6 +75,10 @@ type CheckoutOptions = EventOptions & {
   shippingCost: number;
   shippingMethod: string;
   userData?: { em?: string };
+  /** Applied promo code — rendered verbatim as the GA4-standard ecommerce.coupon param. */
+  coupon?: string;
+  /** Discount in MINOR units (server's own unit) — converted to major units inside the builder. */
+  discountMinor?: number;
 };
 
 type PurchaseOptions = CheckoutOptions & {
@@ -360,7 +366,14 @@ export function buildBeginCheckoutEventFromItems(
   const eventId =
     options.eventId ?? createEventId('begin_checkout', items.map((i) => i.item_id).join('-'));
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const orderTotal = sumItems(items) + options.shippingCost;
+  // No-discount path stays the EXACT expression used before promo codes existed
+  // (byte-identical regression) — the rounding pass only kicks in once a
+  // discount is actually subtracted, so it can never introduce float dust for
+  // the vast majority of (non-promo) checkouts.
+  const discountMajor = options.discountMinor ? options.discountMinor / 100 : 0;
+  const subtotal =
+    discountMajor > 0 ? Number((sumItems(items) - discountMajor).toFixed(2)) : sumItems(items);
+  const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
       event: 'begin_checkout',
@@ -368,7 +381,11 @@ export function buildBeginCheckoutEventFromItems(
       shipping_tier: options.shippingMethod,
       checkout_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
-      ecommerce: ecommerce(items, currency),
+      ecommerce: {
+        ...ecommerce(items, currency),
+        value: subtotal,
+        ...(options.coupon ? { coupon: options.coupon } : {}),
+      },
     },
     'InitiateCheckout',
     eventId,
@@ -399,7 +416,11 @@ export function buildPurchaseEventFromItems(
   // checkout-analytics.ts), so collision-resistance here is unnecessary.
   const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const orderTotal = sumItems(items) + options.shippingCost;
+  // Same byte-identical-when-no-discount rule as begin_checkout above.
+  const discountMajor = options.discountMinor ? options.discountMinor / 100 : 0;
+  const subtotal =
+    discountMajor > 0 ? Number((sumItems(items) - discountMajor).toFixed(2)) : sumItems(items);
+  const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
       event: 'purchase',
@@ -409,6 +430,8 @@ export function buildPurchaseEventFromItems(
       ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: {
         ...ecommerce(items, currency),
+        value: subtotal,
+        ...(options.coupon ? { coupon: options.coupon } : {}),
         transaction_id: options.orderNo,
         shipping: options.shippingCost,
       },
