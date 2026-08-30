@@ -97,7 +97,9 @@ Execute in order; each phase leaves the branch green (`npm run lint && npm run t
 
 ## Execution protocol (worktree + self-review loops)
 
-1. **Setup (once):** create the worktree/branch via superpowers:using-git-worktrees (`feat/promo-codes` off current `main`). Verify `npm run test` baseline before writing code (record any pre-existing Windows failures).
+> **Branching rule (operator instruction, 2026-08-30 — supersedes the single-branch `feat/promo-codes` wording below):** each phase is implemented on its own branch `feat/promocode-phaseN` (N = 1..7), branched off the integration branch `feat/promocode`. When a phase passes its self-review loop, merge `feat/promocode-phaseN` → `feat/promocode`. After Phase 7's verification gate passes, the completed feature merges `feat/promocode` → `main` (via PR, per the git-safety constraint above).
+
+1. **Setup (once):** create the worktree/branch via superpowers:using-git-worktrees (integration branch `feat/promocode` off current `main`). Verify `npm run test` baseline before writing code (record any pre-existing Windows failures).
 2. **Per phase:** open the phase prompt, execute its checkboxed tasks in order (TDD where the prompt specifies tests), committing after each green step with a conventional-commit message.
 3. **Self-review loop (end of every phase, mandatory):**
    a. Run `npm run lint && npm run typecheck && npm run test` and read the actual output.
