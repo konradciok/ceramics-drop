@@ -140,6 +140,34 @@ async function sendEmailOnceWithClaim(
  * A crash anywhere re-enters through the same 23505 on redelivery; every step
  * is CAS- or key-idempotent.
  */
+/**
+ * Best-effort promo-redemption release for the unpaid-outcome paths
+ * (releaseHold, releaseSale's pending→refunded + already-refunded resume).
+ * Never throws: a stuck `pending` redemption only over-counts toward
+ * max_redemptions until the cron reconcile sweep converges it, so failing the
+ * webhook over it would trade a bounded accounting error for a Stripe retry
+ * storm. The RPC is state-aware — a 'redeemed' row is never touched.
+ */
+async function settlePromoReleased(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  order: { id: string; promo_code?: string | null },
+): Promise<void> {
+  if (!order.promo_code) return;
+  try {
+    const { error } = await supabase.rpc('settle_promo_redemption', {
+      p_order_id: order.id,
+      p_status: 'released',
+    });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('promo release settle failed for', order.id, err);
+    Sentry.captureMessage('promo_release_settle_failed', {
+      level: 'warning',
+      extra: { order_id: order.id, promo_code: order.promo_code },
+    });
+  }
+}
+
 async function handlePrivateSaleDoublePaid(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   stripe: ReturnType<typeof getStripe>,
@@ -148,7 +176,7 @@ async function handlePrivateSaleDoublePaid(
   const classify = async (): Promise<string | null> => {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, private_sale_id')
+      .select('id, status, private_sale_id, promo_code')
       .eq('payment_intent_id', pi)
       .maybeSingle();
     if (error) throw new Error(`double-paid classification lookup failed for ${pi}: ${error.message}`);
@@ -359,8 +387,8 @@ export async function POST(req: Request) {
         .update({ status: 'paid', paid_at: new Date().toISOString() })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id, private_sale_id')) as {
-          data: Array<{ id: string; private_sale_id: string | null }> | null;
+        .select('id, private_sale_id, promo_code')) as {
+          data: Array<{ id: string; private_sale_id: string | null; promo_code: string | null }> | null;
           error: { message: string; code?: string } | null;
         };
 
@@ -379,18 +407,20 @@ export async function POST(req: Request) {
       // Fetched up front (not just in the newSale branch) so the single-use token is
       // consumed on Stripe retries too, where the order is already `paid`.
       let privateSaleId: string | null = null;
+      let promoCode: string | null = null;
       let newSale = false;
       if (orderData && orderData.length > 0) {
         orderId = orderData[0].id;
         privateSaleId = orderData[0].private_sale_id;
+        promoCode = orderData[0].promo_code;
         newSale = true;
       } else {
         const { data: existing, error: existingErr } = await supabase
           .from('orders')
-          .select('id, status, private_sale_id')
+          .select('id, status, private_sale_id, promo_code')
           .eq('payment_intent_id', pi)
           .single() as {
-            data: { id: string; status: string; private_sale_id: string | null } | null;
+            data: { id: string; status: string; private_sale_id: string | null; promo_code: string | null } | null;
             error: { code: string; message: string } | null;
           };
         // PGRST116 is PostgREST's zero-rows-from-.single() code — that's the genuine
@@ -428,6 +458,7 @@ export async function POST(req: Request) {
         if (existing.status !== 'paid') return false;
         orderId = existing.id;
         privateSaleId = existing.private_sale_id;
+        promoCode = existing.promo_code;
       }
 
       // H-1: an unchecked failure here is asymmetric — the follow-up COUNT
@@ -489,7 +520,7 @@ export async function POST(req: Request) {
       try {
         const { data: orderRow, error: loadErr } = await supabase
           .from('orders')
-          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, confirmation_email_sent_at, studio_email_sent_at')
+          .select('id, email, total, currency, delivery_method, receiver_first_name, receiver_last_name, inpost_target_point, locale, promo_code, discount, confirmation_email_sent_at, studio_email_sent_at')
           .eq('id', orderId)
           .single();
         if (loadErr) throw new Error(`load order failed for ${orderId}: ${loadErr.message}`);
@@ -503,7 +534,8 @@ export async function POST(req: Request) {
             id: string; email: string | null; total: number; currency: string;
             delivery_method: string; receiver_first_name: string | null;
             receiver_last_name: string | null; inpost_target_point: string | null;
-            locale: string | null; confirmation_email_sent_at: string | null;
+            locale: string | null; promo_code: string | null; discount: number | null;
+            confirmation_email_sent_at: string | null;
             studio_email_sent_at: string | null;
           };
 
@@ -594,6 +626,51 @@ export async function POST(req: Request) {
         if (consumeErr) throw new Error(`private_sales consume failed for ${orderId}: ${consumeErr.message}`);
       }
 
+      // Settle the promo redemption now the order is paid. Same error contract
+      // as the private-sale burn above: an RPC error THROWS so Stripe retries.
+      // A `false` settle means the row sits at the other terminal state
+      // ('released' — an expiry/release raced the in-flight payment):
+      // reconcile by re-claiming (the RPC re-claims released rows for the same
+      // order when capacity allows) and settling again. If capacity is gone,
+      // alert and continue WITHOUT throwing — retrying can never win back
+      // exhausted capacity, and a paid order must not fail over promo
+      // accounting.
+      if (promoCode) {
+        const settleRedeemed = () =>
+          supabase.rpc('settle_promo_redemption', { p_order_id: orderId, p_status: 'redeemed' });
+        const { data: settled, error: settleErr } = await settleRedeemed();
+        if (settleErr) throw new Error(`promo settle failed for ${orderId}: ${settleErr.message}`);
+        if (settled !== true) {
+          const { data: promoRow, error: promoErr } = await supabase
+            .from('promo_codes')
+            .select('id')
+            .eq('code', promoCode)
+            .maybeSingle();
+          if (promoErr) throw new Error(`promo settle failed for ${orderId}: promo lookup: ${promoErr.message}`);
+          const promoId = (promoRow as { id: string } | null)?.id ?? null;
+          let reconciled = false;
+          if (promoId) {
+            const { data: reclaimed, error: reclaimErr } = await supabase.rpc('claim_promo_redemption', {
+              p_promo_id: promoId,
+              p_order_id: orderId,
+            });
+            if (reclaimErr) throw new Error(`promo settle failed for ${orderId}: re-claim: ${reclaimErr.message}`);
+            if (reclaimed === true) {
+              const { data: resettled, error: resettleErr } = await settleRedeemed();
+              if (resettleErr) throw new Error(`promo settle failed for ${orderId}: re-settle: ${resettleErr.message}`);
+              reconciled = resettled === true;
+            }
+          }
+          if (!reconciled) {
+            console.error('markPaid: promo settle lost capacity for', orderId, promoCode);
+            Sentry.captureMessage('promo_settle_lost_capacity', {
+              level: 'error',
+              extra: { order_id: orderId, promo_code: promoCode, payment_intent_id: pi },
+            });
+          }
+        }
+      }
+
       return newSale;
     },
     releaseHold: async (pi) => {
@@ -602,8 +679,8 @@ export async function POST(req: Request) {
         .update({ status: 'failed' })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id, private_sale_id');
-      const rows = data as Array<{ id: string; private_sale_id: string | null }> | null;
+        .select('id, private_sale_id, promo_code');
+      const rows = data as Array<{ id: string; private_sale_id: string | null; promo_code: string | null }> | null;
       // Retry-safe: on a Stripe re-delivery the order is already `failed`, so the
       // update above matches nothing. Fall back to fetching it (mirrors markPaid's
       // already-processed path) so a release that threw on the first attempt is
@@ -613,14 +690,15 @@ export async function POST(req: Request) {
         ((
           await supabase
             .from('orders')
-            .select('id, private_sale_id')
+            .select('id, private_sale_id, promo_code')
             .eq('payment_intent_id', pi)
             .eq('status', 'failed')
             .maybeSingle()
-        ).data as { id: string; private_sale_id: string | null } | null);
+        ).data as { id: string; private_sale_id: string | null; promo_code: string | null } | null);
       if (order) {
         // Private-sale pieces return to `sold` (never relisted publicly); normal holds relist.
         await releaseReservedPieces(supabase, order);
+        await settlePromoReleased(supabase, order);
       }
     },
     releaseSale: async (pi) => {
@@ -648,14 +726,17 @@ export async function POST(req: Request) {
         .update({ status: 'refunded', refund_pending_at: null, expiry_claim_at: null })
         .eq('payment_intent_id', pi)
         .eq('status', 'pending')
-        .select('id, private_sale_id');
+        .select('id, private_sale_id, promo_code');
       if (pendingErr) throw new Error(`releaseSale pending update failed: ${pendingErr.message}`);
-      const pendingRows = pendingData as Array<{ id: string; private_sale_id: string | null }> | null;
+      const pendingRows = pendingData as Array<{ id: string; private_sale_id: string | null; promo_code: string | null }> | null;
       if (pendingRows && pendingRows.length > 0) {
         // No Prodigi cancel: fulfilment only enqueues for paid orders, and this
         // order never reached paid. Throws on failure → 5xx → the retry resumes
         // through the already-refunded fallback below.
         const freed = await releaseReservedPieces(supabase, pendingRows[0]);
+        // A refund on a never-paid order is not a clawback — the claim settles
+        // 'released' like any other unpaid outcome (master non-goal #4).
+        await settlePromoReleased(supabase, pendingRows[0]);
         return freed.length > 0;
       }
 
@@ -723,13 +804,17 @@ export async function POST(req: Request) {
       // another order are never touched.
       const { data: refunded, error: refundedErr } = await supabase
         .from('orders')
-        .select('id, private_sale_id')
+        .select('id, private_sale_id, promo_code')
         .eq('payment_intent_id', pi)
         .eq('status', 'refunded')
         .maybeSingle();
       if (refundedErr) throw new Error(`releaseSale refunded lookup failed: ${refundedErr.message}`);
-      const refundedOrder = refunded as { id: string; private_sale_id: string | null } | null;
+      const refundedOrder = refunded as { id: string; private_sale_id: string | null; promo_code: string | null } | null;
       if (!refundedOrder) return false;
+      // Resume-path promo convergence: only a genuinely-stranded 'pending'
+      // redemption transitions (the RPC is state-aware — a 'redeemed' row from
+      // the paid→refunded path is never touched, per the no-clawback rule).
+      await settlePromoReleased(supabase, refundedOrder);
       // Converge to the order's release target: normal orders relist rows to
       // 'available'; private-sale orders converge only stranded 'reserved'
       // rows to 'sold' — their already-'sold' rows are the correct terminal

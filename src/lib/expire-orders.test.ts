@@ -254,8 +254,10 @@ describe('claimExpiryLease', () => {
 function fakeFinalizeSupabase(opts: {
   pieceResult?: { data: unknown; error: { message: string } | null };
   ordersResult?: { data: unknown; error: { message: string } | null };
+  rpcResult?: { data: unknown; error: { message: string } | null };
 }) {
   const seq: string[] = [];
+  const rpcCalls: Array<{ fn: string; params: Record<string, unknown> }> = [];
   const ordersFilters: Filter[] = [];
   const piecePayloads: Array<Record<string, unknown>> = [];
   const ordersPayloads: Array<Record<string, unknown>> = [];
@@ -269,6 +271,11 @@ function fakeFinalizeSupabase(opts: {
     return node;
   };
   const supabase = {
+    rpc: async (fn: string, params: Record<string, unknown>) => {
+      seq.push(`rpc:${fn}`);
+      rpcCalls.push({ fn, params });
+      return opts.rpcResult ?? { data: true, error: null };
+    },
     from: (table: string) => ({
       update: (payload: Record<string, unknown>) => {
         seq.push(table);
@@ -281,7 +288,7 @@ function fakeFinalizeSupabase(opts: {
       },
     }),
   };
-  return { supabase, seq, ordersFilters, piecePayloads, ordersPayloads };
+  return { supabase, seq, ordersFilters, piecePayloads, ordersPayloads, rpcCalls };
 }
 
 describe('finalizeExpiry', () => {
@@ -332,6 +339,56 @@ describe('finalizeExpiry', () => {
 
     await expect(finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1'))
       .rejects.toThrow(/orders down/);
+  });
+
+  it('settles the promo redemption released AFTER the terminal CAS, for an expired order with a promo', async () => {
+    const { supabase, seq, rpcCalls } = fakeFinalizeSupabase({});
+
+    const expired = await finalizeExpiry(
+      supabase as never,
+      { id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' },
+      'claim-1',
+    );
+
+    expect(expired).toBe(true);
+    expect(seq).toEqual(['piece_state', 'orders', 'rpc:settle_promo_redemption']);
+    expect(rpcCalls).toEqual([
+      { fn: 'settle_promo_redemption', params: { p_order_id: 'o1', p_status: 'released' } },
+    ]);
+  });
+
+  it('no promo → no settle RPC', async () => {
+    const { supabase, rpcCalls } = fakeFinalizeSupabase({});
+
+    await finalizeExpiry(supabase as never, { id: 'o1', private_sale_id: null }, 'claim-1');
+
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it('fenced CAS matched nothing (ownership lost) → no settle (the new owner converges; reconcile sweep backstops)', async () => {
+    const { supabase, rpcCalls } = fakeFinalizeSupabase({ ordersResult: { data: [], error: null } });
+
+    await finalizeExpiry(
+      supabase as never,
+      { id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' },
+      'claim-1',
+    );
+
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it('promo settle failure is best-effort: logged, never throws (the reconcile sweep converges it)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = fakeFinalizeSupabase({ rpcResult: { data: null, error: { message: 'db down' } } });
+
+    const expired = await finalizeExpiry(
+      supabase as never,
+      { id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' },
+      'claim-1',
+    );
+    errSpy.mockRestore();
+
+    expect(expired).toBe(true);
   });
 });
 

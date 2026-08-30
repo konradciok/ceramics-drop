@@ -8,6 +8,8 @@ export type AbandonedOrder = {
   private_sale_id?: string | null;
   /** M-5 double-paid refund window marker — a set value denies the expiry claim. */
   refund_pending_at?: string | null;
+  /** Set when the order claimed a promo redemption — expiry releases it. */
+  promo_code?: string | null;
 };
 
 /** Result of trying to cancel an order's PaymentIntent. */
@@ -209,11 +211,26 @@ export async function expirePendingFenced(
  */
 export async function finalizeExpiry(
   supabase: SupabaseClient,
-  order: { id: string; private_sale_id?: string | null },
+  order: { id: string; private_sale_id?: string | null; promo_code?: string | null },
   claimToken: string,
 ): Promise<boolean> {
   await releaseReservedPieces(supabase, order);
   const { expired, error } = await expirePendingFenced(supabase, order.id, claimToken);
   if (error) throw new Error(`finalizeExpiry update failed for ${order.id}: ${error}`);
+  // Release the order's promo redemption, best-effort, only when OUR fenced
+  // CAS expired the row (a lost-ownership claimant must not settle the new
+  // owner's order). A failure only over-counts max_redemptions until the cron
+  // reconcile sweep converges it — never worth failing the sweep over.
+  if (expired && order.promo_code) {
+    try {
+      const { error: settleErr } = await supabase.rpc('settle_promo_redemption', {
+        p_order_id: order.id,
+        p_status: 'released',
+      });
+      if (settleErr) throw new Error(settleErr.message);
+    } catch (err) {
+      console.error('finalizeExpiry: promo release settle failed for', order.id, err);
+    }
+  }
   return expired;
 }

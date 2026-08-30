@@ -107,6 +107,53 @@ describe('createOrderInvoice', () => {
     expect(updateEq).toHaveBeenCalled();
   });
 
+  it('adds a negative discount line labeled with the promo code so the invoice total equals the charged amount', async () => {
+    orderRow = { ...ORDER, promo_code: 'WELCOME10', discount: 900, total: 10100 };
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 0 })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 10100 });
+    stripeMock.invoices.finalizeInvoice.mockResolvedValue({ id: 'in_1', status: 'open', total: 10100 });
+    stripeMock.invoices.pay.mockResolvedValue({ id: 'in_1', status: 'paid', total: 10100 });
+
+    await createOrderInvoice('pi_1');
+
+    // item + shipping + discount
+    expect(stripeMock.invoiceItems.create).toHaveBeenCalledTimes(3);
+    const discountCall = stripeMock.invoiceItems.create.mock.calls.find(
+      (c) => (c[0] as { amount: number }).amount < 0,
+    );
+    expect(discountCall).toBeDefined();
+    expect(discountCall![0]).toMatchObject({
+      invoice: 'in_1',
+      currency: 'pln',
+      amount: -900,
+      description: 'Rabat (WELCOME10)',
+    });
+    expect(discountCall![1]).toMatchObject({ idempotencyKey: 'ii2_ord-1_discount' });
+    expect(stripeMock.invoices.sendInvoice).toHaveBeenCalled();
+  });
+
+  it('uses the English discount label for en-locale orders', async () => {
+    orderRow = { ...ORDER, locale: 'en', promo_code: 'WELCOME10', discount: 900, total: 10100 };
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 0 })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 10100 });
+
+    await createOrderInvoice('pi_1');
+
+    const discountCall = stripeMock.invoiceItems.create.mock.calls.find(
+      (c) => (c[0] as { amount: number }).amount < 0,
+    );
+    expect(discountCall![0]).toMatchObject({ description: 'Discount (WELCOME10)' });
+  });
+
+  it('adds no discount line when the order has no discount', async () => {
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.invoiceItems.create).toHaveBeenCalledTimes(2);
+  });
+
   it('throws before finalizing when the draft total drifts from the order total', async () => {
     stripeMock.invoices.retrieve.mockReset();
     stripeMock.invoices.retrieve
