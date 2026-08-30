@@ -22,6 +22,7 @@ import {
   resendTemplateHtml,
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
+import { SITE_URL } from './site';
 
 export const NEWSLETTER_CONFIRM_TTL_SECS = 60 * 60 * 24 * 7; // 7 days — generous for inbox lag
 /** Tolerated future clock skew on a token's iat (isolate clocks can drift). */
@@ -211,6 +212,129 @@ export function buildNewsletterConfirmEmail(params: {
   ].join('');
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
   return { subject: t.subject, mainContent, html };
+}
+
+// ── Welcome email (promo code after successful double opt-in) ────────────────
+
+/** Same code-carried i18n rule as I18N_CONFIRM. `body`/`codeIntro` receive the
+ *  human value label ("−10%" or "50 zł / 12 € / 10 £"). */
+const I18N_WELCOME: Record<Locale, {
+  subject: string;
+  greeting: string;
+  body: (value: string) => string;
+  codeIntro: string;
+  cta: string;
+  note: string;
+  signOff: string;
+}> = {
+  pl: {
+    subject: 'Witaj w newsletterze — kod rabatowy dla Ciebie',
+    greeting: 'Cześć,',
+    body: (value) => `Dziękujemy za potwierdzenie zapisu! Na powitanie mamy dla Ciebie kod rabatowy ${value} na zakupy w sklepie.`,
+    codeIntro: 'Twój kod:',
+    cta: 'Przejdź do sklepu',
+    note: 'Kod podasz w koszyku przed płatnością.',
+    signOff: 'Do zobaczenia! Anna Ciok Studio',
+  },
+  en: {
+    subject: 'Welcome to the newsletter — a discount code for you',
+    greeting: 'Hi,',
+    body: (value) => `Thank you for confirming your signup! As a welcome, here is a ${value} discount code for the shop.`,
+    codeIntro: 'Your code:',
+    cta: 'Visit the shop',
+    note: 'Enter the code in your cart before payment.',
+    signOff: 'Talk soon! Anna Ciok Studio',
+  },
+  es: {
+    subject: 'Bienvenido al boletín — un código de descuento para ti',
+    greeting: 'Hola,',
+    body: (value) => `¡Gracias por confirmar tu suscripción! Como bienvenida, aquí tienes un código de descuento de ${value} para la tienda.`,
+    codeIntro: 'Tu código:',
+    cta: 'Ir a la tienda',
+    note: 'Introduce el código en tu cesta antes del pago.',
+    signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+  de: {
+    subject: 'Willkommen im Newsletter — ein Rabattcode für dich',
+    greeting: 'Hallo,',
+    body: (value) => `Danke für die Bestätigung deiner Anmeldung! Zur Begrüßung bekommst du einen Rabattcode über ${value} für den Shop.`,
+    codeIntro: 'Dein Code:',
+    cta: 'Zum Shop',
+    note: 'Den Code gibst du im Warenkorb vor der Zahlung ein.',
+    signOff: 'Bis bald! Anna Ciok Studio',
+  },
+};
+
+type WelcomePromo = {
+  code: string;
+  kind: 'percent' | 'fixed';
+  percent: number | null;
+  /** RAW STORED MINOR UNITS (grosze / euro-cents / pence) — rendered as major units. */
+  amount_pln: number | null;
+  amount_eur: number | null;
+  amount_gbp: number | null;
+};
+
+/** "−10%" or "50 zł / 12 € / 10 £" — the email doesn't know the reader's display currency. */
+function promoValueLabel(promo: WelcomePromo): string {
+  if (promo.kind === 'percent') return `−${promo.percent}%`;
+  const major = (minor: number | null, suffix: string) =>
+    minor != null ? `${minor / 100} ${suffix}` : null;
+  return [major(promo.amount_pln, 'zł'), major(promo.amount_eur, '€'), major(promo.amount_gbp, '£')]
+    .filter((v): v is string => v !== null)
+    .join(' / ');
+}
+
+/**
+ * Pure builder — receives the promo, never selects it (the confirm route owns
+ * selection via getActiveNewsletterPromo). The code is DB-CHECK-normalized to
+ * [A-Z0-9_-], so interpolating it into HTML is safe.
+ */
+export function buildNewsletterWelcomeEmail(params: {
+  locale: 'pl' | 'en' | 'es' | 'de';
+  promo: WelcomePromo;
+}): { subject: string; html: string } {
+  const loc = resolveLocale(params.locale);
+  const t = I18N_WELCOME[loc];
+  const shopUrl = `${SITE_URL}${localePath(loc, '/sklep')}`;
+  const mainContent = [
+    emailParagraph(t.greeting),
+    emailParagraph(t.body(promoValueLabel(params.promo))),
+    emailParagraph(
+      `${t.codeIntro}<br /><strong style="font-size:22px;letter-spacing:.1em;">${params.promo.code}</strong>`,
+    ),
+    emailButton(shopUrl, t.cta),
+    emailMutedParagraph(t.note),
+    emailMutedParagraph(t.signOff),
+  ].join('');
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  return { subject: t.subject, html };
+}
+
+/** Send the welcome email — same raw-fetch Resend shape as the confirm sender. Throws on non-ok. */
+export async function sendNewsletterWelcomeEmail(params: {
+  apiKey: string;
+  to: string;
+  subject: string;
+  html: string;
+  fetchImpl?: typeof fetch;
+}): Promise<void> {
+  const res = await postResendJson({
+    url: 'https://api.resend.com/emails',
+    apiKey: params.apiKey,
+    body: {
+      from: EMAIL_FROM,
+      to: [params.to],
+      reply_to: EMAIL.contact,
+      subject: params.subject,
+      html: params.html,
+    },
+    fetchImpl: params.fetchImpl,
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  }
 }
 
 async function postResendJson(params: {
