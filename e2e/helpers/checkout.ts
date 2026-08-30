@@ -15,6 +15,12 @@ export const sel = {
   checkoutButton: '[data-testid="checkout-button"]',
   paymentSubmit: '[data-testid="payment-submit"]',
   checkoutSuccess: '[data-testid="checkout-success"]',
+  promoToggle: '[data-testid="promo-toggle"]',
+  promoInput: '[data-testid="promo-input"]',
+  promoApply: '[data-testid="promo-apply"]',
+  promoError: '[data-testid="promo-error"]',
+  promoDiscountRow: '[data-testid="promo-discount-row"]',
+  promoRemove: '[data-testid="promo-remove"]',
 } as const;
 
 /**
