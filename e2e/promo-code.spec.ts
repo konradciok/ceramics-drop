@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
   resetCart,
-  addFirstUnsoldFromCategory,
+  appendToCart,
   goToCart,
   fillContact,
   sel,
@@ -9,26 +9,27 @@ import {
 
 /**
  * Promo-code cart flow (Phase 3) — hermetic: the app's OWN endpoints
- * (/api/promo/validate, /api/checkout) are intercepted, Stripe is never
- * touched, no promo rows exist in any DB.
+ * (/api/inventory, /api/promo/validate, /api/checkout) are intercepted,
+ * Stripe is never touched, no promo rows exist in any DB.
  * @ci-safe — display + request-shape assertions only.
  */
 
-/** Seed one unsold ceramic piece into the cart, probing categories in order. */
+/**
+ * Seed one ceramic piece into the cart, inventory-independent: the live
+ * catalogue can be (and currently is) fully sold/showroom, so a tile-based
+ * seed would make the spec hostage to stock. The cart page's own prune runs
+ * against /api/inventory — stub it empty and append a stable registry id.
+ */
 async function seedCeramic(page: Page): Promise<void> {
-  const candidates = ['kubki', 'talerzyki', 'talerze-srednie', 'miski-falowane', 'wazony', 'duze-michy'];
-  for (const category of candidates) {
-    await page.goto(`/${category}`);
-    const tile = page.locator(`${sel.productTile}:not([data-sold="true"])`).first();
-    const visible = await tile.waitFor({ state: 'visible', timeout: 5_000 }).then(
-      () => true,
-      () => false,
-    );
-    if (!visible) continue;
-    await addFirstUnsoldFromCategory(page, category);
-    return;
-  }
-  throw new Error('no category with unsold stock');
+  await page.route('**/api/inventory', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ sold: [], showroom: [] }),
+    }),
+  );
+  await page.goto('/'); // any page, just to reach the app origin's localStorage
+  await appendToCart(page, 'k01'); // stable registry id (ids never renumber)
 }
 
 async function stubValidate(page: Page, body: Record<string, unknown>): Promise<void> {
@@ -57,8 +58,10 @@ test.describe('promo codes @ci', () => {
     const row = page.locator(sel.promoDiscountRow);
     await expect(row).toBeVisible();
     await expect(row).toContainText('WELCOME10');
-    // Server preview is minor units; the row renders -57,50 in the cart currency.
-    await expect(row.locator('.v')).toContainText(/-.*57[,.]50/);
+    // Server preview is minor units (5750); the row renders it negative in the
+    // cart currency via the shared formatter ("-57.5 zł" — PLN prices are
+    // integer-styled, so a fractional discount keeps one decimal).
+    await expect(row.locator('.v')).toContainText(/-.*57[,.]5/);
     await expect(page.locator('.sum-total .v')).not.toHaveText(totalBefore);
 
     // Cheapest path to an armed checkout button: studio pickup (no locker, no address).
