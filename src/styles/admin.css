@@ -749,4 +749,4 @@
   font: inherit; padding: 8px 10px; border: 1px solid var(--c-line);
   border-radius: var(--r-sharp); background: #fff;
 }
-.adm-promo-check { flex-direction: row !important; align-items: center !important; gap: 10px !important; }
+.adm-promo-grid .adm-promo-check { flex-direction: row; align-items: center; gap: 10px; }

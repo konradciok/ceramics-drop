@@ -98,6 +98,28 @@ const zeroStats = (): PromoStats => ({
   last_redeemed_at: null,
 });
 
+/**
+ * Reads every row matching `build`, paginating past PostgREST's `max_rows`
+ * cap (1000 on Supabase-hosted projects) via `.range()` — a promo's
+ * lifetime redemption/order count can exceed that, and a single-page read
+ * would silently understate stats instead of erroring.
+ */
+async function selectAllRows<T>(
+  build: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>,
+  errorPrefix: string,
+): Promise<T[]> {
+  const PAGE_SIZE = 1000;
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`${errorPrefix}: ${error.message}`);
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 /** All promotions (newest first) with live stats from the redemption ledger + orders join. */
 export async function listPromotions(supabase: SupabaseClient): Promise<PromoWithStats[]> {
   const { data: promoData, error: promoErr } = await supabase
@@ -108,29 +130,35 @@ export async function listPromotions(supabase: SupabaseClient): Promise<PromoWit
   const promos = (promoData ?? []) as PromoCode[];
   if (promos.length === 0) return [];
 
-  const { data: redemptionData, error: redemptionErr } = await supabase
-    .from('promo_redemptions')
-    .select('promo_id, status, settled_at')
-    .in('promo_id', promos.map((p) => p.id));
-  if (redemptionErr) throw new Error(`list redemptions failed: ${redemptionErr.message}`);
-  const redemptions = (redemptionData ?? []) as Array<{
+  const redemptions = await selectAllRows<{
     promo_id: string;
     status: 'pending' | 'redeemed' | 'released';
     settled_at: string | null;
-  }>;
+  }>(
+    async (from, to) =>
+      await supabase
+        .from('promo_redemptions')
+        .select('promo_id, status, settled_at')
+        .in('promo_id', promos.map((p) => p.id))
+        .range(from, to),
+    'list redemptions failed',
+  );
 
-  const { data: orderData, error: orderErr } = await supabase
-    .from('orders')
-    .select('promo_code, currency, discount, total')
-    .in('status', ['paid', 'refunded'])
-    .in('promo_code', promos.map((p) => p.code));
-  if (orderErr) throw new Error(`list promo orders failed: ${orderErr.message}`);
-  const orders = (orderData ?? []) as Array<{
+  const orders = await selectAllRows<{
     promo_code: string;
     currency: string;
     discount: number | null;
     total: number | null;
-  }>;
+  }>(
+    async (from, to) =>
+      await supabase
+        .from('orders')
+        .select('promo_code, currency, discount, total')
+        .in('status', ['paid', 'refunded'])
+        .in('promo_code', promos.map((p) => p.code))
+        .range(from, to),
+    'list promo orders failed',
+  );
 
   const byId = new Map<string, PromoStats>();
   const statsFor = (id: string) => {

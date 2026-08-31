@@ -1207,6 +1207,22 @@ describe('webhook markPaid private-sale double-payment (M-5)', () => {
     });
   });
 
+  it('(d) a promo redemption on the double-paid order settles released, not left pending forever', async () => {
+    const { supabase, rpcCalls } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [{ id: 'o1', private_sale_id: 'ps_1', promo_code: 'WELCOME10' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'released' },
+    });
+  });
+
   it('(e) already-refunded error after idempotency-key expiry: treated as success, CAS still proceeds to failed', async () => {
     refundsCreate.mockRejectedValue({ code: 'charge_already_refunded', message: 'Charge ch_1 has already been refunded.' });
     const { supabase, doublePaidWrites } = makeSucceededSupabase(doublePaidOpts());

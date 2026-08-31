@@ -539,6 +539,14 @@ export async function POST(req: Request) {
       p_order_id: orderId,
     });
     if (claimErr || claimed !== true) {
+      if (replay) {
+        // Same danger as the readAttemptStatus lookupFailed branch above: on a
+        // replay this PI may already be in the buyer's hands from the original
+        // request's response. The RPC is re-entrant, so a genuine retry should
+        // just re-claim cleanly — don't assume failure and kill a live payment;
+        // ask the client to retry and let a real exhaustion resolve then.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
       try {
         await stripe.paymentIntents.cancel(paymentIntent.id);
       } catch (cancelErr) {

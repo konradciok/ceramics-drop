@@ -32,8 +32,8 @@ describe('majorToMinor', () => {
     expect(majorToMinor('12.5')).toBe(1250);
   });
 
-  it('empty → null; garbage propagates NaN for the server-side reject', () => {
+  it('empty → null; garbage becomes a value the server zod check rejects (not a silently-dropped null)', () => {
     expect(majorToMinor('')).toBeNull();
-    expect(majorToMinor('abc')).toBeNaN();
+    expect(majorToMinor('abc')).toBe(-1);
   });
 });

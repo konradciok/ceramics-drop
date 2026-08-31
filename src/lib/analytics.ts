@@ -24,6 +24,8 @@ export type AnalyticsItem = {
   index?: number;
   item_list_id?: string;
   item_list_name?: string;
+  /** GA4-standard per-item discount (major units) — set only when a promo allocated one. */
+  discount?: number;
 };
 
 export type EcommercePayload = {
@@ -367,12 +369,10 @@ export function buildBeginCheckoutEventFromItems(
     options.eventId ?? createEventId('begin_checkout', items.map((i) => i.item_id).join('-'));
   const currency = options.currency ?? ANALYTICS_CURRENCY;
   // No-discount path stays the EXACT expression used before promo codes existed
-  // (byte-identical regression) — the rounding pass only kicks in once a
-  // discount is actually subtracted, so it can never introduce float dust for
-  // the vast majority of (non-promo) checkouts.
-  const discountMajor = options.discountMinor ? options.discountMinor / 100 : 0;
-  const subtotal =
-    discountMajor > 0 ? Number((sumItems(items) - discountMajor).toFixed(2)) : sumItems(items);
+  // (byte-identical regression) — allocateItemDiscounts returns `items`
+  // unchanged when there's nothing to allocate.
+  const discountedItems = allocateItemDiscounts(items, options.discountMinor ?? 0);
+  const subtotal = sumItems(discountedItems);
   const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
@@ -382,7 +382,7 @@ export function buildBeginCheckoutEventFromItems(
       checkout_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: {
-        ...ecommerce(items, currency),
+        ...ecommerce(discountedItems, currency),
         value: subtotal,
         ...(options.coupon ? { coupon: options.coupon } : {}),
       },
@@ -417,9 +417,8 @@ export function buildPurchaseEventFromItems(
   const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const currency = options.currency ?? ANALYTICS_CURRENCY;
   // Same byte-identical-when-no-discount rule as begin_checkout above.
-  const discountMajor = options.discountMinor ? options.discountMinor / 100 : 0;
-  const subtotal =
-    discountMajor > 0 ? Number((sumItems(items) - discountMajor).toFixed(2)) : sumItems(items);
+  const discountedItems = allocateItemDiscounts(items, options.discountMinor ?? 0);
+  const subtotal = sumItems(discountedItems);
   const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
@@ -429,7 +428,7 @@ export function buildPurchaseEventFromItems(
       order_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: {
-        ...ecommerce(items, currency),
+        ...ecommerce(discountedItems, currency),
         value: subtotal,
         ...(options.coupon ? { coupon: options.coupon } : {}),
         transaction_id: options.orderNo,
@@ -623,6 +622,44 @@ function withMeta(
 
 function sumItems(items: AnalyticsItem[]): number {
   return Number(items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+}
+
+/**
+ * Allocates an order-level merchandise discount (minor units) across items
+ * proportional to price, so per-item GA4/Meta revenue sums to the discounted
+ * order value instead of only the top-level `value` reflecting it. Quantity
+ * is always 1 in this catalogue (unique ceramics / POD prints), so "per item"
+ * is exact. Minor-unit (integer) largest-remainder allocation keeps the sum
+ * of allocated discounts exactly equal to `discountMinor` — no float drift.
+ * Returns `items` unchanged (no `discount` field added) when there's nothing
+ * to allocate, preserving the byte-identical-when-no-discount contract.
+ */
+export function allocateItemDiscounts<T extends { price: number }>(
+  items: T[],
+  discountMinor: number,
+): Array<T & { discount?: number }> {
+  if (!discountMinor || discountMinor <= 0 || items.length === 0) return items;
+  const pricesMinor = items.map((item) => Math.round(item.price * 100));
+  const totalMinor = pricesMinor.reduce((sum, p) => sum + p, 0);
+  if (totalMinor <= 0) return items;
+
+  const shares = pricesMinor.map((p) => (p * discountMinor) / totalMinor);
+  const allocatedMinor = shares.map((s) => Math.floor(s));
+  let remainder = discountMinor - allocatedMinor.reduce((sum, a) => sum + a, 0);
+  const byRemainderDesc = shares
+    .map((s, i) => ({ i, frac: s - allocatedMinor[i] }))
+    .sort((a, b) => b.frac - a.frac);
+  for (const { i } of byRemainderDesc) {
+    if (remainder <= 0) break;
+    allocatedMinor[i] += 1;
+    remainder -= 1;
+  }
+
+  return items.map((item, i) => ({
+    ...item,
+    price: Number((item.price - allocatedMinor[i] / 100).toFixed(2)),
+    discount: Number((allocatedMinor[i] / 100).toFixed(2)),
+  }));
 }
 
 function createEventId(eventName: string, seed: string): string {

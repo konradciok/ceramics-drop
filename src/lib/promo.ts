@@ -130,11 +130,16 @@ export function computePromoDiscountMinor(
  * caller, which treats the welcome email as best-effort.
  */
 export async function getActiveNewsletterPromo(supabase: SupabaseClient): Promise<PromoCode | null> {
+  // Same schedule window as checkPromoEligibility: only a currently-redeemable
+  // promo should ever reach a welcome email.
+  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('promo_codes')
     .select('*')
     .eq('newsletter_welcome', true)
     .eq('active', true)
+    .or(`starts_at.is.null,starts_at.lte.${now}`)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`newsletter promo lookup failed: ${error.message}`);

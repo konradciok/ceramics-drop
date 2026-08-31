@@ -92,6 +92,8 @@ describe('sendPurchaseConversions', () => {
     const ga4Input = d.sendGa4.mock.calls[0][1];
     expect(ga4Input.value).toBe(270); // (30000-3000)/100
     expect(ga4Input.coupon).toBe('WELCOME10');
+    // Single line item — the full discount allocates onto it, not just the top-level value.
+    expect(ga4Input.items).toEqual([expect.objectContaining({ item_id: 'k01', price: 60, discount: 30 })]);
   });
 
   it('promo: no discount (0) — GA4 value and payload shape are byte-identical to today (regression)', async () => {

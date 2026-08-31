@@ -298,7 +298,10 @@ function parseSnapshotJson(raw: string): CheckoutSnapshot | null {
       const coupon =
         'coupon' in parsed && typeof parsed.coupon === 'string' ? parsed.coupon : undefined;
       const discountMinor =
-        'discountMinor' in parsed && typeof parsed.discountMinor === 'number'
+        'discountMinor' in parsed &&
+        typeof parsed.discountMinor === 'number' &&
+        Number.isSafeInteger(parsed.discountMinor) &&
+        parsed.discountMinor >= 0
           ? parsed.discountMinor
           : undefined;
       return {

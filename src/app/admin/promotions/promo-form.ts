@@ -35,5 +35,9 @@ export function isoToDatetimeLocal(iso: string | null): string {
 export function majorToMinor(value: string): number | null {
   const t = value.trim();
   if (!t) return null;
-  return Math.round(Number(t) * 100);
+  const n = Number(t);
+  // NaN would serialize to `null` over JSON, hiding a bad entry from the
+  // server zod check as an omitted field instead of an invalid one — send a
+  // value the schema actually rejects (amount_pln is z.number().positive()).
+  return Number.isFinite(n) ? Math.round(n * 100) : -1;
 }

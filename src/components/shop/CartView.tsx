@@ -1059,6 +1059,8 @@ export function CartView({
                   onChange={(e) => setPromoInput(e.target.value)}
                   placeholder={t('cart.promo.placeholder')}
                   aria-label={t('cart.promo.label')}
+                  aria-describedby={promoError ? 'promo-error' : undefined}
+                  aria-invalid={promoError ? true : undefined}
                   autoComplete="off"
                   autoCapitalize="characters"
                   spellCheck={false}
@@ -1090,7 +1092,9 @@ export function CartView({
               </button>
             )}
             {promoError && (
-              <p className="promo-error" data-testid="promo-error">{t(promoErrorKey(promoError))}</p>
+              <p className="promo-error" id="promo-error" role="alert" data-testid="promo-error">
+                {t(promoErrorKey(promoError))}
+              </p>
             )}
           </div>
         )}

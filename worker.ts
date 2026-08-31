@@ -278,6 +278,16 @@ async function sweepPromoRedemptions(env: CloudflareEnv): Promise<void> {
       extra: { orderId },
     });
   }
+  if (result.errors > 0) {
+    // Per-row settle failures don't throw (the sweep must keep converging
+    // other rows), so a redemption stuck failing every run would otherwise be
+    // invisible outside worker logs.
+    await captureWorkerAlert(env, {
+      message: 'promo_reconcile_row_errors: one or more promo redemption settles failed this sweep',
+      level: 'warning',
+      extra: { errors: result.errors, scanned: result.scanned },
+    });
+  }
   console.log(JSON.stringify({ event: 'promo_reconcile_sweep_done', ...result }));
 }
 

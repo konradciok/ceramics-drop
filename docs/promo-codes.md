@@ -2,7 +2,7 @@
 
 Operator runbook and technical reference for the promo-code feature (2026-08-30). Both checkout tracks — ceramics and fine-art prints — support an optional code applied at the cart page and validated server-side at checkout.
 
-Implementation plan: `docs/superpowers/plans/2026-08-30-promo-codes-master.md` (master + 7 phase prompts). This doc is the durable reference; the plan is historical.
+Implementation plan: `superpowers/plans/2026-08-30-promo-codes-master.md` (master + 7 phase prompts). This doc is the durable reference; the plan is historical.
 
 ## Operator runbook (`/admin/promotions`)
 
@@ -60,7 +60,7 @@ Supabase — not Stripe — owns promotion definitions and redemption lifecycle.
 
 ### Redemption lifecycle
 
-```
+```text
                     claim_promo_redemption (checkout, after orders insert)
                               │
                               ▼
@@ -102,7 +102,7 @@ Both transitions are atomic RPCs (`supabase/migrations/20260830120000_promo_code
 | Layer | Files |
 |---|---|
 | Domain | `src/lib/promo.ts`, `supabase/migrations/20260830120000_promo_codes.sql` |
-| Checkout | `src/app/api/checkout/route.ts`, `src/app/api/stripe/webhook/route.ts`, `src/lib/expire-orders.ts`, `src/lib/promo-reconcile.ts`, `worker.ts` (5th cron sweep) |
+| Checkout | `src/app/api/checkout/route.ts`, `src/app/api/stripe/webhook/route.ts`, `src/lib/expire-orders.ts`, `src/lib/promo-reconcile.ts`, `worker.ts` (5th of the cron's 5 sweeps — see AGENTS.md) |
 | Cart UI | `src/components/shop/CartView.tsx`, `src/app/api/promo/validate/route.ts`, `src/lib/checkout-client.ts` (`attemptIdentityKey`) |
 | Admin | `src/app/admin/promotions/`, `src/app/api/admin/promotions/`, `src/lib/admin/promotions.ts` |
 | Newsletter | `src/lib/newsletter.ts` (`buildNewsletterWelcomeEmail`), `src/app/api/newsletter/confirm/route.ts` |

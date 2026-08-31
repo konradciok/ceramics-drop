@@ -135,6 +135,15 @@ describe('POST /api/promo/validate', () => {
     expect(fetchPromoByCode).not.toHaveBeenCalled();
   });
 
+  it('400s on a non-object JSON body (`null`) instead of 500ing on a null dereference', async () => {
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/promo/validate', { method: 'POST', body: 'null' }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid_request' });
+  });
+
   it('400s on empty or missing ids', async () => {
     expect((await post({ code: 'WELCOME10', ids: [] })).status).toBe(400);
     expect((await post({ code: 'WELCOME10' })).status).toBe(400);

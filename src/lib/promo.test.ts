@@ -245,20 +245,25 @@ describe('fetchPromoByCode', () => {
   });
 });
 
-/** Stub for getActiveNewsletterPromo's .select().eq().eq().limit().maybeSingle() chain. */
+/** Stub for getActiveNewsletterPromo's .select().eq().eq().or().or().limit().maybeSingle() chain. */
 function newsletterStub(result: { data: unknown; error: unknown }) {
   const calls: Record<string, unknown> = {};
+  const orFilters: string[] = [];
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((col: string, val: unknown) => {
       calls[`eq:${col}`] = val;
       return chain;
     }),
+    or: vi.fn((filter: string) => {
+      orFilters.push(filter);
+      return chain;
+    }),
     limit: vi.fn(() => chain),
     maybeSingle: vi.fn(async () => result),
   };
   const from = vi.fn(() => chain);
-  return { client: { from } as unknown as SupabaseClient, from, calls };
+  return { client: { from } as unknown as SupabaseClient, from, calls, orFilters };
 }
 
 describe('getActiveNewsletterPromo', () => {
@@ -269,6 +274,16 @@ describe('getActiveNewsletterPromo', () => {
     expect(from).toHaveBeenCalledWith('promo_codes');
     expect(calls['eq:newsletter_welcome']).toBe(true);
     expect(calls['eq:active']).toBe(true);
+  });
+
+  it('filters out a not-yet-started or already-expired promo at the query level', async () => {
+    const { client, orFilters } = newsletterStub({ data: null, error: null });
+    await getActiveNewsletterPromo(client);
+    // Same schedule window as checkPromoEligibility: starts_at in the past (or
+    // absent) AND expires_at in the future (or absent).
+    expect(orFilters).toHaveLength(2);
+    expect(orFilters[0]).toMatch(/^starts_at\.is\.null,starts_at\.lte\./);
+    expect(orFilters[1]).toMatch(/^expires_at\.is\.null,expires_at\.gt\./);
   });
 
   it('returns null when none is flagged', async () => {

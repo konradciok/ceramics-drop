@@ -939,7 +939,7 @@ ul { list-style:none; padding:0; margin:0; }
 .promo-toggle:hover { opacity:.95; }
 .promo-form { display:flex; gap:8px; }
 .promo-form input { flex:1; min-width:0; padding:10px 12px; border:1px solid var(--c-line); border-radius:2px; background:transparent; font:inherit; font-size:14px; text-transform:uppercase; }
-.promo-form input:focus { outline:none; border-color:var(--c-espresso); }
+.promo-form input:focus-visible { outline:2px solid var(--c-espresso); outline-offset:1px; border-color:var(--c-espresso); }
 .promo-form .promo-apply { padding:10px 16px; flex:none; }
 .promo-error { margin:8px 0 0; font-size:13px; color:#a04426; }
 .ship-opts { display:flex; flex-direction:column; gap:10px; margin:18px 0 6px; }

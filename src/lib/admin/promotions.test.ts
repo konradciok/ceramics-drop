@@ -23,7 +23,7 @@ function fakeSupabase(plan: Record<string, Result[]>) {
       const queue = plan[table] ?? [{ data: null, error: null }];
       const result = queue.length > 1 ? (queue.shift() as Result) : queue[0];
       const c: Record<string, unknown> = {};
-      for (const m of ['select', 'insert', 'update', 'eq', 'in', 'order', 'limit']) {
+      for (const m of ['select', 'insert', 'update', 'eq', 'in', 'order', 'limit', 'range']) {
         c[m] = (...args: unknown[]) => {
           log.push({ table, method: m, args });
           return c;
@@ -184,6 +184,33 @@ describe('listPromotions', () => {
       promo_codes: [{ data: null, error: { message: 'db down' } }],
     });
     await expect(listPromotions(supabase)).rejects.toThrow(/db down/);
+  });
+
+  it('paginates past PostgREST max_rows (1000) instead of understating stats', async () => {
+    // A full first page (1000 rows) must trigger a second `.range()` fetch —
+    // otherwise a promo with >1000 lifetime redemptions/orders would silently
+    // undercount (the bug CodeRabbit flagged on this function).
+    const fullPage = Array.from({ length: 1000 }, () => ({
+      promo_id: PROMO_ID,
+      status: 'redeemed' as const,
+      settled_at: '2026-08-29T10:00:00Z',
+    }));
+    const { supabase, log } = fakeSupabase({
+      promo_codes: [{ data: [promoRow()], error: null }],
+      promo_redemptions: [
+        { data: fullPage, error: null },
+        { data: [{ promo_id: PROMO_ID, status: 'redeemed', settled_at: '2026-08-30T10:00:00Z' }], error: null },
+      ],
+      orders: [{ data: [], error: null }],
+    });
+    const out = await listPromotions(supabase);
+    expect(out[0].stats.redeemed).toBe(1001);
+    expect(out[0].stats.last_redeemed_at).toBe('2026-08-30T10:00:00Z');
+    const rangeCalls = log.filter((e) => e.table === 'promo_redemptions' && e.method === 'range');
+    expect(rangeCalls.map((c) => c.args)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
   });
 });
 

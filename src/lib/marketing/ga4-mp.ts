@@ -6,6 +6,8 @@ export type Ga4Item = {
   item_category: string;
   item_brand: string;
   item_variant?: string;
+  /** GA4-standard per-item discount (major units) — set only when a promo allocated one. */
+  discount?: number;
 };
 
 export type Ga4PurchaseInput = {

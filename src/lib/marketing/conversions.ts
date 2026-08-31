@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { registryResolveKnownProducts } from '../products';
 import { registryPrintById } from '../prints';
 import { variantLabel } from '../print-cart';
-import { toAnalyticsItem } from '../analytics';
+import { toAnalyticsItem, allocateItemDiscounts } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
@@ -63,7 +63,7 @@ export async function sendPurchaseConversions(
     item_price: item.unit_price / 100,
   }));
 
-  const ga4Items = order.items.map((item) => {
+  const grossGa4Items = order.items.map((item) => {
     // Print line: ceramic registry can't resolve a design id, so build the item
     // from the print registry + persisted variant (value/contents already correct).
     if (item.variant) {
@@ -92,6 +92,11 @@ export async function sendPurchaseConversions(
       ...(ai?.item_variant ? { item_variant: ai.item_variant } : {}),
     };
   });
+  // Mirrors analytics.ts's client-side purchase builder: allocate the
+  // merchandise discount across items (proportional, minor-unit exact) so
+  // per-item GA4 revenue sums to the discounted order value instead of only
+  // the top-level `value` reflecting it.
+  const ga4Items = allocateItemDiscounts(grossGa4Items, order.discount ?? 0);
 
   const emailHash = await hashUserField(order.email, normalizeEmail);
   const shippingAddress = normalizeShippingAddress(order.shipping_address);

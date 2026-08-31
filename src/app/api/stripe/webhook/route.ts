@@ -188,8 +188,8 @@ async function handlePrivateSaleDoublePaid(
     .update({ refund_pending_at: new Date().toISOString() })
     .eq('payment_intent_id', pi)
     .eq('status', 'pending')
-    .select('id, private_sale_id')) as {
-      data: Array<{ id: string; private_sale_id: string | null }> | null;
+    .select('id, private_sale_id, promo_code')) as {
+      data: Array<{ id: string; private_sale_id: string | null; promo_code: string | null }> | null;
       error: { message: string } | null;
     };
   if (markErr) throw new Error(`double-paid marker CAS failed for ${pi}: ${markErr.message}`);
@@ -218,6 +218,9 @@ async function handlePrivateSaleDoublePaid(
   // Throws on failure → 5xx → the retry re-enters via the same 23505, the
   // marker CAS re-claims (still pending), the refund no-ops on its key.
   await releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId });
+  // Order ends `failed` below — a promo claim on it must not linger `pending`
+  // and over-count max_redemptions, same as every other unpaid terminal path.
+  await settlePromoReleased(supabase, marked[0]);
 
   // Alert BEFORE the terminal CAS: once the order is `failed`, a redelivery
   // acks through the marker-zero-row branch without re-alerting, so an isolate

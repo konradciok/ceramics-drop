@@ -1362,6 +1362,19 @@ describe('POST /api/checkout', () => {
       expect(releaseHold).not.toHaveBeenCalled();
     });
 
+    it('replayed POST with a claim RPC failure → 409 checkout_in_progress, NEVER cancels the (possibly buyer-held) PI', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+      selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      claimPromoRpc.mockResolvedValueOnce({ data: false, error: null });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(updateOrderStatus).not.toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
     it('Stripe-minimum clamp: 100% code + odbior lands the PI exactly on 200 gr', async () => {
       fetchPromoByCode.mockResolvedValueOnce({
         promo: mkPromo({ code: 'GRATIS', percent: 100 }),

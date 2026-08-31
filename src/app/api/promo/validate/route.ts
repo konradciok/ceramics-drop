@@ -39,7 +39,9 @@ export async function POST(req: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const parsed: unknown = await req.json();
+    if (!parsed || typeof parsed !== 'object') throw new Error('not an object');
+    body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
