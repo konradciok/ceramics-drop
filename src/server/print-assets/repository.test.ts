@@ -13,7 +13,7 @@ function makeChain(result: unknown): Record<string, unknown> {
     catch: (fn: (e: unknown) => unknown) => Promise.resolve(result).catch(fn),
     finally: (fn: () => void) => Promise.resolve(result).finally(fn),
   };
-  for (const m of ['eq', 'select', 'order']) {
+  for (const m of ['eq', 'select', 'order', 'abortSignal']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain['maybeSingle'] = vi.fn().mockResolvedValue(result);

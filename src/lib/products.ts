@@ -18,6 +18,7 @@
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
+import { readWithFallback } from './supabase-timeout';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -330,19 +331,17 @@ const REGISTRY_CATALOG: CeramicCatalog = {
 
 async function loadCeramicCatalog(): Promise<CeramicCatalog> {
   if (catalogSource() === 'code') return REGISTRY_CATALOG;
-  try {
+  // Resilience default (Stage 4a): a DB read failure (including a bounded
+  // Supabase timeout — see supabase-timeout.ts) degrades to the code registry
+  // — identical to the DB at parity — rather than 500-ing every storefront
+  // surface + checkout. The blip is logged + reported to Sentry; edits
+  // reappear once the DB recovers. (Trade-off: a non-active product briefly
+  // reappears during an outage. Reversible to fail-loud by rethrowing here.)
+  return readWithFallback('ceramic-catalog', async () => {
     const { loadCeramicProductsFromDb } = await import('./catalog/load');
     const products = await loadCeramicProductsFromDb();
     return { products, byId: new Map(products.map((p) => [p.id, p])), byCategory: groupByCategory(products) };
-  } catch (err) {
-    // Resilience default (Stage 4a): a DB read failure degrades to the code
-    // registry — identical to the DB at parity — rather than 500-ing every
-    // storefront surface + checkout. The blip is logged; edits reappear once the
-    // DB recovers. (Trade-off: a non-active product briefly reappears during an
-    // outage. Reversible to fail-loud by rethrowing here.)
-    console.error('[catalog] ceramic DB read failed; falling back to code registry', err);
-    return REGISTRY_CATALOG;
-  }
+  }, REGISTRY_CATALOG);
 }
 
 /**
