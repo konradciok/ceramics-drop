@@ -38,7 +38,7 @@ Serwis jest na poziomie **solidnego technicznego fundamentu, ale bez zamkniętej
 Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (Supabase/Cloudflare/Sentry/GA4) i nie były widoczne w pierwszym przebiegu audytu z powodu braku dostępu do tych systemów; poprzedzają pozostałą listę, bo są aktywne i mierzalne teraz, nie potencjalne.
 
 1. **Trwający incydent produkcyjny:** w ostatnich 24 h **10,3% requestów** do `anna-ciok.studio` (2502/24401) kończy się HTTP 504, rozłożone po PDP wszystkich czterech lokalizacji, ze szczytem 479/h; Sentry nie zarejestrował ani jednego zdarzenia w tym oknie, więc błąd dzieje się poniżej warstwy aplikacji i obecny monitoring go nie łapie. Fakt produkcyjny (Cloudflare GraphQL Analytics + Sentry), zob. §13.2.
-2. **Zero sprzedaży od 36 dni i zerowa dostępna ceramika:** `piece_state` pokazuje 0 z 126 sztuk możliwych do kupienia (125 w stanie showroom, 1 sold); GA4 potwierdza niezależnie 0 zakupów w każdej kategorii przez ostatnie 30 dni, lejek `add_to_cart → begin_checkout → purchase` = 10 → 1 → 0. Żadna poprawka techniczna SEO nie zwiększy przychodu, dopóki nie ma czego kupić — to zmienia sens priorytetyzacji reszty roadmapy. Fakt produkcyjny (Supabase + GA4), zob. §13.3.
+2. **Zero sprzedaży od 59 dni i zerowa dostępna ceramika:** `piece_state` (126 wierszy) pokazuje 0 sztuk możliwych do kupienia — 121 w statusie `sold` (120 z nich dodatkowo `showroom=true`, 1 poza showroomem) i 5 `available` ale również `showroom=true`, więc żadna nie jest dziś kupowalna; ostatnie opłacone zamówienie to `2026-07-03`, czyli 59 dni przed datą audytu. GA4 potwierdza niezależnie 0 zakupów w każdej kategorii w oknie ostatnich 30 dni (`--days 30`, nie „cały sierpień"), lejek `add_to_cart → begin_checkout → purchase` = 10 → 1 → 0. Żadna poprawka techniczna SEO nie zwiększy przychodu, dopóki nie ma czego kupić — to zmienia sens priorytetyzacji reszty roadmapy. Fakt produkcyjny (Supabase + GA4), zob. §13.3.
 3. **Martwe URL-e po migracji ze Shopify pochłaniają ok. ⅓ ruchu:** GA4 pokazuje, że landing pages typu `/en/products/{handle}`, `/en/pages/about-me`, `/en/products/appointment` (ślady starego sklepu Shopify — GA4 property jest opisana w repo jako będąca „pod kontem Shopify") odpowiadają za ok. 280 z ~830 sesji w 30 dni, niemal wszystkie z bounce rate 100%; wszystkie cztery sprawdzone przykłady zwracają dziś żywy HTTP 404 bez przekierowania. Fakt produkcyjny (GA4 + curl), zob. §13.4.
 4. `www.anna-ciok.studio` serwuje duplikat z HTTP 200 zamiast stałego redirectu do apexu, i — potwierdzone teraz na poziomie konfiguracji Cloudflare, nie tylko curl — w strefie nie istnieje ani jedna reguła w fazie `http_request_dynamic_redirect`, ani żaden Page Rule, które mogłyby to robić. Canonical jest tylko sygnałem; redirect jest silniejszym sygnałem konsolidacji ([Google](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)).
 5. W trybie DB błąd odczytu katalogu przełącza storefront na pełny rejestr kodowy. Ponieważ wpisy kodowe domyślnie są publiczne, `draft`/`hidden`/`archived` mogą wrócić do sitemap, feedów i stron w czasie awarii. (Stan na 2026-08-31: w bazie nie ma obecnie żadnej ceramiki w statusie `draft`/`hidden` do ujawnienia — ryzyko jest strukturalne, nie aktywne w tej chwili; zob. §13.3.)
@@ -62,7 +62,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 8. Usunąć ręczne liczniki z metadanych oraz dodać lokalizowany model treści SEO kolekcji z preview/publish/rollback.
 9. Zbudować repo-native crawler/test kontraktów SEO na istniejącym Playwright/Vitest.
 10. Wykonać spike ProductGroup/hasVariant i wariantowych wierszy feedu dla printów.
-11. Ustanowić baseline GMC/CrUX i przeglądy 28/56/90 dni. GA4 baseline i GSC domain-verification już potwierdzone 2026-08-31 (§13.6) — pozostaje GMC i CrUX oraz regularny cadence przeglądu.
+11. Ustanowić baseline GMC/CrUX i przeglądy 28/56/90 dni. GA4 baseline już potwierdzony 2026-08-31 (§13.3, §13.7), a GSC domain-verification potwierdzona przez DNS TXT (§13.5) — pozostaje GMC i CrUX oraz regularny cadence przeglądu.
 
 ## 2. Stan obecny
 
@@ -265,7 +265,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 
 - **Kategoria / ważność / confidence:** reliability/crawl health; **critical**; **confirmed, active**.
 - **Dowód:** Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, ostatnie 24 h (2026-08-31): 2502 z 24401 requestów (**10,3%**) zwróciło `edgeResponseStatus 504`; szczyt 479/h; rozkład po ścieżkach obejmuje PDP ceramiki i printów we wszystkich czterech lokalizacjach (`/kubki/k12`, `/talerzyki/t11`, `/fine-art-prints/fap012`, `/de/talerze-srednie/...`). Sentry (org `anna-ciok-studio`) zwraca zero unresolved i zero resolved issues w tym samym oknie, także dla zapytania „timeout" — błąd nie dociera do warstwy aplikacyjnej, którą monitoruje Sentry. Supabase performance advisors nie wskazują brakujących indeksów ani oczywistego wolnego zapytania (katalog jest mały: 166 produktów, 126 wierszy `piece_state`), co przesuwa podejrzenie w stronę warstwy Workers/edge albo sieciowego opóźnienia do Supabase, a nie SQL.
-- **Wpływ:** Googlebot trafiający na PDP z prawdopodobieństwem ~1/10 dostaje 5xx; przy takiej skali ryzyko realnego zgłoszenia „Server error (5xx)" w GSC Crawl Stats i throttlingu crawl rate jest wysokie. GA4 z tego samego okna (30/31.08) pokazuje bounce rate 100% na dwa ostatnie dni — spójne z realnym wpływem na zaangażowanie, choć nie potwierdza wyłącznej przyczyny.
+- **Wpływ:** zmierzony wskaźnik (10,3% 504) jest agregatem po całym ruchu do strefy (24 401 requestów, wszyscy klienci), nie po samym Googlebocie ani wyłącznie po PDP — próbka ścieżek w §13.2 pokazuje, że PDP są w niej obecne, ale nie mamy segmentacji po user-agencie ani osobnego mianownika dla samego Googlebota, więc jego rzeczywista ekspozycja na 5xx jest **nieznana**, nie ~1/10. Przy takiej skali agregatu ryzyko realnego zgłoszenia „Server error (5xx)" w GSC Crawl Stats i throttlingu crawl rate jest wysokie, ale to ryzyko, nie zmierzony fakt. GA4 z tego samego okna (30/31.08) pokazuje bounce rate 100% na dwa ostatnie dni — spójne kontekstowo z wpływem na zaangażowanie, nie dowód wyłącznej przyczyny.
 - **Reprodukcja:** `Cloudflare GraphQL Analytics` → `httpRequestsAdaptiveGroups` filtrowane po `edgeResponseStatus: 504` dla strefy, dowolne 24 h; porównać z Sentry `search_issues` dla tego samego okna.
 - **Rozwiązanie:** poza zakresem czysto SEO — wymaga `wrangler tail`/logów Workers i sprawdzenia zdrowia/limitów połączeń Supabase w czasie rzeczywistym. Do rozważenia: alerting na poziomie Cloudflare (Notifications na 5xx rate) niezależny od Sentry, bo obecny brak pokrycia to samodzielna luka w monitoringu.
 - **Zależności / koszt:** platform/backend owner; **diagnoza S, naprawa zależna od przyczyny**; wysokie ryzyko dalszej utraty crawl budget i konwersji, jeśli się przeciąga.
@@ -281,7 +281,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Zależności / koszt:** historia handles Shopify (część już widoczna w GA4, reszta może wymagać eksportu ze starego Shopify admin, jeśli wciąż dostępny); **S/M**; niskie ryzyko (dodawanie przekierowań jest bezpieczne).
 - **Weryfikacja:** bounce rate na zmapowanych URL-ach spada, sesje z tych wejść zaczynają przechodzić dalej niż strona wejścia (GA4 landing-page report po 28 dniach); 0 nowych 404 dla listy zmapowanych URL-i w kontraktowym teście.
 
-### SEO-018 — zerowy dostępny katalog ceramiki i zerowa konwersja od 36 dni
+### SEO-018 — zerowy dostępny katalog ceramiki i zerowa konwersja od 59 dni
 
 - **Kategoria / ważność / confidence:** business/conversion (kontekst blokujący ROI reszty roadmapy, nie klasyczny defekt SEO); **critical**; **confirmed**.
 - **Dowód:** Supabase `piece_state` (126 wierszy): `purchasable = 0`, `sold = 121`, `showroom = 125`; ostatnie opłacone zamówienie w `orders` ma `paid_at` 2026-07-03 (PLN, 28 zamówień `paid` łącznie, wszystkie przed tą datą). Niezależnie, GA4 Data API dla ostatnich 30 dni: `itemsPurchased = 0` i `itemRevenue = 0` w każdej kategorii (`fine-art-prints`, `talerze-srednie`, `kubki`, `wazony`); lejek `add_to_cart → begin_checkout → purchase` = 10 → 1 → 0. `drops` ma jeden rekord w statusie `active`, mimo braku sprzedawalnej ceramiki.
@@ -389,7 +389,7 @@ Legenda: **S** ≤1 dzień, **M** 2–4 dni, **L** 5–10 dni (przed estymacją 
 | P0-02 | Fail-closed public catalog projection; `src/lib/products.ts`, catalog loaders, sitemap/feed tests | DB/catalog; M; ryzyko pustszego storefrontu przy outage; Next dev | draft/hidden/archived nigdy publiczne przy DB error; sold/showroom zachowane; alarm fallback | Zero exposure in synthetic failure; K; osobny PR |
 | P0-03 | Jednolity preview noindex; PDP/home helper + metadata tests | Brak; S; niskie; Next dev | brak/empty/nonempty/repeated query matrix; preview noindex,nofollow; clean canonical | Crawl query variants; K; osobny mały PR |
 | P0-04 | Udokumentowany currency/GMC contract i decyzja A/B/C; `src/lib/currency*`, feed/schema/pricing docs | GMC targets + owner; M spike; wysokie ryzyko złej decyzji bez danych; merchant+dev | Dla każdego target feedu cena/waluta identyczna na landing HTML, JSON-LD i checkout; zachowanie bez cookie deterministyczne | GMC mismatch baseline i 28 dni; K/O; spike osobno, implementacja w następnym PR |
-| P0-05 | Potwierdzenie zewnętrznych konsol i baseline | GSC/GMC/Bing/GA4/CrUX access; S; niskie; analytics owner | Domain property, sitemap submitted, GMC association, export baseline, owner/cadence | Baseline zapisany z datą; O; bez PR lub docs-only PR — **GA4 i GSC domain-verification już potwierdzone 2026-08-31 (§13.6), pozostaje GMC/Bing/CrUX** |
+| P0-05 | Potwierdzenie zewnętrznych konsol i baseline | GSC/GMC/Bing/GA4/CrUX access; S; niskie; analytics owner | Domain property, sitemap submitted, GMC association, export baseline, owner/cadence | Baseline zapisany z datą; O; bez PR lub docs-only PR — **GA4 baseline potwierdzony 2026-08-31 (§13.3, §13.7); GSC domain-verification potwierdzona przez DNS TXT (§13.5); pozostaje GMC/Bing/CrUX** |
 | P0-06 | Zatrzymać incydent 504 (SEO-016); alert niezależny od Sentry na 5xx rate | Cloudflare Workers logs, Supabase health; diagnoza S, naprawa zależna od przyczyny; wysokie ryzyko dalszej utraty crawl budget; platform/backend owner | 504 rate <0,5% rolling 24 h; nowy alert faktycznie łapiący powtórkę | Cloudflare GraphQL Analytics 504 rate; O; incydent, nie standardowy PR |
 | P0-07 | Mapa przekierowań legacy Shopify → aktualne PDP/strony (SEO-017) dla top landing pages z GA4 | GA4 30-dniowy landing-page report jako źródło listy; ewentualnie eksport ze starego Shopify admin; S/M; niskie ryzyko; Next dev + content | każdy zmapowany URL 301 do najbliższego odpowiednika; świadome 404 dla reszty, nigdy hurtowo do home | bounce rate na zmapowanych URL-ach spada w GA4 po 28 dniach; K; osobny PR |
 
@@ -513,7 +513,7 @@ RACI w skrócie: developer jest accountable za techniczną prawdziwość; owner 
 
 ## 12. Open questions
 
-1. ~~Czy Domain property GSC dla `anna-ciok.studio` jest zweryfikowane i od kiedy?~~ **Częściowo odpowiedziane 2026-08-31:** DNS TXT `google-site-verification=rVISxSgylS5mAw2Meq_NFO8N-y5L54zkB1jzyT3d2XU` istnieje na strefie, więc weryfikacja domenowa realnie się odbyła. Nadal nieznane: od kiedy, czy sitemapa jest submitted, i czy istnieje osobna historia dla `.com`/`www` — wymaga dostępu do samej konsoli GSC (zob. §13.6).
+1. ~~Czy Domain property GSC dla `anna-ciok.studio` jest zweryfikowane i od kiedy?~~ **Częściowo odpowiedziane 2026-08-31:** DNS TXT `google-site-verification=rVISxSgylS5mAw2Meq_NFO8N-y5L54zkB1jzyT3d2XU` istnieje na strefie, więc weryfikacja domenowa realnie się odbyła. Nadal nieznane: od kiedy, czy sitemapa jest submitted, i czy istnieje osobna historia dla `.com`/`www` — wymaga dostępu do samej konsoli GSC (zob. §13.5).
 2. Czy GMC jest aktywne, jakie data sources/target countries/languages/currencies są skonfigurowane i czy automatic item updates są włączone?
 3. Czy GBP jest osobnym rynkiem handlowym/target feedem, czy tylko wygodą użytkownika? Czy EUR feed ma być kierowany do UK? (Kontekst z §13.3: na 2026-08-31 zero zrealizowanych zamówień w EUR/GBP w historii `orders` — decyzja rynkowa nie jest jeszcze wymuszona przez utracony przychód.)
 4. ~~Jakie kategorie i zapytania generują impressions/non-brand clicks?~~ **Częściowo odpowiedziane 2026-08-31:** GA4 pokazuje rozkład geograficzny organic (Polska 79, Hiszpania 27, UK 3, Belgia/Niemcy/Grecja po 1 sesji w 30 dni) i kanałowy (Direct 457, Organic Social 162, Organic Search 112, Referral 39, Paid Search 1) — ale **nie** zapytania/query-level, bo to wymaga GSC Search Analytics, wciąż niedostępnego. Zob. §13.7.
@@ -539,7 +539,7 @@ Ten rozdział dokumentuje follow-up tego samego dnia: po zamknięciu audytu w §
 | System | Sposób dostępu | Zakres wykorzystany |
 |---|---|---|
 | Supabase | `execute_sql`/`list_tables`/`get_advisors` na projekcie `wnlysejenowymjdxlnaq` | stan `products`/`piece_state`/`orders`/`cms_documents`/`drops`, advisory bezpieczeństwa i wydajności |
-| Cloudflare | API token z uprawnieniami do konta `Konrad.ciok@gmail.com's Account`; `GET /zones`, `GET /zones/{id}/dns_records`, `GET /zones/{id}/rulesets`, `GET /zones/{id}/pagerules`, GraphQL Analytics `httpRequestsAdaptiveGroups` | konfiguracja strefy `anna-ciok.studio` (`df154a46a71277a8b5b4a9e3d9af23ad`), ruch/statusy z ostatnich 24 h |
+| Cloudflare | API token z uprawnieniami do konta właściciela serwisu (`3ebc59b80b15b6b4850ae0734a24ce26`); `GET /zones`, `GET /zones/{id}/dns_records`, `GET /zones/{id}/rulesets`, `GET /zones/{id}/pagerules`, GraphQL Analytics `httpRequestsAdaptiveGroups` | konfiguracja strefy `anna-ciok.studio` (`df154a46a71277a8b5b4a9e3d9af23ad`), ruch/statusy z ostatnich 24 h |
 | Sentry | `find_organizations`/`search_issues` | organizacja `anna-ciok-studio`, okna 24h/90d, zapytania `is:unresolved`/`is:resolved`/`timeout` |
 | GA4 Data API | `npm run ga4:report` (istniejący skrypt repo) + ad-hoc `runReport` wywołania tym samym service accountem | sesje/purchases/funnel (skrypt), plus kanały, landing pages, geografia organic (ad-hoc) |
 
@@ -547,7 +547,7 @@ Ten rozdział dokumentuje follow-up tego samego dnia: po zamknięciu audytu w §
 
 Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, trailing 24h od momentu pomiaru:
 
-```
+```text
 Suma requestów:      24 401
 edgeResponseStatus 200:  18 074
 edgeResponseStatus 504:   2 502   (10,3%)
@@ -589,7 +589,7 @@ status='active' → 1 (jedyny rekord)
 
 GA4 (`npm run ga4:report -- all --days 30`), niezależnie od powyższego:
 
-```
+```text
 === Purchases & Revenue by Category (30d) ===
 itemCategory     itemsViewed  itemsAddedToCart  itemsPurchased  itemRevenue
 fine-art-prints  62           4                 0               0
@@ -603,13 +603,13 @@ begin_checkout   1 event,   1 użytkownik
 purchase         0
 ```
 
-Dwa niezależne systemy (transakcyjna baza i GA4) zgadzają się: brak sprzedaży od `2026-07-03`, zero purchase events w GA4 przez cały sierpień, i **cały katalog ceramiki jest dziś niekupowalny** (0/126). To nie jest klasyczny finding SEO — to kontekst, który zmienia, co w §8 ma sens robić najpierw (stąd SEO-018 w §4 i pozycja 0 w „Najważniejsze następne działania").
+Dwa niezależne systemy (transakcyjna baza i GA4) zgadzają się: brak sprzedaży od `2026-07-03` (59 dni przed datą audytu), zero purchase events w GA4 w oknie ostatnich 30 dni (`--days 30`, nie potwierdzone dla całego sierpnia — okno nie pokrywa 1–2.08), i **cały katalog ceramiki jest dziś niekupowalny** (0/126). To nie jest klasyczny finding SEO — to kontekst, który zmienia, co w §8 ma sens robić najpierw (stąd SEO-018 w §4 i pozycja 0 w „Najważniejsze następne działania").
 
 ### 13.4 Legacy Shopify URL-e (SEO-017)
 
 GA4 top landing pages (30 dni, `landingPagePlusQueryString`, malejąco po sesjach) — wybrane wiersze:
 
-```
+```text
 landingPagePlusQueryString                                    sessions  bounceRate
 (not set)                                                      113      0.63
 /sklep                                                           92      0.30
@@ -628,7 +628,7 @@ landingPagePlusQueryString                                    sessions  bounceRa
 
 Suma sesji na URL-ach o wzorcu `/products/{handle}` lub `/pages/{slug}` w tej próbce: ok. 280 z ~830 sesji 30-dniowych (ok. ⅓), niemal wszystkie z `bounceRate = 1`. `docs/analytics-stack.md` potwierdza, że GA4 property jest „pod kontem Shopify" — te URL-e są reliktem migracji, nie losowym spamem. Weryfikacja produkcyjna (`curl.exe --max-redirs 0`, 2026-08-31):
 
-```
+```text
 /en/products/cumulus-05                    → HTTP/1.1 404 Not Found
 /en/pages/about-me                         → HTTP/1.1 404 Not Found
 /en/products/appointment                   → HTTP/1.1 404 Not Found
@@ -649,7 +649,7 @@ Poza brakiem jakiegokolwiek zdarzenia korelującego z incydentem 504 (§13.2), s
 
 ### 13.7 GA4 — kanały i geografia organic
 
-```
+```text
 === Channel mix (30d) ===
 Direct          457 sesji | 34 engaged  | 0 conversions
 Organic Social  162 sesji | 109 engaged | 0 conversions
