@@ -39,7 +39,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 
 1. **Trwający incydent produkcyjny:** w ostatnich 24 h **10,3% requestów** do `anna-ciok.studio` (2502/24401) kończy się HTTP 504, rozłożone po PDP wszystkich czterech lokalizacji, ze szczytem 479/h; Sentry nie zarejestrował ani jednego zdarzenia w tym oknie, więc błąd dzieje się poniżej warstwy aplikacji i obecny monitoring go nie łapie. Fakt produkcyjny (Cloudflare GraphQL Analytics + Sentry), zob. §13.2.
 2. **Zero sprzedaży od 59 dni i zerowa dostępna ceramika:** `piece_state` (126 wierszy) pokazuje 0 sztuk możliwych do kupienia — 121 w statusie `sold` (120 z nich dodatkowo `showroom=true`, 1 poza showroomem) i 5 `available` ale również `showroom=true`, więc żadna nie jest dziś kupowalna; ostatnie opłacone zamówienie to `2026-07-03`, czyli 59 dni przed datą audytu. GA4 potwierdza niezależnie 0 zakupów w każdej kategorii w oknie ostatnich 30 dni (`--days 30`, nie „cały sierpień”), lejek `add_to_cart → begin_checkout → purchase` = 10 → 1 → 0. Żadna poprawka techniczna SEO nie zwiększy przychodu, dopóki nie ma czego kupić — to zmienia sens priorytetyzacji reszty roadmapy. Fakt produkcyjny (Supabase + GA4), zob. §13.3.
-3. **Martwe URL-e po migracji ze Shopify pochłaniają ok. ⅓ ruchu:** GA4 pokazuje, że landing pages typu `/en/products/{handle}`, `/en/pages/about-me`, `/en/products/appointment` (ślady starego sklepu Shopify — GA4 property jest opisana w repo jako będąca „pod kontem Shopify”) odpowiadają za ok. 280 z ~830 sesji w 30 dni, niemal wszystkie z bounce rate 100%; wszystkie cztery sprawdzone przykłady zwracają dziś żywy HTTP 404 bez przekierowania. Fakt produkcyjny (GA4 + curl), zob. §13.4.
+3. **Martwe URL-e po migracji ze Shopify pochłaniają rzędu ⅓ ruchu:** GA4 pokazuje, że landing pages typu `/en/products/{handle}`, `/en/pages/about-me`, `/en/products/appointment` (ślady starego sklepu Shopify — GA4 property jest opisana w repo jako będąca „pod kontem Shopify”) odpowiadają za ok. 280 sesji w 30 dni na tle ~800 sesji łącznie w tym samym oknie (§13.7), niemal wszystkie z bounce rate 100%; wszystkie cztery sprawdzone przykłady zwracają dziś żywy HTTP 404 bez przekierowania. 280 pochodzi z próbki top 20 landing pages (limit zapytania), nie z pełnego zliczenia, więc „ok. ⅓” to rząd wielkości, nie precyzyjny odsetek. Fakt produkcyjny (GA4 + curl), zob. §13.4.
 4. `www.anna-ciok.studio` serwuje duplikat z HTTP 200 zamiast stałego redirectu do apexu, i — potwierdzone teraz na poziomie konfiguracji Cloudflare, nie tylko curl — w strefie nie istnieje ani jedna reguła w fazie `http_request_dynamic_redirect`, ani żaden Page Rule, które mogłyby to robić. Canonical jest tylko sygnałem; redirect jest silniejszym sygnałem konsolidacji ([Google](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)).
 5. W trybie DB błąd odczytu katalogu przełącza storefront na pełny rejestr kodowy. Ponieważ wpisy kodowe domyślnie są publiczne, `draft`/`hidden`/`archived` mogą wrócić do sitemap, feedów i stron w czasie awarii. (Stan na 2026-08-31: w bazie nie ma obecnie żadnej ceramiki w statusie `draft`/`hidden` do ujawnienia — ryzyko jest strukturalne, nie aktywne w tej chwili; zob. §13.3.)
 6. Dla `/en`, `/es`, `/de` cookie GBP zmienia widoczną cenę, ale JSON-LD i feed pozostają w EUR. To jest celowo deterministyczne, lecz bez jawnej strategii landing URL/GMC stwarza ryzyko price/currency mismatch. Google wymaga zgodności feedu, landing page i structured data ([Merchant Center](https://support.google.com/merchants/answer/4752265), [specyfikacja feedu](https://support.google.com/merchants/answer/7052112)). (Dane `orders`: wszystkie 28 opłaconych zamówień są w PLN; EUR ma tylko 3 `expired`, zero `paid`; GBP/USD/CAD zero zamówień w historii — mechanizm jest realny, ale na 2026-08-31 nie zjadł jeszcze żadnego zrealizowanego przychodu. Zob. §13.3.)
@@ -264,17 +264,17 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 ### SEO-016 — produkcyjny 504 storm na stronach produktowych
 
 - **Kategoria / ważność / confidence:** reliability/crawl health; **critical**; **confirmed, active**.
-- **Dowód:** Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, ostatnie 24 h (2026-08-31): 2502 z 24401 requestów (**10,3%**) zwróciło `edgeResponseStatus 504`; szczyt 479/h; rozkład po ścieżkach obejmuje PDP ceramiki i printów we wszystkich czterech lokalizacjach (`/kubki/k12`, `/talerzyki/t11`, `/fine-art-prints/fap012`, `/de/talerze-srednie/...`). Sentry (org `anna-ciok-studio`) zwraca zero unresolved i zero resolved issues w tym samym oknie, także dla zapytania „timeout” — błąd nie dociera do warstwy aplikacyjnej, którą monitoruje Sentry. Supabase performance advisors nie wskazują brakujących indeksów ani oczywistego wolnego zapytania (katalog jest mały: 166 produktów, 126 wierszy `piece_state`), co przesuwa podejrzenie w stronę warstwy Workers/edge albo sieciowego opóźnienia do Supabase, a nie SQL.
-- **Wpływ:** zmierzony wskaźnik (10,3% 504) jest agregatem po całym ruchu do strefy (24 401 requestów, wszyscy klienci), nie po samym Googlebocie ani wyłącznie po PDP — próbka ścieżek w §13.2 pokazuje, że PDP są w niej obecne, ale nie mamy segmentacji po user-agencie ani osobnego mianownika dla samego Googlebota, więc jego rzeczywista ekspozycja na 5xx jest **nieznana**, nie ~1/10. Przy takiej skali agregatu ryzyko realnego zgłoszenia „Server error (5xx)” w GSC Crawl Stats i throttlingu crawl rate jest wysokie, ale to ryzyko, nie zmierzony fakt. GA4 z tego samego okna (30/31.08) pokazuje bounce rate 100% na dwa ostatnie dni — spójne kontekstowo z wpływem na zaangażowanie, nie dowód wyłącznej przyczyny.
+- **Dowód:** Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, ostatnie 24 h (2026-08-31, 14:41 UTC — druga, pełna próbka po korekcie z pierwszego przebiegu, zob. §13.2 poniżej): 2602 z 24623 requestów (**10,6%**) zwróciło `edgeResponseStatus 504`; szczyt 479/h w pierwszym pomiarze, w ostatniej godzinie tempo spadło do pojedynczych 504/min, więc incydent **wciąż trwa, ale nie w pierwotnym natężeniu**; rozkład po ścieżkach obejmuje PDP ceramiki i printów we wszystkich czterech lokalizacjach (`/kubki/k12`, `/talerzyki/t11`, `/fine-art-prints/fap012`, `/de/talerze-srednie/...`). Sentry (org `anna-ciok-studio`) zwraca zero unresolved i zero resolved issues w tym samym oknie, także dla zapytania „timeout” — Cloudflare pokazuje odpowiedź 504, Sentry nie ma pasującego zdarzenia, ale to nie dowodzi, że błąd faktycznie powstaje poniżej warstwy aplikacyjnej — **to hipoteza, nie potwierdzony fakt**, oparta na braku korelacji, nie na bezpośrednim dostępie do logów Workers. Supabase performance advisors nie wskazują brakujących indeksów ani oczywistego wolnego zapytania (katalog jest mały: 166 produktów, 126 wierszy `piece_state`), co **najprawdopodobniej** przesuwa podejrzenie w stronę warstwy Workers/edge albo sieciowego opóźnienia do Supabase, a nie SQL — bez `wrangler tail` nie da się tego potwierdzić.
+- **Wpływ:** zmierzony wskaźnik (10,3–10,6% 504, dwa niezależne pomiary) jest agregatem po całym ruchu do strefy, nie po samym Googlebocie ani wyłącznie po PDP — próbka ścieżek w §13.2 pokazuje, że PDP są w niej obecne, ale nie mamy segmentacji po user-agencie ani osobnego mianownika dla samego Googlebota, więc jego rzeczywista ekspozycja na 5xx jest **nieznana**, nie ~1/10. Przy takiej skali agregatu ryzyko realnego zgłoszenia „Server error (5xx)” w GSC Crawl Stats i throttlingu crawl rate jest wysokie, ale to ryzyko, nie zmierzony fakt. GA4 z tego samego okna (30/31.08) pokazuje bounce rate 100% na dwa ostatnie dni — spójne kontekstowo z wpływem na zaangażowanie, nie dowód wyłącznej przyczyny.
 - **Reprodukcja:** `Cloudflare GraphQL Analytics` → `httpRequestsAdaptiveGroups` filtrowane po `edgeResponseStatus: 504` dla strefy, dowolne 24 h; porównać z Sentry `search_issues` dla tego samego okna.
 - **Rozwiązanie:** poza zakresem czysto SEO — wymaga `wrangler tail`/logów Workers i sprawdzenia zdrowia/limitów połączeń Supabase w czasie rzeczywistym. Do rozważenia: alerting na poziomie Cloudflare (Notifications na 5xx rate) niezależny od Sentry, bo obecny brak pokrycia to samodzielna luka w monitoringu.
 - **Zależności / koszt:** platform/backend owner; **diagnoza S, naprawa zależna od przyczyny**; wysokie ryzyko dalszej utraty crawl budget i konwersji, jeśli się przeciąga.
 - **Weryfikacja:** 504 rate < 0,5% rolling 24 h w Cloudflare Analytics; nowy alert (Sentry lub Cloudflare Notifications) faktycznie łapiący powtórkę.
 
-### SEO-017 — martwe URL-e po migracji ze Shopify pochłaniają ok. ⅓ ruchu
+### SEO-017 — martwe URL-e po migracji ze Shopify pochłaniają rzędu ⅓ ruchu
 
 - **Kategoria / ważność / confidence:** crawl/redirects/UX; **high**; **confirmed, active**.
-- **Dowód:** GA4 Data API, top landing pages 30 dni: `/en/products/cumulus-05?pr_prod_strat=...`, `/en/products/novocumulus-27-fine-art-print`, `/en/pages/about-me`, `/en/products/appointment` i kilkanaście podobnych — wzorzec URL-i Shopify (`/products/{handle}`, `/pages/{slug}`, parametry `pr_prod_strat`/`pr_rec_id` z aplikacji rekomendacji Shopify). `docs/analytics-stack.md` potwierdza, że property GA4 `539909256` jest „pod kontem Shopify” — serwis migrował z platformy Shopify. Suma sesji na tych URL-ach w 30 dni to ok. 280 z ~830 (ok. ⅓ całego ruchu), niemal wszystkie z bounce rate `1` (100%). Cztery sprawdzone przykłady zwracają dziś żywy `HTTP 404` bez żadnego przekierowania (`curl.exe`, produkcja, 2026-08-31).
+- **Dowód:** GA4 Data API, top landing pages 30 dni: `/en/products/cumulus-05?pr_prod_strat=...`, `/en/products/novocumulus-27-fine-art-print`, `/en/pages/about-me`, `/en/products/appointment` i kilkanaście podobnych — wzorzec URL-i Shopify (`/products/{handle}`, `/pages/{slug}`, parametry `pr_prod_strat`/`pr_rec_id` z aplikacji rekomendacji Shopify). `docs/analytics-stack.md` potwierdza, że property GA4 `539909256` jest „pod kontem Shopify” — serwis migrował z platformy Shopify. Suma sesji na tych URL-ach w 30 dni to ok. 280, na tle ~800 sesji łącznie w tym samym oknie wg pełnego (bez limitu wierszy) raportu kanałowego z §13.7 — rzędu ⅓ całego ruchu, niemal wszystkie z bounce rate `1` (100%). 280 pochodzi z próbki top 20 landing pages (limit zapytania GA4), nie z wyczerpującego zliczenia wszystkich URL-i tego wzorca, więc realna liczba może być wyższa; traktować jako rząd wielkości, nie precyzyjny ułamek. Cztery sprawdzone przykłady zwracają dziś żywy `HTTP 404` bez żadnego przekierowania (`curl.exe`, produkcja, 2026-08-31).
 - **Wpływ:** realny ruch z istniejących backlinków, zakładek i linków w bio social mediów jest dziś tracony na starcie; to marnowanie zarówno link equity, jak i budżetu uwagi odwiedzającego. Częściowo odzyskiwalne: nazewnictwo `novocumulus-NN-fine-art-print` sugeruje możliwe mapowanie 1:1 na konkretne `fapNNN`, a `/pages/about-me` jednoznacznie mapuje się na `/o-studiu`.
 - **Reprodukcja:** GA4 Data API `runReport` z dimension `landingPagePlusQueryString`, 30 dni, posortowane po sesjach; następnie `curl.exe -sS -o NUL -D - <url>` dla top wpisów.
 - **Rozwiązanie:** zbudować listę najczęstszych legacy-URL-i z GA4 (nie tylko top 20), ręcznie/półautomatycznie zmapować handle → aktualny `id`/slug tam gdzie to jednoznaczne, wdrożyć 301 (Cloudflare Redirect Rules albo middleware) dla zmapowanych, zostawić świadome 404 dla reszty zgodnie z zasadą z §7 („Redirect 301 wyłącznie do rzeczywiście równoważnego... nigdy hurtowo do home”).
@@ -545,19 +545,41 @@ Ten rozdział dokumentuje follow-up tego samego dnia: po zamknięciu audytu w §
 
 ### 13.2 Incydent 504 (SEO-016)
 
-Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, trailing 24h od momentu pomiaru:
+Cloudflare GraphQL Analytics, strefa `anna-ciok.studio`, trailing 24h od momentu pomiaru (2026-08-31, 14:02 UTC):
 
 ```text
-Suma requestów:      24 401
-edgeResponseStatus 200:  18 074
-edgeResponseStatus 504:   2 502   (10,3%)
-edgeResponseStatus 308:     181
-edgeResponseStatus 301:     171
-edgeResponseStatus 499:      30
+Suma requestów:          24 401
+edgeResponseStatus 200:   18 074
+edgeResponseStatus 504:    2 502   (10,3%)
+edgeResponseStatus 308:      181
+edgeResponseStatus 301:      171
+edgeResponseStatus 499:       30
 inne (302/307/400/403/502):  143
 ```
 
-Rozkład godzinowy 504 pokazuje ciągłość, nie pojedynczy spike — m.in. `2026-08-30T20:00Z`→368, `2026-08-31T10:00Z`→278, `2026-08-31T12:00Z`→479 (najwyższy, najbliżej momentu pomiaru). Próbka ścieżek z błędem 504 obejmuje PDP ceramiki i printów w każdej z czterech lokalizacji: `/kubki/k12` (28×), `/talerzyki/t11` (31×), `/wazony/v01` (15×), `/fine-art-prints/fap012` (17×), pojedyncze trafienia na `/de/...`, `/en/...`, `/es/...` warianty tych samych PDP oraz `/regulamin` i `/miski-falowane` na `www`.
+**Korekta:** pierwsze zapytanie o rozkład statusów miało `limit: 10` w GraphQL — te siedem wierszy powyżej to *nie* pełny rozkład, tylko część grup zwróconych w limicie (suma = 21 101, nie 24 401; brakowało m.in. `404` i `204`). Poprawiony, niezawężony pomiar 40 minut później (14:41 UTC, więc już inne okno 24h, nie ten sam moment):
+
+```text
+Suma requestów:          24 623
+edgeResponseStatus 200:   18 250
+edgeResponseStatus 404:    2 582
+edgeResponseStatus 504:    2 602   (10,6%)
+edgeResponseStatus 204:      493
+edgeResponseStatus 301:      174
+edgeResponseStatus 308:      165
+edgeResponseStatus 307:      157
+edgeResponseStatus 304:       80
+edgeResponseStatus 302:       74
+edgeResponseStatus 499:       29
+edgeResponseStatus 403:       12
+edgeResponseStatus 502:        2
+edgeResponseStatus 530:        2
+edgeResponseStatus 400:        1
+```
+
+Suma zgadza się (24 623) i wskaźnik 504 jest spójny z pierwszym, zawężonym pomiarem (10,3% → 10,6%) — sam incydent jest realny i nie był artefaktem złej sumy, tylko tabela w pierwszej wersji tego dokumentu była niekompletna. Rozkład minutowy 504 z ostatnich ~3h (14:41 UTC) pokazuje, że **incydent wciąż trwa, ale w wyraźnie niższym tempie niż szczyt**: pojedyncze 1–2 zdarzenia na minutę, z jednym wybiciem do 71 o 12:07 UTC — nie utrzymuje się już na poziomie z pierwszego pomiaru (patrz rozkład godzinowy niżej, zebrany przy pierwszym pomiarze i wciąż aktualny jako dowód przebiegu incydentu do 14:02 UTC).
+
+Rozkład godzinowy 504 z pierwszego pomiaru pokazuje ciągłość, nie pojedynczy spike — m.in. `2026-08-30T20:00Z`→368, `2026-08-31T10:00Z`→278, `2026-08-31T12:00Z`→479 (najwyższy w tamtym oknie). Próbka ścieżek z błędem 504 obejmuje PDP ceramiki i printów w każdej z czterech lokalizacji: `/kubki/k12` (28×), `/talerzyki/t11` (31×), `/wazony/v01` (15×), `/fine-art-prints/fap012` (17×), pojedyncze trafienia na `/de/...`, `/en/...`, `/es/...` warianty tych samych PDP oraz `/regulamin` i `/miski-falowane` na `www`.
 
 Sentry (`anna-ciok-studio`, region `us.sentry.io`) — `search_issues` z `is:unresolved` i osobno `is:resolved` na oknach 24h/90d, oraz zapytanie tekstowe `timeout`: **zero wyników za każdym razem**. Supabase `get_advisors(type: performance)` nie pokazuje nic, co tłumaczyłoby wolne zapytania (tylko nieużywane/duplikowane indeksy na małych tabelach pomocniczych). Wniosek: 504 najprawdopodobniej powstaje na granicy Workers/edge (limit CPU/wall-clock albo opóźnienie sieciowe do Supabase) zanim aplikacja zdąży to zalogować do Sentry — sam brak pokrycia monitoringu jest osobnym, wartym naprawienia faktem.
 
@@ -626,7 +648,7 @@ landingPagePlusQueryString                                    sessions  bounceRa
 ... (jeszcze ~7 podobnych wpisów typu /en/products/{handle})
 ```
 
-Suma sesji na URL-ach o wzorcu `/products/{handle}` lub `/pages/{slug}` w tej próbce: ok. 280 z ~830 sesji 30-dniowych (ok. ⅓), niemal wszystkie z `bounceRate = 1`. `docs/analytics-stack.md` potwierdza, że GA4 property jest „pod kontem Shopify” — te URL-e są reliktem migracji, nie losowym spamem. Weryfikacja produkcyjna (`curl.exe --max-redirs 0`, 2026-08-31):
+Suma sesji na URL-ach o wzorcu `/products/{handle}` lub `/pages/{slug}` w tej próbce (top 20 landing pages, limit zapytania — nie pełne zliczenie): ok. 280, na tle ~800 sesji łącznie w tym samym oknie 30-dniowym wg pełnego raportu kanałowego (§13.7) — rzędu ⅓, niemal wszystkie z `bounceRate = 1`. `docs/analytics-stack.md` potwierdza, że GA4 property jest „pod kontem Shopify” — te URL-e są reliktem migracji, a nie przypadkowym spamem. Weryfikacja produkcyjna (`curl.exe --max-redirs 0`, 2026-08-31):
 
 ```text
 /en/products/cumulus-05                    → HTTP/1.1 404 Not Found
@@ -645,7 +667,7 @@ DNS TXT na `anna-ciok.studio` zawiera `google-site-verification=rVISxSgylS5mAw2M
 
 ### 13.6 Sentry — luka w pokryciu monitoringu
 
-Poza brakiem jakiegokolwiek zdarzenia korelującego z incydentem 504 (§13.2), samo istnienie zweryfikowanej, aktywnej organizacji Sentry (`anna-ciok-studio`, plus druga, prawdopodobnie nieużywana `y9608071l-anna-ciok`) potwierdza, że runtime error monitoring jest podłączony zgodnie z `docs/analytics-stack.md` — ale 10,3% error rate przechodzące niezauważone pokazuje, że pokrycie kończy się na granicy aplikacji, nie edge/Workers. Osobny wniosek operacyjny, nie tylko SEO.
+Poza brakiem jakiegokolwiek zdarzenia korelującego z incydentem 504 (§13.2), samo istnienie zweryfikowanej, aktywnej organizacji Sentry (`anna-ciok-studio`, plus druga, prawdopodobnie nieużywana `y9608071l-anna-ciok`) potwierdza, że runtime error monitoring jest podłączony zgodnie z `docs/analytics-stack.md` — ale ~10% error rate przechodzące bez żadnego pasującego zdarzenia sugeruje, że pokrycie **najprawdopodobniej** kończy się na granicy aplikacji, nie edge/Workers. To hipoteza oparta na braku korelacji, nie potwierdzenie z logów Workers — patrz zastrzeżenie w §13.2. Osobny wniosek operacyjny, nie tylko SEO.
 
 ### 13.7 GA4 — kanały i geografia organic
 
