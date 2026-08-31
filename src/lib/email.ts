@@ -215,12 +215,15 @@ export async function emailLabelToStudio(params: {
 export type NewOrderEmailOrder = {
   id: string;
   email: string | null;
-  total: number;          // grosze
+  total: number;          // minor units, post-discount (the charged amount)
   currency: string;
   delivery_method: string;
   receiver_first_name: string | null;
   receiver_last_name: string | null;
   inpost_target_point: string | null;
+  /** Promo applied at checkout — item lines stay pre-discount, so the Rabat row reconciles them with total. */
+  promo_code?: string | null;
+  discount?: number | null; // minor units
   items: Array<{
     product_id: string;
     unit_price: number;
@@ -255,6 +258,12 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
     rows.push({ label: 'Paczkomat', value: escapeHtml(order.inpost_target_point) });
   }
   rows.push({ label: 'Pozycje', value: String(order.items.length) });
+  if ((order.discount ?? 0) > 0) {
+    rows.push({
+      label: order.promo_code ? `Rabat (${escapeHtml(order.promo_code)})` : 'Rabat',
+      value: `-${formatGrosze(order.discount as number, order.currency)}`,
+    });
+  }
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
 
   const itemLines = order.items

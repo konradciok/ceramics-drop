@@ -20,6 +20,13 @@ const SHIPPING_LABELS: Record<string, { paczkomat: string; kurier: string }> = {
   de: { paczkomat: 'Versand — Paczkomat InPost', kurier: 'Versand — InPost Kurier' },
 };
 
+const DISCOUNT_LABELS: Record<string, string> = {
+  pl: 'Rabat',
+  en: 'Discount',
+  es: 'Descuento',
+  de: 'Rabatt',
+};
+
 /**
  * Build a no-VAT invoice for a paid order and email it via Stripe.
  *
@@ -146,6 +153,21 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         currency: orderCurrency,
         description: shippingLabel,
       }, { idempotencyKey: `ii2_${order.id}_shipping` });
+    }
+    // Promo discount: items above are pre-discount unit prices, so without this
+    // negative line the drift guard below would throw forever on a discounted
+    // order (invoice total > charged total) and the invoice would never send.
+    if ((order.discount ?? 0) > 0) {
+      const discountLabel =
+        (DISCOUNT_LABELS[invoiceLocale] ?? DISCOUNT_LABELS.pl) +
+        (order.promo_code ? ` (${order.promo_code})` : '');
+      await stripe.invoiceItems.create({
+        customer: customer.id,
+        invoice: invoice.id as string,
+        amount: -order.discount,
+        currency: orderCurrency,
+        description: discountLabel,
+      }, { idempotencyKey: `ii2_${order.id}_discount` });
     }
 
     // Guard against drift before the invoice becomes immutable. A mismatch

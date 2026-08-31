@@ -153,7 +153,7 @@ function webhookEventsTable(plan: WebhookEventsPlan = {}) {
  * payload and its `.eq()`/`.in()` filter calls so tests can assert the release
  * actually ran (and with the right target status + scoping).
  */
-function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result; webhookEvents?: WebhookEventsPlan }) {
+function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Result; pieceUpdate: Result; webhookEvents?: WebhookEventsPlan; rpc?: Result | ((fn: string, params: Record<string, unknown>) => Result) }) {
   const ordersUpdates = Array.isArray(plan.ordersUpdate) ? [...plan.ordersUpdate] : [plan.ordersUpdate];
   // One ledger instance per fake — its select counter (seen vs seenAfterInsert)
   // must survive across `.from()` calls.
@@ -163,8 +163,13 @@ function makeSupabase(plan: { ordersUpdate: Result | Result[]; ordersSelect: Res
     pieceUpdated: false,
     pieceFilters: [] as Array<{ method: string; args: unknown[] }>,
     ordersUpdatePayloads: [] as Array<Record<string, unknown>>,
+    rpcCalls: [] as Array<{ fn: string; params: Record<string, unknown> }>,
   };
   const supabase = {
+    rpc: async (fn: string, params: Record<string, unknown>) => {
+      calls.rpcCalls.push({ fn, params });
+      return typeof plan.rpc === 'function' ? plan.rpc(fn, params) : plan.rpc ?? { data: true, error: null };
+    },
     from(table: string) {
       if (table === 'orders') {
         return {
@@ -664,8 +669,13 @@ function makeSucceededSupabase(opts: {
   conversionsClaim?: QueryResult;
   /** F-18 idempotency ledger override; default = fresh event (transparent). */
   webhookEvents?: WebhookEventsPlan;
+  /** RPC results (promo settle/claim). Default success (`data: true`). */
+  rpc?: QueryResult | ((fn: string, params: Record<string, unknown>) => QueryResult);
+  /** promo_codes lookup for the markPaid reconcile path. */
+  promoCodesSelect?: QueryResult;
 }) {
   const failedUpdateEqArgs: unknown[][] = [];
+  const rpcCalls: Array<{ fn: string; params: Record<string, unknown> }> = [];
   // Claim UPDATEs recorded for assertion: the payload value written to the
   // *_sent_at column (a timestamp = claim, null = release) plus every chained
   // filter call, so tests can prove the atomic `.is(col, null)` guard is used.
@@ -684,7 +694,14 @@ function makeSucceededSupabase(opts: {
   const doublePaidWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
   const pieceWrites: Array<Record<string, unknown>> = [];
   const supabase = {
+    rpc: async (fn: string, params: Record<string, unknown>) => {
+      rpcCalls.push({ fn, params });
+      return typeof opts.rpc === 'function' ? opts.rpc(fn, params) : opts.rpc ?? { data: true, error: null };
+    },
     from(table: string) {
+      if (table === 'promo_codes') {
+        return { select: () => proxyChain(opts.promoCodesSelect ?? { data: null, error: null }) };
+      }
       if (table === 'orders') {
         return {
           update: (payload: Record<string, unknown>) => {
@@ -739,7 +756,7 @@ function makeSucceededSupabase(opts: {
             throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
           },
           select: (columns: string) => {
-            if (columns === 'id, status, private_sale_id') return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
+            if (columns === 'id, status, private_sale_id, promo_code') return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
             if (columns === 'id, status') return proxyChain(opts.shipmentLookup);
             if (columns.startsWith('id, email')) return proxyChain(opts.emailOrderSelect ?? { data: null, error: null });
             if (columns.startsWith('id, payment_intent_id')) return proxyChain(opts.conversionsOrderSelect ?? { data: null, error: null });
@@ -769,7 +786,7 @@ function makeSucceededSupabase(opts: {
       throw new Error(`unexpected table: ${table}`);
     },
   };
-  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites };
+  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites, rpcCalls };
 }
 
 describe('webhook markPaid unknown payment_intent (F9b)', () => {
@@ -1187,6 +1204,22 @@ describe('webhook markPaid private-sale double-payment (M-5)', () => {
     expect(seq.indexOf('alert')).toBeLessThan(seq.indexOf('double_paid_cas'));
     expect(vi.mocked(emailPrivateSaleDoublePaidAlertToStudio).mock.calls[0][0]).toMatchObject({
       idempotencyKey: 'double-paid-alert/o1',
+    });
+  });
+
+  it('(d) a promo redemption on the double-paid order settles released, not left pending forever', async () => {
+    const { supabase, rpcCalls } = makeSucceededSupabase({
+      ...doublePaidOpts(),
+      markerClaim: { data: [{ id: 'o1', private_sale_id: 'ps_1', promo_code: 'WELCOME10' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'released' },
     });
   });
 
@@ -2054,5 +2087,222 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     const releaseCall = updateCalls.find((c) => c.payload.status === 'failed');
     expect(releaseCall).toBeDefined();
     expect(releaseCall!.filters).toContainEqual(['eq', ['processing_started_at', claimedAt]]);
+  });
+});
+
+describe('webhook markPaid promo settlement (Phase 2)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  const promoOrderCas = { data: [{ id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' }], error: null };
+  const baseOpts = {
+    casUpdate: promoOrderCas,
+    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+    soldCount: { count: 1, error: null },
+    ceramicCount: { count: 1, error: null },
+    variantRows: { data: [], error: null },
+  };
+
+  it('settles the redemption to redeemed for an order with a promo', async () => {
+    const { supabase, rpcCalls } = makeSucceededSupabase(baseOpts);
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'redeemed' },
+    });
+  });
+
+  it('never calls the settle RPC for an order without a promo', async () => {
+    const { supabase, rpcCalls } = makeSucceededSupabase({
+      ...baseOpts,
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null, promo_code: null }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  it('throws (Stripe retries) when the settle RPC errors', async () => {
+    const { supabase } = makeSucceededSupabase({
+      ...baseOpts,
+      rpc: () => ({ data: null, error: { message: 'db down' } }),
+    });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/promo settle failed/);
+  });
+
+  it('settle=false (row already released): re-claims and settles redeemed again', async () => {
+    // 1st settle → false; claim → true; 2nd settle → true.
+    let settles = 0;
+    const { supabase, rpcCalls } = makeSucceededSupabase({
+      ...baseOpts,
+      promoCodesSelect: { data: { id: 'promo1' }, error: null },
+      rpc: (fn: string) => {
+        if (fn === 'settle_promo_redemption') {
+          settles += 1;
+          return { data: settles > 1, error: null };
+        }
+        return { data: true, error: null };
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls).toContainEqual({
+      fn: 'claim_promo_redemption',
+      params: { p_promo_id: 'promo1', p_order_id: 'o1' },
+    });
+    expect(rpcCalls.filter((c) => c.fn === 'settle_promo_redemption')).toHaveLength(2);
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('promo_settle_lost_capacity', expect.anything());
+  });
+
+  it('settle=false and re-claim=false (capacity gone): alerts promo_settle_lost_capacity and continues without throwing', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSucceededSupabase({
+      ...baseOpts,
+      promoCodesSelect: { data: { id: 'promo1' }, error: null },
+      rpc: () => ({ data: false, error: null }),
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    consoleErrorSpy.mockRestore();
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'promo_settle_lost_capacity',
+      expect.objectContaining({ extra: expect.objectContaining({ order_id: 'o1', promo_code: 'WELCOME10' }) }),
+    );
+  });
+});
+
+describe('webhook releaseHold promo settlement (Phase 2)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  it('settles the redemption to released for a failed order with a promo', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [{ id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' }], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(canceledEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'released' },
+    });
+  });
+
+  it('does not call the settle RPC without a promo', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(canceledEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.rpcCalls).toHaveLength(0);
+  });
+
+  it('release settle is best-effort: an RPC error is logged + Sentry-flagged, the route still 200s', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [{ id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' }], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+      rpc: { data: null, error: { message: 'db down' } },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(canceledEventRequest());
+    consoleErrorSpy.mockRestore();
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'promo_release_settle_failed',
+      expect.objectContaining({ extra: expect.objectContaining({ order_id: 'o1' }) }),
+    );
+  });
+});
+
+describe('webhook releaseSale promo settlement (Phase 2)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  it('pending→refunded branch settles the redemption released (refund before success cannot strand it)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: [{ data: [{ id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' }], error: null }],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'released' },
+    });
+  });
+
+  it('paid→refunded branch performs NO promo settlement (redeemed stays redeemed)', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: [
+        { data: [], error: null }, // pending CAS misses
+        {
+          data: [{ id: 'o1', private_sale_id: null, promo_code: 'WELCOME10', subtotal: 10000, shipping: 2000, currency: 'pln', marketing: null }],
+          error: null,
+        },
+      ],
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.rpcCalls).toHaveLength(0);
+  });
+
+  it('already-refunded resume branch settles released best-effort', async () => {
+    const { supabase, calls } = makeSupabase({
+      ordersUpdate: { data: [], error: null }, // both CAS attempts miss
+      ordersSelect: { data: { id: 'o1', private_sale_id: null, promo_code: 'WELCOME10' }, error: null },
+      pieceUpdate: { data: [{ product_id: 'k01' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(refundedEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(calls.rpcCalls).toContainEqual({
+      fn: 'settle_promo_redemption',
+      params: { p_order_id: 'o1', p_status: 'released' },
+    });
   });
 });

@@ -340,7 +340,22 @@
     "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren.",
     "privateSalePrintsNotice": "Private Bestelllinks gelten nur für Keramik — entferne Prints aus dem Warenkorb, um fortzufahren.",
     "printAssetUnavailable": "Diese Print-Variante ist vorübergehend nicht verfügbar — entferne sie aus dem Warenkorb oder versuche es später erneut.",
-    "printAssetError": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut."
+    "printAssetError": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut.",
+    "promo": {
+      "label": "Rabattcode",
+      "have": "Ich habe einen Rabattcode",
+      "placeholder": "Code eingeben",
+      "apply": "Anwenden",
+      "remove": "Entfernen",
+      "discountRow": "Rabatt ({code})",
+      "invalid": "Dieser Code ist ungültig oder inaktiv.",
+      "expired": "Dieser Code ist abgelaufen.",
+      "notStarted": "Dieser Code ist noch nicht aktiv.",
+      "wrongTrackCeramics": "Dieser Code gilt nur für Fine-Art-Drucke.",
+      "wrongTrackPrints": "Dieser Code gilt nur für Keramik.",
+      "exhausted": "Dieser Code wurde bereits vollständig eingelöst.",
+      "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
+    }
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",

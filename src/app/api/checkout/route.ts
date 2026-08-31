@@ -10,7 +10,14 @@ import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { validatePrintDelivery, type PrintShippingAddress } from '@/lib/print-delivery';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
-import { orderAmountGrosze, orderAmountEuroCents, orderAmountGBPPence, toMinor } from '@/lib/pricing';
+import { shippingGrosze, shippingEuroCents, shippingGBPPence, toMinor } from '@/lib/pricing';
+import {
+  normalizePromoCode,
+  fetchPromoByCode,
+  checkPromoEligibility,
+  computePromoDiscountMinor,
+  type PromoCode,
+} from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
@@ -143,16 +150,45 @@ export async function POST(req: Request) {
     return respond({ error: 'invalid_delivery' }, { status: 400 });
   }
 
+  const supabase = getSupabaseAdmin();
+
+  // Promo code (optional). Validated server-side BEFORE any reservation or PI
+  // work, so every failure path leaves no hold, no order row, no PaymentIntent
+  // behind (same ordering principle as the print_asset_unavailable pre-checks).
+  // Fail closed: a present-but-ineligible code is a hard error — the request
+  // never silently charges full price. The atomic redemption claim runs later
+  // (after the orders insert — its FK requires the row) as the last gate
+  // before the success response.
+  let promo: PromoCode | null = null;
+  if (body.promo_code != null) {
+    const code = normalizePromoCode(body.promo_code);
+    if (!code) {
+      return respond({ error: 'invalid_promo', reason: 'not_found' }, { status: 400 });
+    }
+    const { promo: found, redemptionCount } = await fetchPromoByCode(supabase, code);
+    const eligibility = checkPromoEligibility(found, hasPrints ? 'prints' : 'ceramics', redemptionCount);
+    if (!eligibility.ok) {
+      if (eligibility.reason === 'exhausted') {
+        return respond({ error: 'promo_exhausted' }, { status: 409 });
+      }
+      return respond({ error: 'invalid_promo', reason: eligibility.reason }, { status: 400 });
+    }
+    promo = eligibility.promo;
+  }
+
   const unitPrices = valid.items.map((i) => i.unit_price);
   const subtotalMinor = unitPrices.reduce((s, v) => s + v, 0);
-  let amount: number;
+  // Shipping is explicit in both branches — the discount applies to the
+  // merchandise subtotal only, so shipping can no longer be derived later as
+  // `amount − subtotal`.
+  let shipMinor: number;
   if (hasPrints && printAddress) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency);
-    const shipMinor = toMinor(shipMajor);
+    shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
       // log is the observability signal only; revisit with Prodigi POST /quotes
@@ -167,15 +203,17 @@ export async function POST(req: Request) {
         country: printAddress.country_code,
       }));
     }
-    amount = subtotalMinor + shipMinor;
   } else {
-    amount =
-      chargeCurrency === 'eur' ? orderAmountEuroCents(unitPrices, method) :
-      chargeCurrency === 'gbp' ? orderAmountGBPPence(unitPrices, method) :
-      orderAmountGrosze(unitPrices, method);
+    shipMinor =
+      chargeCurrency === 'eur' ? shippingEuroCents(method) :
+      chargeCurrency === 'gbp' ? shippingGBPPence(method) :
+      shippingGrosze(method);
   }
+  const discountMinor = promo
+    ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)
+    : 0;
+  const amount = subtotalMinor - discountMinor + shipMinor;
 
-  const supabase = getSupabaseAdmin();
   // A stable client-supplied attemptId lets a retried/duplicated POST (network
   // retry, second tab) re-enter its own reservation and PaymentIntent instead
   // of 409-ing itself (F4). It's unguessable (122 random bits from
@@ -280,6 +318,8 @@ export async function POST(req: Request) {
           fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
+          // Reporting/reconciliation only — the DB owns promo truth.
+          ...(promo ? { promo_code: promo.code, promo_id: promo.id } : {}),
         },
         ...(hasPrints && printAddress
           ? {
@@ -387,9 +427,11 @@ export async function POST(req: Request) {
     payment_intent_id: paymentIntent.id,
     status: 'pending',
     currency: chargeCurrency,
-    subtotal: subtotalMinor,
-    shipping: amount - subtotalMinor,
+    subtotal: subtotalMinor, // pre-discount; total = subtotal − discount + shipping
+    shipping: shipMinor,
     total: amount,
+    promo_code: promo?.code ?? null,
+    discount: discountMinor,
     shipping_method: method, // legacy NOT NULL column ÔÇö kept in sync with delivery_method
     delivery_method: method,
     // Explicit fulfilment discriminator (Finding 8): which pipeline owns this
@@ -482,6 +524,48 @@ export async function POST(req: Request) {
     return respond({ error: 'order_persist_failed' }, { status: 500 });
   }
 
+  // Atomic redemption claim — the last gate before the success response. It
+  // must run AFTER the orders insert (promo_redemptions.order_id FK) and runs
+  // on replays too (the RPC is re-entrant for the same order+promo). Failure
+  // means the promo can no longer be honored (capacity raced away, or the
+  // order holds a claim for a different promo after a code change without an
+  // attemptId reset) — never respond success with an unclaimed promo, so undo
+  // all three artifacts exactly like the order_persist_failed branch: cancel
+  // the PI, mark the order failed (a retried attemptId then lands in
+  // order_conflict), release the hold.
+  if (promo) {
+    const { data: claimed, error: claimErr } = await supabase.rpc('claim_promo_redemption', {
+      p_promo_id: promo.id,
+      p_order_id: orderId,
+    });
+    if (claimErr || claimed !== true) {
+      if (replay) {
+        // Same danger as the readAttemptStatus lookupFailed branch above: on a
+        // replay this PI may already be in the buyer's hands from the original
+        // request's response. The RPC is re-entrant, so a genuine retry should
+        // just re-claim cleanly — don't assume failure and kill a live payment;
+        // ask the client to retry and let a real exhaustion resolve then.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error(
+          'checkout: failed to cancel PaymentIntent after promo claim failure',
+          paymentIntent.id,
+          cancelErr,
+        );
+      }
+      await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId);
+      await releaseOwnHold();
+      if (claimErr) {
+        console.error('checkout: promo claim RPC failed', orderId, claimErr);
+        return respond({ error: 'promo_claim_failed' }, { status: 500 });
+      }
+      return respond({ error: 'promo_exhausted' }, { status: 409 });
+    }
+  }
+
   // Kick off the abandoned-checkout recovery flow (Resend Automation triggered by
   // cart.checkout_started). Best-effort and non-blocking: waitUntil lets it finish
   // after the response so it adds no latency to the pay request, and any Resend
@@ -506,5 +590,10 @@ export async function POST(req: Request) {
     }
   }
 
-  return respond({ client_secret: paymentIntent.client_secret });
+  // Field-presence rule: a no-promo response stays byte-identical to the
+  // legacy shape — `discount` appears only when a promo is applied.
+  return respond({
+    client_secret: paymentIntent.client_secret,
+    ...(promo ? { discount: discountMinor } : {}),
+  });
 }

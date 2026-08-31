@@ -340,7 +340,22 @@
     "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar.",
     "privateSalePrintsNotice": "Los enlaces de pedido privado son solo para cerámica — elimina las láminas del carrito para continuar.",
     "printAssetUnavailable": "Esta variante de lámina no está disponible temporalmente — elimínala del carrito o inténtalo más tarde.",
-    "printAssetError": "Algo falló momentáneamente. Inténtalo de nuevo."
+    "printAssetError": "Algo falló momentáneamente. Inténtalo de nuevo.",
+    "promo": {
+      "label": "Código promocional",
+      "have": "Tengo un código promocional",
+      "placeholder": "Introduce el código",
+      "apply": "Aplicar",
+      "remove": "Quitar",
+      "discountRow": "Descuento ({code})",
+      "invalid": "Este código no es válido o está inactivo.",
+      "expired": "Este código ha caducado.",
+      "notStarted": "Este código aún no está activo.",
+      "wrongTrackCeramics": "Este código solo aplica a láminas fine-art.",
+      "wrongTrackPrints": "Este código solo aplica a cerámica.",
+      "exhausted": "Este código ya se ha utilizado por completo.",
+      "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
+    }
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",

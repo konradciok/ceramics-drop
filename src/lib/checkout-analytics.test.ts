@@ -176,6 +176,81 @@ describe('checkout analytics semantics', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  it('round-trips coupon + discountMinor through the snapshot into the purchase event', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+
+    rememberCheckoutForReturn(['k01', 'v01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      coupon: 'WELCOME10',
+      discountMinor: 3400,
+      storage: session,
+    });
+
+    const push = vi.fn();
+    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
+
+    expect(fired).toBe(true);
+    expect(push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ecommerce: expect.objectContaining({ coupon: 'WELCOME10', value: 300 }),
+      }),
+    );
+  });
+
+  it('rejects a fractional, negative, or non-finite discountMinor in a tampered snapshot (falls back to no discount)', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+    const base = { ids: ['k01', 'v01'], shippingCost: 18, shippingMethod: 'kurier', coupon: 'WELCOME10' };
+
+    for (const [i, badDiscountMinor] of [1e309 /* Infinity via JSON.parse overflow */, 33.5, -100].entries()) {
+      storage.set('acc_checkout_snapshot', JSON.stringify({ ...base, discountMinor: badDiscountMinor }));
+      const push = vi.fn();
+      // Distinct payment_intent per iteration — the per-PI dedupe guard would
+      // otherwise suppress the 2nd/3rd fires under a reused id.
+      const fired = pushConfirmedPurchaseFromRememberedCheckout(`pi_tamper_${i}`, 'ACC-tamper', { push, storage: session });
+      expect(fired).toBe(true);
+      // coupon still rides through (it's validated independently) but the
+      // rejected discountMinor must not be applied — value stays undiscounted.
+      expect(push).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ecommerce: expect.objectContaining({ coupon: 'WELCOME10', value: 334 }),
+        }),
+      );
+    }
+  });
+
+  it('a snapshot with no coupon replays byte-identical to today (regression)', () => {
+    const storage = new Map<string, string>();
+    const session = {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => { storage.set(k, v); },
+      removeItem: (k: string) => { storage.delete(k); },
+    };
+
+    rememberCheckoutForReturn(['k01', 'v01'], {
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      storage: session,
+    });
+
+    const push = vi.fn();
+    pushConfirmedPurchaseFromRememberedCheckout('pi_plain', 'ACC-plain', { push, storage: session });
+
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    expect(event.ecommerce).not.toHaveProperty('coupon');
+    expect(event.ecommerce?.value).toBe(334);
+  });
+
   it('stores EUR currency and itemPrices in the snapshot and replays with EUR', () => {
     const storage = new Map<string, string>();
     const session = {

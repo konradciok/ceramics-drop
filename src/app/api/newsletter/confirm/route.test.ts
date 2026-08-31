@@ -5,13 +5,20 @@ import { mintConfirmToken, NEWSLETTER_CONFIRM_TTL_SECS } from '@/lib/newsletter'
 
 // vi.hoisted: the top-level import above triggers the mock factory before
 // ordinary consts initialise, so the spy must be hoisted alongside vi.mock.
-const { subscribeNewsletterContact } = vi.hoisted(() => ({
+const { subscribeNewsletterContact, sendNewsletterWelcomeEmail, getActiveNewsletterPromo } = vi.hoisted(() => ({
   subscribeNewsletterContact: vi.fn<(params: unknown) => Promise<void>>(async () => {}),
+  sendNewsletterWelcomeEmail: vi.fn<(params: unknown) => Promise<void>>(async () => {}),
+  getActiveNewsletterPromo: vi.fn<(supabase: unknown) => Promise<unknown>>(async () => null),
 }));
 vi.mock('@/lib/newsletter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/newsletter')>();
-  return { ...actual, subscribeNewsletterContact };
+  return { ...actual, subscribeNewsletterContact, sendNewsletterWelcomeEmail };
 });
+vi.mock('@/lib/promo', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/promo')>();
+  return { ...actual, getActiveNewsletterPromo };
+});
+vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({}) }));
 
 const getClientIp = vi.fn((): string | null => '203.0.113.60');
 vi.mock('@/lib/client-ip', () => ({ getClientIp }));
@@ -116,6 +123,69 @@ describe('GET /api/newsletter/confirm', () => {
     const res = await GET(reqWithToken('anything'));
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: 'newsletter_unavailable' });
+  });
+
+  const NEWSLETTER_PROMO = {
+    id: '11111111-2222-4333-8444-555555555555',
+    code: 'WELCOME10',
+    kind: 'percent',
+    percent: 10,
+    amount_pln: null,
+    amount_eur: null,
+    amount_gbp: null,
+    applies_to: 'all',
+    active: true,
+    starts_at: null,
+    expires_at: null,
+    max_redemptions: null,
+    newsletter_welcome: true,
+    campaign: null,
+  };
+
+  it('sends the welcome email with the flagged promo after a successful subscribe', async () => {
+    getActiveNewsletterPromo.mockResolvedValueOnce(NEWSLETTER_PROMO);
+    const { GET } = await import('./route');
+    const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'en', secret: SECRET });
+    const res = await GET(reqWithToken(token));
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('http://localhost/en/newsletter?status=confirmed');
+    expect(sendNewsletterWelcomeEmail).toHaveBeenCalledTimes(1);
+    const args = sendNewsletterWelcomeEmail.mock.calls[0][0] as { to: string; html: string; apiKey: string };
+    expect(args.to).toBe('anna@example.com');
+    expect(args.apiKey).toBe('re_test');
+    expect(args.html).toContain('WELCOME10');
+  });
+
+  it('regression: with no flagged promo the flow is exactly the legacy one (no second email)', async () => {
+    getActiveNewsletterPromo.mockResolvedValueOnce(null);
+    const { GET } = await import('./route');
+    const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'pl', secret: SECRET });
+    const res = await GET(reqWithToken(token));
+    expect(res.headers.get('location')).toBe('http://localhost/newsletter?status=confirmed');
+    expect(sendNewsletterWelcomeEmail).not.toHaveBeenCalled();
+  });
+
+  it('a failing welcome send is logged but the confirmed redirect still goes out (best-effort)', async () => {
+    getActiveNewsletterPromo.mockResolvedValueOnce(NEWSLETTER_PROMO);
+    sendNewsletterWelcomeEmail.mockRejectedValueOnce(new Error('Resend 500'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { GET } = await import('./route');
+    const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'en', secret: SECRET });
+    const res = await GET(reqWithToken(token));
+    errSpy.mockRestore();
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('http://localhost/en/newsletter?status=confirmed');
+  });
+
+  it('a promo-lookup DB error degrades to "no promo" — flow unaffected', async () => {
+    getActiveNewsletterPromo.mockRejectedValueOnce(new Error('db down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { GET } = await import('./route');
+    const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'en', secret: SECRET });
+    const res = await GET(reqWithToken(token));
+    errSpy.mockRestore();
+    expect(res.headers.get('location')).toBe('http://localhost/en/newsletter?status=confirmed');
+    expect(sendNewsletterWelcomeEmail).not.toHaveBeenCalled();
   });
 
   it('returns 429 once the per-IP budget (20/min) is spent', async () => {

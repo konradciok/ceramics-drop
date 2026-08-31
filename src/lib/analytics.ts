@@ -24,6 +24,8 @@ export type AnalyticsItem = {
   index?: number;
   item_list_id?: string;
   item_list_name?: string;
+  /** GA4-standard per-item discount (major units) — set only when a promo allocated one. */
+  discount?: number;
 };
 
 export type EcommercePayload = {
@@ -32,6 +34,8 @@ export type EcommercePayload = {
   items: AnalyticsItem[];
   transaction_id?: string;
   shipping?: number;
+  /** GA4-standard ecommerce parameter — the applied promo code, when present. */
+  coupon?: string;
 };
 
 export type MetaContent = { id: string; quantity: 1; item_price: number };
@@ -73,6 +77,10 @@ type CheckoutOptions = EventOptions & {
   shippingCost: number;
   shippingMethod: string;
   userData?: { em?: string };
+  /** Applied promo code — rendered verbatim as the GA4-standard ecommerce.coupon param. */
+  coupon?: string;
+  /** Discount in MINOR units (server's own unit) — converted to major units inside the builder. */
+  discountMinor?: number;
 };
 
 type PurchaseOptions = CheckoutOptions & {
@@ -360,7 +368,12 @@ export function buildBeginCheckoutEventFromItems(
   const eventId =
     options.eventId ?? createEventId('begin_checkout', items.map((i) => i.item_id).join('-'));
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const orderTotal = sumItems(items) + options.shippingCost;
+  // No-discount path stays the EXACT expression used before promo codes existed
+  // (byte-identical regression) — allocateItemDiscounts returns `items`
+  // unchanged when there's nothing to allocate.
+  const discountedItems = allocateItemDiscounts(items, options.discountMinor ?? 0);
+  const subtotal = sumItems(discountedItems);
+  const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
       event: 'begin_checkout',
@@ -368,7 +381,11 @@ export function buildBeginCheckoutEventFromItems(
       shipping_tier: options.shippingMethod,
       checkout_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
-      ecommerce: ecommerce(items, currency),
+      ecommerce: {
+        ...ecommerce(discountedItems, currency),
+        value: subtotal,
+        ...(options.coupon ? { coupon: options.coupon } : {}),
+      },
     },
     'InitiateCheckout',
     eventId,
@@ -399,7 +416,10 @@ export function buildPurchaseEventFromItems(
   // checkout-analytics.ts), so collision-resistance here is unnecessary.
   const eventId = options.eventId ?? `purchase-${options.orderNo}`;
   const currency = options.currency ?? ANALYTICS_CURRENCY;
-  const orderTotal = sumItems(items) + options.shippingCost;
+  // Same byte-identical-when-no-discount rule as begin_checkout above.
+  const discountedItems = allocateItemDiscounts(items, options.discountMinor ?? 0);
+  const subtotal = sumItems(discountedItems);
+  const orderTotal = subtotal + options.shippingCost;
   return withMeta(
     {
       event: 'purchase',
@@ -408,7 +428,9 @@ export function buildPurchaseEventFromItems(
       order_total: orderTotal,
       ...(options.userData ? { user_data: options.userData } : {}),
       ecommerce: {
-        ...ecommerce(items, currency),
+        ...ecommerce(discountedItems, currency),
+        value: subtotal,
+        ...(options.coupon ? { coupon: options.coupon } : {}),
         transaction_id: options.orderNo,
         shipping: options.shippingCost,
       },
@@ -600,6 +622,44 @@ function withMeta(
 
 function sumItems(items: AnalyticsItem[]): number {
   return Number(items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+}
+
+/**
+ * Allocates an order-level merchandise discount (minor units) across items
+ * proportional to price, so per-item GA4/Meta revenue sums to the discounted
+ * order value instead of only the top-level `value` reflecting it. Quantity
+ * is always 1 in this catalogue (unique ceramics / POD prints), so "per item"
+ * is exact. Minor-unit (integer) largest-remainder allocation keeps the sum
+ * of allocated discounts exactly equal to `discountMinor` — no float drift.
+ * Returns `items` unchanged (no `discount` field added) when there's nothing
+ * to allocate, preserving the byte-identical-when-no-discount contract.
+ */
+export function allocateItemDiscounts<T extends { price: number }>(
+  items: T[],
+  discountMinor: number,
+): Array<T & { discount?: number }> {
+  if (!discountMinor || discountMinor <= 0 || items.length === 0) return items;
+  const pricesMinor = items.map((item) => Math.round(item.price * 100));
+  const totalMinor = pricesMinor.reduce((sum, p) => sum + p, 0);
+  if (totalMinor <= 0) return items;
+
+  const shares = pricesMinor.map((p) => (p * discountMinor) / totalMinor);
+  const allocatedMinor = shares.map((s) => Math.floor(s));
+  let remainder = discountMinor - allocatedMinor.reduce((sum, a) => sum + a, 0);
+  const byRemainderDesc = shares
+    .map((s, i) => ({ i, frac: s - allocatedMinor[i] }))
+    .sort((a, b) => b.frac - a.frac);
+  for (const { i } of byRemainderDesc) {
+    if (remainder <= 0) break;
+    allocatedMinor[i] += 1;
+    remainder -= 1;
+  }
+
+  return items.map((item, i) => ({
+    ...item,
+    price: Number((item.price - allocatedMinor[i] / 100).toFixed(2)),
+    discount: Number((allocatedMinor[i] / 100).toFixed(2)),
+  }));
 }
 
 function createEventId(eventName: string, seed: string): string {

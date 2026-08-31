@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
 import {
   ANALYTICS_CURRENCY,
+  allocateItemDiscounts,
   analyticsItemForId,
   buildAddToCartEvent,
   buildBeginCheckoutEvent,
@@ -262,6 +263,100 @@ describe('analytics ecommerce payloads', () => {
       value: 352,
       order_id: 'ACC-1234',
       event_id: 'evt-purchase',
+    });
+  });
+
+  it('promo: coupon + discountMinor apply to begin_checkout ecommerce.value and checkout_total', () => {
+    const items = [product('k01'), product('v01')];
+    const event = buildBeginCheckoutEvent(items, {
+      eventId: 'evt-checkout-promo',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      coupon: 'WELCOME10',
+      discountMinor: 3400, // 34 zł
+    });
+
+    expect(event.ecommerce).toMatchObject({ value: 300, coupon: 'WELCOME10' });
+    expect(event.checkout_total).toBe(318);
+    expect(event.meta).toMatchObject({ value: 318 });
+    // Discount must be allocated across items, not just the order-level value —
+    // otherwise GA4/Meta per-item revenue wouldn't sum to the discounted total.
+    const [k01Item, v01Item] = event.ecommerce!.items;
+    expect(k01Item).toMatchObject({ price: 85.33, discount: 9.67 });
+    expect(v01Item).toMatchObject({ price: 214.67, discount: 24.33 });
+    expect(k01Item.price + v01Item.price).toBeCloseTo(300, 2);
+    expect(event.meta!.contents).toEqual([
+      { id: 'k01', quantity: 1, item_price: 85.33 },
+      { id: 'v01', quantity: 1, item_price: 214.67 },
+    ]);
+  });
+
+  it('promo: with no coupon/discountMinor, begin_checkout is byte-identical to the no-promo build (regression)', () => {
+    const items = [product('k01'), product('v01')];
+    const base = { eventId: 'evt-checkout', shippingCost: 18, shippingMethod: 'kurier' };
+    const withPromoFieldsAbsent = buildBeginCheckoutEvent(items, base);
+    const legacy = buildBeginCheckoutEvent(items, base);
+    expect(withPromoFieldsAbsent).toEqual(legacy);
+    expect(withPromoFieldsAbsent.ecommerce).not.toHaveProperty('coupon');
+    expect(withPromoFieldsAbsent.ecommerce?.value).toBe(334);
+    expect(withPromoFieldsAbsent.checkout_total).toBe(352);
+  });
+
+  it('promo: coupon + discountMinor apply to purchase ecommerce.value, coupon rides shipping/transaction_id', () => {
+    const items = [product('k01'), product('v01')];
+    const event = buildPurchaseEvent(items, {
+      orderNo: 'ACC-1234',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      eventId: 'evt-purchase-promo',
+      coupon: 'WELCOME10',
+      discountMinor: 3400,
+    });
+
+    expect(event.ecommerce).toMatchObject({
+      transaction_id: 'ACC-1234',
+      value: 300,
+      shipping: 18,
+      coupon: 'WELCOME10',
+    });
+    expect(event.order_total).toBe(318);
+    expect(event.meta).toMatchObject({ value: 318, order_id: 'ACC-1234' });
+    const [k01Item, v01Item] = event.ecommerce!.items;
+    expect(k01Item).toMatchObject({ price: 85.33, discount: 9.67 });
+    expect(v01Item).toMatchObject({ price: 214.67, discount: 24.33 });
+  });
+
+  it('promo: with no coupon/discountMinor, purchase is byte-identical to the no-promo build (regression)', () => {
+    const items = [product('k01'), product('v01')];
+    const base = { orderNo: 'ACC-1234', shippingCost: 18, shippingMethod: 'kurier', eventId: 'evt-purchase' };
+    const withPromoFieldsAbsent = buildPurchaseEvent(items, base);
+    const legacy = buildPurchaseEvent(items, base);
+    expect(withPromoFieldsAbsent).toEqual(legacy);
+    expect(withPromoFieldsAbsent.ecommerce).not.toHaveProperty('coupon');
+    expect(withPromoFieldsAbsent.ecommerce?.value).toBe(334);
+    expect(withPromoFieldsAbsent.order_total).toBe(352);
+  });
+
+  describe('allocateItemDiscounts', () => {
+    it('returns items unchanged (no discount field) when there is nothing to allocate', () => {
+      const items = [{ price: 95 }, { price: 239 }];
+      expect(allocateItemDiscounts(items, 0)).toBe(items);
+      expect(allocateItemDiscounts(items, -100)).toBe(items);
+    });
+
+    it('allocates proportionally in minor units, giving the rounding remainder to the largest fractional share', () => {
+      const items = [{ price: 95 }, { price: 239 }];
+      const allocated = allocateItemDiscounts(items, 3400);
+      expect(allocated).toEqual([
+        { price: 85.33, discount: 9.67 },
+        { price: 214.67, discount: 24.33 },
+      ]);
+      // Allocated discounts always sum to exactly the requested minor-unit total.
+      expect(Math.round((allocated[0].discount! + allocated[1].discount!) * 100)).toBe(3400);
+    });
+
+    it('allocates the full discount to a single item', () => {
+      expect(allocateItemDiscounts([{ price: 90 }], 3000)).toEqual([{ price: 60, discount: 30 }]);
     });
   });
 

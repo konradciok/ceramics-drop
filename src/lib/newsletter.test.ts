@@ -7,7 +7,9 @@ import {
   newsletterConfirmUrl,
   newsletterLandingPath,
   buildNewsletterConfirmEmail,
+  buildNewsletterWelcomeEmail,
   sendNewsletterConfirmEmail,
+  sendNewsletterWelcomeEmail,
   subscribeNewsletterContact,
 } from './newsletter';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
@@ -227,6 +229,84 @@ describe('subscribeNewsletterContact', () => {
     const fetchImpl = vi.fn(async () => new Response('nope', { status: 500 }));
     await expect(
       subscribeNewsletterContact({ apiKey: 're_test', email: 'a@b.co', fetchImpl: fetchImpl as unknown as typeof fetch }),
+    ).rejects.toThrow(/Resend 500/);
+  });
+});
+
+describe('buildNewsletterWelcomeEmail', () => {
+  const percentPromo = {
+    code: 'WELCOME10',
+    kind: 'percent' as const,
+    percent: 10,
+    amount_pln: null,
+    amount_eur: null,
+    amount_gbp: null,
+  };
+  // RAW STORED MINOR UNITS — the builder must render major units.
+  const fixedPromo = {
+    code: 'ART50',
+    kind: 'fixed' as const,
+    percent: null,
+    amount_pln: 5000,
+    amount_eur: 1200,
+    amount_gbp: 1000,
+  };
+
+  it.each(['pl', 'en', 'es', 'de'] as const)(
+    '%s: carries the code verbatim, a percent value, and a shop link',
+    (locale) => {
+      const { subject, html } = buildNewsletterWelcomeEmail({ locale, promo: percentPromo });
+      expect(subject.length).toBeGreaterThan(0);
+      expect(html).toContain('WELCOME10');
+      expect(html).toContain('−10%');
+      expect(html).toContain('https://anna-ciok.studio');
+      if (locale !== 'pl') expect(html).toContain(`/${locale}/sklep`);
+      else expect(html).toContain('https://anna-ciok.studio/sklep');
+    },
+  );
+
+  it('renders fixed amounts in MAJOR units for all three currencies — never raw minors', () => {
+    const { html } = buildNewsletterWelcomeEmail({ locale: 'pl', promo: fixedPromo });
+    expect(html).toContain('ART50');
+    expect(html).toContain('50 zł');
+    expect(html).toContain('12 €');
+    expect(html).toContain('10 £');
+    expect(html).not.toContain('5000');
+    expect(html).not.toContain('1200');
+  });
+
+  it('localizes the copy (subjects differ across locales)', () => {
+    const subjects = (['pl', 'en', 'es', 'de'] as const).map(
+      (locale) => buildNewsletterWelcomeEmail({ locale, promo: percentPromo }).subject,
+    );
+    expect(new Set(subjects).size).toBe(4);
+  });
+});
+
+describe('sendNewsletterWelcomeEmail', () => {
+  it('POSTs the built email to Resend and throws on non-ok', async () => {
+    const okFetch = vi.fn(async () => new Response('{}', { status: 200 }));
+    await expect(
+      sendNewsletterWelcomeEmail({
+        apiKey: 're_test',
+        to: 'a@b.co',
+        subject: 'S',
+        html: '<p>x</p>',
+        fetchImpl: okFetch as unknown as typeof fetch,
+      }),
+    ).resolves.toBeUndefined();
+    const [, init] = okFetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({ to: ['a@b.co'], from: EMAIL_FROM });
+
+    const badFetch = vi.fn(async () => new Response('nope', { status: 500 }));
+    await expect(
+      sendNewsletterWelcomeEmail({
+        apiKey: 're_test',
+        to: 'a@b.co',
+        subject: 'S',
+        html: '<p>x</p>',
+        fetchImpl: badFetch as unknown as typeof fetch,
+      }),
     ).rejects.toThrow(/Resend 500/);
   });
 });

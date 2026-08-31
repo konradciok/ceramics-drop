@@ -340,7 +340,22 @@
     "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue.",
     "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue.",
     "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later.",
-    "printAssetError": "Something went wrong for a moment. Please try again."
+    "printAssetError": "Something went wrong for a moment. Please try again.",
+    "promo": {
+      "label": "Promo code",
+      "have": "I have a promo code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "remove": "Remove",
+      "discountRow": "Discount ({code})",
+      "invalid": "This code is invalid or inactive.",
+      "expired": "This code has expired.",
+      "notStarted": "This code isn’t active yet.",
+      "wrongTrackCeramics": "This code only applies to fine-art prints.",
+      "wrongTrackPrints": "This code only applies to ceramics.",
+      "exhausted": "This code has been fully redeemed.",
+      "networkError": "Couldn’t check the code. Please try again."
+    }
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",

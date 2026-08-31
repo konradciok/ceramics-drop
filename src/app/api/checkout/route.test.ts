@@ -1,11 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { printShippingOf } from '@/lib/print-shipping';
+import type { PromoCode } from '@/lib/promo';
 
 type PgError = { code: string; message: string } | null;
 
 const reserveRpc = vi.fn<
   (fn: string, params: Record<string, unknown>) => Promise<{ data: string[]; error: PgError }>
 >(async () => ({ data: [], error: null }));
+// claim_promo_redemption returns a boolean, not a conflict array — separate
+// mock so reserve-count assertions stay reserve-only.
+const claimPromoRpc = vi.fn<
+  (fn: string, params: Record<string, unknown>) => Promise<{ data: boolean | null; error: PgError }>
+>(async () => ({ data: true, error: null }));
+// Partial mock of the promo domain: only the DB fetch is stubbed; normalize /
+// eligibility / discount math run for real (they have their own unit tests).
+const fetchPromoByCode = vi.fn<
+  (supabase: unknown, code: string) => Promise<{ promo: PromoCode | null; redemptionCount: number }>
+>(async () => ({ promo: null, redemptionCount: 0 }));
+vi.mock('@/lib/promo', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/promo')>();
+  return { ...actual, fetchPromoByCode };
+});
 // Terminal call of the status-scoped release chain:
 // .update(...).eq('order_id', id).eq('status', 'reserved').select('product_id')
 const releaseHold = vi.fn<
@@ -45,6 +60,10 @@ const orderAmountGrosze = vi.fn(() => 9_000);
 const orderAmountEuroCents = vi.fn(() => 2_200);
 const orderAmountGBPPence = vi.fn(() => 1_900);
 const toMinor = vi.fn((v: number) => Math.round(v * 100));
+// Real InPost price list values (SHIPPING_PLN/EUR/GBP), minor units.
+const shippingGrosze = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 2_000 : 3_000));
+const shippingEuroCents = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_000));
+const shippingGBPPence = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_200));
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -57,7 +76,8 @@ vi.mock('@/lib/stripe', () => ({
 
 vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: () => ({
-    rpc: reserveRpc,
+    rpc: (fn: string, params: Record<string, unknown>) =>
+      fn === 'claim_promo_redemption' ? claimPromoRpc(fn, params) : reserveRpc(fn, params),
     from: (table: string) => {
       if (table === 'orders') {
         return {
@@ -102,6 +122,9 @@ vi.mock('@/lib/pricing', () => ({
   orderAmountEuroCents,
   orderAmountGBPPence,
   toMinor,
+  shippingGrosze,
+  shippingEuroCents,
+  shippingGBPPence,
 }));
 
 const sendCheckoutStartedEvent = vi.fn(async () => {});
@@ -1116,5 +1139,258 @@ describe('POST /api/checkout', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  describe('promo codes', () => {
+    const PROMO_ID = '11111111-2222-4333-8444-555555555555';
+    const mkPromo = (overrides: Partial<PromoCode> = {}): PromoCode => ({
+      id: PROMO_ID,
+      code: 'WELCOME10',
+      kind: 'percent',
+      percent: 10,
+      amount_pln: null,
+      amount_eur: null,
+      amount_gbp: null,
+      applies_to: 'all',
+      active: true,
+      starts_at: null,
+      expires_at: null,
+      max_redemptions: null,
+      newsletter_welcome: false,
+      campaign: null,
+      ...overrides,
+    });
+    const post = async (body: Record<string, unknown>, init: RequestInit = {}) => {
+      const { POST } = await import('./route');
+      return POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(body),
+          ...init,
+        }),
+      );
+    };
+
+    it('applies a percent promo to a ceramic PLN cart: PI amount, orders row, metadata, response discount', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: '  welcome10 ' }));
+      expect(res.status).toBe(200);
+      // subtotal 9000, 10% → 900 off; odbior shipping 0 → amount 8100.
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      expect(fetchPromoByCode).toHaveBeenCalledWith(expect.anything(), 'WELCOME10');
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 8_100,
+          metadata: expect.objectContaining({ promo_code: 'WELCOME10', promo_id: PROMO_ID }),
+        }),
+        expect.anything(),
+      );
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          promo_code: 'WELCOME10',
+          discount: 900,
+          subtotal: 9_000, // pre-discount
+          shipping: 0,
+          total: 8_100,
+        }),
+      );
+      expect(claimPromoRpc).toHaveBeenCalledWith('claim_promo_redemption', {
+        p_promo_id: PROMO_ID,
+        p_order_id: VALID_ATTEMPT_ID,
+      });
+    });
+
+    it('applies a fixed EUR promo to a print cart; print shipping untouched', async () => {
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+      fetchPromoByCode.mockResolvedValueOnce({
+        promo: mkPromo({
+          code: 'ART10',
+          kind: 'fixed',
+          percent: null,
+          amount_pln: 4_500,
+          amount_eur: 1_000,
+          amount_gbp: 900,
+          applies_to: 'prints',
+        }),
+        redemptionCount: 0,
+      });
+      const shipEur = toMinor(printShippingOf('DE', true, 'eur'));
+      const res = await post(
+        makeCheckoutBody({ ...PRINT_BODY, locale: 'en', promo_code: 'art10' }),
+        { headers: { Cookie: 'currency_pref=eur' } },
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 1_000 });
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          promo_code: 'ART10',
+          discount: 1_000,
+          subtotal: 42_000,
+          shipping: shipEur, // discount never touches shipping
+          total: 42_000 - 1_000 + shipEur,
+        }),
+      );
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 42_000 - 1_000 + shipEur, currency: 'eur' }),
+        expect.anything(),
+      );
+    });
+
+    it('ceramics-only code on a print cart → 400 wrong_track, no PI, no order, no claim', async () => {
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+      fetchPromoByCode.mockResolvedValueOnce({
+        promo: mkPromo({ applies_to: 'ceramics' }),
+        redemptionCount: 0,
+      });
+      const res = await post(makeCheckoutBody({ ...PRINT_BODY, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'wrong_track' });
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
+      expect(claimPromoRpc).not.toHaveBeenCalled();
+    });
+
+    it('prints-only code on a ceramic cart → 400 wrong_track BEFORE any reservation', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({
+        promo: mkPromo({ applies_to: 'prints' }),
+        redemptionCount: 0,
+      });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'wrong_track' });
+      // Validation failure leaves no hold behind.
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['inactive', { active: false }],
+      ['expired', { expires_at: '2020-01-01T00:00:00Z' }],
+      ['not_started', { starts_at: '2999-01-01T00:00:00Z' }],
+    ] as const)('%s code → 400 invalid_promo with matching reason', async (reason, overrides) => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(overrides), redemptionCount: 0 });
+      const res = await post(makeCheckoutBody({ promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('unknown code → 400 not_found', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: null, redemptionCount: 0 });
+      const res = await post(makeCheckoutBody({ promo_code: 'NOPE99' }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'not_found' });
+    });
+
+    it('malformed code → 400 not_found without hitting the DB', async () => {
+      const res = await post(makeCheckoutBody({ promo_code: 'zażółć' }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'not_found' });
+      expect(fetchPromoByCode).not.toHaveBeenCalled();
+    });
+
+    it('exhausted at eligibility pre-check → 409 promo_exhausted before any reservation', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({
+        promo: mkPromo({ max_redemptions: 5 }),
+        redemptionCount: 5,
+      });
+      const res = await post(makeCheckoutBody({ promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'promo_exhausted' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('claim RPC returns false → 409 promo_exhausted with FULL rollback (PI canceled, order failed, hold released)', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      claimPromoRpc.mockResolvedValueOnce({ data: false, error: null });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'promo_exhausted' });
+      expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+      expect(updateOrderStatus).toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    });
+
+    it('claim RPC errors → 500 with the same full rollback', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      claimPromoRpc.mockResolvedValueOnce({ data: null, error: { code: 'XX000', message: 'db down' } });
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+        expect(res.status).toBe(500);
+        expect(await res.json()).toEqual({ error: 'promo_claim_failed' });
+        expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+        expect(updateOrderStatus).toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+        expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it('no promo_code → success JSON carries NO discount field (byte-identical legacy response)', async () => {
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID }));
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json).toEqual({ client_secret: 'cs_test' });
+      expect(json).not.toHaveProperty('discount');
+      expect(claimPromoRpc).not.toHaveBeenCalled();
+      expect(fetchPromoByCode).not.toHaveBeenCalled();
+    });
+
+    it('replayed POST (23505, pending) with the same code re-claims re-entrantly and succeeds', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+      selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      // The claim RPC is re-entrant for the same order+promo — still called.
+      expect(claimPromoRpc).toHaveBeenCalledWith('claim_promo_redemption', {
+        p_promo_id: PROMO_ID,
+        p_order_id: VALID_ATTEMPT_ID,
+      });
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it('replayed POST with a claim RPC failure → 409 checkout_in_progress, NEVER cancels the (possibly buyer-held) PI', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+      insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+      selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      claimPromoRpc.mockResolvedValueOnce({ data: false, error: null });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(updateOrderStatus).not.toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it('Stripe-minimum clamp: 100% code + odbior lands the PI exactly on 200 gr', async () => {
+      fetchPromoByCode.mockResolvedValueOnce({
+        promo: mkPromo({ code: 'GRATIS', percent: 100 }),
+        redemptionCount: 0,
+      });
+      const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'GRATIS' }));
+      expect(res.status).toBe(200);
+      // subtotal 9000, shipping 0: max discount = 9000 + 0 - 200 = 8800.
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 8_800 });
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 200 }),
+        expect.anything(),
+      );
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ discount: 8_800, subtotal: 9_000, total: 200 }),
+      );
+    });
   });
 });

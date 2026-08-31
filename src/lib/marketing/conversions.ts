@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { registryResolveKnownProducts } from '../products';
 import { registryPrintById } from '../prints';
 import { variantLabel } from '../print-cart';
-import { toAnalyticsItem } from '../analytics';
+import { toAnalyticsItem, allocateItemDiscounts } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
@@ -12,10 +12,12 @@ import { normalizeShippingAddress } from '../shipping-address';
 export type ConversionOrder = {
   payment_intent_id: string;
   status: string;
-  subtotal: number; // grosze
+  subtotal: number; // grosze, pre-discount
   shipping: number; // grosze
   total: number;    // grosze
   currency: string;
+  promo_code: string | null;
+  discount: number; // grosze
   email: string | null;
   receiver_first_name: string | null;
   receiver_last_name: string | null;
@@ -61,7 +63,7 @@ export async function sendPurchaseConversions(
     item_price: item.unit_price / 100,
   }));
 
-  const ga4Items = order.items.map((item) => {
+  const grossGa4Items = order.items.map((item) => {
     // Print line: ceramic registry can't resolve a design id, so build the item
     // from the print registry + persisted variant (value/contents already correct).
     if (item.variant) {
@@ -90,6 +92,11 @@ export async function sendPurchaseConversions(
       ...(ai?.item_variant ? { item_variant: ai.item_variant } : {}),
     };
   });
+  // Mirrors analytics.ts's client-side purchase builder: allocate the
+  // merchandise discount across items (proportional, minor-unit exact) so
+  // per-item GA4 revenue sums to the discounted order value instead of only
+  // the top-level `value` reflecting it.
+  const ga4Items = allocateItemDiscounts(grossGa4Items, order.discount ?? 0);
 
   const emailHash = await hashUserField(order.email, normalizeEmail);
   const shippingAddress = normalizeShippingAddress(order.shipping_address);
@@ -123,13 +130,15 @@ export async function sendPurchaseConversions(
     clientId: m.ga_client_id,
     sessionId: m.ga_session_id,
     transactionId: order.payment_intent_id,
-    value: order.subtotal / 100,
+    // (subtotal - discount)/100 — Meta needs no change (order.total is already post-discount).
+    value: (order.subtotal - (order.discount ?? 0)) / 100,
     shipping: order.shipping / 100,
     currency: order.currency.toUpperCase(),
     items: ga4Items,
     ...(emailHash ? { userData: { sha256_email_address: emailHash[0] } } : {}),
     ...(deps.appVersion ? { appVersion: deps.appVersion } : {}),
     ...(deps.appGitSha ? { appGitSha: deps.appGitSha } : {}),
+    ...(order.promo_code ? { coupon: order.promo_code } : {}),
   };
 
   const sendMeta = deps.sendMeta ?? sendMetaPurchase;
@@ -208,9 +217,10 @@ export async function sendPurchaseConversions(
 
 export type RefundOrder = {
   payment_intent_id: string;
-  subtotal: number; // grosze
+  subtotal: number; // grosze, pre-discount
   shipping: number; // grosze
   currency: string;
+  discount: number; // grosze
   marketing: MarketingContext | null;
 };
 
@@ -242,7 +252,9 @@ export async function sendRefundConversion(
       clientId: order.marketing.ga_client_id,
       sessionId: order.marketing.ga_session_id,
       transactionId: order.payment_intent_id,
-      value: order.subtotal / 100,
+      // Reverses exactly the revenue the purchase recorded — same
+      // (subtotal - discount)/100 rule as sendPurchaseConversions above.
+      value: (order.subtotal - (order.discount ?? 0)) / 100,
       shipping: order.shipping / 100,
       currency: order.currency.toUpperCase(),
     };

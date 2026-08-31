@@ -340,7 +340,22 @@
     "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować.",
     "privateSalePrintsNotice": "Linki do prywatnych zamówień dotyczą tylko ceramiki — usuń printy z koszyka, aby kontynuować.",
     "printAssetUnavailable": "Ten wariant printu jest chwilowo niedostępny — usuń go z koszyka lub spróbuj ponownie później.",
-    "printAssetError": "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę."
+    "printAssetError": "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę.",
+    "promo": {
+      "label": "Kod rabatowy",
+      "have": "Mam kod rabatowy",
+      "placeholder": "Wpisz kod",
+      "apply": "Zastosuj",
+      "remove": "Usuń",
+      "discountRow": "Rabat ({code})",
+      "invalid": "Ten kod jest nieprawidłowy lub nieaktywny.",
+      "expired": "Ten kod stracił ważność.",
+      "notStarted": "Ten kod nie jest jeszcze aktywny.",
+      "wrongTrackCeramics": "Ten kod obejmuje tylko grafiki fine-art.",
+      "wrongTrackPrints": "Ten kod obejmuje tylko ceramikę.",
+      "exhausted": "Ten kod został już w pełni wykorzystany.",
+      "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
+    }
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",

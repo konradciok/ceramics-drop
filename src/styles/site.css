@@ -929,6 +929,19 @@ ul { list-style:none; padding:0; margin:0; }
 .sum-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:16px; border-top:1px solid var(--c-line); }
 .sum-total .k { font-family:var(--f-display); font-weight:300; font-size:20px; }
 .sum-total .v { font-family:var(--f-display); font-weight:400; font-size:26px; }
+/* ── Promo code entry / discount row ─────────────────────────────────────── */
+.promo-row .v { color:var(--c-terracotta); }
+.promo-row .k { display:flex; align-items:baseline; gap:10px; }
+.promo-remove { background:none; border:none; padding:0; cursor:pointer; font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-decoration:underline; }
+.promo-remove:hover { opacity:.9; }
+.promo-entry { padding:8px 0 2px; }
+.promo-toggle { background:none; border:none; padding:0; cursor:pointer; font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.6; text-decoration:underline; }
+.promo-toggle:hover { opacity:.95; }
+.promo-form { display:flex; gap:8px; }
+.promo-form input { flex:1; min-width:0; padding:10px 12px; border:1px solid var(--c-line); border-radius:2px; background:transparent; font:inherit; font-size:14px; text-transform:uppercase; }
+.promo-form input:focus-visible { outline:2px solid var(--c-espresso); outline-offset:1px; border-color:var(--c-espresso); }
+.promo-form .promo-apply { padding:10px 16px; flex:none; }
+.promo-error { margin:8px 0 0; font-size:13px; color:#a04426; }
 .ship-opts { display:flex; flex-direction:column; gap:10px; margin:18px 0 6px; }
 .ship-opt { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid var(--c-line); border-radius:2px; cursor:pointer; transition:border-color .2s,background .2s; }
 .ship-opt:hover { border-color:var(--c-espresso); }

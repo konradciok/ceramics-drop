@@ -30,6 +30,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`analytics-stack.md`](analytics-stack.md) | active | GA4 + Meta via GTM: event contract, consent, server conversions |
 | [`e2e-playwright-purchase-flow.md`](e2e-playwright-purchase-flow.md) | active | E2E design: tags, hermetic mode, destructive opt-in |
 | [`stripe-operations.md`](stripe-operations.md) | runbook | Stripe operational procedures |
+| [`promo-codes.md`](promo-codes.md) | active | Promo codes: operator runbook (`/admin/promotions`) + technical reference (discount math, redemption lifecycle, analytics contract) |
 | [`notion-i18n.md`](notion-i18n.md) | active | Notion-backed translation workflow |
 | [`abandoned-cart-resend.md`](abandoned-cart-resend.md) | reference | Abandoned-cart email design |
 | [`complete-inpost.md`](complete-inpost.md) | reference | InPost ShipX integration notes |
