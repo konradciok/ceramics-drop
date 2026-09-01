@@ -97,7 +97,12 @@ export async function getPublishedContent<TPayload = CmsPayload>(
       .eq('cms_document_versions.status', 'published')
       .abortSignal(supabaseTimeout())
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      console.error('CMS published read failed; falling back to messages', { kind, slug, locale, error });
+      Sentry.captureException(error, { tags: { cms: 'getPublishedContent' }, extra: { kind, slug, locale } });
+      return null;
+    }
+    if (!data) return null;
     const versions = (data as { cms_document_versions?: Array<{ payload: unknown }> }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
@@ -127,7 +132,12 @@ export async function getPreviewContent<TPayload = CmsPayload>(
       .eq('cms_document_versions.version', preview.version)
       .abortSignal(supabaseTimeout())
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      console.error('CMS preview read failed', { expected, error });
+      Sentry.captureException(error, { tags: { cms: 'getPreviewContent' }, extra: { expected } });
+      return null;
+    }
+    if (!data) return null;
     const versions = (data as { cms_document_versions?: CmsVersionRow[] }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
