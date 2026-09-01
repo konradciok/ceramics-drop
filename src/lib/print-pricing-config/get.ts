@@ -8,14 +8,12 @@
    ============================================================ */
 import { catalogSource } from '../catalog/source';
 import { DEFAULT_PRINT_PRICING, type PrintPricingConfig } from '../print-pricing';
+import { readWithFallback } from '../supabase-timeout';
 
 export async function getPrintPricingConfig(): Promise<PrintPricingConfig> {
   if (catalogSource() === 'code') return DEFAULT_PRINT_PRICING;
-  try {
+  return readWithFallback('print-pricing-config', async () => {
     const { loadPrintPricingConfigFromDb } = await import('./load');
     return await loadPrintPricingConfigFromDb();
-  } catch (err) {
-    console.error('[print-pricing] DB config read failed; falling back to code defaults', err);
-    return DEFAULT_PRINT_PRICING;
-  }
+  }, DEFAULT_PRINT_PRICING);
 }

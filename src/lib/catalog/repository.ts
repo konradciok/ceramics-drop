@@ -7,6 +7,7 @@
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintDesign, Product } from '../types';
+import { supabaseTimeout } from '../supabase-timeout';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import { parseProductRow, parseProductRows } from './read-schemas';
@@ -78,7 +79,11 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
  * loadCeramicProductsFromDb via the ceramic accessors.
  */
 export async function readCeramicProducts(supabase: SupabaseClient): Promise<Product[]> {
-  const productsRes = await supabase.from('products').select('*').eq('type', 'ceramic');
+  const productsRes = await supabase
+    .from('products')
+    .select('*')
+    .eq('type', 'ceramic')
+    .abortSignal(supabaseTimeout());
   if (productsRes.error) throw new Error(`read products: ${productsRes.error.message}`);
 
   // Customer-facing reader: SKIP an invalid ceramic row (never render/sell at
@@ -87,7 +92,11 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
   const rows = sortCeramicProductRows(parseProductRows(productsRes.data ?? []));
   const ids = rows.map((r) => r.id);
   if (ids.length === 0) return [];
-  const mediaRes = await supabase.from('product_media').select('*').in('product_id', ids);
+  const mediaRes = await supabase
+    .from('product_media')
+    .select('*')
+    .in('product_id', ids)
+    .abortSignal(supabaseTimeout());
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
   return mapCeramicProducts(rows, (mediaRes.data ?? []) as MediaSeedRow[]);
@@ -105,7 +114,8 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
     .from('products')
     .select('*')
     .eq('type', 'print')
-    .order('num', { ascending: true });
+    .order('num', { ascending: true })
+    .abortSignal(supabaseTimeout());
   if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
 
   const rawProducts = productsRes.data ?? [];
@@ -113,8 +123,18 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
   if (ids.length === 0) return [];
 
   const [variantsRes, mediaRes] = await Promise.all([
-    supabase.from('product_variants').select('*').in('product_id', ids).order('position', { ascending: true }),
-    supabase.from('product_media').select('*').in('product_id', ids).order('position', { ascending: true }),
+    supabase
+      .from('product_variants')
+      .select('*')
+      .in('product_id', ids)
+      .order('position', { ascending: true })
+      .abortSignal(supabaseTimeout()),
+    supabase
+      .from('product_media')
+      .select('*')
+      .in('product_id', ids)
+      .order('position', { ascending: true })
+      .abortSignal(supabaseTimeout()),
   ]);
   if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
   if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);

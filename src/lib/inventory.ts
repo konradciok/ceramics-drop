@@ -1,5 +1,6 @@
-import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { getSupabaseAdmin } from './supabase';
+import { supabaseTimeout } from './supabase-timeout';
 import { resolveKnownProducts, CATEGORY_ORDER } from './products';
 import type { Product } from './types';
 
@@ -17,43 +18,41 @@ export function isAvailable(row: PieceRow, now: Date): boolean {
   return true;
 }
 
-/**
- * Sold product ids, cached under the `inventory` tag. The Stripe webhook calls
- * revalidateTag('inventory') on a sale so collection pages refresh promptly
- * while otherwise serving cached, fast responses.
- */
-export const getSoldIds = unstable_cache(
-  async (): Promise<string[]> => {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('piece_state')
-      .select('product_id')
-      .eq('status', 'sold');
-    if (error) throw error;
-    return (data ?? []).map((r) => r.product_id as string);
-  },
-  ['sold-ids'],
-  { tags: ['inventory'], revalidate: 300 },
-);
+type PieceStateRow = { product_id: string; status: string; showroom: boolean };
 
 /**
- * Product ids retired into the showroom (visible but not purchasable), cached
- * under the same `inventory` tag as sold ids so admin toggles refresh promptly.
+ * `piece_state` rows relevant to either sold or showroom state, fetched once
+ * and de-duplicated within a single request via React's `cache()`. Replaces
+ * two independent `unstable_cache`-wrapped queries — the OpenNext deployment's
+ * tag cache is a dummy stub (no persistent invalidation), so that wrapping
+ * provided no real cross-request caching; `cache()` here is request-scoped
+ * memoization only, not a claim of durable invalidation.
+ */
+const fetchPieceState = cache(async (): Promise<PieceStateRow[]> => {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('piece_state')
+    .select('product_id, status, showroom')
+    .or('status.eq.sold,showroom.eq.true')
+    .abortSignal(supabaseTimeout());
+  if (error) throw error;
+  return (data ?? []) as PieceStateRow[];
+});
+
+/** Sold product ids. */
+export async function getSoldIds(): Promise<string[]> {
+  const rows = await fetchPieceState();
+  return rows.filter((r) => r.status === 'sold').map((r) => r.product_id);
+}
+
+/**
+ * Product ids retired into the showroom (visible but not purchasable).
  * Independent of sold state — a piece can be showroom whether it sold or not.
  */
-export const getShowroomIds = unstable_cache(
-  async (): Promise<string[]> => {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('piece_state')
-      .select('product_id')
-      .eq('showroom', true);
-    if (error) throw error;
-    return (data ?? []).map((r) => r.product_id as string);
-  },
-  ['showroom-ids'],
-  { tags: ['inventory'], revalidate: 300 },
-);
+export async function getShowroomIds(): Promise<string[]> {
+  const rows = await fetchPieceState();
+  return rows.filter((r) => r.showroom).map((r) => r.product_id);
+}
 
 /** A showroom piece resolved for display: the product (sold + showroom merged) plus its drop label. */
 export type ShowroomEntry = { product: Product; dropLabel: string | null };
@@ -67,8 +66,8 @@ export type ShowroomEntry = { product: Product; dropLabel: string | null };
 export async function getShowroomProducts(): Promise<ShowroomEntry[]> {
   const supabase = getSupabaseAdmin();
   const [{ data: pieces, error: pieceErr }, { data: drops, error: dropErr }] = await Promise.all([
-    supabase.from('piece_state').select('product_id, status').eq('showroom', true),
-    supabase.from('drops').select('id, label'),
+    supabase.from('piece_state').select('product_id, status').eq('showroom', true).abortSignal(supabaseTimeout()),
+    supabase.from('drops').select('id, label').abortSignal(supabaseTimeout()),
   ]);
   if (pieceErr) throw pieceErr;
   if (dropErr) throw dropErr;

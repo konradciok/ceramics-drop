@@ -7,6 +7,7 @@
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PrintPricingConfig } from '../print-pricing';
+import { supabaseTimeout } from '../supabase-timeout';
 import { printPricingConfigSchema } from './schema';
 
 interface PrintPricingRow {
@@ -56,7 +57,11 @@ function configToRow(config: PrintPricingConfig): PrintPricingRow {
  * the seed row is absent (migration not applied) and on any Supabase error.
  */
 export async function readPrintPricingConfig(supabase: SupabaseClient): Promise<PrintPricingConfig> {
-  const res = await supabase.from('print_pricing_config').select('*').maybeSingle();
+  const res = await supabase
+    .from('print_pricing_config')
+    .select('*')
+    .abortSignal(supabaseTimeout())
+    .maybeSingle();
   if (res.error) throw new Error(`read print pricing: ${res.error.message}`);
   if (!res.data) throw new Error('print_pricing_missing');
   return rowToConfig(res.data as PrintPricingRow);

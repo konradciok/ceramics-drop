@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { supabaseTimeout } from '@/lib/supabase-timeout';
 import type { PrintAssetCoverage, PrintAssetReadiness, PrintAssetVariantCoverage, ResolvedPrintAsset } from './types';
 
 /**
@@ -225,13 +226,15 @@ export async function getPrintAssetCoverage(
       .select('variant_key, print_area_width_px, print_area_height_px')
       .eq('product_id', productId)
       .eq('active', true)
-      .order('variant_key'),
+      .order('variant_key')
+      .abortSignal(supabaseTimeout()),
     supabase
       .from('print_variant_asset_assignments')
       .select(
         'variant_key, print_fulfilment_assets(id, revision, status, width_px, height_px, verified_at)',
       )
-      .eq('product_id', productId),
+      .eq('product_id', productId)
+      .abortSignal(supabaseTimeout()),
   ]);
 
   if (variants.error)

@@ -38,8 +38,14 @@ function mockSupabase(): SupabaseClient {
   return {
     from: (table: string) => {
       if (table === 'print_pricing_config') {
+        // readPrintPricingConfig chains .abortSignal() before .maybeSingle();
+        // updatePrintPricingConfig's own `before` read does not (write path,
+        // out of scope for the timeout fix) — support both shapes.
         return {
-          select: () => ({ maybeSingle: selectMaybeSingle }),
+          select: () => ({
+            maybeSingle: selectMaybeSingle,
+            abortSignal: () => ({ maybeSingle: selectMaybeSingle }),
+          }),
           update: (patch: unknown) => {
             updatePatch(patch);
             return {

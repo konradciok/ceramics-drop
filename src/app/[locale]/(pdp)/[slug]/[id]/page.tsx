@@ -15,7 +15,9 @@ import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { getProductNote } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { readWithFallback } from '@/lib/supabase-timeout';
 import type { Locale } from '@/i18n/routing';
+import type { PrintAssetCoverage } from '@/server/print-assets/types';
 import type { CategorySlug } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -94,7 +96,12 @@ export default async function Page({ params, searchParams }: Props) {
     const t = await getTranslations({ locale });
     const [note, coverage, pricing, pdpContent] = await Promise.all([
       getProductNote(PRINT_SLUG, locale as Locale, design.id, preview),
-      getPrintAssetCoverage(design.id).catch(() => null),
+      readWithFallback<PrintAssetCoverage | null>(
+        'printAssetCoverage',
+        () => getPrintAssetCoverage(design.id),
+        null,
+        { locale, id },
+      ),
       getPrintPricingConfig(),
       getPrintPdpContent(locale as Locale, preview),
     ]);
@@ -129,14 +136,8 @@ export default async function Page({ params, searchParams }: Props) {
 
   const [t, soldIds, showroomIds] = await Promise.all([
     getTranslations({ locale }),
-    getSoldIds().catch((err) => {
-      console.error('getSoldIds failed on PDP', { locale, slug, id, err });
-      return [] as string[];
-    }),
-    getShowroomIds().catch((err) => {
-      console.error('getShowroomIds failed on PDP', { locale, slug, id, err });
-      return [] as string[];
-    }),
+    readWithFallback('soldIds', getSoldIds, [] as string[], { locale, slug, id }),
+    readWithFallback('showroomIds', getShowroomIds, [] as string[], { locale, slug, id }),
   ]);
 
   const withSold = soldIds.includes(base.id) ? { ...base, sold: true } : base;

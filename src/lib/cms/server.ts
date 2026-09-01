@@ -1,5 +1,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { supabaseTimeout } from '@/lib/supabase-timeout';
 import { validateCmsPayload } from './schemas';
 import type { CmsDocumentKind, CmsLocale, CmsPayload, CmsVersionRow } from './types';
 
@@ -93,14 +95,21 @@ export async function getPublishedContent<TPayload = CmsPayload>(
       .eq('status', 'published')
       .eq('cms_document_versions.locale', locale)
       .eq('cms_document_versions.status', 'published')
+      .abortSignal(supabaseTimeout())
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      console.error('CMS published read failed; falling back to messages', { kind, slug, locale, error });
+      Sentry.captureException(error, { tags: { cms: 'getPublishedContent' }, extra: { kind, slug, locale } });
+      return null;
+    }
+    if (!data) return null;
     const versions = (data as { cms_document_versions?: Array<{ payload: unknown }> }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
     return validateCmsPayload(kind, slug, payload) as TPayload;
   } catch (err) {
     console.error('CMS published read failed; falling back to messages', { kind, slug, locale, err });
+    Sentry.captureException(err, { tags: { cms: 'getPublishedContent' }, extra: { kind, slug, locale } });
     return null;
   }
 }
@@ -121,14 +130,21 @@ export async function getPreviewContent<TPayload = CmsPayload>(
       .eq('slug', preview.slug)
       .eq('cms_document_versions.locale', preview.locale)
       .eq('cms_document_versions.version', preview.version)
+      .abortSignal(supabaseTimeout())
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      console.error('CMS preview read failed', { expected, error });
+      Sentry.captureException(error, { tags: { cms: 'getPreviewContent' }, extra: { expected } });
+      return null;
+    }
+    if (!data) return null;
     const versions = (data as { cms_document_versions?: CmsVersionRow[] }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
     return validateCmsPayload(preview.kind, preview.slug, payload) as TPayload;
   } catch (err) {
     console.error('CMS preview read failed', { expected, err });
+    Sentry.captureException(err, { tags: { cms: 'getPreviewContent' }, extra: { expected } });
     return null;
   }
 }

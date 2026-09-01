@@ -1,6 +1,7 @@
 import type { PrintDesign, PrintVariantSelection } from './types';
 import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
+import { readWithFallback } from './supabase-timeout';
 import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
 import { ACTIVE_PRINT_CURATION, RETIRED_PRINT_CURATION, curationForProduct } from './print-curation';
 
@@ -540,16 +541,14 @@ async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<s
   if (catalogSource() === 'code') {
     return { designs: PRINT_DESIGNS, byId: BY_ID };
   }
-  try {
+  // Same resilience default as loadCeramicCatalog: fall back to the registry
+  // on a DB read failure (including a bounded Supabase timeout) rather than
+  // breaking print PDPs + checkout.
+  return readWithFallback('print-catalog', async () => {
     const { loadPrintDesignsFromDb } = await import('./catalog/load');
     const designs = await loadPrintDesignsFromDb();
     return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
-  } catch (err) {
-    // Same resilience default as loadCeramicCatalog: fall back to the registry
-    // on a DB read failure rather than breaking print PDPs + checkout.
-    console.error('[catalog] print DB read failed; falling back to code registry', err);
-    return { designs: PRINT_DESIGNS, byId: BY_ID };
-  }
+  }, { designs: PRINT_DESIGNS, byId: BY_ID });
 }
 
 /** Published designs in registry order. */
