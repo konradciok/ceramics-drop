@@ -283,6 +283,37 @@ describe('createOrderInvoice', () => {
     );
   });
 
+  it('gives two different designs in the same print variant distinct idempotency keys', async () => {
+    // Regression: order 63445e00 (2026-09-02) had fap016 + fap008 both in
+    // GLOBAL-FAP-28X40; a per-SKU key made Stripe reject the second item and
+    // the draft invoice was stuck with one line.
+    const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
+    itemRows = [
+      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+    ];
+    await createOrderInvoice('pi_1');
+    const keys = stripeMock.invoiceItems.create.mock.calls
+      .map((c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey)
+      .filter((k: string) => k !== 'ii2_ord-1_shipping');
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(2);
+  });
+
+  it('keeps two variants of the same design on distinct idempotency keys', async () => {
+    const base = { size: '70x100', framed: false, mount: false, frameColour: 'none' };
+    itemRows = [
+      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: { ...base, prodigiSku: 'GLOBAL-FAP-28X40' } },
+      { order_id: 'ord-1', product_id: 'fap016', unit_price: 30000, variant: { ...base, size: '50x70', prodigiSku: 'GLOBAL-FAP-20X28' } },
+    ];
+    await createOrderInvoice('pi_1');
+    const keys = stripeMock.invoiceItems.create.mock.calls
+      .map((c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey)
+      .filter((k: string) => k !== 'ii2_ord-1_shipping');
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(2);
+  });
+
   it('uses English product labels and shipping description for en locale', async () => {
     orderRow = { ...ORDER, locale: 'en', currency: 'eur' };
     await createOrderInvoice('pi_1');

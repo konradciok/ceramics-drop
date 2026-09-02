@@ -122,8 +122,9 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       const variant = (it.variant ?? null) as (PrintVariantSelection & { prodigiSku: string }) | null;
       let label: string;
       if (variant) {
-        // Fine-art print: design name + chosen variant. The SKU also disambiguates
-        // the idempotency key so two variants of the same design both invoice.
+        // Fine-art print: design name + chosen variant. The idempotency key
+        // below carries both the design id and the SKU so that two variants of
+        // the same design AND two designs in the same variant all invoice.
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
         label = `${printName} Nº ${design?.num ?? ''}`.trim()
@@ -140,7 +141,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${variant?.prodigiSku ?? it.product_id}` });
+      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${variant ? `_${variant.prodigiSku}` : ''}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
