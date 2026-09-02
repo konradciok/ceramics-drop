@@ -125,6 +125,10 @@ const UNTYPED_ALLOWLIST = new Set([
   // module init) — never part of the per-request `env` binding CloudflareEnv.
   'SENTRY_AUTH_TOKEN',
   'SENTRY_ENVIRONMENT',
+  // Local-shell opt-in that re-enables Sentry under NODE_ENV=development
+  // (src/lib/sentry-options.ts). NEXT_PUBLIC_ so the browser bundle sees it;
+  // never set in production; not a Workers binding.
+  'NEXT_PUBLIC_SENTRY_SEND_IN_DEV',
   // Deliberately untyped local-override escape hatch (src/lib/admin/clients.ts
   // widens the type instead of extending CloudflareEnv, so a prod deploy can
   // never accidentally pick one up from a typed default) — see L-30 / Plan 09.
