@@ -102,7 +102,17 @@ export function productNoteIds(slug: string): string[] | null {
   return productNoteEntries(slug)?.map(({ id }) => id) ?? null;
 }
 
-export function validateProductNotesPayload(slug: string, payload: unknown): ProductNotesPayload {
+export type ValidateCmsOptions = {
+  /**
+   * Read-time mode for storefront renders: stale ids (a design retired from the
+   * curation after publish) are dropped and missing ids (a design added after
+   * publish) are tolerated, so a catalogue change never blanks a whole
+   * category's notes. Publish/save paths keep the strict default.
+   */
+  lenient?: boolean;
+};
+
+export function validateProductNotesPayload(slug: string, payload: unknown, options: ValidateCmsOptions = {}): ProductNotesPayload {
   const parsed = productNotesBaseSchema.parse(payload);
   const ids = productNoteIds(slug);
   if (ids === null) {
@@ -117,6 +127,10 @@ export function validateProductNotesPayload(slug: string, payload: unknown): Pro
   }
   const expected = new Set(ids);
   const got = new Set(Object.keys(parsed.notes));
+  if (options.lenient) {
+    const notes = Object.fromEntries(Object.entries(parsed.notes).filter(([id]) => expected.has(id)));
+    return { ...parsed, notes };
+  }
   for (const id of expected) {
     if (!got.has(id)) {
       throw new z.ZodError([
@@ -134,10 +148,10 @@ export function validateProductNotesPayload(slug: string, payload: unknown): Pro
   return parsed;
 }
 
-export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload: unknown): unknown {
+export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload: unknown, options: ValidateCmsOptions = {}): unknown {
   switch (kind) {
     case 'product_notes':
-      return validateProductNotesPayload(slug, payload);
+      return validateProductNotesPayload(slug, payload, options);
     case 'collection':
       return collectionCopySchema.parse(payload);
     case 'page':

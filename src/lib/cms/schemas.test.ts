@@ -36,6 +36,30 @@ describe('CMS product note schemas', () => {
     expect(() => validateProductNotesPayload('wazony', { notes: stale })).toThrow('Nieznany identyfikator zz-stale-id');
   });
 
+  it('read mode drops a stale id instead of rejecting the whole document', () => {
+    // Regression: fap029/fap037 left the curation on 2026-08-29 while the
+    // published notes still carried them — every print PDP fell back to the
+    // message files in all four locales (Sentry CERAMICS-DROP-1S/1T).
+    const ids = registryPrintDesigns().map((design) => design.id);
+    const stale = notesFor(ids);
+    stale['fap-stale'] = 'Opis';
+    const payload = validateProductNotesPayload('fine-art-prints', { notes: stale }, { lenient: true });
+    expect(Object.keys(payload.notes).sort()).toEqual([...ids].sort());
+  });
+
+  it('read mode tolerates a missing id (a newly added design falls back per id, not per document)', () => {
+    const ids = registryPrintDesigns().map((design) => design.id);
+    const incomplete = notesFor(ids);
+    delete incomplete[ids[0]];
+    const payload = validateProductNotesPayload('fine-art-prints', { notes: incomplete }, { lenient: true });
+    expect(payload.notes).not.toHaveProperty(ids[0]);
+    expect(Object.keys(payload.notes)).toHaveLength(ids.length - 1);
+  });
+
+  it('read mode still rejects an unknown document slug', () => {
+    expect(() => validateProductNotesPayload('nope', { notes: {} }, { lenient: true })).toThrow('Nieznany dokument notatek');
+  });
+
   it('rejects empty product notes before publish', () => {
     const ids = registryProductsByCategory('wazony').map((product) => product.id);
     const notes = notesFor(ids);

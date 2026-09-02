@@ -39,10 +39,13 @@ export async function getProductNotes(
     slug,
     locale,
   });
-  if (preview) return preview.notes;
+  // Per-id merge (both branches): reads are lenient, so a design added after
+  // the draft/publish keeps its committed note instead of rendering empty.
+  const fallback = fallbackProductNotes(slug, locale);
+  if (preview) return { ...fallback, ...preview.notes };
 
   const published = await getPublishedContent<ProductNotesPayload>('product_notes', slug, locale);
-  return published?.notes ?? fallbackProductNotes(slug, locale);
+  return published ? { ...fallback, ...published.notes } : fallback;
 }
 
 export async function getProductNote(
