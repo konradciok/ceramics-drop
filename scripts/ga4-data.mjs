@@ -43,9 +43,18 @@ const limitValueIdx = limitIdx !== -1 && args[limitIdx] === '--limit' ? limitIdx
 const rawLimit = limitIdx === -1
   ? '250'
   : (limitValueIdx !== -1 ? args[limitValueIdx] : args[limitIdx].split('=')[1]);
-const LIMIT = Number.parseInt(rawLimit ?? '', 10);
-if (!Number.isInteger(LIMIT) || LIMIT <= 0) {
-  console.error('Invalid --limit value. Use a positive integer, e.g. --limit=500 or --limit 500');
+// GA4_MAX_ROWS below is the Data API's own hard ceiling (runReport never
+// returns more per request regardless of `limit`) — reject rather than
+// silently clamp, so a typo doesn't quietly change what gets pulled.
+const GA4_MAX_ROWS = 250_000;
+// Strict digits-only test first: Number.parseInt('10foo', 10) and
+// Number.parseInt('1.5', 10) both pass Number.isInteger (10 and 1), so
+// parseInt alone would silently accept trailing garbage or decimals.
+const LIMIT = /^\d+$/.test(rawLimit ?? '') ? Number.parseInt(rawLimit, 10) : NaN;
+if (!Number.isInteger(LIMIT) || LIMIT <= 0 || LIMIT > GA4_MAX_ROWS) {
+  console.error(
+    `Invalid --limit value. Use a positive integer up to ${GA4_MAX_ROWS}, e.g. --limit=500 or --limit 500`,
+  );
   process.exit(1);
 }
 // Excludes daysValueIdx/limitValueIdx so `--days 7`/`--limit 500` (space form)
