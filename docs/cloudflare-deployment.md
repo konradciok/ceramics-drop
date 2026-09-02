@@ -73,9 +73,33 @@ npm run cf:dns-cleanup
 
 Requires **Zone.DNS Edit** for `anna-ciok.studio`. Does not add apex/www records — fix those in the dashboard if the apex hostname fails to resolve.
 
-### Canonical host (dashboard)
+### Canonical host (`www.anna-ciok.studio` → `anna-ciok.studio`)
 
-Use **one** public hostname for SEO and analytics. Recommended: redirect `www.anna-ciok.studio` → `anna-ciok.studio` (or the reverse) via a **Redirect rule** in the zone. Ensure the apex has proxied **A and AAAA** records, not IPv6-only.
+Use **one** public hostname for SEO and analytics (P0-01 / SEO-001). Confirmed live 2026-09-02: the `.studio` zone had zero rules in the `http_request_dynamic_redirect` phase and zero Page Rules, so both `anna-ciok.studio` and `www.anna-ciok.studio` served identical content on bare `200`s — a real duplicate-host issue, not a stale finding. Ensure the apex has proxied **A and AAAA** records, not IPv6-only (unaffected by this change — both hostnames already have real DNS records on this zone, unlike the placeholder-DNS `.com` setup below).
+
+**API token** — Zone Read + Single Redirect Edit for `anna-ciok.studio` (narrower than the `.com` token below — no DNS Edit needed).
+
+**Automated setup**
+
+```bash
+CLOUDFLARE_API_TOKEN=... npm run cf:studio-www-redirect
+```
+
+Script: [`scripts/cloudflare-studio-www-redirect-setup.mjs`](../scripts/cloudflare-studio-www-redirect-setup.mjs). Idempotent — adds one redirect rule to the zone's `http_request_dynamic_redirect` ruleset:
+
+| Rule | Match | Target |
+| --- | --- | --- |
+| `studio_www_to_apex` | `http.host eq "www.anna-ciok.studio"` | `https://anna-ciok.studio` + path |
+
+**Verify**
+
+```bash
+curl -sI https://www.anna-ciok.studio/kubki/k01 | grep -iE '^(HTTP|location):'
+```
+
+Expect `301` and `Location: https://anna-ciok.studio/kubki/k01` in one hop, path and query preserved.
+
+**Rollback** — pause/delete the `studio_www_to_apex` rule in the `.studio` zone's redirect ruleset.
 
 ### Secondary domain redirect (`anna-ciok.com` → `anna-ciok.studio`)
 
