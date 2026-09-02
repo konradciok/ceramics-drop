@@ -300,6 +300,45 @@ describe('createOrderInvoice', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
+  it('does not duplicate a line that a legacy draft already holds when a retry re-enters the draft branch', async () => {
+    // A draft created before the key change already carries the first item
+    // (under the old per-SKU key). The retry must skip that line by content,
+    // add only the missing ones, and still pass the total guard.
+    const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
+    itemRows = [
+      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+    ];
+    // First pass on a clean draft: learn the exact label the code emits for fap016.
+    await createOrderInvoice('pi_1');
+    const firstLabel = (stripeMock.invoiceItems.create.mock.calls[0][0] as { description: string }).description;
+
+    vi.clearAllMocks();
+    fromMode = 'select';
+    stripeMock.customers.list.mockResolvedValue({ data: [] });
+    stripeMock.customers.create.mockResolvedValue({ id: 'cus_1' });
+    stripeMock.invoices.create.mockResolvedValue({ id: 'in_1', status: 'draft', total: 50500 });
+    stripeMock.invoiceItems.create.mockResolvedValue({ id: 'ii_2' });
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({
+        id: 'in_1', status: 'draft', total: 50500,
+        lines: { data: [{ id: 'il_legacy', description: firstLabel, amount: 50500 }] },
+      })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: 10500 });
+    stripeMock.invoices.finalizeInvoice.mockResolvedValue({ id: 'in_1', status: 'open', total: 10500 });
+    stripeMock.invoices.pay.mockResolvedValue({ id: 'in_1', status: 'paid', total: 10500 });
+    stripeMock.invoices.sendInvoice.mockResolvedValue({ id: 'in_1', status: 'paid' });
+    updateEq.mockResolvedValue({ error: null });
+
+    await createOrderInvoice('pi_1');
+    const descriptions = stripeMock.invoiceItems.create.mock.calls.map(
+      (c: unknown[]) => (c[0] as { description: string }).description,
+    );
+    expect(descriptions).not.toContain(firstLabel);
+    expect(descriptions).toHaveLength(2); // fap008 + shipping
+    expect(stripeMock.invoices.finalizeInvoice).toHaveBeenCalled();
+  });
+
   it('keeps two variants of the same design on distinct idempotency keys', async () => {
     const base = { size: '70x100', framed: false, mount: false, frameColour: 'none' };
     itemRows = [

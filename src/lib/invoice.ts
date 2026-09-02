@@ -117,6 +117,16 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
   invoice = await stripe.invoices.retrieve(invoice.id as string);
 
   if (invoice.status === 'draft') {
+    // A retry (webhook redelivery, manual resend) re-enters this branch with
+    // the same draft. Idempotency keys already dedupe exact replays, but a
+    // draft written under an older key scheme would otherwise get its lines
+    // added a second time and trip the total guard below — so also skip any
+    // line the draft already carries, matched by description + amount (both
+    // are unique within one order: the cart is a set, never a multiset).
+    const existingLines = invoice.lines?.data ?? [];
+    const draftHasLine = (description: string, amount: number) =>
+      existingLines.some((l) => l.description === description && l.amount === amount);
+
     for (const it of items) {
       const productNames = messages.product as Record<string, string>;
       const variant = (it.variant ?? null) as (PrintVariantSelection & { prodigiSku: string }) | null;
@@ -135,6 +145,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
           ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
           : it.product_id;
       }
+      if (draftHasLine(label, it.unit_price)) continue;
       await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
@@ -147,7 +158,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
       const shippingLabel =
         order.delivery_method === 'paczkomat' ? labels.paczkomat : labels.kurier;
-      await stripe.invoiceItems.create({
+      if (!draftHasLine(shippingLabel, order.shipping)) await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
         amount: order.shipping,
@@ -162,7 +173,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       const discountLabel =
         (DISCOUNT_LABELS[invoiceLocale] ?? DISCOUNT_LABELS.pl) +
         (order.promo_code ? ` (${order.promo_code})` : '');
-      await stripe.invoiceItems.create({
+      if (!draftHasLine(discountLabel, -order.discount)) await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
         amount: -order.discount,
