@@ -39,12 +39,12 @@ export async function getProductNotes(
     slug,
     locale,
   });
-  if (preview) return preview.notes;
+  // Per-id merge (both branches): reads are lenient, so a design added after
+  // the draft/publish keeps its committed note instead of rendering empty.
+  const fallback = fallbackProductNotes(slug, locale);
+  if (preview) return { ...fallback, ...preview.notes };
 
   const published = await getPublishedContent<ProductNotesPayload>('product_notes', slug, locale);
-  const fallback = fallbackProductNotes(slug, locale);
-  // Per-id merge: a design added after the last publish keeps its committed
-  // note instead of the whole category losing its CMS copy.
   return published ? { ...fallback, ...published.notes } : fallback;
 }
 

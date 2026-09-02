@@ -34,6 +34,17 @@ describe('getProductNotes', () => {
     expect(notes[missing]).toBe(fallbackProductNotes('fine-art-prints', 'pl')[missing]);
   });
 
+  it('fills a design missing from a preview draft from the fallback too (lenient preview can omit ids)', async () => {
+    const ids = registryPrintDesigns().map((d) => d.id);
+    const [missing, ...present] = ids;
+    mockPreview.mockResolvedValue({ notes: Object.fromEntries(present.map((id) => [id, `DRAFT ${id}`])) });
+    mockPublished.mockResolvedValue({ notes: Object.fromEntries(ids.map((id) => [id, `CMS ${id}`])) });
+    const notes = await getProductNotes('fine-art-prints', 'pl', 'token');
+    expect(notes[present[0]]).toBe(`DRAFT ${present[0]}`);
+    expect(notes[missing]).toBe(fallbackProductNotes('fine-art-prints', 'pl')[missing]);
+    expect(mockPublished).not.toHaveBeenCalled();
+  });
+
   it('uses the fallback wholesale when nothing is published', async () => {
     mockPublished.mockResolvedValue(null);
     await expect(getProductNotes('fine-art-prints', 'pl')).resolves.toEqual(fallbackProductNotes('fine-art-prints', 'pl'));
