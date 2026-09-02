@@ -6,6 +6,7 @@ import {
   CURRENCY_COOKIE_MAX_AGE,
   currencyForCountry,
 } from './lib/currency';
+import { LEGACY_REDIRECTS } from './lib/legacy-redirects';
 
 // NOTE: This stays `middleware.ts` (not the Next 16 `proxy.ts`) on purpose.
 // `@opennextjs/cloudflare` only bundles edge-runtime middleware; renaming to
@@ -30,6 +31,24 @@ export const SB_AUTH_COOKIE_RE = /^sb-.+-auth-token(?:\.\d+)?$/;
 /** Exported for unit tests — see middleware.test.ts. */
 export function isKontoPath(pathname: string): boolean {
   return KONTO_RE.test(pathname);
+}
+
+const LOCALE_PREFIX_RE = new RegExp(`^/(${routing.locales.join('|')})(?=/|$)`);
+
+/**
+ * Resolves a legacy Shopify URL (`/products/{handle}`, `/pages/{slug}`,
+ * locale-prefixed or not) to its current path via `LEGACY_REDIRECTS`, or
+ * `null` if unmapped — an unmapped legacy-shaped URL is a deliberate real
+ * 404, never a bulk redirect to home (see legacy-redirects.ts). Exported for
+ * unit tests — see middleware.test.ts.
+ */
+export function legacyRedirectTarget(pathname: string): string | null {
+  const localeMatch = pathname.match(LOCALE_PREFIX_RE);
+  const locale = localeMatch?.[1];
+  const rest = (locale ? pathname.slice(localeMatch![0].length) : pathname).replace(/^\/+/, '');
+  if (!Object.hasOwn(LEGACY_REDIRECTS, rest)) return null;
+  const target = LEGACY_REDIRECTS[rest];
+  return locale ? `/${locale}/${target}` : `/${target}`;
 }
 
 /**
@@ -120,6 +139,19 @@ export default function middleware(request: NextRequest) {
     // uncacheable so a shared/CDN cache can't replay one visitor's currency
     // seed onto another. The redirect itself is cheap to recompute.
     redirect.headers.set('Cache-Control', 'private, no-store');
+    applySecurityHeaders(redirect);
+    return redirect;
+  }
+
+  // Legacy Shopify URLs (P0-07 / SEO-017): a handful of confirmed, verified
+  // mappings 301 to their current equivalent; everything else legacy-shaped
+  // falls through to a real 404 (see legacy-redirects.ts — never bulk-redirect
+  // to home). No visitor-specific cookie is set here, so this is cacheable.
+  const legacyTarget = legacyRedirectTarget(pathname);
+  if (legacyTarget) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacyTarget;
+    const redirect = NextResponse.redirect(url, 301);
     applySecurityHeaders(redirect);
     return redirect;
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import middleware, { isKontoPath, SB_AUTH_COOKIE_RE } from './middleware';
+import middleware, { isKontoPath, legacyRedirectTarget, SB_AUTH_COOKIE_RE } from './middleware';
 import { SB_AUTH_COOKIE_RE as SESSION_SB_AUTH_COOKIE_RE } from './lib/auth/session';
 import { NextRequest } from 'next/server';
 
@@ -54,6 +54,49 @@ describe('isKontoPath (customer-account matcher)', () => {
     '/fr/konto', // not a configured locale
   ])('does not match %s', (pathname) => {
     expect(isKontoPath(pathname)).toBe(false);
+  });
+});
+
+describe('legacyRedirectTarget (P0-07 legacy Shopify redirects)', () => {
+  it.each([
+    ['/pages/about-me', '/o-studiu'],
+    ['/en/pages/about-me', '/en/o-studiu'],
+    ['/de/pages/contact', '/de/kontakt'],
+    ['/pages/contact', '/kontakt'],
+  ])('maps %s to %s', (pathname, expected) => {
+    expect(legacyRedirectTarget(pathname)).toBe(expected);
+  });
+
+  it.each([
+    '/products/novocumulus-27-fine-art-print',
+    '/en/products/cumulus-05',
+    '/pages/workshops',
+    '/fine-art-prints/fap001',
+    '/sklep',
+    '/',
+  ])('leaves unmapped legacy-shaped and normal paths alone: %s', (pathname) => {
+    expect(legacyRedirectTarget(pathname)).toBeNull();
+  });
+});
+
+describe('middleware legacy Shopify redirect', () => {
+  it('301s a mapped legacy URL, preserving locale and query string', async () => {
+    const res = await middleware(
+      new NextRequest('https://anna-ciok.studio/en/pages/about-me?utm_source=old-bio-link'),
+    );
+    expect(res.status).toBe(301);
+    const location = new URL(res.headers.get('Location') ?? '');
+    expect(location.pathname).toBe('/en/o-studiu');
+    expect(location.searchParams.get('utm_source')).toBe('old-bio-link');
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  it('passes an unmapped legacy-shaped URL through to normal routing (no redirect)', async () => {
+    const res = await middleware(
+      new NextRequest('https://anna-ciok.studio/en/products/novocumulus-27-fine-art-print'),
+    );
+    expect(res.status).not.toBe(301);
+    expect(res.headers.get('Location')).toBeNull();
   });
 });
 

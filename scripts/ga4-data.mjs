@@ -5,7 +5,8 @@
  * Usage:
  *   npm run ga4:report
  *   npm run ga4:report -- --days 7
- *   npm run ga4:report -- sessions | purchases | funnel
+ *   npm run ga4:report -- sessions | purchases | funnel | landing-pages
+ *   npm run ga4:report -- landing-pages --days 90 --limit 500
  *
  * Prerequisites:
  *   1. npm run gtm:key   (creates .secrets/gtm-api-deploy.json)
@@ -37,9 +38,28 @@ if (!Number.isInteger(DAYS) || DAYS <= 0) {
   console.error('Invalid --days value. Use a positive integer, e.g. --days=7 or --days 7');
   process.exit(1);
 }
-// Excludes daysValueIdx so `--days 7` (space form) doesn't leave the bare "7"
-// to be mistaken for the report-name positional argument.
-const REPORT = args.find((a, i) => !a.startsWith('-') && i !== daysValueIdx) ?? 'all';
+const limitIdx = args.findIndex(a => a === '--limit' || a.startsWith('--limit='));
+const limitValueIdx = limitIdx !== -1 && args[limitIdx] === '--limit' ? limitIdx + 1 : -1;
+const rawLimit = limitIdx === -1
+  ? '250'
+  : (limitValueIdx !== -1 ? args[limitValueIdx] : args[limitIdx].split('=')[1]);
+// GA4_MAX_ROWS below is the Data API's own hard ceiling (runReport never
+// returns more per request regardless of `limit`) — reject rather than
+// silently clamp, so a typo doesn't quietly change what gets pulled.
+const GA4_MAX_ROWS = 250_000;
+// Strict digits-only test first: Number.parseInt('10foo', 10) and
+// Number.parseInt('1.5', 10) both pass Number.isInteger (10 and 1), so
+// parseInt alone would silently accept trailing garbage or decimals.
+const LIMIT = /^\d+$/.test(rawLimit ?? '') ? Number.parseInt(rawLimit, 10) : NaN;
+if (!Number.isInteger(LIMIT) || LIMIT <= 0 || LIMIT > GA4_MAX_ROWS) {
+  console.error(
+    `Invalid --limit value. Use a positive integer up to ${GA4_MAX_ROWS}, e.g. --limit=500 or --limit 500`,
+  );
+  process.exit(1);
+}
+// Excludes daysValueIdx/limitValueIdx so `--days 7`/`--limit 500` (space form)
+// don't leave the bare number to be mistaken for the report-name positional.
+const REPORT = args.find((a, i) => !a.startsWith('-') && i !== daysValueIdx && i !== limitValueIdx) ?? 'all';
 const GA4_BASE = 'https://analyticsdata.googleapis.com/v1beta';
 
 if (!PROPERTY_ID) {
@@ -72,6 +92,10 @@ const { token } = await auth.getAccessToken();
 if (REPORT === 'all' || REPORT === 'sessions') await reportSessions();
 if (REPORT === 'all' || REPORT === 'purchases') await reportPurchases();
 if (REPORT === 'all' || REPORT === 'funnel') await reportFunnel();
+// Not part of 'all' — a targeted SEO investigation report (P0-07 dead-URL
+// audit), not a routine dashboard check, and its row count (--limit) would
+// dwarf the other reports' output.
+if (REPORT === 'landing-pages') await reportLandingPages();
 
 // ---------------------------------------------------------------------------
 
@@ -151,6 +175,18 @@ async function reportFunnel() {
       },
     },
     orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+  });
+  printTable(data);
+}
+
+async function reportLandingPages() {
+  console.log(`=== Landing Pages by sessions (top ${LIMIT}) ===`);
+  const data = await runReport({
+    dateRanges: [{ startDate: `${DAYS}daysAgo`, endDate: 'today' }],
+    dimensions: [{ name: 'landingPagePlusQueryString' }],
+    metrics: [{ name: 'sessions' }, { name: 'bounceRate' }],
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit: LIMIT,
   });
   printTable(data);
 }
