@@ -42,7 +42,10 @@ export async function getProductNotes(
   if (preview) return preview.notes;
 
   const published = await getPublishedContent<ProductNotesPayload>('product_notes', slug, locale);
-  return published?.notes ?? fallbackProductNotes(slug, locale);
+  const fallback = fallbackProductNotes(slug, locale);
+  // Per-id merge: a design added after the last publish keeps its committed
+  // note instead of the whole category losing its CMS copy.
+  return published ? { ...fallback, ...published.notes } : fallback;
 }
 
 export async function getProductNote(

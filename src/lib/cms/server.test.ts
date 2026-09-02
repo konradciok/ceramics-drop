@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) 
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
 import { mintPreviewToken, verifyPreviewToken, getPublishedContent } from './server';
+import { registryPrintDesigns } from '@/lib/prints';
 
 /** A thenable chain where every builder returns the chain; resolves to `result`.
  *  Mirrors the idiom in src/lib/catalog/repository.test.ts. */
@@ -48,6 +49,24 @@ describe('getPublishedContent — Supabase error reporting', () => {
   it('stays silent (no Sentry) when there is simply no published row', async () => {
     mockFrom.mockReturnValue(makeChain({ data: null, error: null }));
     await expect(getPublishedContent('page', 'home', 'en')).resolves.toBeNull();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+describe('getPublishedContent — product notes read leniency', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('returns the live notes minus stale ids instead of null when the published payload carries a retired design', async () => {
+    const ids = registryPrintDesigns().map((d) => d.id);
+    const notes = Object.fromEntries(ids.map((id) => [id, `Opis ${id}`]));
+    const payload = { notes: { ...notes, 'fap-stale': 'Opis' } };
+    mockFrom.mockReturnValue(makeChain({ data: { id: 'doc', cms_document_versions: [{ payload }] }, error: null }));
+    const result = await getPublishedContent<{ notes: Record<string, string> }>('product_notes', 'fine-art-prints', 'es');
+    expect(result).not.toBeNull();
+    expect(Object.keys(result!.notes).sort()).toEqual([...ids].sort());
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

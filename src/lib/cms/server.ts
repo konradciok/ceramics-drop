@@ -106,7 +106,7 @@ export async function getPublishedContent<TPayload = CmsPayload>(
     const versions = (data as { cms_document_versions?: Array<{ payload: unknown }> }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
-    return validateCmsPayload(kind, slug, payload) as TPayload;
+    return validateCmsPayload(kind, slug, payload, { lenient: true }) as TPayload;
   } catch (err) {
     console.error('CMS published read failed; falling back to messages', { kind, slug, locale, err });
     Sentry.captureException(err, { tags: { cms: 'getPublishedContent' }, extra: { kind, slug, locale } });
@@ -141,7 +141,7 @@ export async function getPreviewContent<TPayload = CmsPayload>(
     const versions = (data as { cms_document_versions?: CmsVersionRow[] }).cms_document_versions ?? [];
     const payload = versions[0]?.payload;
     if (!payload) return null;
-    return validateCmsPayload(preview.kind, preview.slug, payload) as TPayload;
+    return validateCmsPayload(preview.kind, preview.slug, payload, { lenient: true }) as TPayload;
   } catch (err) {
     console.error('CMS preview read failed', { expected, err });
     Sentry.captureException(err, { tags: { cms: 'getPreviewContent' }, extra: { expected } });
