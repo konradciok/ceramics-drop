@@ -40,7 +40,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 1. ~~**Trwający incydent produkcyjny:** w pierwszym pomiarze **10,3% requestów** do `anna-ciok.studio` (2502/24401, agregat całego ruchu do strefy) kończyło się HTTP 504 w ostatnich 24 h...~~ **ROZSTRZYGNIĘTE 2026-09-02, false alarm — brak realnego wpływu na użytkowników.** Root cause: zone-level `early_hints: on` w Cloudflare (Speed → Optimization → Content Optimization). Aplikacja emituje nagłówek `Link:` (hreflang alternates z `src/app/[locale]/layout.tsx`) na każdej odpowiedzi, ale nigdy nie używa `rel=preload`/`rel=preconnect` — Cloudflare mimo to generuje wewnętrzny lookup do Early-Hints-cache przy każdym requeście; skoro cache nigdy się nie zapełnia, każdy taki lookup jest cache MISS i loguje się jako `edgeResponseStatus 504` / `originResponseStatus 0` / `requestSource: earlyHintsCache` w surowym GraphQL Analytics i Logpush. To jest udokumentowane, oczekiwane zachowanie Cloudflare ([Early Hints docs](https://developers.cloudflare.com/cache/advanced-configuration/early-hints/), [504 z originResponseStatus 0](https://developers.cloudflare.com/logs/faq/504-origin-status-0/)) — te subrequesty nigdy nie trafiają do Workera/origin, nie dotyczą realnych odwiedzających i są automatycznie wyfiltrowane z dashboardu Cache Analytics (filtr `requestSource: eyeball`), co tłumaczy, dlaczego nie było w nich widać w standardowych widokach ani w Sentry. Dowód: `workersZoneInvocationsAdaptiveGroups` dla tego samego okna 24h pokazuje **0** inwokacji Workera z `httpResponseStatus 504` (9996 invocations total, wszystkie `status:"ok"` poza 11 pomijalnych `canceled`), a `requestSource: earlyHintsCache` = dokładnie 100% wszystkich 504 w dwóch niezależnych oknach (2026-09-01→02: 1785/1785; 2026-08-31: 2106/2106) — zero 504 z jakiegokolwiek innego źródła ruchu. Pierwotna hipoteza „Workers/edge CPU/wall-clock limit albo opóźnienie sieciowe do Supabase" (§13.2, oryginalny wpis) jest tym samym **obalona**; nie przypisywać też winy żadnemu konkretnemu PR — baza 10% jest artefaktem konfiguracji strefy, nie regresją kodu. Zob. zaktualizowane §13.2.
 2. **Zero sprzedaży od 59 dni i zerowa dostępna ceramika:** `piece_state` (126 wierszy) pokazuje 0 sztuk możliwych do kupienia — 121 w statusie `sold` (120 z nich dodatkowo `showroom=true`, 1 poza showroomem) i 5 `available` ale również `showroom=true`, więc żadna nie jest dziś kupowalna; ostatnie opłacone zamówienie to `2026-07-03`, czyli 59 dni przed datą audytu. GA4 potwierdza niezależnie 0 zakupów w każdej kategorii w oknie ostatnich 30 dni (`--days 30`, nie „cały sierpień”), lejek `add_to_cart → begin_checkout → purchase` = 10 → 1 → 0. Żadna poprawka techniczna SEO nie zwiększy przychodu, dopóki nie ma czego kupić — to zmienia sens priorytetyzacji reszty roadmapy. Fakt produkcyjny (Supabase + GA4), zob. §13.3.
 3. **Martwe URL-e po migracji ze Shopify pochłaniają rzędu ⅓ ruchu:** GA4 pokazuje, że landing pages typu `/en/products/{handle}`, `/en/pages/about-me`, `/en/products/appointment` (ślady starego sklepu Shopify — GA4 property jest opisana w repo jako będąca „pod kontem Shopify”) odpowiadają za ok. 280 sesji w 30 dni na tle ~800 sesji łącznie w tym samym oknie (§13.7), niemal wszystkie z bounce rate 100%; wszystkie cztery sprawdzone przykłady zwracają dziś żywy HTTP 404 bez przekierowania. 280 pochodzi z próbki top 20 landing pages (limit zapytania), nie z pełnego zliczenia, więc „ok. ⅓” to rząd wielkości, nie precyzyjny odsetek. Fakt produkcyjny (GA4 + curl), zob. §13.4.
-4. `www.anna-ciok.studio` serwuje duplikat z HTTP 200 zamiast stałego redirectu do apexu, i — potwierdzone teraz na poziomie konfiguracji Cloudflare, nie tylko curl — w strefie nie istnieje ani jedna reguła w fazie `http_request_dynamic_redirect`, ani żaden Page Rule, które mogłyby to robić. Canonical jest tylko sygnałem; redirect jest silniejszym sygnałem konsolidacji ([Google](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)).
+4. ~~`www.anna-ciok.studio` serwuje duplikat z HTTP 200 zamiast stałego redirectu do apexu...~~ **ROZSTRZYGNIĘTE 2026-09-02.** Redirect rule dodany ręcznie w Cloudflare dashboard (Rules → Redirect Rules) — token API konta nie miał dostępnej opcji `Zone > Single Redirect > Edit` mimo przyznania pozostałych uprawnień, więc automatyczny skrypt (`scripts/cloudflare-studio-www-redirect-setup.mjs`, PR [#281](https://github.com/konradciok/ceramics-drop/pull/281)) pozostaje nieuruchomiony do czasu odblokowania tego uprawnienia. Zweryfikowane na produkcji: `www` (http i https) → 301 → apex, path+query zachowane, jeden hop, apex nadal 200.
 5. W trybie DB błąd odczytu katalogu przełącza storefront na pełny rejestr kodowy. Ponieważ wpisy kodowe domyślnie są publiczne, `draft`/`hidden`/`archived` mogą wrócić do sitemap, feedów i stron w czasie awarii. (Stan na 2026-08-31: w bazie nie ma obecnie żadnej ceramiki w statusie `draft`/`hidden` do ujawnienia — ryzyko jest strukturalne, nie aktywne w tej chwili; zob. §13.3.)
 6. Dla `/en`, `/es`, `/de` cookie GBP zmienia widoczną cenę, ale JSON-LD i feed pozostają w EUR. To jest celowo deterministyczne, lecz bez jawnej strategii landing URL/GMC stwarza ryzyko price/currency mismatch. Google wymaga zgodności feedu, landing page i structured data ([Merchant Center](https://support.google.com/merchants/answer/4752265), [specyfikacja feedu](https://support.google.com/merchants/answer/7052112)). (Dane `orders`: wszystkie 28 opłaconych zamówień są w PLN; EUR ma tylko 3 `expired`, zero `paid`; GBP/USD/CAD zero zamówień w historii — mechanizm jest realny, ale na 2026-08-31 nie zjadł jeszcze żadnego zrealizowanego przychodu. Zob. §13.3.)
 7. Kolekcja fine-art prints ma powtarzalny desktopowy CLS około `0.114–0.118` w badaniu lab; źródłem są obrazy bez wymiarów i bez zarezerwowanego ratio. Próg „good” to `≤0.1` w 75. percentylu danych terenowych ([web.dev](https://web.dev/articles/optimize-cls)).
@@ -52,12 +52,12 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 ### Najważniejsze następne działania
 
 0. **(Poza roadmapą SEO, ale blokujące jej sens)** ~~Zdiagnozować i zatrzymać incydent 504~~ **ROZSTRZYGNIĘTE 2026-09-02 — false alarm, zob. §13.2**; pozostaje jednorazowa operacyjna decyzja (wyłączyć `early_hints` w Cloudflare — właściciel zatwierdza ręcznie, poza zakresem PR); zdecydować z ownerem sklepu, co z zerowym dostępnym katalogiem ceramiki (§13.3) — nowy drop, re-open sprzedaży czy świadoma pauza.
-1. Zbudować mapę przekierowań legacy Shopify → aktualne URL-e dla najgłośniejszych landing pages z GA4 (§13.4) — szybki, wysoki zwrot, odzyskuje realny ruch zamiast go odbijać.
-2. Ustawić Cloudflare 301/308 `www → apex` z zachowaniem ścieżki i query; sprawdzić oba protokoły i wszystkie locale. Potwierdzone 2026-08-31: strefa nie ma dziś żadnej reguły redirectu ani Page Rule, więc to czysta implementacja, nie diagnoza.
+1. ~~Zbudować mapę przekierowań legacy Shopify → aktualne URL-e dla najgłośniejszych landing pages z GA4 (§13.4)~~ **W TOKU 2026-09-02** — PR [#280](https://github.com/konradciok/ceramics-drop/pull/280) otwarty: `scripts/ga4-data.mjs` rozszerzony o pełniejszy raport (`landing-pages`, 90 dni, top 300), dwa jednoznaczne mapowania wdrożone w `src/lib/legacy-redirects.ts` (`/pages/about-me → /o-studiu`, `/pages/contact → /kontakt`); większość ruchu (stare handles `novocumulus-NN`/`cumulus-NN`/...) pozostaje świadomym 404 do czasu weryfikacji przez właściciela/artystkę, który obraz odpowiada któremu `fapNNN` — rejestr printów był resetowany 2026-08-17, więc nie ma formuły numerycznej.
+2. ~~Ustawić Cloudflare 301/308 `www → apex`...~~ **ROZSTRZYGNIĘTE 2026-09-02** — zob. pozycję 4 executive summary powyżej.
 3. Zmienić awaryjną politykę publicznego katalogu na fail-closed lub last-known-good dla widoczności, bez ujawniania wpisów niepublicznych.
 4. Naprawić `?preview=` na PDP i dodać macierz testów `preview`/404/noindex.
 5. Uzgodnić docelowe rynki GMC i kontrakt waluty; dopiero potem wybrać stabilne URL-e/parametry feedowe albo oficjalną konwersję walut. (Zerowy zrealizowany przychód EUR/GBP na 2026-08-31 obniża pilność względem P0-01/P0-06/P0-07, ale nie względem inwestycji w ruch międzynarodowy.)
-6. Dodać wymiary/aspect ratio do kart printów; potwierdzić CLS w 5-run lab i później w CrUX.
+6. ~~Dodać wymiary/aspect ratio do kart printów; potwierdzić CLS w 5-run lab i później w CrUX.~~ **PR OTWARTY 2026-09-02** — [#278](https://github.com/konradciok/ceramics-drop/pull/278): `width={700} height={1000}` na `PrintCollectionScreen.tsx`'s `<img>` (uniform 7:10 dla wszystkich 41 designów); CrUX p75 follow-up po merge/28 dniach pozostaje.
 7. Wprowadzić limity/formaty i responsywne pochodne dla hero CMS.
 8. Usunąć ręczne liczniki z metadanych oraz dodać lokalizowany model treści SEO kolekcji z preview/publish/rollback.
 9. Zbudować repo-native crawler/test kontraktów SEO na istniejącym Playwright/Vitest.
@@ -117,15 +117,16 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 
 ## 4. Findings register
 
-### SEO-001 — duplikat hosta `www`
+### SEO-001 — duplikat hosta `www` (ROZSTRZYGNIĘTE 2026-09-02 — redirect live na produkcji)
 
-- **Kategoria / ważność / confidence:** crawl/indexation; **high**; **confirmed**.
+- **Kategoria / ważność / confidence:** crawl/indexation; ~~**high**~~ **resolved**; **confirmed, fixed**.
 - **Dowód:** produkcja: apex i `www` zwracają 200 bez `Location`; `wrangler.jsonc:27-36` wiąże oba custom domains; dokumentacja już wymaga redirectu (`docs/cloudflare-deployment.md:76-82`).
 - **Wpływ:** rozdzielenie sygnałów linkowych/crawl/analytics, zależność od tego, czy Google uszanuje canonical. Google zaleca stały redirect dla alternatywnego hosta ([redirects](https://developers.google.com/search/docs/crawling-indexing/301-redirects)).
 - **Reprodukcja:** `curl.exe -sS -o NUL -D - --max-redirs 0 https://www.anna-ciok.studio/` → `HTTP/1.1 200 OK`.
 - **Rozwiązanie:** Cloudflare Redirect Rule 301/308, zachowujący path i query; nie usuwać canonicali. Minimalny patch operacyjny, nie aplikacyjny.
 - **Zależności / koszt:** dostęp Cloudflare; **S (<0.5 dnia)**; uważać na pętlę i preview/custom domains.
 - **Weryfikacja:** macierz http/https × apex/www × locale/PDP; jeden hop; final canonical apex; GSC po 28 dniach bez rosnących duplikatów.
+- **Aktualizacja 2026-09-02:** redirect rule dodany ręcznie w Cloudflare dashboard (token API konta nie odsłaniał opcji `Zone > Single Redirect > Edit` dla tej strefy mimo przyznania pozostałych uprawnień — możliwe, że wymaga wcześniejszego otwarcia strony Redirect Rules w dashboardzie dla danej strefy). Zweryfikowano curlem: `http`/`https` × apex/`www` — jeden hop, `301`, path+query zachowane, apex nadal `200`. Skrypt `scripts/cloudflare-studio-www-redirect-setup.mjs` (PR [#281](https://github.com/konradciok/ceramics-drop/pull/281)) skomitowany dla powtarzalności/rollbacku, ale nieuruchomiony z powodu tego samego braku uprawnienia.
 
 ### SEO-002 — kontrakt waluty nie gwarantuje feed ↔ HTML ↔ JSON-LD
 
@@ -157,7 +158,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Zależności / koszt:** brak; **S**.
 - **Weryfikacja:** empty/nonempty/repeated preview na home, ceramic PDP, print PDP → noindex, canonical bez query.
 
-### SEO-005 — print collection ma niestabilny layout
+### SEO-005 — print collection ma niestabilny layout (PR OTWARTY 2026-09-02 — #278, oczekuje merge)
 
 - **Kategoria / ważność / confidence:** CWV/images; **medium**; **confirmed in lab, field impact unknown**.
 - **Dowód:** print grid `<img>` nie ma width/height (`src/components/shop/PrintCollectionScreen.tsx:84-115`), CSS ma `aspect-ratio:auto` (`src/styles/site.css:642-655`). Trzy desktopowe przejścia produkcyjne dały CLS ~`0.118`, `0.114`, `0.114`; shift sources wskazały `.gallery-group`, `.tile-meta`, `A.tile.tile-print`.
@@ -166,6 +167,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Rozwiązanie:** wpisać naturalne wymiary/aspect ratio w model/registry i `<img>`; nie lazy-loadować obrazu LCP pierwszego viewportu, reszta lazy.
 - **Zależności / koszt:** dane wymiarów print assets; **S/M**.
 - **Weryfikacja:** pięć runów mobile/desktop, median CLS ≤0.05 i każdy ≤0.1; potem CrUX p75.
+- **Aktualizacja 2026-09-02:** PR [#278](https://github.com/konradciok/ceramics-drop/pull/278) dodaje `width={700} height={1000}` na `<img>` w `PrintCollectionScreen.tsx` — bezpieczne, bo `printListingImage()` zawsze zwraca mockup `framed-natural` w jednolitym stosunku 7:10 dla wszystkich 41 aktualnych designów (ta sama proporcja co `PrintCard.tsx` na pasku printów strony głównej). 5-run lab re-measurement i CrUX p75 pozostają do wykonania po merge.
 
 ### SEO-006 — hero CMS omija responsywne obrazy i budżety
 
@@ -207,7 +209,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Zależności / koszt:** owner prawny/merchant; **S/M**.
 - **Weryfikacja:** schema-dts + własne invariants + Rich Results Test; żadnych danych niewidocznych/nieprawdziwych.
 
-### SEO-010 — social preview nie jest dopasowany do kilku ważnych landingów
+### SEO-010 — social preview nie jest dopasowany do kilku ważnych landingów (PR OTWARTY 2026-09-02 — #279, oczekuje merge)
 
 - **Kategoria / ważność / confidence:** metadata/social; **medium**; **confirmed**.
 - **Dowód:** layout ustawia globalny ceramiczny obraz OG/Twitter (`src/app/[locale]/layout.tsx:38-60`); PDP i gallery nadpisują, lecz print collection, `/sklep`, showroom i część content pages dziedziczą fallback.
@@ -216,6 +218,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Rozwiązanie:** per-surface statyczne lub CMS-managed 1200×630, z localized alt; zachować render w Metadata API.
 - **Zależności / koszt:** design/editor; **S/M**.
 - **Weryfikacja:** head tests + LinkedIn/Facebook/X debugger ręcznie po deployu.
+- **Aktualizacja 2026-09-02:** PR [#279](https://github.com/konradciok/ceramics-drop/pull/279) dodaje `openGraph.images` override dla `/fine-art-prints` (pierwszy kurowany design, prawdziwy stosunek 7:10 zamiast przycinania do 1200×630), `/sklep` i `/showroom` (kurowane zdjęcie `HOME_EDITORIAL_IMAGE` z istniejącym, zlokalizowanym alt). Zweryfikowane lokalnym renderem — `og:image` na wszystkich trzech nie wskazuje już na `kubek-1.webp`. Zakres rozszerzony o `/showroom` (ten sam bug, ten sam jednolinijkowy fix). Share-debugger check po deployu pozostaje.
 
 ### SEO-011 — brak finalnej bramki regresyjnej SEO
 
@@ -271,7 +274,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Zależności / koszt:** platform/backend owner; **diagnoza S, naprawa zależna od przyczyny**; wysokie ryzyko dalszej utraty crawl budget i konwersji, jeśli się przeciąga.
 - **Weryfikacja:** 504 rate < 0,5% rolling 24 h w Cloudflare Analytics; nowy alert (Sentry lub Cloudflare Notifications) faktycznie łapiący powtórkę.
 
-### SEO-017 — martwe URL-e po migracji ze Shopify pochłaniają rzędu ⅓ ruchu
+### SEO-017 — martwe URL-e po migracji ze Shopify pochłaniają rzędu ⅓ ruchu (W TOKU 2026-09-02 — PR #280 otwarty, częściowo rozwiązane)
 
 - **Kategoria / ważność / confidence:** crawl/redirects/UX; **high**; **confirmed, active**.
 - **Dowód:** GA4 Data API, top landing pages 30 dni: `/en/products/cumulus-05?pr_prod_strat=...`, `/en/products/novocumulus-27-fine-art-print`, `/en/pages/about-me`, `/en/products/appointment` i kilkanaście podobnych — wzorzec URL-i Shopify (`/products/{handle}`, `/pages/{slug}`, parametry `pr_prod_strat`/`pr_rec_id` z aplikacji rekomendacji Shopify). `docs/analytics-stack.md` potwierdza, że property GA4 `539909256` jest „pod kontem Shopify” — serwis migrował z platformy Shopify. Suma sesji na tych URL-ach w 30 dni to ok. 280, na tle ~800 sesji łącznie w tym samym oknie wg pełnego (bez limitu wierszy) raportu kanałowego z §13.7 — rzędu ⅓ całego ruchu, niemal wszystkie z bounce rate `1` (100%). 280 pochodzi z próbki top 20 landing pages (limit zapytania GA4), nie z wyczerpującego zliczenia wszystkich URL-i tego wzorca, więc realna liczba może być wyższa; traktować jako rząd wielkości, nie precyzyjny ułamek. Cztery sprawdzone przykłady zwracają dziś żywy `HTTP 404` bez żadnego przekierowania (`curl.exe`, produkcja, 2026-08-31).
@@ -280,6 +283,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Rozwiązanie:** zbudować listę najczęstszych legacy-URL-i z GA4 (nie tylko top 20), ręcznie/półautomatycznie zmapować handle → aktualny `id`/slug tam gdzie to jednoznaczne, wdrożyć 301 (Cloudflare Redirect Rules albo middleware) dla zmapowanych, zostawić świadome 404 dla reszty zgodnie z zasadą z §7 („Redirect 301 wyłącznie do rzeczywiście równoważnego... nigdy hurtowo do home”).
 - **Zależności / koszt:** historia handles Shopify (część już widoczna w GA4, reszta może wymagać eksportu ze starego Shopify admin, jeśli wciąż dostępny); **S/M**; niskie ryzyko (dodawanie przekierowań jest bezpieczne).
 - **Weryfikacja:** bounce rate na zmapowanych URL-ach spada, sesje z tych wejść zaczynają przechodzić dalej niż strona wejścia (GA4 landing-page report po 28 dniach); 0 nowych 404 dla listy zmapowanych URL-i w kontraktowym teście.
+- **Aktualizacja 2026-09-02:** PR [#280](https://github.com/konradciok/ceramics-drop/pull/280). `scripts/ga4-data.mjs` rozszerzony o raport `landing-pages` (90 dni, top 300 zamiast top 20) — pełniejsza lista niż w oryginalnym audycie. Zmapowano i wdrożono w `src/lib/legacy-redirects.ts` + `middleware.ts` dwa jednoznaczne trafienia: `/pages/about-me → /o-studiu`, `/pages/contact → /kontakt` (301, query zachowane, zweryfikowane curlem lokalnie). Hipoteza z §4 o mapowaniu `novocumulus-NN → fapNNN` po numerze **nie sprawdziła się** — rejestr printów był w pełni resetowany 2026-08-17 (`fap01–fap047 → fap001–fap041`), więc nie ma formuły numerycznej; treść notatek printów też nie zawiera nazw chmur, więc nie ma sygnału tekstowego do automatycznego dopasowania. Pozostałe legacy handles (`novocumulus-*`, `cumulus-*`, `stratus-*`, `cumulonimbus-*`, `stratocumulus-*`, `cirrus-*`, `appointment`, `pages/workshops`) zostają świadomym 404 — udokumentowane jako TODO w `legacy-redirects.ts` do ręcznej weryfikacji przez artystkę/właściciela (które płótno odpowiada któremu `fapNNN`), zgodnie z zasadą „nigdy hurtowo do home”.
 
 ### SEO-018 — zerowy dostępny katalog ceramiki i zerowa konwersja od 59 dni
 
@@ -385,23 +389,23 @@ Legenda: **S** ≤1 dzień, **M** 2–4 dni, **L** 5–10 dni (przed estymacją 
 
 | ID | Rezultat / pliki lub moduły | Zależności; est.; ryzyko; owner | Acceptance criteria i testy | Pomiar / typ / PR |
 |---|---|---|---|---|
-| P0-01 | Jeden canonical host; Cloudflare Redirect Rule, `docs/cloudflare-deployment.md` tylko jeśli runbook wymaga aktualizacji | Cloudflare access; S; ryzyko pętli; edge owner | www/http → apex/https w 1 hop, path/query zachowane, apex 200, sitemap/canonical apex | GSC duplicate host trend 28 dni; O; **nie PR aplikacyjny**, osobny change record |
+| P0-01 | Jeden canonical host; Cloudflare Redirect Rule, `docs/cloudflare-deployment.md` tylko jeśli runbook wymaga aktualizacji | Cloudflare access; S; ryzyko pętli; edge owner | www/http → apex/https w 1 hop, path/query zachowane, apex 200, sitemap/canonical apex | GSC duplicate host trend 28 dni; O; **nie PR aplikacyjny**, osobny change record — **ROZSTRZYGNIĘTE 2026-09-02, live na produkcji (zob. SEO-001)** |
 | P0-02 | Fail-closed public catalog projection; `src/lib/products.ts`, catalog loaders, sitemap/feed tests | DB/catalog; M; ryzyko pustszego storefrontu przy outage; Next dev | draft/hidden/archived nigdy publiczne przy DB error; sold/showroom zachowane; alarm fallback | Zero exposure in synthetic failure; K; osobny PR |
 | P0-03 | Jednolity preview noindex; PDP/home helper + metadata tests | Brak; S; niskie; Next dev | brak/empty/nonempty/repeated query matrix; preview noindex,nofollow; clean canonical | Crawl query variants; K; osobny mały PR |
 | P0-04 | Udokumentowany currency/GMC contract i decyzja A/B/C; `src/lib/currency*`, feed/schema/pricing docs | GMC targets + owner; M spike; wysokie ryzyko złej decyzji bez danych; merchant+dev | Dla każdego target feedu cena/waluta identyczna na landing HTML, JSON-LD i checkout; zachowanie bez cookie deterministyczne | GMC mismatch baseline i 28 dni; K/O; spike osobno, implementacja w następnym PR |
 | P0-05 | Potwierdzenie zewnętrznych konsol i baseline | GSC/GMC/Bing/GA4/CrUX access; S; niskie; analytics owner | Domain property, sitemap submitted, GMC association, export baseline, owner/cadence | Baseline zapisany z datą; O; bez PR lub docs-only PR — **GA4 baseline potwierdzony 2026-08-31 (§13.3, §13.7); GSC domain-verification potwierdzona przez DNS TXT (§13.5); pozostaje GMC/Bing/CrUX** |
 | P0-06 | ~~Zatrzymać incydent 504~~ **ROZSTRZYGNIĘTE 2026-09-02 — false alarm (§13.2), root cause = zone `early_hints:on`, nie aplikacja.** Pozostaje: (a) właściciel wyłącza `early_hints` w Cloudflare (Speed → Content Optimization) — operacja ręczna, poza PR; (b) opcjonalnie alert na realne 5xx (`requestSource != earlyHintsCache`) niezależny od Sentry, jeśli chcemy pokrycia na przyszłość | Cloudflare dashboard toggle; XS; zero ryzyka aplikacyjnego; zone owner | `requestSource:"earlyHintsCache"` = 0 wierszy w GraphQL po zmianie; ogólna `edgeResponseStatus:504` rate spada do <0,1% rolling 24h | Cloudflare GraphQL Analytics 504 rate filtrowane `requestSource:"eyeball"`; O; brak PR aplikacyjnego — `docs:` PR tylko na aktualizację tego dokumentu |
-| P0-07 | Mapa przekierowań legacy Shopify → aktualne PDP/strony (SEO-017) dla top landing pages z GA4 | GA4 30-dniowy landing-page report jako źródło listy; ewentualnie eksport ze starego Shopify admin; S/M; niskie ryzyko; Next dev + content | każdy zmapowany URL 301 do najbliższego odpowiednika; świadome 404 dla reszty, nigdy hurtowo do home | bounce rate na zmapowanych URL-ach spada w GA4 po 28 dniach; K; osobny PR |
+| P0-07 | Mapa przekierowań legacy Shopify → aktualne PDP/strony (SEO-017) dla top landing pages z GA4 | GA4 30-dniowy landing-page report jako źródło listy; ewentualnie eksport ze starego Shopify admin; S/M; niskie ryzyko; Next dev + content | każdy zmapowany URL 301 do najbliższego odpowiednika; świadome 404 dla reszty, nigdy hurtowo do home | bounce rate na zmapowanych URL-ach spada w GA4 po 28 dniach; K; osobny PR — **W TOKU 2026-09-02, PR #280 (zob. SEO-017)** |
 
 ### P1 — fundamenty i szybkie korzyści
 
 | ID | Rezultat / pliki lub moduły | Zależności; est.; ryzyko; owner | Acceptance criteria i testy | Pomiar / typ / PR |
 |---|---|---|---|---|
 | P1-01 | Hermetyczny SEO contract suite; nowe test helpers/specs, bez usługi zewnętrznej | P0-02/04 fixtures; M; CI time; QA/Next dev | reprezentatywna macierz z sekcji 9, head/status/schema/sitemap/feed parity; <3 min dodatkowego CI | regresje wykrywane pre-merge; K; osobny PR |
-| P1-02 | Zero print-grid CLS; `PrintCollectionScreen.tsx`, print media model, CSS | dimensions; S/M; małe; frontend/perf | width+height/aspect; 5-run CLS każdy ≤0.1, median ≤0.05; no broken natural ratio | CrUX p75 po 28/56 dni; K; osobny PR |
+| P1-02 | Zero print-grid CLS; `PrintCollectionScreen.tsx`, print media model, CSS | dimensions; S/M; małe; frontend/perf | width+height/aspect; 5-run CLS każdy ≤0.1, median ≤0.05; no broken natural ratio | CrUX p75 po 28/56 dni; K; osobny PR — **PR OTWARTY 2026-09-02, #278 (zob. SEO-005)** |
 | P1-03 | Guard i responsive delivery hero CMS; upload/media route/HomeHero | Cloudflare plan choice; S guard + M/L transform; editor UX risk; edge/frontend | format/size/dimension validation; mobile/desktop sources; fallback; budgets zapisane | transfer/LCP/error rate; K/O; guard PR, transform PR osobno |
 | P1-04 | Evergreen collection metadata i poprawne counts; message files + metadata resolver | translator/editor; S/M; małe | brak fałszywych liczb; 4 locale; unikalne nonempty title/description | CTR baseline/28–90 dni; T/K; osobny PR |
-| P1-05 | Dopasowane OG/Twitter dla prints/shop/showroom/content | assets/editor; S/M; małe | 1200×630, absolute URL, dimensions, localized alt; head snapshots | share debugger i referral CTR; T/K; osobny PR |
+| P1-05 | Dopasowane OG/Twitter dla prints/shop/showroom/content | assets/editor; S/M; małe | 1200×630, absolute URL, dimensions, localized alt; head snapshots | share debugger i referral CTR; T/K; osobny PR — **PR OTWARTY 2026-09-02, #279 (zob. SEO-010); content pages poza fine-art-prints/sklep/showroom nie w zakresie** |
 | P1-06 | Spójny graph schema z IDs/condition/policies | potwierdzona policy; M; schema overclaim risk; merchant dev + owner | stable IDs, `NewCondition`, only visible truthful policy; unit invariants i Rich Results Test | GSC merchant issues; K/O; osobny PR |
 | P1-07 | Feed reliability i wspólny resolver print description | koordynacja z istniejącym platform hygiene plan; S/M; stale availability risk | 200 XML, 164 expected current rows, no 5xx, bounded staleness, CMS parity | fetch errors/latency/GMC freshness; K; osobny PR bez duplikacji planu 14 |
 
@@ -771,13 +775,13 @@ Wyniki:
 **Zaktualizowane 2026-08-31 (§13):** dwie pozycje wchodzą przed dotychczasowy krok 0, bo są aktywnymi, mierzonymi problemami produkcyjnymi, nie ryzykiem.
 
 -1. ~~**Incydent, nie PR:** zdiagnozować i zatrzymać 504 storm (SEO-016, §13.2)~~ **ROZSTRZYGNIĘTE 2026-09-02** — false alarm, root cause = Cloudflare zone `early_hints:on` (nigdy używany świadomie przez aplikację), nie aplikacja/Worker; pozostaje jedna ręczna operacja Cloudflare (wyłączyć Early Hints) do wykonania przez właściciela, nie PR.
-0. **PR 0 — legacy Shopify redirects:** mapa przekierowań dla top landing pages z GA4 (SEO-017, §13.4); tanie, bezpieczne, mierzalny zwrot w 28 dni.
-0b. **Operacja przed PR-ami:** Cloudflare `www → apex` 301/308 + change record i smoke matrix.
+0. ~~**PR 0 — legacy Shopify redirects:** mapa przekierowań dla top landing pages z GA4 (SEO-017, §13.4); tanie, bezpieczne, mierzalny zwrot w 28 dni.~~ **W TOKU 2026-09-02 — PR [#280](https://github.com/konradciok/ceramics-drop/pull/280), zob. SEO-017.**
+0b. ~~**Operacja przed PR-ami:** Cloudflare `www → apex` 301/308 + change record i smoke matrix.~~ **ROZSTRZYGNIĘTE 2026-09-02, zob. SEO-001.**
 1. **PR 1 — SEO safety net:** preview fix + final head/status/404/hreflang contract tests dla reprezentatywnej macierzy.
 2. **PR 2 — catalog visibility fail-closed:** failure-mode projection i testy sitemap/feed/PDP; bez mieszania z contentem.
-3. **PR 3 — print layout stability:** wymiary/aspect ratio i LCP loading policy; mały, mierzalny frontend PR.
+3. ~~**PR 3 — print layout stability:** wymiary/aspect ratio i LCP loading policy; mały, mierzalny frontend PR.~~ **PR OTWARTY 2026-09-02 — [#278](https://github.com/konradciok/ceramics-drop/pull/278), zob. SEO-005** (LCP loading-policy część — nie lazy-loadować pierwszy viewport — nie zaimplementowana w tym PR, tylko wymiary/aspect ratio).
 4. **PR 4a/4b — CMS hero:** najpierw upload budgets/validation, potem osobny spike/PR responsive Cloudflare derivatives.
-5. **PR 5 — collection metadata/social:** poprawa stale copy i surface-specific OG; model CMS kolekcji dopiero w następnym, większym zestawie PR-ów.
+5. **PR 5 — collection metadata/social:** poprawa stale copy i surface-specific OG; model CMS kolekcji dopiero w następnym, większym zestawie PR-ów. Część **surface-specific OG** (SEO-010) wydzielona i **PR OTWARTY 2026-09-02 — [#279](https://github.com/konradciok/ceramics-drop/pull/279)**; część **stale copy** (SEO-007) pozostaje nietknięta.
 
 Równolegle, poza numeracją PR-ów: decyzja ownera sklepu o dostępności ceramiki (SEO-018, §13.3) — bez niej żaden z powyższych PR-ów nie przełoży się na przychód.
 
