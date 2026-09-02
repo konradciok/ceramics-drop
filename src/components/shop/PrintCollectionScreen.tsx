@@ -105,6 +105,8 @@ export async function PrintCollectionScreen({
                       sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw"
                       alt={name}
                       loading="lazy"
+                      width={700}
+                      height={1000}
                     />
                     <div className="tile-meta">
                       <span className="nm">{name}</span>
