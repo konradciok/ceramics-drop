@@ -22,6 +22,7 @@ import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
+import { requireLocale } from '@/i18n/locale-guard';
 import { EMAIL } from '@/lib/email-addresses';
 import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
 import { getHomeContent } from '@/lib/cms/home';
@@ -76,7 +77,7 @@ function railImage(design: PrintDesign, state: MockupState): string {
 
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { locale } = await params;
+  const locale = requireLocale((await params).locale);
   const previewParam = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
@@ -98,7 +99,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
  * contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
-  const { locale } = await params;
+  // Dotted paths skip the i18n middleware and reach this page with a junk
+  // segment — 404 before touching any locale-keyed table (see locale-guard).
+  const locale = requireLocale((await params).locale);
   const previewParam = (await searchParams)?.preview;
   const previewToken = typeof previewParam === 'string' ? previewParam : undefined;
   setRequestLocale(locale);

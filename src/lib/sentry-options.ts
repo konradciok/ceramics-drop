@@ -55,6 +55,10 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
 
   return {
     dsn,
+    // Local `next dev` / E2E runs share the production project's DSN via
+    // .env.local and were landing there as environment=development noise.
+    // Opt back in per shell with SENTRY_SEND_IN_DEV=1 when debugging Sentry itself.
+    enabled: !isDev || process.env.SENTRY_SEND_IN_DEV === '1',
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
     // Correlate every event with the release that shipped it. Inlined at build
     // from package.json (next.config.ts) — matches the source-map `release`.
@@ -65,6 +69,11 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
     ignoreErrors: [
       // Android WebView GC artifact from GTM/GA4 keyboard telemetry — not our code.
       /Java object is gone/,
+      // Instagram in-app browser bridge scripts (navigation_performance_logger,
+      // sendDataToNative) failing on their own native handlers — not our code.
+      /454: Handling is disabled/,
+      /Error invoking postMessage/,
+      /window\.webkit\.messageHandlers/,
     ],
   };
 }
