@@ -4,6 +4,15 @@ const dsn = process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 const isDev = process.env.NODE_ENV === 'development';
 
+/**
+ * Local `next dev` / E2E shells share the production project's DSN via
+ * .env.local and were landing there as environment=development noise, so
+ * development sends nothing unless explicitly opted in. `NEXT_PUBLIC_` because
+ * the browser bundle only sees inlined public vars — a plain server var would
+ * silently leave the client side disabled even when opted in.
+ */
+const sendAllowed = !isDev || process.env.NEXT_PUBLIC_SENTRY_SEND_IN_DEV === '1';
+
 /** The event type Sentry hands `beforeSend` — derived so we never guess the export name. */
 type SentryEvent = Parameters<NonNullable<NodeOptions['beforeSend']>>[0];
 
@@ -55,10 +64,9 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
 
   return {
     dsn,
-    // Local `next dev` / E2E runs share the production project's DSN via
-    // .env.local and were landing there as environment=development noise.
-    // Opt back in per shell with SENTRY_SEND_IN_DEV=1 when debugging Sentry itself.
-    enabled: !isDev || process.env.SENTRY_SEND_IN_DEV === '1',
+    // Belt-and-braces with isSentryEnabled(): the entrypoints already skip
+    // init when this is false; keep the SDK inert for any direct caller too.
+    enabled: sendAllowed,
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
     // Correlate every event with the release that shipped it. Inlined at build
     // from package.json (next.config.ts) — matches the source-map `release`.
@@ -78,6 +86,7 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
   };
 }
 
+/** True when a DSN is configured AND this runtime is allowed to send (see sendAllowed). */
 export function isSentryEnabled(): boolean {
-  return Boolean(dsn);
+  return Boolean(dsn) && sendAllowed;
 }

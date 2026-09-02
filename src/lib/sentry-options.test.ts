@@ -48,7 +48,7 @@ describe('getBaseSentryOptions', () => {
     vi.stubEnv('SENTRY_DSN', 'https://k@o.ingest.sentry.io/1');
     for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v as string);
     const mod = await import('./sentry-options');
-    return mod.getBaseSentryOptions();
+    return { ...mod.getBaseSentryOptions(), isSentryEnabled: mod.isSentryEnabled() };
   }
 
   it('ignores the Instagram in-app browser bridge errors (not our code)', async () => {
@@ -64,9 +64,15 @@ describe('getBaseSentryOptions', () => {
     }
   });
 
-  it('does not send from local dev unless SENTRY_SEND_IN_DEV=1 (keeps E2E/dev runs out of the prod project)', async () => {
-    expect((await load({ NODE_ENV: 'development', SENTRY_SEND_IN_DEV: undefined })).enabled).toBe(false);
-    expect((await load({ NODE_ENV: 'development', SENTRY_SEND_IN_DEV: '1' })).enabled).toBe(true);
+  it('does not send from local dev unless NEXT_PUBLIC_SENTRY_SEND_IN_DEV=1 (keeps E2E/dev runs out of the prod project)', async () => {
+    expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: undefined })).enabled).toBe(false);
+    expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: '1' })).enabled).toBe(true);
     expect((await load({ NODE_ENV: 'production' })).enabled).toBe(true);
+  });
+
+  it('isSentryEnabled() agrees with the gate so the entrypoints skip init in dev entirely', async () => {
+    expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: undefined })).isSentryEnabled).toBe(false);
+    expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: '1' })).isSentryEnabled).toBe(true);
+    expect((await load({ NODE_ENV: 'production' })).isSentryEnabled).toBe(true);
   });
 });
