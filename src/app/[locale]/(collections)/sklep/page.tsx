@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, ResolvingMetadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AllPiecesScreen } from '@/components/shop/AllPiecesScreen';
 import { getPublicProducts } from '@/lib/products';
@@ -12,9 +12,16 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
+  // Spread the parent's openGraph (type, siteName) — a child openGraph object
+  // replaces the parent's wholesale rather than merging with it, so
+  // overriding just `images` would silently drop those fields.
+  const previousOpenGraph = (await parent).openGraph ?? {};
   return {
     title: t('title.sklep'),
     description: t('meta.collections.sklep'),
@@ -23,6 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // (SEO-010); the curated home hero photo is a more representative shot
     // of the whole shop than one arbitrary product.
     openGraph: {
+      ...previousOpenGraph,
       images: [
         {
           url: `${SITE_URL}${HOME_EDITORIAL_IMAGE.src}`,

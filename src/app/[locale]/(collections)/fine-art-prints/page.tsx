@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, ResolvingMetadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PrintCollectionScreen } from '@/components/shop/PrintCollectionScreen';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -21,7 +21,10 @@ const PRINTS_SLUG = 'fine-art-prints';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
   // Representative OG/Twitter image: the first curated design's listing
@@ -29,12 +32,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // the page inherits the global ceramic mug fallback (SEO-010).
   const [hero] = groupPrintDesigns(await getPrintDesigns()).flatMap((g) => g.designs);
   const heroImage = hero ? printListingImage(hero, registryPrintById(hero.id)) : undefined;
+  // Spread the parent's openGraph (type, siteName) — a child openGraph object
+  // replaces the parent's wholesale, not merges with it (Next.js metadata is
+  // only shallow-merged), so overriding just `images` here would silently
+  // drop those fields.
+  const previousOpenGraph = (await parent).openGraph ?? {};
   return {
     title: t('title.fineArtPrints'),
     description: t('meta.collections.fineArtPrints'),
     alternates: alternatesFor(locale as Locale, '/fine-art-prints'),
-    ...(heroImage && {
-      openGraph: {
+    openGraph: {
+      ...previousOpenGraph,
+      ...(heroImage && {
         images: [
           {
             url: `${SITE_URL}${heroImage}`,
@@ -43,8 +52,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             alt: `${t('product.print')} Nº ${hero!.num}`,
           },
         ],
-      },
-    }),
+      }),
+    },
   };
 }
 
