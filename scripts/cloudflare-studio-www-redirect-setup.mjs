@@ -75,6 +75,7 @@ function redirectRule() {
   return {
     ref: 'studio_www_to_apex',
     description: 'studio-www-to-apex',
+    enabled: true,
     expression: `(http.host eq "www.${ZONE_NAME}")`,
     action: 'redirect',
     action_parameters: {
@@ -87,6 +88,16 @@ function redirectRule() {
       },
     },
   };
+}
+
+/** True if an existing rule already matches every field this script owns. */
+function matchesRule(existingRule, wantedRule) {
+  return (
+    existingRule.enabled === wantedRule.enabled &&
+    existingRule.expression === wantedRule.expression &&
+    existingRule.action === wantedRule.action &&
+    JSON.stringify(existingRule.action_parameters) === JSON.stringify(wantedRule.action_parameters)
+  );
 }
 
 async function getRedirectEntrypoint(zoneId) {
@@ -122,10 +133,14 @@ async function ensureRedirect(zoneId) {
   }
 
   const byRef = new Map((existing.rules ?? []).map((r) => [r.ref ?? r.description, r]));
-  if (byRef.has(rule.ref)) {
-    console.log('Redirect rule OK (already present).');
+  const existingRule = byRef.get(rule.ref);
+  if (existingRule && matchesRule(existingRule, rule)) {
+    console.log('Redirect rule OK (already present and matches).');
     return;
   }
+  // Either missing or drifted (e.g. disabled or edited by hand in the
+  // dashboard) — (re)write it so re-running this script actually converges
+  // on the intended config instead of trusting a stale `ref` match.
   byRef.set(rule.ref, rule);
 
   const merged = [...byRef.values()];
@@ -138,7 +153,11 @@ async function ensureRedirect(zoneId) {
       rules: merged,
     }),
   });
-  console.log(`Redirect ruleset updated (${merged.length} rule(s)).`);
+  console.log(
+    existingRule
+      ? 'Redirect ruleset updated (rule config reconciled).'
+      : `Redirect ruleset updated (${merged.length} rule(s)).`,
+  );
 }
 
 async function main() {
