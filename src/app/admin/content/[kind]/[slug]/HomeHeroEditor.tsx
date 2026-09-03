@@ -118,8 +118,12 @@ async function uploadFile(file: File, slot: SlotTarget): Promise<{ key: string; 
 
 /** Hard budget block — checked BEFORE upload, not shown as an advisory after
     the fact. There is no legitimate reason for a homepage hero to exceed the
-    LCP weight budget, so this has no override. */
+    LCP weight budget, so this has no override. Images only — matches
+    `validateUpload`'s server-side scoping: the budget is sized for a
+    compressed still, and no real-world hero video could ever fit inside it,
+    so a hero video is governed by the much larger hard ceiling instead. */
 function budgetExceededMessage(target: SlotTarget, file: File): string | null {
+  if (file.type.startsWith('video/')) return null;
   const g = GUIDANCE[target];
   if (file.size <= g.maxBytes) return null;
   return `Plik przekracza budzet ${g.maxLabel} (${(file.size / 1024).toFixed(0)} KB). Zmniejsz plik i sprobuj ponownie.`;

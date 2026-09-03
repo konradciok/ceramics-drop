@@ -22,6 +22,14 @@ function makeWebpBytes(size: number): Uint8Array {
   return bytes;
 }
 
+/** A minimal valid MP4 payload of the given total byte size ('ftyp' at
+    offset 4 + zero-padding). */
+function makeMp4Bytes(size: number): Uint8Array {
+  const bytes = new Uint8Array(size);
+  bytes.set([0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70], 0);
+  return bytes;
+}
+
 function buildRequest(opts: {
   bytes?: Uint8Array;
   width?: number;
@@ -71,6 +79,28 @@ describe('POST /api/admin/content/media', () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'invalid_slot' });
     expect(ENV.mockPut).not.toHaveBeenCalled();
+  });
+
+  it.each(['toString', 'constructor', 'hasOwnProperty', '__proto__'])(
+    '400s on the inherited-property slot value %j instead of resolving a truthy budget off the prototype chain',
+    async (slot) => {
+      const res = await POST(buildRequest({ slot }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_slot' });
+      expect(ENV.mockPut).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does NOT block a video upload for a desktop slot even when it exceeds the (image-sized) desktop budget', async () => {
+    const res = await POST(
+      buildRequest({
+        slot: 'desktop',
+        contentType: 'video/mp4',
+        bytes: makeMp4Bytes(1024 * 1024), // 1 MB — over the 700 KB desktop image budget
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(ENV.mockPut).toHaveBeenCalled();
   });
 
   it('no slot param -> no budget enforced beyond the hard ceiling (non-hero caller)', async () => {

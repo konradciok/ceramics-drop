@@ -150,7 +150,10 @@ export function validateUpload(input: ValidateUploadInput): ValidateUploadResult
   // A tighter budget (e.g. the hero LCP target) is a separate, distinguishable
   // rejection from the hard ceiling above, so the client can render a
   // specific "over the hero budget" message rather than a generic "too large".
-  if (budgetBytes !== undefined && contentLength > budgetBytes) {
+  // Images only — the budget is sized for a compressed still (700 KB/350 KB),
+  // and no real-world hero video could ever fit inside it; a hero video stays
+  // governed by the much larger hard ceiling above.
+  if (budgetBytes !== undefined && IMAGE_CONTENT_TYPES.has(contentType) && contentLength > budgetBytes) {
     return { ok: false, error: 'over_budget', status: 413 };
   }
 

@@ -12,11 +12,14 @@ import { SITE_MEDIA_PREFIX, siteMediaUrl } from '@/lib/site-media';
 export const dynamic = 'force-dynamic';
 
 /** Hero-slot LCP budgets (SEO-006), keyed by the `?slot=` param the client
-    sends. A poster upload reuses its parent slot's budget. */
-const SLOT_BUDGET_BYTES: Record<string, number> = {
-  desktop: HERO_DESKTOP_MAX_BYTES,
-  mobile: HERO_MOBILE_MAX_BYTES,
-};
+    sends. A poster upload reuses its parent slot's budget. A Map (not a
+    plain object) so an inherited property name like `toString` or
+    `constructor` can never resolve to a truthy value and silently bypass
+    the invalid-slot rejection below. */
+const SLOT_BUDGET_BYTES = new Map<string, number>([
+  ['desktop', HERO_DESKTOP_MAX_BYTES],
+  ['mobile', HERO_MOBILE_MAX_BYTES],
+]);
 
 /**
  * Admin site-media upload — stores homepage-hero images/video into the same
@@ -35,7 +38,7 @@ export async function POST(req: Request) {
   const contentType = req.headers.get('content-type') ?? '';
 
   const slot = url.searchParams.get('slot');
-  const budgetBytes = slot === null ? undefined : SLOT_BUDGET_BYTES[slot];
+  const budgetBytes = slot === null ? undefined : SLOT_BUDGET_BYTES.get(slot);
   if (slot !== null && budgetBytes === undefined) {
     return NextResponse.json({ error: 'invalid_slot' }, { status: 400 });
   }
