@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { validateUpload, uploadKeyFor, MAX_VIDEO_BYTES } from '@/lib/admin/site-media-upload';
+import {
+  validateUpload,
+  uploadKeyFor,
+  MAX_VIDEO_BYTES,
+  HERO_DESKTOP_MAX_BYTES,
+  HERO_MOBILE_MAX_BYTES,
+} from '@/lib/admin/site-media-upload';
 import { SITE_MEDIA_PREFIX, siteMediaUrl } from '@/lib/site-media';
 
 export const dynamic = 'force-dynamic';
+
+/** Hero-slot LCP budgets (SEO-006), keyed by the `?slot=` param the client
+    sends. A poster upload reuses its parent slot's budget. */
+const SLOT_BUDGET_BYTES: Record<string, number> = {
+  desktop: HERO_DESKTOP_MAX_BYTES,
+  mobile: HERO_MOBILE_MAX_BYTES,
+};
 
 /**
  * Admin site-media upload — stores homepage-hero images/video into the same
@@ -20,6 +33,12 @@ export async function POST(req: Request) {
   const width = Number(url.searchParams.get('width'));
   const height = Number(url.searchParams.get('height'));
   const contentType = req.headers.get('content-type') ?? '';
+
+  const slot = url.searchParams.get('slot');
+  const budgetBytes = slot === null ? undefined : SLOT_BUDGET_BYTES[slot];
+  if (slot !== null && budgetBytes === undefined) {
+    return NextResponse.json({ error: 'invalid_slot' }, { status: 400 });
+  }
 
   // Reject an oversized body BEFORE buffering it into memory — the
   // content-length header can lie, so `validateUpload`'s buffered size check
@@ -38,6 +57,7 @@ export async function POST(req: Request) {
     width,
     height,
     bytes: buf,
+    budgetBytes,
   });
 
   if (!validated.ok) {

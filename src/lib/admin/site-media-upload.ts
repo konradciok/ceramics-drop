@@ -13,6 +13,10 @@ export type ValidateUploadInput = {
   width: number;
   height: number;
   bytes: UploadBytes;
+  /** Caller-supplied budget tighter than the hard size ceiling (e.g. the
+      homepage-hero LCP budget). Omit to apply only the hard ceiling below —
+      non-hero callers are unaffected. */
+  budgetBytes?: number;
 };
 
 export type ValidateUploadOk = {
@@ -25,7 +29,12 @@ export type ValidateUploadOk = {
 
 export type ValidateUploadError = {
   ok: false;
-  error: 'invalid_content_type' | 'content_type_mismatch' | 'payload_too_large' | 'invalid_dimensions';
+  error:
+    | 'invalid_content_type'
+    | 'content_type_mismatch'
+    | 'payload_too_large'
+    | 'over_budget'
+    | 'invalid_dimensions';
   status: 415 | 413 | 400;
 };
 
@@ -47,6 +56,12 @@ const IMAGE_CONTENT_TYPES = new Set(['image/webp', 'image/jpeg', 'image/png']);
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
 const MAX_DIMENSION = 10000;
+
+/** Homepage-hero LCP weight budgets (SEO-006) — tighter than the hard
+    ceilings above, shared between the admin editor's client-side check and
+    this module's server-side enforcement so the two numbers can't drift. */
+export const HERO_DESKTOP_MAX_BYTES = 700 * 1024; // 700 KB
+export const HERO_MOBILE_MAX_BYTES = 350 * 1024; // 350 KB
 
 function toUint8Array(bytes: UploadBytes): Uint8Array {
   return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -109,12 +124,13 @@ function isValidDimension(n: number): boolean {
 /**
  * Validates an admin site-media upload: content-type allowlist, magic-byte
  * sniff against the declared type, size cap (8 MB images / 50 MB videos),
- * and integer 1–10000 dimensions. Returns a discriminated result — `ok` with
- * the normalized extension, or an error code with the HTTP status the route
- * should respond with.
+ * an optional tighter caller budget (`budgetBytes`), and integer 1–10000
+ * dimensions. Returns a discriminated result — `ok` with the normalized
+ * extension, or an error code with the HTTP status the route should
+ * respond with.
  */
 export function validateUpload(input: ValidateUploadInput): ValidateUploadResult {
-  const { contentType, contentLength, width, height, bytes } = input;
+  const { contentType, contentLength, width, height, bytes, budgetBytes } = input;
 
   const ext = CONTENT_TYPE_EXT[contentType];
   if (!ext) {
@@ -129,6 +145,13 @@ export function validateUpload(input: ValidateUploadInput): ValidateUploadResult
   const maxBytes = IMAGE_CONTENT_TYPES.has(contentType) ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
   if (contentLength > maxBytes) {
     return { ok: false, error: 'payload_too_large', status: 413 };
+  }
+
+  // A tighter budget (e.g. the hero LCP target) is a separate, distinguishable
+  // rejection from the hard ceiling above, so the client can render a
+  // specific "over the hero budget" message rather than a generic "too large".
+  if (budgetBytes !== undefined && contentLength > budgetBytes) {
+    return { ok: false, error: 'over_budget', status: 413 };
   }
 
   if (!isValidDimension(width) || !isValidDimension(height)) {
