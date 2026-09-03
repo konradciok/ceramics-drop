@@ -148,6 +148,57 @@ describe('validateUpload', () => {
     const result = validateUpload(baseInput({ width: -1, height: 100 }));
     expect(result).toEqual({ ok: false, error: 'invalid_dimensions', status: 400 });
   });
+
+  describe('budgetBytes (SEO-006 hero budget)', () => {
+    it('accepts a payload at or under the caller-supplied budget', () => {
+      const result = validateUpload(baseInput({ contentLength: 1000, budgetBytes: 1000 }));
+      expect(result.ok).toBe(true);
+    });
+
+    it('rejects a payload over the caller-supplied budget with a distinct over_budget/413', () => {
+      const result = validateUpload(baseInput({ contentLength: 1001, budgetBytes: 1000 }));
+      expect(result).toEqual({ ok: false, error: 'over_budget', status: 413 });
+    });
+
+    it('the hard 8 MB/50 MB ceilings still apply unchanged when budgetBytes is omitted', () => {
+      const result = validateUpload(baseInput({ contentLength: 8 * 1024 * 1024 + 1 }));
+      expect(result).toEqual({ ok: false, error: 'payload_too_large', status: 413 });
+    });
+
+    it('a generous budgetBytes never loosens the hard ceiling', () => {
+      const result = validateUpload(
+        baseInput({ contentLength: 8 * 1024 * 1024 + 1, budgetBytes: 50 * 1024 * 1024 }),
+      );
+      expect(result).toEqual({ ok: false, error: 'payload_too_large', status: 413 });
+    });
+
+    it('does NOT apply the (image-sized) budget to a video — only the 50 MB hard ceiling governs it', () => {
+      // A hero video's own budget would still be image-oriented (700 KB /
+      // 350 KB) if plumbed through unscoped — no real-world hero video could
+      // ever pass that, silently making video hero uploads impossible.
+      const result = validateUpload(
+        baseInput({
+          contentType: 'video/mp4',
+          bytes: MP4_BYTES,
+          contentLength: 1024 * 1024, // 1 MB — well over a 700 KB/350 KB image budget
+          budgetBytes: 350 * 1024,
+        }),
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it('still enforces the hard 50 MB video ceiling even with a budgetBytes set', () => {
+      const result = validateUpload(
+        baseInput({
+          contentType: 'video/mp4',
+          bytes: MP4_BYTES,
+          contentLength: 50 * 1024 * 1024 + 1,
+          budgetBytes: 350 * 1024,
+        }),
+      );
+      expect(result).toEqual({ ok: false, error: 'payload_too_large', status: 413 });
+    });
+  });
 });
 
 describe('uploadKeyFor', () => {

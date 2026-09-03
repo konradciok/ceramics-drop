@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { CMS_LOCALES, CmsLocale, HeroMediaSlot, HomePagePayload } from '@/lib/cms/types';
 import type { ContentEditorState } from '@/lib/admin/content';
 import { siteMediaUrl } from '@/lib/site-media';
+import { HERO_DESKTOP_MAX_BYTES, HERO_MOBILE_MAX_BYTES } from '@/lib/admin/site-media-upload';
 import { postJson, type FieldErrors } from './editor-shared';
 import {
   buildFanOutPayloads,
@@ -29,8 +30,8 @@ const TEXT_FIELDS: { key: keyof HomeCopy; label: string; rows: number }[] = [
 type SlotTarget = 'desktop' | 'mobile';
 
 const GUIDANCE: Record<SlotTarget, { hint: string; maxBytes: number; maxLabel: string }> = {
-  desktop: { hint: 'Zalecane: WebP, ok. 2400–2800px szerokości, poniżej 700 KB.', maxBytes: 700 * 1024, maxLabel: '700 KB' },
-  mobile: { hint: 'Zalecane: WebP, ok. 1080×1350px, poniżej 350 KB.', maxBytes: 350 * 1024, maxLabel: '350 KB' },
+  desktop: { hint: 'Wymagane: WebP, ok. 2400–2800px szerokości, ponizej 700 KB.', maxBytes: HERO_DESKTOP_MAX_BYTES, maxLabel: '700 KB' },
+  mobile: { hint: 'Wymagane: WebP, ok. 1080×1350px, ponizej 350 KB.', maxBytes: HERO_MOBILE_MAX_BYTES, maxLabel: '350 KB' },
 };
 
 function asCopy(raw: unknown): HomeCopy {
@@ -92,24 +93,40 @@ function readDimensions(file: File): Promise<{ width: number; height: number }> 
   });
 }
 
-async function uploadFile(file: File): Promise<{ key: string; width: number; height: number; contentType: string }> {
+/** Maps a server rejection code to a friendlier message than the raw code —
+    the client already blocks over-budget files before this route is hit
+    (see `budgetExceededMessage`), so `over_budget` here means a defense-in-
+    depth rejection (e.g. the browser under-reported `file.size`). */
+function uploadErrorMessage(error: string | undefined): string | null {
+  if (error === 'over_budget') return 'Plik przekracza budzet wagowy dla tego slotu hero — serwer odrzucil przeslany plik.';
+  return null;
+}
+
+async function uploadFile(file: File, slot: SlotTarget): Promise<{ key: string; width: number; height: number; contentType: string }> {
   const { width, height } = await readDimensions(file);
-  const res = await fetch(`/api/admin/content/media?width=${width}&height=${height}`, {
+  const res = await fetch(`/api/admin/content/media?width=${width}&height=${height}&slot=${slot}`, {
     method: 'POST',
     headers: { 'content-type': file.type },
     body: file,
   });
   const data = (await res.json().catch(() => ({}))) as { key?: string; contentType?: string; error?: string };
   if (!res.ok || !data.key || !data.contentType) {
-    throw new Error(data.error || `HTTP ${res.status}`);
+    throw new Error(uploadErrorMessage(data.error) ?? data.error ?? `HTTP ${res.status}`);
   }
   return { key: data.key, width, height, contentType: data.contentType };
 }
 
-function sizeWarning(target: SlotTarget, file: File): string | null {
+/** Hard budget block — checked BEFORE upload, not shown as an advisory after
+    the fact. There is no legitimate reason for a homepage hero to exceed the
+    LCP weight budget, so this has no override. Images only — matches
+    `validateUpload`'s server-side scoping: the budget is sized for a
+    compressed still, and no real-world hero video could ever fit inside it,
+    so a hero video is governed by the much larger hard ceiling instead. */
+function budgetExceededMessage(target: SlotTarget, file: File): string | null {
+  if (file.type.startsWith('video/')) return null;
   const g = GUIDANCE[target];
   if (file.size <= g.maxBytes) return null;
-  return `Plik wiekszy niz zalecane ${g.maxLabel} (${(file.size / 1024).toFixed(0)} KB) — przeslano mimo to.`;
+  return `Plik przekracza budzet ${g.maxLabel} (${(file.size / 1024).toFixed(0)} KB). Zmniejsz plik i sprobuj ponownie.`;
 }
 
 export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
@@ -156,10 +173,16 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
 
   async function handleSlotUpload(target: SlotTarget, file: File) {
     const busyKey = target;
+    const blocked = budgetExceededMessage(target, file);
+    if (blocked) {
+      setSlotWarnings((prev) => ({ ...prev, [busyKey]: blocked }));
+      return;
+    }
     setSlotBusy((prev) => ({ ...prev, [busyKey]: true }));
     setMessage(null);
+    setSlotWarnings((prev) => ({ ...prev, [busyKey]: null }));
     try {
-      const uploaded = await uploadFile(file);
+      const uploaded = await uploadFile(file, target);
       const isVideo = uploaded.contentType.startsWith('video/');
       setMedia((prev) => ({
         ...prev,
@@ -167,9 +190,8 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
           ? { kind: 'video', key: uploaded.key, poster: null }
           : { kind: 'image', key: uploaded.key, width: uploaded.width, height: uploaded.height },
       }));
-      setSlotWarnings((prev) => ({ ...prev, [busyKey]: sizeWarning(target, file) }));
     } catch (err) {
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Blad przesylania pliku.' });
+      setSlotWarnings((prev) => ({ ...prev, [busyKey]: err instanceof Error ? err.message : 'Blad przesylania pliku.' }));
     } finally {
       setSlotBusy((prev) => ({ ...prev, [busyKey]: false }));
     }
@@ -177,10 +199,16 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
 
   async function handlePosterUpload(target: SlotTarget, file: File) {
     const busyKey = `${target}-poster`;
+    const blocked = budgetExceededMessage(target, file);
+    if (blocked) {
+      setSlotWarnings((prev) => ({ ...prev, [busyKey]: blocked }));
+      return;
+    }
     setSlotBusy((prev) => ({ ...prev, [busyKey]: true }));
     setMessage(null);
+    setSlotWarnings((prev) => ({ ...prev, [busyKey]: null }));
     try {
-      const uploaded = await uploadFile(file);
+      const uploaded = await uploadFile(file, target);
       if (uploaded.contentType.startsWith('video/')) {
         throw new Error('Plakat musi byc obrazem, nie wideo.');
       }
@@ -192,9 +220,8 @@ export function HomeHeroEditor({ state }: { state: ContentEditorState }) {
           [target]: { ...slot, poster: { key: uploaded.key, width: uploaded.width, height: uploaded.height } },
         };
       });
-      setSlotWarnings((prev) => ({ ...prev, [busyKey]: sizeWarning(target, file) }));
     } catch (err) {
-      setMessage({ ok: false, text: err instanceof Error ? err.message : 'Blad przesylania plakatu.' });
+      setSlotWarnings((prev) => ({ ...prev, [busyKey]: err instanceof Error ? err.message : 'Blad przesylania plakatu.' }));
     } finally {
       setSlotBusy((prev) => ({ ...prev, [busyKey]: false }));
     }
