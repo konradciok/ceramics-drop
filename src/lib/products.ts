@@ -15,10 +15,10 @@
         noteIndex per category. Stable ids survive; only num/category
         change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
+import * as Sentry from '@sentry/nextjs';
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
-import { readWithFallback } from './supabase-timeout';
 import { recordCeramicCatalogSuccess, resolveCeramicCatalogFallback } from './catalog/last-known-good';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
@@ -342,23 +342,33 @@ async function loadCeramicCatalog(): Promise<CeramicCatalog> {
   // (nothing public) — see src/lib/catalog/last-known-good.ts. The blip is
   // logged + reported to Sentry, tagged by which tier served; a real edit
   // reappears once the DB recovers. Reversible to fail-loud by rethrowing.
-  const { catalog: fallbackCatalog, tier } = resolveCeramicCatalogFallback(REGISTRY_CATALOG);
-  return readWithFallback(
-    'ceramic-catalog',
-    async () => {
-      const { loadCeramicProductsFromDb } = await import('./catalog/load');
-      const products = await loadCeramicProductsFromDb();
-      const catalog: CeramicCatalog = {
-        products,
-        byId: new Map(products.map((p) => [p.id, p])),
-        byCategory: groupByCategory(products),
-      };
-      recordCeramicCatalogSuccess(catalog);
-      return catalog;
-    },
-    fallbackCatalog,
-    { fallbackTier: tier },
-  );
+  //
+  // Deliberately NOT using the generic readWithFallback() helper here: its
+  // `fallback` argument is evaluated eagerly, before the DB read is even
+  // attempted. A concurrent request on this isolate can record a fresher
+  // last-known-good catalog while THIS read is still in flight — resolving
+  // the fallback up front would ignore that and serve a stale (possibly
+  // cold-fail-closed) tier even though a better one is available by the time
+  // this read actually fails. Resolving inside the catch, after the read has
+  // settled, always reflects the freshest state.
+  try {
+    const { loadCeramicProductsFromDb } = await import('./catalog/load');
+    const products = await loadCeramicProductsFromDb();
+    const catalog: CeramicCatalog = {
+      products,
+      byId: new Map(products.map((p) => [p.id, p])),
+      byCategory: groupByCategory(products),
+    };
+    recordCeramicCatalogSuccess(catalog);
+    return catalog;
+  } catch (err) {
+    const { catalog, tier } = resolveCeramicCatalogFallback(REGISTRY_CATALOG);
+    console.error('[ceramic-catalog] DB read failed; using fallback', { fallbackTier: tier }, err);
+    // fallbackTier as a tag (not `extra`) so the two tiers are filterable in
+    // Sentry, distinct from a generic Supabase hiccup.
+    Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
+    return catalog;
+  }
 }
 
 /**

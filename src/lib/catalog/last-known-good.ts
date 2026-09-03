@@ -39,25 +39,22 @@ export function resetLastKnownGoodForTests(): void {
   lastGood = null;
 }
 
-function groupByCategory(products: Product[]): Record<CategorySlug, Product[]> {
-  const acc = {} as Record<CategorySlug, Product[]>;
-  for (const product of products) {
-    (acc[product.category] ??= []).push(product);
-  }
-  return acc;
-}
-
 /** Projects the registry as fully non-public — used only when this isolate
     has no last-known-good yet. Forces every product's status to 'hidden'
     (already means "withdraw everywhere" per isProductPublic) rather than
-    leaving it undefined, which isProductPublic treats as 'active'. */
+    leaving it undefined, which isProductPublic treats as 'active'. Reuses
+    `registryCatalog.byCategory`'s own key set (rather than reimplementing
+    category grouping here) so every category slug it was built with —
+    including empty ones — is preserved without a second, potentially
+    drifting grouping implementation. */
 function buildFailClosedProjection(registryCatalog: CeramicCatalog): CeramicCatalog {
   const products: Product[] = registryCatalog.products.map((p) => ({ ...p, status: 'hidden' }));
-  return {
-    products,
-    byId: new Map(products.map((p) => [p.id, p])),
-    byCategory: groupByCategory(products),
-  };
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const byCategory = {} as Record<CategorySlug, Product[]>;
+  for (const slug of Object.keys(registryCatalog.byCategory) as CategorySlug[]) {
+    byCategory[slug] = products.filter((p) => p.category === slug);
+  }
+  return { products, byId, byCategory };
 }
 
 /**
