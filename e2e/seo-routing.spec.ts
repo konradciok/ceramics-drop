@@ -27,7 +27,9 @@ test.describe('SEO routing contract @ci', () => {
 
     for (const { label, path } of cases) {
       test(label, async ({ request }) => {
-        const response = await request.get(path);
+        // maxRedirects: 0 — APIRequestContext follows redirects by default
+        // (up to 20), which would mask a case that only 404s indirectly.
+        const response = await request.get(path, { maxRedirects: 0 });
         expect(response.status()).toBe(404);
       });
     }

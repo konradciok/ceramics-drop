@@ -118,7 +118,10 @@ test.describe('SEO metadata contract @ci', () => {
           await page.goto(`${target}${suffix}`, { waitUntil: 'domcontentloaded' });
           const robotsMeta = page.locator('head meta[name="robots"]');
           if (expectNoindex) {
-            await expect(robotsMeta).toHaveAttribute('content', /noindex/);
+            await expect(robotsMeta).toHaveAttribute(
+              'content',
+              /(?=.*\bnoindex\b)(?=.*\bnofollow\b)/,
+            );
           } else {
             await expect(robotsMeta).toHaveCount(0);
           }
