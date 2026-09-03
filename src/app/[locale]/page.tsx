@@ -21,6 +21,7 @@ import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } f
 import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
+import { previewRobots } from '@/lib/seo/robots';
 import type { Locale } from '@/i18n/routing';
 import { requireLocale } from '@/i18n/locale-guard';
 import { EMAIL } from '@/lib/email-addresses';
@@ -85,10 +86,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
-    // Any ?preview= URL is an admin-only draft view — never indexable, even
-    // if the token is invalid (the body would just fall back to published copy),
-    // and even if Next.js delivered it as an array (repeated ?preview= keys).
-    robots: previewParam !== undefined ? { index: false, follow: false } : undefined,
+    robots: previewRobots(previewParam),
   };
 }
 

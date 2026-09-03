@@ -8,6 +8,7 @@ import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { printProductSchema, productSchema } from '@/lib/seo/structured-data';
 import { productAlternates } from '@/lib/seo/urls';
+import { previewRobots } from '@/lib/seo/robots';
 import { SITE_URL } from '@/lib/site';
 import { ProductPageScreen } from '@/components/shop/ProductPageScreen';
 import { PrintProductScreen } from '@/components/shop/PrintProductScreen';
@@ -26,16 +27,15 @@ const PRINT_SLUG = 'fine-art-prints';
 
 type Props = {
   params: Promise<{ locale: string; slug: string; id: string }>;
-  searchParams?: Promise<{ preview?: string }>;
+  searchParams?: Promise<{ preview?: string | string[] }>;
 };
 
 /** Builds `<title>`, `<meta description>`, hreflang alternates, and OG image for a product page. */
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { locale, slug, id } = await params;
-  const preview = (await searchParams)?.preview;
-  // Any ?preview= URL is an admin-only draft view — never indexable, even if the
-  // token is invalid (the body would just fall back to published copy).
-  const robots = preview ? { index: false, follow: false } : undefined;
+  const previewParam = (await searchParams)?.preview;
+  const previewToken = typeof previewParam === 'string' ? previewParam : undefined;
+  const robots = previewRobots(previewParam);
 
   if (slug === PRINT_SLUG) {
     const design = await getPrintById(id);
@@ -45,7 +45,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     const displayName = `${singular} Nº ${design.num}`;
     const rawNotes = t.raw(`notes.${PRINT_SLUG}`) as unknown;
     const fallbackDescription = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
-    const description = await getProductNote(PRINT_SLUG, locale as Locale, design.id, preview).catch(() => fallbackDescription);
+    const description = await getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken).catch(() => fallbackDescription);
     return {
       title: displayName,
       description,
@@ -69,7 +69,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const fallbackDescription = Array.isArray(rawNotes)
     ? ((rawNotes[product.noteIndex] as string) ?? '')
     : '';
-  const note = await getProductNote(product.category, locale as Locale, product.id, preview).catch(() => fallbackDescription);
+  const note = await getProductNote(product.category, locale as Locale, product.id, previewToken).catch(() => fallbackDescription);
   // DB SEO overrides (db mode, when set) win over the derived title / CMS note.
   const description = product.seoDescription ?? note;
 
@@ -87,7 +87,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 /** Product detail page — server-rendered with force-dynamic so live sold state is always fresh. */
 export default async function Page({ params, searchParams }: Props) {
   const { locale, slug, id } = await params;
-  const preview = (await searchParams)?.preview;
+  const previewParam = (await searchParams)?.preview;
+  const previewToken = typeof previewParam === 'string' ? previewParam : undefined;
   setRequestLocale(locale);
 
   if (slug === PRINT_SLUG) {
@@ -95,7 +96,7 @@ export default async function Page({ params, searchParams }: Props) {
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const [note, coverage, pricing, pdpContent] = await Promise.all([
-      getProductNote(PRINT_SLUG, locale as Locale, design.id, preview),
+      getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken),
       readWithFallback<PrintAssetCoverage | null>(
         'printAssetCoverage',
         () => getPrintAssetCoverage(design.id),
@@ -103,7 +104,7 @@ export default async function Page({ params, searchParams }: Props) {
         { locale, id },
       ),
       getPrintPricingConfig(),
-      getPrintPdpContent(locale as Locale, preview),
+      getPrintPdpContent(locale as Locale, previewToken),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
@@ -142,7 +143,7 @@ export default async function Page({ params, searchParams }: Props) {
 
   const withSold = soldIds.includes(base.id) ? { ...base, sold: true } : base;
   const product = showroomIds.includes(base.id) ? { ...withSold, showroom: true } : withSold;
-  const note = await getProductNote(product.category, locale as Locale, product.id, preview);
+  const note = await getProductNote(product.category, locale as Locale, product.id, previewToken);
 
   return (
     <main>
