@@ -15,10 +15,11 @@
         noteIndex per category. Stable ids survive; only num/category
         change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
+import * as Sentry from '@sentry/nextjs';
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
-import { readWithFallback } from './supabase-timeout';
+import { recordCeramicCatalogSuccess, resolveCeramicCatalogFallback } from './catalog/last-known-good';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -307,7 +308,7 @@ export function registryResolveCartProducts(ids: string[]): Product[] {
    same logic. The db branch is a DYNAMIC import so the Cloudflare-only DB code
    never loads in node/tests under the default 'code' flag, and to avoid a
    static import cycle (load → repository → seed → products). */
-type CeramicCatalog = {
+export type CeramicCatalog = {
   products: Product[];
   byId: Map<string, Product>;
   byCategory: Record<CategorySlug, Product[]>;
@@ -331,17 +332,43 @@ const REGISTRY_CATALOG: CeramicCatalog = {
 
 async function loadCeramicCatalog(): Promise<CeramicCatalog> {
   if (catalogSource() === 'code') return REGISTRY_CATALOG;
-  // Resilience default (Stage 4a): a DB read failure (including a bounded
-  // Supabase timeout — see supabase-timeout.ts) degrades to the code registry
-  // — identical to the DB at parity — rather than 500-ing every storefront
-  // surface + checkout. The blip is logged + reported to Sentry; edits
-  // reappear once the DB recovers. (Trade-off: a non-active product briefly
-  // reappears during an outage. Reversible to fail-loud by rethrowing here.)
-  return readWithFallback('ceramic-catalog', async () => {
+  // Resilience default: a DB read failure (including a bounded Supabase
+  // timeout — see supabase-timeout.ts) degrades first to this isolate's
+  // last-known-good catalog (real DB data, so status/draft/hidden/archived
+  // carries through exactly) rather than the bare code registry, which has
+  // no non-active status to fall back on and would silently re-publish a
+  // withdrawn product (SEO-003). Only a cold isolate that has never served a
+  // successful DB read yet falls back further, to a fail-closed projection
+  // (nothing public) — see src/lib/catalog/last-known-good.ts. The blip is
+  // logged + reported to Sentry, tagged by which tier served; a real edit
+  // reappears once the DB recovers. Reversible to fail-loud by rethrowing.
+  //
+  // Deliberately NOT using the generic readWithFallback() helper here: its
+  // `fallback` argument is evaluated eagerly, before the DB read is even
+  // attempted. A concurrent request on this isolate can record a fresher
+  // last-known-good catalog while THIS read is still in flight — resolving
+  // the fallback up front would ignore that and serve a stale (possibly
+  // cold-fail-closed) tier even though a better one is available by the time
+  // this read actually fails. Resolving inside the catch, after the read has
+  // settled, always reflects the freshest state.
+  try {
     const { loadCeramicProductsFromDb } = await import('./catalog/load');
     const products = await loadCeramicProductsFromDb();
-    return { products, byId: new Map(products.map((p) => [p.id, p])), byCategory: groupByCategory(products) };
-  }, REGISTRY_CATALOG);
+    const catalog: CeramicCatalog = {
+      products,
+      byId: new Map(products.map((p) => [p.id, p])),
+      byCategory: groupByCategory(products),
+    };
+    recordCeramicCatalogSuccess(catalog);
+    return catalog;
+  } catch (err) {
+    const { catalog, tier } = resolveCeramicCatalogFallback(REGISTRY_CATALOG);
+    console.error('[ceramic-catalog] DB read failed; using fallback', { fallbackTier: tier }, err);
+    // fallbackTier as a tag (not `extra`) so the two tiers are filterable in
+    // Sentry, distinct from a generic Supabase hiccup.
+    Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
+    return catalog;
+  }
 }
 
 /**

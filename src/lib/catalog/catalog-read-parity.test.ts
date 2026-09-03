@@ -1,15 +1,23 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import * as Sentry from '@sentry/nextjs';
 import {
   getProducts,
   getPublicProducts,
   getProductById,
   getProductsByCategory,
+  isProductPublic,
   registryProducts,
+  type CeramicCatalog,
 } from '../products';
 import { getPrintById, getPrintDesigns, registryPrintDesigns } from '../prints';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
+import { recordCeramicCatalogSuccess, resetLastKnownGoodForTests } from './last-known-good';
+
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
 
 /**
  * Accessor-level parity gate for the Stage 3b flip: repository ordering and the
@@ -72,6 +80,12 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
   const dbPrints = mapPrintDesigns(seed.products, seed.variants, seed.media);
   const original = process.env.CATALOG_SOURCE;
 
+  beforeEach(() => {
+    // Each test starts as a "cold" isolate — no prior successful DB read —
+    // so last-known-good state never leaks across tests in this file.
+    resetLastKnownGoodForTests();
+  });
+
   afterEach(() => {
     if (original === undefined) delete process.env.CATALOG_SOURCE;
     else process.env.CATALOG_SOURCE = original;
@@ -107,16 +121,110 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     expect(publicIds.has('k04')).toBe(true);
   });
 
-  it('falls back to the code registry when the ceramic DB read fails (no throw)', async () => {
-    process.env.CATALOG_SOURCE = 'db';
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+  describe('DB failure — last-known-good / fail-closed public projection (SEO-003)', () => {
+    it('warm isolate, DB throws: serves last-known-good — draft stays withdrawn, sold/showroom stays public', async () => {
+      process.env.CATALOG_SOURCE = 'db';
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Storefront stays up on the registry instead of throwing.
-    expect(await getProducts()).toEqual(registryProducts());
-    expect((await getProductById('k01'))?.id).toBe('k01');
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+      // Warm the isolate: this "last successful" DB read has k01 as draft and
+      // k04 already sold (sold pieces are still public, just not purchasable).
+      const warmed = dbCeramics.map((p) => {
+        if (p.id === 'k01') return { ...p, status: 'draft' as const };
+        if (p.id === 'k04') return { ...p, sold: true };
+        return p;
+      });
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(warmed);
+      await getProducts(); // records last-known-good
+
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+      const publicIds = new Set((await getPublicProducts()).map((p) => p.id));
+      expect(publicIds.has('k01')).toBe(false); // draft in the last-known-good stays withdrawn
+      expect(publicIds.has('k04')).toBe(true); // sold piece stays public (not purchasable elsewhere)
+      expect((await getProductById('k01'))?.status).toBe('draft');
+      expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
+    });
+
+    it('warm isolate, DB times out: serves last-known-good on a timeout, not just a thrown error', async () => {
+      process.env.CATALOG_SOURCE = 'db';
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(dbCeramics);
+      await getProducts(); // records last-known-good
+
+      // AbortSignal.timeout() rejects with a DOMException named 'TimeoutError'.
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(
+        new DOMException('The operation timed out.', 'TimeoutError'),
+      );
+      expect(await getProducts()).toEqual(dbCeramics);
+    });
+
+    it('cold isolate, DB throws: fails closed — nothing public, PDP guard 404s', async () => {
+      process.env.CATALOG_SOURCE = 'db';
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+
+      expect(await getPublicProducts()).toEqual([]);
+      expect(await getProductsByCategory('kubki')).toEqual([]);
+      const k01 = await getProductById('k01');
+      expect(k01).toBeDefined();
+      expect(isProductPublic(k01!)).toBe(false); // the real PDP route 404s on this
+    });
+
+    it('tags (not just extras) the Sentry report with the fallback tier actually served', async () => {
+      process.env.CATALOG_SOURCE = 'db';
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+      await getProducts(); // cold isolate → cold-fail-closed
+      expect(Sentry.captureException).toHaveBeenLastCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ tags: expect.objectContaining({ fallbackTier: 'cold-fail-closed' }) }),
+      );
+
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValueOnce(dbCeramics);
+      await getProducts(); // warms the isolate
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down again'));
+      await getProducts(); // warm isolate → last-known-good
+      expect(Sentry.captureException).toHaveBeenLastCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ tags: expect.objectContaining({ fallbackTier: 'last-known-good' }) }),
+      );
+    });
+
+    it('a failing read observes a fresher last-known-good recorded WHILE it was in flight, not the state from when it started', async () => {
+      // Regression for a staleness bug: the fallback used to be resolved
+      // eagerly, before the DB read was even attempted, so a request whose
+      // read later fails could serve the fallback tier that was current when
+      // IT started — even if a concurrent request on the same isolate
+      // recorded a fresher last-known-good in the meantime. Resolution must
+      // happen lazily, inside the catch, so it always reflects the freshest
+      // state at the moment the read actually fails.
+      process.env.CATALOG_SOURCE = 'db';
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const freshCatalog: CeramicCatalog = {
+        products: dbCeramics,
+        byId: new Map(dbCeramics.map((p) => [p.id, p])),
+        byCategory: dbCeramics.reduce((acc, p) => {
+          (acc[p.category] ??= []).push(p);
+          return acc;
+        }, {} as CeramicCatalog['byCategory']),
+      };
+
+      // Cold at the moment this read starts. Before it fails, simulate a
+      // concurrent request recording a fresher last-known-good — deterministic
+      // (no real cross-request scheduling needed) because it runs as part of
+      // this same call's own promise chain, strictly before the throw.
+      vi.mocked(loadCeramicProductsFromDb).mockImplementationOnce(() =>
+        Promise.resolve().then(() => {
+          recordCeramicCatalogSuccess(freshCatalog);
+          throw new Error('supabase down');
+        }),
+      );
+
+      expect(await getProducts()).toEqual(dbCeramics); // NOT a cold-fail-closed projection
+    });
   });
 
   it('getPrintDesigns()/getPrintById() deep-equal the registry via the DB path', async () => {
