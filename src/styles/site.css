@@ -223,10 +223,13 @@ ul { list-style:none; padding:0; margin:0; }
   overscroll-behavior-x:contain; scrollbar-width:none;
 }
 .prints-home-grid::-webkit-scrollbar { display:none; }
-.prints-home-card { flex:none; width:min(60vw,220px); display:flex; flex-direction:column; gap:10px; scroll-snap-align:start; }
+/* Base card layout — shared by the scrolling rail and the (non-scrolling)
+   print-collections-grid, which must NOT inherit the rail's fixed width. */
+.prints-home-card { display:flex; flex-direction:column; gap:10px; }
+.prints-home-grid .prints-home-card { flex:none; width:min(60vw,220px); scroll-snap-align:start; }
 @media (min-width:861px) {
   .prints-home-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:24px; overflow:visible; margin:0; padding:0; scroll-snap-type:none; }
-  .prints-home-card { width:auto; }
+  .prints-home-grid .prints-home-card { width:auto; }
 }
 .prints-home-card img {
   width:100%; height:auto; display:block; border-radius:var(--r-sharp);

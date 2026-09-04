@@ -30,15 +30,15 @@ test('@ci hero CTA is in the first viewport before scroll (mobile + desktop)', a
   }
 });
 
-test('@ci hero beat caption renders and is visible under reduced motion', async ({ page }) => {
+test('@ci homepage print rail heading renders and is visible under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await expect(page.locator('.hero-beat-cap')).toBeVisible();
+  await expect(page.locator('.prints-home .section-title')).toBeVisible();
 });
 
-test('@ci hero beat renders 5 print tiles linking to print PDPs', async ({ page }) => {
+test('@ci homepage print rail renders 5 daily-rotated tiles linking to print PDPs', async ({ page }) => {
   await page.goto('/');
-  const tiles = page.locator('.hero-beat .prints-home-card');
+  const tiles = page.locator('.prints-home .prints-home-card');
   await expect(tiles).toHaveCount(5);
   await expect(tiles.first()).toHaveAttribute('href', /fine-art-prints\//);
 });
