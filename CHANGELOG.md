@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.15.0](https://github.com/konradciok/ceramics-drop/compare/v0.14.0...v0.15.0) (2026-09-04)
+
+
+### Features
+
+* **admin:** mark pieces sold/available from the inventory screen ([d638aca](https://github.com/konradciok/ceramics-drop/commit/d638aca58c829005724ac0e7b92994358d612643))
+* **admin:** mark pieces sold/available from the inventory screen ([1433bcb](https://github.com/konradciok/ceramics-drop/commit/1433bcb44a448ce166708c6bab7d75ff21efda1a))
+* curate and guard the fine art print catalog ([af0137b](https://github.com/konradciok/ceramics-drop/commit/af0137b39d5d69e82dac2ebde59a35496fd71005))
+* curate fine art print collections ([52b0406](https://github.com/konradciok/ceramics-drop/commit/52b0406e7fbdabb1a0fd7c0f25c3c35e273b7e3d))
+* derive print numbering from curation map ([7fe99af](https://github.com/konradciok/ceramics-drop/commit/7fe99af5b2ffbdb8f0fa917e4b57526bc04773a6))
+* **footer:** PSTR-style layout with mobile accordions, social row, payment badges ([#267](https://github.com/konradciok/ceramics-drop/issues/267)) ([38dd01c](https://github.com/konradciok/ceramics-drop/commit/38dd01ce23807a5baa2af547a8071cc09103bb22))
+* **home:** hero-beat shows 5 daily-rotated print tiles ([#265](https://github.com/konradciok/ceramics-drop/issues/265)) ([d5e9421](https://github.com/konradciok/ceramics-drop/commit/d5e9421bba6291dfbbd18be91634c79d0d776777))
+* **home:** PSTR-style full-bleed CMS-managed homepage hero ([#263](https://github.com/konradciok/ceramics-drop/issues/263)) ([5ebcd84](https://github.com/konradciok/ceramics-drop/commit/5ebcd840bb31565a3dd6963899d58eb788ec860c))
+* **home:** redesign homepage as print-first ([#291](https://github.com/konradciok/ceramics-drop/issues/291)) ([29465ca](https://github.com/konradciok/ceramics-drop/commit/29465ca4926ff736015aaadc490652521bb2407f))
+* **home:** retell the homepage as one studio, two media ([afe8305](https://github.com/konradciok/ceramics-drop/commit/afe830597fadac0d8fff32132b799444c649c40a))
+* **home:** retell the homepage as one studio, two media ([80ed53d](https://github.com/konradciok/ceramics-drop/commit/80ed53dfc6bc96c0828d4357cadc8539e0379348))
+* project print curation into catalog ([7fe7b70](https://github.com/konradciok/ceramics-drop/commit/7fe7b707d269782390b00ceb769f4386aa3d10aa))
+* promo codes across both checkout tracks ([#270](https://github.com/konradciok/ceramics-drop/issues/270)) ([08c1f46](https://github.com/konradciok/ceramics-drop/commit/08c1f4662ede53c24bdb2f7dc1a54cb0df7fbe23))
+* **shop:** add gift card product, purchase flow, and redemption ([#290](https://github.com/konradciok/ceramics-drop/issues/290)) ([6447559](https://github.com/konradciok/ceramics-drop/commit/644755974276f68f3913a3e797c67f942d52acbd))
+
+
+### Bug Fixes
+
+* address CodeRabbit review feedback ([#268](https://github.com/konradciok/ceramics-drop/issues/268)) ([2816f0b](https://github.com/konradciok/ceramics-drop/commit/2816f0bd78b701b74caa45d87a4f14c822c16875))
+* **admin:** reject non-boolean sold in set-piece-status ([77c0496](https://github.com/konradciok/ceramics-drop/commit/77c049614948641a77b016b2d8e98dfe040b938c))
+* **admin:** stop hero editor staying dirty after a media save ([#264](https://github.com/konradciok/ceramics-drop/issues/264)) ([3be3600](https://github.com/konradciok/ceramics-drop/commit/3be3600d59c23943ef789c69d17e24644d3b5003))
+* **catalog:** bound every Supabase read in the PDP hot path with a timeout ([#272](https://github.com/konradciok/ceramics-drop/issues/272)) ([c5a0370](https://github.com/konradciok/ceramics-drop/commit/c5a03700fdfef13923b8fd60df15af0dde433802))
+* close print rollout cache and activation gaps ([87ae714](https://github.com/konradciok/ceramics-drop/commit/87ae714fbd1d26e79f3e8a87167ad962774d1ccd))
+* **cms:** read product notes leniently so a retired design never blanks a category ([#275](https://github.com/konradciok/ceramics-drop/issues/275)) ([a9e6a2e](https://github.com/konradciok/ceramics-drop/commit/a9e6a2ec32ffa7c503fcaf8849d49e6e0df45622))
+* gate final OpenNext catalog artifacts ([56993f3](https://github.com/konradciok/ceramics-drop/commit/56993f35d0497b30541b4e6a4935a49c45e7bc4e))
+* guard print curation rollout ([f1177a7](https://github.com/konradciok/ceramics-drop/commit/f1177a7994f8d083b53dc27281d32eedf0793e05))
+* **home:** address PR review feedback ([#262](https://github.com/konradciok/ceramics-drop/issues/262)) ([39471ef](https://github.com/konradciok/ceramics-drop/commit/39471ef4ba31ee995b948fdf645072dbc6b074c5))
+* **invoice:** key print invoice items by design + SKU, skip lines a draft already holds ([#274](https://github.com/konradciok/ceramics-drop/issues/274)) ([eb949ad](https://github.com/konradciok/ceramics-drop/commit/eb949ad201237bf44e2449cfbab2f7d01217e914))
+* keep catalog reads live and backfills atomic ([947dfcb](https://github.com/konradciok/ceramics-drop/commit/947dfcb60763027b9bb088976bd35f5c0d2ca890))
+* **prints:** real localized print descriptions + docs status sweep ([196ffa1](https://github.com/konradciok/ceramics-drop/commit/196ffa1e0a8de467f5088b303a89074ccc867a54))
+* **prints:** replace placeholder print descriptions with real localized copy ([811482d](https://github.com/konradciok/ceramics-drop/commit/811482db9e5ce5c048b188eef918758b33af33c4))
+* **prints:** show print-tile captions below the image ([967e6cd](https://github.com/konradciok/ceramics-drop/commit/967e6cd2f73f45fdd2867d10890e35ff486ad11f))
+* reject template catalog prerenders ([4c219eb](https://github.com/konradciok/ceramics-drop/commit/4c219ebd26f567bfe71027a43e7df364d9ed77be))
+* **sentry:** 404 junk locale segments on the homepage, mute in-app browser noise, stop dev reporting ([#276](https://github.com/konradciok/ceramics-drop/issues/276)) ([91d400c](https://github.com/konradciok/ceramics-drop/commit/91d400cb47b3bd7f0991908d1333c153f8f7ccc5))
+* **seo:** enforce homepage hero upload budgets server-side (SEO-006) ([#288](https://github.com/konradciok/ceramics-drop/issues/288)) ([2341f0b](https://github.com/konradciok/ceramics-drop/commit/2341f0b29c8077af16c9d2429d605a68f38326e1))
+* **seo:** fail-closed catalog visibility on Supabase outage (SEO-003) ([#287](https://github.com/konradciok/ceramics-drop/issues/287)) ([919b405](https://github.com/konradciok/ceramics-drop/commit/919b405b561d5d347646300bf149b4834890bf8e))
+* **seo:** give /fine-art-prints, /sklep and /showroom their own OG images ([#279](https://github.com/konradciok/ceramics-drop/issues/279)) ([b5315d1](https://github.com/konradciok/ceramics-drop/commit/b5315d11c959dcadfdd447ecaa03a1e0dafebb9f))
+* **seo:** noindex empty ?preview= on product pages (P0-03/SEO-004) ([#283](https://github.com/konradciok/ceramics-drop/issues/283)) ([7eb5b9e](https://github.com/konradciok/ceramics-drop/commit/7eb5b9e0035d6eaf6cd7739d042ec3f9a49f3cc1))
+* **seo:** redirect legacy Shopify URLs to their current equivalent ([#280](https://github.com/konradciok/ceramics-drop/issues/280)) ([38b56ef](https://github.com/konradciok/ceramics-drop/commit/38b56effe3afdfe80b99aca5351b26a738a7d18b))
+* **seo:** reserve print-tile box to stop fine-art-prints CLS ([#278](https://github.com/konradciok/ceramics-drop/issues/278)) ([436c6c1](https://github.com/konradciok/ceramics-drop/commit/436c6c1982f68d9c9cac6649ecf867a3c8571476))
+* validate exact fine art curation invariants ([f1cb602](https://github.com/konradciok/ceramics-drop/commit/f1cb602115d6da1656f51a52bdf0584ffab81b48))
+
 ## [0.14.0](https://github.com/konradciok/ceramics-drop/compare/v0.13.0...v0.14.0) (2026-08-20)
 
 
