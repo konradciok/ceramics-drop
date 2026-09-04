@@ -81,7 +81,8 @@
     "sklep": "Todas las piezas",
     "showroom": "Showroom",
     "gallery": "Galería",
-    "fineArtPrints": "Impresiones artísticas"
+    "fineArtPrints": "Impresiones artísticas",
+    "giftCard": "Tarjeta regalo"
   },
   "nav": {
     "sklep": "Tienda",
@@ -945,6 +946,7 @@
     "regulamin": "Condiciones de la tienda Anna Ciok Ceramics: pedido, pago, envío y devoluciones de cerámica pintada a mano, en lenguaje claro.",
     "polityka": "Política de privacidad de Anna Ciok Ceramics: qué datos recogemos al comprar, para qué sirven y cuánto tiempo se conservan.",
     "dostawa": "Envíos de Anna Ciok Ceramics: coste, plazo de entrega, embalaje protector y la política de devolución de 14 días.",
+    "giftCard": "Compra una tarjeta regalo para el taller de Anna Ciok — cualquier importe para gastar en cerámica, con el código enviado por email justo después de la compra.",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 29 piezas irrepetibles del drop de junio de Anna Ciok.",
       "wazony": "Jarrones pequeños de cerámica pintados a mano. Nueve piezas panzudas y únicas del drop de junio de Anna Ciok.",
@@ -1024,5 +1026,43 @@
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
     "accordionShipping": "Nuestro socio Prodigi produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
+  },
+  "giftCard": {
+    "eyebrow": "Regalo",
+    "h1": "Regala <em>la elección</em>",
+    "lead": "Cada taza, jarrón y cuenco de este taller se hace una sola vez — y nunca se repite. Con la tarjeta regalo, la persona a la que quieres puede elegir su propia pieza única de cerámica de Anna Ciok.",
+    "cardLabel": "Tarjeta regalo",
+    "cardValidity": "Válida en toda la tienda",
+    "amountEyebrow": "Elige un importe",
+    "amountTitle": "Valor de la tarjeta",
+    "tier1Label": "Un bonito inicio",
+    "tier2Label": "Un gesto generoso",
+    "tier3Label": "Una elección espléndida",
+    "tier4Label": "El sueño de un coleccionista",
+    "formTitle": "Cómpralo como regalo",
+    "formSub": "Añade el email de la persona destinataria y el código le llegará directamente — o déjalo en blanco si prefieres entregarlo tú misma/o.",
+    "recipientLabel": "Email de la persona destinataria (opcional)",
+    "recipientPlaceholder": "nombre@ejemplo.com",
+    "messageLabel": "Un mensaje de tu parte (opcional)",
+    "messagePlaceholder": "Ej. ¡Feliz cumpleaños! Elige algo solo para ti del taller de Anna Ciok.",
+    "addToCart": "Añadir al carrito",
+    "deliveryNote": "El código llega por email justo después de la compra — sin envío, sin espera.",
+    "comingSoon": "La compra online de la tarjeta regalo estará disponible muy pronto. ¿Quieres una ya? <link>Escríbenos</link>.",
+    "stepsEyebrow": "Cómo funciona",
+    "stepsTitle": "Tres pasos sencillos",
+    "step1H": "Elige un importe",
+    "step1P": "Elige el valor de la tarjeta y, si quieres, añade un breve mensaje para la persona destinataria.",
+    "step2H": "El código llega por email",
+    "step2P": "Justo después de la compra enviamos un código de regalo único — a ti, o directamente a la persona destinataria.",
+    "step3H": "Elige su cerámica",
+    "step3P": "El código se puede usar en cualquier compra de cerámica de la tienda, hasta agotar su importe.",
+    "detailsEyebrow": "Detalles",
+    "detailsTitle": "Bueno saber",
+    "accValidityTitle": "Validez de la tarjeta",
+    "accValidityBody": "La tarjeta regalo es válida durante 12 meses desde la fecha de compra. Estamos terminando de definir los detalles — esta información puede cambiar.",
+    "accHowToTitle": "Cómo usar el código",
+    "accHowToBody": "Al finalizar tu pedido, introduce el código en el campo «Código promocional» del carrito. Estamos terminando de definir los detalles — esta información puede cambiar.",
+    "accReturnsTitle": "Devoluciones y cambios",
+    "accReturnsBody": "Las tarjetas regalo, por lo general, no admiten devolución ni se pueden cambiar por dinero en efectivo. Estamos terminando de definir los detalles — esta información puede cambiar."
   }
 }

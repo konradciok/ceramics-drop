@@ -81,7 +81,8 @@
     "sklep": "Alle Stücke",
     "showroom": "Showroom",
     "gallery": "Galerie",
-    "fineArtPrints": "Kunstdrucke"
+    "fineArtPrints": "Kunstdrucke",
+    "giftCard": "Geschenkkarte"
   },
   "nav": {
     "sklep": "Shop",
@@ -945,6 +946,7 @@
     "regulamin": "AGB von Anna Ciok Ceramics: Bestellung, Zahlung, Versand und Rückgabe handbemalter Keramik, verständlich erklärt.",
     "polityka": "Datenschutz bei Anna Ciok Ceramics: welche Daten wir beim Kauf erheben, wofür sie genutzt werden und wie lange wir sie speichern.",
     "dostawa": "Versand bei Anna Ciok Ceramics: Kosten, Lieferzeit, schützende Verpackung und die 14-tägige Rückgaberegelung.",
+    "giftCard": "Kaufe eine Geschenkkarte für das Atelier von Anna Ciok — jeder Betrag einlösbar für Keramik, der Code kommt sofort nach dem Kauf per E-Mail.",
     "collections": {
       "kubki": "Handbemalte Keramiktassen, 300 ml — jede ein Unikat. 28 einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "wazony": "Kleine handbemalte Keramikvasen. Neun bauchige, einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
@@ -1024,5 +1026,43 @@
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
     "accordionShipping": "Unser Partner Prodigi produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
+  },
+  "giftCard": {
+    "eyebrow": "Geschenk",
+    "h1": "Schenke <em>die Wahl</em>",
+    "lead": "Jede Tasse, Vase und Schale in diesem Atelier entsteht nur einmal — und nie wieder. Mit der Geschenkkarte gibst du einer geliebten Person die Freiheit, ihr eigenes, einzigartiges Stück Keramik von Anna Ciok auszuwählen.",
+    "cardLabel": "Geschenkkarte",
+    "cardValidity": "Gültig im gesamten Shop",
+    "amountEyebrow": "Betrag wählen",
+    "amountTitle": "Kartenwert",
+    "tier1Label": "Ein schöner Anfang",
+    "tier2Label": "Eine großzügige Geste",
+    "tier3Label": "Eine großzügige Wahl",
+    "tier4Label": "Ein Sammlertraum",
+    "formTitle": "Als Geschenk kaufen",
+    "formSub": "Gib die E-Mail-Adresse der Empfängerin oder des Empfängers ein, dann geht der Code direkt an sie — oder lass das Feld leer, wenn du ihn selbst weitergeben möchtest.",
+    "recipientLabel": "E-Mail der Empfängerin/des Empfängers (optional)",
+    "recipientPlaceholder": "name@beispiel.de",
+    "messageLabel": "Eine Nachricht von dir (optional)",
+    "messagePlaceholder": "Z. B. Alles Gute! Such dir etwas nur für dich aus dem Atelier von Anna Ciok aus.",
+    "addToCart": "In den Warenkorb",
+    "deliveryNote": "Der Code kommt sofort nach dem Kauf per E-Mail — ohne Versand, ohne Wartezeit.",
+    "comingSoon": "Der Online-Kauf der Geschenkkarte ist bald verfügbar. Möchtest du jetzt schon eine? <link>Schreib uns</link>.",
+    "stepsEyebrow": "So funktioniert es",
+    "stepsTitle": "Drei einfache Schritte",
+    "step1H": "Betrag wählen",
+    "step1P": "Wähle einen Kartenwert und füge, wenn du möchtest, eine kurze Nachricht für die beschenkte Person hinzu.",
+    "step2H": "Der Code kommt per E-Mail",
+    "step2P": "Direkt nach dem Kauf senden wir einen einzigartigen Geschenkcode — an dich oder direkt an die Empfängerin bzw. den Empfänger.",
+    "step3H": "Die Keramik wird ausgewählt",
+    "step3P": "Der Code kann für den Kauf beliebiger Keramik im Shop eingelöst werden, bis der Betrag aufgebraucht ist.",
+    "detailsEyebrow": "Details",
+    "detailsTitle": "Gut zu wissen",
+    "accValidityTitle": "Gültigkeit der Karte",
+    "accValidityBody": "Die Geschenkkarte ist 12 Monate ab Kaufdatum gültig. Wir arbeiten die Details noch aus — diese Information kann sich noch ändern.",
+    "accHowToTitle": "So wird der Code eingelöst",
+    "accHowToBody": "Gib beim Bestellvorgang den Code im Feld „Rabattcode“ im Warenkorb ein. Wir arbeiten die Details noch aus — diese Information kann sich noch ändern.",
+    "accReturnsTitle": "Rückgabe und Umtausch",
+    "accReturnsBody": "Geschenkkarten sind in der Regel von Rückgabe und Barauszahlung ausgeschlossen. Wir arbeiten die Details noch aus — diese Information kann sich noch ändern."
   }
 }

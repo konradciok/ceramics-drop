@@ -81,7 +81,8 @@
     "sklep": "Wszystkie prace",
     "showroom": "Showroom",
     "gallery": "Galeria",
-    "fineArtPrints": "Grafiki artystyczne"
+    "fineArtPrints": "Grafiki artystyczne",
+    "giftCard": "Karta podarunkowa"
   },
   "nav": {
     "sklep": "Sklep",
@@ -945,6 +946,7 @@
     "regulamin": "Regulamin sklepu Anna Ciok Ceramics — zamówienie, płatność, dostawa i zwroty ręcznie malowanej ceramiki, jasnym językiem.",
     "polityka": "Polityka prywatności Anna Ciok Ceramics: jakie dane zbieramy przy zakupie, do czego służą i jak długo je przechowujemy.",
     "dostawa": "Dostawa ceramiki Anna Ciok Ceramics: koszt i czas wysyłki, pakowanie na bezpieczny transport oraz zasady 14-dniowego zwrotu.",
+    "giftCard": "Kup kartę podarunkową do pracowni Anny Ciok — dowolna kwota do wykorzystania na ceramikę, kod wysyłany e-mailem od razu po zakupie.",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
@@ -1024,5 +1026,43 @@
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "accordionShipping": "Druk i wysyłkę realizuje nasz partner Prodigi w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+  },
+  "giftCard": {
+    "eyebrow": "Prezent",
+    "h1": "Podaruj <em>wybór</em>",
+    "lead": "Każdy kubek, waza i miska w tej pracowni powstaje raz — i nigdy się nie powtarza. Kartą podarunkową dajesz bliskiej osobie wolność wybrania własnego, jedynego w swoim rodzaju kawałka ceramiki Anny Ciok.",
+    "cardLabel": "Karta podarunkowa",
+    "cardValidity": "Ważna w całym sklepie",
+    "amountEyebrow": "Wybierz kwotę",
+    "amountTitle": "Nominał karty",
+    "tier1Label": "Na dobry początek",
+    "tier2Label": "Piękny gest",
+    "tier3Label": "Hojny wybór",
+    "tier4Label": "Kolekcjonerskie marzenie",
+    "formTitle": "Kup w prezencie",
+    "formSub": "Wpisz e-mail odbiorcy, a kod trafi prosto do niego — albo zostaw puste, jeśli chcesz przekazać go sam.",
+    "recipientLabel": "E-mail odbiorcy (opcjonalnie)",
+    "recipientPlaceholder": "imie@przyklad.pl",
+    "messageLabel": "Wiadomość od Ciebie (opcjonalnie)",
+    "messagePlaceholder": "Np. Wszystkiego najlepszego! Wybierz coś tylko dla siebie z pracowni Anny Ciok.",
+    "addToCart": "Dodaj do koszyka",
+    "deliveryNote": "Kod otrzymasz e-mailem natychmiast po zakupie — bez przesyłki, bez czekania.",
+    "comingSoon": "Zakup online karty podarunkowej będzie dostępny wkrótce. Chcesz kupić już teraz? <link>Napisz do nas</link>.",
+    "stepsEyebrow": "Jak to działa",
+    "stepsTitle": "Trzy proste kroki",
+    "step1H": "Wybierz kwotę",
+    "step1P": "Wybierz nominał karty i, jeśli chcesz, dodaj krótką wiadomość dla obdarowanej osoby.",
+    "step2H": "Kod trafia na e-mail",
+    "step2P": "Zaraz po zakupie wysyłamy unikalny kod podarunkowy — do Ciebie albo prosto do odbiorcy.",
+    "step3H": "Wybiera się ceramika",
+    "step3P": "Kod można wykorzystać przy zakupie dowolnej ceramiki w sklepie, do wyczerpania kwoty.",
+    "detailsEyebrow": "Szczegóły",
+    "detailsTitle": "Warto wiedzieć",
+    "accValidityTitle": "Ważność karty",
+    "accValidityBody": "Karta podarunkowa jest ważna przez 12 miesięcy od daty zakupu. Szczegóły finalizujemy — ta informacja może się jeszcze zmienić.",
+    "accHowToTitle": "Jak wykorzystać kod",
+    "accHowToBody": "Podczas składania zamówienia wpisz kod w polu „Kod rabatowy” w koszyku. Szczegóły finalizujemy — ta informacja może się jeszcze zmienić.",
+    "accReturnsTitle": "Zwroty i wymiana",
+    "accReturnsBody": "Karty podarunkowe zwykle nie podlegają zwrotowi ani wymianie na gotówkę. Szczegóły finalizujemy — ta informacja może się jeszcze zmienić."
   }
 }

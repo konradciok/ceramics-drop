@@ -81,7 +81,8 @@
     "sklep": "All pieces",
     "showroom": "Showroom",
     "gallery": "Gallery",
-    "fineArtPrints": "Fine Art Prints"
+    "fineArtPrints": "Fine Art Prints",
+    "giftCard": "Gift Card"
   },
   "nav": {
     "sklep": "Shop",
@@ -945,6 +946,7 @@
     "regulamin": "Shop terms for Anna Ciok Ceramics — ordering, payment, shipping and returns for hand-painted ceramics, in plain language.",
     "polityka": "Privacy policy for Anna Ciok Ceramics: what data we collect at checkout, what it's used for, and how long we keep it.",
     "dostawa": "Shipping for Anna Ciok Ceramics: cost, delivery time, protective packing, and the 14-day return policy explained.",
+    "giftCard": "Buy a gift card for Anna Ciok's studio — any amount, to spend on ceramics, with the code emailed right after purchase.",
     "collections": {
       "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 29 unique pieces from Anna Ciok's June 2026 drop.",
       "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
@@ -1024,5 +1026,43 @@
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
     "accordionShipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+  },
+  "giftCard": {
+    "eyebrow": "Gift",
+    "h1": "Give the <em>choice</em>",
+    "lead": "Every mug, vase and bowl in this studio is made once — and never repeated. A gift card lets someone you love pick their own, one-of-a-kind piece of Anna Ciok ceramics.",
+    "cardLabel": "Gift card",
+    "cardValidity": "Valid across the whole shop",
+    "amountEyebrow": "Choose an amount",
+    "amountTitle": "Card value",
+    "tier1Label": "A lovely start",
+    "tier2Label": "A generous gift",
+    "tier3Label": "A grand gesture",
+    "tier4Label": "A collector's dream",
+    "formTitle": "Buy it as a gift",
+    "formSub": "Add the recipient's email and the code goes straight to them — or leave it blank if you'd rather pass it on yourself.",
+    "recipientLabel": "Recipient's email (optional)",
+    "recipientPlaceholder": "name@example.com",
+    "messageLabel": "A message from you (optional)",
+    "messagePlaceholder": "E.g. Happy birthday! Pick something just for yourself from Anna Ciok's studio.",
+    "addToCart": "Add to cart",
+    "deliveryNote": "The code arrives by email right after purchase — no shipping, no waiting.",
+    "comingSoon": "Buying a gift card online is coming soon. Want one now? <link>Get in touch</link>.",
+    "stepsEyebrow": "How it works",
+    "stepsTitle": "Three simple steps",
+    "step1H": "Choose an amount",
+    "step1P": "Pick a card value and, if you like, add a short message for the person receiving it.",
+    "step2H": "The code arrives by email",
+    "step2P": "Right after purchase we send a unique gift code — to you, or straight to the recipient.",
+    "step3H": "They pick their ceramics",
+    "step3P": "The code can be used toward any ceramics purchase in the shop, until its value runs out.",
+    "detailsEyebrow": "Details",
+    "detailsTitle": "Good to know",
+    "accValidityTitle": "How long the card is valid",
+    "accValidityBody": "The gift card is valid for 12 months from the date of purchase. We're still finalising the details — this may change.",
+    "accHowToTitle": "How to use the code",
+    "accHowToBody": "Enter the code in the \"Promo code\" field at checkout. We're still finalising the details — this may change.",
+    "accReturnsTitle": "Returns and exchanges",
+    "accReturnsBody": "Gift cards are generally non-refundable and cannot be exchanged for cash. We're still finalising the details — this may change."
   }
 }
