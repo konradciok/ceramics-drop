@@ -1434,6 +1434,38 @@ ul { list-style:none; padding:0; margin:0; }
 .print-paper-note { font-size:15px; line-height:1.55; opacity:.78; margin:10px 0 0; }
 .pdp-body .pay-error { color:var(--c-terracotta); font-size:14px; line-height:1.5; margin:0; }
 
+/* Gift-card PDP — single centered column (no gallery), a small stylized
+   "card" visual above the tier picker + dedicated checkout. */
+.giftcard-panel { max-width:640px; margin:0 auto; }
+.giftcard-hero {
+  aspect-ratio:16/10; border-radius:var(--r-sharp);
+  background:linear-gradient(135deg,var(--c-espresso),var(--c-terracotta-deep));
+  color:var(--c-paper); display:flex; flex-direction:column;
+  justify-content:space-between; padding:clamp(20px,3vw,32px); margin-bottom:32px;
+}
+.giftcard-hero-brand {
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.18em;
+  text-transform:uppercase; opacity:.75;
+}
+.giftcard-hero-label {
+  font-family:var(--f-display); font-weight:300;
+  font-size:clamp(28px,4vw,40px); line-height:1.05;
+}
+.giftcard-config { display:flex; flex-direction:column; gap:14px; margin-bottom:8px; }
+.giftcard-checkout { gap:18px; }
+.giftcard-back {
+  display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--c-espresso); opacity:.6; background:none; border:0; padding:0; cursor:pointer;
+  transition:opacity .2s;
+}
+.giftcard-back:hover:not(:disabled) { opacity:.9; }
+.giftcard-back:disabled { opacity:.3; cursor:not-allowed; }
+.giftcard-back svg { width:14px; height:14px; }
+.giftcard-contact-note { font-size:14px; line-height:1.5; opacity:.75; margin:-6px 0 4px; }
+.giftcard-config .delivery-fields { margin-top:0; }
+.giftcard-config .pay-form { margin-top:4px; }
+
 /* Lightbox permalink link */
 .lb-permalink {
   display:block; text-align:center; margin-top:14px;

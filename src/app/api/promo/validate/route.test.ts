@@ -35,6 +35,8 @@ function mkPromo(overrides: Partial<PromoCode> = {}): PromoCode {
     max_redemptions: null,
     newsletter_welcome: false,
     campaign: null,
+    source: 'admin',
+    source_order_id: null,
     ...overrides,
   };
 }

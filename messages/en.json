@@ -81,7 +81,8 @@
     "sklep": "All pieces",
     "showroom": "Showroom",
     "gallery": "Gallery",
-    "fineArtPrints": "Fine Art Prints"
+    "fineArtPrints": "Fine Art Prints",
+    "giftCard": "Gift Card"
   },
   "nav": {
     "sklep": "Shop",
@@ -99,7 +100,8 @@
     "fineArtPrints": "Fine Art Prints",
     "studio": "Studio",
     "kontakt": "Contact",
-    "konto": "Account"
+    "konto": "Account",
+    "giftCard": "Gift Card"
   },
   "aria": {
     "cart": "Cart",
@@ -127,7 +129,8 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
-    "copy": "© 2026 Anna Ciok — ceramics and painting, every piece by one maker"
+    "copy": "© 2026 Anna Ciok — ceramics and painting, every piece by one maker",
+    "giftCard": "Gift Card"
   },
   "product": {
     "mug": "Mug",
@@ -958,7 +961,8 @@
       "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop.",
       "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
-    }
+    },
+    "giftCard": "Anna Ciok Ceramics gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics or fine-art prints."
   },
   "deliveryNotice": {
     "title": "Delivery information",
@@ -1024,5 +1028,21 @@
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
     "accordionShipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+  },
+  "giftCard": {
+    "eyebrow": "Gift",
+    "h1": "Gift Card",
+    "lead": "Choose an amount and pay online — the code lands in your inbox right after payment. Redeem it for ceramics or fine-art prints on one future order.",
+    "tierLabel": "Card amount",
+    "buy": "Buy gift card",
+    "continueToPayment": "Continue to payment",
+    "back": "Change amount",
+    "contactTitle": "Your details",
+    "contactNote": "We'll email the code to this address as soon as payment is confirmed.",
+    "invalidContact": "Please check your details and try again.",
+    "accordionHowTitle": "How it works",
+    "accordionHowBody": "Pick one of the four amounts and pay online.\n\nRight after payment we email you a unique code — ready to print or forward as a message.\n\nEnter the code in the \"I have a promo code\" field in the cart, on any ceramics or fine-art-print order.",
+    "accordionTermsTitle": "Terms",
+    "accordionTermsBody": "The code is single-use, for one future order. If your cart total is lower than the card's value, the remainder is forfeited — it is not refunded or carried forward to a later purchase.\n\nThe card never expires and can be used for either ceramics or fine-art prints.\n\nGift cards cannot be combined with other promo codes, and a gift card itself cannot be bought together with ceramics or prints in the same order."
   }
 }

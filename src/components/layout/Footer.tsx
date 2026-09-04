@@ -49,6 +49,9 @@ export async function Footer() {
                 <Link href="/gallery">{t('nav.gallery')}</Link>
               </li>
               <li>
+                <Link href="/karta-podarunkowa">{t('footer.giftCard')}</Link>
+              </li>
+              <li>
                 <Link href="/koszyk">{t('footer.koszyk')}</Link>
               </li>
             </ul>

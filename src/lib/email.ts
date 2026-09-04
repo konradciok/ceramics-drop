@@ -7,6 +7,7 @@
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { variantLabel } from './print-cart';
+import { formatGiftCardAmount, type GiftCardTier } from './gift-cards';
 import type { PrintVariantSelection } from './types';
 import {
   RESEND_TEMPLATE_ALIASES,
@@ -227,7 +228,7 @@ export type NewOrderEmailOrder = {
   items: Array<{
     product_id: string;
     unit_price: number;
-    variant?: (PrintVariantSelection & { prodigiSku: string }) | null;
+    variant?: (PrintVariantSelection & { prodigiSku: string }) | { kind: 'giftcard'; tierId: string } | null;
   }>;
 };
 
@@ -268,10 +269,17 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
 
   const itemLines = order.items
     .map((it) => {
-      // Prints add a variant label + SKU so the studio knows exactly what to produce.
-      const label = it.variant
-        ? `${escapeHtml(it.product_id)} · ${escapeHtml(variantLabel(it.variant, 'pl'))} (${escapeHtml(it.variant.prodigiSku)})`
-        : escapeHtml(it.product_id);
+      let label: string;
+      if (it.variant && (it.variant as { kind?: string }).kind === 'giftcard') {
+        // Gift card: tier id only (no piece/design reference to look up).
+        label = `Karta podarunkowa · ${escapeHtml((it.variant as { tierId: string }).tierId)}`;
+      } else if (it.variant) {
+        // Prints add a variant label + SKU so the studio knows exactly what to produce.
+        const printVariant = it.variant as PrintVariantSelection & { prodigiSku: string };
+        label = `${escapeHtml(it.product_id)} · ${escapeHtml(variantLabel(printVariant, 'pl'))} (${escapeHtml(printVariant.prodigiSku)})`;
+      } else {
+        label = escapeHtml(it.product_id);
+      }
       return `${label} — ${formatGrosze(it.unit_price, order.currency)}`;
     })
     .join('<br />');
@@ -1162,5 +1170,158 @@ export async function emailShippingConfirmationToCustomer(params: {
     subject,
     templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
     variables: { MAIN_CONTENT: mainContent },
+  });
+}
+
+// ── Gift-card delivery email ─────────────────────────────────────────────────
+// Own self-contained document (not the shared Resend template shell above) so
+// the "card" visual reads well both on screen and printed — the floor for the
+// "printable/downloadable card" requirement: a nicely formatted, print-ready
+// HTML email. No PDF/image-generation infrastructure — a viewer can use their
+// mail client's or browser's "Print to PDF" if they want a saved file.
+
+export type GiftCardDeliveryOrder = {
+  id: string;
+  email: string | null;
+  receiver_first_name: string | null;
+};
+
+const I18N_GIFT_CARD: Record<SupportedLocale, {
+  subject: (amount: string) => string;
+  greeting: (name: string | null) => string;
+  intro: string;
+  cardLabel: string;
+  codeLabel: string;
+  terms: string;
+  printHint: string;
+  signOff: string;
+}> = {
+  pl: {
+    subject: (amount) => `Twoja karta podarunkowa (${amount}) — Anna Ciok Ceramics`,
+    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
+    intro: 'Dziękujemy za zakup karty podarunkowej! Poniżej znajdziesz swój unikalny kod.',
+    cardLabel: 'Karta podarunkowa',
+    codeLabel: 'Kod',
+    terms:
+      'Kod jest jednorazowy — możesz go wykorzystać przy jednym przyszłym zamówieniu (ceramika lub druki fine-art). ' +
+      'Kwota przewyższająca wartość zamówienia nie jest zwracana ani przenoszona na kolejne zakupy.',
+    printHint: 'Możesz wydrukować tę wiadomość lub zapisać ją jako PDF, aby wręczyć kartę w formie fizycznej.',
+    signOff: 'Dziękujemy! Anna Ciok Studio',
+  },
+  en: {
+    subject: (amount) => `Your gift card (${amount}) — Anna Ciok Ceramics`,
+    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
+    intro: 'Thank you for purchasing a gift card! Your unique code is below.',
+    cardLabel: 'Gift card',
+    codeLabel: 'Code',
+    terms:
+      'The code is single-use — redeemable on one future order (ceramics or fine-art prints). ' +
+      'Any amount exceeding that order’s value is not refunded or carried forward.',
+    printHint: 'You can print this email or save it as a PDF to give the card as a physical gift.',
+    signOff: 'Thank you! Anna Ciok Studio',
+  },
+  es: {
+    subject: (amount) => `Tu tarjeta regalo (${amount}) — Anna Ciok Ceramics`,
+    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
+    intro: '¡Gracias por comprar una tarjeta regalo! Tu código único está a continuación.',
+    cardLabel: 'Tarjeta regalo',
+    codeLabel: 'Código',
+    terms:
+      'El código es de un solo uso — canjeable en un futuro pedido (cerámica o láminas fine-art). ' +
+      'El importe que supere el valor de ese pedido no se reembolsa ni se traslada.',
+    printHint: 'Puedes imprimir este correo o guardarlo como PDF para regalar la tarjeta en formato físico.',
+    signOff: '¡Gracias! Anna Ciok Studio',
+  },
+  de: {
+    subject: (amount) => `Deine Geschenkkarte (${amount}) — Anna Ciok Ceramics`,
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    intro: 'Danke für den Kauf einer Geschenkkarte! Deinen einmaligen Code findest du unten.',
+    cardLabel: 'Geschenkkarte',
+    codeLabel: 'Code',
+    terms:
+      'Der Code ist einmalig einlösbar — für eine zukünftige Bestellung (Keramik oder Fine-Art-Drucke). ' +
+      'Ein Betrag, der den Bestellwert übersteigt, wird nicht erstattet oder übertragen.',
+    printHint: 'Du kannst diese E-Mail ausdrucken oder als PDF speichern, um die Karte physisch zu verschenken.',
+    signOff: 'Danke! Anna Ciok Studio',
+  },
+};
+
+/**
+ * Pure function — builds subject + a self-contained HTML "card" document for
+ * the gift-card delivery email. `amountLabel` is pre-formatted (see
+ * `formatGiftCardAmount`) so this module doesn't need to know about currency
+ * minor-unit conversion.
+ */
+export function buildGiftCardDeliveryEmail(params: {
+  order: GiftCardDeliveryOrder;
+  amountLabel: string;
+  code: string;
+  locale: string;
+}): { subject: string; html: string } {
+  const { order, amountLabel, code } = params;
+  const loc = resolveLocale(params.locale);
+  const t = I18N_GIFT_CARD[loc];
+  const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
+
+  const card = `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;margin-bottom:24px;">
+  <tr>
+    <td bgcolor="#3A2818" style="background-color:#3A2818;padding-top:32px;padding-bottom:32px;padding-left:32px;padding-right:32px;border-radius:8px;">
+      <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:16px;letter-spacing:0.16em;text-transform:uppercase;color:#D8C9B4;">${escapeHtml(t.cardLabel)} · Anna Ciok Ceramics</p>
+      <p style="margin:16px 0 0 0;font-family:Helvetica,Arial,sans-serif;font-size:40px;line-height:48px;color:#FAF6EC;font-weight:bold;">${escapeHtml(amountLabel)}</p>
+      <p style="margin:20px 0 0 0;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:16px;letter-spacing:0.12em;text-transform:uppercase;color:#D8C9B4;">${escapeHtml(t.codeLabel)}</p>
+      <p style="margin:4px 0 0 0;font-family:'Courier New',Courier,monospace;font-size:24px;line-height:32px;letter-spacing:0.08em;color:#FAF6EC;">${escapeHtml(code)}</p>
+    </td>
+  </tr>
+</table>`;
+
+  const mainContent = [
+    emailParagraph(`${t.greeting(firstName)},`),
+    emailParagraph(t.intro),
+    card,
+    emailMutedParagraph(t.terms),
+    emailMutedParagraph(t.printHint),
+    emailMutedParagraph(t.signOff),
+  ].join('');
+
+  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
+  return { subject: t.subject(amountLabel), html };
+}
+
+/**
+ * Send the gift-card delivery email via Resend. Throws when config or the
+ * recipient email is missing — the webhook route's caller decides whether to
+ * throw (so Stripe retries) or swallow.
+ */
+export async function emailGiftCardToCustomer(params: {
+  order: GiftCardDeliveryOrder;
+  tier: GiftCardTier;
+  currency: 'pln' | 'eur' | 'gbp';
+  code: string;
+  locale: string;
+  env?: CloudflareEnv;
+  /** Dedup key so a Stripe redelivery after an accepted-but-timed-out send can't double-send the code. */
+  idempotencyKey?: string;
+}): Promise<{ id: string | null }> {
+  const env = params.env ?? getCloudflareContext().env;
+  const { order } = params;
+
+  if (!env.RESEND_API_KEY) {
+    throw new Error('Resend not configured: RESEND_API_KEY missing');
+  }
+  if (!order.email) {
+    throw new Error(`Cannot send gift-card email: order ${order.id} has no email`);
+  }
+
+  const amountLabel = formatGiftCardAmount(params.tier, params.currency);
+  const { subject, html } = buildGiftCardDeliveryEmail({ order, amountLabel, code: params.code, locale: params.locale });
+
+  return sendResendHtml({
+    apiKey: env.RESEND_API_KEY,
+    from: EMAIL_FROM,
+    to: [order.email],
+    subject,
+    html,
+    ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
   });
 }

@@ -40,6 +40,16 @@ export type WebhookDeps = {
   ensureInvoiced: (paymentIntentId: string) => Promise<void>;
   /** Create the InPost shipment for a freshly-paid order (no-op for studio pickup). */
   createShipment: (paymentIntentId: string) => Promise<void>;
+  /**
+   * Mint the gift-card redemption code (a single-use `promo_codes` row, see
+   * gift-cards.ts's `buildGiftCardPromoRow`) and email it to the buyer.
+   * A no-op for any order that isn't a gift-card order. Idempotent: called on
+   * EVERY delivery of this event (including redeliveries where markPaid
+   * returns false), so the implementation must itself guard against minting
+   * twice — the DB's unique index on `promo_codes.source_order_id` is the
+   * backstop.
+   */
+  fulfilGiftCard: (paymentIntentId: string) => Promise<void>;
   /** Bust a Next cache tag (e.g. 'inventory'). */
   revalidate: (tag: string) => void;
   /** Fire server-side purchase conversions (Meta CAPI + GA4 MP). Best-effort: errors swallowed by the impl. */
@@ -72,10 +82,15 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const pi = event.data.object as Stripe.PaymentIntent;
       const newlySold = await deps.markPaid(pi.id);
       if (newlySold) deps.revalidate('inventory');
+      // Gift-card fulfilment (mint + email) is its own idempotent, order-kind-
+      // aware step — runs on every delivery, same as trackPurchase below, and
+      // no-ops for a non-gift-card order.
+      await deps.fulfilGiftCard(pi.id);
       await deps.trackPurchase(pi.id);
       await deps.ensureInvoiced(pi.id);
       // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
       // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.
+      // No-ops for a gift-card order (see createShipment's own guard).
       await deps.createShipment(pi.id);
       return;
     }

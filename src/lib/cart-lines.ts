@@ -16,19 +16,29 @@
 import { registryProductById, isCategoryHidden } from './products';
 import { registryPrintById, isVariantAvailable } from './prints';
 import { decodePrintToken, isPrintToken } from './print-cart';
+import { decodeGiftCardToken, getGiftCardTier, isGiftCardToken } from './gift-cards';
+import type { GiftCardTier } from './gift-cards';
 import type { PrintDesign, PrintVariantSelection, Product } from './types';
 
 export type CartLine =
   | { kind: 'ceramic'; id: string; product: Product }
-  | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection };
+  | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection }
+  | { kind: 'giftcard'; id: string; tier: GiftCardTier };
 
-/** Resolve cart ids to deduped, renderable lines (ceramics + available prints). */
+/** Resolve cart ids to deduped, renderable lines (ceramics + available prints + gift cards). */
 export function resolveCartLines(ids: string[]): CartLine[] {
   const seen = new Set<string>();
   const lines: CartLine[] = [];
   for (const id of ids) {
     if (seen.has(id)) continue;
-    if (isPrintToken(id)) {
+    if (isGiftCardToken(id)) {
+      const dec = decodeGiftCardToken(id);
+      if (!dec) continue;
+      const tier = getGiftCardTier(dec.tierId);
+      if (!tier) continue;
+      seen.add(id);
+      lines.push({ kind: 'giftcard', id, tier });
+    } else if (isPrintToken(id)) {
       const dec = decodePrintToken(id);
       if (!dec) continue;
       const design = registryPrintById(dec.designId);

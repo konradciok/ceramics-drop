@@ -21,6 +21,7 @@ import {
   buildReturnLabelEmail,
   buildShippingConfirmation,
   buildShowroomInterestEmail,
+  buildGiftCardDeliveryEmail,
   type CustomerShippingOrder,
   type LabelEmailOrder,
   type OrderConfirmationOrder,
@@ -548,5 +549,53 @@ describe('buildOrderConfirmationEmail — HTML escaping', () => {
     const { html } = buildOrderConfirmationEmail({ order: xssOrder, locale: 'pl' });
     expect(html).not.toContain('<b>x');
     expect(html).toContain('&lt;b&gt;x');
+  });
+});
+
+describe('buildGiftCardDeliveryEmail', () => {
+  const gcOrder = { id: 'order-gc-1', email: 'buyer@example.com', receiver_first_name: 'Anna' };
+
+  it('includes the amount and code, and localises the subject', () => {
+    const { subject, html } = buildGiftCardDeliveryEmail({
+      order: gcOrder,
+      amountLabel: '500 zł',
+      code: 'GIFT-7K3P9QRT',
+      locale: 'pl',
+    });
+    expect(subject).toContain('500 zł');
+    expect(html).toContain('500 zł');
+    expect(html).toContain('GIFT-7K3P9QRT');
+    expect(html).toContain('Cześć Anna');
+  });
+
+  it('localises for en/es/de', () => {
+    for (const locale of ['en', 'es', 'de']) {
+      const { subject } = buildGiftCardDeliveryEmail({
+        order: gcOrder,
+        amountLabel: '120 €',
+        code: 'GIFT-ABCDEFGH',
+        locale,
+      });
+      expect(subject).toContain('120 €');
+    }
+  });
+
+  it('escapes HTML special chars in the code and name', () => {
+    const xssOrder = { ...gcOrder, receiver_first_name: '<b>x' };
+    const { html } = buildGiftCardDeliveryEmail({
+      order: xssOrder,
+      amountLabel: '200 zł',
+      code: '<script>alert(1)</script>',
+      locale: 'pl',
+    });
+    expect(html).not.toContain('<b>x');
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('falls back to a generic greeting with no name', () => {
+    const noName = { ...gcOrder, receiver_first_name: null };
+    const { html } = buildGiftCardDeliveryEmail({ order: noName, amountLabel: '200 zł', code: 'GIFT-X', locale: 'pl' });
+    expect(html).toContain('Cześć,');
   });
 });

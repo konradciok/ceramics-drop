@@ -34,4 +34,19 @@ describe('resolveCartLines', () => {
     // path instead ('white' would legacy-migrate to brown, so use 'pink').
     expect(resolveCartLines(['print:fap005:50x70:true:false:pink'])).toHaveLength(0); // unknown colour
   });
+
+  it('resolves a gift-card token to a giftcard line', () => {
+    const lines = resolveCartLines(['giftcard:gc-500']);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ kind: 'giftcard', id: 'giftcard:gc-500', tier: { id: 'gc-500' } });
+  });
+
+  it('drops an unknown gift-card tier', () => {
+    expect(resolveCartLines(['giftcard:gc-999'])).toHaveLength(0);
+  });
+
+  it('resolves a mixed ceramic + gift-card cart as separate lines (checkout enforces exclusivity, not this resolver)', () => {
+    const lines = resolveCartLines(['k01', 'giftcard:gc-200']);
+    expect(lines.map((l) => l.kind)).toEqual(['ceramic', 'giftcard']);
+  });
 });

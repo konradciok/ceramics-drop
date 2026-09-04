@@ -81,7 +81,8 @@
     "sklep": "Alle Stücke",
     "showroom": "Showroom",
     "gallery": "Galerie",
-    "fineArtPrints": "Kunstdrucke"
+    "fineArtPrints": "Kunstdrucke",
+    "giftCard": "Geschenkkarte"
   },
   "nav": {
     "sklep": "Shop",
@@ -99,7 +100,8 @@
     "fineArtPrints": "Fine Art Drucke",
     "studio": "Studio",
     "kontakt": "Kontakt",
-    "konto": "Konto"
+    "konto": "Konto",
+    "giftCard": "Geschenkkarte"
   },
   "aria": {
     "cart": "Warenkorb",
@@ -127,7 +129,8 @@
     "dostawa": "Versand & Rücksendungen",
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
-    "copy": "© 2026 Anna Ciok — Keramik und Malerei, jedes Stück von einer Hand"
+    "copy": "© 2026 Anna Ciok — Keramik und Malerei, jedes Stück von einer Hand",
+    "giftCard": "Geschenkkarte"
   },
   "product": {
     "mug": "Tasse",
@@ -958,7 +961,8 @@
       "sklep": "Anna Cioks vollständige Kollektion: 125 einmalige Keramikstücke — Tassen, Vasen, Teller und Schüsseln. Von Hand bemalt, jedes Stück einzigartig.",
       "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest.",
       "fineArtPrints": "Fine-Art-Drucke auf 200 g/m²-Papier — gerahmt oder ungerahmt."
-    }
+    },
+    "giftCard": "Anna Ciok Ceramics Geschenkkarte — vier Beträge zur Auswahl. Der Code kommt per E-Mail und kann bei einer künftigen Bestellung von Keramik oder Kunstdrucken eingelöst werden."
   },
   "deliveryNotice": {
     "title": "Versandinformationen",
@@ -1024,5 +1028,21 @@
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
     "accordionShipping": "Unser Partner Prodigi produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
+  },
+  "giftCard": {
+    "eyebrow": "Geschenk",
+    "h1": "Geschenkkarte",
+    "lead": "Betrag wählen und online bezahlen — der Code landet direkt nach der Zahlung in deinem Postfach. Einlösbar für Keramik oder Kunstdrucke bei einer künftigen Bestellung.",
+    "tierLabel": "Kartenbetrag",
+    "buy": "Geschenkkarte kaufen",
+    "continueToPayment": "Weiter zur Zahlung",
+    "back": "Betrag ändern",
+    "contactTitle": "Deine Angaben",
+    "contactNote": "Wir senden den Code an diese Adresse, sobald die Zahlung bestätigt ist.",
+    "invalidContact": "Bitte prüfe deine Angaben und versuche es erneut.",
+    "accordionHowTitle": "So funktioniert's",
+    "accordionHowBody": "Wähle einen der vier Beträge und bezahle online.\n\nDirekt nach der Zahlung senden wir dir einen einmaligen Code per E-Mail — zum Ausdrucken oder Weiterleiten.\n\nGib den Code im Feld „Ich habe einen Rabattcode“ im Warenkorb ein, bei jeder Bestellung von Keramik oder Kunstdrucken.",
+    "accordionTermsTitle": "Bedingungen",
+    "accordionTermsBody": "Der Code ist einmalig gültig, für eine künftige Bestellung. Liegt der Warenkorbwert unter dem Kartenwert, verfällt der Restbetrag — er wird weder erstattet noch auf einen späteren Einkauf übertragen.\n\nDie Karte verfällt nicht und gilt sowohl für Keramik als auch für Kunstdrucke.\n\nGeschenkkarten lassen sich nicht mit anderen Rabattcodes kombinieren, und eine Geschenkkarte kann nicht zusammen mit Keramik oder Drucken in derselben Bestellung gekauft werden."
   }
 }

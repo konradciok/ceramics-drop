@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { validateCart, MAX_CART } from './checkout';
 import { encodePrintToken } from './print-cart';
+import { encodeGiftCardToken } from './gift-cards';
 import type { Product } from './types';
 
 // Mock the DB catalog loader so we can exercise the CATALOG_SOURCE=db path
@@ -161,6 +162,56 @@ describe('validateCart', () => {
   it('rejects an unpublished design', async () => {
     const token = encodePrintToken('fap04', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+  });
+});
+
+describe('validateCart gift cards', () => {
+  it('resolves a gift-card token to a priced item in the checkout currency', async () => {
+    const result = await validateCart([encodeGiftCardToken('gc-500')], 'pln');
+    expect(result).toEqual({
+      ok: true,
+      items: [{ product_id: 'gc-500', unit_price: 50000, giftCardTierId: 'gc-500' }],
+    });
+  });
+
+  it('resolves EUR/GBP figures', async () => {
+    const eur = await validateCart([encodeGiftCardToken('gc-200')], 'eur');
+    expect(eur.ok).toBe(true);
+    if (eur.ok) expect(eur.items[0].unit_price).toBe(5000);
+    const gbp = await validateCart([encodeGiftCardToken('gc-200')], 'gbp');
+    expect(gbp.ok).toBe(true);
+    if (gbp.ok) expect(gbp.items[0].unit_price).toBe(4000);
+  });
+
+  it('rejects an unknown tier token', async () => {
+    expect(await validateCart(['giftcard:gc-999'], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+  });
+
+  it('rejects a cart mixing a gift card with a ceramic', async () => {
+    expect(await validateCart(['k01', encodeGiftCardToken('gc-200')], 'pln')).toEqual({
+      ok: false,
+      reason: 'mixed_cart',
+    });
+  });
+
+  it('rejects a cart mixing a gift card with a print', async () => {
+    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+    expect(await validateCart([token, encodeGiftCardToken('gc-200')], 'pln')).toEqual({
+      ok: false,
+      reason: 'mixed_cart',
+    });
+  });
+
+  it('rejects more than one gift-card tier in a single cart', async () => {
+    expect(
+      await validateCart([encodeGiftCardToken('gc-200'), encodeGiftCardToken('gc-500')], 'pln'),
+    ).toEqual({ ok: false, reason: 'multiple_gift_cards' });
+  });
+
+  it('is idempotent for the same tier token repeated (Set dedup)', async () => {
+    const result = await validateCart([encodeGiftCardToken('gc-1000'), encodeGiftCardToken('gc-1000')], 'pln');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.items).toHaveLength(1);
   });
 });
 

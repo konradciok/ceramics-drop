@@ -33,6 +33,7 @@ export const SITE_PATHS = [
   '/duze-michy',
   '/miski-falowane',
   '/koszyk',
+  '/karta-podarunkowa',
   '/o-studiu',
   '/kontakt',
   '/regulamin',

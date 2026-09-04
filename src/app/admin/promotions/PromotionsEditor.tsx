@@ -26,6 +26,7 @@ const ERROR_MAP: Record<string, string> = {
   newsletter_welcome_taken: 'Inna aktywna promocja jest już oznaczona jako powitalna newslettera.',
   not_found: 'Nie znaleziono promocji.',
   promo_write_failed: 'Zapis nie powiódł się. Spróbuj ponownie lub sprawdź logi serwera.',
+  gift_card_code_readonly: 'Kod wygenerowany z zakupu karty podarunkowej można tylko aktywować/dezaktywować.',
 };
 
 const APPLIES_LABEL: Record<string, string> = {
@@ -376,6 +377,7 @@ export function PromotionsEditor({ promotions }: { promotions: PromoWithStats[] 
                 <tr key={p.id} data-testid={`promo-row-${p.code}`}>
                   <td>
                     <strong>{p.code}</strong>
+                    {p.source === 'gift_card' && <span className="adm-pill promo-giftcard">karta podarunkowa</span>}
                     {p.newsletter_welcome && <span className="adm-pill promo-newsletter">newsletter</span>}
                     {p.campaign && <div className="adm-muted">{p.campaign}</div>}
                   </td>
@@ -402,13 +404,15 @@ export function PromotionsEditor({ promotions }: { promotions: PromoWithStats[] 
                       <button className="adm-btn" disabled={busy} onClick={() => toggle(p)}>
                         {p.active ? 'Dezaktywuj' : 'Aktywuj'}
                       </button>
-                      <button
-                        className="adm-btn"
-                        disabled={busy}
-                        onClick={() => { setEditingId(editingId === p.id ? null : p.id); setCreating(false); setErrors({}); }}
-                      >
-                        Edytuj
-                      </button>
+                      {p.source !== 'gift_card' && (
+                        <button
+                          className="adm-btn"
+                          disabled={busy}
+                          onClick={() => { setEditingId(editingId === p.id ? null : p.id); setCreating(false); setErrors({}); }}
+                        >
+                          Edytuj
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

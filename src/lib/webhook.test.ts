@@ -9,6 +9,7 @@ function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
     releaseSale: vi.fn().mockResolvedValue(true),
     ensureInvoiced: vi.fn().mockResolvedValue(undefined),
     createShipment: vi.fn().mockResolvedValue(undefined),
+    fulfilGiftCard: vi.fn().mockResolvedValue(undefined),
     revalidate: vi.fn(),
     trackPurchase: vi.fn().mockResolvedValue(undefined),
     alertRefundFailed: vi.fn().mockResolvedValue(undefined),
@@ -46,20 +47,22 @@ const refund = (overrides: Partial<{ payment_intent: string | null; failure_reas
 });
 
 describe('handleStripeEvent', () => {
-  it('on success: marks paid, revalidates, ensures invoice, creates shipment', async () => {
+  it('on success: marks paid, revalidates, ensures invoice, creates shipment, fulfils gift cards', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.markPaid).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
     expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
     expect(d.createShipment).toHaveBeenCalledWith('pi_1');
+    expect(d.fulfilGiftCard).toHaveBeenCalledWith('pi_1');
   });
 
-  it('already processed: still ensures invoice and shipment but does NOT revalidate', async () => {
+  it('already processed: still ensures invoice, shipment, and gift-card fulfilment but does NOT revalidate', async () => {
     const d = deps({ markPaid: vi.fn().mockResolvedValue(false) });
     await handleStripeEvent({ type: 'payment_intent.succeeded', data: { object: pi() } } as unknown as Stripe.Event, d);
     expect(d.ensureInvoiced).toHaveBeenCalledWith('pi_1');
     expect(d.createShipment).toHaveBeenCalledWith('pi_1');
+    expect(d.fulfilGiftCard).toHaveBeenCalledWith('pi_1');
     expect(d.revalidate).not.toHaveBeenCalled();
   });
 

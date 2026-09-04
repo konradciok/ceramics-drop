@@ -8,7 +8,7 @@ import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -20,6 +20,7 @@ import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
 import type { PrintVariantSelection } from '@/lib/types';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
+import { buildGiftCardPromoRow, getGiftCardTier, isGiftCardOrderItemVariant, type GiftCardOrderItemVariant } from '@/lib/gift-cards';
 
 export const dynamic = 'force-dynamic';
 
@@ -164,6 +165,36 @@ async function settlePromoReleased(
     Sentry.captureMessage('promo_release_settle_failed', {
       level: 'warning',
       extra: { order_id: order.id, promo_code: order.promo_code },
+    });
+  }
+}
+
+/**
+ * Revoke the gift-card code minted for a refunded gift-card order (Option A:
+ * revocation reuses the existing active/inactive mechanism — no new RPC, see
+ * the 20260904120000 migration). A no-op update when the order never minted
+ * one (any other order kind, or a gift-card order that was refunded before
+ * fulfilGiftCard ran) — matches nothing and errors nothing. Does NOT undo a
+ * redemption that already happened on another order (accepted edge case).
+ * Best-effort like settlePromoReleased above: never throws — a stuck-active
+ * code is a bounded revenue-risk, not a reason to fail the whole webhook.
+ */
+async function revokeGiftCardCode(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  orderId: string,
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('promo_codes')
+      .update({ active: false })
+      .eq('source_order_id', orderId)
+      .eq('source', 'gift_card');
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('gift card revoke failed for', orderId, err);
+    Sentry.captureMessage('gift_card_revoke_failed', {
+      level: 'warning',
+      extra: { order_id: orderId },
     });
   }
 }
@@ -543,22 +574,27 @@ export async function POST(req: Request) {
           };
 
           const items =
-            (itemRows as Array<{ product_id: string; unit_price: number; variant: PrintVariantSelection | null }> | null) ?? [];
+            (itemRows as Array<{ product_id: string; unit_price: number; variant: PrintVariantSelection | GiftCardOrderItemVariant | null }> | null) ?? [];
+          const isGiftCardOrder = items.length > 0 && items.every((it) => isGiftCardOrderItemVariant(it.variant));
           const notifyOrder = {
             order: {
               ...orderRowTyped,
               // Print items carry variant + Prodigi SKU so the studio email
-              // shows exactly what will be produced; ceramics pass null.
+              // shows exactly what will be produced; gift cards pass their own
+              // shape through unchanged (buildNewOrderToStudioEmail special-
+              // cases `kind: 'giftcard'`); ceramics pass null.
               items: items.map((it) => ({
                 product_id: it.product_id,
                 unit_price: it.unit_price,
-                variant: it.variant
-                  ? { ...it.variant, prodigiSku: PRODIGI_SKU_MAP[variantKey(it.variant)]?.sku ?? '—' }
-                  : null,
+                variant: isGiftCardOrderItemVariant(it.variant)
+                  ? it.variant
+                  : it.variant
+                    ? { ...it.variant, prodigiSku: PRODIGI_SKU_MAP[variantKey(it.variant)]?.sku ?? '—' }
+                    : null,
               })),
             },
           };
-          const isPrintOnlyOrder = items.length > 0 && items.every((it) => it.variant !== null);
+          const isPrintOnlyOrder = !isGiftCardOrder && items.length > 0 && items.every((it) => it.variant !== null);
 
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
@@ -574,8 +610,12 @@ export async function POST(req: Request) {
             );
           }
 
-          // Customer order confirmation — same claim-once semantics.
-          if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at) {
+          // Customer order confirmation — same claim-once semantics. Skipped
+          // for gift-card orders: fulfilGiftCard sends its own dedicated
+          // "here's your code" email instead, and the two would be redundant
+          // (worse: the standard copy talks about shipping/production, which
+          // makes no sense for a gift card).
+          if (orderRowTyped.email && !orderRowTyped.confirmation_email_sent_at && !isGiftCardOrder) {
             await sendEmailOnceWithClaim(supabase, orderId, 'confirmation_email_sent_at', () =>
               emailOrderConfirmationToCustomer({
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
@@ -764,6 +804,9 @@ export async function POST(req: Request) {
         // the paid→refunded CAS actually flipped, so a replayed event can't
         // re-enter. Best-effort — never throws.
         await cancelPrintFulfilment(rows[0].id, env);
+        // Gift-card orders: revoke the minted code (no-op for any other order
+        // kind). Same real-transition scoping as cancelPrintFulfilment.
+        await revokeGiftCardCode(supabase, rows[0].id);
         // GA4 revenue correction: this order WAS recorded as purchase revenue
         // (it was 'paid'), so a full refund must reverse it. Same real-transition
         // scoping as cancelPrintFulfilment above — never fires on the
@@ -816,6 +859,10 @@ export async function POST(req: Request) {
       if (refundedErr) throw new Error(`releaseSale refunded lookup failed: ${refundedErr.message}`);
       const refundedOrder = refunded as { id: string; private_sale_id: string | null; promo_code: string | null } | null;
       if (!refundedOrder) return false;
+      // Crash-resume: a prior attempt may have flipped the CAS but died before
+      // revoking the gift-card code (see the primary paid→refunded branch
+      // above). No-op for any other order kind.
+      await revokeGiftCardCode(supabase, refundedOrder.id);
       // Resume-path promo convergence: only a genuinely-stranded 'pending'
       // redemption transitions (the RPC is state-aware — a 'redeemed' row from
       // the paid→refunded path is never touched, per the no-clawback rule).
@@ -894,6 +941,12 @@ export async function POST(req: Request) {
       if (itemsErr || !lineItems) {
         throw new Error(`createShipment: order_items lookup failed for ${orderId}: ${itemsErr?.message ?? 'not found'}`);
       }
+      const hasGiftCards = lineItems.some((i) => isGiftCardOrderItemVariant(i.variant));
+      // Gift cards have no shipment and no Prodigi fulfilment at all — that's
+      // handled entirely by WebhookDeps.fulfilGiftCard (mint + email). Return
+      // before the ceramic/print branching below, which would otherwise
+      // misread a gift-card variant (non-null) as a print.
+      if (hasGiftCards) return;
       const hasCeramics = lineItems.some((i) => i.variant === null);
       const hasPrints   = lineItems.some((i) => i.variant !== null);
 
@@ -974,6 +1027,106 @@ export async function POST(req: Request) {
         // missing_trucker_id = InPost org courier dispatch not configured — retries cannot fix it.
         if (!shouldRethrowShipmentError(err)) return;
         throw err;
+      }
+    },
+    fulfilGiftCard: async (pi) => {
+      // Best-effort by design (never throws): a mint/email hiccup here must
+      // not turn into a Stripe retry storm — the order is already paid and
+      // there is nothing to roll back. Failures are Sentry-alerted so an
+      // operator can manually resend (no CLI helper exists yet for this —
+      // see AGENTS.md/docs/gift-cards.md's known-gaps note).
+      try {
+        const { data: orderRow, error: orderErr } = await supabase
+          .from('orders')
+          .select('id, status, email, receiver_first_name, currency, locale, fulfilment_type')
+          .eq('payment_intent_id', pi)
+          .maybeSingle();
+        if (orderErr) {
+          console.error('fulfilGiftCard: order lookup failed for', pi, orderErr);
+          Sentry.captureException(orderErr);
+          return;
+        }
+        const order = orderRow as {
+          id: string; status: string; email: string | null; receiver_first_name: string | null;
+          currency: string; locale: string | null; fulfilment_type: string;
+        } | null;
+        // No-op for any non-gift-card order, and for a gift-card order not
+        // (yet) paid — a redelivery before markPaid's CAS lands finds nothing
+        // to do here; a later redelivery after markPaid succeeds retries this.
+        if (!order || order.fulfilment_type !== 'giftcard' || order.status !== 'paid') return;
+
+        const { data: itemRows, error: itemsErr } = await supabase
+          .from('order_items')
+          .select('variant')
+          .eq('order_id', order.id);
+        if (itemsErr) {
+          console.error('fulfilGiftCard: order_items lookup failed for', order.id, itemsErr);
+          Sentry.captureException(itemsErr);
+          return;
+        }
+        const giftItem = (itemRows ?? []).find((i) => isGiftCardOrderItemVariant(i.variant));
+        if (!giftItem) {
+          // Defensive: fulfilment_type says giftcard but no gift-card line item exists.
+          console.error('fulfilGiftCard: no gift-card line item for order', order.id);
+          Sentry.captureMessage('gift_card_no_line_item', { level: 'error', extra: { order_id: order.id } });
+          return;
+        }
+        const tierId = (giftItem.variant as { tierId: string }).tierId;
+        const tier = getGiftCardTier(tierId);
+        if (!tier) {
+          console.error('fulfilGiftCard: unknown tier for order', order.id, tierId);
+          Sentry.captureMessage('gift_card_unknown_tier', { level: 'error', extra: { order_id: order.id, tier_id: tierId } });
+          return;
+        }
+
+        // Idempotent mint: the unique index on promo_codes.source_order_id is
+        // the backstop against a Stripe redelivery minting a second code.
+        const row = buildGiftCardPromoRow({ tier, orderId: order.id });
+        const { error: insertErr } = await supabase.from('promo_codes').insert(row);
+        let code = row.code;
+        if (insertErr) {
+          if ((insertErr as { code?: string }).code === '23505') {
+            // Already minted by a prior delivery — fetch the existing code so
+            // the email step below (which is claimed separately) can still
+            // resend it if it hasn't gone out yet.
+            const { data: existing, error: existingErr } = await supabase
+              .from('promo_codes')
+              .select('code')
+              .eq('source_order_id', order.id)
+              .maybeSingle();
+            if (existingErr || !existing) {
+              console.error('fulfilGiftCard: mint race but existing code lookup failed for', order.id, existingErr);
+              Sentry.captureException(existingErr ?? new Error('gift card code missing after 23505'));
+              return;
+            }
+            code = (existing as { code: string }).code;
+          } else {
+            console.error('fulfilGiftCard: mint failed for', order.id, insertErr);
+            Sentry.captureMessage('gift_card_mint_failed', {
+              level: 'error',
+              extra: { order_id: order.id, payment_intent_id: pi, error: insertErr.message },
+            });
+            return;
+          }
+        }
+
+        // Claim-once email send, same idiom as the order-confirmation/studio
+        // emails above (a dedicated column so a redelivery after an accepted-
+        // but-timed-out send can't double-send the code).
+        await sendEmailOnceWithClaim(supabase, order.id, 'confirmation_email_sent_at', () =>
+          emailGiftCardToCustomer({
+            order: { id: order.id, email: order.email, receiver_first_name: order.receiver_first_name },
+            tier,
+            currency: order.currency === 'eur' ? 'eur' : order.currency === 'gbp' ? 'gbp' : 'pln',
+            code,
+            locale: order.locale ?? 'pl',
+            idempotencyKey: `gift-card-delivery/${order.id}`,
+          }),
+          'resend_email_id',
+        );
+      } catch (err) {
+        console.error('fulfilGiftCard failed for', pi, err);
+        Sentry.captureException(err);
       }
     },
     alertRefundFailed: async (refund) => {

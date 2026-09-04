@@ -300,6 +300,17 @@ describe('createOrderInvoice', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
+  it('labels a gift-card line item with the tier amount, not a print/ceramic description', async () => {
+    itemRows = [{ order_id: 'ord-1', product_id: 'gc-500', unit_price: 50000, variant: { kind: 'giftcard', tierId: 'gc-500' } }];
+    await createOrderInvoice('pi_1');
+    const call = stripeMock.invoiceItems.create.mock.calls.find(
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_gc-500_gc-500',
+    );
+    expect(call).toBeDefined();
+    expect((call![0] as { description: string }).description).toContain('500 zł');
+    expect((call![0] as { description: string }).description).not.toContain('gc-500 Nº');
+  });
+
   it('does not duplicate a line that a legacy draft already holds when a retry re-enters the draft branch', async () => {
     // A draft created before the key change already carries the first item
     // (under the old per-SKU key). The retry must skip that line by content,

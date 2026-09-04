@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
+import { GIFT_CARD_TIERS, formatGiftCardAmount } from './gift-cards';
 import {
   ANALYTICS_CURRENCY,
   allocateItemDiscounts,
@@ -7,6 +8,8 @@ import {
   buildAddToCartEvent,
   buildBeginCheckoutEvent,
   buildEngagementEvent,
+  buildGiftCardAddToCartEvent,
+  buildGiftCardViewItemEvent,
   buildLoginEvent,
   buildPageViewEvent,
   buildPrintAddToCartEvent,
@@ -567,5 +570,56 @@ describe('previously-untested builders', () => {
     expect(l).toMatchObject({ method: 'google', user_id: 'u-123' });
     expect(l.ecommerce).toBeUndefined();
     expect(buildSignUpEvent('apple', 'u-9').event).toBe('sign_up');
+  });
+});
+
+describe('gift-card funnel builders', () => {
+  const tier = GIFT_CARD_TIERS[1]; // gc-500
+  const gc = { tierId: tier.id, amountLabel: formatGiftCardAmount(tier, 'eur'), price: 120 };
+
+  it('add_to_cart carries a single gift-card item + Meta AddToCart, item_id = tier id', () => {
+    const e = buildGiftCardAddToCartEvent(gc, { currency: 'EUR', eventId: 'evt-atc' });
+    expect(e).toMatchObject({
+      event: 'add_to_cart',
+      event_id: 'evt-atc',
+      ecommerce: {
+        currency: 'EUR',
+        value: 120,
+        items: [{
+          item_id: 'gc-500',
+          item_category: 'gift-card',
+          item_variant: '120 €',
+          price: 120,
+          quantity: 1,
+        }],
+      },
+      meta: { event_name: 'AddToCart', content_ids: ['gc-500'], value: 120, event_id: 'evt-atc' },
+    });
+  });
+
+  it('view_item wraps a ViewContent meta payload for a gift-card tier', () => {
+    const e = buildGiftCardViewItemEvent(gc, { currency: 'EUR', eventId: 'evt-vi' });
+    expect(e.event).toBe('view_item');
+    expect(e.meta?.event_name).toBe('ViewContent');
+    expect(e.ecommerce?.items[0]).toMatchObject({ item_id: 'gc-500', item_category: 'gift-card' });
+  });
+
+  it('add + view content_ids agree on the tier id (feed-parity anchor)', () => {
+    const add = buildGiftCardAddToCartEvent(gc, { currency: 'EUR' });
+    const view = buildGiftCardViewItemEvent(gc, { currency: 'EUR' });
+    expect(add.meta?.content_ids).toEqual(['gc-500']);
+    expect(view.meta?.content_ids).toEqual(['gc-500']);
+  });
+
+  it('analyticsItemForId resolves a gift-card token only with a priceOverride', () => {
+    expect(analyticsItemForId('giftcard:gc-500')).toBeNull();
+    const item = analyticsItemForId('giftcard:gc-500', 120);
+    expect(item?.item_id).toBe('gc-500');
+    expect(item?.item_category).toBe('gift-card');
+    expect(item?.price).toBe(120);
+  });
+
+  it('analyticsItemForId drops a malformed gift-card token', () => {
+    expect(analyticsItemForId('giftcard:not-a-tier', 120)).toBeNull();
   });
 });

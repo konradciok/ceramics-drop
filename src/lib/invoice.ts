@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
 import { registryPrintById } from './prints';
 import { variantLabel } from './print-cart';
+import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import type { PrintVariantSelection } from './types';
 import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
@@ -25,6 +26,13 @@ const DISCOUNT_LABELS: Record<string, string> = {
   en: 'Discount',
   es: 'Descuento',
   de: 'Rabatt',
+};
+
+const GIFT_CARD_LABELS: Record<string, string> = {
+  pl: 'Karta podarunkowa',
+  en: 'Gift card',
+  es: 'Tarjeta regalo',
+  de: 'Geschenkkarte',
 };
 
 /**
@@ -129,16 +137,25 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
     for (const it of items) {
       const productNames = messages.product as Record<string, string>;
-      const variant = (it.variant ?? null) as (PrintVariantSelection & { prodigiSku: string }) | null;
+      const rawVariant = it.variant ?? null;
       let label: string;
-      if (variant) {
+      let idempotencySuffix = '';
+      if (isGiftCardOrderItemVariant(rawVariant)) {
+        // Gift card: a fixed-denomination line, no per-piece/design reference.
+        const tier = getGiftCardTier(rawVariant.tierId);
+        const gcLabel = GIFT_CARD_LABELS[invoiceLocale] ?? GIFT_CARD_LABELS.pl;
+        label = tier ? `${gcLabel} — ${formatGiftCardAmount(tier, orderCurrency)}` : gcLabel;
+        idempotencySuffix = `_${rawVariant.tierId}`;
+      } else if (rawVariant) {
         // Fine-art print: design name + chosen variant. The idempotency key
         // below carries both the design id and the SKU so that two variants of
         // the same design AND two designs in the same variant all invoice.
+        const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
         label = `${printName} Nº ${design?.num ?? ''}`.trim()
           + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
+        idempotencySuffix = `_${variant.prodigiSku}`;
       } else {
         const product = registryProductById(it.product_id);
         label = product
@@ -152,7 +169,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${variant ? `_${variant.prodigiSku}` : ''}` });
+      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;

@@ -755,7 +755,8 @@ describe('POST /api/checkout', () => {
       address: null,
     },
   };
-  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi') => {
+  const GIFT_CARD_ITEM = { product_id: 'gc-500', unit_price: 50_000, giftCardTierId: 'gc-500' };
+  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi' | 'giftcard') => {
     expect(insertOrders).toHaveBeenCalledWith(
       expect.objectContaining({ fulfilment_type: type }),
     );
@@ -830,6 +831,97 @@ describe('POST /api/checkout', () => {
       expectFulfilment('prodigi');
       // Print carts never touch piece_state.
       expect(reserveRpc).not.toHaveBeenCalled();
+    });
+
+    it("writes 'giftcard' for a gift-card order (contact only, no delivery method)", async () => {
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [GIFT_CARD_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          // No delivery_method/address at all — gift-card checkout only needs a contact.
+          body: JSON.stringify({ ids: [GIFT_CARD_ITEM.product_id], locale: 'pl', contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' } }),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expectFulfilment('giftcard');
+      // Gift cards never touch piece_state (no reservation).
+      expect(reserveRpc).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('gift-card checkout', () => {
+    const giftCardCart = () =>
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [GIFT_CARD_ITEM],
+      } as unknown as ReturnType<typeof validateCart>);
+    const post = async (body: Record<string, unknown> = {}) => {
+      const { POST } = await import('./route');
+      return POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify({
+            ids: [GIFT_CARD_ITEM.product_id],
+            locale: 'pl',
+            contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+            ...body,
+          }),
+        }),
+      );
+    };
+
+    it('rejects a missing contact with invalid_contact (never calls validateDelivery)', async () => {
+      giftCardCart();
+      const res = await post({ contact: { email: 'anna@example.com' } });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_contact' });
+      expect(validateDelivery).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('charges the exact gift-card tier price with zero shipping', async () => {
+      giftCardCart();
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: GIFT_CARD_ITEM.unit_price }),
+        expect.anything(),
+      );
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ shipping: 0, subtotal: GIFT_CARD_ITEM.unit_price, total: GIFT_CARD_ITEM.unit_price }),
+      );
+    });
+
+    it('rejects a promo code on a gift-card cart (no arbitrage)', async () => {
+      giftCardCart();
+      const res = await post({ promo_code: 'WELCOME10' });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'wrong_track' });
+      expect(fetchPromoByCode).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('rejects a private-sale token on a gift-card cart', async () => {
+      giftCardCart();
+      const res = await post({ private_sale_token: 'some-token' });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'private_sale_giftcards_unsupported' });
+    });
+
+    it('stamps the gift-card metadata on the PaymentIntent', async () => {
+      giftCardCart();
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({ has_gift_cards: '1', gift_card_tier: 'gc-500' }),
+        }),
+        expect.anything(),
+      );
     });
   });
 
@@ -1158,6 +1250,8 @@ describe('POST /api/checkout', () => {
       max_redemptions: null,
       newsletter_welcome: false,
       campaign: null,
+      source: 'admin',
+      source_order_id: null,
       ...overrides,
     });
     const post = async (body: Record<string, unknown>, init: RequestInit = {}) => {
