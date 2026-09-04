@@ -419,7 +419,7 @@
       "Gemälde als Fine-Art-Drucke",
       "Druck auf Bestellung",
       "Fine-Art-Papier 200 g/m²",
-      "Versand in die EU und nach Großbritannien"
+      "Versand in die EU und ins Vereinigte Königreich"
     ],
     "printsEyebrow": "Malerei",
     "printsTitle": "Gemälde in <em>Fine-Art-Edition.</em>",
@@ -450,11 +450,11 @@
     "craft2H": "Du wählst <em>Größe und Rahmen</em>",
     "craft2P": "Drei Größen stehen zur Wahl, dazu die Rahmung: ungerahmt oder im Holzrahmen — schwarz, hell- oder dunkelbraun.",
     "craft3H": "Wir drucken <em>und versenden</em>",
-    "craft3P": "Dein Druck wird von unserem Partner Prodigi hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder nach Großbritannien versendet.",
+    "craft3P": "Dein Druck wird von unserem Partner Prodigi hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder im Vereinigten Königreich versendet.",
     "lgMaterialH": "Material & Ausführung",
     "lgMaterialP": "Druck auf Fine-Art-Papier mit 200 g/m², in Archivqualität. Jeder Druck ist ungerahmt oder im Holzrahmen erhältlich: schwarz, hell- oder dunkelbraun.",
     "lgShippingH": "Herstellung & Versand",
-    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Partner Prodigi gefertigt und an deine Adresse in der EU oder nach Großbritannien versendet — in der Regel innerhalb von 5–10 Werktagen.",
+    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Partner Prodigi gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet — in der Regel innerhalb von 5–10 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
     "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
@@ -463,7 +463,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@ania.ciok.art",
     "ctLShipPrints": "Versand Drucke",
-    "ctVShipPrints": "EU & Großbritannien · 5–10 Werktage"
+    "ctVShipPrints": "EU & Vereinigtes Königreich · 5–10 Werktage"
   },
   "printCollections": {
     "inne": "Weitere Drucke"

@@ -40,7 +40,10 @@ test('@ci homepage print rail renders 5 daily-rotated tiles linking to print PDP
   await page.goto('/');
   const tiles = page.locator('.prints-home .prints-home-card');
   await expect(tiles).toHaveCount(5);
-  await expect(tiles.first()).toHaveAttribute('href', /fine-art-prints\//);
+  const hrefs = await tiles.evaluateAll((links) => links.map((l) => l.getAttribute('href')));
+  for (const href of hrefs) {
+    expect(href).toMatch(/fine-art-prints\//);
+  }
 });
 
 test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {
