@@ -1,6 +1,13 @@
 import { CATEGORIES, registryProductById } from './products';
 import { registryPrintById } from './prints';
 import { decodePrintToken, isPrintToken, variantLabel } from './print-cart';
+import {
+  decodeGiftCardToken,
+  formatGiftCardAmount,
+  getGiftCardTier,
+  isGiftCardToken,
+  type GiftCardTierId,
+} from './gift-cards';
 import type { Product } from './types';
 import type { CurrencyCode } from './format';
 
@@ -122,6 +129,20 @@ export function toAnalyticsItem(
  * Lets the cart/checkout/purchase events itemise prints alongside ceramics.
  */
 export function analyticsItemForId(id: string, priceOverride?: number): AnalyticsItem | null {
+  if (isGiftCardToken(id)) {
+    const dec = decodeGiftCardToken(id);
+    if (!dec) return null;
+    const tier = getGiftCardTier(dec.tierId);
+    if (!tier) return null;
+    // A gift-card tier has no single catalogue price (it's per-currency) —
+    // without the caller-supplied price a 0 would silently understate
+    // cart/purchase values, so drop the item, mirroring the print branch below.
+    if (priceOverride === undefined) return null;
+    // Neutral PLN label for id-resolution paths (return-page purchase, cart
+    // pruning) that don't carry the live currency — mirrors the print branch's
+    // fixed 'en' locale label below.
+    return giftCardAnalyticsItem({ tierId: tier.id, amountLabel: formatGiftCardAmount(tier, 'pln'), price: priceOverride });
+  }
   if (isPrintToken(id)) {
     const dec = decodePrintToken(id);
     if (!dec) return null;
@@ -260,6 +281,64 @@ export function buildPrintSelectItemEvent(
     event_id: details.eventId ?? createEventId('select_item', print.id),
     ecommerce: ecommerce([item], details.currency),
   };
+}
+
+export type GiftCardItemInput = { tierId: GiftCardTierId; amountLabel: string; price: number };
+
+/** One canonical AnalyticsItem shape for a gift-card tier (item_id = tier id,
+ *  so Meta content_ids / GA4 item_id are stable across currencies). Exported
+ *  so callers building a begin_checkout payload (GiftCardConfigurator) reuse
+ *  the exact same item shape as add_to_cart/view_item below. */
+export function giftCardAnalyticsItem(gc: GiftCardItemInput): AnalyticsItem {
+  return {
+    item_id: gc.tierId,
+    item_name: `Gift Card ${gc.amountLabel}`,
+    item_brand: BRAND,
+    item_category: 'gift-card',
+    item_variant: gc.amountLabel,
+    price: gc.price,
+    quantity: 1,
+  };
+}
+
+/**
+ * add_to_cart for a gift-card tier. Gift cards aren't `Product`s and have no
+ * single catalogue price (it's per-currency), so — like prints — the caller
+ * resolves the price/label first and passes them in.
+ */
+export function buildGiftCardAddToCartEvent(
+  gc: GiftCardItemInput,
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('add_to_cart', gc.tierId);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  return withMeta(
+    {
+      event: 'add_to_cart',
+      event_id: eventId,
+      ecommerce: ecommerce([giftCardAnalyticsItem(gc)], currency),
+    },
+    'AddToCart',
+    eventId,
+  );
+}
+
+/** view_item for the gift-card PDP — mirrors buildPrintViewItemEvent. */
+export function buildGiftCardViewItemEvent(
+  gc: GiftCardItemInput,
+  options: EventOptions = {},
+): DataLayerEvent {
+  const eventId = options.eventId ?? createEventId('view_item', gc.tierId);
+  const currency = options.currency ?? ANALYTICS_CURRENCY;
+  return withMeta(
+    {
+      event: 'view_item',
+      event_id: eventId,
+      ecommerce: ecommerce([giftCardAnalyticsItem(gc)], currency),
+    },
+    'ViewContent',
+    eventId,
+  );
 }
 
 /** remove_from_cart for a print variant — GA4-only, mirrors buildRemoveFromCartEvent. */

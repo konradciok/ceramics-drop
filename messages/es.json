@@ -81,7 +81,8 @@
     "sklep": "Todas las piezas",
     "showroom": "Showroom",
     "gallery": "Galería",
-    "fineArtPrints": "Impresiones artísticas"
+    "fineArtPrints": "Impresiones artísticas",
+    "giftCard": "Tarjeta regalo"
   },
   "nav": {
     "sklep": "Tienda",
@@ -99,7 +100,8 @@
     "fineArtPrints": "Impresiones Fine Art",
     "studio": "Estudio",
     "kontakt": "Contacto",
-    "konto": "Cuenta"
+    "konto": "Cuenta",
+    "giftCard": "Tarjeta regalo"
   },
   "aria": {
     "cart": "Carrito",
@@ -127,7 +129,8 @@
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
-    "copy": "© 2026 Anna Ciok — cerámica y pintura, cada pieza de una sola autora"
+    "copy": "© 2026 Anna Ciok — cerámica y pintura, cada pieza de una sola autora",
+    "giftCard": "Tarjeta regalo"
   },
   "product": {
     "mug": "Taza",
@@ -958,7 +961,8 @@
       "sklep": "La colección completa de Anna Ciok: 125 piezas de cerámica únicas — tazas, jarrones, platos y cuencos. Pintadas a mano, cada una distinta.",
       "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop.",
       "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
-    }
+    },
+    "giftCard": "Tarjeta regalo Anna Ciok Ceramics — elige entre cuatro importes. El código llega por correo electrónico y se puede usar en un futuro pedido de cerámica o grabados de arte."
   },
   "deliveryNotice": {
     "title": "Información de envío",
@@ -1024,5 +1028,21 @@
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
     "accordionShipping": "Nuestro socio Prodigi produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
+  },
+  "giftCard": {
+    "eyebrow": "Regalo",
+    "h1": "Tarjeta regalo",
+    "lead": "Elige un importe y paga online — recibirás el código por correo justo después del pago. Úsalo para cerámica o grabados de arte en un próximo pedido.",
+    "tierLabel": "Importe de la tarjeta",
+    "buy": "Comprar tarjeta regalo",
+    "continueToPayment": "Continuar al pago",
+    "back": "Cambiar importe",
+    "contactTitle": "Tus datos",
+    "contactNote": "Enviaremos el código a este correo en cuanto se confirme el pago.",
+    "invalidContact": "Revisa tus datos e inténtalo de nuevo.",
+    "accordionHowTitle": "Cómo funciona",
+    "accordionHowBody": "Elige uno de los cuatro importes y paga online.\n\nJusto después del pago te enviamos un código único — listo para imprimir o reenviar en un mensaje.\n\nIntroduce el código en el campo «Tengo un código promocional» del carrito, en cualquier pedido de cerámica o grabados de arte.",
+    "accordionTermsTitle": "Condiciones",
+    "accordionTermsBody": "El código es de un solo uso, para un futuro pedido. Si el total del carrito es inferior al valor de la tarjeta, el importe restante se pierde — no se reembolsa ni se traslada a una compra posterior.\n\nLa tarjeta no caduca y sirve tanto para cerámica como para grabados de arte.\n\nLas tarjetas regalo no se pueden combinar con otros códigos promocionales, y una tarjeta regalo no se puede comprar junto con cerámica o grabados en el mismo pedido."
   }
 }

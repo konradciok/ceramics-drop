@@ -28,6 +28,10 @@ export interface PromoCode {
   max_redemptions: number | null;
   newsletter_welcome: boolean;
   campaign: string | null; // operator-facing label
+  /** 'admin' (operator-created, the pre-existing shape) or 'gift_card' (minted by a paid gift-card order — see gift-cards.ts). */
+  source: 'admin' | 'gift_card';
+  /** The gift-card order this code was minted for. Null for source='admin'. */
+  source_order_id: string | null;
 }
 
 const CODE_RE = /^[A-Z0-9_-]{3,32}$/;

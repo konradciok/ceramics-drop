@@ -5,14 +5,16 @@ import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP
 import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
 import { getPrintPricingConfig } from './print-pricing-config/get';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
+import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
 import type { PrintVariantSelection } from './types';
 
 // Hard sanity bound: every one-of-a-kind ceramic plus every print design in
-// each of its 21 fulfilment variants. Derived so it can't drift when the
-// catalogue changes. Uses the code registry (not the async DB accessors) so it
-// stays a module-load constant — it is an upper bound, and registry == DB at
-// parity, so the exact source is immaterial here.
-export const MAX_CART = registryProducts().length + registryPrintDesigns().length * 21;
+// each of its 21 fulfilment variants, plus every gift-card tier. Derived so it
+// can't drift when the catalogue changes. Uses the code registry (not the
+// async DB accessors) so it stays a module-load constant — it is an upper
+// bound, and registry == DB at parity, so the exact source is immaterial here.
+export const MAX_CART =
+  registryProducts().length + registryPrintDesigns().length * 21 + GIFT_CARD_TIERS.length;
 
 export type CheckoutVariant = PrintVariantSelection & {
   prodigiSku: string;
@@ -31,10 +33,27 @@ export type CheckoutVariant = PrintVariantSelection & {
   assetHeightPx: number;
 };
 
-export type CheckoutItem = { product_id: string; unit_price: number; variant?: CheckoutVariant };
+export type CheckoutItem = {
+  product_id: string;
+  unit_price: number;
+  variant?: CheckoutVariant;
+  /** Set for a gift-card line — mutually exclusive with `variant`. See gift-cards.ts. */
+  giftCardTierId?: GiftCardTierId;
+};
 export type ValidateResult =
   | { ok: true; items: CheckoutItem[] }
-  | { ok: false; reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' | 'print_asset_unavailable' | 'print_asset_error' };
+  | {
+      ok: false;
+      reason:
+        | 'empty'
+        | 'too_many'
+        | 'unknown'
+        | 'not_for_sale'
+        | 'mixed_cart'
+        | 'multiple_gift_cards'
+        | 'print_asset_unavailable'
+        | 'print_asset_error';
+    };
 
 /**
  * Resolve raw cart ids to deduped, catalog-known items.
@@ -51,6 +70,13 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   let pricing: PrintPricingConfig | null = null;
   for (const raw of rawIds) {
     if (typeof raw !== 'string' || seen.has(raw)) continue;
+    if (isGiftCardToken(raw)) {
+      const line = resolveGiftCardToken(raw, currency);
+      if (!line) return { ok: false, reason: 'unknown' };
+      seen.add(raw);
+      items.push({ product_id: line.tierId, unit_price: line.unitPriceMinor, giftCardTierId: line.tierId });
+      continue;
+    }
     if (isPrintToken(raw)) {
       const dec = decodePrintToken(raw);
       if (!dec) return { ok: false, reason: 'unknown' };
@@ -104,9 +130,23 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     items.push({ product_id: id, unit_price });
   }
   if (items.length === 0) return { ok: false, reason: 'empty' };
+  const hasGiftCards = items.some((i) => i.giftCardTierId != null);
+  // Hard rule: gift cards are their own exclusive track — no shipping, no
+  // piece reservation, and (like ceramics vs. prints below) never mixed with
+  // anything else in the same order.
+  if (hasGiftCards && items.some((i) => i.giftCardTierId == null)) {
+    return { ok: false, reason: 'mixed_cart' };
+  }
+  // A gift-card checkout maps 1:1 to a single minted promo_codes row
+  // (Option A) — supporting several gift-card lines in one order would need
+  // multiple mints per order, which the schema deliberately doesn't support.
+  // Buy additional gift cards via separate checkouts.
+  if (hasGiftCards && new Set(items.map((i) => i.giftCardTierId)).size > 1) {
+    return { ok: false, reason: 'multiple_gift_cards' };
+  }
   // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate
   // orders — a cart can never mix the two.
-  if (items.some((i) => i.variant) && items.some((i) => !i.variant)) {
+  if (!hasGiftCards && items.some((i) => i.variant) && items.some((i) => !i.variant)) {
     return { ok: false, reason: 'mixed_cart' };
   }
   return { ok: true, items };

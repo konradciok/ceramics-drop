@@ -743,6 +743,7 @@
 .adm-pill.promo-active { color: #2f6b3f; background: rgba(47, 107, 63, .1); }
 .adm-pill.promo-inactive { color: rgba(58, 40, 24, .6); background: var(--c-line-soft); }
 .adm-pill.promo-newsletter { color: var(--c-periwinkle-deep); background: rgba(111, 138, 196, .14); margin-left: 8px; }
+.adm-pill.promo-giftcard { color: #9c5a2c; background: rgba(156, 90, 44, .12); margin-left: 8px; }
 .adm-promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .adm-promo-grid .adm-note-label { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; }
 .adm-promo-grid input, .adm-promo-grid select {

@@ -31,6 +31,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`e2e-playwright-purchase-flow.md`](e2e-playwright-purchase-flow.md) | active | E2E design: tags, hermetic mode, destructive opt-in |
 | [`stripe-operations.md`](stripe-operations.md) | runbook | Stripe operational procedures |
 | [`promo-codes.md`](promo-codes.md) | active | Promo codes: operator runbook (`/admin/promotions`) + technical reference (discount math, redemption lifecycle, analytics contract) |
+| [`gift-cards.md`](gift-cards.md) | active | Gift cards: backend contract (`src/lib/gift-cards.ts`), Option A promo_codes mint/revoke design, checkout/webhook wiring, and the `/karta-podarunkowa` PDP + dedicated checkout |
 | [`notion-i18n.md`](notion-i18n.md) | active | Notion-backed translation workflow |
 | [`abandoned-cart-resend.md`](abandoned-cart-resend.md) | reference | Abandoned-cart email design |
 | [`complete-inpost.md`](complete-inpost.md) | reference | InPost ShipX integration notes |

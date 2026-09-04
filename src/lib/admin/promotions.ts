@@ -281,9 +281,17 @@ export async function updatePromotion(
   if (!currentData) return { status: 404, body: { error: 'not_found' } };
   const current = currentData as PromoCode;
 
+  // Purchase-minted codes represent a real transaction — read-only except the
+  // `active` toggle (still needed to manually revoke one, mirroring the
+  // automatic revoke-on-refund path). Any other field in the patch is rejected
+  // outright rather than silently ignored.
+  const { active, ...fields } = patch;
+  if (current.source === 'gift_card' && Object.keys(fields).length > 0) {
+    return { status: 400, body: { error: 'gift_card_code_readonly' } };
+  }
+
   // Validate the MERGED record — cross-field rules span fields the patch may
   // omit, so only the merge result can be checked (never defer to a DB error).
-  const { active, ...fields } = patch;
   const merged: CrossFieldRecord = {
     kind: fields.kind ?? current.kind,
     percent: fields.percent !== undefined ? fields.percent : current.percent,

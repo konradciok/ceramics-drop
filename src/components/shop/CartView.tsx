@@ -244,7 +244,13 @@ export function CartView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const lines = resolveCartLines(ids);
+  // This is the ceramics/prints merchandise cart — gift cards are their own
+  // exclusive checkout track (no shipping, no mixing) with a dedicated flow,
+  // so any gift-card token that ends up in the shared cart store is dropped
+  // here rather than half-rendered through ceramic/print-shaped UI.
+  const lines = resolveCartLines(ids).filter(
+    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind !== 'giftcard',
+  );
   const n = lines.length;
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // can't carry them, so any cart with a print line is locked to courier delivery
@@ -263,7 +269,7 @@ export function CartView({
   // maps any other currency to EUR.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
-  const priceOfLine = (l: CartLine) =>
+  const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' | 'print' }>) =>
     l.kind === 'print'
       ? priceOfVariant(l.sel, printCurrency, printPricing)
       : priceOfCurrency(l.product, currency);

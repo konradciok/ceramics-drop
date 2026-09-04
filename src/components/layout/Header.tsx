@@ -16,6 +16,7 @@ export async function Header() {
   const mobileLinks = [
     { href: '/sklep', label: t('nav.sklep') },
     { href: '/fine-art-prints', label: t('nav.fineArtPrints') },
+    { href: '/karta-podarunkowa', label: t('nav.giftCard') },
     { href: '/showroom', label: t('nav.showroom') },
     { href: '/gallery', label: t('nav.gallery') },
     { href: '/o-studiu', label: t('nav.studio') },

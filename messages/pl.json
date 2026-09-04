@@ -81,7 +81,8 @@
     "sklep": "Wszystkie prace",
     "showroom": "Showroom",
     "gallery": "Galeria",
-    "fineArtPrints": "Grafiki artystyczne"
+    "fineArtPrints": "Grafiki artystyczne",
+    "giftCard": "Karta podarunkowa"
   },
   "nav": {
     "sklep": "Sklep",
@@ -99,7 +100,8 @@
     "fineArtPrints": "Odbitki Fine Art",
     "studio": "O studiu",
     "kontakt": "Kontakt",
-    "konto": "Konto"
+    "konto": "Konto",
+    "giftCard": "Karta podarunkowa"
   },
   "aria": {
     "cart": "Koszyk",
@@ -127,7 +129,8 @@
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
-    "copy": "© 2026 Anna Ciok — ceramika i malarstwo, każda praca ma jedną autorkę"
+    "copy": "© 2026 Anna Ciok — ceramika i malarstwo, każda praca ma jedną autorkę",
+    "giftCard": "Karta podarunkowa"
   },
   "product": {
     "mug": "Kubek",
@@ -958,7 +961,8 @@
       "sklep": "Cała kolekcja Anny Ciok: 125 jedynych w swoim rodzaju prac ceramicznych — kubki, wazony, talerze i misy. Ręcznie malowane, każda sztuka inna.",
       "showroom": "Prace z wcześniejszych dropów — do obejrzenia, już niedostępne w sprzedaży. Zostaw znak, jeśli chcesz podobny egzemplarz w przyszłości.",
       "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
-    }
+    },
+    "giftCard": "Karta podarunkowa Anna Ciok Ceramics — cztery kwoty do wyboru, kod dostajesz e-mailem i wykorzystujesz przy jednym przyszłym zamówieniu ceramiki lub grafik artystycznych."
   },
   "deliveryNotice": {
     "title": "Informacja o dostawie",
@@ -1024,5 +1028,21 @@
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "accordionShipping": "Druk i wysyłkę realizuje nasz partner Prodigi w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+  },
+  "giftCard": {
+    "eyebrow": "Prezent",
+    "h1": "Karta podarunkowa",
+    "lead": "Wybierz kwotę, zapłać, a kod otrzymasz e-mailem od razu po zakupie. Można nim zapłacić za ceramikę albo grafiki artystyczne — przy jednym przyszłym zamówieniu.",
+    "tierLabel": "Kwota karty",
+    "buy": "Kup kartę podarunkową",
+    "continueToPayment": "Przejdź do płatności",
+    "back": "Zmień kwotę",
+    "contactTitle": "Twoje dane",
+    "contactNote": "Kod trafi na ten adres e-mail zaraz po zaksięgowaniu płatności.",
+    "invalidContact": "Sprawdź podane dane i spróbuj ponownie.",
+    "accordionHowTitle": "Jak to działa",
+    "accordionHowBody": "Wybierz jedną z czterech kwot i zapłać online.\n\nZaraz po płatności wysyłamy e-mail z unikalnym kodem — gotowym do wydrukowania albo przekazania w wiadomości.\n\nKod wpisujesz w polu „Mam kod rabatowy” w koszyku, przy dowolnym zamówieniu ceramiki lub grafik artystycznych.",
+    "accordionTermsTitle": "Warunki",
+    "accordionTermsBody": "Kod można wykorzystać jednorazowo, przy jednym przyszłym zamówieniu. Jeśli wartość koszyka jest niższa niż kwota karty, nadwyżka przepada — nie jest zwracana ani przenoszona na kolejne zakupy.\n\nKarta nie ma terminu ważności i można nią zapłacić zarówno za ceramikę, jak i za grafiki artystyczne.\n\nKarty podarunkowe nie łączą się z innymi kodami rabatowymi i nie można ich kupić razem z ceramiką lub grafikami w jednym zamówieniu."
   }
 }

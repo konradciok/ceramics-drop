@@ -54,6 +54,8 @@ const promoRow = (overrides: Partial<PromoCode> = {}): PromoCode => ({
   max_redemptions: null,
   newsletter_welcome: false,
   campaign: null,
+  source: 'admin',
+  source_order_id: null,
   ...overrides,
 });
 
@@ -338,6 +340,31 @@ describe('updatePromotion', () => {
     const res = await updatePromotion(supabase, PROMO_ID, { active: true }, null);
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'not_found' });
+  });
+
+  it('rejects a field-changing patch on a purchase-minted (gift_card) code', async () => {
+    const stored = promoRow({ source: 'gift_card', source_order_id: 'order-1' });
+    const { supabase, log } = fakeSupabase({
+      promo_codes: [{ data: stored, error: null }],
+    });
+    const res = await updatePromotion(supabase, PROMO_ID, { campaign: 'x' }, null);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'gift_card_code_readonly' });
+    expect(log.find((e) => e.method === 'update')).toBeUndefined();
+  });
+
+  it('still allows toggling active on a purchase-minted (gift_card) code (manual revoke)', async () => {
+    const stored = promoRow({ source: 'gift_card', source_order_id: 'order-1', active: true });
+    const after = { ...stored, active: false };
+    const { supabase } = fakeSupabase({
+      promo_codes: [
+        { data: stored, error: null },
+        { data: after, error: null },
+      ],
+      catalog_audit_log: [{ error: null }],
+    });
+    const res = await updatePromotion(supabase, PROMO_ID, { active: false }, null);
+    expect(res.status).toBe(200);
   });
 
   it('maps the newsletter unique-index 23505 on activation to 409', async () => {

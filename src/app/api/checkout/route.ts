@@ -19,6 +19,7 @@ import {
   type PromoCode,
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
+import { validateGiftCardContact } from '@/lib/gift-cards';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -119,18 +120,30 @@ export async function POST(req: Request) {
   }
 
   const ids = valid.items.map((i) => i.product_id);
-  // Only ceramics carry a piece_state row to reserve; prints are open-edition.
-  // validateCart guarantees a cart is all-ceramic or all-print (no mixing).
-  const ceramicIds = valid.items.filter((i) => !i.variant).map((i) => i.product_id);
+  // Only ceramics carry a piece_state row to reserve; prints and gift cards
+  // are not. validateCart guarantees a cart is all-ceramic, all-print, or
+  // all-gift-card (no mixing).
+  const ceramicIds = valid.items.filter((i) => !i.variant && !i.giftCardTierId).map((i) => i.product_id);
   const hasPrints = valid.items.some((i) => i.variant);
+  const hasGiftCards = valid.items.some((i) => i.giftCardTierId != null);
   // Delivery details are collected before payment. Prints use their own native
   // international-address schema; the ceramic/InPost contract stays unchanged.
+  // Gift cards have no delivery at all — the buyer always receives the code
+  // themselves, so only a name + email are collected (no address, no method).
   let method: 'paczkomat' | 'kurier' | 'odbior';
   let contact: DeliveryContact;
   let target_point: string | undefined;
   let address: DeliveryAddress | PrintShippingAddress | undefined;
   let printAddress: PrintShippingAddress | undefined;
-  if (hasPrints) {
+  if (hasGiftCards) {
+    const gc = validateGiftCardContact(body);
+    if (!gc.ok) return respond({ error: gc.reason }, { status: 400 });
+    // Reuse 'odbior' as the neutral "no physical delivery" method — it already
+    // yields 0 shipping in every currency and needs no address/phone. The real
+    // discriminator for downstream fulfilment logic is fulfilmentType below.
+    method = 'odbior';
+    contact = { first_name: gc.contact.first_name, last_name: gc.contact.last_name, email: gc.contact.email, phone: gc.contact.phone ?? '' };
+  } else if (hasPrints) {
     const delivery = validatePrintDelivery(body);
     if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
     ({ method, contact, address: printAddress } = delivery.delivery);
@@ -140,7 +153,7 @@ export async function POST(req: Request) {
     if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
     ({ method, contact, target_point, address } = delivery.delivery);
   }
-  const fulfilmentType = method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
+  const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
 
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
   // leaves shipping_address NULL and the Prodigi order could never be built.
@@ -160,6 +173,13 @@ export async function POST(req: Request) {
   // (after the orders insert — its FK requires the row) as the last gate
   // before the success response.
   let promo: PromoCode | null = null;
+  if (body.promo_code != null && hasGiftCards) {
+    // Deliberately unsupported: a promo code discounting a gift-card purchase
+    // would let a buyer mint a code worth MORE than they paid (the minted
+    // code is always the tier's full face value) — an arbitrage the existing
+    // no-stacking promo design was never meant to cover.
+    return respond({ error: 'invalid_promo', reason: 'wrong_track' }, { status: 400 });
+  }
   if (body.promo_code != null) {
     const code = normalizePromoCode(body.promo_code);
     if (!code) {
@@ -230,8 +250,11 @@ export async function POST(req: Request) {
 
   // Private-sale links re-offer already-sold ceramic pieces; prints are
   // open-edition and never part of one (settled decision — see
-  // docs/plans/ceramics-prints-separation/00-master.md #4). Reject before any
-  // reservation is attempted.
+  // docs/plans/ceramics-prints-separation/00-master.md #4). Gift cards are not
+  // pieces at all. Reject before any reservation is attempted.
+  if (privateSaleToken && hasGiftCards) {
+    return respond({ error: 'private_sale_giftcards_unsupported' }, { status: 400 });
+  }
   if (privateSaleToken && hasPrints) {
     return respond({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
@@ -318,6 +341,7 @@ export async function POST(req: Request) {
           fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasPrints ? { has_prints: '1' } : {}),
+          ...(hasGiftCards ? { has_gift_cards: '1', gift_card_tier: valid.items[0].giftCardTierId ?? '' } : {}),
           // Reporting/reconciliation only — the DB owns promo truth.
           ...(promo ? { promo_code: promo.code, promo_id: promo.id } : {}),
         },
@@ -499,7 +523,11 @@ export async function POST(req: Request) {
         order_id: orderId,
         product_id: i.product_id,
         unit_price: i.unit_price,
-        variant: i.variant ? { kind: 'print' as const, ...i.variant } : null,
+        variant: i.variant
+          ? { kind: 'print' as const, ...i.variant }
+          : i.giftCardTierId
+            ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
+            : null,
       })),
     );
     itemsErr = r.error;
