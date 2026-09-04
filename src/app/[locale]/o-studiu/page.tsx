@@ -131,10 +131,10 @@ export default async function StudioPage({ params }: Props) {
           <h2>{t.rich('studio.ctaH', richTags)}</h2>
           <p>{t('studio.ctaP')}</p>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link className="btn btn-primary" href="/kubki">
+            <Link className="btn btn-primary" href="/sklep">
               <span>{t('studio.ctaB1')}</span> <Icon name="arrow" className="btn-arrow" />
             </Link>
-            <Link className="btn btn-ghost" href="/wazony">
+            <Link className="btn btn-ghost" href="/fine-art-prints">
               {t('studio.ctaB2')}
             </Link>
           </div>
