@@ -109,7 +109,7 @@ describe('product notes drafts', () => {
     expect(updated.notes.kubki[0]).toBe('Zatwierdzony opis k01');
     expect(updated.notes.kubki.at(-1)).toBe('Zatwierdzony opis c04');
     expect(updated.notes['talerze-srednie']).toEqual(pl.notes['talerze-srednie']);
-    expect(updated.home.heroBeatCap).toBe(pl.home.heroBeatCap);
+    expect(updated.home.ctEyebrow).toBe(pl.home.ctEyebrow);
   });
 
   it('rejects drafts whose item count no longer matches the category product count', () => {

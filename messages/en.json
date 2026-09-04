@@ -61,7 +61,7 @@
   },
   "announce": "One studio — June-drop ceramics and paintings as fine art prints",
   "title": {
-    "home": "Anna Ciok Ceramics — June 2026 drop",
+    "home": "Anna Ciok Ceramics — Paintings & Fine Art Prints",
     "kubki": "Mugs",
     "wazony": "Small vases",
     "wazonySrednie": "Medium vases",
@@ -415,64 +415,12 @@
     "heroTagline": "ANNA CIOK STUDIO — CERAMICS & FINE ART PRINTS",
     "heroCta": "Browse the shop",
     "heroAlt": "Hand-painted ceramic pieces on a wooden table in Anna Ciok's studio",
-    "heroBeatCap": "Paintings are made in the same studio — ink and watercolour on paper. Each of the {count} is available as a fine art print, framed or unframed.",
     "marquee": [
-      "painted by hand",
-      "one piece at a time",
       "paintings as fine art prints",
-      "straight from the studio"
+      "printed to order",
+      "200 gsm fine art paper",
+      "shipping across the EU & UK"
     ],
-    "colEyebrow": "Ceramics — June drop",
-    "colTitle": "Nine categories, <em>ninety-six stories.</em>",
-    "colAllCta": "All categories in the shop",
-    "colLead": "Browse it like a gallery, mark the pieces you love, and head to checkout when your selection feels right.",
-    "card": {
-      "mug": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Mugs for everyday coffee and tea. Palms, lemons, shells and cacti painted in glaze on pale clay.",
-        "cta": "Choose a mug"
-      },
-      "vase": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Round-bellied vases for a single branch, a few tulips or a market bunch. Each one has its own rhythm of stripes and drawings.",
-        "cta": "Choose a vase"
-      },
-      "midvase": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Medium vases with a clear character — somewhere between the small and the large format.",
-        "cta": "Choose a vase"
-      },
-      "bigvase": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Large forms with a strong presence: palms, shells, cacti, a lobster and small folk scenes on warm white.",
-        "cta": "Choose a vase"
-      },
-      "dish": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Small dishes for jewellery, olive oil, salt or the little things that gather by the bed. Small, but full of character.",
-        "cta": "Choose a dish"
-      },
-      "medplate": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Medium plates, each hand-painted separately. For snacking, serving or displaying — ⌀ 18 cm.",
-        "cta": "Choose a medium plate"
-      },
-      "plate": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Large plates for serving, collecting or hanging on the wall. A donkey, palms, eyes, shells and painted rims.",
-        "cta": "Choose a plate"
-      },
-      "largebowl": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Generous bowls for fruit, salads and the things that like to live on the table. Inside: cobalt gardens, palms and leaves.",
-        "cta": "Choose a bowl"
-      },
-      "wavybowl": {
-        "num": "{count, plural, one {# piece} other {# pieces}} · {price} each",
-        "desc": "Wavy-rim bowls for breakfast, snacks and small everyday rituals. Each one waves a little differently.",
-        "cta": "Choose a bowl"
-      }
-    },
     "printsEyebrow": "Painting",
     "printsTitle": "Paintings in <em>fine art editions.</em>",
     "printsLead": "{count} paintings — ink and watercolour on paper. Choose a size and frame, and we’ll print your copy and ship it to you.",
@@ -486,23 +434,27 @@
     "storyImageAlt": "Anna Ciok in her ceramics studio",
     "editorialImageAlt": "Hand-painted Anna Ciok ceramics in sunlight",
     "storyEyebrow": "About the artist",
-    "storyTitle": "First came painting, <em>now ceramics.</em>",
-    "storyP1": "I’m Anna. I paint canvases and ceramics, and both worlds meet in the same studio. I treat a mug, plate or vase like a small functional painting: something you can hold, place on the table and use without waiting for a special occasion.",
-    "storyP2": "Paintings on paper go into fine art editions — you can hang the same composition at home as a print. Ceramics, though, exist only once: when a piece finds its home, it leaves the shop for good.",
-    "storyCta1": "Choose ceramics",
-    "storyCta2": "See the prints",
-    "craftEyebrow": "How it works",
-    "craftTitle": "From the studio <em>to your shelf.</em>",
-    "craft1H": "You pick <em>your favourites</em>",
-    "craft1P": "In the gallery, click the pieces that pull you in. Every selected thumbnail lands in the bar at the bottom of the screen, so it is easy to come back to your choice.",
-    "craft2H": "You go <em>to checkout</em>",
-    "craft2P": "Review your chosen pieces and complete the order. Payment is handled by Stripe: card, BLIK or Przelewy24.",
-    "craft3H": "We pack <em>and ship</em>",
-    "craft3P": "Ceramics are wrapped by hand and shipped within 1–3 days. Prints are made to order and reach you in 5–10 days — and a sold ceramic piece is never repeated.",
-    "lgCeramicH": "Ceramics — delivery in Poland",
-    "lgCeramicP": "InPost parcel locker or courier. Each piece is wrapped by hand and shipped within 1–3 business days. Personal pickup available in Warsaw.",
-    "lgPrintsH": "Prints — delivery across the EU & UK",
-    "lgPrintsP": "Prints are made to order and delivered by courier to your address anywhere in the European Union and the UK — usually within 5–10 business days.",
+    "storyTitle": "Every piece begins <em>as a painting.</em>",
+    "storyP1": "I’m Anna. I paint in ink and watercolour on paper — each composition starts as a single, hand-made piece in my studio.",
+    "storyP2": "Selected paintings enter a fine art edition: printed on archival-quality paper and shipped in the format you choose — unframed or in a wooden frame.",
+    "storyCta": "Browse the print collections",
+    "collectionsEyebrow": "Collections",
+    "collectionsTitle": "Nine threads, <em>one studio.</em>",
+    "collectionsLead": "Each collection is its own series of paintings — pick the mood, colour and rhythm that suits your space.",
+    "collectionsCount": "{count, plural, one {# piece} other {# pieces}}",
+    "collectionsCta": "All collections",
+    "craftEyebrow": "How to order",
+    "craftTitle": "From the studio <em>to your wall.</em>",
+    "craft1H": "You choose <em>a composition</em>",
+    "craft1P": "Browse the collections and pick the painting that speaks to you most.",
+    "craft2H": "You pick <em>size and frame</em>",
+    "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
+    "craft3H": "We print <em>and ship</em>",
+    "craft3P": "Your print is made and shipped by our partner Prodigi within 5–10 business days, to your home address anywhere in the EU or UK.",
+    "lgMaterialH": "Material & finish",
+    "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
+    "lgShippingH": "Production & shipping",
+    "lgShippingP": "Every print is made to order by our partner Prodigi and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
@@ -510,8 +462,6 @@
     "ctLEmail": "Email",
     "ctLIg": "Instagram",
     "ctVIg": "@ania.ciok.art",
-    "ctLShip": "Ceramics shipping",
-    "ctVShip": "Poland · ships in 1–3 business days",
     "ctLShipPrints": "Prints shipping",
     "ctVShipPrints": "EU & UK · 5–10 business days"
   },
