@@ -18,11 +18,10 @@ values ('11111111-1111-1111-1111-111111111111', 'tap_gc_pi_1', 50000, 0, 50000, 
 -- ── Tests ─────────────────────────────────────────────────────────────────
 -- 1. Existing (pre-feature-shaped) promo rows default to source='admin' with
 --    a NULL source_order_id — no behaviour change for the existing feature.
+insert into promo_codes (code, kind, percent) values ('TAP_GC_ADMIN', 'percent', 10);
+
 select is(
-  (select source from promo_codes
-     where id = (
-       insert into promo_codes (code, kind, percent) values ('TAP_GC_ADMIN', 'percent', 10) returning id
-     )),
+  (select source from promo_codes where code = 'TAP_GC_ADMIN'),
   'admin',
   'a plain promo insert defaults source to admin'
 );

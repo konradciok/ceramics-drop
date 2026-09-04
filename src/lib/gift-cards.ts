@@ -168,6 +168,11 @@ function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
+// Minimal shape check — same pattern as src/lib/newsletter.ts's EMAIL_RE.
+// Not full RFC 5322 validation; just enough to catch an unparseable address
+// before checkout succeeds and the promo-code send has nowhere to go.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
  * Validate the buyer contact for a gift-card checkout: name + email only —
  * deliberately no address/phone requirement (decision: the buyer always
@@ -182,6 +187,7 @@ export function validateGiftCardContact(raw: unknown): ValidateGiftCardContactRe
   const email = str(c.email);
   const phone = str(c.phone);
   if (!first_name || !last_name || !email) return { ok: false, reason: 'invalid_contact' };
+  if (!EMAIL_RE.test(email)) return { ok: false, reason: 'invalid_contact' };
   return { ok: true, contact: { first_name, last_name, email, phone } };
 }
 

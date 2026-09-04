@@ -1080,31 +1080,56 @@ export async function POST(req: Request) {
         }
 
         // Idempotent mint: the unique index on promo_codes.source_order_id is
-        // the backstop against a Stripe redelivery minting a second code.
-        const row = buildGiftCardPromoRow({ tier, orderId: order.id });
-        const { error: insertErr } = await supabase.from('promo_codes').insert(row);
-        let code = row.code;
-        if (insertErr) {
-          if ((insertErr as { code?: string }).code === '23505') {
-            // Already minted by a prior delivery — fetch the existing code so
-            // the email step below (which is claimed separately) can still
-            // resend it if it hasn't gone out yet.
-            const { data: existing, error: existingErr } = await supabase
-              .from('promo_codes')
-              .select('code')
-              .eq('source_order_id', order.id)
-              .maybeSingle();
-            if (existingErr || !existing) {
-              console.error('fulfilGiftCard: mint race but existing code lookup failed for', order.id, existingErr);
-              Sentry.captureException(existingErr ?? new Error('gift card code missing after 23505'));
-              return;
-            }
-            code = (existing as { code: string }).code;
-          } else {
+        // the backstop against a Stripe redelivery minting a second code. A
+        // 23505 on this insert doesn't by itself say WHICH constraint fired —
+        // it could also be a collision on the `code` column itself
+        // (astronomically unlikely given generateGiftCardCode's entropy, but
+        // not impossible, and this mints something with real monetary value).
+        // Disambiguate by re-querying source_order_id: a hit means "already
+        // minted for this order" (the expected redelivery case, reuse the
+        // code); a miss means the 23505 was a `code` collision, so retry the
+        // insert with a freshly generated code, bounded so a persistent DB
+        // issue can't loop forever.
+        const MAX_CODE_COLLISION_RETRIES = 3;
+        let code = '';
+        let mintAttempt = 0;
+        for (;;) {
+          const row = buildGiftCardPromoRow({ tier, orderId: order.id });
+          code = row.code;
+          const { error: insertErr } = await supabase.from('promo_codes').insert(row);
+          if (!insertErr) break;
+          if ((insertErr as { code?: string }).code !== '23505') {
             console.error('fulfilGiftCard: mint failed for', order.id, insertErr);
             Sentry.captureMessage('gift_card_mint_failed', {
               level: 'error',
               extra: { order_id: order.id, payment_intent_id: pi, error: insertErr.message },
+            });
+            return;
+          }
+          const { data: existing, error: existingErr } = await supabase
+            .from('promo_codes')
+            .select('code')
+            .eq('source_order_id', order.id)
+            .maybeSingle();
+          if (existingErr) {
+            console.error('fulfilGiftCard: mint race but existing code lookup failed for', order.id, existingErr);
+            Sentry.captureException(existingErr);
+            return;
+          }
+          if (existing) {
+            // Already minted by a prior delivery — reuse it so the email
+            // step below (claimed separately) can still resend it if needed.
+            code = (existing as { code: string }).code;
+            break;
+          }
+          // No row for this order despite the 23505 → the collision was on
+          // `code` itself, not `source_order_id`. Retry with a fresh code.
+          mintAttempt++;
+          if (mintAttempt >= MAX_CODE_COLLISION_RETRIES) {
+            console.error('fulfilGiftCard: exhausted code-collision retries for', order.id);
+            Sentry.captureMessage('gift_card_code_collision_exhausted', {
+              level: 'error',
+              extra: { order_id: order.id, payment_intent_id: pi, attempts: mintAttempt },
             });
             return;
           }

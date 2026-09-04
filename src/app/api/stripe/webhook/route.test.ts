@@ -44,6 +44,7 @@ vi.mock('@/lib/email', () => ({
   emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
   emailDisputeCreatedAlertToStudio: vi.fn(async () => {}),
   emailInvoiceFailedAlertToStudio: vi.fn(async () => {}),
+  emailGiftCardToCustomer: vi.fn(async () => ({ id: 'resend_gift_1' })),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
 // Both are `async` in the real module and are now handed to ctx.waitUntil with a
@@ -60,7 +61,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -2304,5 +2305,247 @@ describe('webhook releaseSale promo settlement (Phase 2)', () => {
       fn: 'settle_promo_redemption',
       params: { p_order_id: 'o1', p_status: 'released' },
     });
+  });
+});
+
+// --- Gift-card fulfilment (fulfilGiftCard): redelivery idempotency + code-collision disambiguation ---
+describe('webhook gift-card fulfilment (fulfilGiftCard)', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(emailGiftCardToCustomer).mockClear();
+  });
+
+  const ORDER_ID = 'order_gift_1';
+
+  /**
+   * Minimal stateful Supabase fake covering exactly the queries
+   * markPaid/fulfilGiftCard/createShipment issue for a single paid
+   * gift-card-only order. `orderStatus`/`confirmationEmailSentAt`/
+   * `promoRows` persist across `.from()` calls AND across multiple POST()
+   * invocations against the same fake instance, which is what lets a test
+   * drive two full "deliveries" of `payment_intent.succeeded` and observe
+   * the second seeing the first delivery's effects (already-paid order,
+   * already-minted code) — the realistic shape of a redelivery after a
+   * crash-resumed stale webhook_events lease (see AGENTS.md's Webhook
+   * Fulfillment section), without needing to re-drive that ledger's own
+   * CAS mechanics, which are covered elsewhere.
+   */
+  function makeGiftCardSupabase(opts: {
+    /** Controls the `promo_codes.insert()` outcome; default = "23505 iff a row for this source_order_id already exists" (the expected redelivery case). */
+    insertBehavior?: (
+      payload: Record<string, unknown>,
+      promoRows: Array<{ code: string; source_order_id: string }>,
+    ) => { error: { code?: string; message: string } | null };
+    /** order_items.variant rows for this order — default one valid gift-card line item. */
+    itemRows?: Array<{ variant: unknown }>;
+  } = {}) {
+    let orderStatus: 'pending' | 'paid' = 'pending';
+    let confirmationEmailSentAt: string | null = null;
+    const promoRows: Array<{ code: string; source_order_id: string }> = [];
+    const insertedPayloads: Array<Record<string, unknown>> = [];
+    const insertBehavior =
+      opts.insertBehavior ??
+      ((payload, rows) => {
+        const exists = rows.some((r) => r.source_order_id === payload.source_order_id);
+        if (exists) {
+          return {
+            error: {
+              code: '23505',
+              message: 'duplicate key value violates unique constraint "promo_codes_source_order_id_idx"',
+            },
+          };
+        }
+        return { error: null };
+      });
+    const itemRows = opts.itemRows ?? [{ variant: { kind: 'giftcard', tierId: 'gc-200' } }];
+    const webhookEvents = webhookEventsTable();
+
+    const supabase = {
+      rpc: async () => ({ data: true, error: null }),
+      from(table: string) {
+        if (table === 'webhook_events') return webhookEvents;
+        if (table === 'orders') {
+          return {
+            update: (payload: Record<string, unknown>) => {
+              if (payload.status === 'paid') {
+                if (orderStatus === 'pending') {
+                  orderStatus = 'paid';
+                  return proxyChain({ data: [{ id: ORDER_ID, private_sale_id: null, promo_code: null }], error: null });
+                }
+                return proxyChain({ data: [], error: null }); // already paid — CAS matches 0 rows
+              }
+              if ('confirmation_email_sent_at' in payload) {
+                const claiming = payload.confirmation_email_sent_at !== null;
+                if (claiming) {
+                  if (confirmationEmailSentAt) return proxyChain({ data: [], error: null }); // already claimed
+                  confirmationEmailSentAt = payload.confirmation_email_sent_at as string;
+                  return proxyChain({ data: [{ id: ORDER_ID }], error: null });
+                }
+                confirmationEmailSentAt = null; // release
+                return proxyChain({ data: [], error: null });
+              }
+              if ('resend_email_id' in payload) return proxyChain({ data: null, error: null });
+              throw new Error(`unexpected orders.update payload: ${JSON.stringify(payload)}`);
+            },
+            select: (columns: string) => {
+              if (columns === 'id, status, private_sale_id, promo_code') {
+                return proxyChain({
+                  data: { id: ORDER_ID, status: orderStatus, private_sale_id: null, promo_code: null },
+                  error: null,
+                });
+              }
+              if (columns === 'id, status') {
+                return proxyChain({ data: { id: ORDER_ID, status: orderStatus }, error: null });
+              }
+              if (columns === 'id, status, email, receiver_first_name, currency, locale, fulfilment_type') {
+                return proxyChain({
+                  data: {
+                    id: ORDER_ID, status: orderStatus, email: 'buyer@example.com', receiver_first_name: 'Ann',
+                    currency: 'pln', locale: 'pl', fulfilment_type: 'giftcard',
+                  },
+                  error: null,
+                });
+              }
+              if (columns.startsWith('id, email, total')) {
+                return proxyChain({
+                  data: {
+                    id: ORDER_ID, email: 'buyer@example.com', total: 20000, currency: 'pln', delivery_method: 'pickup',
+                    receiver_first_name: 'Ann', receiver_last_name: 'B', inpost_target_point: null, locale: 'pl',
+                    promo_code: null, discount: 0, confirmation_email_sent_at: confirmationEmailSentAt,
+                    studio_email_sent_at: '2026-01-01T00:00:00Z',
+                  },
+                  error: null,
+                });
+              }
+              if (columns.startsWith('id, payment_intent_id')) return proxyChain({ data: null, error: null });
+              throw new Error(`unexpected orders.select columns: ${columns}`);
+            },
+          };
+        }
+        if (table === 'order_items') {
+          return {
+            select: (_columns: string, countOpts?: unknown) => {
+              if (countOpts) return proxyChain({ count: 0, error: null }); // no ceramic items
+              return proxyChain({ data: itemRows, error: null });
+            },
+          };
+        }
+        if (table === 'piece_state') {
+          return {
+            update: () => proxyChain({ data: null, error: null }),
+            select: () => proxyChain({ count: 0, error: null }),
+          };
+        }
+        if (table === 'promo_codes') {
+          return {
+            insert: async (payload: Record<string, unknown>) => {
+              insertedPayloads.push(payload);
+              const result = insertBehavior(payload, promoRows);
+              if (!result.error) {
+                promoRows.push({ code: payload.code as string, source_order_id: payload.source_order_id as string });
+              }
+              return result;
+            },
+            select: () => {
+              let filterVal: string | undefined;
+              return {
+                eq: (_col: string, val: string) => {
+                  filterVal = val;
+                  return {
+                    maybeSingle: async () => {
+                      const row = promoRows.find((r) => r.source_order_id === filterVal);
+                      return { data: row ? { code: row.code } : null, error: null };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`unexpected table: ${table}`);
+      },
+    };
+    return { supabase, promoRows, insertedPayloads };
+  }
+
+  it('a redelivery of payment_intent.succeeded mints only one promo_codes row and sends the email only once', async () => {
+    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase();
+    supabaseImpl = supabase;
+
+    const first = await POST(succeededEventRequest());
+    expect(first.status).toBe(200);
+
+    const second = await POST(succeededEventRequest());
+    expect(second.status).toBe(200);
+
+    expect(promoRows).toHaveLength(1);
+    expect(insertedPayloads).toHaveLength(2); // both deliveries attempt an insert
+    expect(insertedPayloads[1].source_order_id).toBe(ORDER_ID); // 2nd delivery collides on source_order_id
+    expect(vi.mocked(emailGiftCardToCustomer)).toHaveBeenCalledTimes(1); // not resent on redelivery
+    expect(vi.mocked(emailGiftCardToCustomer).mock.calls[0][0]).toMatchObject({ code: promoRows[0].code });
+  });
+
+  it('a gift-card order missing its gift-card line item (malformed/mismatched data) mints no code and alerts', async () => {
+    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({ itemRows: [] });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(insertedPayloads).toHaveLength(0);
+    expect(promoRows).toHaveLength(0);
+    expect(vi.mocked(emailGiftCardToCustomer)).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'gift_card_no_line_item',
+      expect.objectContaining({ extra: expect.objectContaining({ order_id: ORDER_ID }) }),
+    );
+  });
+
+  it('a `code` collision (not source_order_id) retries the insert with a fresh code instead of silently giving up', async () => {
+    let insertCalls = 0;
+    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({
+      insertBehavior: () => {
+        insertCalls++;
+        if (insertCalls === 1) {
+          return {
+            error: { code: '23505', message: 'duplicate key value violates unique constraint "promo_codes_code_key"' },
+          };
+        }
+        return { error: null };
+      },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    expect(insertedPayloads).toHaveLength(2); // 1st collides on `code`, 2nd (fresh code) succeeds
+    expect(insertedPayloads[0].code).not.toBe(insertedPayloads[1].code);
+    expect(promoRows).toHaveLength(1);
+    expect(promoRows[0].code).toBe(insertedPayloads[1].code);
+    expect(vi.mocked(emailGiftCardToCustomer)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(emailGiftCardToCustomer).mock.calls[0][0]).toMatchObject({ code: insertedPayloads[1].code });
+  });
+
+  it('exhausts a bounded number of code-collision retries and alerts rather than looping forever', async () => {
+    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({
+      insertBehavior: () => ({
+        error: { code: '23505', message: 'duplicate key value violates unique constraint "promo_codes_code_key"' },
+      }),
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200); // best-effort: never turns into a 5xx retry storm
+    expect(insertedPayloads).toHaveLength(3); // MAX_CODE_COLLISION_RETRIES
+    expect(promoRows).toHaveLength(0);
+    expect(vi.mocked(emailGiftCardToCustomer)).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'gift_card_code_collision_exhausted',
+      expect.objectContaining({ extra: expect.objectContaining({ order_id: ORDER_ID, attempts: 3 }) }),
+    );
   });
 });

@@ -129,6 +129,18 @@ describe('validateGiftCardContact', () => {
     expect(validateGiftCardContact(null)).toEqual({ ok: false, reason: 'invalid_contact' });
     expect(validateGiftCardContact({})).toEqual({ ok: false, reason: 'invalid_contact' });
   });
+
+  it('rejects a malformed email — the buyer email is the only delivery channel for the code', () => {
+    expect(
+      validateGiftCardContact({ contact: { first_name: 'Anna', last_name: 'K', email: 'not-an-email' } }),
+    ).toEqual({ ok: false, reason: 'invalid_contact' });
+    expect(
+      validateGiftCardContact({ contact: { first_name: 'Anna', last_name: 'K', email: 'anna@nodot' } }),
+    ).toEqual({ ok: false, reason: 'invalid_contact' });
+    expect(
+      validateGiftCardContact({ contact: { first_name: 'Anna', last_name: 'K', email: '@example.com' } }),
+    ).toEqual({ ok: false, reason: 'invalid_contact' });
+  });
 });
 
 describe('generateGiftCardCode', () => {

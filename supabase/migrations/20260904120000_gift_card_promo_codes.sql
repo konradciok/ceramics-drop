@@ -41,6 +41,23 @@ create index promo_codes_source_idx on promo_codes (source);
 
 -- Explicit discriminator for gift-card orders alongside the existing
 -- ceramics/prints kinds (mirrors Finding 8's fulfilment_type column).
+-- Low-lock replacement (precedent: block 4 of 20260813170000_harden_rpc_and_catalog.sql):
+-- add the new check under a temporary name as NOT VALID (metadata-only,
+-- no table scan), VALIDATE it separately, then swap names. Honest caveat:
+-- the Supabase CLI applies one migration file inside a single wrapping
+-- transaction, so this does NOT give checkout inserts a window to commit
+-- *between* these statements the way genuinely separate transactions
+-- would — the whole block still commits or rolls back atomically. What it
+-- still buys: `VALIDATE CONSTRAINT` takes a SHARE UPDATE EXCLUSIVE lock,
+-- which — unlike the ACCESS EXCLUSIVE lock a plain `ADD CONSTRAINT ...
+-- CHECK` scan would hold for its whole duration — permits concurrent
+-- INSERT/UPDATE/DELETE (i.e. concurrent checkout writes to `orders`) while
+-- the scan runs; only the brief NOT VALID add / DROP / RENAME steps take
+-- ACCESS EXCLUSIVE, and each is a fast catalog-only update, not a scan.
+-- `orders` also has few enough rows that the scan itself is cheap either
+-- way, but the lock-mode difference is the actual, real benefit here.
+alter table orders add constraint orders_fulfilment_type_check_new
+  check (fulfilment_type in ('inpost', 'prodigi', 'pickup', 'giftcard')) not valid;
+alter table orders validate constraint orders_fulfilment_type_check_new;
 alter table orders drop constraint orders_fulfilment_type_check;
-alter table orders add constraint orders_fulfilment_type_check
-  check (fulfilment_type in ('inpost', 'prodigi', 'pickup', 'giftcard'));
+alter table orders rename constraint orders_fulfilment_type_check_new to orders_fulfilment_type_check;
