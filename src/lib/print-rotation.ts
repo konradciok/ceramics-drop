@@ -1,5 +1,5 @@
 /**
- * Deterministic daily rotation for the homepage hero-beat print tiles.
+ * Deterministic daily rotation for the homepage's print rail tiles.
  * Pure and dependency-free so the pick is testable and identical across
  * V8 (build-time prerender) and workerd (per-request render): FNV-1a hash
  * of the date key seeds a mulberry32 PRNG driving a Fisher–Yates shuffle.

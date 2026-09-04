@@ -9,9 +9,10 @@ type Props = {
   sizes: string;
 };
 
-/** Shared print tile for the homepage rail and hero-beat carousel — purely
-    presentational (name/price are computed by the caller, which owns the
-    translations and pricing config). Styled by `.prints-home-card`. */
+/** Print tile for the homepage's daily-rotated rail — purely presentational
+    (name/price are computed by the caller, which owns the translations and
+    pricing config). Styled by `.prints-home-card`, also reused inline by the
+    homepage's print-collections index tiles. */
 export function PrintCard({ id, image, name, priceLabel, sizes }: Props) {
   return (
     <Link className="prints-home-card" href={`/fine-art-prints/${id}`}>

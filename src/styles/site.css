@@ -200,28 +200,12 @@ ul { list-style:none; padding:0; margin:0; }
 .section-link svg { width:14px; height:14px; transition:transform .25s ease; }
 .section-link:hover svg { transform:translateX(3px); }
 
-/* ─── KOLEKCJE (dwa kafle) ────────────────────────────── */
-.collections { background:var(--c-cream); }
-.collection-grid { display:grid; grid-template-columns:1fr; gap:20px; }
+/* ─── PRINT COLLECTIONS INDEX (nine named series) ────────── */
+.print-collections { background:var(--c-cream); }
+.print-collections-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
 @media (min-width:861px) {
-  .collection-grid { grid-template-columns:1fr 1fr; }
+  .print-collections-grid { grid-template-columns:repeat(3,1fr); gap:28px; }
 }
-.collection {
-  position:relative; overflow:hidden; background:var(--c-bone); cursor:pointer;
-  display:flex; align-items:flex-end; padding:clamp(24px,3vw,44px); aspect-ratio:4/3.4;
-}
-.collection img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform 1s var(--ease); }
-.collection:hover img { transform:scale(1.05); }
-.collection .shade { position:absolute; inset:0; background:linear-gradient(180deg,transparent 35%,rgba(31,22,16,.62)); }
-.col-content { position:relative; z-index:2; color:var(--c-paper); }
-.col-content .num { font-family:var(--f-cond); font-size:12px; letter-spacing:.22em; text-transform:uppercase; opacity:.85; margin-bottom:10px; }
-.col-content h3 { font-family:var(--f-display); font-weight:300; font-size:clamp(30px,3.2vw,48px); line-height:1; margin:0 0 12px; letter-spacing:-.01em; }
-.col-content h3 em { font-style:italic; font-weight:400; }
-.col-content p { font-family:var(--f-cond); font-size:13px; letter-spacing:.06em; margin:0 0 16px; max-width:34ch; opacity:.9; }
-.col-cta { font-family:var(--f-cond); font-size:12px; letter-spacing:.2em; text-transform:uppercase; display:inline-flex; align-items:center; gap:10px; padding-bottom:4px; border-bottom:1px solid currentColor; }
-.col-cta svg { width:13px; height:13px; transition:transform .25s ease; }
-.collection:hover .col-cta svg { transform:translateX(3px); }
-.home-more { display:flex; justify-content:center; margin-top:clamp(28px,4vw,52px); }
 
 /* ─── PRINTS (home rail) ──────────────────────────────── */
 .prints-home { background:var(--c-paper); }
@@ -231,14 +215,17 @@ ul { list-style:none; padding:0; margin:0; }
   .prints-home-aside { align-items:flex-end; }
   .prints-home-aside p { text-align:right; }
 }
-/* Mobile: horizontal rail bleeding into the gutters; ≥861px: 4-up grid. */
+/* Mobile: gutter-bleed snap scroller; ≥861px: static 5-up row (no scroll). */
 .prints-home-grid {
   display:flex; gap:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
   margin:0 calc(-1 * var(--gut)); padding:8px var(--gut) 16px;
+  scroll-snap-type:x proximity; scroll-padding-inline:var(--gut);
+  overscroll-behavior-x:contain; scrollbar-width:none;
 }
-.prints-home-card { flex:none; width:min(60vw,220px); display:flex; flex-direction:column; gap:10px; }
+.prints-home-grid::-webkit-scrollbar { display:none; }
+.prints-home-card { flex:none; width:min(60vw,220px); display:flex; flex-direction:column; gap:10px; scroll-snap-align:start; }
 @media (min-width:861px) {
-  .prints-home-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:24px; overflow:visible; margin:0; padding:0; }
+  .prints-home-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:24px; overflow:visible; margin:0; padding:0; scroll-snap-type:none; }
   .prints-home-card { width:auto; }
 }
 .prints-home-card img {
@@ -1592,28 +1579,3 @@ ul { list-style:none; padding:0; margin:0; }
 .pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }
 
 /* ─── Hero beat band (Spec D) ─────────────────────────────────── */
-/* Print tiles sit on paper (vs the hero's cream) so the two media read
-   as separate beats — design canvas "Jedna pracownia, dwa media". */
-.hero-beat { background: var(--c-paper); padding: clamp(56px,8vw,110px) var(--gut) clamp(48px,7vw,96px); }
-.hero-beat-inner { max-width: var(--max); margin: 0 auto; display: grid; gap: 28px; justify-items: center; }
-/* Hero beat — 5 daily-rotated print tiles. Mobile: gutter-bleed snap
-   scroller; ≥861px: static 5-up row (no scroll). Tiles reuse .prints-home-card. */
-.hero-beat-grid {
-  justify-self: stretch; /* .hero-beat-inner justify-items:center would shrink-wrap the scroller */
-  display: flex; gap: 14px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  margin: 0 calc(-1 * var(--gut)); padding: 8px var(--gut) 16px;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: var(--gut);
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-}
-.hero-beat-grid::-webkit-scrollbar { display: none; }
-.hero-beat-grid .prints-home-card { scroll-snap-align: start; }
-@media (min-width: 861px) {
-  .hero-beat-grid {
-    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px;
-    overflow: visible; margin: 0; padding: 0; scroll-snap-type: none;
-  }
-}
-.hero-beat-cap { max-width: 40ch; text-align: center; font-family: var(--f-display); font-style: italic; font-size: clamp(18px,2.4vw,26px); line-height: 1.4; color: var(--c-espresso-muted); margin: 0; }
