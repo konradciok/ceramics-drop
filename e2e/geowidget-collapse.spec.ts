@@ -13,9 +13,11 @@ import {
  * sit between the contact fields and the pay CTA unconditionally on mobile.
  * Now it mounts only after "choose a locker" and collapses to the selected
  * point with a "change" action.
- * @ci-safe — mocked Geowidget seam; /api/checkout is never called.
+ * Needs a real backend: onlineAvailable (active-drop gate) fails closed
+ * without one, so no ceramic tile is ever purchasable to seed this with —
+ * run only via `npm run test:e2e:edge` against a live/preview deploy.
  */
-test.describe('geowidget collapse @ci', () => {
+test.describe('geowidget collapse @checkout-edge', () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
   test.beforeEach(async ({ page, context }) => {

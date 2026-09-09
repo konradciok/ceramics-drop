@@ -5,9 +5,11 @@ import { resetCart, addFirstUnsoldFromCategory, goToCart } from './helpers/check
  * Accessible names + keyboard access (audit P1): tile overlay anchors and
  * cart thumbnails were empty links, and purchasable tiles had no keyboard
  * path to the lightbox at all.
- * @ci-safe — read-only page interactions plus local cart state.
+ * Needs a real backend: onlineAvailable (active-drop gate) fails closed
+ * without one, so the lightbox/add-to-cart paths under test never open —
+ * run only via `npm run test:e2e:edge` against a live/preview deploy.
  */
-test.describe('tile and cart link a11y @ci', () => {
+test.describe('tile and cart link a11y @checkout-edge', () => {
   test('gallery tile link carries name/price and Enter opens the lightbox', async ({ page }) => {
     await page.goto('/kubki');
     const tile = page

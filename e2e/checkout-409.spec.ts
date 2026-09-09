@@ -13,8 +13,10 @@ import {
 // Failure path: /api/checkout returns 409 (item sold out between add-to-cart and checkout).
 // Expected: the app surfaces cart.soldOut copy and prunes the affected line from the cart
 // (CartView.handleCheckout — removes each id in the 409 `sold` array).
-// @ci-safe — the checkout response is mocked, so no real order is created.
-test.describe('@checkout-edge @ci checkout 409', () => {
+// Needs a real backend: onlineAvailable (active-drop gate) fails closed
+// without one, so no ceramic tile is ever purchasable to seed this with —
+// run only via `npm run test:e2e:edge` against a live/preview deploy.
+test.describe('@checkout-edge checkout 409', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('handles 409 by showing sold-out and pruning the cart', async ({ page, context }) => {

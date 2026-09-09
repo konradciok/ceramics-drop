@@ -4,8 +4,10 @@ import { resetCart, addFirstUnsoldFromCategory, goToCart, selectPaczkomat, block
 // Failure path: the InPost Geowidget script is blocked or its token is missing.
 // Expected: the app shows delivery.lockerUnavailable copy and keeps checkout
 // disabled (no locker selectable → lockerReady is false in CartView).
-// @ci-safe — fully self-contained via request interception; no real checkout occurs.
-test.describe('@checkout-edge @ci geowidget unavailable', () => {
+// Needs a real backend: onlineAvailable (active-drop gate) fails closed
+// without one, so no ceramic tile is ever purchasable to seed this with —
+// run only via `npm run test:e2e:edge` against a live/preview deploy.
+test.describe('@checkout-edge geowidget unavailable', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page, context }) => {

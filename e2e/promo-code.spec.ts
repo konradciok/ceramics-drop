@@ -25,7 +25,10 @@ async function seedCeramic(page: Page): Promise<void> {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ sold: [], showroom: [] }),
+      // `available` (added alongside the active-drop purchase guard) is what
+      // CartView actually reads to decide a ceramic line stays in the cart /
+      // checkout arms — an empty or missing array reads as "prune everything".
+      body: JSON.stringify({ sold: [], showroom: [], available: ['k01'], activeDrops: [] }),
     }),
   );
   await page.goto('/'); // any page, just to reach the app origin's localStorage
