@@ -1,9 +1,7 @@
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { AllPiecesScreen } from '@/components/shop/AllPiecesScreen';
-import { ShowroomViewAnalytics } from '@/components/shop/ShowroomViewAnalytics';
-import { getPublicProducts } from '@/lib/products';
-import { getSoldIds, getShowroomIds } from '@/lib/inventory';
+import { ShowroomScreen } from '@/components/shop/ShowroomScreen';
+import { getShowroomProducts } from '@/lib/inventory';
 import { alternatesFor } from '@/lib/seo/urls';
 import { HOME_EDITORIAL_IMAGE } from '@/lib/editorial-images';
 import { SITE_URL } from '@/lib/site';
@@ -48,25 +46,12 @@ export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Combined public ceramics catalogue — every category in one grid,
-  // independent of the `showroom` flag (which only badges a piece as
-  // not-for-sale; see ProductTile). Sold/showroom overlays are best-effort:
-  // a Supabase outage must not take the storefront down.
-  const [soldIds, showroomIds] = await Promise.all([
-    getSoldIds().catch(() => [] as string[]),
-    getShowroomIds().catch(() => [] as string[]),
-  ]);
-  const sold = new Set(soldIds);
-  const showroom = new Set(showroomIds);
-  const products = (await getPublicProducts()).map((p) => {
-    const merged = sold.has(p.id) ? { ...p, sold: true } : p;
-    return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
-  });
+  // Availability failures retain the archive and disable purchase actions.
+  const entries = await getShowroomProducts().catch(() => []);
 
   return (
     <main>
-      <ShowroomViewAnalytics count={products.filter((p) => p.showroom).length} />
-      <AllPiecesScreen products={products} />
+      <ShowroomScreen entries={entries} />
     </main>
   );
 }

@@ -97,7 +97,7 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(dbCeramics);
 
     expect(await getProducts()).toEqual(registryProducts());
-    expect(await getProductById('k01')).toEqual(registryProducts().find((p) => p.id === 'k01'));
+    expect(await getProductById('k01')).toMatchObject(registryProducts().find((p) => p.id === 'k01')!);
     expect(await getProductById('nope')).toBeUndefined();
     expect((await getProductsByCategory('kubki')).map((p) => p.id)).toEqual(
       registryProducts().filter((p) => p.category === 'kubki').map((p) => p.id),

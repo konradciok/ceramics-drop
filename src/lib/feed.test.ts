@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import type { Product } from './types';
+vi.mock('./ceramic-sale-state', () => ({
+  withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
+}));
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
 import { getPrintDesigns } from './prints';
 

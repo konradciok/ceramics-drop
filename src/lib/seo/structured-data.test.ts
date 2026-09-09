@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import type { Product } from '@/lib/types';
+vi.mock('@/lib/ceramic-sale-state', () => ({
+  withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
+}));
 import { collectionSchema, organizationSchema, printCollectionSchema, printProductSchema, productSchema } from './structured-data';
 import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
@@ -197,7 +201,7 @@ describe('collectionSchema', () => {
 
 describe('productSchema', () => {
   const products = registryProductsByCategory('kubki');
-  const product = { ...products[0], sold: false };
+  const product = { ...products[0], sold: false, onlineAvailable: true };
   const tRaw = (key: string) => {
     // Return a stub notes array so noteIndex lookup works
     if (key.startsWith('notes.')) return ['test note'];

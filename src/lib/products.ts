@@ -83,7 +83,7 @@ export function isProductPublic(product: Product): boolean {
 
 /** Whether a piece may be bought — publicly visible AND not sold / not in the showroom. */
 export function isProductPurchasable(product: Product): boolean {
-  return !product.sold && !product.showroom && isProductPublic(product);
+  return product.onlineAvailable === true && !product.sold && !product.showroom && isProductPublic(product);
 }
 
 /** CATEGORY_ORDER minus hidden families — nav / footer / switcher / jump-nav. */
@@ -296,7 +296,9 @@ export function registryResolveKnownProducts(ids: string[]): Product[] {
 
 /** Registry-only cart resolve (no DB) — mirrors resolveCartProducts on the client. */
 export function registryResolveCartProducts(ids: string[]): Product[] {
-  return registryResolveKnownProducts(ids).filter(isProductPurchasable);
+  // Display only: this registry cannot authorize purchases. Tiles and checkout
+  // use verified availability separately.
+  return registryResolveKnownProducts(ids).filter((p) => !p.sold && !p.showroom && isProductPublic(p));
 }
 
 /* ------------------------------------------------------------------
@@ -379,23 +381,29 @@ export async function getProducts(): Promise<Product[]> {
   return (await loadCeramicCatalog()).products;
 }
 
+async function withCeramicSaleState(products: Product[]): Promise<Product[]> {
+  const { withCeramicSaleState: merge } = await import('./ceramic-sale-state');
+  return merge(products);
+}
+
 /**
  * Products shown on public browsing surfaces (shop, sitemap, merchant feeds) —
  * the full catalogue minus the hidden families. Sold pieces are kept (the sold
  * overlay is applied at render time; feeds mark them out-of-stock).
  */
 export async function getPublicProducts(): Promise<Product[]> {
-  return (await loadCeramicCatalog()).products.filter(isProductPublic);
+  return withCeramicSaleState((await loadCeramicCatalog()).products.filter(isProductPublic));
 }
 
 export async function getProductsByCategory(slug: CategorySlug): Promise<Product[]> {
   // Public grid + PDP siblings + collection JSON-LD read this — withdraw any
   // non-active product (db mode only; `code` has no status ⇒ all active).
-  return ((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic);
+  return withCeramicSaleState(((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic));
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
-  return (await loadCeramicCatalog()).byId.get(id);
+  const product = (await loadCeramicCatalog()).byId.get(id);
+  return product ? (await withCeramicSaleState([product]))[0] : undefined;
 }
 
 /** Resolve known products by id without filtering sold pieces. */
@@ -413,5 +421,5 @@ export async function resolveKnownProducts(ids: string[]): Promise<Product[]> {
  * localStorage can never reintroduce sold or withdrawn inventory.
  */
 export async function resolveCartProducts(ids: string[]): Promise<Product[]> {
-  return (await resolveKnownProducts(ids)).filter(isProductPurchasable);
+  return (await withCeramicSaleState(await resolveKnownProducts(ids))).filter(isProductPurchasable);
 }

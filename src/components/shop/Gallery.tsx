@@ -6,6 +6,7 @@ import { useFilter } from '@/store/filter';
 import { filterByStatus } from '@/lib/status-filter';
 import { useMounted } from '@/lib/use-mounted';
 import type { Product } from '@/lib/types';
+import { isProductPurchasable } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
@@ -29,7 +30,7 @@ export function Gallery({ products, bento = false }: Props) {
   // useEffect deps without triggering the effect on every render. Showroom pieces
   // are excluded — they never open the lightbox and aren't purchasable, so they
   // must stay out of the lightbox/analytics index space.
-  const available = useMemo(() => products.filter((p) => !p.sold && !p.showroom), [products]);
+  const available = useMemo(() => products.filter(isProductPurchasable), [products]);
   const t = useTranslations();
   const mounted = useMounted();
   const storedStatus = useFilter((s) => s.status);

@@ -10,6 +10,7 @@ const mk = (id: string, sold: boolean, showroom = false): Product => ({
   price: 95,
   measure: '10 cm',
   sold,
+  onlineAvailable: !sold && !showroom,
   showroom,
   dropId: 'drop-1',
   noteIndex: 0,

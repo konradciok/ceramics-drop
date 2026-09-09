@@ -56,6 +56,8 @@ const ORDER_COLUMNS = [
   'subtotal_display',
   'shipping_display',
   'total_display',
+  'gift_card_payment_display',
+  'cash_payment_display',
   'items_count',
   'product_ids',
   'email',
@@ -103,6 +105,8 @@ async function main(): Promise<void> {
     subtotal_display: minorToMajor(o.subtotal, o.currency),
     shipping_display: minorToMajor(o.shipping, o.currency),
     total_display: minorToMajor(o.total, o.currency),
+    gift_card_payment_display: minorToMajor(o.gift_card_amount ?? 0, o.currency),
+    cash_payment_display: minorToMajor(o.cash_amount ?? o.total, o.currency),
     items_count: o.items.length,
     product_ids: o.items.map((it) => it.product_id).join('; '),
   }));

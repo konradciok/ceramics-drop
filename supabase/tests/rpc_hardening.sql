@@ -83,6 +83,10 @@ select is(
 insert into piece_state (product_id, status) values
   ('tap_ttl_neg', 'available'),
   ('tap_ttl_huge', 'available');
+insert into drops(id,label,status) values ('tap_ttl','Test','active');
+insert into products(id,type,category_slug,num,price_pln,status,drop_id) values
+  ('tap_ttl_neg','ceramic','kubki','01',100,'active','tap_ttl'),
+  ('tap_ttl_huge','ceramic','kubki','02',100,'active','tap_ttl');
 
 select is(
   reserve_pieces(array['tap_ttl_neg'], 'a0000000-0000-0000-0000-000000000001', -5),

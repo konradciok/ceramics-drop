@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createOrderInvoice } from './invoice';
+import { createOrderInvoice, createInvoiceForOrder } from './invoice';
 
 /**
  * Covers the regression where invoices were created EMPTY (pending invoice items
@@ -29,6 +29,7 @@ const stripeMock = {
   customers: { create: vi.fn(), list: vi.fn(), update: vi.fn() },
   invoiceItems: { create: vi.fn() },
   invoices: {
+    search: vi.fn(),
     create: vi.fn(),
     retrieve: vi.fn(),
     finalizeInvoice: vi.fn(),
@@ -67,6 +68,7 @@ beforeEach(() => {
   stripeMock.customers.create.mockResolvedValue({ id: 'cus_1' });
   stripeMock.customers.update.mockResolvedValue({ id: 'cus_updated' });
   stripeMock.invoices.create.mockResolvedValue({ id: 'in_1', status: 'draft', total: 0 });
+  stripeMock.invoices.search.mockResolvedValue({ data: [], has_more: false });
   stripeMock.invoiceItems.create.mockResolvedValue({ id: 'ii_1' });
   // First retrieve: live status after create; second: total check after items.
   stripeMock.invoices.retrieve
@@ -78,6 +80,27 @@ beforeEach(() => {
 });
 
 describe('createOrderInvoice', () => {
+  it('invoices the full value of a balance payment without inventing a PaymentIntent or a discount', async () => {
+    orderRow = { ...ORDER, payment_intent_id: null, currency: 'eur', gift_card_amount: 10500 };
+    await createInvoiceForOrder({ orderId: 'ord-1' });
+    const parameters = stripeMock.invoices.create.mock.calls[0][0];
+    expect(parameters.metadata).toEqual({ order_id: 'ord-1' });
+    expect(parameters.custom_fields).toEqual([
+      { name: 'Karta podarunkowa', value: '105.00 EUR' },
+      { name: 'Dopłata', value: '0.00 EUR' },
+    ]);
+    expect(stripeMock.invoiceItems.create.mock.calls.every(call => call[0].amount >= 0)).toBe(true);
+    expect(stripeMock.invoices.pay).toHaveBeenCalledWith('in_1', { paid_out_of_band: true }, expect.anything());
+  });
+
+  it('recovers a previously created invoice even after the create idempotency key expires', async () => {
+    stripeMock.invoices.search.mockResolvedValue({ data: [{ id: 'in_existing' }], has_more: false });
+    stripeMock.invoices.retrieve.mockReset().mockResolvedValue({ id: 'in_existing', status: 'paid', total: 10500 });
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.invoices.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoiceItems.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoices.sendInvoice).toHaveBeenCalledWith('in_existing', {}, expect.anything());
+  });
   it('attaches items directly to a send_invoice PLN draft, pays out-of-band, then sends', async () => {
     await createOrderInvoice('pi_1');
 
@@ -162,7 +185,7 @@ describe('createOrderInvoice', () => {
 
     await expect(createOrderInvoice('pi_1')).rejects.toThrow(/total 9999 != order ord-1 total 10500/);
     expect(stripeMock.invoices.finalizeInvoice).not.toHaveBeenCalled();
-    expect(updateEq).not.toHaveBeenCalled();
+    expect(updateEq).toHaveBeenCalledOnce(); // draft id saved for recovery; invoiced_at remains unset
   });
 
   it('resumes idempotently when a webhook retry finds the invoice already paid', async () => {

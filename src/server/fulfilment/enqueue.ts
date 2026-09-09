@@ -34,8 +34,9 @@ export async function enqueueProdigi(
   orderId: string,
   env: CloudflareEnv,
   ctx: ExecutionContext,
+  client?: ReturnType<typeof getSupabaseAdmin>,
 ): Promise<void> {
-  const supabase = getSupabaseAdmin();
+  const supabase = client ?? getSupabaseAdmin();
   const idempotencyKey = `prodigi:${env.PRODIGI_ENV}:order:${orderId}:v1`;
 
   // Upsert is idempotent: duplicate webhook → same unique idempotency_key → no

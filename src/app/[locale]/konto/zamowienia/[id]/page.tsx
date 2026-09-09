@@ -1,4 +1,5 @@
 import '@/styles/account.css';
+import { paymentBreakdownRows } from '@/lib/payment-breakdown';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -112,6 +113,8 @@ export default async function KontoOrderPage({ params }: Props) {
               <span>{t('account.total')}</span>
               <span>{formatOrderAmount(order.total, order.currency, locale)}</span>
             </div>
+            {(order.gift_card_amount ?? 0) > 0 && paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount ?? 0 }, locale).slice(1).map(row =>
+              <div className="line" key={row.label}><span>{row.label}</span><span>{row.value}</span></div>)}
           </div>
         </div>
 
@@ -174,7 +177,7 @@ export default async function KontoOrderPage({ params }: Props) {
           )}
         </div>
 
-        {isCeramicOrder && order.status === 'paid' && (
+        {(isCeramicOrder || order.fulfilment_type === 'prodigi') && order.status === 'paid' && (
           <div className="account-actions">
             {/* Reuse the existing returns flow rather than rebuilding it here. */}
             <Link

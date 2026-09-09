@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
@@ -6,9 +6,11 @@ import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
 import { handleStripeEvent } from '@/lib/webhook';
+import { handleBalancePaymentEvent } from '@/server/balance-payment-events';
+import { completePaidOrder } from '@/server/complete-paid-order';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
 import type { OrderForShipment } from '@/lib/shipx';
@@ -20,7 +22,7 @@ import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
 import type { PrintVariantSelection } from '@/lib/types';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
-import { buildGiftCardPromoRow, getGiftCardTier, isGiftCardOrderItemVariant, type GiftCardOrderItemVariant } from '@/lib/gift-cards';
+import { isGiftCardOrderItemVariant, type GiftCardOrderItemVariant } from '@/lib/gift-cards';
 
 export const dynamic = 'force-dynamic';
 
@@ -184,18 +186,16 @@ async function revokeGiftCardCode(
   orderId: string,
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('promo_codes')
-      .update({ active: false })
-      .eq('source_order_id', orderId)
-      .eq('source', 'gift_card');
-    if (error) throw new Error(error.message);
+    const revoked = await supabase.rpc('revoke_refunded_gift_card', { p_order_id: orderId });
+    if (revoked.error) throw revoked.error;
+    if (revoked.data === false) Sentry.captureMessage('refunded_gift_card_requires_manual_review', { level: 'error', extra: { order_id: orderId } });
   } catch (err) {
     console.error('gift card revoke failed for', orderId, err);
     Sentry.captureMessage('gift_card_revoke_failed', {
       level: 'warning',
       extra: { order_id: orderId },
     });
+    throw err;
   }
 }
 
@@ -415,6 +415,7 @@ export async function POST(req: Request) {
       .then(undefined, (e) => console.error('webhook_events lease release failed', event.id, e));
 
   await handleStripeEvent(event, {
+    handleBalancePayment: (balanceEvent) => handleBalancePaymentEvent(balanceEvent, { supabase, stripe, env, ctx }),
     markPaid: async (pi) => {
       const { data: orderData, error: orderErr } = (await supabase
         .from('orders')
@@ -1030,128 +1031,11 @@ export async function POST(req: Request) {
       }
     },
     fulfilGiftCard: async (pi) => {
-      // Best-effort by design (never throws): a mint/email hiccup here must
-      // not turn into a Stripe retry storm — the order is already paid and
-      // there is nothing to roll back. Failures are Sentry-alerted so an
-      // operator can manually resend (no CLI helper exists yet for this —
-      // see AGENTS.md/docs/gift-cards.md's known-gaps note).
-      try {
-        const { data: orderRow, error: orderErr } = await supabase
-          .from('orders')
-          .select('id, status, email, receiver_first_name, currency, locale, fulfilment_type')
-          .eq('payment_intent_id', pi)
-          .maybeSingle();
-        if (orderErr) {
-          console.error('fulfilGiftCard: order lookup failed for', pi, orderErr);
-          Sentry.captureException(orderErr);
-          return;
-        }
-        const order = orderRow as {
-          id: string; status: string; email: string | null; receiver_first_name: string | null;
-          currency: string; locale: string | null; fulfilment_type: string;
-        } | null;
-        // No-op for any non-gift-card order, and for a gift-card order not
-        // (yet) paid — a redelivery before markPaid's CAS lands finds nothing
-        // to do here; a later redelivery after markPaid succeeds retries this.
-        if (!order || order.fulfilment_type !== 'giftcard' || order.status !== 'paid') return;
-
-        const { data: itemRows, error: itemsErr } = await supabase
-          .from('order_items')
-          .select('variant')
-          .eq('order_id', order.id);
-        if (itemsErr) {
-          console.error('fulfilGiftCard: order_items lookup failed for', order.id, itemsErr);
-          Sentry.captureException(itemsErr);
-          return;
-        }
-        const giftItem = (itemRows ?? []).find((i) => isGiftCardOrderItemVariant(i.variant));
-        if (!giftItem) {
-          // Defensive: fulfilment_type says giftcard but no gift-card line item exists.
-          console.error('fulfilGiftCard: no gift-card line item for order', order.id);
-          Sentry.captureMessage('gift_card_no_line_item', { level: 'error', extra: { order_id: order.id } });
-          return;
-        }
-        const tierId = (giftItem.variant as { tierId: string }).tierId;
-        const tier = getGiftCardTier(tierId);
-        if (!tier) {
-          console.error('fulfilGiftCard: unknown tier for order', order.id, tierId);
-          Sentry.captureMessage('gift_card_unknown_tier', { level: 'error', extra: { order_id: order.id, tier_id: tierId } });
-          return;
-        }
-
-        // Idempotent mint: the unique index on promo_codes.source_order_id is
-        // the backstop against a Stripe redelivery minting a second code. A
-        // 23505 on this insert doesn't by itself say WHICH constraint fired —
-        // it could also be a collision on the `code` column itself
-        // (astronomically unlikely given generateGiftCardCode's entropy, but
-        // not impossible, and this mints something with real monetary value).
-        // Disambiguate by re-querying source_order_id: a hit means "already
-        // minted for this order" (the expected redelivery case, reuse the
-        // code); a miss means the 23505 was a `code` collision, so retry the
-        // insert with a freshly generated code, bounded so a persistent DB
-        // issue can't loop forever.
-        const MAX_CODE_COLLISION_RETRIES = 3;
-        let code = '';
-        let mintAttempt = 0;
-        for (;;) {
-          const row = buildGiftCardPromoRow({ tier, orderId: order.id });
-          code = row.code;
-          const { error: insertErr } = await supabase.from('promo_codes').insert(row);
-          if (!insertErr) break;
-          if ((insertErr as { code?: string }).code !== '23505') {
-            console.error('fulfilGiftCard: mint failed for', order.id, insertErr);
-            Sentry.captureMessage('gift_card_mint_failed', {
-              level: 'error',
-              extra: { order_id: order.id, payment_intent_id: pi, error: insertErr.message },
-            });
-            return;
-          }
-          const { data: existing, error: existingErr } = await supabase
-            .from('promo_codes')
-            .select('code')
-            .eq('source_order_id', order.id)
-            .maybeSingle();
-          if (existingErr) {
-            console.error('fulfilGiftCard: mint race but existing code lookup failed for', order.id, existingErr);
-            Sentry.captureException(existingErr);
-            return;
-          }
-          if (existing) {
-            // Already minted by a prior delivery — reuse it so the email
-            // step below (claimed separately) can still resend it if needed.
-            code = (existing as { code: string }).code;
-            break;
-          }
-          // No row for this order despite the 23505 → the collision was on
-          // `code` itself, not `source_order_id`. Retry with a fresh code.
-          mintAttempt++;
-          if (mintAttempt >= MAX_CODE_COLLISION_RETRIES) {
-            console.error('fulfilGiftCard: exhausted code-collision retries for', order.id);
-            Sentry.captureMessage('gift_card_code_collision_exhausted', {
-              level: 'error',
-              extra: { order_id: order.id, payment_intent_id: pi, attempts: mintAttempt },
-            });
-            return;
-          }
-        }
-
-        // Claim-once email send, same idiom as the order-confirmation/studio
-        // emails above (a dedicated column so a redelivery after an accepted-
-        // but-timed-out send can't double-send the code).
-        await sendEmailOnceWithClaim(supabase, order.id, 'confirmation_email_sent_at', () =>
-          emailGiftCardToCustomer({
-            order: { id: order.id, email: order.email, receiver_first_name: order.receiver_first_name },
-            tier,
-            currency: order.currency === 'eur' ? 'eur' : order.currency === 'gbp' ? 'gbp' : 'pln',
-            code,
-            locale: order.locale ?? 'pl',
-            idempotencyKey: `gift-card-delivery/${order.id}`,
-          }),
-          'resend_email_id',
-        );
-      } catch (err) {
-        console.error('fulfilGiftCard failed for', pi, err);
-        Sentry.captureException(err);
+      const { data: order, error } = await supabase.from('orders')
+        .select('id, status, email, receiver_first_name, currency, locale, fulfilment_type').eq('payment_intent_id', pi).maybeSingle();
+      if (error) throw error;
+      if (order?.status === 'paid' && order.fulfilment_type === 'giftcard') {
+        await completePaidOrder(order.id, { supabase, stripe, env, ctx });
       }
     },
     alertRefundFailed: async (refund) => {

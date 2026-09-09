@@ -17,6 +17,8 @@ export const HANDLED_STRIPE_EVENTS = [
 ] as const;
 
 export type WebhookDeps = {
+  /** Balance-funded orders own their atomic settlement and proportional refunds. */
+  handleBalancePayment?: (event: Stripe.Event) => Promise<boolean>;
   /** Flip order pending→paid and claim pieces still reserved to this order. Returns false if already processed (idempotent no-op). */
   markPaid: (paymentIntentId: string) => Promise<boolean>;
   /** Return reserved pieces to available for a canceled PaymentIntent. */
@@ -77,6 +79,7 @@ function extractPiId(raw: string | { id: string } | null | undefined): string | 
 }
 
 export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<void> {
+  if (await deps.handleBalancePayment?.(event)) return;
   switch (event.type) {
     case 'payment_intent.succeeded': {
       const pi = event.data.object as Stripe.PaymentIntent;

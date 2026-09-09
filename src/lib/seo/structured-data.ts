@@ -138,8 +138,8 @@ function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur'; priceCurre
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
-function availabilityFor(sold: boolean) {
-  return sold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock';
+function availabilityFor(sold: boolean, available: boolean) {
+  return sold ? 'https://schema.org/SoldOut' : available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 }
 
 /**
@@ -224,7 +224,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               '@type': 'Offer',
               price: locale === 'pl' ? category.price : PRICE_EUR[slug],
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
-              availability: availabilityFor(p.sold || sold.has(p.id) || showroom.has(p.id)),
+              availability: availabilityFor(p.sold || sold.has(p.id), p.onlineAvailable === true && !showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
               shippingDetails: shippingDetailsFor(locale),
               hasMerchantReturnPolicy: merchantReturnPolicy(locale),
@@ -419,7 +419,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           price: locale === 'pl' ? product.price : PRICE_EUR[product.category],
           priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
           // Showroom pieces are not purchasable — never advertise them InStock.
-          availability: availabilityFor(product.sold || product.showroom === true),
+          availability: availabilityFor(product.sold, product.onlineAvailable === true && !product.showroom),
           url: productUrl,
           shippingDetails: shippingDetailsFor(locale),
           hasMerchantReturnPolicy: merchantReturnPolicy(locale),
