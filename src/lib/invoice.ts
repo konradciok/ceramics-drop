@@ -4,7 +4,7 @@ import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
 import { registryPrintById } from './prints';
-import { variantLabel } from './print-cart';
+import { variantKey, variantLabel } from './print-cart';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import type { PrintVariantSelection } from './types';
 import plMessages from '../../messages/pl.json';
@@ -130,8 +130,8 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
     // the same draft. Idempotency keys already dedupe exact replays, but a
     // draft written under an older key scheme would otherwise get its lines
     // added a second time and trip the total guard below — so also skip any
-    // line the draft already carries, matched by description + amount (both
-    // are unique within one order: the cart is a set, never a multiset).
+    // line the draft already carries. Prints use stable identity + amount;
+    // older lines fall back to exact current or legacy descriptions + amount.
     const existingLines = invoice.lines?.data ?? [];
     const draftHasLine = (description: string, amount: number) =>
       existingLines.some((l) => l.description === description && l.amount === amount);
@@ -140,6 +140,8 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
       const productNames = messages.product as Record<string, string>;
       const rawVariant = it.variant ?? null;
       let label: string;
+      let legacyPrintLabel: string | undefined;
+      let printIdentity: { product_id: string; variant_key: string } | undefined;
       let idempotencySuffix = '';
       if (isGiftCardOrderItemVariant(rawVariant)) {
         // Gift card: a fixed-denomination line, no per-piece/design reference.
@@ -154,8 +156,11 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
+        const suffix = ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
         label = (design ? printDisplayName(design, printName) : printName)
-          + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
+          + suffix;
+        legacyPrintLabel = `${printName} Nº ${design?.num ?? ''}`.trim() + suffix;
+        printIdentity = { product_id: it.product_id, variant_key: variantKey(variant) };
         idempotencySuffix = `_${variant.prodigiSku}`;
       } else {
         const product = registryProductById(it.product_id);
@@ -163,13 +168,24 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
           ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
           : it.product_id;
       }
-      if (draftHasLine(label, it.unit_price)) continue;
+      const hasLine = printIdentity
+        ? existingLines.some((line) => {
+          if (line.amount !== it.unit_price) return false;
+          if (line.metadata?.product_id || line.metadata?.variant_key) {
+            return line.metadata.product_id === printIdentity.product_id
+              && line.metadata.variant_key === printIdentity.variant_key;
+          }
+          return line.description === label || line.description === legacyPrintLabel;
+        })
+        : draftHasLine(label, it.unit_price);
+      if (hasLine) continue;
       await stripe.invoiceItems.create({
         customer: customer.id,
         invoice: invoice.id as string,
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
+        ...(printIdentity ? { metadata: printIdentity } : {}),
       }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}` });
     }
     if (order.shipping > 0) {
