@@ -76,7 +76,7 @@ export async function PrintProductScreen({
         <nav className="pdp-breadcrumb" aria-label="breadcrumb">
           <Link href="/">{SITE_NAME}</Link>
           <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
-          <Link href={`/${SLUG}`}>{categoryName}</Link>
+          <Link href="/sklep">{categoryName}</Link>
           <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
           <span aria-current="page">{displayName}</span>
         </nav>
@@ -159,7 +159,7 @@ export async function PrintProductScreen({
               })}
             </div>
             <div className="pdp-more-cta">
-              <Link href={`/${SLUG}`} className="btn btn-ghost">
+              <Link href="/sklep" className="btn btn-ghost">
                 {t('product.seeAll')} — {categoryName}
               </Link>
             </div>

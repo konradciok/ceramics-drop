@@ -2,14 +2,30 @@
 export const SITE_URL = 'https://anna-ciok.studio';
 
 /** Brand name — a proper noun, identical across locales. Single source for metadata + JSON-LD. */
-export const SITE_NAME = 'Anna Ciok Ceramics';
+export const SITE_NAME = 'Anna Ciok Studio';
+export const ARTIST_NAME = 'Anna Ciok';
+
+export const STUDIO = {
+  name: SITE_NAME,
+  artist: ARTIST_NAME,
+  taxId: 'Y9608071L',
+  address: {
+    streetAddress: 'San Pedro Abajo 12',
+    postalCode: '38500',
+    addressLocality: 'Guimar',
+    addressRegion: 'Tenerife, Canarias',
+    addressCountry: 'ES',
+  },
+  instagram: 'https://www.instagram.com/anna.ciok.art/',
+  facebook: 'https://www.facebook.com/anki.doodle.tenerife/',
+} as const;
 
 /**
- * Merchant `brand` value — deliberately the artist's name, not `SITE_NAME`.
+ * Merchant brand, shared with the storefront; the artist is ARTIST_NAME.
  * Shared by the Google/Meta feed (`<g:brand>`, feed.ts) and the on-page
  * `Product.brand` JSON-LD (structured-data.ts) so they never disagree.
  */
-export const PRODUCT_BRAND_NAME = 'Anna Ciok';
+export const PRODUCT_BRAND_NAME = SITE_NAME;
 
 /** App routes under `[locale]` (path segment only, leading slash).
  *
@@ -21,7 +37,6 @@ export const SITE_PATHS = [
   '/',
   '/sklep',
   '/showroom',
-  '/fine-art-prints',
   '/gallery',
   '/kubki',
   '/wazony',
@@ -47,4 +62,4 @@ export const SITE_PATHS = [
  * `/koszyk/return` isn't in `SITE_PATHS` (never sitemapped), but is listed here
  * too for documentation parity with its own `noindex` layout.
  */
-export const NOINDEX_PATHS: readonly string[] = ['/koszyk', '/koszyk/return'];
+export const NOINDEX_PATHS: readonly string[] = ['/koszyk', '/koszyk/return', '/koszyk/potwierdzenie'];

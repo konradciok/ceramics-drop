@@ -27,7 +27,7 @@ export const PRODUCT_NOTE_DOCUMENTS: EditableContentDocument[] = [
     kind: 'product_notes',
     slug: 'fine-art-prints',
     label: 'fine-art-prints',
-    publicPath: '/fine-art-prints',
+    publicPath: '/sklep',
   },
 ];
 
@@ -35,7 +35,7 @@ export const PRINT_PDP_DOCUMENT: EditableContentDocument = {
   kind: 'page',
   slug: PRINT_PDP_SLUG,
   label: 'Print PDP — sekcje',
-  publicPath: '/fine-art-prints',
+  publicPath: '/sklep',
 };
 
 export const HOME_PAGE_DOCUMENT: EditableContentDocument = {

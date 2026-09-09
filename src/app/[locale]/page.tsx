@@ -60,7 +60,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const previewParam = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
-  // "%s — Anna Ciok Ceramics" template to avoid doubling it.
+  // "%s — Anna Ciok Studio" template to avoid doubling it.
   return {
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
@@ -133,7 +133,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               <p>{t('home.storyP1')}</p>
               <p>{t('home.storyP2')}</p>
               <div className="story-actions">
-                <Link className="btn btn-primary" href="/fine-art-prints">
+                <Link className="btn btn-primary" href="/sklep">
                   <span>{t('home.storyCta')}</span> <Icon name="arrow" className="btn-arrow" />
                 </Link>
               </div>
@@ -152,7 +152,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.collectionsLead')}</p>
-                  <Link className="section-link" href="/fine-art-prints">
+                  <Link className="section-link" href="/sklep">
                     <span>{t('home.collectionsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>
@@ -163,7 +163,7 @@ export default async function HomePage({ params, searchParams }: Props) {
                 const cover = printListingImage(g.designs[0], registryPrintById(g.designs[0].id));
                 const name = g.name ?? t('printCollections.inne');
                 return (
-                  <Link key={g.slug} className="prints-home-card" href={`/fine-art-prints#${g.slug}`}>
+                  <Link key={g.slug} className="prints-home-card" href={`/sklep#${g.slug}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={cover} srcSet={srcSet(cover)} sizes="(min-width:861px) 30vw, 45vw" alt="" loading="lazy" />
                     <span className="prints-home-meta">
@@ -188,7 +188,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.printsLead', { count: printDesigns.length })}</p>
-                  <Link className="section-link" href="/fine-art-prints">
+                  <Link className="section-link" href="/sklep">
                     <span>{t('home.printsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>

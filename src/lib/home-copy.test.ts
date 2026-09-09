@@ -53,7 +53,7 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     expect(title.length).toBeGreaterThan(0);
     // Home opts out of the layout's brand-suffix template (see
     // seo/title-branding.test.ts), so it must carry the brand itself.
-    expect(title).toContain('Anna Ciok Ceramics');
+    expect(title).toContain('Anna Ciok Studio');
     expect(title).not.toMatch(/\bdrop\b/i);
     expect(title).not.toMatch(/20\d{2}/);
   });

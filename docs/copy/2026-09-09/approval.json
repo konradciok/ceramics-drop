@@ -1,0 +1,10 @@
+{
+  "locale": "pl",
+  "status": "approved",
+  "approvedBy": "user",
+  "date": "2026-09-09",
+  "evidence": "zaakcpetowane",
+  "scope": "Polski pakiet copy i kontynuacja wdrożenia planu",
+  "publication": "pending",
+  "remainingChecks": ["Funkcje salda i dropów", "EN/ES/DE", "Dostawa i dokumenty formalne", "Weryfikacja CMS i testy przed publikacją"]
+}

@@ -61,7 +61,7 @@ export async function PrintCollectionScreen({
         </div>
       </section>
 
-      {/* Sticky collection jump-nav — same pattern as /sklep (AllPiecesScreen),
+      {/* Sticky collection jump-nav — same pattern as /showroom (AllPiecesScreen),
           static anchors only (no scroll-spy; .gallery-group scroll-margin-top
           keeps the jump target clear of the sticky header). */}
       <nav id="print-nav" className="shop-nav-sticky" aria-label={t('nav.fineArtPrints')}>
