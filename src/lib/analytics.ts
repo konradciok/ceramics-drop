@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import { CATEGORIES, registryProductById } from './products';
 import { registryPrintById } from './prints';
 import { decodePrintToken, isPrintToken, variantLabel } from './print-cart';
@@ -153,7 +154,7 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
     if (priceOverride === undefined) return null;
     return {
       item_id: design.id,
-      item_name: `Print Nº ${design.num}`,
+      item_name: printDisplayName(design),
       item_brand: BRAND,
       item_category: 'fine-art-prints',
       item_variant: variantLabel(dec.sel, 'en'),
@@ -198,7 +199,7 @@ type PrintItemInput = { id: string; num: string; variantLabel: string; price: nu
 function printAnalyticsItem(print: PrintItemInput): AnalyticsItem {
   return {
     item_id: print.id,
-    item_name: `Print Nº ${print.num}`,
+    item_name: printDisplayName(print),
     item_brand: BRAND,
     item_category: 'fine-art-prints',
     item_variant: print.variantLabel,

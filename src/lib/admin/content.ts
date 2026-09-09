@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import { adminSupabase } from './clients';
 import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
@@ -95,7 +96,7 @@ export function contentItems(slug: string): ContentItem[] {
   if (slug === 'fine-art-prints') {
     return registryPrintDesigns().map((design) => ({
       id: design.id,
-      label: `Druk Nº ${design.num}`,
+      label: printDisplayName(design, 'Druk'),
       image: design.image,
     }));
   }

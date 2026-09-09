@@ -7,11 +7,25 @@ import {
   RETIRED_PRINT_CURATION,
   catalogStatusForPrint,
   curationForProduct,
+  printDisplayName,
   validatePrintCuration,
 } from './print-curation';
 import source from '../../config/print-catalog-curation.json';
 
 describe('fine-art print curation map', () => {
+  it('names every collection independently from 01 in display order', () => {
+    for (const collection of PRINT_COLLECTION_DEFINITIONS) {
+      collection.designIds.forEach((id, index) => {
+        expect(printDisplayName({ id, num: '99' }, 'Druk')).toBe(
+          `${collection.name} ${String(index + 1).padStart(2, '0')}`,
+        );
+      });
+    }
+    expect(printDisplayName({ id: 'fap004', num: '24' })).toBe('Signs 01');
+    expect(printDisplayName({ id: 'fap008', num: '25' })).toBe('Signs 02');
+    expect(printDisplayName({ id: 'unknown', num: '42' }, 'Druk')).toBe('Druk Nº 42');
+  });
+
   it('only runs migration rollout gates when mapped product IDs exist', () => {
     const migration = readFileSync(
       new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),

@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
@@ -287,7 +288,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }:
             position: i + 1,
             item: {
               '@type': 'Product',
-              name: `${singular} Nº ${d.num}`,
+              name: printDisplayName(d, singular),
               description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
               image: `${SITE_URL}${d.image}`,
               category: categoryName,
@@ -329,7 +330,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const name = `${singular} Nº ${design.num}`;
+  const name = printDisplayName(design, singular);
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');

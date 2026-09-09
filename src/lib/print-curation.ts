@@ -85,6 +85,17 @@ export function curationForProduct(id: string): PrintCuration | undefined {
   return ACTIVE_PRINT_CURATION.find((item) => item.productId === id);
 }
 
+/** Customer-facing name, numbered independently in each authored collection.
+ * Resolve by ID so code and database catalogues use the same names.
+ */
+export function printDisplayName(design: { id: string; num: string }, fallback = 'Print'): string {
+  for (const collection of PRINT_COLLECTION_DEFINITIONS) {
+    const index = collection.designIds.indexOf(design.id);
+    if (index !== -1) return `${collection.name} ${String(index + 1).padStart(2, '0')}`;
+  }
+  return `${fallback} Nº ${design.num}`;
+}
+
 export function catalogStatusForPrint(id: string): 'active' | 'archived' {
   if (curationForProduct(id)) return 'active';
   if (RETIRED_PRINT_CURATION.some((item) => item.productId === id)) return 'archived';

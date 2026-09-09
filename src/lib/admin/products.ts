@@ -5,6 +5,7 @@
  * synchronous registry). Unknown ids (e.g. retired smoke-test pieces still
  * referenced by old orders) degrade to showing the raw id.
  */
+import { printDisplayName } from '@/lib/print-curation';
 import { registryProductById } from '@/lib/products';
 import { variantLabel } from '@/lib/print-cart';
 import { registryPrintById } from '@/lib/prints';
@@ -50,7 +51,7 @@ export function productRef(productId: string, variant?: unknown): ProductRef {
     const suffix = sel ? ` · ${variantLabel(sel, 'pl')}` : '';
     return {
       id: print.id,
-      label: `${CATEGORY_LABEL['fine-art-prints']} Nº${print.num}${suffix}`,
+      label: `${printDisplayName(print, CATEGORY_LABEL['fine-art-prints'])}${suffix}`,
       category: print.category,
       image: smallest(print.image),
       known: true,

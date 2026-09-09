@@ -4,6 +4,7 @@
    island (variant must be chosen) and the spec block covers print details,
    edition, delivery lead time and care.
    ============================================================ */
+import { printDisplayName } from '@/lib/print-curation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
@@ -47,7 +48,7 @@ export async function PrintProductScreen({
 
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const displayName = `${singular} Nº ${design.num}`;
+  const displayName = printDisplayName(design, singular);
   const rawNotes = t.raw(`notes.${SLUG}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
   const note = noteOverride ?? fallbackNote;
@@ -91,7 +92,7 @@ export async function PrintProductScreen({
               <>
                 <div className="eyebrow">{categoryName}</div>
                 <h1>
-                  {singular} <em>Nº {design.num}</em>
+                  {displayName}
                 </h1>
                 {note && (
                   <ExpandableText
@@ -137,7 +138,7 @@ export async function PrintProductScreen({
             <div className="gallery" data-count={siblings.length}>
               {siblings.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
-                const name = `${singular} Nº ${d.num}`;
+                const name = printDisplayName(d, singular);
                 const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>

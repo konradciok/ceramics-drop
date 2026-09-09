@@ -5,6 +5,7 @@
    a variant (size/paper/frame) must be chosen first, so each tile links
    straight to the print PDP. Prices are shown as "from X / from Y".
    ============================================================ */
+import { printDisplayName } from '@/lib/print-curation';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
@@ -87,7 +88,7 @@ export async function PrintCollectionScreen({
             <div className="gallery" data-count={g.designs.length}>
               {g.designs.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
-                const name = `${t('product.print')} Nº ${d.num}`;
+                const name = printDisplayName(d, t('product.print'));
                 const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link

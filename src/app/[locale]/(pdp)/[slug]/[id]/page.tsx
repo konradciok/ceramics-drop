@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -42,7 +43,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const singular = t('product.print');
-    const displayName = `${singular} Nº ${design.num}`;
+    const displayName = printDisplayName(design, singular);
     const rawNotes = t.raw(`notes.${PRINT_SLUG}`) as unknown;
     const fallbackDescription = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
     const description = await getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken).catch(() => fallbackDescription);
