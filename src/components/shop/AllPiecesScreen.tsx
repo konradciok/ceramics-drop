@@ -1,6 +1,9 @@
 /* ============================================================
    AllPiecesScreen — shop head + sticky category jump-nav + hint
-   + grouped gallery for the unified /sklep page.
+   + grouped gallery for the unified /showroom ceramics catalogue
+   (public ceramics from every category, independent of the
+   `showroom` flag — that flag only badges a piece as not-for-sale
+   and disables its cart button; see ProductTile).
    Server component; copy comes from i18n message catalogs.
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
@@ -19,9 +22,9 @@ export async function AllPiecesScreen({ products }: { products: Product[] }) {
       <section className="shop-head">
         <div className="shop-head-inner">
           <div>
-            <div className="eyebrow">{t('collection.sklep.eyebrow')}</div>
-            <h1>{t.rich('collection.sklep.title', richTags)}</h1>
-            <p className="lead">{t('collection.sklep.lead')}</p>
+            <div className="eyebrow">{t('showroom.eyebrow')}</div>
+            <h1>{t.rich('showroom.title', richTags)}</h1>
+            <p className="lead">{t('showroom.lead')}</p>
           </div>
         </div>
       </section>
@@ -30,7 +33,7 @@ export async function AllPiecesScreen({ products }: { products: Product[] }) {
           sticky containing block is <main> — it stays pinned under the site
           header while the user scrolls the galleries. GroupedGallery's
           scroll-spy toggles aria-current on these anchors. */}
-      <nav id="shop-nav" className="shop-nav-sticky" aria-label={t('nav.sklep')}>
+      <nav id="shop-nav" className="shop-nav-sticky" aria-label={t('nav.showroom')}>
         <div className="shop-nav-track has-filter">
           <div className="shop-switch">
             {VISIBLE_CATEGORY_ORDER.map((s) => (

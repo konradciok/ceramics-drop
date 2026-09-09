@@ -60,7 +60,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const previewParam = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
-  // "%s — Anna Ciok Ceramics" template to avoid doubling it.
+  // "%s — Anna Ciok Studio" template to avoid doubling it.
   return {
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
