@@ -7,7 +7,6 @@ import { CATEGORIES, getProductsByCategory } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
-import { ShowroomInterestForm } from './ShowroomInterestForm';
 import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
@@ -73,7 +72,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                 {name} <em>Nº {product.num}</em>
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
-              {!product.sold && !showroom && <PdpDelivery product={product} currency={currency} />}
+              {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">
@@ -89,10 +88,10 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              {showroom ? (
+              {product.onlineAvailable !== true && !product.sold ? (
                 <div className="pdp-showroom" data-testid="pdp-showroom">
                   <p className="pdp-showroom-copy">{t('showroom.pdpCopy')}</p>
-                  <ShowroomInterestForm productId={product.id} />
+                  <a className="btn btn-primary" href="mailto:ania@ciok.art">{t('ceramics.visitCta')}</a>
                 </div>
               ) : (
                 <AddToCartButton product={product} />

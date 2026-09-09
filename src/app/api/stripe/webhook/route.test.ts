@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
+import { completePaidOrder } from '@/server/complete-paid-order';
 
 // --- Stripe: constructEventAsync (all paths) + refunds.create (under-fulfillment) ---
 const constructEventAsync = vi.fn();
@@ -26,6 +27,9 @@ vi.mock('@opennextjs/cloudflare', () => ({
 }));
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
+// Their transaction/side-effect contracts have dedicated balance tests.
+vi.mock('@/server/balance-payment-events', () => ({ handleBalancePaymentEvent: vi.fn(async () => false) }));
+vi.mock('@/server/complete-paid-order', () => ({ completePaidOrder: vi.fn(async () => true) }));
 
 // --- Supabase: swapped per test ---
 let supabaseImpl: unknown;
@@ -759,6 +763,7 @@ function makeSucceededSupabase(opts: {
           select: (columns: string) => {
             if (columns === 'id, status, private_sale_id, promo_code') return proxyChain(opts.fallbackSelect ?? { data: null, error: null });
             if (columns === 'id, status') return proxyChain(opts.shipmentLookup);
+            if (columns === 'id, status, email, receiver_first_name, currency, locale, fulfilment_type') return proxyChain({ data: null, error: null });
             if (columns.startsWith('id, email')) return proxyChain(opts.emailOrderSelect ?? { data: null, error: null });
             if (columns.startsWith('id, payment_intent_id')) return proxyChain(opts.conversionsOrderSelect ?? { data: null, error: null });
             throw new Error(`unexpected orders.select columns: ${columns}`);
@@ -2223,7 +2228,7 @@ describe('webhook releaseHold promo settlement (Phase 2)', () => {
     const res = await POST(canceledEventRequest());
 
     expect(res.status).toBe(200);
-    expect(calls.rpcCalls).toHaveLength(0);
+    expect(calls.rpcCalls).not.toContainEqual(expect.objectContaining({ fn: 'settle_promo_redemption' }));
   });
 
   it('release settle is best-effort: an RPC error is logged + Sentry-flagged, the route still 200s', async () => {
@@ -2287,7 +2292,7 @@ describe('webhook releaseSale promo settlement (Phase 2)', () => {
     const res = await POST(refundedEventRequest());
 
     expect(res.status).toBe(200);
-    expect(calls.rpcCalls).toHaveLength(0);
+    expect(calls.rpcCalls).not.toContainEqual(expect.objectContaining({ fn: 'settle_promo_redemption' }));
   });
 
   it('already-refunded resume branch settles released best-effort', async () => {
@@ -2470,82 +2475,22 @@ describe('webhook gift-card fulfilment (fulfilGiftCard)', () => {
     return { supabase, promoRows, insertedPayloads };
   }
 
-  it('a redelivery of payment_intent.succeeded mints only one promo_codes row and sends the email only once', async () => {
+  it('routes every paid gift-card delivery through the retryable order processor without minting a promo', async () => {
+    vi.mocked(completePaidOrder).mockClear();
     const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase();
     supabaseImpl = supabase;
-
-    const first = await POST(succeededEventRequest());
-    expect(first.status).toBe(200);
-
-    const second = await POST(succeededEventRequest());
-    expect(second.status).toBe(200);
-
-    expect(promoRows).toHaveLength(1);
-    expect(insertedPayloads).toHaveLength(2); // both deliveries attempt an insert
-    expect(insertedPayloads[1].source_order_id).toBe(ORDER_ID); // 2nd delivery collides on source_order_id
-    expect(vi.mocked(emailGiftCardToCustomer)).toHaveBeenCalledTimes(1); // not resent on redelivery
-    expect(vi.mocked(emailGiftCardToCustomer).mock.calls[0][0]).toMatchObject({ code: promoRows[0].code });
-  });
-
-  it('a gift-card order missing its gift-card line item (malformed/mismatched data) mints no code and alerts', async () => {
-    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({ itemRows: [] });
-    supabaseImpl = supabase;
-
-    const res = await POST(succeededEventRequest());
-
-    expect(res.status).toBe(200);
+    expect((await POST(succeededEventRequest())).status).toBe(200);
+    expect((await POST(succeededEventRequest())).status).toBe(200);
+    expect(completePaidOrder).toHaveBeenCalledTimes(2);
+    expect(completePaidOrder).toHaveBeenCalledWith(ORDER_ID, expect.objectContaining({ supabase }));
+    expect(promoRows).toHaveLength(0);
     expect(insertedPayloads).toHaveLength(0);
-    expect(promoRows).toHaveLength(0);
-    expect(vi.mocked(emailGiftCardToCustomer)).not.toHaveBeenCalled();
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'gift_card_no_line_item',
-      expect.objectContaining({ extra: expect.objectContaining({ order_id: ORDER_ID }) }),
-    );
   });
 
-  it('a `code` collision (not source_order_id) retries the insert with a fresh code instead of silently giving up', async () => {
-    let insertCalls = 0;
-    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({
-      insertBehavior: () => {
-        insertCalls++;
-        if (insertCalls === 1) {
-          return {
-            error: { code: '23505', message: 'duplicate key value violates unique constraint "promo_codes_code_key"' },
-          };
-        }
-        return { error: null };
-      },
-    });
+  it('propagates processing failure so the webhook lease can be retried', async () => {
+    const { supabase } = makeGiftCardSupabase();
     supabaseImpl = supabase;
-
-    const res = await POST(succeededEventRequest());
-
-    expect(res.status).toBe(200);
-    expect(insertedPayloads).toHaveLength(2); // 1st collides on `code`, 2nd (fresh code) succeeds
-    expect(insertedPayloads[0].code).not.toBe(insertedPayloads[1].code);
-    expect(promoRows).toHaveLength(1);
-    expect(promoRows[0].code).toBe(insertedPayloads[1].code);
-    expect(vi.mocked(emailGiftCardToCustomer)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(emailGiftCardToCustomer).mock.calls[0][0]).toMatchObject({ code: insertedPayloads[1].code });
-  });
-
-  it('exhausts a bounded number of code-collision retries and alerts rather than looping forever', async () => {
-    const { supabase, promoRows, insertedPayloads } = makeGiftCardSupabase({
-      insertBehavior: () => ({
-        error: { code: '23505', message: 'duplicate key value violates unique constraint "promo_codes_code_key"' },
-      }),
-    });
-    supabaseImpl = supabase;
-
-    const res = await POST(succeededEventRequest());
-
-    expect(res.status).toBe(200); // best-effort: never turns into a 5xx retry storm
-    expect(insertedPayloads).toHaveLength(3); // MAX_CODE_COLLISION_RETRIES
-    expect(promoRows).toHaveLength(0);
-    expect(vi.mocked(emailGiftCardToCustomer)).not.toHaveBeenCalled();
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'gift_card_code_collision_exhausted',
-      expect.objectContaining({ extra: expect.objectContaining({ order_id: ORDER_ID, attempts: 3 }) }),
-    );
+    vi.mocked(completePaidOrder).mockRejectedValueOnce(new Error('issuance retry'));
+    await expect(POST(succeededEventRequest())).rejects.toThrow('issuance retry');
   });
 });

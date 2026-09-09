@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
@@ -20,6 +20,7 @@ import {
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
 import { validateGiftCardContact } from '@/lib/gift-cards';
+import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -241,6 +242,9 @@ export async function POST(req: Request) {
   // needed before trusting it as the order id.
   const rawAttemptId = typeof body.attemptId === 'string' ? body.attemptId : null;
   const orderId = isUuid(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
+  const mode = await supabase.rpc('claim_checkout_payment_mode', { p_order_id: orderId, p_mode: body.gift_card_code != null ? 'balance' : 'cash' });
+  if (mode.error) return respond({ error: 'checkout_in_progress' }, { status: 409 });
+  if (mode.data !== true) return respond({ error: 'gift_card_attempt_conflict' }, { status: 409 });
 
   // A private-sale token unlocks buying specific already-`sold` pieces via a secret
   // link, without relisting them in the shop. It uses a dedicated atomic RPC that
@@ -258,6 +262,82 @@ export async function POST(req: Request) {
   if (privateSaleToken && hasPrints) {
     return respond({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
+
+  const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
+  const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
+  const str2 = (v: unknown, max = 256) => {
+    if (typeof v !== 'string') return null;
+    const s = v.trim();
+    if (!s || s.length > max) return null;
+    return s;
+  };
+  const origin = req.headers.get('origin') ?? '';
+  const localePrefix = locale !== 'pl' ? `/${locale}` : '';
+  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
+  // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
+  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
+  // declined tracking, so they're dropped rather than merely flagged.
+  const marketing: MarketingContext =
+    consent === 'granted'
+      ? {
+          consent,
+          fbp: str2(mc.fbp),
+          fbc: str2(mc.fbc),
+          ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
+          ga_session_id: str2(mc.ga_session_id),
+          ip: clientIp,
+          user_agent: req.headers.get('user-agent'),
+          event_source_url: eventSourceUrl,
+          captured_at: new Date().toISOString(),
+        }
+      : {
+          consent,
+          fbp: null,
+          fbc: null,
+          ga_client_id: null,
+          ga_session_id: null,
+          ip: null,
+          user_agent: null,
+          event_source_url: null,
+          captured_at: new Date().toISOString(),
+        };
+
+  if (body.gift_card_code != null) {
+    const { checkoutWithGiftCard } = await import('@/server/gift-card-checkout');
+    const code = normalizeGiftCardCode(body.gift_card_code);
+    if (!code) return respond({ error: 'gift_card_invalid' }, { status: 400 });
+    if (hasGiftCards || promo) return respond({ error: 'gift_card_excluded' }, { status: 400 });
+    if (!isUuid(rawAttemptId)) return respond({ error: 'attempt_id_required' }, { status: 400 });
+    try {
+      if (privateSaleToken) {
+        const sale = await loadActivePrivateSale(supabase, privateSaleToken);
+        if (!sale) return respond({ error: 'invalid_token' }, { status: 410 });
+        privateSaleId = sale.id;
+      }
+      const { env, ctx } = getCloudflareContext();
+      const result = await checkoutWithGiftCard({
+        code, privateToken: privateSaleToken,
+        deps: { supabase, stripe: getStripe(), env, ctx },
+        order: {
+          id: orderId, currency: chargeCurrency, subtotal: subtotalMinor, shipping: shipMinor, total: amount,
+          shipping_method: method, delivery_method: method, fulfilment_type: fulfilmentType,
+          email: contact.email, receiver_first_name: contact.first_name, receiver_last_name: contact.last_name,
+          receiver_phone: contact.phone || null, inpost_target_point: target_point ?? null,
+          shipping_address: address ?? null, locale, private_sale_id: privateSaleId, user_id: sessionUserId,
+          marketing,
+        },
+        items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: i.variant ? { kind: 'print', ...i.variant } : null })),
+      });
+      return respond(result, { headers: { 'Cache-Control': 'no-store' } });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : '';
+      const publicErrors = ['gift_card_invalid','gift_card_empty','gift_card_currency','gift_card_excluded','gift_card_attempt_conflict','order_attempt_conflict','ceramic_unavailable'];
+      if (publicErrors.includes(reason)) return respond({ error: reason }, { status: 409 });
+      console.error('[gift-card-checkout] Retry required', { orderId });
+      return respond({ error: 'gift_card_unavailable' }, { status: 503 });
+    }
+  }
+
 
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
   // is status-scoped (only rows still `reserved` for this order id), so rows a
@@ -406,45 +486,6 @@ export async function POST(req: Request) {
     await releaseOwnHold();
     return respond({ error: 'stripe_failed' }, { status: 502 });
   }
-
-  const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
-  const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
-  const str2 = (v: unknown, max = 256) => {
-    if (typeof v !== 'string') return null;
-    const s = v.trim();
-    if (!s || s.length > max) return null;
-    return s;
-  };
-  const origin = req.headers.get('origin') ?? '';
-  const localePrefix = locale !== 'pl' ? `/${locale}` : '';
-  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
-  // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
-  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
-  // declined tracking, so they're dropped rather than merely flagged.
-  const marketing: MarketingContext =
-    consent === 'granted'
-      ? {
-          consent,
-          fbp: str2(mc.fbp),
-          fbc: str2(mc.fbc),
-          ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
-          ga_session_id: str2(mc.ga_session_id),
-          ip: clientIp,
-          user_agent: req.headers.get('user-agent'),
-          event_source_url: eventSourceUrl,
-          captured_at: new Date().toISOString(),
-        }
-      : {
-          consent,
-          fbp: null,
-          fbc: null,
-          ga_client_id: null,
-          ga_session_id: null,
-          ip: null,
-          user_agent: null,
-          event_source_url: null,
-          captured_at: new Date().toISOString(),
-        };
 
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId,

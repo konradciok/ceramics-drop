@@ -23,6 +23,7 @@ import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillme
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { claimExpiryLease, releaseExpiryLease, expirePendingFenced, type CancelOutcome } from '@/lib/expire-orders';
 import type { DeliveryMethod } from '@/lib/pricing';
+import { refundBalanceOrder } from '@/server/balance-refunds';
 
 export type ActionResult = {
   status: number;
@@ -50,11 +51,21 @@ export async function refundOrder(deps: RefundDeps, orderId: string): Promise<Ac
   const { supabase, stripe, env } = deps;
   const { data, error } = await supabase
     .from('orders')
-    .select('payment_intent_id, status')
+    .select('payment_intent_id, status, gift_card_id, total, fulfilment_type')
     .eq('id', orderId)
     .maybeSingle();
   if (error) return fail(500, error.message);
   if (!data) return fail(404, 'Order not found');
+  if (data.gift_card_id && (data.status === 'paid' || data.status === 'refunded')) {
+    try {
+      // The full-refund operation uses the stable order UUID. Partial refunds
+      // use their own UUID through the dedicated balance refund endpoint.
+      const result = await refundBalanceOrder(orderId, orderId, null, deps);
+      return ok(result === 'settled' ? 'Zwrot rozliczony na pierwotne źródła płatności.' : 'Zwrot dopłaty jest przetwarzany. Saldo wróci po potwierdzeniu Stripe.');
+    } catch (e) {
+      return fail(502, e instanceof Error ? e.message : 'Nie udało się rozliczyć zwrotu.');
+    }
+  }
   if (data.status !== 'paid') {
     return fail(409, `Nie można zwrócić zamówienia o statusie „${data.status}”.`);
   }
@@ -63,6 +74,11 @@ export async function refundOrder(deps: RefundDeps, orderId: string): Promise<Ac
   }
 
   const pi = data.payment_intent_id;
+  if (data.fulfilment_type === 'giftcard') {
+    const allowed = await supabase.rpc('prepare_gift_card_purchase_refund', { p_order_id: orderId });
+    if (allowed.error) return fail(500, 'Nie udało się sprawdzić historii karty.');
+    if (!allowed.data) return fail(409, 'Karta została użyta lub ma rezerwację środków. Zwrot zakupu wymaga ręcznego rozliczenia.');
+  }
   let refundId: string;
   try {
     const refund = await stripe.refunds.create(
@@ -122,13 +138,22 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
   const { supabase, stripe } = deps;
   const { data: order, error: orderErr } = await supabase
     .from('orders')
-    .select('status, private_sale_id, payment_intent_id')
+    .select('status, private_sale_id, payment_intent_id, gift_card_id')
     .eq('id', orderId)
     .maybeSingle();
   if (orderErr) return fail(500, orderErr.message);
   if (!order) return fail(404, 'Order not found');
   if (order.status === 'paid') {
     return fail(409, 'Zamówienie opłacone — użyj zwrotu, nie zwalniaj rezerwacji.');
+  }
+
+  if (order.gift_card_id) {
+    if (order.payment_intent_id && await cancelIntent(stripe, order.payment_intent_id) !== 'canceled') {
+      return fail(409, 'Płatność w toku lub nieznana — saldo pozostaje zarezerwowane.');
+    }
+    const aborted = await supabase.rpc('abort_balance_order', { p_order_id: orderId, p_intent_id: order.payment_intent_id });
+    if (aborted.error) return fail(409, aborted.error.message);
+    return aborted.data ? ok('Zwolniono saldo i rezerwację zamówienia.') : fail(409, 'Zamówienie zostało już rozliczone.');
   }
 
   let claimToken: string | null = null;
@@ -268,9 +293,6 @@ export async function createShipmentForOrder(
   if (order.status !== 'paid') {
     return fail(409, `Nie można utworzyć przesyłki dla zamówienia o statusie „${order.status}”.`);
   }
-  if (!order.payment_intent_id) {
-    return fail(409, 'Brak PaymentIntent dla zamówienia.');
-  }
   if (!isDeliveryMethod(order.delivery_method)) {
     return fail(409, 'Nieobsługiwana metoda dostawy.');
   }
@@ -310,9 +332,9 @@ export async function createShipmentForOrder(
 
   try {
     await createOrderShipment(
-      order.payment_intent_id,
+      orderId,
       {
-        loadOrder: async (paymentIntentId) => {
+        loadOrder: async (shipmentOrderId) => {
           const { data } = await supabase
             .from('orders')
             .select(
@@ -320,7 +342,7 @@ export async function createShipmentForOrder(
                 'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id, ' +
                 'inpost_dispatch_order_id, delivery_status',
             )
-            .eq('payment_intent_id', paymentIntentId)
+            .eq('id', shipmentOrderId)
             .single();
           return (data as OrderForShipment | null) ?? null;
         },

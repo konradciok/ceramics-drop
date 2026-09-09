@@ -73,7 +73,7 @@ describe('POST /api/admin/create-shipment', () => {
     expect(res.status).toBe(200);
     expect(body).toEqual({ message: 'Przesyłka utworzona.' });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(
-      'pi_1',
+      ORDER_ID,
       expect.objectContaining({
         loadOrder: expect.any(Function),
         saveShipment: expect.any(Function),
@@ -158,7 +158,7 @@ describe('POST /api/admin/create-shipment', () => {
       inpost_label_emailed_at: null,
     });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(
-      'pi_1',
+      ORDER_ID,
       expect.any(Object),
       { adoptExisting: false },
     );

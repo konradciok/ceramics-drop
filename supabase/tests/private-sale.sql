@@ -48,6 +48,12 @@ insert into orders (payment_intent_id, subtotal, shipping, total, shipping_metho
 insert into piece_state (product_id, status) values ('tap_g1', 'sold');
 
 -- ── Tests ─────────────────────────────────────────────────────────────────--
+-- New purchases also require a public catalogue row in an active drop.
+insert into drops(id,label,status) values ('tap_private','Test','active');
+insert into products(id,type,category_slug,num,price_pln,status,drop_id)
+  select product_id,'ceramic','kubki','01',100,'active','tap_private'
+  from piece_state where product_id like 'tap\_%' escape '\';
+
 -- A1: exact-set reserve of sold pieces succeeds (no conflicts).
 select is(
   reserve_private_sale_pieces('tap_tok_a', array['tap_a1', 'tap_a2'], '11111111-1111-1111-1111-111111111111', 900),

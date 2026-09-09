@@ -24,6 +24,7 @@ import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
 import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
+import { recoverBalanceOrders } from './src/server/recover-balance-orders';
 import { isProbePath } from './src/lib/probe-paths';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
@@ -102,6 +103,10 @@ export default {
   },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {
+    ctx.waitUntil(recoverBalanceOrders({ supabase: supabaseFromEnv(env), stripe: stripeFromEnv(env), env, ctx })
+      .catch(async (error) => {
+        await captureWorkerAlert(env, { message: 'balance_recovery_sweep_failed', level: 'error', extra: { error: String(error) } });
+      }));
     // waitUntil discards rejections silently, so catch + log here — otherwise a
     // Supabase/Stripe failure mid-sweep would vanish with no signal that the cron ran.
     ctx.waitUntil(
@@ -305,6 +310,7 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         .from('orders')
         .select('id, payment_intent_id, private_sale_id, refund_pending_at, promo_code')
         .eq('status', 'pending')
+        .is('gift_card_id', null)
         .lt('created_at', cutoff)
         .limit(BATCH_LIMIT);
       if (error) throw new Error(`loadAbandoned failed: ${error.message}`);

@@ -32,6 +32,7 @@ const updateOrderStatus = vi.fn<
   (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
 >(async () => ({ error: null }));
 const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
+const claimPaymentMode = vi.fn(async () => ({ data: true, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
   id: 'pi_test',
   client_secret: 'cs_test',
@@ -77,7 +78,7 @@ vi.mock('@/lib/stripe', () => ({
 vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: () => ({
     rpc: (fn: string, params: Record<string, unknown>) =>
-      fn === 'claim_promo_redemption' ? claimPromoRpc(fn, params) : reserveRpc(fn, params),
+      fn === 'claim_checkout_payment_mode' ? claimPaymentMode() : fn === 'claim_promo_redemption' ? claimPromoRpc(fn, params) : reserveRpc(fn, params),
     from: (table: string) => {
       if (table === 'orders') {
         return {
@@ -151,6 +152,14 @@ vi.mock('@/lib/auth/session', async (importOriginal) => {
 });
 
 describe('POST /api/checkout', () => {
+  it('cannot reopen a balance attempt as a cash-only payment when a tab loses its card code', async () => {
+    const { POST } = await import('./route');
+    claimPaymentMode.mockResolvedValueOnce({ data: false, error: null });
+    const response = await POST(new Request('http://localhost/api/checkout', { method: 'POST', body: JSON.stringify({ ids: ['k01'], locale: 'pl', delivery_method: 'odbior', attemptId: '00000000-0000-0000-0000-000000000001' }) }));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'gift_card_attempt_conflict' });
+    expect(createPaymentIntent).not.toHaveBeenCalled(); expect(reserveRpc).not.toHaveBeenCalled(); expect(releaseHold).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();

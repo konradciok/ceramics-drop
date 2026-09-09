@@ -154,7 +154,7 @@ async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>,
       additionalImages,
       // Showroom pieces are visible but not purchasable — never advertise them
       // in stock in merchant feeds (matches reserve_pieces + JSON-LD).
-      availability: soldIds.has(product.id) || showroomIds.has(product.id) ? 'out of stock' : 'in stock',
+      availability: product.onlineAvailable !== true || soldIds.has(product.id) || showroomIds.has(product.id) ? 'out of stock' : 'in stock',
       price: priceStr,
       category: product.category,
       material: 'Ceramics',

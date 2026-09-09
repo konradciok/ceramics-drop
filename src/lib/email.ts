@@ -18,6 +18,7 @@ import {
   resendTemplateHtml,
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
+import { paymentBreakdownRows, type OrderPaymentBreakdown } from './payment-breakdown';
 import { SITE_URL } from '@/lib/site';
 import { inpostTrackingUrl } from '@/lib/tracking';
 
@@ -214,6 +215,8 @@ export async function emailLabelToStudio(params: {
 // ── Studio new-order notification ────────────────────────────────────────────
 
 export type NewOrderEmailOrder = {
+  gift_card_amount?: number;
+  gift_card_balance_after?: number | null;
   id: string;
   email: string | null;
   total: number;          // minor units, post-discount (the charged amount)
@@ -266,6 +269,9 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
     });
   }
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
+  if ((order.gift_card_amount ?? 0) > 0) {
+    rows.push(...paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount! },'pl').slice(1));
+  }
 
   const itemLines = order.items
     .map((it) => {
@@ -300,10 +306,11 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
 /** Email the studio about a new paid order. Throws if Resend isn't configured (caller must catch). */
 export async function emailNewOrderToStudio(params: {
   order: NewOrderEmailOrder;
+  env?: CloudflareEnv;
   /** M-27: pass `studio-new-order/<orderId>` from the claim-based webhook sender. */
   idempotencyKey?: string;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
     throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
@@ -969,6 +976,7 @@ export type OrderConfirmationOrder = {
   id: string;
   email: string | null;
   receiver_first_name: string | null;
+  payment?: OrderPaymentBreakdown;
 };
 
 // Intentionally duplicates deliveryNotice.* from messages/*.json — the Workers
@@ -1091,6 +1099,7 @@ export function buildOrderConfirmationEmail(params: {
   const mainContent = [
     emailParagraph(`${greeting},`),
     emailParagraph(t.thankYou),
+    order.payment ? emailDetailTable(paymentBreakdownRows(order.payment,loc)) : '',
     emailParagraph(`<strong>${escapeHtml(t.deliveryTitle)}</strong>`),
     emailParagraph(t.deliveryP1),
     emailParagraph(t.deliveryP2),
@@ -1203,8 +1212,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Karta podarunkowa',
     codeLabel: 'Kod',
     terms:
-      'Kod jest jednorazowy — możesz go wykorzystać przy jednym przyszłym zamówieniu (ceramika lub druki fine-art). ' +
-      'Kwota przewyższająca wartość zamówienia nie jest zwracana ani przenoszona na kolejne zakupy.',
+      'Kartą zapłacisz za standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu, także za dostawę. Niewykorzystane saldo pozostaje na kolejne zakupy w walucie karty. Jedna karta na zamówienie, bez łączenia z kodem rabatowym. Karta nie obejmuje innych kart, zamówień indywidualnych ani zakupów podczas wizyty w pracowni.',
     printHint: 'Możesz wydrukować tę wiadomość lub zapisać ją jako PDF, aby wręczyć kartę w formie fizycznej.',
     signOff: 'Dziękujemy! Anna Ciok Studio',
   },
@@ -1215,8 +1223,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Gift card',
     codeLabel: 'Code',
     terms:
-      'The code is single-use — redeemable on one future order (ceramics or fine-art prints). ' +
-      'Any amount exceeding that order’s value is not refunded or carried forward.',
+      'Use your card for standard Fine Art Print orders online and ceramics during an active drop, including delivery. Unused balance stays on the card for future purchases in its currency. One card per order, without a discount code. Other gift cards, custom orders and purchases during a studio visit are excluded.',
     printHint: 'You can print this email or save it as a PDF to give the card as a physical gift.',
     signOff: 'Thank you! Anna Ciok Studio',
   },
@@ -1227,8 +1234,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Tarjeta regalo',
     codeLabel: 'Código',
     terms:
-      'El código es de un solo uso — canjeable en un futuro pedido (cerámica o láminas fine-art). ' +
-      'El importe que supere el valor de ese pedido no se reembolsa ni se traslada.',
+      'La tarjeta sirve para Fine Art Print estándar online y cerámica durante un drop activo, incluido el envío. El saldo restante se conserva para futuras compras en la moneda de la tarjeta. Una tarjeta por pedido, sin código de descuento. No incluye otras tarjetas, encargos personalizados ni compras durante una visita al estudio.',
     printHint: 'Puedes imprimir este correo o guardarlo como PDF para regalar la tarjeta en formato físico.',
     signOff: '¡Gracias! Anna Ciok Studio',
   },
@@ -1239,8 +1245,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Geschenkkarte',
     codeLabel: 'Code',
     terms:
-      'Der Code ist einmalig einlösbar — für eine zukünftige Bestellung (Keramik oder Fine-Art-Drucke). ' +
-      'Ein Betrag, der den Bestellwert übersteigt, wird nicht erstattet oder übertragen.',
+      'Die Karte gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops, einschließlich Versand. Restguthaben bleibt für weitere Einkäufe in der Kartenwährung erhalten. Eine Karte pro Bestellung, ohne Rabattcode. Weitere Geschenkkarten, Sonderanfertigungen und Einkäufe bei einem Atelierbesuch sind ausgeschlossen.',
     printHint: 'Du kannst diese E-Mail ausdrucken oder als PDF speichern, um die Karte physisch zu verschenken.',
     signOff: 'Danke! Anna Ciok Studio',
   },
@@ -1297,6 +1302,7 @@ export async function emailGiftCardToCustomer(params: {
   order: GiftCardDeliveryOrder;
   tier: GiftCardTier;
   currency: 'pln' | 'eur' | 'gbp';
+  amountMinor?: number;
   code: string;
   locale: string;
   env?: CloudflareEnv;
@@ -1313,7 +1319,8 @@ export async function emailGiftCardToCustomer(params: {
     throw new Error(`Cannot send gift-card email: order ${order.id} has no email`);
   }
 
-  const amountLabel = formatGiftCardAmount(params.tier, params.currency);
+  const amountLabel = params.amountMinor === undefined ? formatGiftCardAmount(params.tier, params.currency)
+    : new Intl.NumberFormat(params.locale, { style: 'currency', currency: params.currency }).format(params.amountMinor / 100);
   const { subject, html } = buildGiftCardDeliveryEmail({ order, amountLabel, code: params.code, locale: params.locale });
 
   return sendResendHtml({

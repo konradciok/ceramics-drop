@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
+import { paymentBreakdownRows } from '@/lib/payment-breakdown';
 import { notFound } from 'next/navigation';
 import { getOrder } from '@/lib/admin/data';
 import { adminStripe } from '@/lib/admin/clients';
@@ -55,7 +57,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound();
 
   const payment = await loadPayment(order.payment_intent_id);
-  const fullyRefunded = payment.ok ? payment.info.refundedMinor >= order.total : order.status === 'refunded';
+  const fullyRefunded = order.status === 'refunded' || (!(order.gift_card_amount ?? 0) && payment.ok && payment.info.refundedMinor >= order.total);
   const addressLabel = formatShippingAddress(order.shipping_address);
 
   const timeline: { label: string; at: string | null }[] = [
@@ -145,17 +147,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 {payment.ok ? (
                   payment.info.status
                 ) : payment.reason === 'no_pi' ? (
-                  <span className="adm-muted">Brak PaymentIntent — zamówienie nieopłacone</span>
+                  <span className="adm-muted">{order.status === 'paid' && order.gift_card_amount === order.total ? 'Opłacone kartą podarunkową' : `DB: ${order.status}`}</span>
                 ) : (
                   <span className="adm-muted">Stripe niedostępny · DB: {order.status}</span>
                 )}
               </dd>
               <dt>Kwota</dt><dd>{formatMoney(order.total, order.currency)}</dd>
+              {(order.gift_card_amount ?? 0) > 0 && paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount ?? 0 }, 'pl').slice(1).map(row =>
+                <Fragment key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></Fragment>)}
               {payment.ok && payment.info.cardLast4 ? (
                 <><dt>Karta</dt><dd>{payment.info.cardBrand} ···· {payment.info.cardLast4}</dd></>
               ) : null}
               {payment.ok && payment.info.refundedMinor > 0 ? (
-                <><dt>Zwrócono</dt><dd>{formatMoney(payment.info.refundedMinor, order.currency)}{fullyRefunded ? ' (pełny)' : ''}</dd></>
+                <><dt>Zwrócono przez Stripe</dt><dd>{formatMoney(payment.info.refundedMinor, order.currency)}</dd></>
               ) : null}
               <dt>PaymentIntent</dt><dd className="adm-mono">{order.payment_intent_id ?? '—'}</dd>
               <dt>Faktura</dt><dd className="adm-mono">{order.invoice_id ?? '—'}</dd>

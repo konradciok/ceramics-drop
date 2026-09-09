@@ -31,6 +31,9 @@ export type AccountOrder = {
   subtotal: number;
   shipping: number;
   total: number;
+  gift_card_amount?: number;
+  gift_card_balance_after?: number | null;
+  cash_amount?: number;
   created_at: string;
   paid_at: string | null;
   delivery_method: string | null;
@@ -45,7 +48,7 @@ export type AccountOrder = {
 };
 
 const ORDER_COLUMNS =
-  'id, status, currency, subtotal, shipping, total, created_at, paid_at, delivery_method, fulfilment_type, delivery_status, inpost_tracking_number, inpost_target_point, shipping_address, receiver_first_name, receiver_last_name';
+  'id, status, currency, subtotal, shipping, total, gift_card_amount, gift_card_balance_after, cash_amount, created_at, paid_at, delivery_method, fulfilment_type, delivery_status, inpost_tracking_number, inpost_target_point, shipping_address, receiver_first_name, receiver_last_name';
 
 type RawAccountOrder = Omit<AccountOrder, 'items'> & { order_items: AccountOrderItem[] | null };
 

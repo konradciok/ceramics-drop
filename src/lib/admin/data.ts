@@ -33,6 +33,9 @@ export type AdminOrder = {
   subtotal: number;
   shipping: number;
   total: number;
+  gift_card_amount?: number;
+  gift_card_balance_after?: number | null;
+  cash_amount?: number;
   email: string | null;
   shipping_address: Record<string, unknown> | null;
   created_at: string;
@@ -54,7 +57,7 @@ export type AdminOrder = {
 };
 
 const ORDER_COLUMNS =
-  'id, payment_intent_id, status, currency, subtotal, shipping, total, email, shipping_address, created_at, paid_at, invoiced_at, invoice_id, delivery_method, receiver_first_name, receiver_last_name, receiver_phone, inpost_target_point, inpost_shipment_id, inpost_tracking_number, delivery_status, locale, customer_notified_at, return_requested_at';
+  'id, payment_intent_id, status, currency, subtotal, shipping, total, gift_card_amount, gift_card_balance_after, cash_amount, email, shipping_address, created_at, paid_at, invoiced_at, invoice_id, delivery_method, receiver_first_name, receiver_last_name, receiver_phone, inpost_target_point, inpost_shipment_id, inpost_tracking_number, delivery_status, locale, customer_notified_at, return_requested_at';
 
 type RawOrder = Omit<AdminOrder, 'items'> & { order_items: OrderItem[] | null };
 

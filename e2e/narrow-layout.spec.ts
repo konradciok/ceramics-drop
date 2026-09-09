@@ -7,9 +7,9 @@ import { test, expect } from '@playwright/test';
  * @ci-safe — read-only page loads.
  */
 test.describe('narrow-width layout @ci', () => {
-  test('320px /showroom: no horizontal overflow, filter fits the gutter box', async ({ page }) => {
+  test('320px /kubki: no horizontal overflow, filter fits the gutter box', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
-    await page.goto('/showroom');
+    await page.goto('/kubki');
     const filter = page.locator('.status-filter').first();
     await expect(filter).toBeVisible();
 

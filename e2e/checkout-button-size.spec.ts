@@ -1,5 +1,5 @@
 import { test, expect, type Locator } from '@playwright/test';
-import { resetCart, addFirstUnsoldFromCategory, goToCart } from './helpers/checkout';
+import { resetCart, goToCart } from './helpers/checkout';
 
 /**
  * Guard against the giant-SVG button regression: Icon renders viewBox-only
@@ -26,7 +26,12 @@ test.describe('button svg sizing @ci', () => {
 
   test('checkout CTA stays pill-sized', async ({ page }) => {
     await resetCart(page);
-    await addFirstUnsoldFromCategory(page, 'kubki');
+    // A print, not a ceramic: ceramic purchasability now depends on
+    // onlineAvailable (the active-drop gate), which fails closed without a
+    // real backend — the print path has no such gate.
+    await page.goto('/fine-art-prints/fap005');
+    await page.getByTestId('opt-size-50x70').click();
+    await page.getByTestId('print-add').click();
     await goToCart(page);
     await expectPillSized(page.locator('[data-testid="checkout-button"]'), 'checkout CTA');
   });

@@ -38,6 +38,8 @@ import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print
 import { attemptIdentityKey, checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
+import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
+import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
 import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
@@ -186,6 +188,7 @@ export function CartView({
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [inventoryReady, setInventoryReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
@@ -203,6 +206,8 @@ export function CartView({
   const [promoBusy, setPromoBusy] = useState(false);
   // A PromoIneligibleReason from the server, or 'network' for transport failures.
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [giftCard, setGiftCard] = useState<AppliedGiftCard | null>(null);
+  const [balancePayment, setBalancePayment] = useState<{ giftCard: number; cash: number } | null>(null);
 
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
@@ -235,12 +240,16 @@ export function CartView({
     current.forEach((id) => { if (!valid.has(id)) remove(id); });
 
     fetch('/api/inventory')
-      .then((r) => r.json())
-      .then(({ sold, showroom = [] }: { sold: string[]; showroom?: string[] }) =>
-        // Prune anything no longer purchasable — sold pieces and showroom-retired
-        // pieces alike — exactly as the server reserve_pieces guard would reject.
-        [...sold, ...showroom].forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
-      .catch(() => {});
+      .then((r) => { if (!r.ok) throw new Error('availability_unavailable'); return r.json(); })
+      .then(({ available }: { available: string[] }) => {
+        if (!Array.isArray(available)) throw new Error('availability_unavailable');
+        const allowed = new Set(available);
+        resolveCartLines(useCart.getState().ids).forEach((line) => {
+          if (line.kind === 'ceramic' && !allowed.has(line.id)) remove(line.id);
+        });
+        setInventoryReady(true);
+      })
+      .catch(() => setInventoryReady(false));
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -282,6 +291,8 @@ export function CartView({
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
   const total = subtotal + shipCost - promoDiscount;
+  const cardSplit = giftCard?.currency === printCurrency && total > 0
+    ? splitGiftCardPayment(Math.round(total * 100), giftCard.available, STRIPE_MINIMUM_MINOR[printCurrency]) : null;
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
   const countryOptions = PRINT_COUNTRIES
@@ -295,7 +306,7 @@ export function CartView({
   // promo-bound, so both are part of the attempt identity (hard Phase 3 gate,
   // see attemptIdentityKey). Regenerate so a stale attemptId is never reused.
   // Skips the initial mount (same attempt).
-  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null);
+  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null) + (giftCard ? `\ncard:${giftCard.code}:${printCurrency}:${ship}:${country}` : '');
   const attemptCartKey = useRef(attemptKey);
   useEffect(() => {
     if (attemptCartKey.current === attemptKey) return;
@@ -466,6 +477,14 @@ export function CartView({
   }
 
   async function handleCheckout(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
+    if (giftCard && giftCard.currency !== printCurrency) {
+      setCheckoutError(t('giftBalance.wrongCurrency', { currency: giftCard.currency.toUpperCase() }));
+      return;
+    }
+    if (!privateSale && lines.some((line) => line.kind === 'ceramic') && !inventoryReady) {
+      setCheckoutError(t('ceramics.availabilityError'));
+      return;
+    }
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
@@ -502,13 +521,17 @@ export function CartView({
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
       resStatus = res.status;
       if (res.status === 409) {
         const conflict = (await res.json()) as { error?: string; sold?: string[] };
+        if (conflict.error?.startsWith('gift_card_') || conflict.error === 'order_attempt_conflict' || conflict.error === 'ceramic_unavailable') {
+          setCheckoutError(t(conflict.error === 'ceramic_unavailable' ? 'ceramics.cartBlocked' : 'giftBalance.invalid'));
+          return;
+        }
         if (conflict.error === 'order_conflict') {
           // The attemptId was already consumed by a non-pending order (paid,
           // expired, ...). Start a fresh attempt for the next click and keep
@@ -568,6 +591,7 @@ export function CartView({
         }
       }
       if (!res.ok) {
+        if (giftCard) { setCheckoutError(t('giftBalance.unavailable')); return; }
         // Abandon the attemptId: Stripe may have cached this failure under its
         // idempotency key, and the server already released any hold it took —
         // a fresh attempt is the only path that can succeed.
@@ -597,7 +621,20 @@ export function CartView({
         setCheckoutError(errorMessage);
         return;
       }
-      const { client_secret, discount } = (await res.json()) as { client_secret: string; discount?: number };
+      const response = (await res.json()) as { status?: string; confirmation_url?: string; client_secret?: string; discount?: number; gift_card_amount?: number; cash_amount?: number };
+      if (response.status === 'paid' && response.confirmation_url) {
+        const confirmation = new URL(response.confirmation_url, window.location.origin);
+        if (confirmation.origin !== window.location.origin) throw new Error('Invalid confirmation URL');
+        lines.forEach(line => remove(line.id));
+        resetAttemptId();
+        window.location.assign(confirmation.href);
+        return;
+      }
+      const { client_secret, discount } = response;
+      if (!client_secret) throw new Error('Missing payment response');
+      if (typeof response.gift_card_amount === 'number' && typeof response.cash_amount === 'number') {
+        setBalancePayment({ giftCard: response.gift_card_amount, cash: response.cash_amount });
+      }
       // Re-sync the preview with the authoritative figure (shipping-aware
       // Stripe-minimum clamp can grant slightly more than the preview showed).
       if (promo && typeof discount === 'number') {
@@ -617,7 +654,7 @@ export function CartView({
         discountMinor: typeof discount === 'number' ? discount : promo?.discount,
       });
       // A later, separate purchase must never reuse this attemptId.
-      resetAttemptId();
+      if (!giftCard) resetAttemptId();
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -628,7 +665,7 @@ export function CartView({
       // checkout_in_progress/unavailable (keep-required), and a kept id
       // converges on retry while a wrong reset wipes the cart against the
       // buyer's own live hold. A pure network error also keeps it — see above.
-      if (gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
+      if (!giftCard && gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
       // Received-but-unprocessable responses are not network errors — report
       // the real status so analytics can tell a parse failure from an outage.
       pushDataLayer(buildEngagementEvent(
@@ -981,7 +1018,7 @@ export function CartView({
               onClick={hasPrints ? undefined : () => void handleCheckout()}
               disabled={submitting || !deliveryReady || mixedCart || privateSalePrints}
             >
-              {t('cart.checkout')} <Icon name="arrow" />
+              {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>
           )}
           {checkoutError && <p className="pay-error">{checkoutError}</p>}
@@ -1056,7 +1093,7 @@ export function CartView({
             </span>
             <span className="v">-{fmt(promoDiscount)}</span>
           </div>
-        ) : clientSecret ? null : (
+        ) : clientSecret || giftCard ? null : (
           <div className="promo-entry">
             {promoOpen ? (
               <div className="promo-form">
@@ -1109,6 +1146,8 @@ export function CartView({
           <span className="k">{t('cart.total')}</span>
           <span className="v">{fmt(total)}</span>
         </div>
+        {!promo && <GiftCardPayment key={printCurrency} card={giftCard} onChange={setGiftCard}
+          total={Math.round(total * 100)} currency={printCurrency} locked={submitting || !!clientSecret} confirmed={balancePayment} />}
         <div className="cart-delivery-notice">
           <strong>{t('deliveryNotice.title')}</strong>
           <p>{t('deliveryNotice.p1')}</p>

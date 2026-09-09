@@ -1,6 +1,9 @@
 import { cache } from 'react';
 import { getSupabaseAdmin } from './supabase';
 import { supabaseTimeout } from './supabase-timeout';
+import { getPublicProducts, CATEGORY_ORDER } from './products';
+import { getCeramicSaleState } from './ceramic-sale-state';
+import type { Product } from './types';
 
 export type PieceRow = {
   status: 'available' | 'reserved' | 'sold';
@@ -50,4 +53,27 @@ export async function getSoldIds(): Promise<string[]> {
 export async function getShowroomIds(): Promise<string[]> {
   const rows = await fetchPieceState();
   return rows.filter((r) => r.showroom).map((r) => r.product_id);
+}
+
+/** A public ceramic piece with verified sale state and its drop label. */
+export type ShowroomEntry = { product: Product; dropLabel: string | null };
+
+/**
+ * All public ceramics, independent of the historical showroom flag. An
+ * availability outage keeps the catalogue visible and disables online sales.
+ */
+export async function getShowroomProducts(): Promise<ShowroomEntry[]> {
+  const [products, { drops }] = await Promise.all([getPublicProducts(), getCeramicSaleState()]);
+  const dropLabel = new Map(drops.map((d) => [d.id, d.label]));
+  const order = new Map(CATEGORY_ORDER.map((slug, i) => [slug, i]));
+
+  return products
+    .map((product) => ({
+      product,
+      dropLabel: dropLabel.get(product.dropId) ?? null,
+    }))
+    .sort((a, b) => {
+      const byCat = (order.get(a.product.category) ?? 0) - (order.get(b.product.category) ?? 0);
+      return byCat !== 0 ? byCat : a.product.num.localeCompare(b.product.num);
+    });
 }

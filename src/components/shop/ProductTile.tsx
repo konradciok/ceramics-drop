@@ -8,7 +8,7 @@ import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { isPrintToken } from '@/lib/print-cart';
-import { CATEGORIES } from '@/lib/products';
+import { CATEGORIES, isProductPurchasable } from '@/lib/products';
 import {
   buildAddToCartEvent,
   buildEngagementEvent,
@@ -50,7 +50,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
   // like sold pieces on the tile (badge + PDP link), with a distinct badge that
   // takes priority when a piece is both showroom and sold.
   const showroom = product.showroom === true;
-  const notForSale = product.sold || showroom;
+  const notForSale = !isProductPurchasable(product);
 
   const sizes =
     feature === 'lead' ? '(min-width:1101px) 50vw, (min-width:561px) 66vw, 100vw'
@@ -94,7 +94,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
           );
           return;
         }
-        onOpen?.(product);
+        if (!notForSale) onOpen?.(product);
       }}
       data-testid="product-tile"
       data-product-id={product.id}

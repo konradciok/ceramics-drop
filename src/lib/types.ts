@@ -40,6 +40,9 @@ export interface Product {
    * (not in showroom); overlaid at render time exactly like `sold`.
    */
   showroom?: boolean;
+  /** Verified at request time; absent/false never authorizes a storefront purchase. */
+  onlineAvailable?: boolean;
+  saleState?: 'available' | 'reserved' | 'sold' | 'archive' | 'unavailable' | 'unknown';
   /** Which sales-event drop this piece was released in. References `drops.id`. */
   dropId: string;
   /** 0-based index into the category's `notes` array (description lookup). */
