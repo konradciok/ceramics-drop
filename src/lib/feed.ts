@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import { getPublicProducts, CATEGORIES } from './products';
 import { getPrintDesigns } from './prints';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
@@ -183,7 +184,7 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const pricing = await getPrintPricingConfig(); // global price list, CATALOG_SOURCE-aware
 
   return designs.map((design) => {
-    const title = `${singular} #${design.num}`;
+    const title = printDisplayName(design, singular);
     const notes = (msg.notes as Record<string, string[]>)['fine-art-prints'];
     const description = notes?.[design.noteIndex] ?? title;
 

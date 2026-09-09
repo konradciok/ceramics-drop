@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { Link } from '@/i18n/navigation';
@@ -97,7 +98,7 @@ export default async function HomePage({ params, searchParams }: Props) {
   // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
-  const printName = (d: PrintDesign) => `${t('product.print')} Nº ${d.num}`;
+  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'));
 
   // Nine named collections (plus an "inne" fallback bucket, only if
   // non-empty) — membership/order come from groupPrintDesigns, never

@@ -3,6 +3,7 @@
    Names resolve through the code registry like the cart and invoices do;
    unknown ids (retired pieces on old orders) degrade to the raw id.
    ============================================================ */
+import { printDisplayName } from '@/lib/print-curation';
 import { CATEGORIES, registryProductById } from '@/lib/products';
 import { registryPrintById } from '@/lib/prints';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES as CANONICAL_PRINT_SIZES, variantLabel } from '@/lib/print-cart';
@@ -51,7 +52,7 @@ export function accountItemLabel(item: AccountOrderItem, t: Translate, locale: s
     const design = registryPrintById(item.product_id);
     return {
       key: `${item.product_id}-${JSON.stringify(item.variant)}`,
-      name: design ? `${t('product.print')} Nº ${design.num}` : item.product_id,
+      name: design ? printDisplayName(design, t('product.print')) : item.product_id,
       detail: printDetail(item.variant, locale),
     };
   }

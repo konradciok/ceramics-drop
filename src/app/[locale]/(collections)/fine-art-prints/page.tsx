@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PrintCollectionScreen } from '@/components/shop/PrintCollectionScreen';
@@ -49,7 +50,7 @@ export async function generateMetadata(
             url: `${SITE_URL}${heroImage}`,
             width: 1200,
             height: 1714,
-            alt: `${t('product.print')} Nº ${hero!.num}`,
+            alt: printDisplayName(hero!, t('product.print')),
           },
         ],
       }),

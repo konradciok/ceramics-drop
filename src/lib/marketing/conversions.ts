@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import * as Sentry from '@sentry/nextjs';
 import { registryResolveKnownProducts } from '../products';
 import { registryPrintById } from '../prints';
@@ -70,7 +71,7 @@ export async function sendPurchaseConversions(
       const design = registryPrintById(item.product_id);
       return {
         item_id: item.product_id,
-        item_name: design ? `Print Nº ${design.num}` : item.product_id,
+        item_name: design ? printDisplayName(design) : item.product_id,
         price: item.unit_price / 100,
         quantity: 1 as const,
         item_category: 'fine-art-prints',

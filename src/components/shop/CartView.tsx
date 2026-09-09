@@ -1,5 +1,6 @@
 'use client';
 
+import { printDisplayName } from '@/lib/print-curation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
@@ -720,7 +721,7 @@ export function CartView({
           {lines.map((l) => {
             if (l.kind === 'print') {
               const d = l.design;
-              const name = `${t('product.print')} Nº ${d.num}`;
+              const name = printDisplayName(d, t('product.print'));
               return (
                 <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
                   <Link href={`/fine-art-prints/${d.id}`} className="thumb" aria-label={name}>
@@ -999,12 +1000,12 @@ export function CartView({
               const d = l.design;
               return (
                 <li key={l.id} className="sum-item">
-                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={`${t('product.print')} Nº ${d.num}`}>
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={printDisplayName(d, t('product.print'))}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
                   </Link>
                   <div className="sum-item-info">
-                    <span className="sum-item-name">{t('product.print')} Nº {d.num} · {variantLabel(l.sel, locale)}</span>
+                    <span className="sum-item-name">{printDisplayName(d, t('product.print'))} · {variantLabel(l.sel, locale)}</span>
                     <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                   </div>
                 </li>

@@ -1,3 +1,4 @@
+import { printDisplayName } from '@/lib/print-curation';
 import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
@@ -153,7 +154,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
-        label = `${printName} Nº ${design?.num ?? ''}`.trim()
+        label = (design ? printDisplayName(design, printName) : printName)
           + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
         idempotencySuffix = `_${variant.prodigiSku}`;
       } else {
