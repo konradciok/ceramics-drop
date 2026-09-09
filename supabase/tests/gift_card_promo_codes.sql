@@ -11,7 +11,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(8);
+select plan(9);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 insert into orders (id, payment_intent_id, subtotal, shipping, total, shipping_method, status, fulfilment_type)
