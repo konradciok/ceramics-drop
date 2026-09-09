@@ -101,7 +101,7 @@ describe('collectionSchema', () => {
 
   it('sets brand on every item and a description from the tRaw notes fallback', () => {
     (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok' });
+      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
       expect(item.description).toBe('stub note');
     });
   });
@@ -151,7 +151,7 @@ describe('collectionSchema', () => {
       );
       // Market the policy covers tracks the locale; returns are always sent back to PL.
       expect(item.offers.hasMerchantReturnPolicy?.applicableCountry).toBe('PL');
-      expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCountry).toBe('PL');
+      expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCountry).toBe('ES');
     });
   });
 
@@ -167,14 +167,14 @@ describe('collectionSchema', () => {
   });
 
   it.each(['en', 'es', 'de'] as const)(
-    '%s locale keeps applicableCountry on its own market, while returnPolicyCountry stays PL',
+    '%s locale keeps applicableCountry on its own market, while returnPolicyCountry stays ES',
     async (locale) => {
       const graph = await collectionSchema({ slug: 'kubki', locale, t, tRaw });
       const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
       items.forEach(({ item }) => {
         expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe(MARKET_COUNTRY[locale]);
         expect(item.offers.hasMerchantReturnPolicy?.applicableCountry).toBe(MARKET_COUNTRY[locale]);
-        expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCountry).toBe('PL');
+        expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCountry).toBe('ES');
       });
     },
   );
@@ -234,7 +234,7 @@ describe('productSchema', () => {
   });
 
   it('sets brand to Anna Ciok, matching the <g:brand> literal in feed.ts', () => {
-    expect(nodes[1]['brand']).toEqual({ '@type': 'Brand', name: 'Anna Ciok' });
+    expect(nodes[1]['brand']).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
   });
 
   it('attaches ceramics shippingDetails (2 InPost rates, with deliveryTime) and a 14-day hasMerchantReturnPolicy', () => {
@@ -248,11 +248,11 @@ describe('productSchema', () => {
     expect(offer.hasMerchantReturnPolicy.merchantReturnDays).toBe(14);
     expect(offer.hasMerchantReturnPolicy.returnFees).toBe('https://schema.org/ReturnShippingFees');
     expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe('PL');
-    expect(offer.hasMerchantReturnPolicy.returnPolicyCountry).toBe('PL');
+    expect(offer.hasMerchantReturnPolicy.returnPolicyCountry).toBe('ES');
   });
 
   it.each(['en', 'es', 'de'] as const)(
-    '%s locale sets applicableCountry to its own market while returnPolicyCountry stays PL',
+    '%s locale sets applicableCountry to its own market while returnPolicyCountry stays ES',
     (locale) => {
       const graph = productSchema({ product, locale, t, tRaw });
       const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
@@ -261,7 +261,7 @@ describe('productSchema', () => {
       };
       expect(offer.shippingDetails[0].shippingDestination.addressCountry).toBe(MARKET_COUNTRY[locale]);
       expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe(MARKET_COUNTRY[locale]);
-      expect(offer.hasMerchantReturnPolicy.returnPolicyCountry).toBe('PL');
+      expect(offer.hasMerchantReturnPolicy.returnPolicyCountry).toBe('ES');
     },
   );
 
@@ -317,7 +317,7 @@ describe('printCollectionSchema', () => {
 
   it('sets brand on every item, matching the shared PRODUCT_BRAND_NAME', () => {
     (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok' });
+      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
     });
   });
 
@@ -331,12 +331,12 @@ describe('printCollectionSchema', () => {
     });
   });
 
-  it('marks prints as not returnable, distinct from the ceramics 14-day window', () => {
+  it('gives standard prints a 14-day withdrawal window', () => {
     (nodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCategory).toBe(
-        'https://schema.org/MerchantReturnNotPermitted',
+        'https://schema.org/MerchantReturnFiniteReturnWindow',
       );
-      expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBeUndefined();
+      expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBe(14);
     });
   });
 
@@ -359,7 +359,7 @@ describe('printProductSchema', () => {
   const notesStub = Array.from({ length: design.noteIndex + 1 }, () => 'test note');
   const tRawStub = (key: string) => (key.startsWith('notes.') ? notesStub : key);
 
-  it('attaches Prodigi shippingDetails and a MerchantReturnNotPermitted policy', () => {
+  it('attaches Prodigi shippingDetails and a MerchantReturnFiniteReturnWindow policy', () => {
     const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING });
     const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
       shippingDetails: ShippingDetail[];
@@ -367,7 +367,7 @@ describe('printProductSchema', () => {
     };
     expect(offer.shippingDetails).toHaveLength(2);
     expect(offer.shippingDetails[0].shippingRate.value).toBe(printShippingOf('PL', false, 'pln'));
-    expect(offer.hasMerchantReturnPolicy.returnPolicyCategory).toBe('https://schema.org/MerchantReturnNotPermitted');
+    expect(offer.hasMerchantReturnPolicy.returnPolicyCategory).toBe('https://schema.org/MerchantReturnFiniteReturnWindow');
   });
 
   it('falls through to the tRaw fallback when the description override is an empty string', () => {

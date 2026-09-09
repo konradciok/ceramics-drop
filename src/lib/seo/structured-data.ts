@@ -7,25 +7,21 @@ import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
 import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
-import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME } from '@/lib/site';
+import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
 import { SHIPPING_COUNTRY } from '@/lib/feed';
 import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import { RETURNS_POLICY } from '@/lib/returns-policy';
 
 const PRINTS_SLUG = 'fine-art-prints';
 
 /** Matches the copy on /dostawa-i-zwroty (shipping.s5P / s5Li2 / s5Li3): 14-day
  *  right of withdrawal, buyer pays return shipping, refund within 14 days. */
-const RETURN_WINDOW_DAYS = 14;
+const RETURN_WINDOW_DAYS = RETURNS_POLICY.withdrawalDays;
 
-/**
- * Studio fulfilment is Poland-based regardless of the buyer's market (see
- * /dostawa-i-zwroty and o-studiu — the June drop travelled to Poland for the
- * summer), so returns are always sent back to PL even though the offer's
- * `applicableCountry` (the market the policy covers) tracks the locale.
- */
-const RETURN_POLICY_COUNTRY = 'PL';
+/** Returns go to the studio in Tenerife; the covered market follows locale. */
+const RETURN_POLICY_COUNTRY = RETURNS_POLICY.address.addressCountry;
 
 /** Resolves a Product description: an explicit CMS override, falling through
  *  to the static `notes.<slug>` array on an empty override too — `??` alone
@@ -68,7 +64,7 @@ function shippingDetailsFor(locale: Locale) {
 }
 
 /**
- * Ceramics-only 14-day right-of-withdrawal return policy (see /dostawa-i-zwroty).
+ * Standard ceramics and prints: 14-day withdrawal policy.
  * `applicableCountry` is the market the offer/policy covers (tracks the
  * locale's shipping destination); `returnPolicyCountry` is the fixed address
  * returns are actually sent back to.
@@ -108,13 +104,9 @@ function printShippingDetailsFor(locale: Locale) {
   ];
 }
 
-/** Prints are made-to-order and not returnable (see buildPrintShippingConfirmation
- *  in email.ts) — a distinct policy from ceramics' 14-day window, not an omission. */
-function printReturnPolicy() {
-  return {
-    '@type': 'MerchantReturnPolicy' as const,
-    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted' as const,
-  };
+/** Standard print-on-demand variants share the withdrawal policy. */
+function printReturnPolicy(locale: Locale) {
+  return merchantReturnPolicy(locale);
 }
 
 /** Prices (major units, given currency) of every sellable variant of a design. */
@@ -162,6 +154,9 @@ export function organizationSchema(): WithContext<Organization> {
     url: SITE_URL,
     logo: `${SITE_URL}/logotype.png`,
     email: EMAIL.contact,
+    taxID: STUDIO.taxId,
+    address: { '@type': 'PostalAddress', ...STUDIO.address },
+    sameAs: [STUDIO.instagram, STUDIO.facebook],
   };
 }
 
@@ -264,7 +259,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }:
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+  const collectionUrl = absoluteUrl(locale, '/sklep');
   const rawNotes = tRaw?.(`notes.${PRINTS_SLUG}`);
 
   return {
@@ -302,7 +297,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }:
                 availability: 'https://schema.org/InStock',
                 url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
                 shippingDetails: printShippingDetailsFor(locale),
-                hasMerchantReturnPolicy: printReturnPolicy(),
+                hasMerchantReturnPolicy: printReturnPolicy(locale),
               },
             },
           };
@@ -334,7 +329,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+  const collectionUrl = absoluteUrl(locale, '/sklep');
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
   const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
   const prices = sellableVariantPrices(design, currency, pricing);
@@ -368,7 +363,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           availability: 'https://schema.org/InStock',
           url: productUrl,
           shippingDetails: printShippingDetailsFor(locale),
-          hasMerchantReturnPolicy: printReturnPolicy(),
+          hasMerchantReturnPolicy: printReturnPolicy(locale),
         },
       },
     ],
