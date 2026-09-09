@@ -43,7 +43,7 @@ export async function Footer() {
           <FooterAccordionSection id="fart" heading={t('footer.hArt')}>
             <ul>
               <li>
-                <Link href="/fine-art-prints">{t('nav.fineArtPrints')}</Link>
+                <Link href="/sklep">{t('nav.fineArtPrints')}</Link>
               </li>
               <li>
                 <Link href="/gallery">{t('nav.gallery')}</Link>

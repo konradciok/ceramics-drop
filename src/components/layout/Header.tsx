@@ -15,7 +15,6 @@ export async function Header() {
 
   const mobileLinks = [
     { href: '/sklep', label: t('nav.sklep') },
-    { href: '/fine-art-prints', label: t('nav.fineArtPrints') },
     { href: '/karta-podarunkowa', label: t('nav.giftCard') },
     { href: '/showroom', label: t('nav.showroom') },
     { href: '/gallery', label: t('nav.gallery') },
@@ -39,7 +38,6 @@ export async function Header() {
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}
           <nav className="nav-left">
             <Link className="nav-link" href="/sklep">{t('nav.sklep')}</Link>
-            <Link className="nav-link" href="/fine-art-prints">{t('nav.fineArtPrints')}</Link>
             <Link className="nav-link" href="/showroom">{t('nav.showroom')}</Link>
             <Link className="nav-link" href="/gallery">{t('nav.gallery')}</Link>
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
@@ -48,8 +46,8 @@ export async function Header() {
 
           <Link className="brand" href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logotype.png" alt="Anna Ciok Ceramics" width={48} height={48} />
-            <span className="brand-word">ANNA CIOK<small>CERAMICS</small></span>
+            <img src="/logotype.png" alt="Anna Ciok Studio" width={48} height={48} />
+            <span className="brand-word">ANNA CIOK<small>STUDIO</small></span>
           </Link>
 
           <div className="nav-right">

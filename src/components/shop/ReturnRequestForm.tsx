@@ -1,39 +1,27 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { returnStatusMessageKey, type ReturnStatusKey } from './return-status';
+import { RETURNS_POLICY, returnContactHref } from '@/lib/returns-policy';
 
 export function ReturnRequestForm({ initialOrderId = '' }: { initialOrderId?: string }) {
   const t = useTranslations('returns');
   const [orderId, setOrderId] = useState(initialOrderId);
-  const [status, setStatus] = useState<ReturnStatusKey | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!orderId.trim() || pending) return;
-    setPending(true);
-    setStatus(null);
-    try {
-      const res = await fetch('/api/returns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId.trim() }),
-      });
-      setStatus(returnStatusMessageKey(res.status));
-    } catch {
-      setStatus('error');
-    } finally {
-      setPending(false);
-    }
-  }
-
+  const fieldId = useId();
+  const address = RETURNS_POLICY.address;
   return (
-    <form onSubmit={submit} className="return-form">
-      <label htmlFor="order-id" className="return-label">{t('label')}</label>
-      <input id="order-id" name="order-id" value={orderId} onChange={(e) => setOrderId(e.target.value)} className="return-input" autoComplete="off" required />
-      <button type="submit" className="return-btn" disabled={pending || !orderId.trim()}>{t('button')}</button>
-      {status && <p className={`return-msg return-msg-${status}`} role="status">{t(status)}</p>}
-    </form>
+    <div className="return-form">
+      <p>{t('instructions')}</p>
+      <address>
+        Anna Ciok Studio<br />
+        {address.streetAddress}<br />
+        {address.postalCode} {address.addressLocality}<br />
+        {t('returnRegion')}
+      </address>
+      <p>{t('returnCost')}</p>
+      <label htmlFor={fieldId} className="return-label">{t('optionalOrder')}</label>
+      <input id={fieldId} name="order-id" value={orderId} onChange={(e) => setOrderId(e.target.value)} className="return-input" autoComplete="off" maxLength={100} />
+      <a className="return-btn" href={returnContactHref(t('heading'),orderId)}>{t('button')}</a>
+      <p>{t('noAccount')}</p>
+    </div>
   );
 }

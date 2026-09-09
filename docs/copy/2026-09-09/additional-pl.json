@@ -1,0 +1,147 @@
+{
+  "identity": {
+    "brand": "Anna Ciok Studio",
+    "artist": "Anna Ciok",
+    "seller": "Anna Ciok Studio",
+    "taxId": "Y9608071L",
+    "address": "San Pedro Abajo 12, 38500 Guimar, Tenerife, Hiszpania — Wyspy Kanaryjskie",
+    "email": "ania@ciok.art",
+    "instagram": "https://www.instagram.com/anna.ciok.art/",
+    "facebook": "https://www.facebook.com/anki.doodle.tenerife/",
+    "wordmark": "STUDIO"
+  },
+  "custom": {
+    "title": "Zamówienia indywidualne",
+    "painting": "Chcesz zamówić obraz malowany akwarelą i tuszem? Napisz, jakiej wielkości i kolorystyki szukasz.",
+    "paintingCta": "Zapytaj o obraz na zamówienie",
+    "size": "Potrzebujesz innego rozmiaru Fine Art Print? Napisz, który wzór Cię interesuje i jakie wymiary rozważasz.",
+    "sizeCta": "Zapytaj o inny rozmiar",
+    "architects": "Współpracuję z architektami przy doborze prac do wnętrz. Opisz projekt i napisz, jakich prac szukasz.",
+    "architectsCta": "Napisz o projekcie wnętrza",
+    "email": "ania@ciok.art"
+  },
+  "ceramics": {
+    "archiveTitle": "Wcześniejsze prace",
+    "archiveLead": "Galeria pokazuje ceramikę z wcześniejszych kolekcji. Nie jest wykazem przedmiotów dostępnych obecnie w pracowni.",
+    "visit": "Ceramikę możesz obejrzeć i kupić podczas umówionej wizyty w mojej pracowni w Güímar na Teneryfie.",
+    "visitCta": "Umów wizytę",
+    "dropTitle": "Ceramika dostępna online",
+    "dropLead": "Te przedmioty możesz zamówić podczas aktywnego dropu. Każdy jest pojedynczym egzemplarzem.",
+    "noDrop": "Sprzedaż internetowa ceramiki jest teraz zamknięta.",
+    "ended": "Ten drop się zakończył. Możesz nadal obejrzeć przedmioty w galerii wcześniejszych prac.",
+    "archived": "Wcześniejsza praca",
+    "sold": "Sprzedane",
+    "reserved": "Zarezerwowane",
+    "available": "Dostępne online",
+    "unavailable": "Niedostępne online",
+    "availabilityError": "Nie udało się sprawdzić dostępności. Spróbuj ponownie za chwilę.",
+    "cartBlocked": "Ceramika w tym koszyku nie jest teraz dostępna online. Usuń ją, aby kontynuować zakupy.",
+    "privateSaleBlocked": "Nowe zamówienie przez ten link jest możliwe tylko podczas aktywnego dropu.",
+    "paymentInProgress": "Rozpoczęta płatność pozostaje obsługiwana zgodnie z rezerwacją zamówienia."
+  },
+  "giftBalance": {
+    "have": "Mam kartę podarunkową",
+    "label": "Kod karty podarunkowej",
+    "placeholder": "Wpisz kod karty",
+    "apply": "Użyj karty",
+    "remove": "Usuń kartę",
+    "balance": "Dostępne saldo: {amount}",
+    "used": "Z karty podarunkowej: {amount}",
+    "remaining": "Saldo po opłaceniu zamówienia: {amount}",
+    "cashDue": "Do dopłaty: {amount}",
+    "total": "Wartość zamówienia",
+    "placeOrder": "Zamawiam i płacę kartą podarunkową",
+    "covered": "Karta podarunkowa pokrywa całe zamówienie wraz z dostawą.",
+    "confirmed": "Zamówienie zostało opłacone kartą podarunkową. Potwierdzenie otrzymasz e-mailem.",
+    "invalid": "Nie można użyć tej karty. Sprawdź kod lub napisz na ania@ciok.art.",
+    "wrongCurrency": "Karta działa w walucie {currency}. Zmień walutę zamówienia, aby jej użyć.",
+    "empty": "Ta karta nie ma dostępnych środków.",
+    "reserved": "Część salda jest zarezerwowana dla innej płatności. Spróbuj ponownie po jej zakończeniu.",
+    "excluded": "Karta obejmuje standardowe Fine Art Print online i ceramikę podczas aktywnego dropu. Nie można nią zapłacić za kolejną kartę.",
+    "promoConflict": "W jednym zamówieniu możesz użyć jednej karty podarunkowej albo kodu rabatowego.",
+    "minimumPayment": "Aby dopłata mogła zostać pobrana, użyjemy z karty {used}. Pozostałe {remaining} zachowasz na kolejne zakupy.",
+    "unavailable": "Płatność kartą podarunkową jest chwilowo niedostępna. Twoje saldo pozostaje zachowane.",
+    "confirmationUnavailable": "Nie udało się otworzyć potwierdzenia. Sprawdź e-mail z zamówieniem lub napisz na ania@ciok.art.",
+    "refund": "Zwrócono {cardAmount} na kartę podarunkową i {cashAmount} pierwotną metodą płatności.",
+    "usedCardRefund": "Jeśli karta została już częściowo lub w całości wykorzystana, napisz na ania@ciok.art w sprawie zwrotu jej zakupu. Studio sprawdzi historię rozliczeń."
+  },
+  "dimensions": {
+    "printSize": "Format wydruku",
+    "imageArea": "Pole obrazu",
+    "outerFrame": "Zewnętrzne wymiary oprawy",
+    "note": "Format wydruku, pole obrazu i zewnętrzne wymiary oprawy to różne wymiary. Szczegóły dotyczą wybranego wariantu."
+  },
+  "emailConfirmationPrint": {
+    "subject": "Zamówienie przyjęte — Anna Ciok Studio",
+    "greeting": "Cześć {name},",
+    "body": "Dziękuję za zakup Fine Art Print. Zamówienie {orderId} zostało opłacone i przyjęte do realizacji.",
+    "details": "Poniżej znajdziesz wybrane produkty, warianty, adres dostawy i rozliczenie płatności.",
+    "shipping": "Fine Art Print powstaje po zamówieniu. Gdy przesyłka zostanie nadana, otrzymasz wiadomość. Jeśli usługa obejmuje śledzenie, w wiadomości znajdziesz również odnośnik do przesyłki.",
+    "cta": "Zobacz zamówienie",
+    "help": "W sprawie zamówienia lub zwrotu napisz na ania@ciok.art. Nie musisz zakładać konta.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailConfirmationCeramics": {
+    "subject": "Zamówienie przyjęte — Anna Ciok Studio",
+    "body": "Dziękuję za zakup ceramiki. Zamówienie {orderId} zostało opłacone i przyjęte do realizacji.",
+    "delivery": "Wybrana dostawa: {deliveryMethod}. Adres: {address}. Warunki realizacji znajdziesz w potwierdzeniu zamówienia.",
+    "help": "Masz pytanie? Napisz na ania@ciok.art.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailGiftIssued": {
+    "subject": "Twoja karta podarunkowa — Anna Ciok Studio",
+    "body": "Dziękuję za zakup karty podarunkowej. Jej wartość wynosi {amount} w walucie {currency}.",
+    "code": "Kod karty: {code}",
+    "terms": "Kartą zapłacisz za standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu, także za dostawę. Niewykorzystane środki pozostają na karcie. Karta nie ma terminu ważności i działa tylko w walucie zakupu.",
+    "exclusions": "Karta nie obejmuje wizyt w pracowni, zamówień indywidualnych ani zakupu kolejnej karty. W zamówieniu użyjesz jednej karty, bez łączenia z kodem rabatowym.",
+    "cta": "Przejdź do sklepu",
+    "help": "Kod możesz przekazać wybranej osobie. W sprawie ponownego wysłania kodu napisz na ania@ciok.art.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailGiftResent": {
+    "subject": "Ponowne wysłanie karty podarunkowej — Anna Ciok Studio",
+    "body": "Przesyłamy ponownie kod Twojej karty: {code}. Dostępne saldo wynosi {balance}. Ponowne wysłanie kodu nie zmienia salda ani historii karty.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailShipped": {
+    "subject": "Zamówienie zostało wysłane — Anna Ciok Studio",
+    "body": "Zamówienie {orderId} zostało nadane.",
+    "trackingCta": "Śledź przesyłkę",
+    "withoutTracking": "Dla tej przesyłki nie ma dostępnego odnośnika do śledzenia. W sprawie dostawy napisz na ania@ciok.art.",
+    "returns": "Informacje o odstąpieniu od umowy i reklamacjach znajdziesz na stronie zwrotów.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailRefund": {
+    "subject": "Zwrot płatności — Anna Ciok Studio",
+    "body": "Rozliczono zwrot do zamówienia {orderId}: {refundTotal}.",
+    "card": "Przywrócono na kartę podarunkową: {cardAmount}. Dostępne saldo: {balance}.",
+    "cash": "Zlecono zwrot pierwotną metodą płatności: {cashAmount}. Termin zaksięgowania zależy od operatora płatności.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailNewsletterConfirm": {
+    "subject": "Potwierdź zapis do newslettera — Anna Ciok Studio",
+    "body": "Kliknij poniżej, aby potwierdzić, że chcesz otrzymywać wiadomości o nowych pracach i kolekcjach.",
+    "cta": "Potwierdzam zapis",
+    "note": "Jeśli nie prosisz o zapis, pomiń tę wiadomość.",
+    "signature": "Anna Ciok Studio"
+  },
+  "emailNewsletterWelcome": {
+    "subject": "Witaj w newsletterze Anna Ciok Studio",
+    "body": "Dziękuję za zapis. Będę dawać znać o nowych pracach i kolekcjach.",
+    "promoBody": "Twój kod powitalny: {code}. Rabat: {value}. Warunki użycia zobaczysz w sklepie.",
+    "cta": "Przejdź do sklepu",
+    "unsubscribe": "Zrezygnuj z newslettera",
+    "signature": "Anna Ciok Studio"
+  },
+  "invoice": {
+    "title": "Dokument sprzedaży",
+    "seller": "Sprzedawca",
+    "taxId": "Numer podatkowy",
+    "orderValue": "Wartość zamówienia",
+    "giftPayment": "Opłacono kartą podarunkową",
+    "cashPayment": "Opłacono przez operatora płatności",
+    "remainingDue": "Pozostało do zapłaty",
+    "refundCard": "Zwrot na kartę podarunkową",
+    "refundCash": "Zwrot pierwotną metodą płatności"
+  }
+}

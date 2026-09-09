@@ -1,14 +1,24 @@
+import { printDisplayName } from '@/lib/print-curation';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { AllPiecesScreen } from '@/components/shop/AllPiecesScreen';
-import { getPublicProducts } from '@/lib/products';
-import { getSoldIds, getShowroomIds } from '@/lib/inventory';
+import { PrintCollectionScreen } from '@/components/shop/PrintCollectionScreen';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { printCollectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
-import { HOME_EDITORIAL_IMAGE } from '@/lib/editorial-images';
+import { getProductNotes } from '@/lib/cms/messages';
+import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getPrintDesigns, registryPrintById } from '@/lib/prints';
+import { printListingImage } from '@/lib/print-mockups';
+import { groupPrintDesigns } from '@/lib/print-collections';
 import { SITE_URL } from '@/lib/site';
 import type { Locale } from '@/i18n/routing';
 
+// Published designs and global pricing are mutable database state. This route
+// must invoke their runtime loaders instead of shipping an immutable code-mode
+// prerender produced during the Worker build.
 export const dynamic = 'force-dynamic';
+
+const PRINTS_SLUG = 'fine-art-prints';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -18,27 +28,32 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });
+  // Representative OG/Twitter image: the first curated design's listing
+  // mockup, in the same order the collection itself renders — without this,
+  // the page inherits the global ceramic mug fallback (SEO-010).
+  const [hero] = groupPrintDesigns(await getPrintDesigns()).flatMap((g) => g.designs);
+  const heroImage = hero ? printListingImage(hero, registryPrintById(hero.id)) : undefined;
   // Spread the parent's openGraph (type, siteName) — a child openGraph object
-  // replaces the parent's wholesale rather than merging with it, so
-  // overriding just `images` would silently drop those fields.
+  // replaces the parent's wholesale, not merges with it (Next.js metadata is
+  // only shallow-merged), so overriding just `images` here would silently
+  // drop those fields.
   const previousOpenGraph = (await parent).openGraph ?? {};
   return {
-    title: t('title.sklep'),
-    description: t('meta.collections.sklep'),
+    title: t('title.fineArtPrints'),
+    description: t('meta.collections.fineArtPrints'),
     alternates: alternatesFor(locale as Locale, '/sklep'),
-    // Without an override this inherits the global ceramic-mug OG fallback
-    // (SEO-010); the curated home hero photo is a more representative shot
-    // of the whole shop than one arbitrary product.
     openGraph: {
       ...previousOpenGraph,
-      images: [
-        {
-          url: `${SITE_URL}${HOME_EDITORIAL_IMAGE.src}`,
-          width: HOME_EDITORIAL_IMAGE.width,
-          height: HOME_EDITORIAL_IMAGE.height,
-          alt: t('home.editorialImageAlt'),
-        },
-      ],
+      ...(heroImage && {
+        images: [
+          {
+            url: `${SITE_URL}${heroImage}`,
+            width: 1200,
+            height: 1714,
+            alt: printDisplayName(hero!, t('product.print')),
+          },
+        ],
+      }),
     },
   };
 }
@@ -46,23 +61,16 @@ export async function generateMetadata(
 export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-
-  const [soldIds, showroomIds] = await Promise.all([
-    getSoldIds().catch(() => [] as string[]),
-    getShowroomIds().catch(() => [] as string[]),
+  const [t, notes, pricing] = await Promise.all([
+    getTranslations({ locale }),
+    getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
+    getPrintPricingConfig(),
   ]);
-  const sold = new Set(soldIds);
-  const showroom = new Set(showroomIds);
-  // Sold/showroom overlays are best-effort: a Supabase outage must not take the
-  // storefront down. Fall back to none — reserve_pieces is the real guard.
-  const products = (await getPublicProducts()).map((p) => {
-    const merged = sold.has(p.id) ? { ...p, sold: true } : p;
-    return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
-  });
-
+  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing });
   return (
     <main>
-      <AllPiecesScreen products={products} />
+      <JsonLd data={schema} />
+      <PrintCollectionScreen locale={locale as Locale} pricing={pricing} />
     </main>
   );
 }

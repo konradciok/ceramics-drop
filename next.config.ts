@@ -19,6 +19,14 @@ const gitSha = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    // Preserve query parameters and the browser's collection fragment. Product
+    // permalinks below /fine-art-prints/:id deliberately remain unchanged.
+    return [
+      { source: '/fine-art-prints', destination: '/sklep', permanent: true },
+      { source: '/:locale(pl|en|es|de)/fine-art-prints', destination: '/:locale/sklep', permanent: true },
+    ];
+  },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
     NEXT_PUBLIC_GIT_SHA: gitSha,

@@ -15,6 +15,9 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 |---|---|---|
 | [`STATUS.md`](STATUS.md) | active | Volatile feature-state facts with last-verified dates |
 | [`../AGENTS.md`](../AGENTS.md) | active | Canonical agent/project context (architecture, commands, conventions) |
+| [`copy-source-of-truth.md`](copy-source-of-truth.md) | active | Owner-approved brand and terminology decisions; draft PL copy, verified fulfillment facts, and implementation gaps (2026-09-09) |
+| [`copy/2026-09-09/README.md`](copy/2026-09-09/README.md) | active | PL approval package: preview, full key register, proposed CMS changes and draft documents; not published |
+| [`plans/2026-09-09-studio-copy-sales-model.md`](plans/2026-09-09-studio-copy-sales-model.md) | active | Owner's complete copy and sales-model implementation plan; PL approval gate first |
 
 ## Guides & runbooks
 
@@ -56,6 +59,7 @@ Trust chain for cleanup work: **`cleaning-instructions.md` is authoritative**;
 
 | Location | Status | What it is |
 |---|---|---|
+| [`plans/2026-09-09-cms-rebuild-repository-fit.md`](plans/2026-09-09-cms-rebuild-repository-fit.md) | reference | Proposed CMS rebuild fitted to the actual repository: catalog ownership, new workflows/UI, retained integrations, migration stages and acceptance criteria |
 | [`plans/`](plans/) | active | Feature plans (customer accounts, print pipeline, private sale, …) |
 | [`superpowers/plans/`](superpowers/plans/) | active | Dated implementation plans |
 | [`superpowers/specs/`](superpowers/specs/) | active | Dated design specs |
