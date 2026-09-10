@@ -56,7 +56,7 @@ type ShipId = DeliveryMethod;
 const SHIP_IDS: ShipId[] = ['paczkomat', 'kurier', 'odbior'];
 
 // Maps each delivery method to its funnel event so we can see which option
-// creates friction vs. advantage (InPost locker vs. courier vs. Warsaw pickup).
+// creates friction vs. advantage (InPost locker vs. courier vs. studio pickup).
 const SHIP_EVENT: Record<ShipId, string> = {
   paczkomat: 'parcel_locker_select',
   kurier: 'courier_select',
@@ -872,7 +872,7 @@ export function CartView({
               />
             ) : (
             <div className="delivery-fields">
-              {/* All ceramic delivery methods are Poland-only (InPost / Warsaw pickup). */}
+              {/* Shipping (InPost locker/courier) is Poland-only; the free pickup option is at the Tenerife studio. */}
               <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
               <div className="field-row">
                 <label className="field">

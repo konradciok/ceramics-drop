@@ -17,7 +17,7 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'fine-art-prints': 0, // ponytail: prints use print-pricing.ts, not this map
 };
 
-/** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
+/** Delivery methods — InPost is the sole carrier; `odbior` is free Tenerife studio pickup. */
 export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 
 /**
