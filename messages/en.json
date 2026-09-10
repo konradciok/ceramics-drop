@@ -64,7 +64,7 @@
       "cancelled": "Cancelled"
     }
   },
-  "announce": "One studio — June-drop ceramics and paintings as fine art prints",
+  "announce": "One studio — ceramics and paintings as fine art prints",
   "title": {
     "home": "Anna Ciok Studio — Paintings & Fine Art Prints",
     "kubki": "Mugs",
@@ -455,11 +455,11 @@
     "craft2H": "You pick <em>size and frame</em>",
     "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
     "craft3H": "We print <em>and ship</em>",
-    "craft3P": "Your print is made and shipped by our partner Prodigi within 5–10 business days, to your home address anywhere in the EU or UK.",
+    "craft3P": "Your print is made and shipped by our print partner within 5–10 business days, to your home address anywhere in the EU or UK.",
     "lgMaterialH": "Material & finish",
     "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
     "lgShippingH": "Production & shipping",
-    "lgShippingP": "Every print is made to order by our partner Prodigi and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
+    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
@@ -523,7 +523,7 @@
     "fine-art-prints": {
       "eyebrow": "Open edition",
       "title": "Fine Art <em>Prints</em>",
-      "lead": "Ceramic motifs printed on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped via Prodigi."
+      "lead": "Ceramic motifs printed on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped via our print partner."
     }
   },
   "studio": {
@@ -550,7 +550,7 @@
     "fact3D": "Some compositions stay on paper and enter a fine art edition. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
     "fact4K": "Ceramics shipping",
     "fact4V": "1–3 <em>days</em>",
-    "fact4D": "I pack and ship ceramics myself within 1–3 business days across Poland. Fine art prints are made and shipped by our partner Prodigi, usually within 5–10 days, anywhere in the EU or UK.",
+    "fact4D": "I pack and ship ceramics myself within 1–3 business days across Poland. Fine art prints are made and shipped by our print partner, usually within 5–10 days, anywhere in the EU or UK.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
@@ -558,7 +558,7 @@
     "p2H": "Two <em>paths</em>",
     "p2P": "Some compositions stay on paper and enter a fine art edition as prints. The rest I carry onto tableware: I apply glaze and paint the motif by hand, straight onto the ceramic.",
     "p3H": "I fire <em>or print</em>",
-    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base. Fine art prints are printed on paper and shipped by our partner Prodigi.",
+    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base. Fine art prints are printed on paper and shipped by our print partner.",
     "ctaH": "One studio, <em>two ways to live with art.</em>",
     "ctaP": "Ceramics exist only once — when a piece finds its home, it leaves the shop for good. Fine art prints are made to order, so the composition you love can always hang in yours.",
     "ctaB1": "See the ceramics",
@@ -959,7 +959,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Open edition",
     "sectionDelivery": "Delivery",
-    "deliveryNote": "Produced and shipped via Prodigi, 5–10 working days",
+    "deliveryNote": "Produced and shipped via our print partner, 5–10 working days",
     "sectionCare": "Care",
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
     "moreFrom": "More prints",
@@ -973,10 +973,10 @@
     "accordionFramingTitle": "Framing",
     "accordionShippingTitle": "Shipping & returns",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok is a Warsaw-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
+    "artistBio": "Anna Ciok is a Tenerife-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
-    "accordionShipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+    "accordionShipping": "Prints are produced and shipped by our print partner within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
   },
   "giftCard": {
     "eyebrow": "Gift",

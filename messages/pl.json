@@ -64,7 +64,7 @@
       "cancelled": "Anulowane"
     }
   },
-  "announce": "Jedna pracownia — ceramika z czerwcowego dropu i obrazy w edycji fine art",
+  "announce": "Jedna pracownia — ceramika i obrazy w edycji fine art",
   "title": {
     "home": "Anna Ciok Studio — malarstwo i odbitki Fine Art",
     "kubki": "Kubki",
@@ -455,11 +455,11 @@
     "craft2H": "Dobierasz <em>rozmiar i ramę</em>",
     "craft2P": "Do wyboru trzy rozmiary oraz oprawa: bez ramy albo w drewnianej ramie — czarnej, jasnobrązowej lub ciemnobrązowej.",
     "craft3H": "Drukujemy <em>i wysyłamy</em>",
-    "craft3P": "Odbitkę drukuje i wysyła nasz partner Prodigi w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
+    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
     "lgMaterialH": "Materiał i wykonanie",
     "lgMaterialP": "Druk na papierze fine art o gramaturze 200 g/m², w jakości archiwalnej. Każda odbitka dostępna jest bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "lgShippingH": "Realizacja i wysyłka",
-    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera Prodigi i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
+    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
     "ctP": "Chcesz zobaczyć pracę na żywo, zapytać o odbitkę w innym rozmiarze albo o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
@@ -523,7 +523,7 @@
     "fine-art-prints": {
       "eyebrow": "Edycja otwarta",
       "title": "Odbitki <em>Fine Art</em>",
-      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez Prodigi."
+      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez naszego partnera druku."
     }
   },
   "studio": {
@@ -550,7 +550,7 @@
     "fact3D": "Jedne kompozycje zostają na papierze i wchodzą do edycji fine art. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
     "fact4K": "Wysyłka ceramiki",
     "fact4V": "1–3 <em>dni</em>",
-    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner Prodigi, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
+    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner druku, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
@@ -558,7 +558,7 @@
     "p2H": "Dwie <em>drogi</em>",
     "p2P": "Część kompozycji zostaje na papierze i trafia do edycji fine art jako odbitka. Pozostałe przenoszę na naczynia: nakładam szkliwo i maluję wzór pędzlem wprost na ceramikę.",
     "p3H": "Wypalam <em>albo drukuję</em>",
-    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu. Odbitki na papierze fine art drukuje i wysyła nasz partner Prodigi.",
+    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu. Odbitki na papierze fine art drukuje i wysyła nasz partner druku.",
     "ctaH": "Jedna pracownia, <em>dwa sposoby na sztukę.</em>",
     "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre. Odbitki fine art drukujemy na zamówienie, więc wybrana kompozycja zawsze może zawisnąć u Ciebie.",
     "ctaB1": "Zobacz ceramikę",
@@ -959,7 +959,7 @@
     "sectionEdition": "Edycja",
     "editionOpen": "Edycja otwarta",
     "sectionDelivery": "Dostawa",
-    "deliveryNote": "Produkcja i wysyłka przez Prodigi, 5–10 dni roboczych",
+    "deliveryNote": "Produkcja i wysyłka przez naszego partnera druku, 5–10 dni roboczych",
     "sectionCare": "Przechowywanie",
     "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
     "moreFrom": "Więcej odbitek",
@@ -973,10 +973,10 @@
     "accordionFramingTitle": "Oprawa",
     "accordionShippingTitle": "Wysyłka i zwroty",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok tworzy w Warszawie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
+    "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Druk i wysyłkę realizuje nasz partner Prodigi w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
   },
   "giftCard": {
     "eyebrow": "Prezent",

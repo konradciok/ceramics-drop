@@ -10,7 +10,6 @@ export function ReturnRequestForm({ initialOrderId = '' }: { initialOrderId?: st
   const address = RETURNS_POLICY.address;
   return (
     <div className="return-form">
-      <p>{t('instructions')}</p>
       <address>
         Anna Ciok Studio<br />
         {address.streetAddress}<br />

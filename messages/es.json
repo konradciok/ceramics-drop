@@ -64,7 +64,7 @@
       "cancelled": "Cancelado"
     }
   },
-  "announce": "Un estudio — cerámica del drop de junio y pinturas en edición fine art",
+  "announce": "Un estudio — cerámica y pinturas en edición fine art",
   "title": {
     "home": "Anna Ciok Studio — Pintura y láminas Fine Art",
     "kubki": "Tazas",
@@ -455,11 +455,11 @@
     "craft2H": "Eliges <em>tamaño y marco</em>",
     "craft2P": "Puedes elegir entre tres tamaños y un marco — sin marco o de madera, en negro, marrón claro u oscuro.",
     "craft3H": "Imprimimos <em>y enviamos</em>",
-    "craft3P": "Tu impresión la hace y envía nuestro socio Prodigi en 5–10 días laborables, a tu dirección en la Unión Europea o el Reino Unido.",
+    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión en 5–10 días laborables, a tu dirección en la Unión Europea o el Reino Unido.",
     "lgMaterialH": "Material y acabado",
     "lgMaterialP": "Impresión en papel fine art de 200 g/m², calidad de archivo. Cada impresión está disponible sin marco o con marco de madera: negro, marrón claro u oscuro.",
     "lgShippingH": "Producción y envío",
-    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio Prodigi y se envía a tu dirección en la Unión Europea o el Reino Unido — normalmente en 5–10 días laborables.",
+    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido — normalmente en 5–10 días laborables.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
     "ctP": "¿Quieres ver una pieza en persona, preguntar por una impresión en otro tamaño o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
@@ -523,7 +523,7 @@
     "fine-art-prints": {
       "eyebrow": "Edición abierta",
       "title": "Impresiones <em>Fine Art</em>",
-      "lead": "Motivos cerámicos impresos en papel Fine Art 200 g/m². Elige tu tamaño y enmarcado — impreso y enviado por Prodigi."
+      "lead": "Motivos cerámicos impresos en papel Fine Art 200 g/m². Elige tu tamaño y enmarcado — impreso y enviado por nuestro socio de impresión."
     }
   },
   "studio": {
@@ -550,7 +550,7 @@
     "fact3D": "Unas composiciones se quedan en papel y entran en una edición fine art. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
     "fact4K": "Envío de cerámica",
     "fact4V": "1–3 <em>días</em>",
-    "fact4D": "Embalo y envío la cerámica yo misma en 1–3 días laborables por toda Polonia. Las láminas fine art las produce y envía nuestro socio Prodigi, normalmente en 5–10 días, a la Unión Europea y al Reino Unido.",
+    "fact4D": "Embalo y envío la cerámica yo misma en 1–3 días laborables por toda Polonia. Las láminas fine art las produce y envía nuestro socio de impresión, normalmente en 5–10 días, a la Unión Europea y al Reino Unido.",
     "procEyebrow": "Cómo se hace una pieza",
     "procH": "De la primera línea <em>a una pieza terminada.</em>",
     "p1H": "Empiezo <em>con una línea</em>",
@@ -558,7 +558,7 @@
     "p2H": "Dos <em>caminos</em>",
     "p2P": "Algunas composiciones se quedan en papel y entran en una edición fine art como láminas. El resto las llevo a la vajilla: aplico esmalte y pinto el motivo a mano, directamente sobre la cerámica.",
     "p3H": "Cuezo <em>o imprimo</em>",
-    "p3P": "La cerámica la cuezo en el horno a 1040 °C, la reviso con cuidado y firmo la base. Las láminas fine art se imprimen en papel y las envía nuestro socio Prodigi.",
+    "p3P": "La cerámica la cuezo en el horno a 1040 °C, la reviso con cuidado y firmo la base. Las láminas fine art se imprimen en papel y las envía nuestro socio de impresión.",
     "ctaH": "Un estudio, <em>dos formas de vivir con el arte.</em>",
     "ctaP": "La cerámica existe una sola vez — cuando una pieza encuentra su hogar, deja la tienda para siempre. Las láminas fine art se hacen bajo pedido, así que la composición que te enamora siempre puede colgar en tu casa.",
     "ctaB1": "Ver la cerámica",
@@ -959,7 +959,7 @@
     "sectionEdition": "Edición",
     "editionOpen": "Edición abierta",
     "sectionDelivery": "Envío",
-    "deliveryNote": "Producido y enviado por Prodigi, 5–10 días hábiles",
+    "deliveryNote": "Producido y enviado por nuestro socio de impresión, 5–10 días hábiles",
     "sectionCare": "Cuidado",
     "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
     "moreFrom": "Más impresiones",
@@ -973,10 +973,10 @@
     "accordionFramingTitle": "Marco",
     "accordionShippingTitle": "Envío y devoluciones",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok es una artista afincada en Varsovia que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
+    "artistBio": "Anna Ciok es una artista afincada en Tenerife que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
-    "accordionShipping": "Nuestro socio Prodigi produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
+    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
   },
   "giftCard": {
     "eyebrow": "Regalo",

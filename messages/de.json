@@ -64,7 +64,7 @@
       "cancelled": "Storniert"
     }
   },
-  "announce": "Ein Studio — Keramik aus dem Juni-Drop und Malerei als Fine-Art-Drucke",
+  "announce": "Ein Studio — Keramik und Malerei als Fine-Art-Drucke",
   "title": {
     "home": "Anna Ciok Studio — Malerei & Fine-Art-Drucke",
     "kubki": "Tassen",
@@ -455,11 +455,11 @@
     "craft2H": "Du wählst <em>Größe und Rahmen</em>",
     "craft2P": "Drei Größen stehen zur Wahl, dazu die Rahmung: ungerahmt oder im Holzrahmen — schwarz, hell- oder dunkelbraun.",
     "craft3H": "Wir drucken <em>und versenden</em>",
-    "craft3P": "Dein Druck wird von unserem Partner Prodigi hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder im Vereinigten Königreich versendet.",
+    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder im Vereinigten Königreich versendet.",
     "lgMaterialH": "Material & Ausführung",
     "lgMaterialP": "Druck auf Fine-Art-Papier mit 200 g/m², in Archivqualität. Jeder Druck ist ungerahmt oder im Holzrahmen erhältlich: schwarz, hell- oder dunkelbraun.",
     "lgShippingH": "Herstellung & Versand",
-    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Partner Prodigi gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet — in der Regel innerhalb von 5–10 Werktagen.",
+    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet — in der Regel innerhalb von 5–10 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
     "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
@@ -523,7 +523,7 @@
     "fine-art-prints": {
       "eyebrow": "Offene Edition",
       "title": "Fine Art <em>Drucke</em>",
-      "lead": "Keramikmotive auf 200 g/m² Fine Art Papier. Größe und Rahmung wählen — Druck und Versand über Prodigi."
+      "lead": "Keramikmotive auf 200 g/m² Fine Art Papier. Größe und Rahmung wählen — Druck und Versand über unseren Druckpartner."
     }
   },
   "studio": {
@@ -550,7 +550,7 @@
     "fact3D": "Manche Kompositionen bleiben auf Papier und gehen in eine Fine-Art-Edition ein. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
     "fact4K": "Versand Keramik",
     "fact4V": "1–3 <em>Tage</em>",
-    "fact4D": "Keramik verpacke und versende ich selbst innerhalb von 1–3 Werktagen in ganz Polen. Fine-Art-Drucke werden von unserem Partner Prodigi gefertigt und versendet, meist innerhalb von 5–10 Tagen, in die EU oder ins Vereinigte Königreich.",
+    "fact4D": "Keramik verpacke und versende ich selbst innerhalb von 1–3 Werktagen in ganz Polen. Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet, meist innerhalb von 5–10 Tagen, in die EU oder ins Vereinigte Königreich.",
     "procEyebrow": "Wie ein Stück entsteht",
     "procH": "Von der ersten Linie <em>zum fertigen Stück.</em>",
     "p1H": "Ich beginne <em>mit einer Linie</em>",
@@ -558,7 +558,7 @@
     "p2H": "Zwei <em>Wege</em>",
     "p2P": "Manche Kompositionen bleiben auf Papier und gehen als Druck in eine Fine-Art-Edition ein. Die anderen übertrage ich auf Geschirr: Ich trage Glasur auf und male das Motiv von Hand direkt auf die Keramik.",
     "p3H": "Ich brenne <em>oder drucke</em>",
-    "p3P": "Keramik brenne ich im Ofen bei 1040 °C, begutachte sie sorgfältig und signiere den Boden. Fine-Art-Drucke werden auf Papier gedruckt und von unserem Partner Prodigi versendet.",
+    "p3P": "Keramik brenne ich im Ofen bei 1040 °C, begutachte sie sorgfältig und signiere den Boden. Fine-Art-Drucke werden auf Papier gedruckt und von unserem Druckpartner versendet.",
     "ctaH": "Ein Studio, <em>zwei Wege, mit Kunst zu leben.</em>",
     "ctaP": "Keramik gibt es nur einmal — wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer. Fine-Art-Drucke entstehen auf Bestellung, sodass die Komposition, die dich berührt, immer bei dir hängen kann.",
     "ctaB1": "Keramik ansehen",
@@ -959,7 +959,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Offene Edition",
     "sectionDelivery": "Lieferung",
-    "deliveryNote": "Produktion und Versand über Prodigi, 5–10 Werktage",
+    "deliveryNote": "Produktion und Versand über unseren Druckpartner, 5–10 Werktage",
     "sectionCare": "Pflege",
     "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
     "moreFrom": "Weitere Drucke",
@@ -973,10 +973,10 @@
     "accordionFramingTitle": "Rahmen",
     "accordionShippingTitle": "Versand & Rückgabe",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok ist eine in Warschau lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
+    "artistBio": "Anna Ciok ist eine auf Teneriffa lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
-    "accordionShipping": "Unser Partner Prodigi produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
+    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
   },
   "giftCard": {
     "eyebrow": "Geschenk",
