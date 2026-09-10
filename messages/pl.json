@@ -64,7 +64,7 @@
       "cancelled": "Anulowane"
     }
   },
-  "announce": "Jedna pracownia — ceramika z czerwcowego dropu i obrazy w edycji fine art",
+  "announce": "Jedna pracownia — ceramika i obrazy w edycji fine art",
   "title": {
     "home": "Anna Ciok Studio — malarstwo i odbitki Fine Art",
     "kubki": "Kubki",
@@ -372,7 +372,7 @@
     "courierT": "Kurier InPost",
     "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
     "pickupT": "Odbiór osobisty",
-    "pickupD": "W Warszawie, po wcześniejszym umówieniu terminu.",
+    "pickupD": "Na Teneryfie (San Pedro Abajo 12, Guimar), po wcześniejszym umówieniu terminu.",
     "printT": "Dostawa kurierem",
     "printD": "Druk wysyłany przez naszą drukarnię fine-art, dostawa pod adres w UE i UK."
   },
@@ -455,11 +455,11 @@
     "craft2H": "Dobierasz <em>rozmiar i ramę</em>",
     "craft2P": "Do wyboru trzy rozmiary oraz oprawa: bez ramy albo w drewnianej ramie — czarnej, jasnobrązowej lub ciemnobrązowej.",
     "craft3H": "Drukujemy <em>i wysyłamy</em>",
-    "craft3P": "Odbitkę drukuje i wysyła nasz partner Prodigi w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
+    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
     "lgMaterialH": "Materiał i wykonanie",
     "lgMaterialP": "Druk na papierze fine art o gramaturze 200 g/m², w jakości archiwalnej. Każda odbitka dostępna jest bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "lgShippingH": "Realizacja i wysyłka",
-    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera Prodigi i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
+    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
     "ctP": "Chcesz zobaczyć pracę na żywo, zapytać o odbitkę w innym rozmiarze albo o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
@@ -523,7 +523,7 @@
     "fine-art-prints": {
       "eyebrow": "Edycja otwarta",
       "title": "Odbitki <em>Fine Art</em>",
-      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez Prodigi."
+      "lead": "Reprodukcje ceramicznych wzorów na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy przez naszego partnera druku."
     }
   },
   "studio": {
@@ -550,7 +550,7 @@
     "fact3D": "Jedne kompozycje zostają na papierze i wchodzą do edycji fine art. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
     "fact4K": "Wysyłka ceramiki",
     "fact4V": "1–3 <em>dni</em>",
-    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner Prodigi, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
+    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner druku, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
@@ -558,7 +558,7 @@
     "p2H": "Dwie <em>drogi</em>",
     "p2P": "Część kompozycji zostaje na papierze i trafia do edycji fine art jako odbitka. Pozostałe przenoszę na naczynia: nakładam szkliwo i maluję wzór pędzlem wprost na ceramikę.",
     "p3H": "Wypalam <em>albo drukuję</em>",
-    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu. Odbitki na papierze fine art drukuje i wysyła nasz partner Prodigi.",
+    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu. Odbitki na papierze fine art drukuje i wysyła nasz partner druku.",
     "ctaH": "Jedna pracownia, <em>dwa sposoby na sztukę.</em>",
     "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre. Odbitki fine art drukujemy na zamówienie, więc wybrana kompozycja zawsze może zawisnąć u Ciebie.",
     "ctaB1": "Zobacz ceramikę",
@@ -574,7 +574,7 @@
     "fEmailPh": "ty@example.com",
     "fTopic": "W jakiej sprawie",
     "topic1": "Pytanie o pracę z dropu",
-    "topic2": "Odbiór osobisty w Warszawie",
+    "topic2": "Odbiór osobisty na Teneryfie",
     "topic3": "Zamówienie na specjalną okazję",
     "topic4": "Współpraca / hurt",
     "topic5": "Coś innego",
@@ -591,7 +591,7 @@
     "lIg": "Instagram",
     "vIg": "@anna.ciok.art",
     "lStudio": "Odbiór",
-    "vStudio": "Warszawa · odbiór po umówieniu",
+    "vStudio": "Teneryfa · odbiór po umówieniu",
     "lShip": "Wysyłka",
     "vShip": "Polska · nadanie w 1–3 dni roboczych",
     "lReply": "Odpowiadam",
@@ -613,15 +613,15 @@
     "s1P": "Prace wysyłam <strong>Paczkomatem InPost (od 20 zł)</strong> albo <strong>kurierem InPost (30 zł)</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
     "s1Li1": "Paczkomat InPost, cała Polska — od 20 zł",
     "s1Li1b": "Kurier InPost, cała Polska — 30 zł",
-    "s1Li2": "Odbiór osobisty w Warszawie — gratis",
+    "s1Li2": "Odbiór osobisty na Teneryfie — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, wycenię ją indywidualnie",
     "s2H": "Czas realizacji",
-    "s2P": "Prace z czerwcowego dropu są gotowe i czekają w Polsce, więc nie ma tu czasu produkcji. Paczkę nadaję w ciągu <strong>1–3 dni roboczych</strong> od zaksięgowania płatności, a InPost dostarcza ją zwykle następnego dnia roboczego po nadaniu.",
+    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Paczkę nadaję w ciągu <strong>1–3 dni roboczych</strong> od zaksięgowania płatności, a InPost dostarcza ją zwykle następnego dnia roboczego po nadaniu.",
     "s2Note": "Pakuję wszystko sama, między pracą w studiu a kolejnymi wypałami. Jeśli zależy Ci na konkretnym terminie, napisz — sprawdzę, co da się zrobić.",
     "s3H": "Pakowanie",
     "s3P": "Ceramikę owijam ręcznie: folia, tektura i dużo wypełnienia, żeby nic nie przesuwało się w pudełku. Opakowanie oznaczam jako kruche i ograniczam plastik tam, gdzie mogę to zrobić bez ryzyka dla pracy.",
     "s4H": "Odbiór osobisty",
-    "s4P": "Jeśli jesteś w Warszawie albo będziesz przejazdem, możesz odebrać zamówienie osobiście. Odbiór jest bezpłatny i umawiamy go mailowo na konkretny dzień oraz godzinę; to nie jest stały punkt z regularnymi godzinami otwarcia.",
+    "s4P": "Jeśli jesteś na Teneryfie albo będziesz przejazdem, możesz odebrać zamówienie osobiście. Odbiór jest bezpłatny i umawiamy go mailowo na konkretny dzień oraz godzinę; to nie jest stały punkt z regularnymi godzinami otwarcia.",
     "s5H": "Zwroty",
     "s5P": "Kupując jako konsument, możesz odstąpić od umowy w ciągu <strong>14 dni</strong> od otrzymania przesyłki, bez podawania przyczyny. Zwrot rozpoczniesz na <zlink>stronie zwrotów</zlink> — wystarczy numer zamówienia. Możesz też napisać na <link>ania@ciok.art</link>.",
     "s5Li1": "Praca powinna wrócić nieuszkodzona, najlepiej w oryginalnym opakowaniu",
@@ -644,7 +644,7 @@
     "toc7": "§7 Postanowienia końcowe",
     "updated": "Wersja: czerwiec 2026",
     "s1H": "§1 Postanowienia ogólne",
-    "s1P1": "Sklep internetowy Anna Ciok Studio prowadzi pracownia ceramiczna Anny Ciok z siedzibą w Warszawie. Ze sprzedawcą skontaktujesz się pod adresem <link>ania@ciok.art</link>.",
+    "s1P1": "Sklep internetowy Anna Ciok Studio prowadzi pracownia Anny Ciok z siedzibą pod adresem San Pedro Abajo 12, 38500 Guimar, Teneryfa, Hiszpania — Wyspy Kanaryjskie. Ze sprzedawcą skontaktujesz się pod adresem <link>ania@ciok.art</link>.",
     "s1P2": "W sklepie sprzedaję ręcznie malowane prace ceramiczne. Każda praca jest jedynym egzemplarzem — po sprzedaży znika z oferty i nie jest odtwarzana jako identyczna sztuka.",
     "s2H": "§2 Zamówienia",
     "s2P": "Zamówienie składasz przez dodanie wybranych prac do koszyka i potwierdzenie zakupu. Umowa sprzedaży zostaje zawarta po potwierdzeniu zamówienia i zaksięgowaniu płatności.",
@@ -659,7 +659,7 @@
     "s6H": "§6 Reklamacje",
     "s6P": "Jeśli praca dotrze uszkodzona albo niezgodna z opisem, możesz złożyć reklamację mailowo, dołączając zdjęcia. Rozpatruję ją w ciągu 14 dni i, zależnie od Twojego wyboru, wymieniam pracę albo zwracam pełną kwotę wraz z kosztem wysyłki.",
     "s7H": "§7 Postanowienia końcowe",
-    "s7P": "W sprawach nieuregulowanych regulaminem stosuje się przepisy prawa polskiego, w tym ustawę o prawach konsumenta i Kodeks cywilny. Ewentualne zmiany regulaminu nie wpływają na zamówienia złożone przed ich wejściem w życie."
+    "s7P": "W sprawach nieuregulowanych regulaminem stosuje się przepisy prawa hiszpańskiego, w tym hiszpańską ustawę o ochronie konsumentów i użytkowników oraz hiszpański Kodeks cywilny. Ewentualne zmiany regulaminu nie wpływają na zamówienia złożone przed ich wejściem w życie."
   },
   "privacy": {
     "eyebrow": "Dokumenty",
@@ -674,7 +674,7 @@
     "toc6": "Twoje prawa",
     "updated": "Aktualizacja: czerwiec 2026",
     "s1H": "Administrator danych",
-    "s1P": "Administratorem Twoich danych jest pracownia ceramiczna Anny Ciok z siedzibą w Warszawie. W sprawach związanych z danymi osobowymi napisz na <link>ania@ciok.art</link>.",
+    "s1P": "Administratorem Twoich danych jest pracownia Anny Ciok z siedzibą pod adresem San Pedro Abajo 12, 38500 Guimar, Teneryfa, Hiszpania — Wyspy Kanaryjskie. W sprawach związanych z danymi osobowymi napisz na <link>ania@ciok.art</link>.",
     "s2H": "Jakie dane zbieram",
     "s2Li1": "Dane potrzebne do realizacji zamówienia — imię, adres wysyłki, e-mail i telefon",
     "s2Li2": "Treść wiadomości, którą wysyłasz do mnie mailowo",
@@ -959,7 +959,7 @@
     "sectionEdition": "Edycja",
     "editionOpen": "Edycja otwarta",
     "sectionDelivery": "Dostawa",
-    "deliveryNote": "Produkcja i wysyłka przez Prodigi, 5–10 dni roboczych",
+    "deliveryNote": "Produkcja i wysyłka przez naszego partnera druku, 5–10 dni roboczych",
     "sectionCare": "Przechowywanie",
     "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
     "moreFrom": "Więcej odbitek",
@@ -973,10 +973,10 @@
     "accordionFramingTitle": "Oprawa",
     "accordionShippingTitle": "Wysyłka i zwroty",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok tworzy w Warszawie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
+    "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Druk i wysyłkę realizuje nasz partner Prodigi w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
   },
   "giftCard": {
     "eyebrow": "Prezent",
