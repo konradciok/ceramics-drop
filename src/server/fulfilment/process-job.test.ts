@@ -521,4 +521,33 @@ describe('processJob', () => {
     expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('concurrent delivery/callback'));
     consoleWarnSpy.mockRestore();
   });
+
+  it('CreatedWithIssues + lost CAS: diagnostics are still persisted and alerts still fire', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'CreatedWithIssues',
+      order: {
+        id: 'pr_issues_race',
+        status: { stage: 'InProgress', issues: [{ objectId: 'item-1', errorCode: 'items.assets.NotDownloaded', description: 'boom' }] },
+      },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS, finalizeData: null });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined(); // no throw → no retry-create
+
+    // fulfilment_jobs writes: claim → CAS finalization (lost) → diagnostics-only write
+    const jobChains = mockFrom.mock.results
+      .map((r, i) => ({ table: mockFrom.mock.calls[i][0] as string, chain: r.value as Record<string, ReturnType<typeof vi.fn>> }))
+      .filter((c) => c.table === 'fulfilment_jobs');
+    expect(jobChains.length).toBe(3);
+    const diag = jobChains[2].chain['update'].mock.calls[0][0] as Record<string, unknown>;
+    // Diagnostics-only: no status field, carries the issue text.
+    expect(diag).not.toHaveProperty('status');
+    expect(String(diag.last_error)).toContain('items.assets.NotDownloaded');
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockStudioEmail).toHaveBeenCalledTimes(1);
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+  });
 });

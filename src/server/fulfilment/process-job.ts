@@ -296,10 +296,22 @@ export async function processJob(
     .maybeSingle();
   if (issuesErr) throw issuesErr;
   if (!issuesFinalized) {
+    // A concurrent delivery/callback finalized the status first — but the
+    // outcome issues are operator-relevant regardless of the job's final
+    // state (the failed-action sweep never sees fulfilment_submitted/shipped,
+    // so nothing else would surface them). Persist the diagnostics without
+    // touching status, then fall through to the alerts below.
     console.warn(
-      `processJob: job ${jobId} finalized by a concurrent delivery/callback — leaving its status untouched`,
+      `processJob: job ${jobId} finalized by a concurrent delivery/callback — persisting outcome diagnostics only`,
     );
-    return;
+    const { error: diagErr } = await supabase.from('fulfilment_jobs')
+      .update({
+        last_error: serializeOutcomeIssues(outcome, outcomeIssues),
+        updated_at: now(),
+      })
+      .eq('id', jobId)
+      .in('status', ['fulfilment_submitting', 'fulfilment_submitted', 'shipped', 'completed']);
+    if (diagErr) throw diagErr;
   }
 
   const alert = buildOutcomeAlert({ orderId, jobId, prodigiOrderId, outcome, issues: outcomeIssues });

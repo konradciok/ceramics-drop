@@ -530,8 +530,7 @@ describe('POST /api/checkout', () => {
     expect(releaseHold).not.toHaveBeenCalled();
   });
 
-  it('replay with an items-count failure answers 409 checkout_in_progress (client keeps attemptId, retries)', async () => {
-    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+  it('replay with an items-count failure answers 409 checkout_in_progress (client keeps attemptId, retries)', async () => {    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
     selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
     countOrderItems.mockResolvedValueOnce({ count: null, error: { code: 'PGRST', message: 'db down' } });
     const { POST } = await import('./route');
@@ -546,6 +545,25 @@ describe('POST /api/checkout', () => {
     // Never hand out the client_secret, never cancel the possibly-live PI.
     expect(insertOrderItems).not.toHaveBeenCalled();
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('replay with an ANOMALOUS persisted item count (not 0, not the cart size) answers 409 order_conflict', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    // A healthy atomic insert persists exactly valid.items.length (1) rows;
+    // any other count means duplicated/partial rows — never return the secret.
+    countOrderItems.mockResolvedValueOnce({ count: 3, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'order_conflict' });
+    expect(insertOrderItems).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
   });
 

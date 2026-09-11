@@ -579,6 +579,15 @@ export async function POST(req: Request) {
         // on that basis. 409 keeps the client's attemptId so it retries.
         return respond({ error: 'checkout_in_progress' }, { status: 409 });
       }
+      // The multi-row insert is a single atomic statement, so a healthy prior
+      // attempt persisted EXACTLY valid.items.length rows (the attemptId is
+      // cart-bound client-side). Zero means the first attempt died before the
+      // insert → backfill. Any other count is an anomaly (e.g. duplicated
+      // rows from a racing replay) — never hand out the client_secret on it;
+      // 409 makes the client reset its attemptId onto a fresh order.
+      if (existingItems !== 0 && existingItems !== valid.items.length) {
+        return respond({ error: 'order_conflict' }, { status: 409 });
+      }
       shouldInsert = existingItems === 0;
     }
     if (shouldInsert) {
