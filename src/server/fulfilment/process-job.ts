@@ -275,7 +275,21 @@ export async function processJob(
     // Order exists but will not progress without action → the human-attention
     // status the failed-action cron sweep already alerts on. Never throw here:
     // a queue retry would re-POST and re-classify via 409 as alreadyexists.
-    await failJob('failed_action_required', serializeOutcomeIssues('OnHold', outcomeIssues), attempts);
+    // Same claim-state CAS as the other finalization branches: the order
+    // exists at Prodigi by now, so a callback may already have advanced the
+    // job (e.g. shipped) — never downgrade a terminal status.
+    const { data: holdFinalized, error: holdErr } = await supabase.from('fulfilment_jobs')
+      .update({ status: 'failed_action_required', attempts, last_error: serializeOutcomeIssues('OnHold', outcomeIssues), updated_at: now() })
+      .eq('id', jobId)
+      .in('status', ['fulfilment_submitting'])
+      .select('id')
+      .maybeSingle();
+    if (holdErr) throw holdErr;
+    if (!holdFinalized) {
+      console.warn(
+        `processJob: job ${jobId} finalized by a concurrent delivery/callback — leaving its status untouched (OnHold outcome)`,
+      );
+    }
     return;
   }
 

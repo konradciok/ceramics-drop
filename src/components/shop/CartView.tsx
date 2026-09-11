@@ -821,7 +821,7 @@ export function CartView({
                       pushDataLayer(
                         buildRemoveFromCartEvent(p, {
                           currency: analyticsCurrency,
-                          itemPrices: [priceOfCurrency(p, currency)],
+                          itemPrices: [priceOfLine(l)],
                         }),
                       );
                     }}
