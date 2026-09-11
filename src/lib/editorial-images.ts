@@ -7,8 +7,9 @@ export type EditorialImage = {
 
 export const EDITORIAL_IMAGES = {
   aniaSunlight: { key: 'aniaSunlight', src: '/uploads/3ania.webp', width: 1086, height: 1448 },
-  aniaMaker: { key: 'aniaMaker', src: '/uploads/1ania.webp', width: 1366, height: 2048 },
+  aniaMaker: { key: 'aniaMaker', src: '/uploads/1ania.webp', width: 800, height: 1200 },
   aniaWorkspace: { key: 'aniaWorkspace', src: '/uploads/2ania.webp', width: 1366, height: 2048 },
+  pdpAuthor: { key: 'pdpAuthor', src: '/uploads/pdp-author.webp', width: 933, height: 1400 },
   photo01: { key: 'photo01', src: '/uploads/gallery-whatsapp-01.webp', width: 1152, height: 2048 },
   photo02: { key: 'photo02', src: '/uploads/gallery-whatsapp-02.webp', width: 1366, height: 2048 },
   photo03: { key: 'photo03', src: '/uploads/gallery-whatsapp-03.webp', width: 1152, height: 2048 },
@@ -31,7 +32,7 @@ export const HOME_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
 export const STUDIO_HEAD_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
 export const STUDIO_STORY_IMAGE = EDITORIAL_IMAGES.aniaMaker;
 // Print PDP "About the Artist" band — portrait of Anna in the studio.
-export const PRINT_PDP_ARTIST_IMAGE = EDITORIAL_IMAGES.aniaSunlight;
+export const PRINT_PDP_ARTIST_IMAGE = EDITORIAL_IMAGES.pdpAuthor;
 
 export const GALLERY_EDITORIAL_IMAGES = [
   EDITORIAL_IMAGES.photo01,
@@ -55,5 +56,6 @@ export const DIRECT_EDITORIAL_IMAGES = [
   EDITORIAL_IMAGES.aniaSunlight,
   EDITORIAL_IMAGES.aniaMaker,
   EDITORIAL_IMAGES.aniaWorkspace,
+  EDITORIAL_IMAGES.pdpAuthor,
   ...GALLERY_EDITORIAL_IMAGES,
 ] as const;
