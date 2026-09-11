@@ -53,21 +53,35 @@ const SHIPPING_EUR: Record<PrintCountry, { framed: number; loose: number }> = {
   GB: { framed: 20.79,  loose: 5.66 },
 };
 
-// Same fixed conversion the hand-set price tables use (see print-pricing.ts).
+// Fallback conversion — used only when no config rates are supplied. The
+// authoritative rates are the admin-editable `eurToPln`/`eurToGbp` on the
+// print pricing config (see print-pricing.ts); callers that have the config
+// (checkout, cart) must pass it so shipping converts at the same rates the
+// item prices use.
 const EUR_TO_PLN = 4.25;
 const EUR_TO_GBP = 0.86;
 
+/** The conversion-rate subset of PrintPricingConfig print shipping needs. */
+export interface PrintShippingRates {
+  eurToPln: number;
+  eurToGbp: number;
+}
+
 /**
  * Print-order shipping in MAJOR units for the display currency, rounded up to
- * a whole unit. `framed` = the cart contains at least one framed print.
+ * a whole unit (shipping never undercharges on rounding, unlike item prices).
+ * `framed` = the cart contains at least one framed print. Pass `rates` from
+ * the print pricing config whenever available so shipping and item prices
+ * share the admin-editable conversion rates.
  */
 export function printShippingOf(
   country: PrintCountry,
   framed: boolean,
   currency: 'pln' | 'eur' | 'gbp',
+  rates?: PrintShippingRates,
 ): number {
   const eur = SHIPPING_EUR[country][framed ? 'framed' : 'loose'];
   if (currency === 'eur') return Math.ceil(eur);
-  if (currency === 'gbp') return Math.ceil(eur * EUR_TO_GBP);
-  return Math.ceil(eur * EUR_TO_PLN);
+  if (currency === 'gbp') return Math.ceil(eur * (rates?.eurToGbp ?? EUR_TO_GBP));
+  return Math.ceil(eur * (rates?.eurToPln ?? EUR_TO_PLN));
 }

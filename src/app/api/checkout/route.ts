@@ -19,6 +19,7 @@ import {
   type PromoCode,
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
+import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { validateGiftCardContact } from '@/lib/gift-cards';
 import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
@@ -208,7 +209,10 @@ export async function POST(req: Request) {
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
-    const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency);
+    // Same admin-editable conversion rates the item prices were derived with —
+    // shipping must not silently keep stale rates after an FX edit at /admin/pricing.
+    const printPricing = await getPrintPricingConfig();
+    const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency, printPricing);
     shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
@@ -558,20 +562,51 @@ export async function POST(req: Request) {
     }
   }
   let itemsErr = null;
-  if (!orderErr) {
-    const r = await supabase.from('order_items').insert(
-      valid.items.map((i) => ({
-        order_id: orderId,
-        product_id: i.product_id,
-        unit_price: i.unit_price,
-        variant: i.variant
-          ? { kind: 'print' as const, ...i.variant }
-          : i.giftCardTierId
-            ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
-            : null,
-      })),
-    );
-    itemsErr = r.error;
+  if (!orderErr || replay) {
+    // Fresh insert writes the items; a REPLAY backfills them if the first
+    // attempt died between the orders insert and this one (Worker isolate
+    // kill / eviction). Without the backfill the buyer can pay for an order
+    // whose order_items never landed: fulfilment sees an empty cart and the
+    // under-fulfilment guard counts expected = 0.
+    let shouldInsert = !orderErr;
+    if (replay) {
+      const { count: existingItems, error: countErr } = await supabase
+        .from('order_items')
+        .select('order_id', { count: 'exact', head: true })
+        .eq('order_id', orderId);
+      if (countErr || existingItems == null) {
+        // Can't verify the order's items — never hand out the client_secret
+        // on that basis. 409 keeps the client's attemptId so it retries.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
+      // The multi-row insert is a single atomic statement, so a healthy prior
+      // attempt persisted EXACTLY valid.items.length rows (the attemptId is
+      // cart-bound client-side). Zero means the first attempt died before the
+      // insert → backfill. Any other count is an anomaly (e.g. duplicated
+      // rows from a racing replay) — never hand out the client_secret on it;
+      // 409 makes the client reset its attemptId onto a fresh order.
+      if (existingItems !== 0 && existingItems !== valid.items.length) {
+        return respond({ error: 'order_conflict' }, { status: 409 });
+      }
+      shouldInsert = existingItems === 0;
+    }
+    if (shouldInsert) {
+      const r = await supabase.from('order_items').insert(
+        valid.items.map((i) => ({
+          order_id: orderId,
+          product_id: i.product_id,
+          unit_price: i.unit_price,
+          variant: i.variant
+            ? { kind: 'print' as const, ...i.variant }
+            : i.giftCardTierId
+              ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
+              : null,
+        })),
+      );
+      // A concurrent replay of the same attemptId may have backfilled first —
+      // that unique violation is success, not a persistence failure.
+      itemsErr = r.error?.code === PG_UNIQUE_VIOLATION ? null : r.error;
+    }
   }
   if ((orderErr && !replay) || itemsErr) {
     // Persisting the order failed — undo so we never collect money without a record.

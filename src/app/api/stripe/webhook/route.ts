@@ -1134,10 +1134,18 @@ export async function POST(req: Request) {
         // would never actually trigger. If a genuine crash between the claim and the
         // send ever strands an order, the recovery is a manual column reset:
         // `UPDATE orders SET conversions_sent_at = NULL WHERE id = '<order-id>'`.
+        // The status filter keeps markPaid's refund-then-fail paths (under-
+        // fulfilment auto-refund, private-sale double-paid) OUT of the ad
+        // platforms: those orders end `failed` before this runs in the same
+        // delivery, and recording full purchase revenue for a transaction the
+        // buyer was just refunded for — with no later reversal, since the
+        // `charge.refunded` reversal only fires from releaseSale's paid→refunded
+        // transition — permanently distorts attribution revenue.
         const { data: claimed, error: claimErr } = await supabase
           .from('orders')
           .update({ conversions_sent_at: new Date().toISOString() })
           .eq('payment_intent_id', pi)
+          .eq('status', 'paid')
           .is('conversions_sent_at', null)
           .select('id');
         if (claimErr) {

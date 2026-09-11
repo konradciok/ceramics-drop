@@ -86,7 +86,9 @@ const CTX = {} as ExecutionContext;
 
 /** Build a thenable chain where every method returns the chain.
  *  Awaiting the chain (or any method's return) resolves to `result`.
- *  `.maybeSingle()` and `.single()` still resolve individually via overrides. */
+ *  `.maybeSingle()` and `.single()` still resolve individually via overrides.
+ *  Overrides are merged into the SAME object the builder methods return, so
+ *  e.g. `.select('id').maybeSingle()` hits the override, not the default. */
 function makeChain(result: unknown, overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const chain: Record<string, unknown> = {
     then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>
@@ -100,13 +102,18 @@ function makeChain(result: unknown, overrides: Record<string, unknown> = {}): Re
   chain['maybeSingle'] = vi.fn().mockResolvedValue(result);
   chain['single'] = vi.fn().mockResolvedValue(result);
   chain['returns'] = vi.fn().mockResolvedValue(result);
-  return { ...chain, ...overrides };
+  return Object.assign(chain, overrides);
 }
 
 function setupMocks({
   claimData = { attempts: 0 } as { attempts: number } | null,
   orderData = null as Record<string, unknown> | null,
+  orderError = null as unknown,
   itemsData = [] as unknown[],
+  itemsError = null as unknown,
+  // Data returned by maybeSingle() on fulfilment_jobs calls AFTER the claim —
+  // the finalization CAS. Defaults to a truthy row ("we won the CAS").
+  finalizeData = { id: 'job-1' } as Record<string, unknown> | null,
 } = {}) {
   let jobCallCount = 0;
   mockFrom.mockImplementation((table: string) => {
@@ -115,14 +122,14 @@ function setupMocks({
       const claimResult = { data: claimData, error: null };
       const updateResult = { error: null };
       return makeChain(jobCallCount === 1 ? claimResult : updateResult, {
-        maybeSingle: vi.fn().mockResolvedValue(claimResult),
+        maybeSingle: vi.fn().mockResolvedValue(jobCallCount === 1 ? claimResult : { data: finalizeData, error: null }),
       });
     }
     if (table === 'orders') {
-      return makeChain({ data: orderData });
+      return makeChain({ data: orderData, error: orderError });
     }
     if (table === 'order_items') {
-      return makeChain({ data: itemsData });
+      return makeChain({ data: itemsData, error: itemsError });
     }
     if (table === 'prodigi_orders') {
       return makeChain({ error: null });
@@ -456,5 +463,91 @@ describe('processJob', () => {
       status: 'failed_action_required',
       last_error: expect.stringContaining('shipping address'),
     });
+  });
+
+  // ── launch-audit fixes: transient DB errors must retry, never park a paid order ──
+
+  it('rethrows on a transient orders-load error instead of failed_action_required (queue retries)', async () => {
+    setupMocks({ orderData: null, orderError: { message: 'supabase 503', code: '503' } });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV, CTX)).rejects.toMatchObject({ message: 'supabase 503' });
+
+    // Only the claim ran — no failJob write parked the job in a terminal bucket.
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    expect(tables.filter((t: string) => t === 'fulfilment_jobs').length).toBe(1);
+    expect(mockPostOrder).not.toHaveBeenCalled();
+  });
+
+  it('rethrows on a transient order_items-load error instead of failed_action_required (queue retries)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: [], itemsError: { message: 'connection reset', code: '57014' } });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV, CTX)).rejects.toMatchObject({ message: 'connection reset' });
+
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    expect(tables.filter((t: string) => t === 'fulfilment_jobs').length).toBe(1);
+    expect(mockPostOrder).not.toHaveBeenCalled();
+  });
+
+  it('409 duplicate with no id in the body: marks failed_retryable and throws so the queue retries (never parked invisible)', async () => {
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS });
+    const { ProdigiError } = await import('../prodigi/client');
+    mockPostOrder.mockRejectedValueOnce(new ProdigiError('Prodigi 409: duplicate', 409, false, null));
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).rejects.toBeInstanceOf(ProdigiError);
+
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    expect((lastJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({
+      status: 'failed_retryable',
+      last_error: expect.stringContaining('id unknown'),
+    });
+    // No prodigi_orders row was fabricated for an unknown id.
+    expect(tables).not.toContain('prodigi_orders');
+  });
+
+  it('finalization CAS: a job already moved terminal by a concurrent callback is never downgraded', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS, finalizeData: null });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined();
+
+    const tables = mockFrom.mock.calls.map(([t]: string[]) => t);
+    const lastJobChain = mockFrom.mock.results[tables.lastIndexOf('fulfilment_jobs')].value as Record<string, ReturnType<typeof vi.fn>>;
+    const update = (lastJobChain['update'] as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<string, unknown>;
+    expect(update).toMatchObject({ status: 'fulfilment_submitted' }); // attempted, but CAS-scoped…
+    // …and the CAS was applied: the update is restricted to the state this delivery claimed.
+    expect(lastJobChain['in'].mock.calls[0][0]).toBe('status');
+    expect(lastJobChain['in'].mock.calls[0][1]).toEqual(['fulfilment_submitting']);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('concurrent delivery/callback'));
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('CreatedWithIssues + lost CAS: diagnostics are still persisted and alerts still fire', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockPostOrder.mockResolvedValueOnce({
+      outcome: 'CreatedWithIssues',
+      order: {
+        id: 'pr_issues_race',
+        status: { stage: 'InProgress', issues: [{ objectId: 'item-1', errorCode: 'items.assets.NotDownloaded', description: 'boom' }] },
+      },
+    });
+    setupMocks({ orderData: PAID_ORDER, itemsData: PRINT_ITEMS, finalizeData: null });
+    const { processJob } = await import('./process-job');
+    await expect(processJob(MSG, ENV_SIGNED, CTX)).resolves.toBeUndefined(); // no throw → no retry-create
+
+    // fulfilment_jobs writes: claim → CAS finalization (lost) → diagnostics-only write
+    const jobChains = mockFrom.mock.results
+      .map((r, i) => ({ table: mockFrom.mock.calls[i][0] as string, chain: r.value as Record<string, ReturnType<typeof vi.fn>> }))
+      .filter((c) => c.table === 'fulfilment_jobs');
+    expect(jobChains.length).toBe(3);
+    const diag = jobChains[2].chain['update'].mock.calls[0][0] as Record<string, unknown>;
+    // Diagnostics-only: no status field, carries the issue text.
+    expect(diag).not.toHaveProperty('status');
+    expect(String(diag.last_error)).toContain('items.assets.NotDownloaded');
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockStudioEmail).toHaveBeenCalledTimes(1);
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });
