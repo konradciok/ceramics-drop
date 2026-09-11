@@ -137,11 +137,17 @@ export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
   printPricing,
+  ceramicPrices = {},
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
   /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
   printPricing: PrintPricingConfig;
+  /** DB price (PLN) per ceramic id, resolved by the server page — the same
+   *  rows checkout charges. The client's code registry can drift from these
+   *  after an admin price_pln edit; EUR/GBP prices are per-category maps
+   *  identical on both sides, so only PLN needs the override. */
+  ceramicPrices?: Record<string, number>;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -282,12 +288,16 @@ export function CartView({
   const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' | 'print' }>) =>
     l.kind === 'print'
       ? priceOfVariant(l.sel, printCurrency, printPricing)
-      : priceOfCurrency(l.product, currency);
+      : currency === 'pln' && ceramicPrices[l.product.id] !== undefined
+        ? ceramicPrices[l.product.id]
+        : priceOfCurrency(l.product, currency);
   const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
   // ceramic carts keep the InPost price list.
-  const shipCost = hasPrints ? printShippingOf(country, hasFramed, printCurrency) : shippingOf(ship);
+  const shipCost = hasPrints
+    ? printShippingOf(country, hasFramed, printCurrency, printPricing)
+    : shippingOf(ship);
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
   const total = subtotal + shipCost - promoDiscount;

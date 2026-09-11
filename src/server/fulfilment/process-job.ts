@@ -136,12 +136,15 @@ export async function processJob(
   if (!job) return; // already terminal / submitted — duplicate delivery
 
   // 2. Load order (columns as persisted by /api/checkout — see mapper.OrderRow).
-  const { data: order } = await supabase
+  // A transient DB error must NOT be classified as "order not paid" — that
+  // would park a paid order in terminal failed_action_required. Throw → retry.
+  const { data: order, error: orderLoadErr } = await supabase
     .from('orders')
     .select('id, status, currency, email, receiver_first_name, receiver_last_name, receiver_phone, shipping_address, delivery_method')
     .eq('id', orderId)
     .single<OrderRow & { status: string }>();
 
+  if (orderLoadErr) throw orderLoadErr; // queue retries
   if (!order || order.status !== 'paid') {
     await failJob('failed_action_required', 'order not paid');
     return;
@@ -151,14 +154,16 @@ export async function processJob(
     return;
   }
 
-  // 3. Load print line items.
-  const { data: items } = await supabase
+  // 3. Load print line items. Same discipline as the order load: a transient
+  // DB error is retryable, only a genuine empty result is action-required.
+  const { data: items, error: itemsLoadErr } = await supabase
     .from('order_items')
     .select('product_id, unit_price, variant')
     .eq('order_id', orderId)
     .not('variant', 'is', null)
     .returns<PrintItemRow[]>();
 
+  if (itemsLoadErr) throw itemsLoadErr; // queue retries
   if (!items || items.length === 0) {
     await failJob('failed_action_required', 'no print items found');
     return;
@@ -212,10 +217,15 @@ export async function processJob(
       prodigiOrderId = dupId;
       outcome = 'alreadyexists';
     } else if (e instanceof ProdigiError && e.status === 409) {
-      // Order exists but the body carried no id — callbacks will reconcile via
-      // merchantReference; do not create a second order.
-      await failJob('fulfilment_submitted', '409 duplicate — order exists on Prodigi, id unknown', (job.attempts ?? 0) + 1);
-      return;
+      // Order exists but the body carried no id. Parking the job in
+      // 'fulfilment_submitted' here would leave no prodigi_orders row, making
+      // it invisible to BOTH the stranded-job watchdog and the M-12
+      // reconciliation sweep. Mark retryable and throw instead: a retry
+      // re-POSTs, the 409 normally carries the id on a later attempt (dupId
+      // path above recovers), and exhausted retries land in the DLQ, which
+      // alerts. Never create a second order on Prodigi.
+      await failJob('failed_retryable', '409 duplicate — order exists on Prodigi, id unknown (retrying to recover id)', (job.attempts ?? 0) + 1);
+      throw e; // Causes queue to retry.
     } else {
       const retryable = e instanceof ProdigiError ? e.retryable : true;
       await failJob(
@@ -243,10 +253,21 @@ export async function processJob(
   const attempts = (job.attempts ?? 0) + 1;
 
   if (outcome === 'created' || outcome === 'alreadyexists') {
-    const { error: doneErr } = await supabase.from('fulfilment_jobs')
+    // CAS on the state this delivery claimed: a concurrent Prodigi callback
+    // may have already advanced the job (e.g. to 'shipped') — never downgrade
+    // a terminal status. 0 rows = someone else finalized; log and accept.
+    const { data: finalized, error: doneErr } = await supabase.from('fulfilment_jobs')
       .update({ status: 'fulfilment_submitted', attempts, updated_at: now() })
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .in('status', ['fulfilment_submitting'])
+      .select('id')
+      .maybeSingle();
     if (doneErr) throw doneErr;
+    if (!finalized) {
+      console.warn(
+        `processJob: job ${jobId} finalized by a concurrent delivery/callback — leaving its status untouched`,
+      );
+    }
     return;
   }
 
@@ -261,15 +282,25 @@ export async function processJob(
   // CreatedWithIssues + any unknown outcome: the order exists and keeps moving,
   // but carries issues → track as submitted (reconciliation keeps polling it),
   // persist the full diagnostics, and alert loudly. No throw (retry-create risk).
-  const { error: issuesErr } = await supabase.from('fulfilment_jobs')
+  // Same CAS as above: never downgrade a status a concurrent callback advanced.
+  const { data: issuesFinalized, error: issuesErr } = await supabase.from('fulfilment_jobs')
     .update({
       status: 'fulfilment_submitted',
       attempts,
       last_error: serializeOutcomeIssues(outcome, outcomeIssues),
       updated_at: now(),
     })
-    .eq('id', jobId);
+    .eq('id', jobId)
+    .in('status', ['fulfilment_submitting'])
+    .select('id')
+    .maybeSingle();
   if (issuesErr) throw issuesErr;
+  if (!issuesFinalized) {
+    console.warn(
+      `processJob: job ${jobId} finalized by a concurrent delivery/callback — leaving its status untouched`,
+    );
+    return;
+  }
 
   const alert = buildOutcomeAlert({ orderId, jobId, prodigiOrderId, outcome, issues: outcomeIssues });
   console.error(JSON.stringify(alert.log));

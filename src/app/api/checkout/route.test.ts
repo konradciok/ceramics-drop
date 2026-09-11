@@ -28,6 +28,9 @@ const releaseHold = vi.fn<
 >(async () => ({ data: [], error: null }));
 const insertOrders = vi.fn(async () => ({ error: null as PgError }));
 const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
+// Head-count used by the replay branch to decide whether order_items need a
+// backfill. Default 1 = "items already persisted" (a healthy replay).
+const countOrderItems = vi.fn(async () => ({ count: 1 as number | null, error: null as PgError }));
 const updateOrderStatus = vi.fn<
   (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
 >(async () => ({ error: null }));
@@ -89,7 +92,12 @@ vi.mock('@/lib/supabase', () => ({
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
         };
       }
-      if (table === 'order_items') return { insert: insertOrderItems };
+      if (table === 'order_items') {
+        return {
+          insert: insertOrderItems,
+          select: () => ({ eq: () => countOrderItems() }),
+        };
+      }
       if (table === 'piece_state') {
         return {
           update: () => ({
@@ -502,6 +510,43 @@ describe('POST /api/checkout', () => {
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
     expect(insertOrderItems).not.toHaveBeenCalled();
+  });
+
+  it('replay BACKFILLS order_items when the first attempt died between the two inserts', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    countOrderItems.mockResolvedValueOnce({ count: 0, error: null });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(insertOrderItems).toHaveBeenCalledTimes(1);
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('replay with an items-count failure answers 409 checkout_in_progress (client keeps attemptId, retries)', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    countOrderItems.mockResolvedValueOnce({ count: null, error: { code: 'PGRST', message: 'db down' } });
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+    // Never hand out the client_secret, never cancel the possibly-live PI.
+    expect(insertOrderItems).not.toHaveBeenCalled();
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
   });
 
   it('rejects a replay of a non-pending order with 409, frees the hold its own reserve call took, AND cancels the orphaned fresh PI', async () => {

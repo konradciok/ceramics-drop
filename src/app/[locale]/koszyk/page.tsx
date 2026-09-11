@@ -6,6 +6,7 @@ import type { Locale } from '@/i18n/routing';
 import { headers } from 'next/headers';
 import { isPrintCountry } from '@/lib/print-shipping';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getPublicProducts } from '@/lib/products';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -24,10 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params, searchParams }: Props) {
-  const [{ locale }, requestHeaders, printPricing] = await Promise.all([
+  const [{ locale }, requestHeaders, printPricing, products] = await Promise.all([
     params,
     headers(),
     getPrintPricingConfig(),
+    getPublicProducts(),
   ]);
   setRequestLocale(locale);
   // A repeated ?sale=a&sale=b query yields string[]; collapse to a single token.
@@ -35,10 +37,18 @@ export default async function Page({ params, searchParams }: Props) {
   const saleToken = Array.isArray(sale) ? (sale[0] ?? null) : (sale ?? null);
   const cfCountry = requestHeaders.get('CF-IPCountry')?.toUpperCase() ?? '';
   const initialPrintCountry = isPrintCountry(cfCountry) ? cfCountry : 'PL';
+  // PLN cart prices must come from the same DB rows checkout charges — the
+  // client registry can drift from them after an admin price_pln edit.
+  const ceramicPrices = Object.fromEntries(products.map((p) => [p.id, p.price]));
 
   return (
     <main id="cart-root">
-      <CartView privateSaleToken={saleToken} initialPrintCountry={initialPrintCountry} printPricing={printPricing} />
+      <CartView
+        privateSaleToken={saleToken}
+        initialPrintCountry={initialPrintCountry}
+        printPricing={printPricing}
+        ceramicPrices={ceramicPrices}
+      />
     </main>
   );
 }
