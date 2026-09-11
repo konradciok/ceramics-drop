@@ -25,7 +25,12 @@ import { previewRobots } from '@/lib/seo/robots';
 import type { Locale } from '@/i18n/routing';
 import { requireLocale } from '@/i18n/locale-guard';
 import { EMAIL } from '@/lib/email-addresses';
-import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
+import {
+  HOME_EDITORIAL_DESKTOP_IMAGE,
+  HOME_EDITORIAL_MOBILE_IMAGE,
+  HOME_STORY_IMAGE,
+  EDITORIAL_IMAGES,
+} from '@/lib/editorial-images';
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
 
@@ -85,7 +90,8 @@ export default async function HomePage({ params, searchParams }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
-  const editorialImage = HOME_EDITORIAL_IMAGE;
+  const editorialImage = HOME_EDITORIAL_MOBILE_IMAGE;
+  const editorialDesktopImage = HOME_EDITORIAL_DESKTOP_IMAGE;
   const storyImage = HOME_STORY_IMAGE;
 
   const currency = await getCurrency(locale);
@@ -246,8 +252,23 @@ export default async function HomePage({ params, searchParams }: Props) {
       <section className="section editorial reveal">
         <div className="section-inner">
           <div className="editorial-shot">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={editorialImage.src} srcSet={srcSet(editorialImage.src)} sizes="(min-width:861px) 720px, 100vw" alt={t('home.editorialImageAlt')} width={editorialImage.width} height={editorialImage.height} />
+            {/* Art direction: horizontal interior shot on desktop, vertical on
+                mobile — same `<picture>` pattern as the HomeHero. */}
+            <picture>
+              <source
+                media="(min-width:861px)"
+                srcSet={srcSet(editorialDesktopImage.src)}
+                sizes="(min-width:861px) 720px"
+              />
+              <img
+                src={editorialImage.src}
+                srcSet={srcSet(editorialImage.src)}
+                sizes="100vw"
+                alt={t('home.editorialImageAlt')}
+                width={editorialImage.width}
+                height={editorialImage.height}
+              />
+            </picture>
           </div>
         </div>
       </section>
