@@ -1,0 +1,462 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Anna Ciok Studio — CMS Admin API",
+    "version": "1.0.0",
+    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections/content/pricing/shipping-rates (S2/S4) and assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
+  },
+  "paths": {
+    "/v1/session": {
+      "get": {
+        "operationId": "get__v1_session",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Session" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "operationId": "get__v1_capabilities",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Capabilities" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products": {
+      "get": {
+        "operationId": "get__v1_products",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["ceramic", "print"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["draft", "active", "hidden", "archived"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["updated_desc", "updated_asc", "num_asc", "num_desc"], "default": "updated_desc" } }
+        ],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductList" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "post__v1_products",
+        "parameters": [ { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductDraft" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products/{id}": {
+      "get": {
+        "operationId": "get__v1_products__id_",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "put": {
+        "operationId": "put__v1_products__id_",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductSave" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products/{id}/duplicate": {
+      "post": {
+        "operationId": "post__v1_products__id__duplicate",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products/{id}/publication": {
+      "get": {
+        "operationId": "get__v1_products__id__publication",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "post__v1_products__id__publication",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Publication" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products/{id}/availability": {
+      "put": {
+        "operationId": "put__v1_products__id__availability",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Availability" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/products/{id}/proofs/{proofId}": {
+      "post": {
+        "operationId": "post__v1_products__id__proofs__proofId_",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "proofId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProofDecision" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Product" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/collections": { "get": { "operationId": "get__v1_collections", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/collections/{id}": {
+      "get": { "operationId": "get__v1_collections__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "put": { "operationId": "put__v1_collections__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceSave" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
+    "/v1/collections/{id}/publication": { "post": { "operationId": "post__v1_collections__id__publication", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/collections/{id}/restore": { "post": { "operationId": "post__v1_collections__id__restore", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Restore" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/content": { "get": { "operationId": "get__v1_content", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/content/{id}": {
+      "get": { "operationId": "get__v1_content__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "put": { "operationId": "put__v1_content__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceSave" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
+    "/v1/content/{id}/publication": { "post": { "operationId": "post__v1_content__id__publication", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/content/{id}/restore": { "post": { "operationId": "post__v1_content__id__restore", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Restore" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/pricing": { "get": { "operationId": "get__v1_pricing", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/pricing/{id}": {
+      "get": { "operationId": "get__v1_pricing__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "put": { "operationId": "put__v1_pricing__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceSave" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
+    "/v1/pricing/{id}/publication": { "post": { "operationId": "post__v1_pricing__id__publication", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/pricing/{id}/restore": { "post": { "operationId": "post__v1_pricing__id__restore", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Restore" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/shipping-rates": { "get": { "operationId": "get__v1_shipping_rates", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/shipping-rates/{id}": {
+      "get": { "operationId": "get__v1_shipping_rates__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "put": { "operationId": "put__v1_shipping_rates__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceSave" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
+    "/v1/shipping-rates/{id}/publication": { "post": { "operationId": "post__v1_shipping_rates__id__publication", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/shipping-rates/{id}/restore": { "post": { "operationId": "post__v1_shipping_rates__id__restore", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Restore" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/pricing/{id}/preview": { "post": { "operationId": "post__v1_pricing__id__preview", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PricingPreview" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MoneyList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/audit": {
+      "get": {
+        "operationId": "get__v1_audit",
+        "parameters": [ { "name": "resourceId", "in": "query", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditList" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/previews": {
+      "post": {
+        "operationId": "post__v1_previews",
+        "parameters": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Preview" } } } },
+        "responses": {
+          "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreviewResult" } } } },
+          "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/assets": { "get": { "operationId": "get__v1_assets", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssetList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/jobs": {
+      "get": { "operationId": "get__v1_jobs", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "post": { "operationId": "post__v1_jobs", "parameters": [ { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobCreate" } } } }, "responses": { "202": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Job" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
+    "/v1/uploads": { "post": { "operationId": "post__v1_uploads", "parameters": [ { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Upload" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UploadIntent" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/uploads/{id}/confirm": { "post": { "operationId": "post__v1_uploads__id__confirm", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Asset" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/jobs/{id}/retry": { "post": { "operationId": "post__v1_jobs__id__retry", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "202": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Job" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "description": "Stable machine code. Known S1 values: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION_FAILED, REVISION_CONFLICT, CONTRACT_MISMATCH, IDEMPOTENCY_REQUIRED, IDEMPOTENCY_KEY_REUSE, IDEMPOTENCY_IN_PROGRESS, RESERVATION_ACTIVE, PRINT_ASSETS_INCOMPLETE, INVALID_PROOF_TRANSITION, NOT_IMPLEMENTED." },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" },
+          "currentRevision": { "type": "integer" },
+          "fieldErrors": { "type": "object", "additionalProperties": { "type": "string" } }
+        },
+        "required": ["code", "message", "requestId"],
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" },
+          "environment": { "type": "string", "enum": ["integration", "production"] },
+          "contractVersion": { "type": "string" },
+          "writesEnabled": { "type": "boolean" }
+        },
+        "required": ["email", "environment", "contractVersion", "writesEnabled"],
+        "additionalProperties": false
+      },
+      "Capabilities": {
+        "type": "object",
+        "properties": {
+          "contractVersion": { "type": "string" },
+          "productTypes": { "type": "array", "items": { "type": "string", "enum": ["ceramic", "print"] } },
+          "productStatuses": { "type": "array", "items": { "type": "string", "enum": ["draft", "active", "hidden", "archived"] } },
+          "ceramicCategories": { "type": "array", "items": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"] } },
+          "printSizes": { "type": "array", "items": { "type": "string", "enum": ["30x40", "50x70", "70x100"] } },
+          "printFrameColours": { "type": "array", "items": { "type": "string", "enum": ["black", "natural", "brown"] } },
+          "printMountAvailable": { "type": "boolean" },
+          "maxUploadBytes": { "type": "integer" },
+          "maxMegapixels": { "type": "integer" },
+          "currencies": { "type": "array", "items": { "type": "string", "enum": ["pln", "eur", "gbp"] } }
+        },
+        "required": ["contractVersion", "productTypes", "productStatuses", "ceramicCategories", "printSizes", "printFrameColours", "printMountAvailable", "maxUploadBytes", "maxMegapixels", "currencies"],
+        "additionalProperties": false
+      },
+      "LocalizedText": {
+        "type": "object",
+        "properties": { "pl": { "type": "string" }, "en": { "type": "string" }, "es": { "type": "string" }, "de": { "type": "string" } },
+        "required": ["pl"],
+        "additionalProperties": false
+      },
+      "LocalizedTextOptional": {
+        "type": "object",
+        "properties": { "pl": { "type": "string" }, "en": { "type": "string" }, "es": { "type": "string" }, "de": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "Proof": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "print_fulfilment_assets.id (uuid)" },
+          "variantKey": { "type": "string", "description": "'<size>:<framed>:<mount>:<frameColour>', e.g. '30x40:true:true:black'" },
+          "revision": { "type": "string" },
+          "status": { "type": "string", "enum": ["staged", "ready", "retired", "revoked"] },
+          "url": { "type": ["string", "null"] }
+        },
+        "required": ["id", "variantKey", "revision", "status", "url"],
+        "additionalProperties": false
+      },
+      "CeramicDraft": {
+        "type": "object",
+        "properties": {
+          "type": { "const": "ceramic" },
+          "category": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"] },
+          "displayNumber": { "type": "string" },
+          "measure": { "type": "string" },
+          "pricePln": { "type": "integer", "description": "grosze (minor units)" },
+          "priceEur": { "type": "integer", "description": "euro-cents (minor units)" },
+          "priceGbp": { "type": "integer", "description": "pence (minor units)" },
+          "images": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "title": { "$ref": "#/components/schemas/LocalizedText" },
+          "description": { "$ref": "#/components/schemas/LocalizedText" },
+          "seo": { "$ref": "#/components/schemas/LocalizedTextOptional" },
+          "showroom": { "type": "boolean" },
+          "dropId": { "type": "string" }
+        },
+        "required": ["type", "category", "displayNumber", "measure", "pricePln", "priceEur", "priceGbp", "images", "title", "description", "showroom"],
+        "additionalProperties": false
+      },
+      "PrintDraft": {
+        "type": "object",
+        "properties": {
+          "type": { "const": "print" },
+          "displayNumber": { "type": "string" },
+          "sizes": { "type": "array", "items": { "type": "string", "enum": ["30x40", "50x70", "70x100"] }, "minItems": 1 },
+          "frameColours": { "type": "array", "items": { "type": "string", "enum": ["black", "natural", "brown"] } },
+          "mountAvailable": { "type": "boolean" },
+          "unavailable": { "type": "array", "items": { "type": "string" }, "description": "Excluded variantKey strings" },
+          "images": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "title": { "$ref": "#/components/schemas/LocalizedText" },
+          "description": { "$ref": "#/components/schemas/LocalizedText" },
+          "seo": { "$ref": "#/components/schemas/LocalizedTextOptional" }
+        },
+        "required": ["type", "displayNumber", "sizes", "mountAvailable", "images", "title", "description"],
+        "additionalProperties": false
+      },
+      "ProductDraft": {
+        "oneOf": [ { "$ref": "#/components/schemas/CeramicDraft" }, { "$ref": "#/components/schemas/PrintDraft" } ],
+        "discriminator": { "propertyName": "type", "mapping": { "ceramic": "#/components/schemas/CeramicDraft", "print": "#/components/schemas/PrintDraft" } }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["ceramic", "print"] },
+          "revision": { "type": "integer" },
+          "publishedRevision": { "type": ["integer", "null"] },
+          "status": { "type": "string", "enum": ["draft", "active", "hidden", "archived"] },
+          "draft": { "$ref": "#/components/schemas/ProductDraft" },
+          "thumbnail": { "type": "string" },
+          "proofs": { "type": "array", "items": { "$ref": "#/components/schemas/Proof" } },
+          "availability": { "type": "string", "enum": ["available", "reserved", "sold", "showroom"] }
+        },
+        "required": ["id", "type", "revision", "publishedRevision", "status", "draft", "thumbnail", "proofs", "availability"],
+        "additionalProperties": false
+      },
+      "ProductList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "pageSize": { "type": "integer" }
+        },
+        "required": ["items", "total", "page", "pageSize"],
+        "additionalProperties": false
+      },
+      "ProductSave": {
+        "type": "object",
+        "properties": { "expectedRevision": { "type": "integer" }, "draft": { "$ref": "#/components/schemas/ProductDraft" } },
+        "required": ["expectedRevision", "draft"],
+        "additionalProperties": false
+      },
+      "Revision": {
+        "type": "object",
+        "properties": { "expectedRevision": { "type": "integer" } },
+        "required": ["expectedRevision"],
+        "additionalProperties": false
+      },
+      "Publication": {
+        "type": "object",
+        "properties": { "expectedRevision": { "type": "integer" }, "action": { "type": "string", "enum": ["publish", "hide", "archive"] } },
+        "required": ["expectedRevision", "action"],
+        "additionalProperties": false
+      },
+      "Readiness": {
+        "type": "object",
+        "properties": {
+          "revision": { "type": "integer" },
+          "ready": { "type": "boolean" },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["revision", "ready", "blockers", "warnings"],
+        "additionalProperties": false
+      },
+      "Resource": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["collections", "content", "pricing", "shipping-rates"] },
+          "name": { "type": "string" },
+          "revision": { "type": "integer" },
+          "publishedRevision": { "type": ["integer", "null"] },
+          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/Field" } }
+        },
+        "required": ["id", "kind", "name", "revision", "publishedRevision", "fields"],
+        "additionalProperties": false
+      },
+      "Field": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "type": { "type": "string", "enum": ["text", "richtext", "number", "productIds"] },
+          "value": { "type": "string" },
+          "locale": { "type": "string", "enum": ["pl", "en", "es", "de", "none"] },
+          "sourceLocale": { "type": "string", "enum": ["pl", "en", "es", "de", "none"] }
+        },
+        "required": ["key", "label", "type", "value", "locale", "sourceLocale"],
+        "additionalProperties": false
+      },
+      "ResourceList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Resource" } } }, "required": ["items"], "additionalProperties": false },
+      "ResourceSave": { "type": "object", "properties": { "expectedRevision": { "type": "integer" }, "name": { "type": "string" }, "fields": { "type": "array", "items": { "$ref": "#/components/schemas/Field" } } }, "required": ["expectedRevision", "name", "fields"], "additionalProperties": false },
+      "Audit": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "resourceId": { "type": "string" },
+          "revision": { "type": ["integer", "null"] },
+          "action": { "type": "string", "description": "Known S1 values: draft_saved, status:active, status:hidden, status:archived, availability_changed, proof_approved, proof_rejected, print_asset_publish" },
+          "actor": { "type": "string" },
+          "createdAt": { "type": "string" }
+        },
+        "required": ["id", "resourceId", "revision", "action", "actor", "createdAt"],
+        "additionalProperties": false
+      },
+      "AuditList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Audit" } } } , "required": ["items"], "additionalProperties": false },
+      "Restore": { "type": "object", "properties": { "expectedRevision": { "type": "integer" }, "sourceRevision": { "type": "integer" } }, "required": ["expectedRevision", "sourceRevision"], "additionalProperties": false },
+      "Preview": { "type": "object", "properties": { "resourceId": { "type": "string" }, "revision": { "type": "integer" } }, "required": ["resourceId", "revision"], "additionalProperties": false },
+      "PreviewResult": { "type": "object", "properties": { "url": { "type": "string" }, "expiresAt": { "type": "string" } }, "required": ["url", "expiresAt"], "additionalProperties": false },
+      "Asset": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "name": { "type": "string" }, "revision": { "type": "integer" },
+          "status": { "type": "string", "enum": ["uploaded", "processing", "ready", "failed"] },
+          "ratio": { "type": "string" }, "url": { "type": "string" },
+          "usages": { "type": "array", "items": { "type": "string" } }, "error": { "type": "string" }
+        },
+        "required": ["id", "name", "revision", "status", "ratio", "url", "usages", "error"],
+        "additionalProperties": false
+      },
+      "AssetList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Asset" } } }, "required": ["items"], "additionalProperties": false },
+      "Upload": { "type": "object", "properties": { "filename": { "type": "string" }, "contentType": { "type": "string", "enum": ["image/jpeg", "image/png"] }, "bytes": { "type": "integer" }, "ratio": { "type": "string" } }, "required": ["filename", "contentType", "bytes", "ratio"], "additionalProperties": false },
+      "UploadIntent": { "type": "object", "properties": { "id": { "type": "string" }, "assetId": { "type": "string" }, "uploadUrl": { "type": "string" }, "expiresAt": { "type": "string" } }, "required": ["id", "assetId", "uploadUrl", "expiresAt"], "additionalProperties": false },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "assetId": { "type": "string" }, "revision": { "type": "integer" },
+          "status": { "type": "string", "enum": ["queued", "processing", "completed", "failed"] },
+          "progress": { "type": "integer" }, "error": { "type": "string" }
+        },
+        "required": ["id", "assetId", "revision", "status", "progress", "error"],
+        "additionalProperties": false
+      },
+      "JobList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Job" } } }, "required": ["items"], "additionalProperties": false },
+      "JobCreate": { "type": "object", "properties": { "assetId": { "type": "string" }, "expectedRevision": { "type": "integer" } }, "required": ["assetId", "expectedRevision"], "additionalProperties": false },
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": { "type": "integer" },
+          "availability": { "type": "string", "enum": ["available", "sold", "showroom"] },
+          "showroom": { "type": "boolean" }
+        },
+        "required": ["expectedRevision", "availability", "showroom"],
+        "additionalProperties": false
+      },
+      "ProofDecision": {
+        "type": "object",
+        "properties": { "expectedRevision": { "type": "integer" }, "action": { "type": "string", "enum": ["approve", "reject"] } },
+        "required": ["expectedRevision", "action"],
+        "additionalProperties": false
+      },
+      "PricingPreview": { "type": "object", "properties": { "expectedRevision": { "type": "integer" }, "fields": { "type": "array", "items": { "$ref": "#/components/schemas/Field" } } }, "required": ["expectedRevision", "fields"], "additionalProperties": false },
+      "MoneyList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "label": { "type": "string" }, "currency": { "type": "string" }, "minorUnits": { "type": "integer" } },
+              "required": ["label", "currency", "minorUnits"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["items"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
