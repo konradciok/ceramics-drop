@@ -6,10 +6,21 @@ import { sessionRoute } from './handlers/session';
 import { capabilitiesRoute } from './handlers/capabilities';
 import { productsListRoute } from './handlers/products-list';
 import { productsGetRoute } from './handlers/products-get';
+import { productsCreateRoute } from './handlers/products-create';
+import { productsSaveRoute } from './handlers/products-save';
+import { productsDuplicateRoute } from './handlers/products-duplicate';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
-const routes: RouteDef[] = [sessionRoute, capabilitiesRoute, productsListRoute, productsGetRoute];
+const routes: RouteDef[] = [
+  sessionRoute,
+  capabilitiesRoute,
+  productsListRoute,
+  productsGetRoute,
+  productsCreateRoute,
+  productsSaveRoute,
+  productsDuplicateRoute,
+];
 
 const dispatch = createRouter(routes);
 
