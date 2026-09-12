@@ -22,20 +22,24 @@ repo's own follow-through.
 5. **Test results** — unit tests for every handler/module under
    `src/server/cms-api/` (run `npx vitest run src/server/cms-api/` for the
    current count), pgTAP tests for every new RPC (`supabase test db`), and
-   a real-JWT integration suite (`request-handler.test.ts`) proving these
-   exact negative scenarios from brief §8:
+   these exact negative scenarios from brief §8, proven across two layers:
+   the real-JWT integration suite (`request-handler.test.ts`) for
+   auth/routing —
    - missing token → 401
    - expired token → 401
    - forged signature → 401
    - wrong audience (right team, wrong app) → 403
    - wrong issuer → 403
    - valid token, email outside `CMS_OWNERS` → 403
-   - stale `expectedRevision` on a write → 409 `REVISION_CONFLICT` with `currentRevision`
-   - missing `Idempotency-Key` on create/duplicate/publish → 422
-   - a repeated `Idempotency-Key` with a different body → 422 `IDEMPOTENCY_KEY_REUSE`
+   - missing `Idempotency-Key` on `POST /v1/products` → 422
    - an S2/S3/S4 path → 404 `NOT_IMPLEMENTED`
-   - a print publish attempt with an incomplete proof set → 422 `PRINT_ASSETS_INCOMPLETE`
-   - an availability change against an actively reserved or online-sold piece → 409 `RESERVATION_ACTIVE`
+
+   — and the colocated handler-level unit tests (`handlers/*.test.ts`) for
+   the write-path business rules each handler enforces —
+   - stale `expectedRevision` on a write → 409 `REVISION_CONFLICT` with `currentRevision` (products/publication/proofs handlers)
+   - a repeated `Idempotency-Key` with a different body → 422 `IDEMPOTENCY_KEY_REUSE` (products/publication handlers)
+   - a print publish attempt with an incomplete proof set → 422 `PRINT_ASSETS_INCOMPLETE` (publication handler)
+   - an availability change against an actively reserved or online-sold piece → 409 `RESERVATION_ACTIVE` (availability handler)
 
 ## Not delivered by this plan — needs a human or the CMS repo
 

@@ -54,7 +54,9 @@ describe('publicationPostRoute', () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
     vi.mocked(idempotency.completeIdempotencyKey).mockResolvedValue(undefined);
     vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);
-    vi.mocked(readiness.buildPrintVariantSpecs).mockReturnValue([{ variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2 }]);
+    vi.mocked(readiness.buildPrintVariantSpecs).mockReturnValue([
+      { variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2, axes: { size: '30x40', framed: false, mount: false, frameColour: 'none' } },
+    ]);
   });
 
   it('requires an Idempotency-Key', async () => {
@@ -97,7 +99,9 @@ describe('publicationPostRoute', () => {
     await publicationPostRoute.handler(req({ expectedRevision: 5, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_2' }, ctxWith(rpc));
     const [, params] = rpc.mock.calls[0];
     expect(params.p_structural).toBeNull();
-    expect(params.p_variants).toEqual([{ variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2 }]);
+    expect(params.p_variants).toEqual([
+      { variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2, axes: { size: '30x40', framed: false, mount: false, frameColour: 'none' } },
+    ]);
   });
 
   it('hides without computing readiness or passing variants/media/structural', async () => {

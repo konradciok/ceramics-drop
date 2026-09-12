@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from './idempotency';
 
 type Row = {

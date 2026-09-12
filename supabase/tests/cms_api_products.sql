@@ -5,11 +5,11 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(26);
+select plan(28);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
-  (create_product_with_draft('tap_cms_ceramic', 'ceramic', 'kubki', '99', '{"title":{"pl":"Test"}}'::jsonb, 'anna@studio.pl')).revision,
+  (create_product_with_draft('tap_cms_ceramic', 'ceramic', 'kubki', '99', '{"title":{"pl":"Test"},"pricePln":12000,"priceEur":2800,"priceGbp":2400}'::jsonb, 'anna@studio.pl')).revision,
   1,
   'create_product_with_draft: first draft is revision 1'
 );
@@ -18,6 +18,12 @@ select is(
   (select p.status from products p where p.id = 'tap_cms_ceramic'),
   'draft',
   'create_product_with_draft: product starts as draft'
+);
+
+select is(
+  (select p.price_pln from products p where p.id = 'tap_cms_ceramic'),
+  120,
+  'create_product_with_draft: writes the real ceramic price (minor units / 100) at creation, satisfying products_ceramic_price_present unconditionally'
 );
 
 select is(
@@ -81,13 +87,10 @@ select is(
 );
 
 -- assert_print_assets_ready() interpolates the missing-key list into its
--- exception message (print_assets_incomplete: <keys>), unlike the old bare
--- print_asset_readiness_missing()-driven raise this replaces, whose message
--- was the fixed literal 'print_assets_incomplete' with no suffix. throws_ok's
--- message argument requires an exact match, so — following the same
+-- exception message (print_assets_incomplete: <keys>), so throws_ok's
+-- exact-match message argument won't work here — following the same
 -- throws_like + LIKE-pattern convention supabase/tests/print_curation_readiness.sql
--- already uses for this exact function's exception — this asserts a pattern,
--- not an exact string.
+-- already uses for this exact function's exception, this asserts a pattern.
 select throws_like(
   $$ select publish_product_revision(
        'tap_cms_print', 1, 'publish', 'anna@studio.pl',
@@ -135,11 +138,21 @@ values ('tap_cms_print_ready', '30x40:false:false:none', '93000000-0000-0000-000
 select is(
   (publish_product_revision(
     'tap_cms_print_ready', 1, 'publish', 'anna@studio.pl',
-    '[{"variant_key":"30x40:false:false:none","sku":"SKU-READY","print_area_width_px":100,"print_area_height_px":200}]'::jsonb,
+    '[{"variant_key":"30x40:false:false:none","sku":"SKU-READY","print_area_width_px":100,"print_area_height_px":200,"axes":{"size":"30x40","framed":false,"mount":false,"frameColour":"none"}}]'::jsonb,
     null, null
   ))->'product'->>'status',
   'active',
   'publish_product_revision: a print with a genuinely ready asset publishes successfully'
+);
+
+-- The storefront catalog mapper (mapPrintDesigns) reads product_variants.axes
+-- as its SOLE source to reconstruct a print's sizes/frameColours/mountAvailable
+-- (C1 regression guard: a variant row published with axes left null is
+-- invisible to that reconstruction even though the row itself exists).
+select is(
+  (select pv.axes from product_variants pv where pv.product_id = 'tap_cms_print_ready' and pv.variant_key = '30x40:false:false:none'),
+  '{"size":"30x40","framed":false,"mount":false,"frameColour":"none"}'::jsonb,
+  'publish_product_revision: writes axes onto the published print variant row'
 );
 
 -- Simulate the asset becoming unusable after publish (e.g. an emergency revoke).

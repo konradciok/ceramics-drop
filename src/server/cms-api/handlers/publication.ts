@@ -117,6 +117,14 @@ export const publicationPostRoute: RouteDef = {
             { currentRevision: extractCurrentRevision(error) },
           );
         }
+        if (error.message?.includes('draft_required')) {
+          return errorResponse(
+            'VALIDATION_FAILED',
+            'Zapisz wersję roboczą przed publikacją.',
+            422,
+            ctx.requestId,
+          );
+        }
         if (error.message?.includes('print_assets_incomplete')) {
           return errorResponse('PRINT_ASSETS_INCOMPLETE', 'Brakuje zaakceptowanych proofów.', 422, ctx.requestId);
         }

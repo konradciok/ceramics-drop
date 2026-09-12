@@ -1,13 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
-import type { PrintFrameColour } from '@/lib/types';
+import { variantKey, assetPxFor, PRODIGI_SKU_MAP } from '@/lib/print-cart';
 import type { PrintDraft, ProductResponse } from './types';
+import type { PrintFrameColour } from '@/lib/types';
+
+export type PrintVariantAxes = { size: string; framed: boolean; mount: boolean; frameColour: PrintFrameColour | 'none' };
 
 export type PrintVariantSpec = {
   variant_key: string;
   sku: string | null;
   print_area_width_px: number | null;
   print_area_height_px: number | null;
+  axes: PrintVariantAxes;
 };
 
 export type ReadinessResult = { revision: number; ready: boolean; blockers: string[]; warnings: string[] };
@@ -20,11 +23,17 @@ export function buildPrintVariantSpecs(draft: PrintDraft): PrintVariantSpec[] {
     const key = variantKey(sel);
     if (unavailable.has(key)) return;
     const entry = PRODIGI_SKU_MAP[key];
+    // Use assetPxFor(entry), never entry.printAreaPx directly: the two diverge
+    // for '30x40:true:false:black' (Decision 2026-08-03, prodigi/decisions.md #6)
+    // — printAreaPx is the Prodigi print-area spec, assetPx is the actual master
+    // asset's pixel dimensions, and readiness must compare against the asset.
+    const px = entry ? assetPxFor(entry) : null;
     specs.push({
       variant_key: key,
       sku: entry?.sku ?? null,
-      print_area_width_px: entry?.printAreaPx.w ?? null,
-      print_area_height_px: entry?.printAreaPx.h ?? null,
+      print_area_width_px: px?.w ?? null,
+      print_area_height_px: px?.h ?? null,
+      axes: sel,
     });
   };
 

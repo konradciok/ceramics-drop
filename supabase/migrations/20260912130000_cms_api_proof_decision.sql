@@ -4,9 +4,16 @@
 -- issues that one UPDATE, guarded by `where status = 'staged'` so a
 -- concurrent or repeat decision on an already-decided proof fails closed
 -- (0 rows updated) rather than silently re-deciding it.
+--
+-- p_product_id is the path's {id} segment (products/{id}/proofs/{proofId}):
+-- verified against the asset's actual owning product BEFORE any mutation, so
+-- a proofId that belongs to a different product can never be approved/
+-- rejected under the wrong product's identity (and never leaks whether that
+-- proofId exists at all — same 'proof_not_found' as an unknown id).
 
 create or replace function decide_print_proof(
   p_asset_id          uuid,
+  p_product_id        text,
   p_action            text,
   p_expected_revision integer,
   p_actor_email       text
@@ -31,7 +38,7 @@ begin
     from print_fulfilment_assets pfa
    where pfa.id = p_asset_id
    for update;
-  if not found then
+  if not found or v_product_id <> p_product_id then
     raise 'proof_not_found';
   end if;
 
@@ -75,10 +82,10 @@ begin
 end;
 $$;
 
-revoke all on function decide_print_proof(uuid, text, integer, text) from public, anon, authenticated;
-grant execute on function decide_print_proof(uuid, text, integer, text) to service_role;
+revoke all on function decide_print_proof(uuid, text, text, integer, text) from public, anon, authenticated;
+grant execute on function decide_print_proof(uuid, text, text, integer, text) to service_role;
 
 -- ============================================================
 -- Rollback (manual):
---   drop function if exists decide_print_proof(uuid, text, integer, text);
+--   drop function if exists decide_print_proof(uuid, text, text, integer, text);
 -- ============================================================

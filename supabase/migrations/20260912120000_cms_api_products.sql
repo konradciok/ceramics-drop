@@ -36,21 +36,14 @@ alter table products
 -- 3. catalog_audit_log.revision ───────────────────────────────────────────────
 alter table catalog_audit_log add column revision integer;
 
--- 3b. Relax products_ceramic_price_present for draft-status ceramics ──────────
--- The pre-existing guard (20260813170000_harden_rpc_and_catalog.sql) requires
--- every ceramic row to have a non-null price_pln, unconditionally. That was
--- correct for the admin catalog-edit path (which always writes a price), but
--- create_product_with_draft (below) creates a brand-new draft ceramic with no
--- price at all — price is only materialized onto this row at publish time
--- (see publish_product_revision's structural branch). Exempt status='draft'
--- only; products_ceramic_price_positive (which already tolerates null) is
--- untouched, and every non-draft status still requires a real price, so an
--- active/hidden/archived ceramic can never have a null price — the guard's
--- original protection is fully preserved for every state that matters.
-alter table products drop constraint products_ceramic_price_present;
-alter table products add constraint products_ceramic_price_present
-  check (type <> 'ceramic' or status = 'draft' or price_pln is not null) not valid;
-alter table products validate constraint products_ceramic_price_present;
+-- (No constraint relaxation needed: create_product_with_draft, below, writes
+-- a real price for every ceramic row at creation time — extracted from the
+-- already-validated draft payload — so products_ceramic_price_present
+-- (20260813170000_harden_rpc_and_catalog.sql) stays exactly as it was,
+-- unconditionally requiring a non-null price for every ceramic row. This
+-- also means a draft ceramic is never a "null-priced ceramic" from the
+-- existing catalog-read code's point of view, so it can never trip that
+-- code's null-price Sentry alert on an ordinary storefront page render.)
 
 -- 4. cms_api_idempotency_keys ──────────────────────────────────────────────────
 -- Leased-CAS ledger, same shape as webhook_events (src/lib/webhook.ts):
@@ -97,8 +90,26 @@ begin
     raise 'invalid_type';
   end if;
 
-  insert into products (id, type, category_slug, num, status)
-  values (p_id, p_type, p_category_slug, p_num, 'draft');
+  if p_type = 'ceramic' then
+    -- Write the already-validated (zod .positive()) prices immediately, in
+    -- whole units matching products.price_pln's convention (the draft
+    -- payload carries minor units — grosze/cents/pence). This is what lets
+    -- products_ceramic_price_present stay unconditional (see the migration
+    -- header note above): a ceramic row is never inserted with a null
+    -- price, draft or not, so a public catalog read never encounters — and
+    -- Sentry-alerts on — a "null-priced ceramic" that was actually just a
+    -- CMS draft that hadn't been published yet.
+    insert into products (id, type, category_slug, num, status, price_pln, price_eur, price_gbp)
+    values (
+      p_id, p_type, p_category_slug, p_num, 'draft',
+      round((p_payload->>'pricePln')::numeric / 100)::integer,
+      round((p_payload->>'priceEur')::numeric / 100)::integer,
+      round((p_payload->>'priceGbp')::numeric / 100)::integer
+    );
+  else
+    insert into products (id, type, category_slug, num, status)
+    values (p_id, p_type, p_category_slug, p_num, 'draft');
+  end if;
 
   insert into product_drafts (product_id, revision, payload, created_by)
   values (p_id, 1, p_payload, p_actor_email)
@@ -168,7 +179,11 @@ revoke all on function save_product_draft(text, integer, jsonb, text) from publi
 grant execute on function save_product_draft(text, integer, jsonb, text) to service_role;
 
 -- 7. publish_product_revision ──────────────────────────────────────────────────
--- p_variants (print only): [{variant_key, sku, print_area_width_px, print_area_height_px}]
+-- p_variants (print only): [{variant_key, sku, print_area_width_px, print_area_height_px, axes}]
+-- axes is {size, framed, mount, frameColour} — the storefront catalog mapper
+-- (mapPrintDesigns in src/lib/catalog/mappers.ts) reads it as the SOLE source
+-- to reconstruct a print's sizes/frameColours/mountAvailable; a variant row
+-- with axes=null is invisible to that reconstruction.
 -- p_media: [{url, alt, position, is_primary}] or null to leave product_media untouched
 -- p_structural (ceramic only): {category_slug, num, measure, price_pln, price_eur, price_gbp, drop_id, seo_title, seo_description}
 -- Every column reference is table-aliased (RETURNS TABLE-style ambiguity hazard
@@ -210,6 +225,14 @@ begin
     raise 'revision_conflict' using detail = format('currentRevision=%s', v_current_revision);
   end if;
 
+  -- revision 0 means "no draft has ever been saved" (product_drafts.revision
+  -- starts at 1). products.published_revision has a composite FK to
+  -- product_drafts(product_id, revision), so publishing at revision 0 would
+  -- otherwise hit an unmapped FK-violation 500 instead of a clear 4xx.
+  if p_action = 'publish' and p_expected_revision = 0 then
+    raise 'draft_required';
+  end if;
+
   v_before := to_jsonb(v_product);
 
   if p_action = 'publish' then
@@ -223,7 +246,7 @@ begin
       insert into product_variants (
         product_id, variant_key, sku, is_default, active, position,
         track_inventory, stock_quantity, allow_backorder,
-        print_area_width_px, print_area_height_px
+        print_area_width_px, print_area_height_px, axes
       )
       select
         p_product_id,
@@ -234,7 +257,8 @@ begin
         (j.idx - 1)::integer,
         false, 0, true,
         (j.obj->>'print_area_width_px')::integer,
-        (j.obj->>'print_area_height_px')::integer
+        (j.obj->>'print_area_height_px')::integer,
+        j.obj->'axes'
       from jsonb_array_elements(p_variants) with ordinality as j(obj, idx);
 
       -- Locked check, not the bare (unlocked) print_asset_readiness_missing():
@@ -261,9 +285,9 @@ begin
         price_pln       = (p_structural->>'price_pln')::integer,
         price_eur       = (p_structural->>'price_eur')::integer,
         price_gbp       = (p_structural->>'price_gbp')::integer,
-        drop_id         = p_structural->>'drop_id',
-        seo_title       = p_structural->>'seo_title',
-        seo_description = p_structural->>'seo_description'
+        drop_id         = coalesce(p_structural->>'drop_id', p.drop_id),
+        seo_title       = coalesce(p_structural->>'seo_title', p.seo_title),
+        seo_description = coalesce(p_structural->>'seo_description', p.seo_description)
       where p.id = p_product_id;
 
       insert into product_variants (product_id, variant_key, is_default, active)
@@ -381,10 +405,6 @@ grant execute on function set_piece_availability_guarded(text, text, boolean, te
 --   drop function if exists save_product_draft(text, integer, jsonb, text);
 --   drop function if exists create_product_with_draft(text, text, text, text, jsonb, text);
 --   drop table if exists cms_api_idempotency_keys;
---   alter table products drop constraint if exists products_ceramic_price_present;
---   alter table products add constraint products_ceramic_price_present
---     check (type <> 'ceramic' or price_pln is not null) not valid;
---   alter table products validate constraint products_ceramic_price_present;
 --   alter table catalog_audit_log drop column if exists revision;
 --   alter table products drop constraint if exists products_published_revision_fk;
 --   alter table products drop column if exists published_revision;

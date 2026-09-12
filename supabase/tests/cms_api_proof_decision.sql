@@ -3,10 +3,11 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(8);
+select plan(9);
 
 insert into products (id, type, category_slug, num, status) values
-  ('tap_proof_product', 'print', 'fine-art-prints', '77', 'draft');
+  ('tap_proof_product', 'print', 'fine-art-prints', '77', 'draft'),
+  ('tap_proof_other', 'print', 'fine-art-prints', '78', 'draft');
 
 insert into product_drafts (product_id, revision, payload) values
   ('tap_proof_product', 1, '{"type":"print"}'::jsonb);
@@ -19,19 +20,25 @@ insert into print_fulfilment_assets (
 );
 
 select throws_ok(
-  $$ select decide_print_proof('99999999-9999-9999-9999-999999999999', 'approve', 1, null) $$,
+  $$ select decide_print_proof('99999999-9999-9999-9999-999999999999', 'tap_proof_product', 'approve', 1, null) $$,
   'proof_not_found',
   'decide_print_proof: unknown asset id is rejected'
 );
 
 select throws_ok(
-  $$ select decide_print_proof('92000000-0000-0000-0000-000000000001', 'approve', 0, null) $$,
+  $$ select decide_print_proof('92000000-0000-0000-0000-000000000001', 'tap_proof_other', 'approve', 1, null) $$,
+  'proof_not_found',
+  'decide_print_proof: an asset id that belongs to a different product is rejected'
+);
+
+select throws_ok(
+  $$ select decide_print_proof('92000000-0000-0000-0000-000000000001', 'tap_proof_product', 'approve', 0, null) $$,
   'revision_conflict',
   'decide_print_proof: stale expectedRevision is rejected'
 );
 
 select is(
-  (decide_print_proof('92000000-0000-0000-0000-000000000001', 'approve', 1, 'anna@studio.pl'))->>'productId',
+  (decide_print_proof('92000000-0000-0000-0000-000000000001', 'tap_proof_product', 'approve', 1, 'anna@studio.pl'))->>'productId',
   'tap_proof_product',
   'decide_print_proof: approve returns the owning product id'
 );
@@ -54,13 +61,13 @@ select is(
 );
 
 select throws_ok(
-  $$ select decide_print_proof('92000000-0000-0000-0000-000000000001', 'reject', 1, null) $$,
+  $$ select decide_print_proof('92000000-0000-0000-0000-000000000001', 'tap_proof_product', 'reject', 1, null) $$,
   'invalid_proof_transition',
   'decide_print_proof: an already-ready asset cannot be decided again'
 );
 
 select ok(
-  not has_function_privilege('anon', 'decide_print_proof(uuid,text,integer,text)', 'execute'),
+  not has_function_privilege('anon', 'decide_print_proof(uuid,text,text,integer,text)', 'execute'),
   'decide_print_proof: anon cannot execute'
 );
 

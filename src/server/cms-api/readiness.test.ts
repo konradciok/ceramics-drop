@@ -49,6 +49,22 @@ describe('buildPrintVariantSpecs', () => {
     const specs = buildPrintVariantSpecs(printDraft);
     expect(specs[0]).toMatchObject({ sku: 'GLOBAL-FAP-12X16', print_area_width_px: 3600, print_area_height_px: 4800 });
   });
+
+  it('includes the axes selection on every generated spec', () => {
+    const specs = buildPrintVariantSpecs(printDraft);
+    expect(specs[0].axes).toEqual({ size: '30x40', framed: false, mount: false, frameColour: 'none' });
+    expect(specs[1].axes).toEqual({ size: '30x40', framed: true, mount: false, frameColour: 'black' });
+  });
+
+  it('uses assetPxFor (not printAreaPx) for a variant where the master asset diverges from the Prodigi print-area spec', () => {
+    // '30x40:true:false:black' is the one PRODIGI_SKU_MAP entry with a distinct
+    // assetPx (3600x4800) vs printAreaPx (3614x4795) — Decision 2026-08-03,
+    // prodigi/decisions.md #6. Readiness must compare against the real asset
+    // dimensions (assetPx), or every print becomes permanently unpublishable.
+    const specs = buildPrintVariantSpecs(printDraft);
+    const framed = specs.find((s) => s.variant_key === '30x40:true:false:black');
+    expect(framed).toMatchObject({ print_area_width_px: 3600, print_area_height_px: 4800 });
+  });
 });
 
 describe('computeReadiness', () => {
@@ -111,7 +127,7 @@ describe('computeReadiness', () => {
       ],
       print_fulfilment_assets: [
         { id: 'a1', status: 'ready', width_px: 3600, height_px: 4800 },
-        { id: 'a2', status: 'ready', width_px: 3614, height_px: 4795 },
+        { id: 'a2', status: 'ready', width_px: 3600, height_px: 4800 },
       ],
     });
     const result = await computeReadiness(supabase, printProduct);
