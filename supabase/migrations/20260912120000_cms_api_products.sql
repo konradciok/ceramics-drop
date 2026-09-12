@@ -189,7 +189,6 @@ as $$
 declare
   v_current_revision integer;
   v_product          products%rowtype;
-  v_missing          text[];
   v_before           jsonb;
   v_after            jsonb;
 begin
@@ -238,13 +237,18 @@ begin
         (j.obj->>'print_area_height_px')::integer
       from jsonb_array_elements(p_variants) with ordinality as j(obj, idx);
 
-      select array_agg(m)
-        into v_missing
-        from print_asset_readiness_missing(array[p_product_id]) as m;
-
-      if coalesce(array_length(v_missing, 1), 0) > 0 then
-        raise 'print_assets_incomplete' using detail = format('missing=%L', v_missing);
-      end if;
+      -- Locked check, not the bare (unlocked) print_asset_readiness_missing():
+      -- assert_print_assets_ready (20260828120000_curate_fine_art_prints.sql)
+      -- takes FOR SHARE on the variant/assignment/asset rows and holds them
+      -- through commit, closing a TOCTOU race where a concurrent asset-revoke
+      -- could slip in between this check and the status update below. The
+      -- pre-existing products_guard_print_activation trigger does NOT catch
+      -- this on a republish of an ALREADY-active print — it only re-verifies
+      -- on the transition INTO 'active' (old.status IS DISTINCT FROM
+      -- 'active'), so a republish that keeps status='active' throughout
+      -- would otherwise skip verification entirely. Raises
+      -- 'print_assets_incomplete: <missing keys>' directly if not ready.
+      perform assert_print_assets_ready(array[p_product_id]);
     else
       if p_structural is null then
         raise 'structural_required';

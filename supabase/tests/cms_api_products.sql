@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(22);
+select plan(26);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
@@ -80,13 +80,21 @@ select is(
   'create_product_with_draft: print draft created'
 );
 
-select throws_ok(
+-- assert_print_assets_ready() interpolates the missing-key list into its
+-- exception message (print_assets_incomplete: <keys>), unlike the old bare
+-- print_asset_readiness_missing()-driven raise this replaces, whose message
+-- was the fixed literal 'print_assets_incomplete' with no suffix. throws_ok's
+-- message argument requires an exact match, so — following the same
+-- throws_like + LIKE-pattern convention supabase/tests/print_curation_readiness.sql
+-- already uses for this exact function's exception — this asserts a pattern,
+-- not an exact string.
+select throws_like(
   $$ select publish_product_revision(
        'tap_cms_print', 1, 'publish', 'anna@studio.pl',
        '[{"variant_key":"30x40:false:false:none","sku":"SKU1","print_area_width_px":100,"print_area_height_px":200}]'::jsonb,
        null, null
      ) $$,
-  'print_assets_incomplete',
+  'print_assets_incomplete:%tap_cms_print:30x40:false:false:none%',
   'publish_product_revision: print with no ready proof is rejected'
 );
 
@@ -100,6 +108,59 @@ select is(
   (select count(*)::integer from product_variants pv where pv.product_id = 'tap_cms_print'),
   0,
   'publish_product_revision: rejected print publish rolls back variant inserts'
+);
+
+-- publish_product_revision — print, successful publish + republish regression --
+-- Also proves assert_print_assets_ready (locked) actually runs on a REPUBLISH
+-- of an already-active print, not only on first activation: the pre-existing
+-- products_guard_print_activation trigger alone does NOT re-verify readiness
+-- when old.status is already 'active', so this check must run explicitly
+-- inside publish_product_revision itself on every publish attempt.
+select is(
+  (create_product_with_draft('tap_cms_print_ready', 'print', 'fine-art-prints', '97', '{"title":{"pl":"Ready Print"}}'::jsonb, 'anna@studio.pl')).revision,
+  1,
+  'create_product_with_draft: ready-print draft created'
+);
+
+insert into print_fulfilment_assets (
+  id, product_id, revision, r2_key, sha256, content_type, width_px, height_px, byte_size, status
+) values (
+  '93000000-0000-0000-0000-000000000001', 'tap_cms_print_ready', 'r1',
+  'prints/tap_cms_print_ready/r1/a.jpg', 'sha-ready', 'image/jpeg', 100, 200, 10, 'ready'
+);
+
+insert into print_variant_asset_assignments (product_id, variant_key, asset_id)
+values ('tap_cms_print_ready', '30x40:false:false:none', '93000000-0000-0000-0000-000000000001');
+
+select is(
+  (publish_product_revision(
+    'tap_cms_print_ready', 1, 'publish', 'anna@studio.pl',
+    '[{"variant_key":"30x40:false:false:none","sku":"SKU-READY","print_area_width_px":100,"print_area_height_px":200}]'::jsonb,
+    null, null
+  ))->'product'->>'status',
+  'active',
+  'publish_product_revision: a print with a genuinely ready asset publishes successfully'
+);
+
+-- Simulate the asset becoming unusable after publish (e.g. an emergency revoke).
+update print_fulfilment_assets set status = 'revoked' where id = '93000000-0000-0000-0000-000000000001';
+
+select save_product_draft('tap_cms_print_ready', 1, '{"title":{"pl":"Ready Print v2"}}'::jsonb, 'anna@studio.pl');
+
+select throws_like(
+  $$ select publish_product_revision(
+       'tap_cms_print_ready', 2, 'publish', 'anna@studio.pl',
+       '[{"variant_key":"30x40:false:false:none","sku":"SKU-READY","print_area_width_px":100,"print_area_height_px":200}]'::jsonb,
+       null, null
+     ) $$,
+  'print_assets_incomplete:%tap_cms_print_ready:30x40:false:false:none%',
+  'publish_product_revision: republishing an ALREADY-active print with a since-revoked asset is still rejected'
+);
+
+select is(
+  (select p.status from products p where p.id = 'tap_cms_print_ready'),
+  'active',
+  'publish_product_revision: a rejected republish leaves the prior active state untouched'
 );
 
 -- publish_product_revision — hide/archive ---------------------------------------
