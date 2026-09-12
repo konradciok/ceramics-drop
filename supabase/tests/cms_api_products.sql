@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(20);
+select plan(22);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
@@ -110,6 +110,22 @@ select is(
 );
 
 -- set_piece_availability_guarded -------------------------------------------------
+-- A genuine successful transition first: exercises the real UPDATE statement
+-- (and its p_availability::piece_status cast — the invalid_availability and
+-- reservation_active checks below all raise BEFORE reaching that UPDATE, so
+-- none of them alone would catch a cast/assignment bug here).
+select is(
+  (set_piece_availability_guarded('tap_cms_ceramic', 'sold', false, 'anna@studio.pl'))->>'ok',
+  'true',
+  'set_piece_availability_guarded: a normal transition to sold succeeds'
+);
+
+select is(
+  (select ps.status::text from piece_state ps where ps.product_id = 'tap_cms_ceramic'),
+  'sold',
+  'set_piece_availability_guarded: the piece_state row reflects the new status'
+);
+
 select throws_ok(
   $$ select set_piece_availability_guarded('tap_cms_ceramic', 'showroom', true, 'anna@studio.pl') $$,
   'invalid_availability',

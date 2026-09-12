@@ -36,6 +36,22 @@ alter table products
 -- 3. catalog_audit_log.revision ───────────────────────────────────────────────
 alter table catalog_audit_log add column revision integer;
 
+-- 3b. Relax products_ceramic_price_present for draft-status ceramics ──────────
+-- The pre-existing guard (20260813170000_harden_rpc_and_catalog.sql) requires
+-- every ceramic row to have a non-null price_pln, unconditionally. That was
+-- correct for the admin catalog-edit path (which always writes a price), but
+-- create_product_with_draft (below) creates a brand-new draft ceramic with no
+-- price at all — price is only materialized onto this row at publish time
+-- (see publish_product_revision's structural branch). Exempt status='draft'
+-- only; products_ceramic_price_positive (which already tolerates null) is
+-- untouched, and every non-draft status still requires a real price, so an
+-- active/hidden/archived ceramic can never have a null price — the guard's
+-- original protection is fully preserved for every state that matters.
+alter table products drop constraint products_ceramic_price_present;
+alter table products add constraint products_ceramic_price_present
+  check (type <> 'ceramic' or status = 'draft' or price_pln is not null) not valid;
+alter table products validate constraint products_ceramic_price_present;
+
 -- 4. cms_api_idempotency_keys ──────────────────────────────────────────────────
 -- Leased-CAS ledger, same shape as webhook_events (src/lib/webhook.ts):
 -- 'processing' with a fresh processing_started_at means "in flight, ask the
@@ -335,7 +351,7 @@ begin
   v_before := to_jsonb(v_row);
 
   update piece_state ps set
-    status               = p_availability,
+    status               = p_availability::piece_status,
     showroom             = p_showroom,
     showroom_entered_at  = case when p_showroom then coalesce(ps.showroom_entered_at, now()) else null end,
     showroom_note        = case when p_showroom then ps.showroom_note else null end
@@ -361,6 +377,10 @@ grant execute on function set_piece_availability_guarded(text, text, boolean, te
 --   drop function if exists save_product_draft(text, integer, jsonb, text);
 --   drop function if exists create_product_with_draft(text, text, text, text, jsonb, text);
 --   drop table if exists cms_api_idempotency_keys;
+--   alter table products drop constraint if exists products_ceramic_price_present;
+--   alter table products add constraint products_ceramic_price_present
+--     check (type <> 'ceramic' or price_pln is not null) not valid;
+--   alter table products validate constraint products_ceramic_price_present;
 --   alter table catalog_audit_log drop column if exists revision;
 --   alter table products drop constraint if exists products_published_revision_fk;
 --   alter table products drop column if exists published_revision;

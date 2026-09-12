@@ -11,7 +11,7 @@ begin;
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(24);
+select plan(25);
 
 -- ── M-2: RPC execute privileges ────────────────────────────────────────────
 -- anon/authenticated must NOT be able to execute any of the four legacy RPCs;
@@ -126,10 +126,16 @@ select throws_ok(
 
 select throws_ok(
   $$ insert into products (id, type, category_slug, num, price_pln, status)
-     values ('tap_price_null', 'ceramic', 'kubki', '99', null, 'draft') $$,
+     values ('tap_price_null', 'ceramic', 'kubki', '99', null, 'active') $$,
   '23514',
   null, -- skip matching the (locale-dependent) message text; errcode is enough
-  'M-4: a NULL-priced ceramic insert is rejected (23514 check_violation, products_ceramic_price_present)'
+  'M-4: a NULL-priced non-draft ceramic insert is rejected (23514 check_violation, products_ceramic_price_present)'
+);
+
+select lives_ok(
+  $$ insert into products (id, type, category_slug, num, price_pln, status)
+     values ('tap_price_null_draft', 'ceramic', 'kubki', '99', null, 'draft') $$,
+  'M-4: a NULL-priced DRAFT ceramic insert is accepted (intentional exemption for CMS drafts)'
 );
 
 select lives_ok(
