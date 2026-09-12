@@ -56,6 +56,26 @@ describe('loadProductResponses', () => {
     expect(product.thumbnail).toBe('https://x.test/k01.webp');
   });
 
+  it('synthesizes sizes/frameColours/mountAvailable from multiple legacy print_variants rows, excluding inactive ones', async () => {
+    const supabase = fakeSupabase({
+      products: [{ id: 'fap002', type: 'print', category_slug: 'fine-art-prints', num: '02', measure: '', price_pln: null, price_eur: null, price_gbp: null, drop_id: null, status: 'active', published_revision: null }],
+      product_drafts: [],
+      product_variants: [
+        { product_id: 'fap002', variant_key: '30x40:false:false:none', axes: { size: '30x40', framed: false, mount: false, frameColour: 'none' }, active: true },
+        { product_id: 'fap002', variant_key: '30x40:true:false:black', axes: { size: '30x40', framed: true, mount: false, frameColour: 'black' }, active: true },
+        { product_id: 'fap002', variant_key: '50x70:true:true:natural', axes: { size: '50x70', framed: true, mount: true, frameColour: 'natural' }, active: true },
+        { product_id: 'fap002', variant_key: '70x100:false:false:none', axes: { size: '70x100', framed: false, mount: false, frameColour: 'none' }, active: false },
+      ],
+      product_media: [{ product_id: 'fap002', url: 'https://x.test/fap002.webp', is_primary: true }],
+      piece_state: [],
+    });
+    const result = await loadProductResponses(supabase, env, ['fap002']);
+    const draft = result.get('fap002')!.draft as { sizes: string[]; frameColours: string[]; mountAvailable: boolean };
+    expect([...draft.sizes].sort()).toEqual(['30x40', '50x70']);
+    expect([...draft.frameColours].sort()).toEqual(['black', 'natural']);
+    expect(draft.mountAvailable).toBe(true);
+  });
+
   it('leaves publishedRevision null for a draft-status legacy product with no product_drafts row', async () => {
     const supabase = fakeSupabase({
       products: [{ id: 'fap099', type: 'print', category_slug: 'fine-art-prints', num: '99', measure: '', price_pln: null, price_eur: null, price_gbp: null, drop_id: null, status: 'draft', published_revision: null }],
