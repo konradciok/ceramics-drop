@@ -11,6 +11,7 @@ import { productsSaveRoute } from './handlers/products-save';
 import { productsDuplicateRoute } from './handlers/products-duplicate';
 import { publicationGetRoute, publicationPostRoute } from './handlers/publication';
 import { availabilityRoute } from './handlers/availability';
+import { proofDecisionRoute } from './handlers/proofs';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -25,6 +26,7 @@ const routes: RouteDef[] = [
   publicationGetRoute,
   publicationPostRoute,
   availabilityRoute,
+  proofDecisionRoute,
 ];
 
 const dispatch = createRouter(routes);
