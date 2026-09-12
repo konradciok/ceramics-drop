@@ -91,6 +91,7 @@ interface CloudflareEnv {
   CMS_ACCESS_AUD?: string;
   CMS_OWNERS?: string;
   CMS_API_LOCAL_BYPASS?: string;
+  CMS_API_ENVIRONMENT?: string;
   /** Storefront catalogue source — 'db' reads shadow tables; omit or any other value => code registry. */
   CATALOG_SOURCE?: string;
   /** Optional public origin override for non-production Workers (e.g. staging). Falls back to SITE_URL. */
