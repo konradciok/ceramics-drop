@@ -10,7 +10,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const LEASE_MS = 30_000;
 
 export type IdempotencyClaim =
-  | { kind: 'run' }
+  | { kind: 'run'; leaseToken: string }
   | { kind: 'replay'; status: number; body: unknown }
   | { kind: 'in_progress' }
   | { kind: 'key_reuse' };
@@ -37,7 +37,7 @@ export async function claimIdempotencyKey(
     .maybeSingle();
 
   if (!insertResult.error) {
-    return { kind: 'run' };
+    return { kind: 'run', leaseToken: now };
   }
 
   // 23505 = unique_violation on (operation, idempotency_key) — someone else
@@ -88,13 +88,22 @@ export async function claimIdempotencyKey(
   if (!reclaimed) {
     return { kind: 'in_progress' };
   }
-  return { kind: 'run' };
+  return { kind: 'run', leaseToken: now };
 }
 
+// completeIdempotencyKey/releaseIdempotencyKey both require the exact
+// leaseToken (processing_started_at) the matching claimIdempotencyKey 'run'
+// result returned, and CAS on it — mirroring the same guard the reclaim step
+// above already uses (and matching src/lib/webhook.ts's release pattern).
+// Without this, a handler that runs longer than LEASE_MS could have its
+// lease legitimately reclaimed by a second caller, and the first (stale)
+// caller's eventual complete/release call would otherwise silently clobber
+// whatever the second, newer attempt already wrote.
 export async function completeIdempotencyKey(
   supabase: SupabaseClient,
   operation: string,
   idempotencyKey: string,
+  leaseToken: string,
   responseStatus: number,
   responseBody: unknown,
 ): Promise<void> {
@@ -102,7 +111,13 @@ export async function completeIdempotencyKey(
     .from('cms_api_idempotency_keys')
     .update({ status: 'done', response_status: responseStatus, response_body: responseBody, completed_at: new Date().toISOString() })
     .eq('operation', operation)
-    .eq('idempotency_key', idempotencyKey);
+    .eq('idempotency_key', idempotencyKey)
+    .eq('processing_started_at', leaseToken)
+    .select('id')
+    .maybeSingle();
+  // A CAS miss (0 rows matched) means a newer caller already reclaimed this
+  // key after our lease expired — that caller now owns the final state, so
+  // this is a no-op, not an error.
   if (error) throw error;
 }
 
@@ -110,11 +125,15 @@ export async function releaseIdempotencyKey(
   supabase: SupabaseClient,
   operation: string,
   idempotencyKey: string,
+  leaseToken: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('cms_api_idempotency_keys')
     .update({ status: 'failed' })
     .eq('operation', operation)
-    .eq('idempotency_key', idempotencyKey);
+    .eq('idempotency_key', idempotencyKey)
+    .eq('processing_started_at', leaseToken)
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
 }

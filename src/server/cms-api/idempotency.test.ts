@@ -54,10 +54,10 @@ function fakeSupabase(initial?: Row) {
 }
 
 describe('claimIdempotencyKey', () => {
-  it('returns run on first claim', async () => {
+  it('returns run with a leaseToken on first claim', async () => {
     const { client } = fakeSupabase();
     const result = await claimIdempotencyKey(client, 'products:create', 'key-1', { a: 1 });
-    expect(result).toEqual({ kind: 'run' });
+    expect(result).toEqual({ kind: 'run', leaseToken: expect.any(String) });
   });
 
   it('replays the stored response for a done key with the same payload', async () => {
@@ -96,7 +96,7 @@ describe('claimIdempotencyKey', () => {
     expect(result).toEqual({ kind: 'in_progress' });
   });
 
-  it('reclaims a stale processing lease and returns run', async () => {
+  it('reclaims a stale processing lease and returns run with the new leaseToken', async () => {
     const { client } = fakeSupabase({
       status: 'processing',
       request_hash: await sha256({ a: 1 }),
@@ -105,31 +105,33 @@ describe('claimIdempotencyKey', () => {
       processing_started_at: new Date(Date.now() - 60_000).toISOString(),
     });
     const result = await claimIdempotencyKey(client, 'products:create', 'key-1', { a: 1 });
-    expect(result).toEqual({ kind: 'run' });
+    expect(result).toEqual({ kind: 'run', leaseToken: expect.any(String) });
   });
 });
 
 describe('completeIdempotencyKey / releaseIdempotencyKey', () => {
-  it('does not throw when the update succeeds', async () => {
+  it('does not throw when the leaseToken matches the stored processing_started_at', async () => {
+    const leaseToken = new Date().toISOString();
     const { client } = fakeSupabase({
       status: 'processing',
       request_hash: 'h',
       response_status: null,
       response_body: null,
-      processing_started_at: new Date().toISOString(),
+      processing_started_at: leaseToken,
     });
-    await expect(completeIdempotencyKey(client, 'products:create', 'key-1', 200, { ok: true })).resolves.toBeUndefined();
+    await expect(completeIdempotencyKey(client, 'products:create', 'key-1', leaseToken, 200, { ok: true })).resolves.toBeUndefined();
   });
 
-  it('release does not throw when the update succeeds', async () => {
+  it('release does not throw when the leaseToken matches the stored processing_started_at', async () => {
+    const leaseToken = new Date().toISOString();
     const { client } = fakeSupabase({
       status: 'processing',
       request_hash: 'h',
       response_status: null,
       response_body: null,
-      processing_started_at: new Date().toISOString(),
+      processing_started_at: leaseToken,
     });
-    await expect(releaseIdempotencyKey(client, 'products:create', 'key-1')).resolves.toBeUndefined();
+    await expect(releaseIdempotencyKey(client, 'products:create', 'key-1', leaseToken)).resolves.toBeUndefined();
   });
 });
 
