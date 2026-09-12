@@ -4,10 +4,12 @@ import { errorResponse, newRequestId } from './http';
 import { createRouter, type RouteDef } from './router';
 import { sessionRoute } from './handlers/session';
 import { capabilitiesRoute } from './handlers/capabilities';
+import { productsListRoute } from './handlers/products-list';
+import { productsGetRoute } from './handlers/products-get';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
-const routes: RouteDef[] = [sessionRoute, capabilitiesRoute];
+const routes: RouteDef[] = [sessionRoute, capabilitiesRoute, productsListRoute, productsGetRoute];
 
 const dispatch = createRouter(routes);
 
