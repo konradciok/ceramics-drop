@@ -1,7 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { signPrintAssetUrl } from '@/lib/print-assets';
 import type { CategorySlug, PrintFrameColour, PrintSize } from '@/lib/types';
+import { CATEGORY_SLUGS } from './validation';
 import type { CeramicDraft, PrintDraft, ProductDraft, ProductResponse, Proof } from './types';
+
+// Same source of truth ceramicDraftSchema uses for its category enum — reused
+// here (rather than a fresh list) so the mapper and the write-path validator
+// can never drift apart on what counts as a valid ceramic category.
+function isCeramicCategorySlug(slug: string): slug is Exclude<CategorySlug, 'fine-art-prints'> {
+  return (CATEGORY_SLUGS as readonly string[]).includes(slug);
+}
 
 type ProductRow = {
   id: string;
@@ -139,9 +147,18 @@ function synthesizeDraft(product: ProductRow, variants: VariantRow[], media: Med
     return printDraft;
   }
 
+  // products.category_slug is only `text not null` — no DB constraint ties it
+  // to type='ceramic'. Reject a corrupt/legacy row here instead of silently
+  // returning a CeramicDraft whose `category` lies about its declared type.
+  if (!isCeramicCategorySlug(product.category_slug)) {
+    throw new Error(
+      `Product ${product.id} has type='ceramic' but category_slug='${product.category_slug}' is not a valid ceramic category.`,
+    );
+  }
+
   const ceramicDraft: CeramicDraft = {
     type: 'ceramic',
-    category: product.category_slug as Exclude<CategorySlug, 'fine-art-prints'>,
+    category: product.category_slug,
     displayNumber: product.num,
     measure: product.measure ?? '',
     pricePln: (product.price_pln ?? 0) * 100,

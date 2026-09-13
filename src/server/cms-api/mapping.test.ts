@@ -115,6 +115,17 @@ describe('loadProductResponses', () => {
     expect(result.get('k03')!.availability).toBe('showroom');
   });
 
+  it('rejects a ceramic row whose category_slug is not a valid ceramic category instead of returning a lying CeramicDraft', async () => {
+    const supabase = fakeSupabase({
+      products: [{ id: 'k99', type: 'ceramic', category_slug: 'fine-art-prints', num: '99', measure: '9x8', price_pln: 100, price_eur: 20, price_gbp: 18, drop_id: null, status: 'active', published_revision: null }],
+      product_drafts: [],
+      product_variants: [],
+      product_media: [],
+      piece_state: [],
+    });
+    await expect(loadProductResponses(supabase, env, ['k99'])).rejects.toThrow(/category_slug/);
+  });
+
   it('signs a URL only for ready/retired print_fulfilment_assets, not staged', async () => {
     const supabase = fakeSupabase({
       products: [{ id: 'fap001', type: 'print', category_slug: 'fine-art-prints', num: '01', measure: '', price_pln: null, price_eur: null, price_gbp: null, drop_id: null, status: 'active', published_revision: 1 }],

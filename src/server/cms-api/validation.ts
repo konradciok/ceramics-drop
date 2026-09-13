@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-const CATEGORY_SLUGS = [
+// Exported so mapping.ts's synthesizeDraft() can reject a DB row whose
+// category_slug isn't a valid ceramic category using this exact same list —
+// products.category_slug is only `text not null` in the schema (no CHECK
+// tying it to type), so this is the one place that enumerates the valid set.
+export const CATEGORY_SLUGS = [
   'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
   'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
 ] as const;
