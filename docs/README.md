@@ -35,6 +35,9 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`stripe-operations.md`](stripe-operations.md) | runbook | Stripe operational procedures |
 | [`promo-codes.md`](promo-codes.md) | active | Promo codes: operator runbook (`/admin/promotions`) + technical reference (discount math, redemption lifecycle, analytics contract) |
 | [`gift-cards.md`](gift-cards.md) | active | Gift cards: backend contract (`src/lib/gift-cards.ts`), Option A promo_codes mint/revoke design, checkout/webhook wiring, and the `/karta-podarunkowa` PDP + dedicated checkout |
+| [`cms-api-data-model.md`](cms-api-data-model.md) | reference | CMS API (S1) data model: draft/revision/publish, audit log, idempotency ledger |
+| [`cms-api-integration-environment.md`](cms-api-integration-environment.md) | runbook | Provisioning a real cms-ceramics <-> ceramics-drop Service Binding integration environment |
+| [`cms-api-s1-handoff.md`](cms-api-s1-handoff.md) | active | S1 Definition-of-Done handoff: what shipped vs. what still needs an operator or the CMS repo |
 | [`notion-i18n.md`](notion-i18n.md) | active | Notion-backed translation workflow |
 | [`abandoned-cart-resend.md`](abandoned-cart-resend.md) | reference | Abandoned-cart email design |
 | [`complete-inpost.md`](complete-inpost.md) | reference | InPost ShipX integration notes |

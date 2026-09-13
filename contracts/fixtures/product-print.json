@@ -1,0 +1,24 @@
+{
+  "id": "prd_f6e5d4c3b2",
+  "type": "print",
+  "revision": 7,
+  "publishedRevision": 5,
+  "status": "active",
+  "draft": {
+    "type": "print",
+    "displayNumber": "42",
+    "sizes": ["30x40", "50x70"],
+    "frameColours": ["black", "natural"],
+    "mountAvailable": true,
+    "unavailable": [],
+    "images": ["https://anna-ciok.studio/uploads/fine-art-prints/fap042-1.webp"],
+    "title": { "pl": "Cisza nad wodą", "en": "Silence over the water" },
+    "description": { "pl": "…", "en": "…" },
+    "seo": { "pl": "…" }
+  },
+  "thumbnail": "https://anna-ciok.studio/uploads/fine-art-prints/fap042-1.webp",
+  "proofs": [
+    { "id": "9f1c1e2a-0000-4000-8000-000000000001", "variantKey": "30x40:true:true:black", "revision": "r3", "status": "ready", "url": "https://anna-ciok.studio/api/print-assets/9f1c1e2a-0000-4000-8000-000000000001" }
+  ],
+  "availability": "available"
+}

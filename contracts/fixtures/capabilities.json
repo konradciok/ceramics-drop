@@ -1,0 +1,12 @@
+{
+  "contractVersion": "1.0.0",
+  "productTypes": ["ceramic", "print"],
+  "productStatuses": ["draft", "active", "hidden", "archived"],
+  "ceramicCategories": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"],
+  "printSizes": ["30x40", "50x70", "70x100"],
+  "printFrameColours": ["black", "natural", "brown"],
+  "printMountAvailable": true,
+  "maxUploadBytes": 104857600,
+  "maxMegapixels": 160,
+  "currencies": ["pln", "eur", "gbp"]
+}

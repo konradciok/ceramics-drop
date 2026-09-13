@@ -554,3 +554,4 @@ async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js';
+export { CmsApi } from './src/server/cms-api/entrypoint';
