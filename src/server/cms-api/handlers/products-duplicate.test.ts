@@ -29,6 +29,12 @@ describe('productsDuplicateRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects a null JSON body', async () => {
+    const res = await productsDuplicateRoute.handler(req(null), {} as CloudflareEnv, { id: 'prd_src' }, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
+
   it('returns 404 and releases the lease when the source product is missing', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(null);
     const res = await productsDuplicateRoute.handler(req({ expectedRevision: 1 }), {} as CloudflareEnv, { id: 'prd_src' }, ctxWith(vi.fn()));

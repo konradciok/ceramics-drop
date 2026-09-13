@@ -69,6 +69,12 @@ describe('publicationPostRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects a literal null request body with 422 instead of throwing', async () => {
+    const res = await publicationPostRoute.handler(req(null), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
+
   it('blocks publish and releases the lease when readiness is not ready', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(printProduct);
     vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 5, ready: false, blockers: ['Zaakceptuj proof dla wariantu X.'], warnings: [] });
@@ -119,5 +125,20 @@ describe('publicationPostRoute', () => {
     const res = await publicationPostRoute.handler(req({ expectedRevision: 3, action: 'hide' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc));
     expect(res.status).toBe(409);
     expect((await res.json()).currentRevision).toBe(9);
+  });
+
+  it('propagates the original publication error even when releasing the idempotency key also fails', async () => {
+    vi.mocked(mapping.loadProductResponse).mockResolvedValue(ceramicProduct);
+    const originalError = new Error('boom_original');
+    const rpc = vi.fn().mockResolvedValue({ error: originalError });
+    // First release call (inside the `if (error)` branch) succeeds; the
+    // second (in the outer catch, guarding the rethrow) fails — the original
+    // error must still win rather than being masked by the release failure.
+    vi.mocked(idempotency.releaseIdempotencyKey)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('release_failed'));
+    await expect(
+      publicationPostRoute.handler(req({ expectedRevision: 3, action: 'hide' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc)),
+    ).rejects.toThrow('boom_original');
   });
 });

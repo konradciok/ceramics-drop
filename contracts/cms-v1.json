@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections/content/pricing/shipping-rates (S2/S4) and assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
   },
+  "security": [ { "cloudflareAccess": [] } ],
   "paths": {
     "/v1/session": {
       "get": {
@@ -192,11 +193,19 @@
     "/v1/jobs/{id}/retry": { "post": { "operationId": "post__v1_jobs__id__retry", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }, { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Revision" } } } }, "responses": { "202": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Job" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } }
   },
   "components": {
+    "securitySchemes": {
+      "cloudflareAccess": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Cf-Access-Jwt-Assertion",
+        "description": "Cloudflare Access service token assertion. Injected by Access; the Worker verifies issuer and audience independently."
+      }
+    },
     "schemas": {
       "Error": {
         "type": "object",
         "properties": {
-          "code": { "type": "string", "description": "Stable machine code. Known S1 values: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION_FAILED, REVISION_CONFLICT, CONTRACT_MISMATCH, IDEMPOTENCY_REQUIRED, IDEMPOTENCY_KEY_REUSE, IDEMPOTENCY_IN_PROGRESS, RESERVATION_ACTIVE, PRINT_ASSETS_INCOMPLETE, INVALID_PROOF_TRANSITION, NOT_IMPLEMENTED." },
+          "code": { "type": "string", "description": "Stable machine code. Known S1 values: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION_FAILED, REVISION_CONFLICT, CONTRACT_MISMATCH, IDEMPOTENCY_REQUIRED, IDEMPOTENCY_KEY_REUSE, IDEMPOTENCY_IN_PROGRESS, RESERVATION_ACTIVE, PRINT_ASSETS_INCOMPLETE, INVALID_PROOF_TRANSITION, NOT_IMPLEMENTED, INTERNAL_ERROR." },
           "message": { "type": "string" },
           "requestId": { "type": "string" },
           "currentRevision": { "type": "integer" },

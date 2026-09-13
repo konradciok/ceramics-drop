@@ -5,7 +5,7 @@ export type LocalizedTextOptional = { pl?: string; en?: string; es?: string; de?
 
 export type CeramicDraft = {
   type: 'ceramic';
-  category: CategorySlug;
+  category: Exclude<CategorySlug, 'fine-art-prints'>;
   displayNumber: string;
   measure: string;
   pricePln: number;

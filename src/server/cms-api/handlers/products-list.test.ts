@@ -79,4 +79,37 @@ describe('productsListRoute', () => {
     expect(body.pageSize).toBe(100);
     expect(body.page).toBe(1);
   });
+
+  it.each([
+    ['fractional', 'page=1.5&pageSize=2.5'],
+    ['zero', 'page=0&pageSize=0'],
+    ['negative', 'page=-1&pageSize=-5'],
+    ['infinite', 'page=Infinity&pageSize=Infinity'],
+    ['non-numeric', 'page=nope&pageSize=nope'],
+  ])('falls back to defaults for %s page/pageSize instead of producing invalid range offsets', async (_label, qs) => {
+    const supabase = fakeSupabase([], 0);
+    const res = await productsListRoute.handler(
+      new Request(`https://x.test/v1/products?${qs}`),
+      {} as CloudflareEnv,
+      {},
+      ctxFor(supabase),
+    );
+    const body = await res.json();
+    expect(body.page).toBe(1);
+    expect(body.pageSize).toBe(20);
+    expect(Number.isSafeInteger(body.page)).toBe(true);
+    expect(Number.isSafeInteger(body.pageSize)).toBe(true);
+  });
+
+  it('clamps a safe-integer pageSize above 100 down to 100', async () => {
+    const supabase = fakeSupabase([], 0);
+    const res = await productsListRoute.handler(
+      new Request('https://x.test/v1/products?pageSize=250'),
+      {} as CloudflareEnv,
+      {},
+      ctxFor(supabase),
+    );
+    const body = await res.json();
+    expect(body.pageSize).toBe(100);
+  });
 });

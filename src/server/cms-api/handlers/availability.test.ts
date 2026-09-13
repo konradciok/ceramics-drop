@@ -22,6 +22,12 @@ describe('availabilityRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects a null JSON body', async () => {
+    const res = await availabilityRoute.handler(req(null), {} as CloudflareEnv, { id: 'k01' }, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
+
   it('returns 404 when the product does not exist', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(null);
     const res = await availabilityRoute.handler(req({ expectedRevision: 2, availability: 'sold', showroom: false }), {} as CloudflareEnv, { id: 'k01' }, ctxWith(vi.fn()));

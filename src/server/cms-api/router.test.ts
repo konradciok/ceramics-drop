@@ -50,4 +50,18 @@ describe('createRouter', () => {
     );
     expect(await res.json()).toEqual({ id: 'prd_abc', proofId: '9f1c1e2a-test' });
   });
+
+  it('returns 422 VALIDATION_FAILED for a malformed percent-encoded path segment', async () => {
+    const routes: RouteDef[] = [
+      {
+        method: 'GET',
+        path: '/v1/products/{id}',
+        handler: async (_req, _env, params) => new Response(JSON.stringify(params)),
+      },
+    ];
+    const dispatch = createRouter(routes);
+    const res = await dispatch(new Request('https://x.test/v1/products/%E0%A4%A'), {} as CloudflareEnv, ctx);
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
 });

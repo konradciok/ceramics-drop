@@ -65,6 +65,15 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(401);
   });
 
+  it('401s a validly-signed token with no exp claim (requiredClaims enforces expiry is present, not just unexpired)', async () => {
+    const token = await new SignJWT({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN })
+      .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+      .setIssuedAt()
+      .sign(privateKey);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/session', token), baseEnv, deps);
+    expect(res.status).toBe(401);
+  });
+
   it('401s a token forged with the wrong signing key', async () => {
     const { privateKey: otherKey } = await generateKeyPair('RS256');
     const token = await new SignJWT({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN })
@@ -82,7 +91,15 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(403);
   });
 
-  it('403s a genuinely valid token issued by the wrong Access team/issuer', async () => {
+  // Note: this signs with the SAME trusted test key and only varies the
+  // `iss` claim string — it is not a real "wrong team" token. A genuine
+  // wrong-team Access token would be signed by that other team's own key
+  // (getJwks() always fetches from the configured CMS_ACCESS_TEAM_DOMAIN,
+  // never from the token's own `iss`), so it would fail signature
+  // verification and get 401 — see 'wrong signing key' above. This test
+  // exercises the narrower, defense-in-depth case: a same-key token whose
+  // `iss` claim is mismatched.
+  it('403s a genuinely valid, correctly-signed token whose iss claim does not match the configured team domain', async () => {
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: 'https://someone-elses-team.cloudflareaccess.com' });
     const res = await handleCmsApiRequest(reqWithToken('/v1/session', token), baseEnv, deps);
     expect(res.status).toBe(403);

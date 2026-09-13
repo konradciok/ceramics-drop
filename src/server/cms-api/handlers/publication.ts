@@ -38,6 +38,9 @@ export const publicationPostRoute: RouteDef = {
     } catch {
       return errorResponse('VALIDATION_FAILED', 'Request body must be valid JSON.', 422, ctx.requestId);
     }
+    if (typeof body !== 'object' || body === null) {
+      return errorResponse('VALIDATION_FAILED', 'Request body must be a JSON object.', 422, ctx.requestId);
+    }
     const parsed = body as { expectedRevision?: unknown; action?: unknown };
     if (typeof parsed.expectedRevision !== 'number' || !ACTIONS.includes(parsed.action as (typeof ACTIONS)[number])) {
       return errorResponse('VALIDATION_FAILED', 'expectedRevision and a valid action are required.', 422, ctx.requestId);
@@ -135,7 +138,15 @@ export const publicationPostRoute: RouteDef = {
       await completeIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken, 200, updated);
       return jsonResponse(updated);
     } catch (err) {
-      await releaseIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken);
+      // Swallow a release failure here so the original publication error
+      // (err) always propagates — a failed release just leaves the lease in
+      // place, and the 30s LEASE_MS in idempotency.ts lets a later request
+      // reclaim it, so this is a safe no-op rather than a stuck key.
+      try {
+        await releaseIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken);
+      } catch {
+        // ignore — see comment above
+      }
       throw err;
     }
   },

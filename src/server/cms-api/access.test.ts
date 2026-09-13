@@ -12,6 +12,7 @@ const baseEnv = {
   CMS_ACCESS_AUD: 'cms-aud-123',
   CMS_OWNERS: 'anna@anna-ciok.studio',
   CMS_API_LOCAL_BYPASS: undefined,
+  CMS_API_ENVIRONMENT: undefined,
 };
 
 function req(headers: Record<string, string> = {}, hostname = 'ceramics-drop.example.com') {
@@ -72,13 +73,33 @@ describe('verifyCmsAccess', () => {
     expect(result).toEqual({ ok: true, email: 'Anna@Anna-Ciok.Studio' });
   });
 
-  it('bypasses verification on a private host when CMS_API_LOCAL_BYPASS=true', async () => {
-    const result = await verifyCmsAccess(req({}, 'localhost'), { ...baseEnv, CMS_API_LOCAL_BYPASS: 'true' });
+  it('bypasses verification on a private host when CMS_API_LOCAL_BYPASS=true and CMS_API_ENVIRONMENT=local', async () => {
+    const result = await verifyCmsAccess(req({}, 'localhost'), {
+      ...baseEnv,
+      CMS_API_LOCAL_BYPASS: 'true',
+      CMS_API_ENVIRONMENT: 'local',
+    });
     expect(result).toEqual({ ok: true, email: 'local-bypass@anna-ciok.studio' });
   });
 
-  it('does not bypass on a public host even when CMS_API_LOCAL_BYPASS=true', async () => {
-    const result = await verifyCmsAccess(req({}, 'ceramics-drop.example.com'), { ...baseEnv, CMS_API_LOCAL_BYPASS: 'true' });
+  it('does not bypass on a public host even when CMS_API_LOCAL_BYPASS=true and CMS_API_ENVIRONMENT=local', async () => {
+    const result = await verifyCmsAccess(req({}, 'ceramics-drop.example.com'), {
+      ...baseEnv,
+      CMS_API_LOCAL_BYPASS: 'true',
+      CMS_API_ENVIRONMENT: 'local',
+    });
     expect(result).toEqual({ ok: false, status: 401 });
   });
+
+  it.each(['production', 'integration', undefined])(
+    'does not bypass on a private host with CMS_API_LOCAL_BYPASS=true when CMS_API_ENVIRONMENT=%s — a Service Binding caller can set url.hostname to anything',
+    async (environment) => {
+      const result = await verifyCmsAccess(req({}, 'localhost'), {
+        ...baseEnv,
+        CMS_API_LOCAL_BYPASS: 'true',
+        CMS_API_ENVIRONMENT: environment,
+      });
+      expect(result).toEqual({ ok: false, status: 401 });
+    },
+  );
 });

@@ -37,6 +37,12 @@ describe('productsSaveRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects a null JSON body', async () => {
+    const res = await productsSaveRoute.handler(req(null), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
+
   it('validates the draft body', async () => {
     const res = await productsSaveRoute.handler(req({ expectedRevision: 1, draft: { type: 'ceramic' } }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(vi.fn()));
     expect(res.status).toBe(422);

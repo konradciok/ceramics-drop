@@ -17,6 +17,16 @@ describe('previewsRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it.each([
+    ['fractional', 1.5],
+    ['negative', -1],
+    ['infinite', Infinity],
+    ['NaN', NaN],
+  ])('rejects a %s revision with 422', async (_label, revision) => {
+    const res = await previewsRoute.handler(req({ resourceId: 'prd_1', revision }), {} as CloudflareEnv, {}, ctx);
+    expect(res.status).toBe(422);
+  });
+
   it('returns 404 when the product does not exist', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(null);
     const res = await previewsRoute.handler(req({ resourceId: 'prd_1', revision: 1 }), {} as CloudflareEnv, {}, ctx);

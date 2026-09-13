@@ -41,11 +41,22 @@ export type CmsAccessResult = { ok: true; email: string } | { ok: false; status:
 
 export async function verifyCmsAccess(
   request: Request,
-  env: Pick<CloudflareEnv, 'CMS_ACCESS_TEAM_DOMAIN' | 'CMS_ACCESS_AUD' | 'CMS_OWNERS' | 'CMS_API_LOCAL_BYPASS'>,
+  env: Pick<
+    CloudflareEnv,
+    'CMS_ACCESS_TEAM_DOMAIN' | 'CMS_ACCESS_AUD' | 'CMS_OWNERS' | 'CMS_API_LOCAL_BYPASS' | 'CMS_API_ENVIRONMENT'
+  >,
 ): Promise<CmsAccessResult> {
   const url = new URL(request.url);
 
-  if (env.CMS_API_LOCAL_BYPASS === 'true' && isPrivateHost(url.hostname)) {
+  // `CmsApi.fetch` is invoked via a Cloudflare Service Binding, not a real
+  // incoming HTTP request — the calling Worker constructs the `Request`
+  // itself and can set `url` to anything, including a private hostname. So
+  // the private-host check alone does not prove local execution the way it
+  // does for the storefront's own Next-facing admin gate (src/lib/admin/
+  // access.ts, invoked from worker.ts's fetch handler with a real request
+  // URL). Require CMS_API_ENVIRONMENT === 'local' as the primary gate and
+  // keep the private-host check only as an additional local-dev guard.
+  if (env.CMS_API_ENVIRONMENT === 'local' && env.CMS_API_LOCAL_BYPASS === 'true' && isPrivateHost(url.hostname)) {
     return { ok: true, email: 'local-bypass@anna-ciok.studio' };
   }
 
@@ -66,6 +77,7 @@ export async function verifyCmsAccess(
     const { payload } = await jwtVerify(jwt, jwks, {
       issuer: env.CMS_ACCESS_TEAM_DOMAIN,
       audience: env.CMS_ACCESS_AUD,
+      requiredClaims: ['exp'],
     });
     email = typeof payload.email === 'string' ? payload.email : undefined;
   } catch (err) {

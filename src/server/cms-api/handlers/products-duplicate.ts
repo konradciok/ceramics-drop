@@ -22,6 +22,9 @@ export const productsDuplicateRoute: RouteDef = {
     } catch {
       return errorResponse('VALIDATION_FAILED', 'Request body must be valid JSON.', 422, ctx.requestId);
     }
+    if (typeof body !== 'object' || body === null) {
+      return errorResponse('VALIDATION_FAILED', 'Request body must be a JSON object.', 422, ctx.requestId);
+    }
     const parsed = body as { expectedRevision?: unknown };
     if (typeof parsed.expectedRevision !== 'number') {
       return errorResponse('VALIDATION_FAILED', 'expectedRevision is required.', 422, ctx.requestId, {

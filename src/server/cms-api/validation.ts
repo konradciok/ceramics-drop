@@ -20,7 +20,7 @@ const ceramicDraftSchema = z
     type: z.literal('ceramic'),
     category: z.enum(CATEGORY_SLUGS),
     displayNumber: z.string().min(1),
-    measure: z.string(),
+    measure: z.string().min(1),
     pricePln: z.number().int().positive(),
     priceEur: z.number().int().positive(),
     priceGbp: z.number().int().positive(),

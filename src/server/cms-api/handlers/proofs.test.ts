@@ -28,6 +28,14 @@ describe('proofDecisionRoute', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rejects a literal null request body with 422 instead of throwing', async () => {
+    const rpc = vi.fn();
+    const res = await proofDecisionRoute.handler(req(null), {} as CloudflareEnv, { id: 'fap001', proofId: ASSET_ID }, ctxWith(rpc));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it('maps proof_not_found to 404 (including a proofId that belongs to a different product)', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'proof_not_found' } });
     const res = await proofDecisionRoute.handler(req({ expectedRevision: 1, action: 'approve' }), {} as CloudflareEnv, { id: 'fap001', proofId: ASSET_ID }, ctxWith(rpc));

@@ -48,9 +48,13 @@ export function createRouter(routes: RouteDef[]) {
       if (route.method !== req.method) continue;
 
       const params: Record<string, string> = {};
-      route.paramNames.forEach((name, i) => {
-        params[name] = decodeURIComponent(match[i + 1]);
-      });
+      for (let i = 0; i < route.paramNames.length; i += 1) {
+        try {
+          params[route.paramNames[i]] = decodeURIComponent(match[i + 1]);
+        } catch {
+          return errorResponse('VALIDATION_FAILED', 'Path parameter encoding is invalid.', 422, ctx.requestId);
+        }
+      }
       return route.handler(req, env, params, ctx);
     }
 

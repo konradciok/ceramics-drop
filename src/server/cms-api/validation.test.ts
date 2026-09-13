@@ -56,6 +56,17 @@ describe('validateProductDraft', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('rejects a ceramic draft with an empty measure', () => {
+    const result = validateProductDraft({ ...validCeramic, measure: '' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.fieldErrors.measure).toBeDefined();
+  });
+
+  it('accepts a ceramic draft with a real measure value', () => {
+    const result = validateProductDraft({ ...validCeramic, measure: '12 cm' });
+    expect(result.ok).toBe(true);
+  });
+
   it('rejects a print draft with an unknown size', () => {
     const result = validateProductDraft({ ...validPrint, sizes: ['99x99'] });
     expect(result.ok).toBe(false);

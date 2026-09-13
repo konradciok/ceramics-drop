@@ -141,7 +141,7 @@ function synthesizeDraft(product: ProductRow, variants: VariantRow[], media: Med
 
   const ceramicDraft: CeramicDraft = {
     type: 'ceramic',
-    category: product.category_slug as CategorySlug,
+    category: product.category_slug as Exclude<CategorySlug, 'fine-art-prints'>,
     displayNumber: product.num,
     measure: product.measure ?? '',
     pricePln: (product.price_pln ?? 0) * 100,

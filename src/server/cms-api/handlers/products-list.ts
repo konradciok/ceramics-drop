@@ -22,8 +22,18 @@ export const productsListRoute: RouteDef = {
     // PostgREST .or() filter string — untreated user input there is a
     // filter-injection vector (comma/paren/dot are filter metacharacters).
     const q = rawQ ? rawQ.replace(/[^a-zA-Z0-9_-]/g, '') : undefined;
-    const page = Math.max(1, Number(url.searchParams.get('page') ?? '1') || 1);
-    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? '20') || 20));
+    // Number.isSafeInteger rejects fractional values (1.5), Infinity/NaN,
+    // and out-of-range floats before they reach the pagination math below —
+    // an unclamped fractional or infinite page/pageSize produces invalid
+    // .range() offsets.
+    const parsedPage = Number(url.searchParams.get('page') ?? '1');
+    const page = Number.isSafeInteger(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
+
+    const parsedPageSize = Number(url.searchParams.get('pageSize') ?? '20');
+    const pageSize =
+      Number.isSafeInteger(parsedPageSize) && parsedPageSize >= 1
+        ? Math.min(100, parsedPageSize)
+        : 20;
     const sort = SORT_COLUMNS[url.searchParams.get('sort') ?? 'updated_desc'] ?? SORT_COLUMNS.updated_desc;
 
     let query = ctx.supabase.from('products').select('id', { count: 'exact' });
