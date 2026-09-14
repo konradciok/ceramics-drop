@@ -89,10 +89,14 @@ export const publicationPostRoute: RouteDef = {
             price_pln: Math.round(product.draft.pricePln / 100),
             price_eur: Math.round(product.draft.priceEur / 100),
             price_gbp: Math.round(product.draft.priceGbp / 100),
-            // Left unset (never blank), publish_product_revision defaults this
-            // server-side to the current active drop — see that RPC's coalesce
-            // chain (20260914120000_ceramic_drop_default_and_copy.sql).
-            drop_id: product.draft.dropId ?? null,
+            // A blank cms-ceramics field submits '' (not undefined) — normalize
+            // to null so this never reaches the RPC as an empty-string
+            // override; publish_product_revision then defaults it server-side
+            // to the current active drop (see that RPC's coalesce chain,
+            // 20260914120000_ceramic_drop_default_and_copy.sql). The RPC's own
+            // nullif(..., '') guard (20260914130000_fix_publish_empty_drop_id.sql)
+            // covers this same case for any other caller.
+            drop_id: product.draft.dropId?.trim() ? product.draft.dropId.trim() : null,
             title: product.draft.title.pl,
             description: product.draft.description.pl,
             seo_title: null,
