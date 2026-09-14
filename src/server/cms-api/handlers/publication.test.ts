@@ -117,6 +117,37 @@ describe('publicationPostRoute', () => {
     expect(params.p_media).toEqual([{ url: 'a.webp', alt: null, position: 0, is_primary: true }]);
   });
 
+  it('normalizes a blank dropId (empty string, not undefined) to null rather than forwarding it', async () => {
+    // cms-ceramics's dropId field is a controlled text input: left blank, it
+    // submits '' — the RPC's coalesce would otherwise treat '' as a real
+    // override and violate the drop_id FK instead of defaulting server-side.
+    const blankDropIdProduct = {
+      id: 'prd_1',
+      revision: 3,
+      type: 'ceramic',
+      draft: {
+        type: 'ceramic',
+        category: 'kubki',
+        displayNumber: '01',
+        measure: '9x8',
+        pricePln: 12000,
+        priceEur: 2800,
+        priceGbp: 2400,
+        images: ['a.webp'],
+        title: { pl: 'Kubek Lazur' },
+        description: { pl: 'Ręcznie toczony kubek.' },
+        seo: { pl: 'meta' },
+        dropId: '  ',
+      },
+    } as never;
+    vi.mocked(mapping.loadProductResponse).mockResolvedValue(blankDropIdProduct);
+    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 3, ready: true, blockers: [], warnings: [] });
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    await publicationPostRoute.handler(req({ expectedRevision: 3, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc));
+    const [, params] = rpc.mock.calls[0];
+    expect(params.p_structural.drop_id).toBeNull();
+  });
+
   it('publishes a print with variant params and no structural param', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(printProduct);
     vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 5, ready: true, blockers: [], warnings: [] });

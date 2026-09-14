@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(38);
+select plan(40);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
@@ -96,6 +96,24 @@ select is(
   (select p.description from products p where p.id = 'tap_cms_ceramic'),
   'CMS description',
   'publish_product_revision: materializes description from the structural payload'
+);
+
+-- An empty-string drop_id (cms-ceramics's blank text field submits '', not
+-- null) must default exactly like an absent one, not violate the drop_id FK.
+select is(
+  (create_product_with_draft('tap_cms_empty_drop', 'ceramic', 'kubki', '94', '{"title":{"pl":"Empty Drop"},"pricePln":8000,"priceEur":1600,"priceGbp":1400}'::jsonb, 'anna@studio.pl')).revision,
+  1,
+  'create_product_with_draft: fourth ceramic draft created for the empty-string drop_id test'
+);
+
+select is(
+  (publish_product_revision(
+    'tap_cms_empty_drop', 1, 'publish', 'anna@studio.pl', null,
+    '[{"url":"https://example.test/d.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+    '{"category_slug":"kubki","num":"94","measure":"9x8","price_pln":8000,"price_eur":1600,"price_gbp":1400,"drop_id":"","title":"Empty Drop","description":"Empty drop desc","seo_title":null,"seo_description":null}'::jsonb
+  ))->'product'->>'drop_id',
+  'drop-1',
+  'publish_product_revision: an empty-string drop_id (not null) still defaults to the active drop instead of violating the FK'
 );
 
 select is(
