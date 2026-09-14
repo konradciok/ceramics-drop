@@ -97,6 +97,19 @@ describe('validateCart', () => {
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
   });
 
+  it('prices EUR/GBP from the product DB-backed priceEur/priceGbp in db mode, not the code constant (S2b)', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    try {
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([{ ...k01(), priceEur: 30, priceGbp: 26 }]);
+      const eur = await validateCart(['k01'], 'eur');
+      expect(eur).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 3000 }] });
+      const gbp = await validateCart(['k01'], 'gbp');
+      expect(gbp).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2600 }] });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('accepts a valid print token and snapshots the resolved asset', async () => {
     const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     const result = await validateCart([token], 'pln');

@@ -226,11 +226,19 @@ describe('priceOfCurrency', () => {
     expect(priceOfCurrency(product, 'pln')).toBe(PRICE_PLN.kubki);
   });
 
-  it('returns the GBP table price for gbp', () => {
+  it('falls back to the GBP table price for gbp when the product has no DB-backed priceGbp', () => {
     expect(priceOfCurrency(product, 'gbp')).toBe(PRICE_GBP.kubki);
   });
 
-  it('returns the EUR table price for eur', () => {
+  it('falls back to the EUR table price for eur when the product has no DB-backed priceEur', () => {
     expect(priceOfCurrency(product, 'eur')).toBe(PRICE_EUR.kubki);
+  });
+
+  it('prefers the product DB-backed priceEur/priceGbp when set (S2b)', () => {
+    const withDbPrices = { ...product, priceEur: 30, priceGbp: 26 };
+    expect(priceOfCurrency(withDbPrices, 'eur')).toBe(30);
+    expect(priceOfCurrency(withDbPrices, 'gbp')).toBe(26);
+    // PLN is unaffected — always product.price, DB-backed or not.
+    expect(priceOfCurrency(withDbPrices, 'pln')).toBe(PRICE_PLN.kubki);
   });
 });

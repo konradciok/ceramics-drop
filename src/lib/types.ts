@@ -76,6 +76,17 @@ export interface Product {
    */
   title?: string;
   description?: string;
+  /**
+   * DB-backed EUR/GBP prices (`products.price_eur` / `price_gbp`), surfaced
+   * only in db mode when set. In `code` mode, or for a registry-seeded row
+   * that was never backfilled, these are undefined — priceOfCurrency() then
+   * falls back to the per-category PRICE_EUR/PRICE_GBP code constant, same
+   * as it always has. Unlike `price` (PLN — always DB-sourced in db mode),
+   * these were previously 100% code constants regardless of CATALOG_SOURCE;
+   * see products.ts's history for why.
+   */
+  priceEur?: number;
+  priceGbp?: number;
 }
 
 /** Structural metadata for a product family / collection page. */

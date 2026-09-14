@@ -84,4 +84,17 @@ describe('mapCeramicProducts, downstream of the read guard', () => {
     const products = mapCeramicProducts([ceramicRow({ id: 'k04', price_pln: null })], []);
     expect(products[0]?.price).not.toBe(0);
   });
+
+  it('surfaces priceEur/priceGbp when set on the row (S2b)', () => {
+    const rows = parseProductRows([ceramicRow({ id: 'k05', price_eur: 30, price_gbp: 26 })]);
+    const products = mapCeramicProducts(rows, []);
+    expect(products[0]).toMatchObject({ priceEur: 30, priceGbp: 26 });
+  });
+
+  it('omits priceEur/priceGbp when null on the row (registry parity — no override yet)', () => {
+    const rows = parseProductRows([ceramicRow({ id: 'k06', price_eur: null, price_gbp: null })]);
+    const products = mapCeramicProducts(rows, []);
+    expect(products[0]).not.toHaveProperty('priceEur');
+    expect(products[0]).not.toHaveProperty('priceGbp');
+  });
 });
