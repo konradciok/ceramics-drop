@@ -26,6 +26,8 @@ function ceramicRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
     status: 'active',
     seo_title: null,
     seo_description: null,
+    title: null,
+    description: null,
     drop_id: 'drop-1',
     note_index: 1,
     ...over,

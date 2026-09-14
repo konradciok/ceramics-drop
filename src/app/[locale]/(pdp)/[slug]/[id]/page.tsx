@@ -2,7 +2,7 @@ import { printDisplayName } from '@/lib/print-curation';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { getProductById, CATEGORIES, isProductPublic } from '@/lib/products';
+import { getProductById, CATEGORIES, isProductPublic, productDisplayName } from '@/lib/products';
 import { getPrintById } from '@/lib/prints';
 import { getPrintAssetCoverage } from '@/server/print-assets/repository';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
@@ -65,14 +65,16 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const t = await getTranslations({ locale });
   const cat = CATEGORIES[product.category];
   const name = t(`product.${cat.singularKey}`);
-  const displayName = `${name} Nº ${product.num}`;
+  const displayName = productDisplayName(product, name);
   const rawNotes = t.raw(`notes.${product.category}`) as unknown;
   const fallbackDescription = Array.isArray(rawNotes)
     ? ((rawNotes[product.noteIndex] as string) ?? '')
     : '';
   const note = await getProductNote(product.category, locale as Locale, product.id, previewToken).catch(() => fallbackDescription);
-  // DB SEO overrides (db mode, when set) win over the derived title / CMS note.
-  const description = product.seoDescription ?? note;
+  // DB SEO override (db mode, when set) wins outright; otherwise the CMS-authored
+  // `description` (same db-mode-only field the storefront name draws `title` from)
+  // is preferred over the derived CMS note, matching seoTitle's precedence over displayName.
+  const description = product.seoDescription ?? product.description ?? note;
 
   return {
     title: product.seoTitle ?? displayName,

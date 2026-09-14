@@ -81,6 +81,17 @@ export function isProductPublic(product: Product): boolean {
   return (product.status ?? 'active') === 'active' && !isCategoryHidden(product.category);
 }
 
+/**
+ * Display name for a ceramic piece: the CMS-authored `title` (db mode, when
+ * set — e.g. a product created via cms-ceramics) takes the complete name
+ * as-is (no "Nº {num}" suffix forced onto real copy); the code registry
+ * carries no title, so every registry-seeded piece keeps its synthesized
+ * "{singularName} Nº {num}" name exactly as before.
+ */
+export function productDisplayName(product: Product, singularName: string): string {
+  return product.title ?? `${singularName} Nº ${product.num}`;
+}
+
 /** Whether a piece may be bought — publicly visible AND not sold / not in the showroom. */
 export function isProductPurchasable(product: Product): boolean {
   return product.onlineAvailable === true && !product.sold && !product.showroom && isProductPublic(product);

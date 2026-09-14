@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(28);
+select plan(37);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
@@ -56,7 +56,7 @@ select is(
   (publish_product_revision(
     'tap_cms_ceramic', 2, 'publish', 'anna@studio.pl', null,
     '[{"url":"https://example.test/a.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
-    '{"category_slug":"kubki","num":"99","measure":"9x8","price_pln":12000,"price_eur":2800,"price_gbp":2400,"drop_id":null,"seo_title":null,"seo_description":null}'::jsonb
+    '{"category_slug":"kubki","num":"99","measure":"9x8","price_pln":12000,"price_eur":2800,"price_gbp":2400,"drop_id":null,"title":"CMS Kubek","description":"CMS description","seo_title":null,"seo_description":null}'::jsonb
   ))->'product'->>'status',
   'active',
   'publish_product_revision: ceramic publish activates the product'
@@ -77,6 +77,87 @@ select is(
   (select count(*)::integer from product_media pm where pm.product_id = 'tap_cms_ceramic'),
   1,
   'publish_product_revision: replaces product_media from the draft'
+);
+
+-- publish_product_revision — ceramic drop_id default + title/description (S2a) --
+select is(
+  (select p.drop_id from products p where p.id = 'tap_cms_ceramic'),
+  'drop-1',
+  'publish_product_revision: a first-ever ceramic publish with no explicit drop_id defaults to the active drop'
+);
+
+select is(
+  (select p.title from products p where p.id = 'tap_cms_ceramic'),
+  'CMS Kubek',
+  'publish_product_revision: materializes title from the structural payload'
+);
+
+select is(
+  (select p.description from products p where p.id = 'tap_cms_ceramic'),
+  'CMS description',
+  'publish_product_revision: materializes description from the structural payload'
+);
+
+select is(
+  (create_product_with_draft('tap_cms_no_drop', 'ceramic', 'kubki', '96', '{"title":{"pl":"No Drop"},"pricePln":10000,"priceEur":2000,"priceGbp":1800}'::jsonb, 'anna@studio.pl')).revision,
+  1,
+  'create_product_with_draft: second ceramic draft created for the no-active-drop test'
+);
+
+update drops set status = 'ended' where id = 'drop-1';
+
+select throws_ok(
+  $$ select publish_product_revision(
+       'tap_cms_no_drop', 1, 'publish', 'anna@studio.pl', null,
+       '[{"url":"https://example.test/b.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+       '{"category_slug":"kubki","num":"96","measure":"9x8","price_pln":10000,"price_eur":2000,"price_gbp":1800,"drop_id":null,"title":"No Drop","description":"No drop desc","seo_title":null,"seo_description":null}'::jsonb
+     ) $$,
+  'no_active_drop',
+  'publish_product_revision: a first-ever ceramic publish with zero active drops and no explicit drop_id is rejected'
+);
+
+update drops set status = 'active' where id = 'drop-1';
+
+select is(
+  (publish_product_revision(
+    'tap_cms_no_drop', 1, 'publish', 'anna@studio.pl', null,
+    '[{"url":"https://example.test/b.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+    '{"category_slug":"kubki","num":"96","measure":"9x8","price_pln":10000,"price_eur":2000,"price_gbp":1800,"drop_id":null,"title":"No Drop","description":"No drop desc","seo_title":null,"seo_description":null}'::jsonb
+  ))->'product'->>'status',
+  'active',
+  'publish_product_revision: the same publish succeeds once an active drop exists again'
+);
+
+-- Republish regression: an explicit drop_id set on first publish must survive
+-- even after a DIFFERENT drop later becomes the active one.
+select is(
+  (create_product_with_draft('tap_cms_drop2', 'ceramic', 'kubki', '95', '{"title":{"pl":"Drop Two"},"pricePln":9000,"priceEur":1800,"priceGbp":1600}'::jsonb, 'anna@studio.pl')).revision,
+  1,
+  'create_product_with_draft: third ceramic draft created for the republish-preserves-drop_id test'
+);
+
+insert into drops (id, label, status, started_at) values ('tap_drop_2', 'Tap Drop 2', 'ended', now());
+
+select is(
+  (publish_product_revision(
+    'tap_cms_drop2', 1, 'publish', 'anna@studio.pl', null,
+    '[{"url":"https://example.test/c.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+    '{"category_slug":"kubki","num":"95","measure":"9x8","price_pln":9000,"price_eur":1800,"price_gbp":1600,"drop_id":"tap_drop_2","title":"Drop Two","description":"Drop two desc","seo_title":null,"seo_description":null}'::jsonb
+  ))->'product'->>'drop_id',
+  'tap_drop_2',
+  'publish_product_revision: an explicit drop_id on first publish is honoured over the active drop'
+);
+
+select save_product_draft('tap_cms_drop2', 1, '{"title":{"pl":"Drop Two v2"}}'::jsonb, 'anna@studio.pl');
+
+select is(
+  (publish_product_revision(
+    'tap_cms_drop2', 2, 'publish', 'anna@studio.pl', null,
+    '[{"url":"https://example.test/c.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+    '{"category_slug":"kubki","num":"95","measure":"9x8","price_pln":9000,"price_eur":1800,"price_gbp":1600,"drop_id":null,"title":"Drop Two v2","description":"Drop two desc v2","seo_title":null,"seo_description":null}'::jsonb
+  ))->'product'->>'drop_id',
+  'tap_drop_2',
+  'publish_product_revision: a republish with no explicit drop_id keeps the existing drop_id instead of re-picking the active one'
 );
 
 -- publish_product_revision — print, incomplete assets ---------------------------

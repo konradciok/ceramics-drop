@@ -13,7 +13,19 @@ const ceramicProduct = {
   id: 'prd_1',
   revision: 3,
   type: 'ceramic',
-  draft: { type: 'ceramic', category: 'kubki', displayNumber: '01', measure: '9x8', pricePln: 12000, priceEur: 2800, priceGbp: 2400, images: ['a.webp'], seo: { pl: 'meta' } },
+  draft: {
+    type: 'ceramic',
+    category: 'kubki',
+    displayNumber: '01',
+    measure: '9x8',
+    pricePln: 12000,
+    priceEur: 2800,
+    priceGbp: 2400,
+    images: ['a.webp'],
+    title: { pl: 'Kubek Lazur' },
+    description: { pl: 'Ręcznie toczony kubek.' },
+    seo: { pl: 'meta' },
+  },
 } as never;
 
 const printProduct = {
@@ -94,7 +106,14 @@ describe('publicationPostRoute', () => {
     expect(res.status).toBe(200);
     const [, params] = rpc.mock.calls[0];
     expect(params.p_variants).toBeNull();
-    expect(params.p_structural).toMatchObject({ category_slug: 'kubki', price_pln: 120, price_eur: 28, price_gbp: 24 });
+    expect(params.p_structural).toMatchObject({
+      category_slug: 'kubki',
+      price_pln: 120,
+      price_eur: 28,
+      price_gbp: 24,
+      title: 'Kubek Lazur',
+      description: 'Ręcznie toczony kubek.',
+    });
     expect(params.p_media).toEqual([{ url: 'a.webp', alt: null, position: 0, is_primary: true }]);
   });
 
@@ -117,6 +136,15 @@ describe('publicationPostRoute', () => {
     expect(readiness.computeReadiness).not.toHaveBeenCalled();
     const [, params] = rpc.mock.calls[0];
     expect(params).toMatchObject({ p_action: 'hide', p_variants: null, p_media: null, p_structural: null });
+  });
+
+  it('maps a no_active_drop RPC error to 422', async () => {
+    vi.mocked(mapping.loadProductResponse).mockResolvedValue(ceramicProduct);
+    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 3, ready: true, blockers: [], warnings: [] });
+    const rpc = vi.fn().mockResolvedValue({ error: { message: 'no_active_drop' } });
+    const res = await publicationPostRoute.handler(req({ expectedRevision: 3, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
   });
 
   it('maps a revision_conflict RPC error to 409', async () => {

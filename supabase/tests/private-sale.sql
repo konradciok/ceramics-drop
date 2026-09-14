@@ -48,10 +48,12 @@ insert into orders (payment_intent_id, subtotal, shipping, total, shipping_metho
 insert into piece_state (product_id, status) values ('tap_g1', 'sold');
 
 -- ── Tests ─────────────────────────────────────────────────────────────────--
--- New purchases also require a public catalogue row in an active drop.
-insert into drops(id,label,status) values ('tap_private','Test','active');
+-- New purchases also require a public catalogue row in an active drop. Reuse
+-- the seeded 'drop-1' (20260709130000_showroom_drops.sql) rather than
+-- inserting a second active drop — drops_single_active
+-- (20260914120000_ceramic_drop_default_and_copy.sql) allows at most one.
 insert into products(id,type,category_slug,num,price_pln,status,drop_id)
-  select product_id,'ceramic','kubki','01',100,'active','tap_private'
+  select product_id,'ceramic','kubki','01',100,'active','drop-1'
   from piece_state where product_id like 'tap\_%' escape '\';
 
 -- A1: exact-set reserve of sold pieces succeeds (no conflicts).

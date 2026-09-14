@@ -81,6 +81,9 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       // SEO overrides only when set (registry has none → parity preserved).
       ...(row.seo_title ? { seoTitle: row.seo_title } : {}),
       ...(row.seo_description ? { seoDescription: row.seo_description } : {}),
+      // CMS-authored copy only when set (registry has none → parity preserved).
+      ...(row.title ? { title: row.title } : {}),
+      ...(row.description ? { description: row.description } : {}),
     });
   }
 

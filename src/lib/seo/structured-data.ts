@@ -2,7 +2,7 @@ import { printDisplayName } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
-import { getCategory, getProductsByCategory } from '@/lib/products';
+import { getCategory, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
 import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
@@ -215,7 +215,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
           position: i + 1,
           item: {
             '@type': 'Product',
-            name: `${singular} Nº ${p.num}`,
+            name: productDisplayName(p, singular),
             description: resolveDescription(notes?.[p.id], rawNotes, p.noteIndex),
             image: `${SITE_URL}${p.image}`,
             category: categoryName,
@@ -386,7 +386,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
   const category = getCategory(product.category);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
-  const name = `${singular} Nº ${product.num}`;
+  const name = productDisplayName(product, singular);
   const rawNotes = tRaw(`notes.${product.category}`);
   const description = resolveDescription(descriptionOverride, rawNotes, product.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');

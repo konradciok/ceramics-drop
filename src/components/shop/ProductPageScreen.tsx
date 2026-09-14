@@ -3,7 +3,7 @@ import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { getCurrency } from '@/lib/currency.server';
-import { CATEGORIES, getProductsByCategory } from '@/lib/products';
+import { CATEGORIES, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
@@ -24,7 +24,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const cat = CATEGORIES[product.category];
   const name = t(`product.${cat.singularKey}`);
   const categoryName = t(cat.nameKey);
-  const displayName = `${name} Nº ${product.num}`;
+  const displayName = productDisplayName(product, name);
   const rawNotes = t.raw(`notes.${product.category}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
   const note = noteOverride ?? fallbackNote;
@@ -69,7 +69,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                 {categoryName} — {t('lightbox.drop')}
               </div>
               <h1>
-                {name} <em>Nº {product.num}</em>
+                {product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
               {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} />}
@@ -111,7 +111,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <ProductTileLink
                     key={p.id}
                     product={p}
-                    displayName={`${t(`product.${CATEGORIES[p.category].singularKey}`)} Nº ${p.num}`}
+                    displayName={productDisplayName(p, t(`product.${CATEGORIES[p.category].singularKey}`))}
                     soldLabel={soldLabel}
                     showroomLabel={showroomLabel}
                     priceLabel={fmt(priceOfCurrency(p, currency))}

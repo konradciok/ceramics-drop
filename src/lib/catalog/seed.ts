@@ -74,6 +74,8 @@ function ceramicRows(seed: CatalogSeed): void {
       status: 'active',
       seo_title: null,
       seo_description: null,
+      title: null,
+      description: null,
       drop_id: p.dropId,
       note_index: p.noteIndex,
     });
@@ -127,6 +129,8 @@ function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
       status: catalogStatusForPrint(d.id),
       seo_title: null,
       seo_description: null,
+      title: null,
+      description: null,
       drop_id: null,
       note_index: d.noteIndex,
     });

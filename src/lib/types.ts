@@ -65,6 +65,17 @@ export interface Product {
    */
   seoTitle?: string;
   seoDescription?: string;
+  /**
+   * CMS-authored copy (`products.title` / `description`), surfaced only in db
+   * mode when set (undefined in the code registry — every registry-seeded
+   * piece keeps its synthesized "{name} Nº {num}" display name). Unlike
+   * `seoTitle`/`seoDescription` these feed the visible product name in
+   * category grids and the PDP (see `productDisplayName` in products.ts), not
+   * just `<meta>` tags. `description` additionally falls back into the PDP
+   * `<meta description>` when no `seoDescription` override is set.
+   */
+  title?: string;
+  description?: string;
 }
 
 /** Structural metadata for a product family / collection page. */
