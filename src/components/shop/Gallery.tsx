@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Product } from '@/lib/types';
 import { useTranslations } from 'next-intl';
 import { useFilter } from '@/store/filter';
 import { filterByStatus } from '@/lib/status-filter';
 import { useMounted } from '@/lib/use-mounted';
-import type { Product } from '@/lib/types';
 import { isProductPurchasable } from '@/lib/products';
 import { buildSelectItemEvent, buildViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
@@ -31,6 +31,9 @@ export function Gallery({ products, bento = false }: Props) {
   // are excluded — they never open the lightbox and aren't purchasable, so they
   // must stay out of the lightbox/analytics index space.
   const available = useMemo(() => products.filter(isProductPurchasable), [products]);
+  // Category-scoped fallback so a CMS-created (DB-only) ceramic on this page
+  // still counts toward the selection bar's total.
+  const knownProducts = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
   const t = useTranslations();
   const mounted = useMounted();
   const storedStatus = useFilter((s) => s.status);
@@ -114,7 +117,7 @@ export function Gallery({ products, bento = false }: Props) {
         onStep={step}
         triggerRef={triggerRef}
       />
-      <SelectionBar />
+      <SelectionBar knownProducts={knownProducts} />
     </>
   );
 }

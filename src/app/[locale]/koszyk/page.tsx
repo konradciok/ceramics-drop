@@ -40,6 +40,9 @@ export default async function Page({ params, searchParams }: Props) {
   // PLN cart prices must come from the same DB rows checkout charges — the
   // client registry can drift from them after an admin price_pln edit.
   const ceramicPrices = Object.fromEntries(products.map((p) => [p.id, p.price]));
+  // DB-aware fallback so a CMS-created ceramic (absent from the code
+  // registry) still resolves to a renderable cart line.
+  const knownProducts = Object.fromEntries(products.map((p) => [p.id, p]));
 
   return (
     <main id="cart-root">
@@ -48,6 +51,7 @@ export default async function Page({ params, searchParams }: Props) {
         initialPrintCountry={initialPrintCountry}
         printPricing={printPricing}
         ceramicPrices={ceramicPrices}
+        knownProducts={knownProducts}
       />
     </main>
   );
