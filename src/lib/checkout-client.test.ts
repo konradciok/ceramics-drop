@@ -52,6 +52,14 @@ describe('checkoutPreBodyError', () => {
     });
   });
 
+  it('maps 503 + print_pricing_unavailable to a keep-attemptId recovery path (not the generic print_asset_error copy)', () => {
+    expect(checkoutPreBodyError(503, { error: 'print_pricing_unavailable' })).toEqual({
+      errorKey: 'cart.printPricingUnavailable',
+      analyticsReason: 'print_pricing_unavailable',
+      analyticsStatus: 503,
+    });
+  });
+
   it('returns null for 503 with an unrelated error code', () => {
     expect(checkoutPreBodyError(503, { error: 'other' })).toBeNull();
   });

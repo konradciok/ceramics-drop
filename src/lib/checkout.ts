@@ -3,7 +3,7 @@ import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
-import { getPrintPricingConfig } from './print-pricing-config/get';
+import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from './print-pricing-config/get';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
 import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
 import type { PrintVariantSelection } from './types';
@@ -52,7 +52,8 @@ export type ValidateResult =
         | 'mixed_cart'
         | 'multiple_gift_cards'
         | 'print_asset_unavailable'
-        | 'print_asset_error';
+        | 'print_asset_error'
+        | 'print_pricing_unavailable';
     };
 
 /**
@@ -94,7 +95,16 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       }
       if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
-      pricing ??= await getPrintPricingConfig();
+      if (!pricing) {
+        try {
+          pricing = await getPrintPricingConfigForCheckout();
+        } catch (err) {
+          if (err instanceof PrintPricingUnavailableError) {
+            return { ok: false, reason: 'print_pricing_unavailable' };
+          }
+          throw err;
+        }
+      }
       const major = priceOfVariant(dec.sel, currency, pricing);
       const unit_price = toMinor(major);
       items.push({

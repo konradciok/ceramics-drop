@@ -19,7 +19,7 @@ import {
   type PromoCode,
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
-import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from '@/lib/print-pricing-config/get';
 import { validateGiftCardContact } from '@/lib/gift-cards';
 import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
@@ -117,6 +117,7 @@ export async function POST(req: Request) {
     const status =
       valid.reason === 'print_asset_unavailable' ? 409 :
       valid.reason === 'print_asset_error' ? 503 :
+      valid.reason === 'print_pricing_unavailable' ? 503 :
       400;
     return respond({ error: valid.reason }, { status });
   }
@@ -211,7 +212,17 @@ export async function POST(req: Request) {
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     // Same admin-editable conversion rates the item prices were derived with —
     // shipping must not silently keep stale rates after an FX edit at /admin/pricing.
-    const printPricing = await getPrintPricingConfig();
+    // Checkout-specific accessor: never silently substitutes
+    // DEFAULT_PRINT_PRICING on a DB failure (that's what item pricing already
+    // avoids via validateCart) — fails the request instead, same as a
+    // transient print-asset error below.
+    let printPricing;
+    try {
+      printPricing = await getPrintPricingConfigForCheckout();
+    } catch (err) {
+      if (!(err instanceof PrintPricingUnavailableError)) throw err;
+      return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
+    }
     const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency, printPricing);
     shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {

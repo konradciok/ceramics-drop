@@ -136,6 +136,13 @@ vi.mock('@/lib/pricing', () => ({
   shippingGBPPence,
 }));
 
+// Real print-pricing-config/get.ts (getPrintPricingConfigForCheckout) runs
+// for real in every test — CATALOG_SOURCE defaults to 'code' in this file,
+// so it short-circuits to DEFAULT_PRINT_PRICING without touching this mock.
+// Only the one test that stubs CATALOG_SOURCE=db exercises the DB branch.
+const loadPrintPricingConfigFromDb = vi.fn<() => Promise<import('@/lib/print-pricing').PrintPricingConfig>>();
+vi.mock('@/lib/print-pricing-config/load', () => ({ loadPrintPricingConfigFromDb }));
+
 const sendCheckoutStartedEvent = vi.fn(async () => {});
 vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
 
@@ -276,6 +283,29 @@ describe('POST /api/checkout', () => {
     const res = await POST(req);
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: 'print_asset_error' });
+    expect(reserveRpc).not.toHaveBeenCalled();
+    expect(createPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it('maps print_pricing_unavailable from validateCart to 503 (cold-isolate pricing failure)', async () => {
+    validateCart.mockReturnValueOnce(
+      { ok: false, reason: 'print_pricing_unavailable' } as unknown as ReturnType<typeof validateCart>,
+    );
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        ids: ['print:fap01:50x70:true:false:black'],
+        locale: 'pl',
+        delivery_method: 'kurier',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
+        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'print_pricing_unavailable' });
     expect(reserveRpc).not.toHaveBeenCalled();
     expect(createPaymentIntent).not.toHaveBeenCalled();
   });
@@ -1089,6 +1119,26 @@ describe('POST /api/checkout', () => {
       );
       // The InPost ceramic price list must not be consulted for prints.
       expect(orderAmountGrosze).not.toHaveBeenCalled();
+    });
+
+    it('a cold-isolate DB pricing failure on the shipping-cost read returns 503 print_pricing_unavailable, never a silently-priced order', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      const { resetLastKnownGoodForTests } = await import('@/lib/print-pricing-config/last-known-good');
+      resetLastKnownGoodForTests();
+      loadPrintPricingConfigFromDb.mockRejectedValueOnce(new Error('supabase down'));
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        printCart();
+        const res = await post();
+        expect(res.status).toBe(503);
+        expect(await res.json()).toEqual({ error: 'print_pricing_unavailable' });
+        expect(createPaymentIntent).not.toHaveBeenCalled();
+        expect(insertOrders).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+        errSpy.mockRestore();
+        resetLastKnownGoodForTests();
+      }
     });
 
     it('loose print ships cheaper than framed (framed/loose rates differ)', async () => {

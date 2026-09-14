@@ -349,6 +349,7 @@
     "privateSalePrintsNotice": "Private Bestelllinks gelten nur für Keramik — entferne Prints aus dem Warenkorb, um fortzufahren.",
     "printAssetUnavailable": "Diese Print-Variante ist vorübergehend nicht verfügbar — entferne sie aus dem Warenkorb oder versuche es später erneut.",
     "printAssetError": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut.",
+    "printPricingUnavailable": "Der aktuelle Print-Preis konnte nicht geladen werden. Bitte versuche es gleich noch einmal.",
     "promo": {
       "label": "Rabattcode",
       "have": "Ich habe einen Rabattcode",
