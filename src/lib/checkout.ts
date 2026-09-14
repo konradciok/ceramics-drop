@@ -41,7 +41,19 @@ export type CheckoutItem = {
   giftCardTierId?: GiftCardTierId;
 };
 export type ValidateResult =
-  | { ok: true; items: CheckoutItem[] }
+  | {
+      ok: true;
+      items: CheckoutItem[];
+      /**
+       * The print-pricing config item pricing was resolved from, when the
+       * cart held any print — reused by the caller for the shipping-cost
+       * calculation instead of an independent second read (both must come
+       * from the same config, or a pricing edit or last-known-good swap
+       * mid-request could price items and shipping from different
+       * generations of the config).
+       */
+      printPricing?: PrintPricingConfig;
+    }
   | {
       ok: false;
       reason:
@@ -159,5 +171,5 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   if (!hasGiftCards && items.some((i) => i.variant) && items.some((i) => !i.variant)) {
     return { ok: false, reason: 'mixed_cart' };
   }
-  return { ok: true, items };
+  return { ok: true, items, ...(pricing ? { printPricing: pricing } : {}) };
 }

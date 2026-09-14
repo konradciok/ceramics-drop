@@ -212,16 +212,20 @@ export async function POST(req: Request) {
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
     // Same admin-editable conversion rates the item prices were derived with —
     // shipping must not silently keep stale rates after an FX edit at /admin/pricing.
-    // Checkout-specific accessor: never silently substitutes
-    // DEFAULT_PRINT_PRICING on a DB failure (that's what item pricing already
-    // avoids via validateCart) — fails the request instead, same as a
-    // transient print-asset error below.
-    let printPricing;
-    try {
-      printPricing = await getPrintPricingConfigForCheckout();
-    } catch (err) {
-      if (!(err instanceof PrintPricingUnavailableError)) throw err;
-      return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
+    // Reuse validateCart's own resolved config rather than an independent
+    // second read: two reads could straddle a pricing edit or a last-known-
+    // good swap mid-request and price items and shipping from different
+    // config generations. validateCart always resolves one for any cart
+    // with a print item (hasPrints is true here), so this is a defensive
+    // fallback only — never expected to fire in production.
+    let printPricing = valid.printPricing;
+    if (!printPricing) {
+      try {
+        printPricing = await getPrintPricingConfigForCheckout();
+      } catch (err) {
+        if (!(err instanceof PrintPricingUnavailableError)) throw err;
+        return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
+      }
     }
     const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency, printPricing);
     shipMinor = toMinor(shipMajor);

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { printShippingOf } from '@/lib/print-shipping';
+import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
 import type { PromoCode } from '@/lib/promo';
 
 type PgError = { code: string; message: string } | null;
@@ -1138,6 +1139,36 @@ describe('POST /api/checkout', () => {
         vi.unstubAllEnvs();
         errSpy.mockRestore();
         resetLastKnownGoodForTests();
+      }
+    });
+
+    it('prices shipping from validateCart\'s own resolved config, never re-reading pricing independently', async () => {
+      // A pricing config visibly different from DEFAULT_PRINT_PRICING (10x the
+      // EUR→PLN rate) — if the response's shipping cost reflects THIS rate,
+      // it proves the config came from validateCart's `printPricing`, not a
+      // second, independent getPrintPricingConfigForCheckout() read (which
+      // would use DEFAULT_PRINT_PRICING here, CATALOG_SOURCE being unset).
+      const CUSTOM_PRICING = { ...DEFAULT_PRINT_PRICING, eurToPln: 10 };
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+        printPricing: CUSTOM_PRICING,
+      } as unknown as ReturnType<typeof validateCart>);
+      // Stubbed to fail loudly if a second read is ever attempted — proves
+      // the reused config path, not just a coincidentally-matching value.
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadPrintPricingConfigFromDb.mockRejectedValueOnce(new Error('unexpected second read'));
+      try {
+        const res = await post();
+        expect(res.status).toBe(200);
+        expect(loadPrintPricingConfigFromDb).not.toHaveBeenCalled();
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({
+            shipping: toMinor(printShippingOf('DE', true, 'pln', CUSTOM_PRICING)),
+          }),
+        );
+      } finally {
+        vi.unstubAllEnvs();
       }
     });
 
