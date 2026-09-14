@@ -83,7 +83,10 @@
       "routes": [],
       "vars": {
         "CATALOG_SOURCE": "db",
-        "PRODIGI_ENV": "sandbox"
+        "PRODIGI_ENV": "sandbox",
+        // Drives GET /v1/session's `environment` field for the CMS API
+        // (src/server/cms-api/handlers/session.ts) — anything else reports "production".
+        "CMS_API_ENVIRONMENT": "integration"
       },
       "triggers": { "crons": ["*/15 * * * *"] },
       "assets": {
