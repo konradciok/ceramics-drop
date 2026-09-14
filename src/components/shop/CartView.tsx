@@ -10,7 +10,7 @@ import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName }
 import type { CartLine } from '@/lib/cart-lines-server';
 import { useCartLines } from '@/lib/use-cart-lines';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
-import { variantLabel, isPrintToken } from '@/lib/print-cart';
+import { variantLabel } from '@/lib/print-cart';
 import { isGiftCardToken } from '@/lib/gift-cards';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
@@ -192,6 +192,7 @@ export function CartView({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [inventoryReady, setInventoryReady] = useState(false);
+  const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
@@ -235,26 +236,36 @@ export function CartView({
         .finally(() => setPrivateSaleLoading(false));
       return;
     }
-    // Sold-piece pruning only — malformed/withdrawn/unknown id pruning now
-    // happens in the "unavailable" cart-lines effect below (with a buyer-
-    // visible notice, closing the old silent-drop gap). A purely SYNC
-    // classification here (no cart-lines resolution needed): /api/inventory's
-    // `available` list only ever contains bare ceramic ids, so a print token
-    // or gift-card token can never legitimately appear in it either way.
+    // Fetch availability only — the prune-against-it effect below applies it
+    // once the cart-lines DTO has resolved which ids are real ceramic lines
+    // in the first place (see that effect's own comment for why).
     fetch('/api/inventory')
       .then((r) => { if (!r.ok) throw new Error('availability_unavailable'); return r.json(); })
       .then(({ available }: { available: string[] }) => {
         if (!Array.isArray(available)) throw new Error('availability_unavailable');
-        const allowed = new Set(available);
-        useCart.getState().ids.forEach((id) => {
-          if (!isGiftCardToken(id) && !isPrintToken(id) && !allowed.has(id)) remove(id);
-        });
+        setAvailableIds(new Set(available));
         setInventoryReady(true);
       })
       .catch(() => setInventoryReady(false));
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sold-piece pruning: silent (no buyer-visible notice — "someone else just
+  // bought it" needs no explanation the way "this was never purchasable"
+  // does). Gated on BOTH the inventory fetch above and the cart-lines DTO
+  // being 'ready', and scoped to already-resolved `kind: 'ceramic'` lines —
+  // NOT raw ids. A bare id that /api/inventory doesn't list could just as
+  // easily be unknown/withdrawn/malformed, not merely sold; pruning by raw
+  // id here would silently drop it before the unavailable-line effect below
+  // ever saw it in `allLines`, losing the buyer-visible notice that effect
+  // exists to show.
+  useEffect(() => {
+    if (!availableIds || linesStatus !== 'ready') return;
+    allLines.forEach((l) => {
+      if (l.kind === 'ceramic' && !availableIds.has(l.id)) remove(l.id);
+    });
+  }, [availableIds, allLines, linesStatus, remove]);
 
   // Auto-remove any cart id the server-side resolver could not resolve
   // (unknown, withdrawn, malformed token) with a one-time visible notice —

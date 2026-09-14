@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { useCartLines } from '@/lib/use-cart-lines';
+import { isGiftCardToken } from '@/lib/gift-cards';
+import { isPrintToken } from '@/lib/print-cart';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
@@ -17,7 +19,7 @@ export function SelectionBar() {
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
-  const { lines } = useCartLines(ids);
+  const { lines, status } = useCartLines(ids);
 
   // Selection scope is ceramics only — prints/gift cards aren't added from
   // the gallery/PDP selection flow this bar summarises. Sold/showroom pieces
@@ -29,7 +31,13 @@ export function SelectionBar() {
     .filter((l) => l.kind === 'ceramic')
     .map((l) => l.product)
     .filter((p) => !p.sold && !p.showroom);
-  const n = products.length;
+  // While the DTO is loading or failed, `lines` is empty — fall back to the
+  // cart store's own (synchronous) ceramic-shaped id count instead of 0, so
+  // an in-flight fetch or a transient error never flashes the bar away or
+  // strands it at "0 items" mid-browse. Only the total genuinely needs the
+  // resolved products; it settles to the real figure once `status` is ready.
+  const ceramicIdCount = ids.filter((id) => !isGiftCardToken(id) && !isPrintToken(id)).length;
+  const n = status === 'ready' ? products.length : ceramicIdCount;
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 
   return (
