@@ -93,8 +93,11 @@ describe('updateProductStatus guarded RPC', () => {
   });
 });
 
-function supabaseForBackfill(error: { message: string } | null = null) {
-  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+function supabaseForBackfill(
+  error: { message: string } | null = null,
+  data: unknown = { skipped_cms_owned_ids: [] },
+) {
+  const rpc = vi.fn().mockResolvedValue({ data, error });
   return { supabase: { rpc } as unknown as SupabaseClient, rpc };
 }
 
@@ -128,6 +131,21 @@ describe('backfillCatalog print publication safety', () => {
     await expect(backfillCatalog(supabase)).rejects.toThrow(
       'atomic catalog backfill: duplicate key',
     );
+  });
+
+  it('returns an empty skippedCmsOwnedIds on an ordinary run', async () => {
+    const { supabase } = supabaseForBackfill();
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
+  });
+
+  it('surfaces skippedCmsOwnedIds from the RPC response', async () => {
+    const { supabase } = supabaseForBackfill(null, { skipped_cms_owned_ids: ['k01', 'fap001'] });
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: ['k01', 'fap001'] });
+  });
+
+  it('defaults to an empty list if the RPC response is missing the field entirely', async () => {
+    const { supabase } = supabaseForBackfill(null, null);
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
   });
 });
 

@@ -45,6 +45,15 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
   };
 }
 
+export interface BackfillCatalogResult {
+  /** Product ids the backfill left untouched because the CMS has ever
+   *  written a product_drafts row for them (draft saved and/or published) —
+   *  see 20260914140000_backfill_cms_ownership_guard.sql. Empty on every
+   *  ordinary run; non-empty means an operator has CMS-edited a
+   *  registry-seeded product, which is expected and safe, just worth logging. */
+  skippedCmsOwnedIds: string[];
+}
+
 /**
  * Idempotently mirror the code registry into the catalog tables.
  *
@@ -60,17 +69,23 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
  * does NOT touch piece_state or orders — stock and sale state stay in their
  * dedicated tables.
  *
+ * A registry-seeded id the CMS has ever drafted/published (product_drafts
+ * history) is skipped entirely — see the migration referenced on
+ * BackfillCatalogResult — so this can never revert a CMS edit.
+ *
  * Requires migration 20260828120000 (atomic RPC/publication guard) plus
  * 20260709130000 (the `drop-1` row referenced by ceramic product rows).
  */
-export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
+export async function backfillCatalog(supabase: SupabaseClient): Promise<BackfillCatalogResult> {
   const seed = buildCatalogSeed();
-  const { error } = await supabase.rpc('backfill_catalog', {
+  const { data, error } = await supabase.rpc('backfill_catalog', {
     p_products: seed.products,
     p_variants: seed.variants,
     p_media: seed.media,
   });
   if (error) throw new Error(`atomic catalog backfill: ${error.message}`);
+  const skippedCmsOwnedIds = (data as { skipped_cms_owned_ids?: string[] } | null)?.skipped_cms_owned_ids ?? [];
+  return { skippedCmsOwnedIds };
 }
 
 /**
