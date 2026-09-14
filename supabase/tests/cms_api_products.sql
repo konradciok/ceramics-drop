@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(37);
+select plan(38);
 
 -- create_product_with_draft ---------------------------------------------------
 select is(
@@ -158,6 +158,20 @@ select is(
   ))->'product'->>'drop_id',
   'tap_drop_2',
   'publish_product_revision: a republish with no explicit drop_id keeps the existing drop_id instead of re-picking the active one'
+);
+
+-- Republish with an EXPLICIT drop_id that differs from the existing one:
+-- the explicit value must win outright, not just on a first-ever publish.
+select save_product_draft('tap_cms_drop2', 2, '{"title":{"pl":"Drop Two v3"}}'::jsonb, 'anna@studio.pl');
+
+select is(
+  (publish_product_revision(
+    'tap_cms_drop2', 3, 'publish', 'anna@studio.pl', null,
+    '[{"url":"https://example.test/c.webp","alt":null,"position":0,"is_primary":true}]'::jsonb,
+    '{"category_slug":"kubki","num":"95","measure":"9x8","price_pln":9000,"price_eur":1800,"price_gbp":1600,"drop_id":"drop-1","title":"Drop Two v3","description":"Drop two desc v3","seo_title":null,"seo_description":null}'::jsonb
+  ))->'product'->>'drop_id',
+  'drop-1',
+  'publish_product_revision: an explicit drop_id on republish overrides the existing (different) drop_id'
 );
 
 -- publish_product_revision — print, incomplete assets ---------------------------
