@@ -8,7 +8,7 @@ import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { isPrintToken } from '@/lib/print-cart';
-import { CATEGORIES, isProductPurchasable } from '@/lib/products';
+import { CATEGORIES, isProductPurchasable, productDisplayName } from '@/lib/products';
 import {
   buildAddToCartEvent,
   buildEngagementEvent,
@@ -43,7 +43,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
   const remove = useCart((s) => s.remove);
 
   const name = t(`product.${CATEGORIES[product.category].singularKey}`);
-  const displayName = `${name} Nº ${product.num}`;
+  const displayName = productDisplayName(product, name);
   const price = fmt(priceOfCurrency(product, currency));
   const gallery = product.gallery ?? [];
   // Showroom pieces are not purchasable and never open the lightbox — they behave

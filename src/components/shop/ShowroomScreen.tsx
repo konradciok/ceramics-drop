@@ -6,7 +6,7 @@
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORIES } from '@/lib/products';
+import { CATEGORIES, productDisplayName } from '@/lib/products';
 import { srcSet } from '@/lib/images';
 import { richTags } from '@/components/ui/richTags';
 import type { ShowroomEntry } from '@/lib/inventory';
@@ -48,7 +48,7 @@ export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) 
           {archive.map(({ product, dropLabel }) => {
             const cat = CATEGORIES[product.category];
             const name = t(`product.${cat.singularKey}`);
-            const displayName = `${name} Nº ${product.num}`;
+            const displayName = productDisplayName(product, name);
             return (
               <div className="showroom-card" data-testid="showroom-card" data-product-id={product.id} key={product.id}>
                 <Link href={`/${product.category}/${product.id}`} className="showroom-card-media" aria-label={displayName}>

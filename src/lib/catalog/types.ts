@@ -28,6 +28,9 @@ export interface ProductSeedRow {
   status: ProductStatus;
   seo_title: string | null;
   seo_description: string | null;
+  /** CMS-authored copy (PL-only, mirrors seo_title/seo_description). */
+  title: string | null;
+  description: string | null;
   drop_id: string | null;
   note_index: number | null;
 }

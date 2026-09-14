@@ -89,7 +89,12 @@ export const publicationPostRoute: RouteDef = {
             price_pln: Math.round(product.draft.pricePln / 100),
             price_eur: Math.round(product.draft.priceEur / 100),
             price_gbp: Math.round(product.draft.priceGbp / 100),
+            // Left unset (never blank), publish_product_revision defaults this
+            // server-side to the current active drop — see that RPC's coalesce
+            // chain (20260914120000_ceramic_drop_default_and_copy.sql).
             drop_id: product.draft.dropId ?? null,
+            title: product.draft.title.pl,
+            description: product.draft.description.pl,
             seo_title: null,
             seo_description: product.draft.seo?.pl ?? null,
           };
@@ -124,6 +129,14 @@ export const publicationPostRoute: RouteDef = {
           return errorResponse(
             'VALIDATION_FAILED',
             'Zapisz wersję roboczą przed publikacją.',
+            422,
+            ctx.requestId,
+          );
+        }
+        if (error.message?.includes('no_active_drop')) {
+          return errorResponse(
+            'VALIDATION_FAILED',
+            'Brak aktywnego dropu — ustaw dropId ręcznie lub uruchom nowy drop.',
             422,
             ctx.requestId,
           );

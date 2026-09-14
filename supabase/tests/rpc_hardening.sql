@@ -83,10 +83,12 @@ select is(
 insert into piece_state (product_id, status) values
   ('tap_ttl_neg', 'available'),
   ('tap_ttl_huge', 'available');
-insert into drops(id,label,status) values ('tap_ttl','Test','active');
+-- Reuse the seeded 'drop-1' (20260709130000_showroom_drops.sql) rather than
+-- inserting a second active drop — drops_single_active
+-- (20260914120000_ceramic_drop_default_and_copy.sql) allows at most one.
 insert into products(id,type,category_slug,num,price_pln,status,drop_id) values
-  ('tap_ttl_neg','ceramic','kubki','01',100,'active','tap_ttl'),
-  ('tap_ttl_huge','ceramic','kubki','02',100,'active','tap_ttl');
+  ('tap_ttl_neg','ceramic','kubki','01',100,'active','drop-1'),
+  ('tap_ttl_huge','ceramic','kubki','02',100,'active','drop-1');
 
 select is(
   reserve_pieces(array['tap_ttl_neg'], 'a0000000-0000-0000-0000-000000000001', -5),

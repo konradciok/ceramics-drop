@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
-import { CATEGORIES, registryProductById, isCategoryHidden } from '@/lib/products';
+import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
 import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
@@ -808,14 +808,15 @@ export function CartView({
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
+            const lineDisplayName = productDisplayName(p, name);
             return (
               <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
-                <Link href={`/${p.category}/${p.id}`} className="thumb" aria-label={`${name} Nº ${p.num}`}>
+                <Link href={`/${p.category}/${p.id}`} className="thumb" aria-label={lineDisplayName}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
                 </Link>
                 <div>
-                  <h4>{name} Nº {p.num}</h4>
+                  <h4>{lineDisplayName}</h4>
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
@@ -1067,14 +1068,15 @@ export function CartView({
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
+            const lineDisplayName = productDisplayName(p, name);
             return (
               <li key={l.id} className="sum-item">
-                <Link href={`/${p.category}/${p.id}`} className="sum-item-thumb" aria-label={`${name} Nº ${p.num}`}>
+                <Link href={`/${p.category}/${p.id}`} className="sum-item-thumb" aria-label={lineDisplayName}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
                 </Link>
                 <div className="sum-item-info">
-                  <span className="sum-item-name">{name} Nº {p.num}</span>
+                  <span className="sum-item-name">{lineDisplayName}</span>
                   <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                 </div>
               </li>
