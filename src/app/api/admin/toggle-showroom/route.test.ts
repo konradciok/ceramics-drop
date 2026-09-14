@@ -10,7 +10,7 @@ vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
 vi.mock('next/cache', () => ({ revalidateTag: mocks.revalidateTag }));
 
 function req(body: unknown) {
-  return new Request('http://localhost/api/admin/set-piece-status', {
+  return new Request('http://localhost/api/admin/toggle-showroom', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -23,9 +23,7 @@ function supabaseUpdating(
   existingIds: string[] = ['k01', 'k02', 'k03'],
 ) {
   const select = vi.fn().mockResolvedValue({ data: returnedRows, error: null });
-  const is = vi.fn(() => ({ select }));
-  const eq = vi.fn(() => ({ select, is }));
-  const inFn = vi.fn(() => ({ eq }));
+  const inFn = vi.fn(() => ({ select }));
   const update = vi.fn(() => ({ in: inFn }));
 
   const productsSelectIn = vi
@@ -34,38 +32,36 @@ function supabaseUpdating(
   const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
 
   const from = vi.fn((table: string) => (table === 'products' ? { select: productsSelect } : { update }));
-  return { from, update, inFn, eq, is, select, productsSelectIn };
+  return { from, update, inFn, select, productsSelectIn };
 }
 
-describe('POST /api/admin/set-piece-status', () => {
+describe('POST /api/admin/toggle-showroom', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('marks available pieces as sold, filtering the update to status=available', async () => {
+  it('adds pieces to the showroom, stamping showroom_entered_at and an optional note', async () => {
     const supabase = supabaseUpdating([{ product_id: 'k01' }, { product_id: 'k02' }]);
     mocks.adminSupabase.mockReturnValue(supabase);
 
-    const res = await POST(req({ productIds: ['k01', 'k02'], sold: true }));
+    const res = await POST(req({ productIds: ['k01', 'k02'], showroom: true, note: 'Fair booth' }));
     const body = (await res.json()) as { message: string; count: number };
 
     expect(res.status).toBe(200);
     expect(body.count).toBe(2);
     expect(body.message).toContain('2');
-    expect(supabase.update).toHaveBeenCalledWith({ status: 'sold' });
+    expect(supabase.update).toHaveBeenCalledWith(
+      expect.objectContaining({ showroom: true, showroom_note: 'Fair booth', showroom_entered_at: expect.any(String) }),
+    );
     expect(supabase.inFn).toHaveBeenCalledWith('product_id', ['k01', 'k02']);
-    expect(supabase.eq).toHaveBeenCalledWith('status', 'available');
     expect(mocks.revalidateTag).toHaveBeenCalledWith('inventory', 'max');
   });
 
   it('accepts a DB-only product id absent from the static registry', async () => {
-    // 'prd_abc123' exists in `products` (real DB catalog) but was never in
-    // the static code registry — confirms the existence check no longer
-    // depends on registryProductById.
     const supabase = supabaseUpdating([{ product_id: 'prd_abc123' }], ['prd_abc123']);
     mocks.adminSupabase.mockReturnValue(supabase);
 
-    const res = await POST(req({ productIds: ['prd_abc123'], sold: true }));
+    const res = await POST(req({ productIds: ['prd_abc123'], showroom: true }));
     const body = (await res.json()) as { count: number };
 
     expect(res.status).toBe(200);
@@ -73,36 +69,26 @@ describe('POST /api/admin/set-piece-status', () => {
     expect(supabase.productsSelectIn).toHaveBeenCalledWith('id', ['prd_abc123']);
   });
 
-  it('reports a partial match when some requested pieces are not eligible', async () => {
-    // Only k01 was actually 'available'; k02 (e.g. reserved/already sold) is silently excluded by the DB filter.
+  it('removes pieces from the showroom, clearing showroom_entered_at and note', async () => {
     const supabase = supabaseUpdating([{ product_id: 'k01' }]);
     mocks.adminSupabase.mockReturnValue(supabase);
 
-    const res = await POST(req({ productIds: ['k01', 'k02'], sold: true }));
+    const res = await POST(req({ productIds: ['k01'], showroom: false }));
     const body = (await res.json()) as { count: number };
 
     expect(res.status).toBe(200);
     expect(body.count).toBe(1);
-  });
-
-  it('reverts a manually-sold piece to available, filtering to status=sold and order_id IS NULL', async () => {
-    const supabase = supabaseUpdating([{ product_id: 'k01' }]);
-    mocks.adminSupabase.mockReturnValue(supabase);
-
-    const res = await POST(req({ productIds: ['k01'], sold: false }));
-    const body = (await res.json()) as { count: number };
-
-    expect(res.status).toBe(200);
-    expect(body.count).toBe(1);
-    expect(supabase.update).toHaveBeenCalledWith({ status: 'available' });
-    expect(supabase.eq).toHaveBeenCalledWith('status', 'sold');
-    expect(supabase.is).toHaveBeenCalledWith('order_id', null);
+    expect(supabase.update).toHaveBeenCalledWith({
+      showroom: false,
+      showroom_entered_at: null,
+      showroom_note: null,
+    });
   });
 
   it('rejects unknown product ids', async () => {
     mocks.adminSupabase.mockReturnValue(supabaseUpdating([], []));
 
-    const res = await POST(req({ productIds: ['nope'], sold: true }));
+    const res = await POST(req({ productIds: ['nope'], showroom: true }));
     const body = (await res.json()) as { error: string };
 
     expect(res.status).toBe(400);
@@ -110,17 +96,8 @@ describe('POST /api/admin/set-piece-status', () => {
   });
 
   it('requires a non-empty productIds array', async () => {
-    const res = await POST(req({ productIds: [], sold: true }));
+    const res = await POST(req({ productIds: [], showroom: true }));
     expect(res.status).toBe(400);
-  });
-
-  it('rejects a missing or non-boolean sold value instead of defaulting to false', async () => {
-    const res = await POST(req({ productIds: ['k01'] }));
-    const body = (await res.json()) as { error: string };
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain('boolean');
-    expect(mocks.adminSupabase).not.toHaveBeenCalled();
   });
 
   it('returns a Supabase error as a 500 when the existence check fails', async () => {
@@ -128,7 +105,7 @@ describe('POST /api/admin/set-piece-status', () => {
     const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
     mocks.adminSupabase.mockReturnValue({ from: vi.fn(() => ({ select: productsSelect })) });
 
-    const res = await POST(req({ productIds: ['k01'], sold: true }));
+    const res = await POST(req({ productIds: ['k01'], showroom: true }));
     const body = (await res.json()) as { error: string };
 
     expect(res.status).toBe(500);
@@ -137,8 +114,7 @@ describe('POST /api/admin/set-piece-status', () => {
 
   it('returns a Supabase error as a 500 when the update fails', async () => {
     const select = vi.fn().mockResolvedValue({ data: null, error: { message: 'update failed' } });
-    const eq = vi.fn(() => ({ select, is: vi.fn(() => ({ select })) }));
-    const inFn = vi.fn(() => ({ eq }));
+    const inFn = vi.fn(() => ({ select }));
     const update = vi.fn(() => ({ in: inFn }));
     const productsSelectIn = vi.fn().mockResolvedValue({ data: [{ id: 'k01' }], error: null });
     const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
@@ -146,7 +122,7 @@ describe('POST /api/admin/set-piece-status', () => {
       from: vi.fn((table: string) => (table === 'products' ? { select: productsSelect } : { update })),
     });
 
-    const res = await POST(req({ productIds: ['k01'], sold: true }));
+    const res = await POST(req({ productIds: ['k01'], showroom: true }));
     const body = (await res.json()) as { error: string };
 
     expect(res.status).toBe(500);
