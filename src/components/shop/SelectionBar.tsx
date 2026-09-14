@@ -2,32 +2,33 @@
 
 import { useTranslations } from 'next-intl';
 import { useCart } from '@/store/cart';
-import { registryResolveCartProducts } from '@/lib/products';
+import { useCartLines } from '@/lib/use-cart-lines';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
-import type { Product } from '@/lib/types';
-
-type Props = {
-  /** DB-aware ceramic products (id → Product) the caller already holds
-   *  (category-scoped Gallery listing, or the current PDP + siblings) — lets
-   *  a CMS-created ceramic absent from the code registry still count toward
-   *  the selection total instead of being silently dropped. */
-  knownProducts?: Record<string, Product>;
-};
 
 /** Sticky bottom bar summarising the current selection. */
-export function SelectionBar({ knownProducts }: Props = {}) {
+export function SelectionBar() {
   const t = useTranslations();
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
+  const { lines } = useCartLines(ids);
 
-  const products = registryResolveCartProducts(ids, knownProducts);
+  // Selection scope is ceramics only — prints/gift cards aren't added from
+  // the gallery/PDP selection flow this bar summarises. Sold/showroom pieces
+  // are excluded too (registryResolveCartProducts did the same): the DTO
+  // deliberately keeps them in `lines` for CartView's own sold-badge display,
+  // but a piece that sold while the buyer was browsing shouldn't inflate this
+  // bar's count/total ahead of the /koszyk inventory-prune-with-notice.
+  const products = lines
+    .filter((l) => l.kind === 'ceramic')
+    .map((l) => l.product)
+    .filter((p) => !p.sold && !p.showroom);
   const n = products.length;
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 

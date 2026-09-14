@@ -339,6 +339,8 @@
     "pay": "Pay now",
     "payProcessing": "Processing…",
     "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "unavailableRemoved": "Some pieces are no longer available and have been removed from your cart.",
+    "loadError": "Couldn’t load your cart. Please check your connection and try again.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "checkoutError": "Couldn’t start payment. Please try again shortly.",
     "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",

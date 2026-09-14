@@ -339,6 +339,8 @@
     "pay": "Pagar ahora",
     "payProcessing": "Procesando…",
     "soldOut": "Algunas piezas acaban de venderse y las hemos eliminado de tu carrito.",
+    "unavailableRemoved": "Algunas piezas ya no están disponibles y las hemos eliminado de tu carrito.",
+    "loadError": "No se pudo cargar tu carrito. Comprueba tu conexión e inténtalo de nuevo.",
     "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "checkoutError": "No se pudo iniciar el pago. Inténtalo de nuevo en un momento.",
     "notForSale": "Esta pieza ha sido retirada de la venta y ya no se puede comprar.",

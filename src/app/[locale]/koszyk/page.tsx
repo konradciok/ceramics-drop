@@ -6,7 +6,6 @@ import type { Locale } from '@/i18n/routing';
 import { headers } from 'next/headers';
 import { isPrintCountry } from '@/lib/print-shipping';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
-import { getPublicProducts } from '@/lib/products';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -25,11 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params, searchParams }: Props) {
-  const [{ locale }, requestHeaders, printPricing, products] = await Promise.all([
+  const [{ locale }, requestHeaders, printPricing] = await Promise.all([
     params,
     headers(),
     getPrintPricingConfig(),
-    getPublicProducts(),
   ]);
   setRequestLocale(locale);
   // A repeated ?sale=a&sale=b query yields string[]; collapse to a single token.
@@ -37,12 +35,6 @@ export default async function Page({ params, searchParams }: Props) {
   const saleToken = Array.isArray(sale) ? (sale[0] ?? null) : (sale ?? null);
   const cfCountry = requestHeaders.get('CF-IPCountry')?.toUpperCase() ?? '';
   const initialPrintCountry = isPrintCountry(cfCountry) ? cfCountry : 'PL';
-  // PLN cart prices must come from the same DB rows checkout charges — the
-  // client registry can drift from them after an admin price_pln edit.
-  const ceramicPrices = Object.fromEntries(products.map((p) => [p.id, p.price]));
-  // DB-aware fallback so a CMS-created ceramic (absent from the code
-  // registry) still resolves to a renderable cart line.
-  const knownProducts = Object.fromEntries(products.map((p) => [p.id, p]));
 
   return (
     <main id="cart-root">
@@ -50,8 +42,6 @@ export default async function Page({ params, searchParams }: Props) {
         privateSaleToken={saleToken}
         initialPrintCountry={initialPrintCountry}
         printPricing={printPricing}
-        ceramicPrices={ceramicPrices}
-        knownProducts={knownProducts}
       />
     </main>
   );

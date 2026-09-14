@@ -31,9 +31,6 @@ export function Gallery({ products, bento = false }: Props) {
   // are excluded — they never open the lightbox and aren't purchasable, so they
   // must stay out of the lightbox/analytics index space.
   const available = useMemo(() => products.filter(isProductPurchasable), [products]);
-  // Category-scoped fallback so a CMS-created (DB-only) ceramic on this page
-  // still counts toward the selection bar's total.
-  const knownProducts = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
   const t = useTranslations();
   const mounted = useMounted();
   const storedStatus = useFilter((s) => s.status);
@@ -117,7 +114,7 @@ export function Gallery({ products, bento = false }: Props) {
         onStep={step}
         triggerRef={triggerRef}
       />
-      <SelectionBar knownProducts={knownProducts} />
+      <SelectionBar />
     </>
   );
 }

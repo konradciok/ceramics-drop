@@ -339,6 +339,8 @@
     "pay": "Zapłać teraz",
     "payProcessing": "Przetwarzanie…",
     "soldOut": "Część prac została już sprzedana, więc usunęłam je z Twojego koszyka.",
+    "unavailableRemoved": "Część prac stała się niedostępna, więc usunęłam je z Twojego koszyka.",
+    "loadError": "Nie udało się wczytać koszyka. Sprawdź połączenie i spróbuj ponownie.",
     "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
     "checkoutError": "Nie udało się rozpocząć płatności. Spróbuj za chwilę.",
     "notForSale": "Ta praca została wycofana ze sprzedaży i nie można jej już kupić.",
