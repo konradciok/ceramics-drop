@@ -11,7 +11,11 @@
    accessors instead. Production runs CATALOG_SOURCE='db', but this client-side
    resolver still reads the code registry (it cannot reach the service-role DB
    client from the browser); the two are kept at parity so the client view
-   matches, and a server-side cart-resolve that reads the DB is a future follow-up.
+   matches, plus an optional `knownProducts` fallback map — ids the calling
+   server component already fetched DB-aware (e.g. getPublicProducts) — so a
+   CMS-created (DB-only) ceramic still resolves for display here even though
+   it's absent from the code registry. A full server-side cart-resolve DTO is
+   a future follow-up (S2b).
    ============================================================ */
 import { registryProductById, isCategoryHidden } from './products';
 import { registryPrintById, isVariantAvailable } from './prints';
@@ -25,8 +29,13 @@ export type CartLine =
   | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection }
   | { kind: 'giftcard'; id: string; tier: GiftCardTier };
 
-/** Resolve cart ids to deduped, renderable lines (ceramics + available prints + gift cards). */
-export function resolveCartLines(ids: string[]): CartLine[] {
+/**
+ * Resolve cart ids to deduped, renderable lines (ceramics + available prints
+ * + gift cards). `knownProducts` (id → Product) is an optional fallback for
+ * ceramic ids absent from the code registry — a DB-only product a server
+ * component already resolved DB-aware.
+ */
+export function resolveCartLines(ids: string[], knownProducts?: Record<string, Product>): CartLine[] {
   const seen = new Set<string>();
   const lines: CartLine[] = [];
   for (const id of ids) {
@@ -46,7 +55,7 @@ export function resolveCartLines(ids: string[]): CartLine[] {
       seen.add(id);
       lines.push({ kind: 'print', id, design, sel: dec.sel });
     } else {
-      const product = registryProductById(id);
+      const product = registryProductById(id) ?? knownProducts?.[id];
       if (!product) continue;
       if (isCategoryHidden(product.category)) continue;
       seen.add(id);

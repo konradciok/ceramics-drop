@@ -9,16 +9,25 @@ import { priceOfCurrency } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import type { Product } from '@/lib/types';
+
+type Props = {
+  /** DB-aware ceramic products (id → Product) the caller already holds
+   *  (category-scoped Gallery listing, or the current PDP + siblings) — lets
+   *  a CMS-created ceramic absent from the code registry still count toward
+   *  the selection total instead of being silently dropped. */
+  knownProducts?: Record<string, Product>;
+};
 
 /** Sticky bottom bar summarising the current selection. */
-export function SelectionBar() {
+export function SelectionBar({ knownProducts }: Props = {}) {
   const t = useTranslations();
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
 
-  const products = registryResolveCartProducts(ids);
+  const products = registryResolveCartProducts(ids, knownProducts);
   const n = products.length;
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 

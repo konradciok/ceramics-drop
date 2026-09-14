@@ -43,6 +43,7 @@ import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-bala
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
 import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
+import type { Product } from '@/lib/types';
 
 /**
  * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
@@ -138,6 +139,7 @@ export function CartView({
   initialPrintCountry = 'PL',
   printPricing,
   ceramicPrices = {},
+  knownProducts = {},
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
@@ -148,6 +150,10 @@ export function CartView({
    *  after an admin price_pln edit; EUR/GBP prices are per-category maps
    *  identical on both sides, so only PLN needs the override. */
   ceramicPrices?: Record<string, number>;
+  /** DB-aware ceramic products (id → Product) resolved server-side — lets a
+   *  CMS-created ceramic (absent from the code registry) still render in the
+   *  cart instead of being silently dropped. */
+  knownProducts?: Record<string, Product>;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -242,7 +248,7 @@ export function CartView({
     // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
     // from what's rendered (server validateCart stays the hard gate regardless).
     const current = useCart.getState().ids;
-    const valid = new Set(resolveCartLines(current).map((l) => l.id));
+    const valid = new Set(resolveCartLines(current, knownProducts).map((l) => l.id));
     current.forEach((id) => { if (!valid.has(id)) remove(id); });
 
     fetch('/api/inventory')
@@ -250,7 +256,7 @@ export function CartView({
       .then(({ available }: { available: string[] }) => {
         if (!Array.isArray(available)) throw new Error('availability_unavailable');
         const allowed = new Set(available);
-        resolveCartLines(useCart.getState().ids).forEach((line) => {
+        resolveCartLines(useCart.getState().ids, knownProducts).forEach((line) => {
           if (line.kind === 'ceramic' && !allowed.has(line.id)) remove(line.id);
         });
         setInventoryReady(true);
@@ -264,7 +270,7 @@ export function CartView({
   // exclusive checkout track (no shipping, no mixing) with a dedicated flow,
   // so any gift-card token that ends up in the shared cart store is dropped
   // here rather than half-rendered through ceramic/print-shaped UI.
-  const lines = resolveCartLines(ids).filter(
+  const lines = resolveCartLines(ids, knownProducts).filter(
     (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind !== 'giftcard',
   );
   const n = lines.length;
@@ -336,7 +342,7 @@ export function CartView({
     if (promoSyncRef.current === promoSyncKey) return;
     promoSyncRef.current = promoSyncKey;
     if (!promo) return;
-    const current = resolveCartLines(useCart.getState().ids);
+    const current = resolveCartLines(useCart.getState().ids, knownProducts);
     // An emptied cart renders no promo UI at all; the next cart change lands
     // back here and re-validates, so no synchronous state write is needed.
     if (current.length === 0) return;

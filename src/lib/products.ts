@@ -287,18 +287,23 @@ export function registryProductsByCategory(slug: CategorySlug): Product[] {
   return PRODUCTS_BY_CATEGORY[slug];
 }
 
-/** Registry-only resolve (no DB) — used by client/code-derived cart surfaces. */
-export function registryResolveKnownProducts(ids: string[]): Product[] {
+/**
+ * Registry-only resolve (no DB) — used by client/code-derived cart surfaces.
+ * `knownProducts` (id → Product) is an optional fallback for ids absent from
+ * the code registry — a DB-only product a server component already resolved
+ * DB-aware (see cart-lines.ts's own `knownProducts` fallback).
+ */
+export function registryResolveKnownProducts(ids: string[], knownProducts?: Record<string, Product>): Product[] {
   return ids
-    .map((id) => PRODUCT_BY_ID.get(id))
+    .map((id) => PRODUCT_BY_ID.get(id) ?? knownProducts?.[id])
     .filter((p): p is Product => p !== undefined);
 }
 
 /** Registry-only cart resolve (no DB) — mirrors resolveCartProducts on the client. */
-export function registryResolveCartProducts(ids: string[]): Product[] {
+export function registryResolveCartProducts(ids: string[], knownProducts?: Record<string, Product>): Product[] {
   // Display only: this registry cannot authorize purchases. Tiles and checkout
   // use verified availability separately.
-  return registryResolveKnownProducts(ids).filter((p) => !p.sold && !p.showroom && isProductPublic(p));
+  return registryResolveKnownProducts(ids, knownProducts).filter((p) => !p.sold && !p.showroom && isProductPublic(p));
 }
 
 /* ------------------------------------------------------------------

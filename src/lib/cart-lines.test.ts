@@ -1,5 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { resolveCartLines } from './cart-lines';
+import type { Product } from './types';
+
+function dbOnlyProduct(overrides: Partial<Product> = {}): Product {
+  return {
+    id: 'prd_db_only',
+    category: 'kubki',
+    num: '99',
+    image: '/uploads/db-only.webp',
+    price: 12000,
+    measure: '9 × 9 cm',
+    sold: false,
+    dropId: 'drop-1',
+    noteIndex: 0,
+    ...overrides,
+  };
+}
 
 describe('resolveCartLines', () => {
   it('resolves a mixed cart preserving order', () => {
@@ -48,5 +64,22 @@ describe('resolveCartLines', () => {
   it('resolves a mixed ceramic + gift-card cart as separate lines (checkout enforces exclusivity, not this resolver)', () => {
     const lines = resolveCartLines(['k01', 'giftcard:gc-200']);
     expect(lines.map((l) => l.kind)).toEqual(['ceramic', 'giftcard']);
+  });
+
+  it('falls back to knownProducts for a ceramic id absent from the code registry', () => {
+    const product = dbOnlyProduct();
+    const lines = resolveCartLines(['prd_db_only'], { prd_db_only: product });
+    expect(lines).toEqual([{ kind: 'ceramic', id: 'prd_db_only', product }]);
+  });
+
+  it('prefers the code registry over knownProducts when an id exists in both', () => {
+    const stale = dbOnlyProduct({ id: 'k01', price: 1 });
+    const lines = resolveCartLines(['k01'], { k01: stale });
+    expect(lines[0]).toMatchObject({ kind: 'ceramic', id: 'k01' });
+    expect((lines[0] as { product: Product }).product).not.toBe(stale);
+  });
+
+  it('without a knownProducts map, a DB-only id is dropped like any unknown id', () => {
+    expect(resolveCartLines(['prd_db_only'])).toHaveLength(0);
   });
 });
