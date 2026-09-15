@@ -3,7 +3,7 @@ import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
-import { getPrintPricingConfig } from './print-pricing-config/get';
+import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from './print-pricing-config/get';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
 import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
 import type { PrintVariantSelection } from './types';
@@ -41,7 +41,19 @@ export type CheckoutItem = {
   giftCardTierId?: GiftCardTierId;
 };
 export type ValidateResult =
-  | { ok: true; items: CheckoutItem[] }
+  | {
+      ok: true;
+      items: CheckoutItem[];
+      /**
+       * The print-pricing config item pricing was resolved from, when the
+       * cart held any print — reused by the caller for the shipping-cost
+       * calculation instead of an independent second read (both must come
+       * from the same config, or a pricing edit or last-known-good swap
+       * mid-request could price items and shipping from different
+       * generations of the config).
+       */
+      printPricing?: PrintPricingConfig;
+    }
   | {
       ok: false;
       reason:
@@ -52,7 +64,8 @@ export type ValidateResult =
         | 'mixed_cart'
         | 'multiple_gift_cards'
         | 'print_asset_unavailable'
-        | 'print_asset_error';
+        | 'print_asset_error'
+        | 'print_pricing_unavailable';
     };
 
 /**
@@ -94,7 +107,16 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       }
       if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
       seen.add(raw);
-      pricing ??= await getPrintPricingConfig();
+      if (!pricing) {
+        try {
+          pricing = await getPrintPricingConfigForCheckout();
+        } catch (err) {
+          if (err instanceof PrintPricingUnavailableError) {
+            return { ok: false, reason: 'print_pricing_unavailable' };
+          }
+          throw err;
+        }
+      }
       const major = priceOfVariant(dec.sel, currency, pricing);
       const unit_price = toMinor(major);
       items.push({
@@ -149,5 +171,5 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   if (!hasGiftCards && items.some((i) => i.variant) && items.some((i) => !i.variant)) {
     return { ok: false, reason: 'mixed_cart' };
   }
-  return { ok: true, items };
+  return { ok: true, items, ...(pricing ? { printPricing: pricing } : {}) };
 }

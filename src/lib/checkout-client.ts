@@ -21,8 +21,8 @@ export function shouldKeepAttemptIdOnCatch(status: number): boolean {
 }
 
 export type CheckoutPreBodyError = {
-  errorKey: 'cart.printAssetError' | 'cart.rateLimited';
-  analyticsReason: 'print_asset_error' | 'rate_limited';
+  errorKey: 'cart.printAssetError' | 'cart.printPricingUnavailable' | 'cart.rateLimited';
+  analyticsReason: 'print_asset_error' | 'print_pricing_unavailable' | 'rate_limited';
   analyticsStatus: 429 | 503;
 };
 
@@ -42,6 +42,13 @@ export function checkoutPreBodyError(
     };
   }
   if (status === 503) {
+    if (body?.error === 'print_pricing_unavailable') {
+      return {
+        errorKey: 'cart.printPricingUnavailable',
+        analyticsReason: 'print_pricing_unavailable',
+        analyticsStatus: 503,
+      };
+    }
     if (body?.error && body.error !== 'print_asset_error') return null;
     return {
       errorKey: 'cart.printAssetError',

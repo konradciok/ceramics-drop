@@ -349,6 +349,7 @@
     "privateSalePrintsNotice": "Los enlaces de pedido privado son solo para cerámica — elimina las láminas del carrito para continuar.",
     "printAssetUnavailable": "Esta variante de lámina no está disponible temporalmente — elimínala del carrito o inténtalo más tarde.",
     "printAssetError": "Algo falló momentáneamente. Inténtalo de nuevo.",
+    "printPricingUnavailable": "No se pudo obtener el precio actual de la lámina. Inténtalo de nuevo en un momento.",
     "promo": {
       "label": "Código promocional",
       "have": "Tengo un código promocional",

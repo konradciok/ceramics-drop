@@ -349,6 +349,7 @@
     "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue.",
     "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later.",
     "printAssetError": "Something went wrong for a moment. Please try again.",
+    "printPricingUnavailable": "We couldn't fetch the current print price. Please try again shortly.",
     "promo": {
       "label": "Promo code",
       "have": "I have a promo code",
