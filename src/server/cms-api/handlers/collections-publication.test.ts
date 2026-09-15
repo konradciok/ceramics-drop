@@ -114,6 +114,14 @@ describe('collectionsPublicationPostRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
+  it('still maps collection_not_found to 404 even when releasing the idempotency key fails', async () => {
+    vi.mocked(idempotency.releaseIdempotencyKey).mockRejectedValue(new Error('release boom'));
+    const rpc = vi.fn().mockResolvedValue({ error: { message: 'collection_not_found' } });
+    const res = await collectionsPublicationPostRoute.handler(req({ expectedRevision: 1 }), {} as CloudflareEnv, { id: 'col_missing' }, ctxWith(rpc));
+    expect(res.status).toBe(404);
+    expect((await res.json()).code).toBe('NOT_FOUND');
+  });
+
   it('maps revision_conflict to 409 with currentRevision parsed from the detail string', async () => {
     const rpc = vi.fn().mockResolvedValue({ error: { message: 'revision_conflict', details: 'currentRevision=7' } });
     const res = await collectionsPublicationPostRoute.handler(req({ expectedRevision: 3 }), {} as CloudflareEnv, { id: 'col_1' }, ctxWith(rpc));

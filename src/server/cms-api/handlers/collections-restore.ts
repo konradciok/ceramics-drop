@@ -74,7 +74,15 @@ export const collectionsRestorePostRoute: RouteDef = {
       });
 
       if (error) {
-        await releaseIdempotencyKey(ctx.supabase, 'collections:restore', idempotencyKey, leaseToken);
+        // Swallow a release failure so it can't replace the mapped RPC error
+        // response below with a generic 500 — a failed release just leaves
+        // the lease in place, and the 30s LEASE_MS in idempotency.ts lets a
+        // later request reclaim it, so this is a safe no-op.
+        try {
+          await releaseIdempotencyKey(ctx.supabase, 'collections:restore', idempotencyKey, leaseToken);
+        } catch {
+          // ignore — see comment above
+        }
         if (error.message?.includes('collection_not_found')) {
           return errorResponse('NOT_FOUND', `Collection ${params.id} does not exist.`, 404, ctx.requestId);
         }
