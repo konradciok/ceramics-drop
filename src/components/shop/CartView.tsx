@@ -7,9 +7,11 @@ import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
-import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
+import type { CartLine } from '@/lib/cart-lines-server';
+import { useCartLines } from '@/lib/use-cart-lines';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
+import { isGiftCardToken } from '@/lib/gift-cards';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
@@ -43,7 +45,6 @@ import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-bala
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
 import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
-import type { Product } from '@/lib/types';
 
 /**
  * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
@@ -138,22 +139,11 @@ export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
   printPricing,
-  ceramicPrices = {},
-  knownProducts = {},
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
   /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
   printPricing: PrintPricingConfig;
-  /** DB price (PLN) per ceramic id, resolved by the server page — the same
-   *  rows checkout charges. The client's code registry can drift from these
-   *  after an admin price_pln edit; EUR/GBP prices are per-category maps
-   *  identical on both sides, so only PLN needs the override. */
-  ceramicPrices?: Record<string, number>;
-  /** DB-aware ceramic products (id → Product) resolved server-side — lets a
-   *  CMS-created ceramic (absent from the code registry) still render in the
-   *  cart instead of being silently dropped. */
-  knownProducts?: Record<string, Product>;
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -161,6 +151,7 @@ export function CartView({
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
   const replace = useCart((s) => s.replace);
+  const { lines: allLines, status: linesStatus } = useCartLines(ids);
 
   // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
   // the server component). The cart is a locked bundle of (already-`sold`) pieces:
@@ -201,6 +192,7 @@ export function CartView({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [inventoryReady, setInventoryReady] = useState(false);
+  const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
@@ -244,21 +236,14 @@ export function CartView({
         .finally(() => setPrivateSaleLoading(false));
       return;
     }
-    // Drop any stored id that can never resolve to a buyable line — malformed or
-    // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
-    // from what's rendered (server validateCart stays the hard gate regardless).
-    const current = useCart.getState().ids;
-    const valid = new Set(resolveCartLines(current, knownProducts).map((l) => l.id));
-    current.forEach((id) => { if (!valid.has(id)) remove(id); });
-
+    // Fetch availability only — the prune-against-it effect below applies it
+    // once the cart-lines DTO has resolved which ids are real ceramic lines
+    // in the first place (see that effect's own comment for why).
     fetch('/api/inventory')
       .then((r) => { if (!r.ok) throw new Error('availability_unavailable'); return r.json(); })
       .then(({ available }: { available: string[] }) => {
         if (!Array.isArray(available)) throw new Error('availability_unavailable');
-        const allowed = new Set(available);
-        resolveCartLines(useCart.getState().ids, knownProducts).forEach((line) => {
-          if (line.kind === 'ceramic' && !allowed.has(line.id)) remove(line.id);
-        });
+        setAvailableIds(new Set(available));
         setInventoryReady(true);
       })
       .catch(() => setInventoryReady(false));
@@ -266,12 +251,50 @@ export function CartView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sold-piece pruning: silent (no buyer-visible notice — "someone else just
+  // bought it" needs no explanation the way "this was never purchasable"
+  // does). Gated on BOTH the inventory fetch above and the cart-lines DTO
+  // being 'ready', and scoped to already-resolved `kind: 'ceramic'` lines —
+  // NOT raw ids. A bare id that /api/inventory doesn't list could just as
+  // easily be unknown/withdrawn/malformed, not merely sold; pruning by raw
+  // id here would silently drop it before the unavailable-line effect below
+  // ever saw it in `allLines`, losing the buyer-visible notice that effect
+  // exists to show.
+  useEffect(() => {
+    if (!availableIds || linesStatus !== 'ready') return;
+    allLines.forEach((l) => {
+      if (l.kind === 'ceramic' && !availableIds.has(l.id)) remove(l.id);
+    });
+  }, [availableIds, allLines, linesStatus, remove]);
+
+  // Auto-remove any cart id the server-side resolver could not resolve
+  // (unknown, withdrawn, malformed token) with a one-time visible notice —
+  // replaces the old resolver's silent-drop behavior. Fires whenever the
+  // cart-lines DTO resolves/re-resolves, not just on mount, so an id that
+  // becomes unavailable later (e.g. withdrawn while sitting in the cart) is
+  // still caught. `handledUnavailableIds` guards against reprocessing the
+  // same id on a subsequent re-render/re-fetch.
+  const handledUnavailableIds = useRef(new Set<string>());
+  const [showUnavailableNotice, setShowUnavailableNotice] = useState(false);
+  useEffect(() => {
+    if (linesStatus !== 'ready') return;
+    const newlyUnavailable = allLines.filter(
+      (l) => l.kind === 'unavailable' && !handledUnavailableIds.current.has(l.id),
+    );
+    if (newlyUnavailable.length === 0) return;
+    newlyUnavailable.forEach((l) => {
+      handledUnavailableIds.current.add(l.id);
+      remove(l.id);
+    });
+    setShowUnavailableNotice(true);
+  }, [allLines, linesStatus, remove]);
+
   // This is the ceramics/prints merchandise cart — gift cards are their own
   // exclusive checkout track (no shipping, no mixing) with a dedicated flow,
   // so any gift-card token that ends up in the shared cart store is dropped
   // here rather than half-rendered through ceramic/print-shaped UI.
-  const lines = resolveCartLines(ids, knownProducts).filter(
-    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind !== 'giftcard',
+  const lines = allLines.filter(
+    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind === 'ceramic' || l.kind === 'print',
   );
   const n = lines.length;
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
@@ -294,9 +317,7 @@ export function CartView({
   const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' | 'print' }>) =>
     l.kind === 'print'
       ? priceOfVariant(l.sel, printCurrency, printPricing)
-      : currency === 'pln' && ceramicPrices[l.product.id] !== undefined
-        ? ceramicPrices[l.product.id]
-        : priceOfCurrency(l.product, currency);
+      : priceOfCurrency(l.product, currency);
   const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
@@ -342,7 +363,9 @@ export function CartView({
     if (promoSyncRef.current === promoSyncKey) return;
     promoSyncRef.current = promoSyncKey;
     if (!promo) return;
-    const current = resolveCartLines(useCart.getState().ids, knownProducts);
+    // /api/promo/validate resolves ids itself server-side — no need to
+    // re-resolve cart lines here, just forward the raw (non-gift-card) ids.
+    const current = useCart.getState().ids.filter((id) => !isGiftCardToken(id));
     // An emptied cart renders no promo UI at all; the next cart change lands
     // back here and re-validates, so no synchronous state write is needed.
     if (current.length === 0) return;
@@ -350,7 +373,7 @@ export function CartView({
     fetch('/api/promo/validate', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: promo.code, ids: current.map((l) => l.id), locale }),
+      body: JSON.stringify({ code: promo.code, ids: current, locale }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { ok: boolean; code?: string; discount?: number; reason?: string } | null) => {
@@ -726,10 +749,29 @@ export function CartView({
     );
   }
 
+  // ── Cart-lines DTO still resolving ─────────────────────────────────────────
+  // Only reachable when `ids` is non-empty (useCartLines resolves synchronously
+  // to 'ready' for an empty cart), so this never masks a genuinely empty cart.
+  if (linesStatus === 'loading') {
+    return <div className="cart-empty" aria-busy="true" />;
+  }
+
+  // ── Cart-lines DTO fetch failed ──────────────────────────────────────────
+  // Distinct from the empty state so a transient network failure never reads
+  // to the buyer as "your cart was cleared".
+  if (linesStatus === 'error') {
+    return (
+      <div className="cart-empty">
+        <h2>{t('cart.loadError')}</h2>
+      </div>
+    );
+  }
+
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
     return (
       <div className="cart-empty">
+        {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -770,6 +812,7 @@ export function CartView({
             {t('cart.label')} <em>—</em> {n} {t('cart.word', { count: n })}
           </h1>
         </div>
+        {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
         <div className="cart-list">
           {lines.map((l) => {
             if (l.kind === 'print') {

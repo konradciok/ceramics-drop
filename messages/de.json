@@ -339,6 +339,8 @@
     "pay": "Jetzt bezahlen",
     "payProcessing": "Wird verarbeitet…",
     "soldOut": "Einige Stücke wurden gerade verkauft und wurden aus deinem Warenkorb entfernt.",
+    "unavailableRemoved": "Einige Stücke sind nicht mehr verfügbar und wurden aus deinem Warenkorb entfernt.",
+    "loadError": "Dein Warenkorb konnte nicht geladen werden. Bitte prüfe deine Verbindung und versuche es erneut.",
     "rateLimited": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
     "checkoutError": "Zahlung konnte nicht gestartet werden. Bitte versuche es in Kürze erneut.",
     "notForSale": "Dieses Stück wurde aus dem Verkauf genommen und kann nicht mehr gekauft werden.",

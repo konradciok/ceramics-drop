@@ -45,11 +45,6 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
     })
     .slice(0, 4);
 
-  // Fallback for the selection bar so a CMS-created (DB-only) ceramic in the
-  // cart still counts toward its total, even though it's absent from the
-  // code registry — this PDP's own product plus its (also DB-aware) siblings.
-  const knownProducts = Object.fromEntries([product, ...siblings].map((p) => [p.id, p]));
-
   return (
     <>
       {/* Showroom pieces aren't purchasable — don't fire ecommerce view_item
@@ -132,7 +127,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
           </section>
         )}
       </article>
-      <SelectionBar knownProducts={knownProducts} />
+      <SelectionBar />
     </>
   );
 }
