@@ -14,6 +14,12 @@ import { availabilityRoute } from './handlers/availability';
 import { proofDecisionRoute } from './handlers/proofs';
 import { auditRoute } from './handlers/audit';
 import { previewsRoute } from './handlers/previews';
+import { collectionsListRoute } from './handlers/collections-list';
+import { collectionsGetRoute } from './handlers/collections-get';
+import { collectionsCreateRoute } from './handlers/collections-create';
+import { collectionsSaveRoute } from './handlers/collections-save';
+import { collectionsPublicationPostRoute } from './handlers/collections-publication';
+import { collectionsRestorePostRoute } from './handlers/collections-restore';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -31,6 +37,12 @@ const routes: RouteDef[] = [
   proofDecisionRoute,
   auditRoute,
   previewsRoute,
+  collectionsListRoute,
+  collectionsGetRoute,
+  collectionsCreateRoute,
+  collectionsSaveRoute,
+  collectionsPublicationPostRoute,
+  collectionsRestorePostRoute,
 ];
 
 const dispatch = createRouter(routes);

@@ -125,8 +125,12 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
   });
 
   it('404s an unregistered S2/S3/S4 path even carrying a fully valid owner token', async () => {
+    // Collections routes are registered as of this task — repointed at
+    // /v1/content, which is still genuinely unimplemented (no content
+    // handler/route exists anywhere under src/server/cms-api/handlers/), so
+    // this still proves the same S2/S3/S4 router fallback.
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const res = await handleCmsApiRequest(reqWithToken('/v1/collections', token), baseEnv, deps);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/content', token), baseEnv, deps);
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
   });

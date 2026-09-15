@@ -58,3 +58,31 @@ export type ProductResponse = {
   proofs: Proof[];
   availability: ProductAvailability;
 };
+
+// --- Generic Field[]/Resource shape (collections, content, pricing,
+// shipping-rates — this task only implements collections; the contract's
+// `Field`/`Resource` schemas are shared verbatim across all four kinds). See
+// contracts/cms-v1.json's Field/Resource schemas — greenfield, not derived
+// from ProductDraft/ProductResponse above (those are ceramics-specific).
+export type FieldType = 'text' | 'richtext' | 'number' | 'productIds';
+export type FieldLocale = 'pl' | 'en' | 'es' | 'de' | 'none';
+
+export type Field = {
+  key: string;
+  label: string;
+  type: FieldType;
+  value: string;
+  locale: FieldLocale;
+  sourceLocale: FieldLocale;
+};
+
+export type ResourceKind = 'collections' | 'content' | 'pricing' | 'shipping-rates';
+
+export type CollectionResponse = {
+  id: string;
+  kind: 'collections';
+  name: string;
+  revision: number;
+  publishedRevision: number | null;
+  fields: Field[];
+};

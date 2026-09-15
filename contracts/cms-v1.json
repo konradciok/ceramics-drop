@@ -3,7 +3,7 @@
   "info": {
     "title": "Anna Ciok Studio — CMS Admin API",
     "version": "1.0.0",
-    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections/content/pricing/shipping-rates (S2/S4) and assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
+    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections (S2) is implemented; content/pricing/shipping-rates (S2/S4) and assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
   },
   "security": [ { "cloudflareAccess": [] } ],
   "paths": {
@@ -133,7 +133,10 @@
         }
       }
     },
-    "/v1/collections": { "get": { "operationId": "get__v1_collections", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } } },
+    "/v1/collections": {
+      "get": { "operationId": "get__v1_collections", "parameters": [], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceList" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
+      "post": { "operationId": "post__v1_collections", "parameters": [ { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceCreate" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
+    },
     "/v1/collections/{id}": {
       "get": { "operationId": "get__v1_collections__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } },
       "put": { "operationId": "put__v1_collections__id_", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResourceSave" } } } }, "responses": { "200": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Resource" } } } }, "default": { "description": "Response", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } } }
@@ -205,7 +208,7 @@
       "Error": {
         "type": "object",
         "properties": {
-          "code": { "type": "string", "description": "Stable machine code. Known S1 values: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION_FAILED, REVISION_CONFLICT, CONTRACT_MISMATCH, IDEMPOTENCY_REQUIRED, IDEMPOTENCY_KEY_REUSE, IDEMPOTENCY_IN_PROGRESS, RESERVATION_ACTIVE, PRINT_ASSETS_INCOMPLETE, INVALID_PROOF_TRANSITION, NOT_IMPLEMENTED, INTERNAL_ERROR." },
+          "code": { "type": "string", "description": "Stable machine code. Known S1 values: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, VALIDATION_FAILED, REVISION_CONFLICT, CONTRACT_MISMATCH, IDEMPOTENCY_REQUIRED, IDEMPOTENCY_KEY_REUSE, IDEMPOTENCY_IN_PROGRESS, RESERVATION_ACTIVE, PRINT_ASSETS_INCOMPLETE, INVALID_PROOF_TRANSITION, MISSING_POLISH, NOT_IMPLEMENTED, INTERNAL_ERROR." },
           "message": { "type": "string" },
           "requestId": { "type": "string" },
           "currentRevision": { "type": "integer" },
@@ -390,6 +393,7 @@
       },
       "ResourceList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Resource" } } }, "required": ["items"], "additionalProperties": false },
       "ResourceSave": { "type": "object", "properties": { "expectedRevision": { "type": "integer" }, "name": { "type": "string" }, "fields": { "type": "array", "items": { "$ref": "#/components/schemas/Field" } } }, "required": ["expectedRevision", "name", "fields"], "additionalProperties": false },
+      "ResourceCreate": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"], "additionalProperties": false },
       "Audit": {
         "type": "object",
         "properties": {
