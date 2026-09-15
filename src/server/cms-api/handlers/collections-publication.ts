@@ -97,7 +97,11 @@ export const collectionsPublicationPostRoute: RouteDef = {
             'Kolekcja zawiera nieistniejące produkty.',
             422,
             ctx.requestId,
-            { fieldErrors: { products: extractInvalidProductIds(error) } },
+            // Contract's Error.fieldErrors is Record<string, string> (every
+            // value must be a string) — join the parsed ids the same way
+            // publication.ts's readiness.blockers is joined into
+            // fieldErrors.variants ('; ' separator).
+            { fieldErrors: { products: extractInvalidProductIds(error).join('; ') } },
           );
         }
         throw error;

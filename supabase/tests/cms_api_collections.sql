@@ -8,7 +8,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(40);
+select plan(41);
 
 -- Fixture: a real product row for product_ref_invalid's "valid id" half.
 -- print (not ceramic) so no price is required — products_ceramic_price_present
@@ -168,6 +168,45 @@ select throws_ok(
   $$ select publish_collection_revision('tap_col_bad_product', 1, 'anna@studio.pl') $$,
   'product_ref_invalid',
   'publish_collection_revision: a productIds CSV containing an id absent from products is rejected'
+);
+
+-- The invalidIds= detail-string format is pinned by Global Constraint 11 and
+-- parsed verbatim by collections-publication.ts's extractInvalidProductIds —
+-- throws_ok above only asserts the exception NAME ('product_ref_invalid').
+-- pgTAP's throws_like/throws_ilike can't assert the DETAIL content: per
+-- pgtap's own source (throws_like's body is
+-- `_tlike( SQLERRM ~~ $2, SQLERRM, $2, $3 )`), they pattern-match only
+-- SQLERRM — the exception's primary MESSAGE — which for this exception is
+-- the bare literal 'product_ref_invalid'; the invalidIds=<ids> payload
+-- lives in the exception's DETAIL, a separate attribute, via
+-- `raise exception 'product_ref_invalid' using detail = format('invalidIds=%s', ...)`.
+-- So this local helper (rolled back with the rest of this file's one
+-- transaction) calls the RPC itself, captures PG_EXCEPTION_DETAIL via
+-- GET STACKED DIAGNOSTICS, and alike() asserts its content with the same
+-- %-wildcard LIKE-pattern style throws_like uses elsewhere in this file
+-- (the missing product id, tap_col_prod_missing, must appear).
+create or replace function tap_publish_collection_product_ref_invalid_detail(
+  p_collection_id     text,
+  p_expected_revision integer,
+  p_actor_email       text
+) returns text
+language plpgsql
+as $$
+declare
+  v_detail text;
+begin
+  perform publish_collection_revision(p_collection_id, p_expected_revision, p_actor_email);
+  return null;
+exception when others then
+  get stacked diagnostics v_detail = pg_exception_detail;
+  return v_detail;
+end;
+$$;
+
+select alike(
+  tap_publish_collection_product_ref_invalid_detail('tap_col_bad_product', 1, 'anna@studio.pl'),
+  '%invalidIds=%tap_col_prod_missing%',
+  'publish_collection_revision: product_ref_invalid DETAIL carries the missing product id'
 );
 
 -- An empty productIds CSV (no products in the collection) is valid, not an

@@ -374,6 +374,7 @@ grant execute on function restore_collection_draft(text, integer, integer, text)
 --   drop function if exists create_collection_with_draft(text, jsonb, text);
 --   drop index if exists catalog_audit_log_collection_idx;
 --   alter table catalog_audit_log drop constraint if exists catalog_audit_log_product_or_collection_check;
+--   delete from catalog_audit_log where product_id is null;
 --   alter table catalog_audit_log drop column if exists collection_id;
 --   alter table catalog_audit_log alter column product_id set not null;
 --   alter table collections drop constraint if exists collections_published_revision_fk;

@@ -132,7 +132,7 @@ describe('collectionsPublicationPostRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
-  it('maps product_ref_invalid to 422 VALIDATION_FAILED with fieldErrors.products parsed from the invalidIds= detail string', async () => {
+  it('maps product_ref_invalid to 422 VALIDATION_FAILED with fieldErrors.products joined from the invalidIds= detail string (contract requires a string, not an array)', async () => {
     const rpc = vi.fn().mockResolvedValue({
       error: { message: 'product_ref_invalid', details: 'invalidIds=prd_ghost,prd_missing' },
     });
@@ -140,7 +140,7 @@ describe('collectionsPublicationPostRoute', () => {
     expect(res.status).toBe(422);
     const parsedBody = await res.json();
     expect(parsedBody.code).toBe('VALIDATION_FAILED');
-    expect(parsedBody.fieldErrors).toEqual({ products: ['prd_ghost', 'prd_missing'] });
+    expect(parsedBody.fieldErrors).toEqual({ products: 'prd_ghost; prd_missing' });
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
@@ -150,7 +150,7 @@ describe('collectionsPublicationPostRoute', () => {
     });
     const res = await collectionsPublicationPostRoute.handler(req({ expectedRevision: 1 }), {} as CloudflareEnv, { id: 'col_1' }, ctxWith(rpc));
     const parsedBody = await res.json();
-    expect(parsedBody.fieldErrors).toEqual({ products: ['prd_only_one'] });
+    expect(parsedBody.fieldErrors).toEqual({ products: 'prd_only_one' });
   });
 
   it('propagates the original publication error even when releasing the idempotency key also fails', async () => {
