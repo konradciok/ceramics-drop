@@ -11,6 +11,7 @@ import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
 import { withRegistryMockups } from '../print-mockups';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant } from '../print-pricing';
+import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
 import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 
@@ -24,9 +25,21 @@ import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 describe('catalog seed ↔ registry parity', () => {
   const seed = buildCatalogSeed();
 
-  it('round-trips ceramics back to registryProducts() exactly', () => {
+  it('round-trips ceramics back to registryProducts() exactly (modulo priceEur/priceGbp)', () => {
+    // seed.ts backfills price_eur/price_gbp for every ceramic row from these
+    // same PRICE_EUR/PRICE_GBP constants; mapCeramicProducts now surfaces them
+    // (S2b — priceOfCurrency prefers the DB value). The bare registry carries
+    // no such fields (they're synthesized at seed time), so the round-trip is
+    // exact modulo those two — same convention the print round-trip below
+    // uses for mockups/editorialGallery.
     const rebuilt = mapCeramicProducts(seed.products, seed.media);
-    expect(rebuilt).toEqual(registryProducts());
+    expect(rebuilt).toEqual(
+      registryProducts().map((p) => ({
+        ...p,
+        priceEur: PRICE_EUR[p.category],
+        priceGbp: PRICE_GBP[p.category],
+      })),
+    );
   });
 
   it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {

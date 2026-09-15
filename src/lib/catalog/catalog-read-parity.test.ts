@@ -10,6 +10,7 @@ import {
   type CeramicCatalog,
 } from '../products';
 import { getPrintById, getPrintDesigns, registryPrintDesigns } from '../prints';
+import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
@@ -33,7 +34,12 @@ describe('catalog read path ↔ registry parity', () => {
       return byCat !== 0 ? byCat : a.num.localeCompare(b.num, undefined, { numeric: true });
     });
     expect(dbOrder[0]?.id).not.toBe(registryProducts()[0]?.id);
-    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(registryProducts());
+    // Modulo priceEur/priceGbp — see catalog-parity.test.ts's round-trip test
+    // for why the DB-backed catalogue always carries them and the bare
+    // registry never does.
+    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(
+      registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
+    );
   });
 });
 
@@ -96,7 +102,10 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     process.env.CATALOG_SOURCE = 'db';
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(dbCeramics);
 
-    expect(await getProducts()).toEqual(registryProducts());
+    // Modulo priceEur/priceGbp — see catalog-parity.test.ts's round-trip test.
+    expect(await getProducts()).toEqual(
+      registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
+    );
     expect(await getProductById('k01')).toMatchObject(registryProducts().find((p) => p.id === 'k01')!);
     expect(await getProductById('nope')).toBeUndefined();
     expect((await getProductsByCategory('kubki')).map((p) => p.id)).toEqual(

@@ -1,5 +1,5 @@
 import { getProductById, isProductPublic, registryProducts } from './products';
-import { PRICE_EUR, PRICE_GBP, toMinor } from './pricing';
+import { priceOfCurrency, toMinor } from './pricing';
 import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
 import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
 import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
@@ -144,10 +144,11 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     // a private-sale link (validateCart runs before either reservation).
     if (!isProductPublic(product)) return { ok: false, reason: 'not_for_sale' };
     seen.add(id);
-    const major =
-      currency === 'eur' ? PRICE_EUR[product.category] :
-      currency === 'gbp' ? PRICE_GBP[product.category] :
-      product.price;
+    // priceOfCurrency prefers the product's own DB-backed priceEur/priceGbp
+    // (set on every backfilled or CMS-published row) over the per-category
+    // code constant — this is THE price of record for ceramics, same as it
+    // already is for PLN.
+    const major = priceOfCurrency(product, currency);
     const unit_price = toMinor(major);
     items.push({ product_id: id, unit_price });
   }

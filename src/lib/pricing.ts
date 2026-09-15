@@ -116,19 +116,26 @@ export function priceOf(product: { category: CategorySlug; price: number }, loca
   return PRICE_EUR[product.category];
 }
 
-/** Display price for a product in an explicit currency. */
+/**
+ * Display price for a product in an explicit currency. PLN is always the
+ * product's own `price` (products.price_pln has always been the live DB
+ * source of truth in db mode). EUR/GBP prefer the product's own DB-backed
+ * `priceEur`/`priceGbp` when set — the per-category PRICE_EUR/PRICE_GBP code
+ * constant is now only a fallback for `code` mode or a registry row that
+ * genuinely has no override yet, not the sole source it used to be.
+ */
 export function priceOfCurrency(
-  product: { category: CategorySlug; price: number },
+  product: { category: CategorySlug; price: number; priceEur?: number; priceGbp?: number },
   currency: Currency,
 ): number {
   switch (currency) {
     case 'pln':
       return product.price;
     case 'gbp':
-      return PRICE_GBP[product.category];
+      return product.priceGbp ?? PRICE_GBP[product.category];
     case 'eur':
     default:
-      return PRICE_EUR[product.category];
+      return product.priceEur ?? PRICE_EUR[product.category];
   }
 }
 
