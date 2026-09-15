@@ -117,15 +117,21 @@ function runRpc(state: FakeState, fn: string, args: Record<string, unknown>): { 
 }
 
 // Chainable, thenable query-builder stub covering exactly the
-// select/in/order surface collections-mapping.ts's loadCollectionResponses
-// uses. collections-mapping.ts itself is NOT mocked in this file — it runs
-// for real against the rows below, so response assembly is genuinely
-// exercised, not asserted-by-fixture.
+// select/in/eq/order/limit/maybeSingle surface collections-mapping.ts's
+// loadCollectionResponses uses (it looks up each collection's latest draft
+// individually via eq/order/limit/maybeSingle rather than one in()-batched
+// query — see collections-mapping.ts for why). collections-mapping.ts itself
+// is NOT mocked in this file — it runs for real against the rows below, so
+// response assembly is genuinely exercised, not asserted-by-fixture.
 function makeQueryBuilder(rows: unknown[]) {
   let result = rows;
   const builder = {
     in(column: string, values: string[]) {
       result = result.filter((row) => values.includes((row as Record<string, unknown>)[column] as string));
+      return builder;
+    },
+    eq(column: string, value: unknown) {
+      result = result.filter((row) => (row as Record<string, unknown>)[column] === value);
       return builder;
     },
     order(column: string, opts: { ascending: boolean }) {
@@ -135,6 +141,13 @@ function makeQueryBuilder(rows: unknown[]) {
         return opts.ascending ? av - bv : bv - av;
       });
       return builder;
+    },
+    limit(n: number) {
+      result = result.slice(0, n);
+      return builder;
+    },
+    async maybeSingle() {
+      return { data: result[0] ?? null, error: null };
     },
     then(resolve: (v: { data: unknown[]; error: null }) => void) {
       resolve({ data: result, error: null });

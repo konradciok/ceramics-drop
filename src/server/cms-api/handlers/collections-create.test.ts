@@ -62,6 +62,13 @@ describe('collectionsCreateRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
+  it('still returns the 422 VALIDATION_FAILED response for an invalid body even when releasing the key itself fails', async () => {
+    vi.mocked(idempotency.releaseIdempotencyKey).mockRejectedValue(new Error('release boom'));
+    const res = await collectionsCreateRoute.handler(req({ name: '   ' }), {} as CloudflareEnv, {}, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+  });
+
   it('creates the collection with a col_-prefixed id, seeds exactly 5 default fields, and completes the idempotency key on success', async () => {
     const rpc = vi.fn().mockResolvedValue({ error: null });
     const res = await collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc));
@@ -105,5 +112,12 @@ describe('collectionsCreateRoute', () => {
     await expect(collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc))).rejects.toBeTruthy();
     expect(rpc).toHaveBeenCalledTimes(3);
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+  });
+
+  it('propagates the original RPC error, not a release failure, when both the RPC and the release fail', async () => {
+    const rpcError = { code: '23505', message: 'duplicate key' };
+    const rpc = vi.fn().mockResolvedValue({ error: rpcError });
+    vi.mocked(idempotency.releaseIdempotencyKey).mockRejectedValue(new Error('release boom'));
+    await expect(collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc))).rejects.toBe(rpcError);
   });
 });

@@ -58,7 +58,17 @@ export const collectionsCreateRoute: RouteDef = {
 
     const validated = validateCollectionCreate(body);
     if (!validated.ok) {
-      await releaseIdempotencyKey(ctx.supabase, 'collections:create', idempotencyKey, leaseToken);
+      // Swallow a release failure so it can't replace the 422
+      // VALIDATION_FAILED response below — a failed release just leaves the
+      // lease in place, and the 30s LEASE_MS in idempotency.ts lets a later
+      // request reclaim it, so this is a safe no-op (same rationale as
+      // collections-publication.ts's / collections-restore.ts's catch-block
+      // release).
+      try {
+        await releaseIdempotencyKey(ctx.supabase, 'collections:create', idempotencyKey, leaseToken);
+      } catch {
+        // ignore — see comment above
+      }
       return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, { fieldErrors: validated.fieldErrors });
     }
 
@@ -84,7 +94,14 @@ export const collectionsCreateRoute: RouteDef = {
       await completeIdempotencyKey(ctx.supabase, 'collections:create', idempotencyKey, leaseToken, 200, collection);
       return jsonResponse(collection, 200);
     } catch (err) {
-      await releaseIdempotencyKey(ctx.supabase, 'collections:create', idempotencyKey, leaseToken);
+      // Swallow a release failure here so the original error (err) always
+      // propagates instead of being replaced by the release failure — same
+      // rationale as the comment above.
+      try {
+        await releaseIdempotencyKey(ctx.supabase, 'collections:create', idempotencyKey, leaseToken);
+      } catch {
+        // ignore — see comment above
+      }
       throw err;
     }
   },

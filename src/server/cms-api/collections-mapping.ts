@@ -8,11 +8,7 @@ type CollectionRow = {
 
 type CollectionDraftPayload = { name: string; fields: Field[] };
 
-type CollectionDraftRow = {
-  collection_id: string;
-  revision: number;
-  payload: CollectionDraftPayload;
-};
+type LatestCollectionDraft = { revision: number; payload: CollectionDraftPayload };
 
 export async function loadCollectionResponses(
   supabase: SupabaseClient,
@@ -20,32 +16,44 @@ export async function loadCollectionResponses(
 ): Promise<Map<string, CollectionResponse>> {
   if (collectionIds.length === 0) return new Map();
 
-  const [collectionsRes, draftsRes] = await Promise.all([
+  // Fetching every requested collection's drafts with one `.in()` + a global
+  // `order('revision')` would rely on PostgREST's implicit max_rows cap
+  // (1000) to not silently truncate — and truncation drops the *lowest*
+  // revision rows across all requested collections combined, which can
+  // discard an entire low-numbered collection's only draft while collections
+  // with heavily-edited (high-revision) drafts survive. Querying the latest
+  // draft per collection individually (using the covering
+  // `collection_drafts_collection_idx (collection_id, revision desc)` index)
+  // is correct at any scale instead of depending on that cap.
+  const [collectionsRes, draftResults] = await Promise.all([
     supabase.from('collections').select('id, published_revision').in('id', collectionIds),
-    supabase
-      .from('collection_drafts')
-      .select('collection_id, revision, payload')
-      .in('collection_id', collectionIds)
-      .order('revision', { ascending: false }),
+    Promise.all(
+      collectionIds.map((id) =>
+        supabase
+          .from('collection_drafts')
+          .select('revision, payload')
+          .eq('collection_id', id)
+          .order('revision', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ),
+    ),
   ]);
 
-  for (const res of [collectionsRes, draftsRes]) {
+  if (collectionsRes.error) throw collectionsRes.error;
+  for (const res of draftResults) {
     if (res.error) throw res.error;
   }
 
   const collections = (collectionsRes.data ?? []) as CollectionRow[];
 
-  // draftsRes is ordered by revision desc, so the first row seen per
-  // collection_id is its latest draft — the "current draft" that save/get
-  // should show, which may be ahead of collections.published_revision. Same
-  // "first wins" convention mapping.ts's loadProductResponses uses for
-  // product_drafts.
-  const latestDraftByCollection = new Map<string, { revision: number; payload: CollectionDraftPayload }>();
-  for (const row of (draftsRes.data ?? []) as CollectionDraftRow[]) {
-    if (!latestDraftByCollection.has(row.collection_id)) {
-      latestDraftByCollection.set(row.collection_id, { revision: row.revision, payload: row.payload });
+  const latestDraftByCollection = new Map<string, LatestCollectionDraft>();
+  draftResults.forEach((res, index) => {
+    const row = res.data as { revision: number; payload: CollectionDraftPayload } | null;
+    if (row) {
+      latestDraftByCollection.set(collectionIds[index], { revision: row.revision, payload: row.payload });
     }
-  }
+  });
 
   const result = new Map<string, CollectionResponse>();
   for (const collection of collections) {

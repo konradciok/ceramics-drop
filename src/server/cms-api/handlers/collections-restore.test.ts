@@ -58,6 +58,28 @@ describe('collectionsRestorePostRoute', () => {
     expect(parsedBody.fieldErrors).toEqual({ sourceRevision: 'required' });
   });
 
+  it('rejects a fractional expectedRevision', async () => {
+    const res = await collectionsRestorePostRoute.handler(
+      req({ expectedRevision: 2.5, sourceRevision: 1 }),
+      {} as CloudflareEnv,
+      { id: 'col_1' },
+      ctxWith(vi.fn()),
+    );
+    expect(res.status).toBe(422);
+    expect((await res.json()).fieldErrors).toEqual({ expectedRevision: 'required' });
+  });
+
+  it('rejects a fractional sourceRevision', async () => {
+    const res = await collectionsRestorePostRoute.handler(
+      req({ expectedRevision: 2, sourceRevision: 1.5 }),
+      {} as CloudflareEnv,
+      { id: 'col_1' },
+      ctxWith(vi.fn()),
+    );
+    expect(res.status).toBe(422);
+    expect((await res.json()).fieldErrors).toEqual({ sourceRevision: 'required' });
+  });
+
   it('idempotency replay: same key + same body returns the stored response and never calls the RPC', async () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'replay', status: 200, body: { id: 'col_1', revision: 3 } });
     const rpc = vi.fn();

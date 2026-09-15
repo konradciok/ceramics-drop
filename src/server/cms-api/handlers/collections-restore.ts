@@ -37,12 +37,15 @@ export const collectionsRestorePostRoute: RouteDef = {
     // the RPC, same inline-validation style as collections-publication.ts's
     // bare {expectedRevision} Revision schema).
     const parsed = body as { expectedRevision?: unknown; sourceRevision?: unknown };
-    if (typeof parsed.expectedRevision !== 'number') {
+    // Number.isInteger rejects non-numbers, NaN, Infinity, and fractional
+    // values in one check — a fractional or non-finite revision would
+    // otherwise pass the old `typeof === 'number'` check and reach the RPC.
+    if (!Number.isInteger(parsed.expectedRevision)) {
       return errorResponse('VALIDATION_FAILED', 'expectedRevision is required.', 422, ctx.requestId, {
         fieldErrors: { expectedRevision: 'required' },
       });
     }
-    if (typeof parsed.sourceRevision !== 'number') {
+    if (!Number.isInteger(parsed.sourceRevision)) {
       return errorResponse('VALIDATION_FAILED', 'sourceRevision is required.', 422, ctx.requestId, {
         fieldErrors: { sourceRevision: 'required' },
       });

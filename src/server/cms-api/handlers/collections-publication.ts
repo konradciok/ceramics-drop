@@ -48,7 +48,10 @@ export const collectionsPublicationPostRoute: RouteDef = {
     // Contract's Revision schema is bare {expectedRevision} — no `action`
     // field (Global Constraint 9/17/20: collections have no status states).
     const parsed = body as { expectedRevision?: unknown };
-    if (typeof parsed.expectedRevision !== 'number') {
+    // Number.isInteger rejects non-numbers, NaN, Infinity, and fractional
+    // values in one check — a fractional or non-finite revision would
+    // otherwise pass the old `typeof === 'number'` check and reach the RPC.
+    if (!Number.isInteger(parsed.expectedRevision)) {
       return errorResponse('VALIDATION_FAILED', 'expectedRevision is required.', 422, ctx.requestId, {
         fieldErrors: { expectedRevision: 'required' },
       });

@@ -48,6 +48,14 @@ describe('collectionsPublicationPostRoute', () => {
     expect((await res.json()).code).toBe('VALIDATION_FAILED');
   });
 
+  it('rejects a fractional expectedRevision', async () => {
+    const res = await collectionsPublicationPostRoute.handler(req({ expectedRevision: 2.5 }), {} as CloudflareEnv, { id: 'col_1' }, ctxWith(vi.fn()));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(body.fieldErrors).toEqual({ expectedRevision: 'required' });
+  });
+
   it('idempotency replay: same key + same body returns the stored response and never calls the RPC', async () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'replay', status: 200, body: { id: 'col_1', revision: 2 } });
     const rpc = vi.fn();

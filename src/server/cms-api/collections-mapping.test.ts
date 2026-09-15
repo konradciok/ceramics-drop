@@ -2,19 +2,42 @@ import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadCollectionResponse, loadCollectionResponses } from './collections-mapping';
 
-function makeTable(data: unknown[]) {
+function makeCollectionsTable(data: unknown[]) {
   const builder: Record<string, unknown> = {};
   const self = () => builder;
   builder.select = self;
   builder.in = self;
-  builder.order = self;
-  builder.eq = self;
   builder.then = (resolve: (v: { data: unknown[]; error: null }) => void) => resolve({ data, error: null });
   return builder;
 }
 
-function fakeSupabase(tables: Record<string, unknown[]>): SupabaseClient {
-  return { from: (table: string) => makeTable(tables[table] ?? []) } as unknown as SupabaseClient;
+type DraftRow = { collection_id: string; revision: number; payload: unknown };
+
+// Mirrors the real chain (`select().eq('collection_id', id).order().limit(1).maybeSingle()`)
+// and filters by the id passed to `.eq()`, since loadCollectionResponses now
+// queries each collection's latest draft individually rather than in one
+// `.in()` batch (see collections-mapping.ts for why).
+function makeDraftsTable(data: DraftRow[]) {
+  return {
+    select: () => ({
+      eq: (_column: string, id: string) => ({
+        order: () => ({
+          limit: () => ({
+            maybeSingle: async () => {
+              const rows = data.filter((row) => row.collection_id === id).sort((a, b) => b.revision - a.revision);
+              return { data: rows[0] ?? null, error: null };
+            },
+          }),
+        }),
+      }),
+    }),
+  };
+}
+
+function fakeSupabase(tables: { collections: unknown[]; collection_drafts: DraftRow[] }): SupabaseClient {
+  return {
+    from: (table: string) => (table === 'collections' ? makeCollectionsTable(tables.collections) : makeDraftsTable(tables.collection_drafts)),
+  } as unknown as SupabaseClient;
 }
 
 describe('loadCollectionResponses', () => {
@@ -23,7 +46,7 @@ describe('loadCollectionResponses', () => {
     const supabase = {
       from: () => {
         called = true;
-        return makeTable([]);
+        return makeCollectionsTable([]);
       },
     } as unknown as SupabaseClient;
     const result = await loadCollectionResponses(supabase, []);
@@ -139,20 +162,41 @@ describe('loadCollectionResponses', () => {
     }
   });
 
-  it('propagates a supabase error instead of swallowing it', async () => {
+  it('propagates a collections-query error instead of swallowing it', async () => {
     const supabase = {
       from: (table: string) => {
-        const builder: Record<string, unknown> = {};
-        const self = () => builder;
-        builder.select = self;
-        builder.in = self;
-        builder.order = self;
-        builder.then = (resolve: (v: { data: unknown[] | null; error: unknown }) => void) =>
-          resolve(table === 'collections' ? { data: null, error: new Error('boom') } : { data: [], error: null });
-        return builder;
+        if (table === 'collections') {
+          const builder: Record<string, unknown> = {};
+          const self = () => builder;
+          builder.select = self;
+          builder.in = self;
+          builder.then = (resolve: (v: { data: null; error: unknown }) => void) => resolve({ data: null, error: new Error('boom') });
+          return builder;
+        }
+        return makeDraftsTable([]);
       },
     } as unknown as SupabaseClient;
     await expect(loadCollectionResponses(supabase, ['col_1'])).rejects.toThrow('boom');
+  });
+
+  it('propagates a per-collection draft-query error instead of swallowing it', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'collections') return makeCollectionsTable([{ id: 'col_1', published_revision: null }]);
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null, error: new Error('draft query boom') }),
+                }),
+              }),
+            }),
+          }),
+        };
+      },
+    } as unknown as SupabaseClient;
+    await expect(loadCollectionResponses(supabase, ['col_1'])).rejects.toThrow('draft query boom');
   });
 });
 
