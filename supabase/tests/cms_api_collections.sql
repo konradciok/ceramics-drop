@@ -80,8 +80,21 @@ select ok(
   'publish_collection_revision: stamps published_at'
 );
 
+-- Filtered on action (not just "order by created_at desc limit 1"): the whole
+-- file runs inside one pgTAP transaction, and catalog_audit_log.created_at
+-- defaults to now() == transaction_timestamp(), which is frozen for the
+-- entire transaction — every audit row written anywhere in this file shares
+-- the exact same created_at. By this point 'tap_col_main' already has two
+-- earlier 'draft_saved' rows (create + save) tied on created_at with this
+-- new row, so "latest by created_at" is not decidable and returns whichever
+-- row Postgres's tie-break happens to pick — filtering on the expected
+-- action is the only way to assert this deterministically, and still fails
+-- (NULL vs 'published') if publish_collection_revision omits the audit
+-- write entirely.
 select is(
-  (select cal.action from catalog_audit_log cal where cal.collection_id = 'tap_col_main' order by cal.created_at desc limit 1),
+  (select cal.action from catalog_audit_log cal
+    where cal.collection_id = 'tap_col_main' and cal.action = 'published'
+    order by cal.created_at desc limit 1),
   'published',
   'publish_collection_revision: writes a published audit row'
 );
@@ -194,8 +207,14 @@ select is(
   'restore_collection_draft: never touches published_revision'
 );
 
+-- Same fix as the publish assertion above: filter on the expected action
+-- rather than "order by created_at desc limit 1", since 'tap_col_main' now
+-- has 3 earlier rows (2x draft_saved, 1x published) all tied on created_at
+-- with this new row inside the one transaction the whole file runs in.
 select is(
-  (select cal.action from catalog_audit_log cal where cal.collection_id = 'tap_col_main' order by cal.created_at desc limit 1),
+  (select cal.action from catalog_audit_log cal
+    where cal.collection_id = 'tap_col_main' and cal.action = 'restored'
+    order by cal.created_at desc limit 1),
   'restored',
   'restore_collection_draft: writes a restored audit row'
 );
