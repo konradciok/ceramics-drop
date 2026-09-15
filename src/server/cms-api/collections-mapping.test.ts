@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadCollectionResponse, loadCollectionResponses } from './collections-mapping';
 
@@ -106,16 +106,37 @@ describe('loadCollectionResponses', () => {
     expect(result.get('col_2')!.revision).toBe(2);
   });
 
-  it('falls back to an empty revision-0 draft for a collections row with no matching collection_drafts row', async () => {
-    const supabase = fakeSupabase({
-      collections: [{ id: 'col_orphan', published_revision: null }],
-      collection_drafts: [],
-    });
-    const result = await loadCollectionResponses(supabase, ['col_orphan']);
-    const collection = result.get('col_orphan')!;
-    expect(collection.revision).toBe(0);
-    expect(collection.name).toBe('');
-    expect(collection.fields).toEqual([]);
+  it('falls back to an empty revision-0 draft for a collections row with no matching collection_drafts row, and logs a warning so the anomaly is discoverable', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const supabase = fakeSupabase({
+        collections: [{ id: 'col_orphan', published_revision: null }],
+        collection_drafts: [],
+      });
+      const result = await loadCollectionResponses(supabase, ['col_orphan']);
+      const collection = result.get('col_orphan')!;
+      expect(collection.revision).toBe(0);
+      expect(collection.name).toBe('');
+      expect(collection.fields).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('col_orphan');
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('does not log a warning for a collection that has a matching draft', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const supabase = fakeSupabase({
+        collections: [{ id: 'col_1', published_revision: null }],
+        collection_drafts: [{ collection_id: 'col_1', revision: 1, payload: { name: 'Fine', fields: [] } }],
+      });
+      await loadCollectionResponses(supabase, ['col_1']);
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('propagates a supabase error instead of swallowing it', async () => {

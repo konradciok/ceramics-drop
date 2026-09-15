@@ -57,7 +57,13 @@ export async function loadCollectionResponses(
     // product_drafts entirely. A missing draftEntry here would mean data
     // corruption, not a normal state; fall back to an empty revision-0 draft
     // rather than throwing, so a corrupt row still surfaces as a response
-    // instead of a 500 that hides which collection is broken.
+    // instead of a 500 that hides which collection is broken. Log it (same
+    // `[cms-api]` prefix convention as request-handler.ts's unhandled-error
+    // logging) so this anomaly is at least discoverable if it ever fires —
+    // otherwise the collection just silently looks empty forever.
+    if (!draftEntry) {
+      console.warn(`[cms-api] collection ${collection.id} has no collection_drafts row — falling back to an empty revision-0 draft`);
+    }
     const revision = draftEntry?.revision ?? 0;
     const name = draftEntry?.payload.name ?? '';
     const fields = draftEntry?.payload.fields ?? [];
