@@ -120,7 +120,10 @@ describeLocal('fresh local catalog backfill publication gate', () => {
     assertQuery('read activated prints', activated);
     expect(activated.data).toEqual([{ id: productId, status: 'active' }]);
 
-    await expect(backfillCatalog(supabase)).resolves.toBeUndefined();
+    // Rerunning the backfill against a fresh (non-CMS-edited) catalog skips
+    // nothing — the ownership guard only excludes ids with product_drafts
+    // history (20260914140000_backfill_cms_ownership_guard.sql).
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
 
     const rerunProduct = await supabase
       .from('products')

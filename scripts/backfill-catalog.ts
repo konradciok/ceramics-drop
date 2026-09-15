@@ -33,12 +33,17 @@ async function main(): Promise<void> {
   });
 
   const seed = buildCatalogSeed();
-  await backfillCatalog(supabase);
+  const { skippedCmsOwnedIds } = await backfillCatalog(supabase);
 
   console.log('\nCatalog backfill complete.');
   console.log(`  products: ${seed.products.length}`);
   console.log(`  variants: ${seed.variants.length}`);
   console.log(`  media:    ${seed.media.length}\n`);
+  if (skippedCmsOwnedIds.length > 0) {
+    console.warn(
+      `catalog:backfill skipped ${skippedCmsOwnedIds.length} CMS-owned id(s) (edited via the CMS since backfill — left untouched): ${skippedCmsOwnedIds.join(', ')}`,
+    );
+  }
 }
 
 main().catch((error: unknown) => {
