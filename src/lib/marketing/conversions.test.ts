@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
 import { registryProductById } from '../products';
 import { toAnalyticsItem } from '../analytics';
+import { PRINT_COLLECTION_DEFINITIONS } from '../print-curation';
 
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
@@ -41,6 +42,13 @@ function deps(over = {}) {
     sendGa4: vi.fn().mockResolvedValue({ ok: true, status: 204 }),
     appVersion: '0.10.0',
     appGitSha: '8ae90a5',
+    // Hermetic stub: without this, deps.loadDefinitions falls through to the
+    // real loadPrintCollectionDefinitions, which attempts a real Supabase
+    // call via getSupabaseAdmin(). No test in this file's default path
+    // exercises print-collection naming, so an empty list is a safe default;
+    // the one test that does (the print-line-item-naming test below)
+    // overrides this with the real curation map.
+    loadDefinitions: vi.fn().mockResolvedValue([]),
     ...over,
   };
 }
@@ -117,6 +125,10 @@ describe('sendPurchaseConversions', () => {
 
   it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {
     const d = deps({
+      // Exercises the CMS-resolved naming path: feed it the real curation map
+      // (no network call — it's a local, synchronously-computed constant) so
+      // the design-name assertion below stays byte-identical to production.
+      loadDefinitions: vi.fn().mockResolvedValue(PRINT_COLLECTION_DEFINITIONS),
       loadOrder: vi.fn().mockResolvedValue(
         baseOrder({
           // Totals consistent with the two items below: 9000 + 35000 + 1800 shipping.
