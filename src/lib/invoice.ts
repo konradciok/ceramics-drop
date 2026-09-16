@@ -4,6 +4,7 @@ import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
 import { registryPrintById } from './prints';
+import { loadPrintCollectionDefinitions } from './print-collections';
 import { variantLabel } from './print-cart';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import type { PrintVariantSelection } from './types';
@@ -65,6 +66,7 @@ export async function createInvoiceForOrder(
 ): Promise<void> {
   const stripe = deps?.stripe ?? getStripe();
   const supabase = deps?.supabase ?? getSupabaseAdmin();
+  const definitions = await loadPrintCollectionDefinitions();
 
   const { data: order, error: orderError } = await supabase
     .from('orders').select('*')
@@ -179,7 +181,7 @@ export async function createInvoiceForOrder(
         const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
-        label = (design ? printDisplayName(design, printName) : printName)
+        label = (design ? printDisplayName(design, printName, definitions) : printName)
           + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
         idempotencySuffix = `_${variant.prodigiSku}`;
       } else {

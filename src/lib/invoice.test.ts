@@ -58,6 +58,20 @@ let itemRows: Array<Record<string, unknown>> | null = ITEMS;
 vi.mock('./stripe', () => ({ getStripe: () => stripeMock }));
 vi.mock('./supabase', () => ({ getSupabaseAdmin: () => supabaseMock }));
 
+// Deterministic CMS-collection name resolution for print line items — only
+// the DB-facing loadPrintCollectionDefinitions call is mocked (same pattern
+// as cart-lines-server.test.ts), so createInvoiceForOrder never makes a real
+// Supabase call to resolve print collection names.
+vi.mock('./print-collections', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./print-collections')>();
+  return {
+    ...actual,
+    loadPrintCollectionDefinitions: vi.fn(async () => [
+      { slug: 'ostrea', name: 'Ostrea', designIds: ['fap001'], prints: [] },
+    ]),
+  };
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   fromMode = 'select';
