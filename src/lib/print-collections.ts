@@ -11,7 +11,9 @@
    unknown to that map (for example a DB-created design) remains safely in
    the localized fallback bucket.
    ============================================================ */
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { PRINT_COLLECTION_DEFINITIONS } from './print-curation';
+import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
 
 export type PrintCollectionSlug = string;
@@ -48,4 +50,64 @@ export function groupPrintDesigns(
   const rest = designs.filter((d) => !COLLECTION_BY_ID.has(d.id));
   groups.push({ slug: UNASSIGNED_COLLECTION, name: undefined, designs: rest });
   return groups.filter((g) => g.designs.length > 0);
+}
+
+type CollectionField = {
+  key: string;
+  value: string;
+};
+
+/**
+ * Loads the real, CMS-managed fine-art-print collections — published state
+ * only, never a draft. Mirrors PrintCollectionDefinition's shape so callers
+ * (groupPrintDesigns, printDisplayName) can't tell a DB-loaded array from
+ * the static one.
+ *
+ * `prints` is always returned empty: nothing in this codebase reads it
+ * (only `.designIds` and `.name`/`.slug` are used by any current or Plan-1
+ * caller — see print-curation.ts's own PRINT_COLLECTION_DEFINITIONS
+ * construction, where `prints` mirrors curation-map metadata that has no DB
+ * equivalent and no consumer).
+ */
+export async function loadPrintCollectionDefinitions(
+  supabase: SupabaseClient,
+): Promise<PrintCollectionDefinition[]> {
+  const { data: collections, error: collectionsError } = await supabase
+    .from('collections')
+    .select('id, published_revision')
+    .not('published_revision', 'is', null);
+  if (collectionsError) throw collectionsError;
+
+  const rows = (collections ?? []) as { id: string; published_revision: number }[];
+
+  const definitions = await Promise.all(
+    rows.map(async (row) => {
+      const { data: draft, error: draftError } = await supabase
+        .from('collection_drafts')
+        .select('payload')
+        .eq('collection_id', row.id)
+        .eq('revision', row.published_revision)
+        .maybeSingle();
+      if (draftError) throw draftError;
+      if (!draft) return null;
+
+      const payload = draft.payload as { name: string; fields: CollectionField[] };
+      const fields = payload.fields ?? [];
+      const slugField = fields.find((f) => f.key === 'slug');
+      const productsField = fields.find((f) => f.key === 'products');
+      const designIds = productsField?.value
+        ? productsField.value.split(',').map((id) => id.trim()).filter((id) => id.length > 0)
+        : [];
+
+      const definition: PrintCollectionDefinition = {
+        slug: slugField?.value || row.id,
+        name: payload.name,
+        designIds,
+        prints: [],
+      };
+      return definition;
+    }),
+  );
+
+  return definitions.filter((d): d is PrintCollectionDefinition => d !== null);
 }
