@@ -3,7 +3,6 @@ import * as Sentry from '@sentry/nextjs';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
 import { registryProductById } from '../products';
 import { toAnalyticsItem } from '../analytics';
-import { PRINT_COLLECTION_DEFINITIONS } from '../print-curation';
 
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
@@ -125,10 +124,15 @@ describe('sendPurchaseConversions', () => {
 
   it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {
     const d = deps({
-      // Exercises the CMS-resolved naming path: feed it the real curation map
-      // (no network call — it's a local, synchronously-computed constant) so
-      // the design-name assertion below stays byte-identical to production.
-      loadDefinitions: vi.fn().mockResolvedValue(PRINT_COLLECTION_DEFINITIONS),
+      // Exercises the CMS-resolved naming path with a fixture whose name the
+      // static PRINT_COLLECTION_DEFINITIONS default cannot produce for fap005
+      // (it maps fap005 to 'Horizons'): this pins that `definitions` is
+      // actually threaded through to printDisplayName, not silently dropped
+      // in favor of the static fallback (which would happen to also resolve
+      // fap005 to a plausible-looking name and let this test pass either way).
+      loadDefinitions: vi.fn().mockResolvedValue([
+        { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
+      ]),
       loadOrder: vi.fn().mockResolvedValue(
         baseOrder({
           // Totals consistent with the two items below: 9000 + 35000 + 1800 shipping.
@@ -148,7 +152,7 @@ describe('sendPurchaseConversions', () => {
     const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap005');
     expect(printItem).toMatchObject({
       item_id: 'fap005',
-      item_name: 'Horizons 01',
+      item_name: 'CmsOnly 01',
       item_category: 'fine-art-prints',
       item_variant: '50×70 cm · frame black',
       price: 350,

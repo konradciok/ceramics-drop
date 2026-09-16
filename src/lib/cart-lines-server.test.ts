@@ -21,7 +21,11 @@ vi.mock('./print-collections', async (importOriginal) => {
   return {
     ...actual,
     loadPrintCollectionDefinitions: vi.fn(async () => [
-      { slug: 'ostrea', name: 'Ostrea', designIds: ['fap001'], prints: [] },
+      // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
+      // default also names fap001's collection 'Ostrea', so asserting on that
+      // name wouldn't prove this mocked `definitions` value was actually used
+      // versus the static fallback silently winning.
+      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
     ]),
   };
 });
@@ -64,7 +68,7 @@ describe('resolveCartLinesServer print line names', () => {
     const printLine = lines.find((l) => l.kind === 'print');
     expect(printLine).toBeDefined();
     if (printLine?.kind === 'print') {
-      expect(printLine.name).toBe('Ostrea 01');
+      expect(printLine.name).toBe('CmsOnly 01');
     }
   });
 });

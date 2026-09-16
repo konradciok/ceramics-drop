@@ -66,8 +66,13 @@ vi.mock('./print-collections', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./print-collections')>();
   return {
     ...actual,
+    // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
+    // default also names fap001's collection 'Ostrea', so asserting on that
+    // name wouldn't prove this mocked `definitions` value was actually used
+    // versus the static fallback silently winning (see the print-line-naming
+    // assertion below, which pins on 'CmsOnly 01').
     loadPrintCollectionDefinitions: vi.fn(async () => [
-      { slug: 'ostrea', name: 'Ostrea', designIds: ['fap001'], prints: [] },
+      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
     ]),
   };
 });
@@ -399,6 +404,23 @@ describe('createOrderInvoice', () => {
       .filter((k: string) => k !== 'ii2_ord-1_shipping');
     expect(keys).toHaveLength(2);
     expect(new Set(keys).size).toBe(2);
+  });
+
+  it('labels a fine-art print line item with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
+    itemRows = [
+      {
+        order_id: 'ord-1',
+        product_id: 'fap001',
+        unit_price: 35000,
+        variant: { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' },
+      },
+    ];
+    await createOrderInvoice('pi_1');
+    const call = stripeMock.invoiceItems.create.mock.calls.find(
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_fap001_GLOBAL-FAP-28X40',
+    );
+    expect(call).toBeDefined();
+    expect((call![0] as { description: string }).description).toContain('CmsOnly 01');
   });
 
   it('uses English product labels and shipping description for en locale', async () => {
