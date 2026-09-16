@@ -56,15 +56,17 @@ function fakeSupabase(config: FakeSupabaseConfig) {
 const ALL_NAMES = (curationSource as { collections: { name: string }[] }).collections.map((c) => c.name);
 
 describe('buildFields', () => {
-  it('produces 4 locale description fields, a products field, and a slug field, in that order', () => {
+  it('produces 4 blank locale description fields, a products field, a slug field, and a kind field, in that order (7 fields)', () => {
     const fields = buildFields('Ostrea', 'ostrea', ['fap001', 'fap002', 'fap003']);
+    expect(fields).toHaveLength(7);
     expect(fields).toEqual([
-      { key: 'description', label: 'Opis kolekcji', type: 'text', value: 'Ostrea.', locale: 'pl', sourceLocale: 'pl' },
+      { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'pl', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'en', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'es', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },
       { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value: 'fap001,fap002,fap003', locale: 'none', sourceLocale: 'none' },
       { key: 'slug', label: 'Slug', type: 'text', value: 'ostrea', locale: 'none', sourceLocale: 'none' },
+      { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' },
     ]);
   });
 });

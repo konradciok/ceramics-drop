@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import curationSource from '../config/print-catalog-curation.json';
-import { loadSupabaseClient } from './lib/script-env';
+import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
 
 type CurationCollection = { slug: string; name: string; prints: { productId: string }[] };
 type CurationSource = { collections: CurationCollection[] };
@@ -40,12 +40,21 @@ export function generateCollectionId(): string {
 
 export function buildFields(name: string, slug: string, productIds: string[]) {
   return [
-    { key: 'description', label: 'Opis kolekcji', type: 'text', value: `${name}.`, locale: 'pl', sourceLocale: 'pl' },
+    // Left blank rather than a generated `${name}.` placeholder — a blank
+    // field reads as genuinely unwritten to an operator editing the
+    // collection later; a pre-filled one reads as authored (but wrong) copy.
+    { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'pl', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'en', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'es', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },
     { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value: productIds.join(','), locale: 'none', sourceLocale: 'none' },
     { key: 'slug', label: 'Slug', type: 'text', value: slug, locale: 'none', sourceLocale: 'none' },
+    // Scopes this collection into the fine-art-print storefront sections —
+    // see src/lib/print-collections.ts's loadPrintCollectionDefinitions,
+    // which only includes collections carrying this exact field/value. A
+    // collection created via the CMS's generic "+ Nowa kolekcja" button has
+    // no `kind` field and is safely excluded by default.
+    { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' },
   ];
 }
 
@@ -88,6 +97,10 @@ export async function runBackfill(supabase: SupabaseClient): Promise<void> {
       }
       throw error;
     }
+    // Every exit path above either sets `created` or throws — this makes
+    // that invariant explicit rather than silently trusting it, in case a
+    // future edit adds a `break` that skips setting it.
+    if (!created) throw new Error(`unreachable: exited the create retry loop for "${collection.name}" without creating or throwing`);
 
     const { error: publishError } = await supabase.rpc('publish_collection_revision', {
       p_collection_id: collectionId,
@@ -103,7 +116,17 @@ export async function runBackfill(supabase: SupabaseClient): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // Collections have no delete API, so a misdirected run (e.g. .env.local
+  // accidentally pointing at production during what was meant to be a test
+  // run) creates permanent, hard-to-clean rows. loadSupabaseClient() throws
+  // first if the target env vars are missing; only once that's confirmed
+  // present do we log the resolved target host and what's about to be
+  // written, before the first RPC write — giving a human running the script
+  // a chance to Ctrl+C if the target looks wrong.
   const supabase = loadSupabaseClient();
+  const env = loadLocalEnv();
+  console.log(`Target: ${new URL(env.SUPABASE_URL!).host}`);
+  console.log(`Will process: ${source.collections.map((c) => c.name).join(', ')}`);
   await runBackfill(supabase);
 }
 
