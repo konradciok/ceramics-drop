@@ -129,7 +129,7 @@ export function toAnalyticsItem(
  * (`print:fap01:a3:satin:oak`) — to an AnalyticsItem, or null if unresolvable.
  * Lets the cart/checkout/purchase events itemise prints alongside ceramics.
  */
-export function analyticsItemForId(id: string, priceOverride?: number): AnalyticsItem | null {
+export function analyticsItemForId(id: string, priceOverride?: number, nameOverride?: string): AnalyticsItem | null {
   if (isGiftCardToken(id)) {
     const dec = decodeGiftCardToken(id);
     if (!dec) return null;
@@ -154,7 +154,7 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
     if (priceOverride === undefined) return null;
     return {
       item_id: design.id,
-      item_name: printDisplayName(design),
+      item_name: nameOverride ?? printDisplayName(design),
       item_brand: BRAND,
       item_category: 'fine-art-prints',
       item_variant: variantLabel(dec.sel, 'en'),
@@ -168,9 +168,13 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
 }
 
 /** Resolve a positional ids + prices pair to AnalyticsItems, dropping unresolvable ids. */
-export function analyticsItemsForIds(ids: string[], itemPrices?: number[]): AnalyticsItem[] {
+export function analyticsItemsForIds(
+  ids: string[],
+  itemPrices?: number[],
+  nameOverrides?: (string | undefined)[],
+): AnalyticsItem[] {
   return ids
-    .map((id, i) => analyticsItemForId(id, itemPrices?.[i]))
+    .map((id, i) => analyticsItemForId(id, itemPrices?.[i], nameOverrides?.[i]))
     .filter((it): it is AnalyticsItem => it !== null);
 }
 
@@ -192,14 +196,14 @@ export function buildAddToCartEvent(
   );
 }
 
-type PrintItemInput = { id: string; num: string; variantLabel: string; price: number };
+type PrintItemInput = { id: string; num: string; variantLabel: string; price: number; itemName?: string };
 
 /** One canonical AnalyticsItem shape for a print variant (item_id = design id,
  *  so Meta content_ids / GA4 item_id match the fap0x merchant-feed rows). */
 function printAnalyticsItem(print: PrintItemInput): AnalyticsItem {
   return {
     item_id: print.id,
-    item_name: printDisplayName(print),
+    item_name: print.itemName ?? printDisplayName(print),
     item_brand: BRAND,
     item_category: 'fine-art-prints',
     item_variant: print.variantLabel,
