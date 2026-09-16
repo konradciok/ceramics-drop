@@ -76,11 +76,86 @@ over making every call site async — smaller diff, and these are pure
 functions today; keeping them pure (data in, data out) is worth preserving
 rather than turning them into async I/O-performing functions.
 
-**Implementation must grep every current caller** of
-`PRINT_COLLECTION_DEFINITIONS`, `printDisplayName`, `curationForProduct`,
-`catalogStatusForPrint`, `groupPrintDesigns`, `collectionOf` before
-changing signatures, so no call site is silently left calling stale
-synchronous data.
+**Confirmed full caller list** (grepped against `origin/main`, non-test):
+`printDisplayName` is called from 15 files spanning several *different*
+execution contexts, not just page renders — `sklep/page.tsx`,
+`(pdp)/[slug]/[id]/page.tsx`, `[locale]/page.tsx` (homepage),
+`seo/structured-data.ts` (page metadata — server, request-scoped);
+`components/shop/CartView.tsx`, `PrintCollectionScreen.tsx`,
+`PrintProductScreen.tsx` (need to confirm client vs. server per
+component); `lib/invoice.ts` (order invoice generation — background/
+webhook context, its own lifecycle); `lib/analytics.ts`,
+`lib/marketing/conversions.ts` (event/webhook-triggered, not request-scoped
+in the page sense); `lib/feed.ts` (product feed generation — cron/on-demand,
+its own lifecycle); `lib/account/items.ts` (order-history rendering);
+`lib/admin/content.ts`, `lib/admin/products.ts` (admin listings).
+`catalogStatusForPrint` is additionally called from `lib/catalog/seed.ts`.
+`curationForProduct` from `lib/prints.ts`.
+
+**This is a materially bigger change than "swap one page's data source."**
+Given the real blast radius (client components, webhooks, cron jobs, admin
+— each a different data-loading lifecycle), this work is split into two
+plans:
+
+- **Plan 1 (this plan's implementation target):** the loader, the
+  backfill, and the storefront-facing consumers that already do
+  per-request async data loading and together cover what a customer
+  actually sees browsing the site: `src/app/[locale]/(collections)/sklep/page.tsx`
+  and `src/components/shop/PrintCollectionScreen.tsx` (the collection
+  listing — the actual grouping/rendering happens in the screen component,
+  not the page file), `src/app/[locale]/(pdp)/[slug]/[id]/page.tsx` and
+  `src/components/shop/PrintProductScreen.tsx` (the PDP — same split),
+  `src/app/[locale]/page.tsx` (homepage), and `src/lib/seo/structured-data.ts`
+  (`printCollectionSchema`/`printProductSchema`, both already take a
+  pre-fetched `designs`/`design` argument from their callers, so they just
+  need the same new optional parameter, not a data-loading change).
+- **Plan 2 (separate, scoped later, after Plan 1 ships and is verified
+  live — now fully investigated and planned, see
+  `docs/superpowers/plans/2026-09-16-fine-art-collections-plan2.md`):**
+  `CartView.tsx` + `cart-lines-server.ts` (the cart's actual data
+  resolution is server-side; CartView reads a pre-resolved name, no
+  client DB access needed), `invoice.ts`, `analytics.ts` +
+  `PrintCollectionAnalytics.tsx` + `PrintViewAnalytics.tsx` +
+  `PrintConfigurator.tsx` + `PrintPdpPurchase.tsx` (client-side GA4/Meta
+  tracking — each of these components already receives or can receive
+  `definitions`/a resolved name from its Plan-1-updated parent, one to two
+  hops away), `marketing/conversions.ts`, `feed.ts`, `admin/content.ts`,
+  `admin/products.ts`, `account/items.ts`. `catalog/seed.ts` was
+  investigated and confirmed genuinely out of scope for both plans — its
+  only relevant call is `catalogStatusForPrint`, already excluded.
+  `AddToCartButton.tsx`, `Gallery.tsx`, `ProductTile.tsx` were initially
+  suspected in scope but confirmed ceramics-only — no print-naming
+  dependency at all, need no changes.
+
+Plan 1 leaves Plan 2's call sites reading the OLD static JSON/exports
+unchanged and working exactly as today — this plan does not delete
+`config/print-catalog-curation.json` or `print-curation.ts`'s exports yet
+(see the Cleanup section: cleanup only happens once *all* callers are
+migrated, i.e. after Plan 2).
+
+**Additional scope boundary, also out of Plan 1 (and Plan 2):**
+`curationForProduct()` (`print-curation.ts`, called from `prints.ts:504`)
+drives a THIRD thing beyond naming and grouping — whether a print is
+`published` (shown/orderable) at all — and `prints.ts`'s `getPrintDesigns()`
+is what every page (including Plan 1's four) calls to get its design list
+in the first place. Plan 1 does **not** touch this: `published` stays
+governed by the static JSON, unchanged, same as the already-agreed
+archived-status boundary. Consequence: after Plan 1, editing a collection
+through the CMS can rename a print or move it between sections, but
+cannot make a wholly new print appear or an existing one disappear from
+the site — that still requires editing the JSON and deploying, same as
+today. Revisiting `published`'s source is explicitly out of scope for both
+plans; flag as a future follow-up if it becomes a real need.
+
+**Signature design (why Plan 2 callers need zero changes):**
+`printDisplayName(design, fallback)` and `groupPrintDesigns(designs)` gain
+a new, optional, backward-compatible third/second parameter —
+`definitions: PrintCollectionDefinition[]` — defaulting to the existing
+module-level `PRINT_COLLECTION_DEFINITIONS`/`PRINT_COLLECTIONS` constants
+(the static JSON, exactly as today). Plan 1's four files pass their
+DB-loaded definitions explicitly; every other caller (Plan 2's nine files)
+needs no code change at all — it keeps calling the same function the same
+way and gets the same static-JSON-backed behavior it does today.
 
 ### 3. Backfill (one-time script, run against real production)
 
@@ -159,16 +234,13 @@ does not create duplicates.
   through the CMS itself (new draft revision, fix, publish) — or, only in
   a genuine emergency, direct SQL. No exotic recovery mechanism needed.
 
-### 6. Cleanup
+### 6. Cleanup (Plan 2's final task, not Plan 1)
 
-Once the code change is live and verified: delete
-`config/print-catalog-curation.json` and the now-dead exports in
-`print-curation.ts` (`validatePrintCuration`, `PRINT_CURATION`,
-`ACTIVE_PRINT_CURATION`, and anything else with no remaining caller) —
-**grep for every export first**; `RETIRED_PRINT_CURATION` /
-`curationForProduct`'s retired-lookup behavior may still be relied on
-elsewhere for archived-print handling even though the *collections* half
-of this file is being replaced — confirm before removing, don't assume.
+`config/print-catalog-curation.json` and `print-curation.ts`'s exports
+stay in place and in use after Plan 1 — Plan 2's callers still read them.
+Cleanup (deleting the JSON file and any exports left with no caller) is
+Plan 2's own final task, once every caller has migrated. Do not delete
+anything from `print-curation.ts` as part of Plan 1.
 
 ## Non-goals
 
