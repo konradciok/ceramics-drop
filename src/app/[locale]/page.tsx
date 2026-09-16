@@ -33,7 +33,6 @@ import {
 } from '@/lib/editorial-images';
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
-import { getSupabaseAdmin } from '@/lib/supabase';
 
 // Catalog visibility and print pricing are database-owned in production. Keep
 // the locale route server-rendered so a deploy can never freeze code-mode build
@@ -100,7 +99,7 @@ export default async function HomePage({ params, searchParams }: Props) {
     getPrintDesigns(),
     getPrintPricingConfig(),
     getHomeContent(locale as CmsLocale, previewToken),
-    loadPrintCollectionDefinitions(getSupabaseAdmin()),
+    loadPrintCollectionDefinitions(),
   ]);
 
   // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.

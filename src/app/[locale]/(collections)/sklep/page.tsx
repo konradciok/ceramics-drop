@@ -10,7 +10,6 @@ import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage } from '@/lib/print-mockups';
 import { groupPrintDesigns, loadPrintCollectionDefinitions } from '@/lib/print-collections';
-import { getSupabaseAdmin } from '@/lib/supabase';
 import { SITE_URL } from '@/lib/site';
 import type { Locale } from '@/i18n/routing';
 
@@ -32,7 +31,7 @@ export async function generateMetadata(
   // Representative OG/Twitter image: the first curated design's listing
   // mockup, in the same order the collection itself renders — without this,
   // the page inherits the global ceramic mug fallback (SEO-010).
-  const definitions = await loadPrintCollectionDefinitions(getSupabaseAdmin());
+  const definitions = await loadPrintCollectionDefinitions();
   const [hero] = groupPrintDesigns(await getPrintDesigns(), definitions).flatMap((g) => g.designs);
   const heroImage = hero ? printListingImage(hero, registryPrintById(hero.id)) : undefined;
   // Spread the parent's openGraph (type, siteName) — a child openGraph object
@@ -67,7 +66,7 @@ export default async function Page({ params }: Props) {
     getTranslations({ locale }),
     getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
     getPrintPricingConfig(),
-    loadPrintCollectionDefinitions(getSupabaseAdmin()),
+    loadPrintCollectionDefinitions(),
   ]);
   const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing, definitions });
   return (

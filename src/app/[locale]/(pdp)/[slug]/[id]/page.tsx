@@ -18,7 +18,6 @@ import { getProductNote } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { readWithFallback } from '@/lib/supabase-timeout';
-import { getSupabaseAdmin } from '@/lib/supabase';
 import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import type { Locale } from '@/i18n/routing';
 import type { PrintAssetCoverage } from '@/server/print-assets/types';
@@ -45,7 +44,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const singular = t('product.print');
-    const definitions = await loadPrintCollectionDefinitions(getSupabaseAdmin());
+    const definitions = await loadPrintCollectionDefinitions();
     const displayName = printDisplayName(design, singular, definitions);
     const rawNotes = t.raw(`notes.${PRINT_SLUG}`) as unknown;
     const fallbackDescription = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
@@ -111,7 +110,7 @@ export default async function Page({ params, searchParams }: Props) {
       ),
       getPrintPricingConfig(),
       getPrintPdpContent(locale as Locale, previewToken),
-      loadPrintCollectionDefinitions(getSupabaseAdmin()),
+      loadPrintCollectionDefinitions(),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.

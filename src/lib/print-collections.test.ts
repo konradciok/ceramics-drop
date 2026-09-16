@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import de from '../../messages/de.json';
 import en from '../../messages/en.json';
@@ -10,9 +10,15 @@ import {
   UNASSIGNED_COLLECTION,
   groupPrintDesigns,
   loadPrintCollectionDefinitions,
+  loadPrintCollectionDefinitionsFromDb,
 } from './print-collections';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
+
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+
+const { mockGetSupabaseAdmin } = vi.hoisted(() => ({ mockGetSupabaseAdmin: vi.fn() }));
+vi.mock('./supabase', () => ({ getSupabaseAdmin: mockGetSupabaseAdmin }));
 
 describe('PRINT_COLLECTIONS integrity', () => {
   it('has unique slugs, none equal to the fallback', () => {
@@ -73,7 +79,7 @@ describe('i18n coverage', () => {
   });
 });
 
-type DraftRow = { collection_id: string; revision: number; payload: unknown };
+type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };
 
 interface FakeSupabaseConfig {
   collections: { id: string; published_revision: number | null }[];
@@ -82,6 +88,23 @@ interface FakeSupabaseConfig {
   collectionDraftsError?: { message: string } | null;
 }
 
+/** The payload field every print collection must carry (see
+ *  scripts/backfill-fine-art-collections.ts's buildFields). */
+const KIND_FIELD = { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' };
+
+function productsField(value: string) {
+  return { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value, locale: 'none', sourceLocale: 'none' };
+}
+
+function slugField(value: string) {
+  return { key: 'slug', label: 'Slug', type: 'text', value, locale: 'none', sourceLocale: 'none' };
+}
+
+/** Fake Supabase client matching loadPrintCollectionDefinitionsFromDb's real
+ *  query shape: `collections.select().not().abortSignal()` then a single
+ *  batched `collection_drafts.select().in().abortSignal()` — the `.in()`
+ *  fetch returns every saved revision for the requested collection ids,
+ *  mirroring the real batched query the loader filters/sorts in JS. */
 function fakeSupabase(config: FakeSupabaseConfig): SupabaseClient {
   return {
     from: (table: string) => {
@@ -89,29 +112,32 @@ function fakeSupabase(config: FakeSupabaseConfig): SupabaseClient {
         return {
           select: () => ({
             not: () => ({
-              then: (resolve: (v: { data: unknown[]; error: { message: string } | null }) => void) => {
-                if (config.collectionsError) {
-                  resolve({ data: [], error: config.collectionsError });
-                } else {
-                  resolve({ data: config.collections.filter((c) => c.published_revision != null), error: null });
-                }
-              },
+              abortSignal: () => ({
+                then: (resolve: (v: { data: unknown[]; error: { message: string } | null }) => void) => {
+                  if (config.collectionsError) {
+                    resolve({ data: [], error: config.collectionsError });
+                  } else {
+                    resolve({ data: config.collections.filter((c) => c.published_revision != null), error: null });
+                  }
+                },
+              }),
             }),
           }),
         };
       }
       return {
         select: () => ({
-          eq: (_col: string, collectionId: string) => ({
-            eq: (_col2: string, revision: number) => ({
-              maybeSingle: async () => {
+          in: (_col: string, ids: string[]) => ({
+            abortSignal: () => ({
+              then: (resolve: (v: { data: unknown[]; error: { message: string } | null }) => void) => {
                 if (config.collectionDraftsError) {
-                  return { data: null, error: config.collectionDraftsError };
+                  resolve({ data: [], error: config.collectionDraftsError });
+                } else {
+                  resolve({
+                    data: config.collection_drafts.filter((d) => ids.includes(d.collection_id)),
+                    error: null,
+                  });
                 }
-                const row = config.collection_drafts.find(
-                  (d) => d.collection_id === collectionId && d.revision === revision,
-                );
-                return { data: row ?? null, error: null };
               },
             }),
           }),
@@ -121,10 +147,10 @@ function fakeSupabase(config: FakeSupabaseConfig): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
-describe('loadPrintCollectionDefinitions', () => {
+describe('loadPrintCollectionDefinitionsFromDb', () => {
   it('returns an empty array when no collections are published', async () => {
     const supabase = fakeSupabase({ collections: [], collection_drafts: [] });
-    const result = await loadPrintCollectionDefinitions(supabase);
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result).toEqual([]);
   });
 
@@ -132,10 +158,10 @@ describe('loadPrintCollectionDefinitions', () => {
     const supabase = fakeSupabase({
       collections: [{ id: 'col_draft1', published_revision: null }],
       collection_drafts: [
-        { collection_id: 'col_draft1', revision: 1, payload: { name: 'Draft Only', fields: [] } },
+        { collection_id: 'col_draft1', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Draft Only', fields: [KIND_FIELD] } },
       ],
     });
-    const result = await loadPrintCollectionDefinitions(supabase);
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result).toEqual([]);
   });
 
@@ -146,24 +172,15 @@ describe('loadPrintCollectionDefinitions', () => {
         {
           collection_id: 'col_abc123',
           revision: 1,
+          created_at: '2026-01-01T00:00:00Z',
           payload: {
             name: 'Ostrea',
-            fields: [
-              { key: 'slug', label: 'Slug', type: 'text', value: 'ostrea', locale: 'none', sourceLocale: 'none' },
-              {
-                key: 'products',
-                label: 'Produkty i kolejność',
-                type: 'productIds',
-                value: 'fap001,fap002,fap003',
-                locale: 'none',
-                sourceLocale: 'none',
-              },
-            ],
+            fields: [KIND_FIELD, slugField('ostrea'), productsField('fap001,fap002,fap003')],
           },
         },
       ],
     });
-    const result = await loadPrintCollectionDefinitions(supabase);
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result).toEqual([
       { slug: 'ostrea', name: 'Ostrea', designIds: ['fap001', 'fap002', 'fap003'], prints: [] },
     ]);
@@ -176,23 +193,12 @@ describe('loadPrintCollectionDefinitions', () => {
         {
           collection_id: 'col_xyz789',
           revision: 1,
-          payload: {
-            name: 'No Slug Collection',
-            fields: [
-              {
-                key: 'products',
-                label: 'Produkty i kolejność',
-                type: 'productIds',
-                value: 'fap004',
-                locale: 'none',
-                sourceLocale: 'none',
-              },
-            ],
-          },
+          created_at: '2026-01-01T00:00:00Z',
+          payload: { name: 'No Slug Collection', fields: [KIND_FIELD, productsField('fap004')] },
         },
       ],
     });
-    const result = await loadPrintCollectionDefinitions(supabase);
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result[0].slug).toBe('col_xyz789');
   });
 
@@ -203,16 +209,12 @@ describe('loadPrintCollectionDefinitions', () => {
         {
           collection_id: 'col_empty',
           revision: 1,
-          payload: {
-            name: 'Empty',
-            fields: [
-              { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value: '', locale: 'none', sourceLocale: 'none' },
-            ],
-          },
+          created_at: '2026-01-01T00:00:00Z',
+          payload: { name: 'Empty', fields: [KIND_FIELD, productsField('')] },
         },
       ],
     });
-    const result = await loadPrintCollectionDefinitions(supabase);
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result[0].designIds).toEqual([]);
   });
 
@@ -222,16 +224,159 @@ describe('loadPrintCollectionDefinitions', () => {
       collection_drafts: [],
       collectionsError: { message: 'Database connection failed' },
     });
-    await expect(loadPrintCollectionDefinitions(supabase)).rejects.toThrow('Database connection failed');
+    await expect(loadPrintCollectionDefinitionsFromDb(supabase)).rejects.toThrow('Database connection failed');
   });
 
-  it('throws when a collection_drafts query returns an error', async () => {
+  it('throws when the batched collection_drafts query returns an error', async () => {
     const supabase = fakeSupabase({
       collections: [{ id: 'col_abc123', published_revision: 1 }],
       collection_drafts: [],
-      collectionDraftsError: { message: 'Failed to fetch draft' },
+      collectionDraftsError: { message: 'Failed to fetch drafts' },
     });
-    await expect(loadPrintCollectionDefinitions(supabase)).rejects.toThrow('Failed to fetch draft');
+    await expect(loadPrintCollectionDefinitionsFromDb(supabase)).rejects.toThrow('Failed to fetch drafts');
+  });
+
+  it('picks only the draft revision matching published_revision, ignoring other saved revisions returned by the batched fetch', async () => {
+    const supabase = fakeSupabase({
+      collections: [{ id: 'col_x', published_revision: 2 }],
+      collection_drafts: [
+        { collection_id: 'col_x', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Old Draft', fields: [KIND_FIELD] } },
+        { collection_id: 'col_x', revision: 2, created_at: '2026-01-02T00:00:00Z', payload: { name: 'Published', fields: [KIND_FIELD] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result).toEqual([{ slug: 'col_x', name: 'Published', designIds: [], prints: [] }]);
+  });
+
+  it('orders published collections by the published draft\'s created_at, oldest first, regardless of row order', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_b', published_revision: 1 },
+        { id: 'col_a', published_revision: 1 },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_b', revision: 1, created_at: '2026-02-01T00:00:00Z', payload: { name: 'B', fields: [KIND_FIELD] } },
+        { collection_id: 'col_a', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'A', fields: [KIND_FIELD] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.name)).toEqual(['A', 'B']);
+  });
+
+  it('excludes a published collection with no kind field (not a print collection)', async () => {
+    const supabase = fakeSupabase({
+      collections: [{ id: 'col_generic', published_revision: 1 }],
+      collection_drafts: [
+        { collection_id: 'col_generic', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Some Ceramics Collection', fields: [] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result).toEqual([]);
+  });
+
+  it('excludes a published collection whose kind field has a different value', async () => {
+    const supabase = fakeSupabase({
+      collections: [{ id: 'col_other_kind', published_revision: 1 }],
+      collection_drafts: [
+        {
+          collection_id: 'col_other_kind',
+          revision: 1,
+          created_at: '2026-01-01T00:00:00Z',
+          payload: { name: 'Ceramics', fields: [{ key: 'kind', label: 'Rodzaj', type: 'text', value: 'ceramic-collection', locale: 'none', sourceLocale: 'none' }] },
+        },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result).toEqual([]);
+  });
+
+  it.each([
+    ['missing entirely', {}],
+    ['not a string', { name: 123 }],
+  ])('skips a collection whose payload name is %s, rather than crashing', async (_label, payloadOverrides) => {
+    const supabase = fakeSupabase({
+      collections: [{ id: 'col_bad_name', published_revision: 1 }],
+      collection_drafts: [
+        { collection_id: 'col_bad_name', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { ...payloadOverrides, fields: [KIND_FIELD] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result).toEqual([]);
+  });
+
+  it('de-dupes design ids across collections — the earlier collection (by created_at order) wins', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_first', published_revision: 1 },
+        { id: 'col_second', published_revision: 1 },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_first', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'First', fields: [KIND_FIELD, productsField('fap001,fap002')] } },
+        { collection_id: 'col_second', revision: 1, created_at: '2026-01-02T00:00:00Z', payload: { name: 'Second', fields: [KIND_FIELD, productsField('fap002,fap003')] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.designIds)).toEqual([['fap001', 'fap002'], ['fap003']]);
+  });
+
+  it('de-dupes colliding manually-set slugs by appending a numeric suffix, logging a warning', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_first', published_revision: 1 },
+        { id: 'col_second', published_revision: 1 },
+        { id: 'col_third', published_revision: 1 },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_first', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'First', fields: [KIND_FIELD, slugField('same')] } },
+        { collection_id: 'col_second', revision: 1, created_at: '2026-01-02T00:00:00Z', payload: { name: 'Second', fields: [KIND_FIELD, slugField('same')] } },
+        { collection_id: 'col_third', revision: 1, created_at: '2026-01-03T00:00:00Z', payload: { name: 'Third', fields: [KIND_FIELD, slugField('same')] } },
+      ],
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.slug)).toEqual(['same', 'same-2', 'same-3']);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe('loadPrintCollectionDefinitions (request-cached, fallback-on-failure)', () => {
+  it('returns real DB-sourced definitions when the read succeeds', async () => {
+    mockGetSupabaseAdmin.mockReturnValue(
+      fakeSupabase({
+        collections: [{ id: 'col_abc123', published_revision: 1 }],
+        collection_drafts: [
+          {
+            collection_id: 'col_abc123',
+            revision: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            payload: { name: 'Ostrea', fields: [KIND_FIELD, productsField('fap001')] },
+          },
+        ],
+      }),
+    );
+    const result = await loadPrintCollectionDefinitions();
+    expect(result).toEqual([{ slug: 'col_abc123', name: 'Ostrea', designIds: ['fap001'], prints: [] }]);
+  });
+
+  it('falls back to the static PRINT_COLLECTIONS array when getSupabaseAdmin() throws', async () => {
+    mockGetSupabaseAdmin.mockImplementation(() => {
+      throw new Error('offline');
+    });
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await loadPrintCollectionDefinitions();
+    expect(result).toEqual(PRINT_COLLECTIONS);
+    errorLog.mockRestore();
+  });
+
+  it('falls back to the static PRINT_COLLECTIONS array when the underlying query errors', async () => {
+    mockGetSupabaseAdmin.mockReturnValue(
+      fakeSupabase({ collections: [], collection_drafts: [], collectionsError: { message: 'Database connection failed' } }),
+    );
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await loadPrintCollectionDefinitions();
+    expect(result).toEqual(PRINT_COLLECTIONS);
+    errorLog.mockRestore();
   });
 });
 
