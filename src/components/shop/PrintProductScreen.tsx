@@ -74,7 +74,7 @@ export async function PrintProductScreen({
 
   return (
     <>
-    <PrintViewAnalytics design={design} pricing={pricing} />
+    <PrintViewAnalytics design={design} pricing={pricing} definitions={definitions} />
     <article className="pdp">
       <div className="pdp-inner">
         <nav className="pdp-breadcrumb" aria-label="breadcrumb">
