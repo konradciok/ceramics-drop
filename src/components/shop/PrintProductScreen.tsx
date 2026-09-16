@@ -92,6 +92,7 @@ export async function PrintProductScreen({
             alt={displayName}
             usableVariantKeys={usableVariantKeys}
             pricing={pricing}
+            definitions={definitions}
             header={
               <>
                 <div className="eyebrow">{categoryName}</div>
