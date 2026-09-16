@@ -8,6 +8,7 @@ import { authEnabled, getSessionUser } from '@/lib/auth/session';
 import { getAccountOrder } from '@/lib/account/orders';
 import { customerOrderStatus } from '@/lib/account/status';
 import { accountItemLabel, formatOrderAmount, formatOrderDate } from '@/lib/account/items';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatShippingAddress } from '@/lib/shipping-address';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,7 @@ export default async function KontoOrderPage({ params }: Props) {
   const { order, fulfilment } = result;
 
   const t = await getTranslations({ locale });
+  const definitions = await loadPrintCollectionDefinitions();
   const { status, tracking } = customerOrderStatus({
     status: order.status,
     fulfilmentType: order.fulfilment_type,
@@ -84,7 +86,7 @@ export default async function KontoOrderPage({ params }: Props) {
           <h2>{t('account.itemsH')}</h2>
           <ul className="account-items">
             {order.items.map((item, index) => {
-              const label = accountItemLabel(item, t, locale);
+              const label = accountItemLabel(item, t, locale, definitions);
               return (
                 // Index-suffixed: two identical print line items in one order
                 // would otherwise collide on the variant-derived key.
