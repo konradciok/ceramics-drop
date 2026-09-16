@@ -197,10 +197,18 @@ export async function loadPrintCollectionDefinitionsFromDb(
  * rendering exactly — this migration's stated goal.
  */
 export const loadPrintCollectionDefinitions = cache(
-  async (): Promise<PrintCollectionDefinition[]> =>
+  async (supabase?: SupabaseClient): Promise<PrintCollectionDefinition[]> =>
     readWithFallback(
       'printCollectionDefinitions',
-      () => loadPrintCollectionDefinitionsFromDb(getSupabaseAdmin()),
+      // getSupabaseAdmin() is resolved here, inside readWithFallback's own
+      // try/catch, not as a default-parameter expression — a default param
+      // (`supabase: SupabaseClient = getSupabaseAdmin()`) evaluates before
+      // this function body runs, so a throwing getSupabaseAdmin() (e.g. a
+      // missing env var) would escape readWithFallback entirely and violate
+      // this function's documented never-throws guarantee. Confirmed by
+      // print-collections.test.ts's "falls back ... when getSupabaseAdmin()
+      // throws" case.
+      () => loadPrintCollectionDefinitionsFromDb(supabase ?? getSupabaseAdmin()),
       PRINT_COLLECTIONS,
     ),
 );

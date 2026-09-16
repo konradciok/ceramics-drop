@@ -6,6 +6,7 @@
  * referenced by old orders) degrade to showing the raw id.
  */
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { registryProductById } from '@/lib/products';
 import { variantLabel } from '@/lib/print-cart';
 import { registryPrintById } from '@/lib/prints';
@@ -34,7 +35,7 @@ export type ProductRef = {
   known: boolean;
 };
 
-export function productRef(productId: string, variant?: unknown): ProductRef {
+export function productRef(productId: string, variant?: unknown, definitions?: PrintCollectionDefinition[]): ProductRef {
   const p = registryProductById(productId);
   if (p) {
     return {
@@ -51,7 +52,7 @@ export function productRef(productId: string, variant?: unknown): ProductRef {
     const suffix = sel ? ` · ${variantLabel(sel, 'pl')}` : '';
     return {
       id: print.id,
-      label: `${printDisplayName(print, CATEGORY_LABEL['fine-art-prints'])}${suffix}`,
+      label: `${printDisplayName(print, CATEGORY_LABEL['fine-art-prints'], definitions)}${suffix}`,
       category: print.category,
       image: smallest(print.image),
       known: true,

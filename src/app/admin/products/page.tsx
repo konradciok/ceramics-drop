@@ -1,4 +1,6 @@
 import { listProducts } from '@/lib/admin/catalog-list';
+import { adminSupabase } from '@/lib/admin/clients';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { ProductsTable } from './ProductsTable';
 
 // Consistent with the other admin pages (orders, inventory): force request-time
@@ -6,7 +8,8 @@ import { ProductsTable } from './ProductsTable';
 export const dynamic = 'force-dynamic';
 
 export default async function ProductsPage() {
-  const { rows, source, dbCount, expectedCount } = await listProducts();
+  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
+  const { rows, source, dbCount, expectedCount } = await listProducts(definitions);
 
   return (
     <>
