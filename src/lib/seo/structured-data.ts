@@ -1,4 +1,5 @@
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
@@ -245,6 +246,8 @@ type PrintCollectionArgs = {
   notes?: Record<string, string>;
   /** Global print price list — loaded once by the page and shared with the screen. */
   pricing: PrintPricingConfig;
+  /** CMS-resolved collection definitions (id → collection membership) — loaded once by the page. */
+  definitions?: PrintCollectionDefinition[];
 };
 
 /**
@@ -253,7 +256,7 @@ type PrintCollectionArgs = {
  * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
  * print is configurable, not a single SKU.
  */
-export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }: PrintCollectionArgs): Promise<Graph> {
+export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
@@ -283,7 +286,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }:
             position: i + 1,
             item: {
               '@type': 'Product',
-              name: printDisplayName(d, singular),
+              name: printDisplayName(d, singular, definitions),
               description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
               image: `${SITE_URL}${d.image}`,
               category: categoryName,
@@ -315,17 +318,19 @@ type PrintProductArgs = {
   description?: string;
   /** Global print price list — loaded once by the PDP and shared with the screen. */
   pricing: PrintPricingConfig;
+  /** CMS-resolved collection definitions (id → collection membership) — loaded once by the PDP. */
+  definitions?: PrintCollectionDefinition[];
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing }: PrintProductArgs): Graph {
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions }: PrintProductArgs): Graph {
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const name = printDisplayName(design, singular);
+  const name = printDisplayName(design, singular, definitions);
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');

@@ -6,6 +6,7 @@
    straight to the print PDP. Prices are shown as "from X / from Y".
    ============================================================ */
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
@@ -27,10 +28,13 @@ const SLUG = 'fine-art-prints';
 export async function PrintCollectionScreen({
   locale,
   pricing,
+  definitions,
 }: {
   locale: Locale;
   /** Global print price list, loaded once by the page (getPrintPricingConfig). */
   pricing: PrintPricingConfig;
+  /** CMS-managed print collection definitions, loaded once by the page (loadPrintCollectionDefinitions). */
+  definitions: PrintCollectionDefinition[];
 }) {
   const t = await getTranslations();
   const designs = await getPrintDesigns();
@@ -39,7 +43,7 @@ export async function PrintCollectionScreen({
   const { fmt, code: analyticsCurrency } = currencyFormatter(printCurrency);
 
   // Curated collections; grouped display order also drives analytics indices.
-  const groups = groupPrintDesigns(designs);
+  const groups = groupPrintDesigns(designs, definitions);
   const ordered = groups.flatMap((g) => g.designs);
 
   // Entry variant (first size, unframed) — matches the tile's displayed "from X"
@@ -88,7 +92,7 @@ export async function PrintCollectionScreen({
             <div className="gallery" data-count={g.designs.length}>
               {g.designs.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
-                const name = printDisplayName(d, t('product.print'));
+                const name = printDisplayName(d, t('product.print'), definitions);
                 const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link

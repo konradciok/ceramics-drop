@@ -16,7 +16,7 @@ import { toChargeableCurrency } from '@/lib/currency';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { groupPrintDesigns } from '@/lib/print-collections';
+import { groupPrintDesigns, loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } from '@/lib/print-mockups';
 import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
@@ -95,21 +95,22 @@ export default async function HomePage({ params, searchParams }: Props) {
   const storyImage = HOME_STORY_IMAGE;
 
   const currency = await getCurrency(locale);
-  const [printDesigns, printPricing, heroContent] = await Promise.all([
+  const [printDesigns, printPricing, heroContent, definitions] = await Promise.all([
     getPrintDesigns(),
     getPrintPricingConfig(),
     getHomeContent(locale as CmsLocale, previewToken),
+    loadPrintCollectionDefinitions(),
   ]);
 
   // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
-  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'));
+  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'), definitions);
 
   // Nine named collections (plus an "inne" fallback bucket, only if
   // non-empty) — membership/order come from groupPrintDesigns, never
   // hardcoded here. Empty collections are already dropped upstream.
-  const collectionGroups = groupPrintDesigns(printDesigns);
+  const collectionGroups = groupPrintDesigns(printDesigns, definitions);
 
   // Daily-rotated print rail — the same seeded-shuffle mechanism the
   // homepage has always used, now the page's single scrolling rail.

@@ -18,6 +18,7 @@ import { getProductNote } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { readWithFallback } from '@/lib/supabase-timeout';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import type { Locale } from '@/i18n/routing';
 import type { PrintAssetCoverage } from '@/server/print-assets/types';
 import type { CategorySlug } from '@/lib/types';
@@ -43,7 +44,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
     const singular = t('product.print');
-    const displayName = printDisplayName(design, singular);
+    const definitions = await loadPrintCollectionDefinitions();
+    const displayName = printDisplayName(design, singular, definitions);
     const rawNotes = t.raw(`notes.${PRINT_SLUG}`) as unknown;
     const fallbackDescription = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
     const description = await getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken).catch(() => fallbackDescription);
@@ -98,7 +100,7 @@ export default async function Page({ params, searchParams }: Props) {
     const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const [note, coverage, pricing, pdpContent] = await Promise.all([
+    const [note, coverage, pricing, pdpContent, definitions] = await Promise.all([
       getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken),
       readWithFallback<PrintAssetCoverage | null>(
         'printAssetCoverage',
@@ -108,6 +110,7 @@ export default async function Page({ params, searchParams }: Props) {
       ),
       getPrintPricingConfig(),
       getPrintPdpContent(locale as Locale, previewToken),
+      loadPrintCollectionDefinitions(),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
@@ -128,9 +131,10 @@ export default async function Page({ params, searchParams }: Props) {
             tRaw: (key: string) => t.raw(key),
             description: note,
             pricing,
+            definitions,
           })}
         />
-        <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} />
+        <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} definitions={definitions} />
       </main>
     );
   }

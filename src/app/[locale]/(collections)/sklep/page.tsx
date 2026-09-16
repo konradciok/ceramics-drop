@@ -9,7 +9,7 @@ import { getProductNotes } from '@/lib/cms/messages';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage } from '@/lib/print-mockups';
-import { groupPrintDesigns } from '@/lib/print-collections';
+import { groupPrintDesigns, loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { SITE_URL } from '@/lib/site';
 import type { Locale } from '@/i18n/routing';
 
@@ -31,7 +31,8 @@ export async function generateMetadata(
   // Representative OG/Twitter image: the first curated design's listing
   // mockup, in the same order the collection itself renders — without this,
   // the page inherits the global ceramic mug fallback (SEO-010).
-  const [hero] = groupPrintDesigns(await getPrintDesigns()).flatMap((g) => g.designs);
+  const definitions = await loadPrintCollectionDefinitions();
+  const [hero] = groupPrintDesigns(await getPrintDesigns(), definitions).flatMap((g) => g.designs);
   const heroImage = hero ? printListingImage(hero, registryPrintById(hero.id)) : undefined;
   // Spread the parent's openGraph (type, siteName) — a child openGraph object
   // replaces the parent's wholesale, not merges with it (Next.js metadata is
@@ -50,7 +51,7 @@ export async function generateMetadata(
             url: `${SITE_URL}${heroImage}`,
             width: 1200,
             height: 1714,
-            alt: printDisplayName(hero!, t('product.print')),
+            alt: printDisplayName(hero!, t('product.print'), definitions),
           },
         ],
       }),
@@ -61,16 +62,17 @@ export async function generateMetadata(
 export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, notes, pricing] = await Promise.all([
+  const [t, notes, pricing, definitions] = await Promise.all([
     getTranslations({ locale }),
     getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
     getPrintPricingConfig(),
+    loadPrintCollectionDefinitions(),
   ]);
-  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing });
+  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing, definitions });
   return (
     <main>
       <JsonLd data={schema} />
-      <PrintCollectionScreen locale={locale as Locale} pricing={pricing} />
+      <PrintCollectionScreen locale={locale as Locale} pricing={pricing} definitions={definitions} />
     </main>
   );
 }

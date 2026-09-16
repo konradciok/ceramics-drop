@@ -5,6 +5,7 @@
    edition, delivery lead time and care.
    ============================================================ */
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
@@ -32,6 +33,7 @@ export async function PrintProductScreen({
   usableVariantKeys,
   pricing,
   content,
+  definitions,
 }: {
   design: PrintDesign;
   noteOverride?: string;
@@ -40,6 +42,8 @@ export async function PrintProductScreen({
   pricing: PrintPricingConfig;
   /** Print-PDP section content (accordions + artist), loaded once by the PDP page (getPrintPdpContent). */
   content: PrintPdpPayload;
+  /** CMS-managed print collection definitions, loaded once by the PDP page (loadPrintCollectionDefinitions). */
+  definitions: PrintCollectionDefinition[];
 }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
@@ -48,7 +52,7 @@ export async function PrintProductScreen({
 
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const displayName = printDisplayName(design, singular);
+  const displayName = printDisplayName(design, singular, definitions);
   const rawNotes = t.raw(`notes.${SLUG}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
   const note = noteOverride ?? fallbackNote;
@@ -138,7 +142,7 @@ export async function PrintProductScreen({
             <div className="gallery" data-count={siblings.length}>
               {siblings.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
-                const name = printDisplayName(d, singular);
+                const name = printDisplayName(d, singular, definitions);
                 const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>

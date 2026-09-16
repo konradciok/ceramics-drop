@@ -6,6 +6,7 @@ vi.mock('@/lib/ceramic-sale-state', () => ({
 import { collectionSchema, organizationSchema, printCollectionSchema, printProductSchema, productSchema } from './structured-data';
 import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { PRICE_EUR } from '@/lib/pricing';
 import { printShippingOf } from '@/lib/print-shipping';
 import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
@@ -41,7 +42,7 @@ type Offer = {
 type Node = {
   '@type': string;
   numberOfItems?: number;
-  itemListElement?: { item: { image: string; description?: string; brand?: { name: string }; offers: Offer } }[];
+  itemListElement?: { item: { name?: string; image: string; description?: string; brand?: { name: string }; offers: Offer } }[];
 };
 
 /** locale → expected shipping/return-policy market country, mirrors SHIPPING_COUNTRY in feed.ts. */
@@ -354,6 +355,21 @@ describe('printCollectionSchema', () => {
       expect(loose.shippingDestination.addressCountry).toBe('IE');
     });
   });
+
+  it('uses the passed-in definitions to name products, not the static curation map', async () => {
+    // fap001 is "Ostrea 01" under the static map (see print-curation.test.ts's
+    // equivalent case) — proves this call site forwards `definitions` through
+    // to printDisplayName rather than silently dropping it, as it did for a
+    // stretch of this branch's history.
+    const [firstDesign] = registryPrintDesigns();
+    const customDefinitions: PrintCollectionDefinition[] = [
+      { slug: 'custom', name: 'Custom Collection', designIds: [firstDesign.id], prints: [] },
+    ];
+    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions });
+    const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
+    const match = items.find(({ item }) => item.name === 'Custom Collection 01');
+    expect(match).toBeDefined();
+  });
 });
 
 describe('printProductSchema', () => {
@@ -378,5 +394,14 @@ describe('printProductSchema', () => {
     const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '', pricing: DEFAULT_PRINT_PRICING });
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     expect(nodes[1]['description']).toBe('test note');
+  });
+
+  it('uses the passed-in definitions to name the product, not the static curation map', () => {
+    const customDefinitions: PrintCollectionDefinition[] = [
+      { slug: 'custom', name: 'Custom Collection', designIds: [design.id], prints: [] },
+    ];
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions });
+    const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
+    expect(nodes[1]['name']).toBe('Custom Collection 01');
   });
 });
