@@ -66,13 +66,18 @@ export async function createInvoiceForOrder(
 ): Promise<void> {
   const stripe = deps?.stripe ?? getStripe();
   const supabase = deps?.supabase ?? getSupabaseAdmin();
-  const definitions = await loadPrintCollectionDefinitions();
 
   const { data: order, error: orderError } = await supabase
     .from('orders').select('*')
     .eq('orderId' in reference ? 'id' : 'payment_intent_id', 'orderId' in reference ? reference.orderId : reference.paymentIntentId).single();
   if (orderError) throw new Error(`Invoice order lookup failed: ${orderError.message}`);
   if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return;
+
+  // Loaded only after the idempotency guard above (order.invoiced_at is
+  // specifically what makes that guard idempotent): Stripe webhook retries
+  // and duplicate events routinely hit that early return, and this DB read
+  // (with its own timeout) would otherwise be wasted work on every retry.
+  const definitions = await loadPrintCollectionDefinitions();
 
   const { data: items, error: itemsError } = await supabase
     .from('order_items').select('*').eq('order_id', order.id);

@@ -195,6 +195,15 @@ export async function loadPrintCollectionDefinitionsFromDb(
  * degrades to the static `PRINT_COLLECTIONS` array (same shape
  * `printDisplayName` already defaults to), preserving pre-migration
  * rendering exactly — this migration's stated goal.
+ *
+ * Admin (injected-client) calls — e.g. `loadPrintCollectionDefinitions(adminSupabase())`
+ * from the various /admin pages — do NOT benefit from this memoization the
+ * way the zero-argument storefront calls do: `adminSupabase()` (see
+ * src/lib/admin/clients.ts) constructs a brand-new client object on every
+ * call, and `cache()` memoizes by argument identity, so every admin call is
+ * a cache miss and always performs its own fresh DB round-trips. Harmless
+ * today since each admin page calls this exactly once per render, but keep
+ * it in mind before adding a second call within one admin render.
  */
 export const loadPrintCollectionDefinitions = cache(
   async (supabase?: SupabaseClient): Promise<PrintCollectionDefinition[]> =>
