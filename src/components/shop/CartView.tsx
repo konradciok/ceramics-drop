@@ -1,6 +1,5 @@
 'use client';
 
-import { printDisplayName } from '@/lib/print-curation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
@@ -458,7 +457,11 @@ export function CartView({
   useEffect(() => {
     if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
     viewedCartKeys.current.add(cartKey);
-    const items = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    const items = analyticsItemsForIds(
+      lines.map((l) => l.id),
+      lines.map(priceOfLine),
+      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
+    );
     pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartKey, lines]);
@@ -535,7 +538,11 @@ export function CartView({
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     // begin_checkout itemises the whole cart (ceramics + prints); print items are
     // resolved from their tokens with server-equal prices.
-    const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    const checkoutItems = analyticsItemsForIds(
+      lines.map((l) => l.id),
+      lines.map(priceOfLine),
+      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
+    );
     pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
@@ -817,7 +824,7 @@ export function CartView({
           {lines.map((l) => {
             if (l.kind === 'print') {
               const d = l.design;
-              const name = printDisplayName(d, t('product.print'));
+              const name = l.name;
               return (
                 <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
                   <Link href={`/fine-art-prints/${d.id}`} className="thumb" aria-label={name}>
@@ -836,7 +843,7 @@ export function CartView({
                         remove(l.id);
                         pushDataLayer(
                           buildPrintRemoveFromCartEvent(
-                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l) },
+                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l), itemName: name },
                             { currency: analyticsCurrency },
                           ),
                         );
@@ -1097,12 +1104,12 @@ export function CartView({
               const d = l.design;
               return (
                 <li key={l.id} className="sum-item">
-                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={printDisplayName(d, t('product.print'))}>
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={l.name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
                   </Link>
                   <div className="sum-item-info">
-                    <span className="sum-item-name">{printDisplayName(d, t('product.print'))} · {variantLabel(l.sel, locale)}</span>
+                    <span className="sum-item-name">{l.name} · {variantLabel(l.sel, locale)}</span>
                     <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                   </div>
                 </li>
