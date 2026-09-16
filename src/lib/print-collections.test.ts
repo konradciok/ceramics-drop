@@ -11,6 +11,7 @@ import {
   groupPrintDesigns,
   loadPrintCollectionDefinitions,
 } from './print-collections';
+import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
 
 describe('PRINT_COLLECTIONS integrity', () => {
@@ -231,5 +232,19 @@ describe('loadPrintCollectionDefinitions', () => {
       collectionDraftsError: { message: 'Failed to fetch draft' },
     });
     await expect(loadPrintCollectionDefinitions(supabase)).rejects.toThrow('Failed to fetch draft');
+  });
+});
+
+describe('groupPrintDesigns with an explicit definitions array', () => {
+  it('groups by the passed-in definitions instead of PRINT_COLLECTIONS', () => {
+    const customDefinitions: PrintCollectionDefinition[] = [
+      { slug: 'custom', name: 'Custom', designIds: ['fap001'], prints: [] },
+    ];
+    const designs = [{ id: 'fap001' } as PrintDesign, { id: 'fap002' } as PrintDesign];
+    const groups = groupPrintDesigns(designs, customDefinitions);
+    expect(groups).toEqual([
+      { slug: 'custom', name: 'Custom', designs: [designs[0]] },
+      { slug: 'inne', name: undefined, designs: [designs[1]] },
+    ]);
   });
 });

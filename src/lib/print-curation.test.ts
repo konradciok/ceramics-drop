@@ -10,6 +10,7 @@ import {
   printDisplayName,
   validatePrintCuration,
 } from './print-curation';
+import type { PrintCollectionDefinition } from './print-curation';
 import source from '../../config/print-catalog-curation.json';
 
 describe('fine-art print curation map', () => {
@@ -112,5 +113,23 @@ describe('fine-art print curation map', () => {
     const universe = structuredClone(source);
     universe.collections[0].prints[0].productId = 'fap999';
     expect(() => validatePrintCuration(universe)).toThrow(/product ID universe must be fap001 through fap041/i);
+  });
+});
+
+describe('printDisplayName with an explicit definitions array', () => {
+  it('uses the passed-in definitions instead of the static curation map', () => {
+    const customDefinitions: PrintCollectionDefinition[] = [
+      { slug: 'custom', name: 'Custom Collection', designIds: ['fap001', 'fap002'], prints: [] },
+    ];
+    // fap001 is "Ostrea 01" under the static map, but "Custom Collection 01"
+    // under this explicit array — proves the parameter, not the module
+    // constant, drives the result.
+    expect(printDisplayName({ id: 'fap001', num: '01' }, 'Print', customDefinitions)).toBe(
+      'Custom Collection 01',
+    );
+  });
+
+  it('still uses the static curation map when no definitions argument is passed', () => {
+    expect(printDisplayName({ id: 'fap001', num: '01' }, 'Print')).toBe('Ostrea 01');
   });
 });

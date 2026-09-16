@@ -88,8 +88,12 @@ export function curationForProduct(id: string): PrintCuration | undefined {
 /** Customer-facing name, numbered independently in each authored collection.
  * Resolve by ID so code and database catalogues use the same names.
  */
-export function printDisplayName(design: { id: string; num: string }, fallback = 'Print'): string {
-  for (const collection of PRINT_COLLECTION_DEFINITIONS) {
+export function printDisplayName(
+  design: { id: string; num: string },
+  fallback = 'Print',
+  definitions: PrintCollectionDefinition[] = PRINT_COLLECTION_DEFINITIONS,
+): string {
+  for (const collection of definitions) {
     const index = collection.designIds.indexOf(design.id);
     if (index !== -1) return `${collection.name} ${String(index + 1).padStart(2, '0')}`;
   }

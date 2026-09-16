@@ -40,14 +40,18 @@ export function collectionOf(id: string): PrintCollectionSlug | undefined {
     dropped — an unpublished member simply doesn't render. */
 export function groupPrintDesigns(
   designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[] = PRINT_COLLECTIONS,
 ): { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] {
   const byId = new Map(designs.map((d) => [d.id, d]));
-  const groups: { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] = PRINT_COLLECTIONS.map(({ slug, name, designIds }) => ({
+  const collectionById = new Map<string, PrintCollectionSlug>(
+    definitions.flatMap((c) => c.designIds.map((id) => [id, c.slug] as const)),
+  );
+  const groups: { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] = definitions.map(({ slug, name, designIds }) => ({
     slug,
     name,
     designs: designIds.flatMap((id) => byId.get(id) ?? []),
   }));
-  const rest = designs.filter((d) => !COLLECTION_BY_ID.has(d.id));
+  const rest = designs.filter((d) => !collectionById.has(d.id));
   groups.push({ slug: UNASSIGNED_COLLECTION, name: undefined, designs: rest });
   return groups.filter((g) => g.designs.length > 0);
 }
