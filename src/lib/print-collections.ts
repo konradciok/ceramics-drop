@@ -82,15 +82,20 @@ export async function loadPrintCollectionDefinitionsFromDb(
 ): Promise<PrintCollectionDefinition[]> {
   const { data: collections, error: collectionsError } = await supabase
     .from('collections')
-    .select('id, published_revision')
+    .select('id, published_revision, created_at')
     .not('published_revision', 'is', null)
     .abortSignal(supabaseTimeout());
   if (collectionsError) throw collectionsError;
 
-  const rows = (collections ?? []) as { id: string; published_revision: number }[];
+  const rows = (collections ?? []) as { id: string; published_revision: number; created_at: string }[];
   if (rows.length === 0) return [];
 
   const publishedRevisionById = new Map(rows.map((r) => [r.id, r.published_revision]));
+  // The collection's own created_at — set once, at creation, and never
+  // touched again by save_collection_draft/publish_collection_revision.
+  // Used as the ordering key below instead of the published draft's own
+  // created_at (see the ordering comment further down for why).
+  const collectionCreatedAtById = new Map(rows.map((r) => [r.id, r.created_at]));
   const ids = rows.map((r) => r.id);
 
   // One batched fetch instead of one query per collection (N+1): a single
@@ -109,15 +114,29 @@ export async function loadPrintCollectionDefinitionsFromDb(
   type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };
   const draftRows = (drafts ?? []) as DraftRow[];
 
-  // Exactly the published draft per collection, ordered oldest-created-first.
-  // Postgres without ORDER BY returns heap order, which can silently change
-  // on the next UPDATE (publish_collection_revision UPDATEs
+  // Exactly the published draft per collection, ordered oldest-collection-
+  // created-first. Postgres without ORDER BY returns heap order, which can
+  // silently change on the next UPDATE (publish_collection_revision UPDATEs
   // collections.published_revision) — this ordering is what fixes the
   // on-page section order (groupPrintDesigns maps over the returned array in
   // sequence) so a republish can never reshuffle the storefront.
+  //
+  // Deliberately keyed on the *collection's* created_at, not the draft's:
+  // save_collection_draft stamps every new revision with a fresh created_at,
+  // so sorting by the draft's timestamp would move a collection's section
+  // the moment someone edits and republishes it (its published draft row
+  // would then be the newest one). collections.created_at is set once at
+  // creation and is untouched by edits/republishes, so it's stable across
+  // the collection's whole lifetime. The collection id is a deterministic
+  // tie-breaker for the (currently impossible, but not DB-enforced) case of
+  // two collections sharing an identical created_at.
   const publishedDrafts = draftRows
     .filter((d) => d.revision === publishedRevisionById.get(d.collection_id))
-    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    .sort((a, b) => {
+      const aCreatedAt = collectionCreatedAtById.get(a.collection_id) ?? '';
+      const bCreatedAt = collectionCreatedAtById.get(b.collection_id) ?? '';
+      return aCreatedAt.localeCompare(bCreatedAt) || a.collection_id.localeCompare(b.collection_id);
+    });
 
   const definitions: PrintCollectionDefinition[] = [];
   const seenDesignIds = new Set<string>();

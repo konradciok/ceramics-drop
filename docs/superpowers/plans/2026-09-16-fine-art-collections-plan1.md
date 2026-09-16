@@ -1103,6 +1103,10 @@ function buildFields(name: string, slug: string, productIds: string[]) {
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },
     { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value: productIds.join(','), locale: 'none', sourceLocale: 'none' },
     { key: 'slug', label: 'Slug', type: 'text', value: slug, locale: 'none', sourceLocale: 'none' },
+    // Scopes this collection into the fine-art-print storefront sections —
+    // see src/lib/print-collections.ts's loadPrintCollectionDefinitions,
+    // which only includes collections carrying this exact field/value.
+    { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' },
   ];
 }
 
@@ -1196,7 +1200,7 @@ select c.id, c.published_revision, cd.payload->>'name' as name,
        cd.payload->'fields'->4->>'value' as product_ids
 from collections c
 join collection_drafts cd on cd.collection_id = c.id and cd.revision = c.published_revision
-order by cd.created_at;
+order by c.created_at, c.id;
 ```
 
 Expected: 9 rows, each with `published_revision = 1` and a non-empty
@@ -1254,7 +1258,7 @@ select c.id, c.published_revision, cd.payload->>'name' as name,
        jsonb_array_length(cd.payload->'fields') as n_fields
 from collections c
 join collection_drafts cd on cd.collection_id = c.id and cd.revision = c.published_revision
-order by cd.created_at;
+order by c.created_at, c.id;
 ```
 
 Expected: 9 rows, `published_revision = 1`, `n_fields = 6` each, names

@@ -176,8 +176,13 @@ fields: [
   { key: "description", label: "Opis kolekcji", type: "text", value: "", locale: "de", sourceLocale: "pl" },
   { key: "products", label: "Produkty i kolejność", type: "productIds", value: "<CSV of productIds in JSON order>", locale: "none", sourceLocale: "none" },
   { key: "slug", label: "Slug", type: "text", value: "<the JSON's existing slug, e.g. \"ostrea\">", locale: "none", sourceLocale: "none" },
+  { key: "kind", label: "Rodzaj", type: "text", value: "print-collection", locale: "none", sourceLocale: "none" },
 ]
 ```
+
+The `kind` field is required — `src/lib/print-collections.ts`'s loader only includes
+collections carrying `kind === "print-collection"`, so omitting it produces
+published rows the storefront silently excludes.
 
 The PL description is an honest, minimal placeholder (the collection name
 itself, e.g. `"Ostrea."`) — not real marketing copy. It exists only to

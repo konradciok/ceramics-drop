@@ -6,9 +6,17 @@
  * create_collection_with_draft / publish_collection_revision RPCs — the
  * same code path the CMS itself uses.
  *
- * Idempotent: skips any collection whose name already exists among
- * collection_drafts payloads, so a re-run after a partial failure does
- * not create duplicates.
+ * Idempotent and resumable: a collection whose revision-1 draft already
+ * exists AND is published (collections.published_revision = 1) is skipped.
+ * One whose revision-1 draft exists but was never published — e.g.
+ * create_collection_with_draft succeeded on a prior run but
+ * publish_collection_revision then failed or the run was interrupted — is
+ * published (reusing its existing collection_id) instead of being skipped
+ * or recreated. Only a name with no revision-1 draft at all is created from
+ * scratch. This way a re-run after a partial failure both avoids duplicates
+ * and completes the interrupted publish, rather than leaving the collection
+ * permanently unpublished (and so excluded from the storefront, which only
+ * reads collections with a non-null published_revision).
  *
  * Usage:
  *   npm run backfill:fine-art-collections
@@ -66,16 +74,54 @@ export async function runBackfill(supabase: SupabaseClient): Promise<void> {
 
   const { data: existingRevisionOnes, error: existingError } = await supabase
     .from('collection_drafts')
-    .select('payload')
+    .select('collection_id, payload')
     .eq('revision', 1);
   if (existingError) throw existingError;
-  const existingNames = new Set(
-    (existingRevisionOnes ?? []).map((row) => (row.payload as { name?: string })?.name),
+  const existingIdByName = new Map<string, string>(
+    (existingRevisionOnes ?? [])
+      .map((row) => [(row.payload as { name?: string })?.name, row.collection_id as string] as const)
+      .filter((entry): entry is [string, string] => typeof entry[0] === 'string'),
+  );
+
+  // A revision-1 collection_drafts row only proves create_collection_with_draft
+  // ran — creation and publication are separate RPCs (below), so a prior run
+  // that crashed or errored between them leaves that name here with no
+  // matching publish. Load publication state for every such name so the loop
+  // can tell "already fully published, skip" apart from "draft exists but
+  // was never published, resume it".
+  const existingIds = [...existingIdByName.values()];
+  const { data: existingCollections, error: collectionsError } = existingIds.length
+    ? await supabase.from('collections').select('id, published_revision').in('id', existingIds)
+    : { data: [] as { id: string; published_revision: number | null }[], error: null };
+  if (collectionsError) throw collectionsError;
+  const publishedRevisionById = new Map<string, number | null>(
+    (existingCollections ?? []).map((row) => [row.id as string, row.published_revision as number | null]),
   );
 
   for (const collection of source.collections) {
-    if (existingNames.has(collection.name)) {
-      console.log(`skip: "${collection.name}" already exists`);
+    const existingId = existingIdByName.get(collection.name);
+    if (existingId) {
+      // Only revision 1 is ever created by this script, so "published"
+      // means published_revision === 1 exactly. Anything else (still null,
+      // or advanced past 1 by a later CMS edit) is not the untouched happy
+      // path this backfill owns — fall through to publish_collection_revision
+      // below, which either completes the interrupted publish (the common
+      // case) or raises a clear `revision_conflict` / `collection_not_found`
+      // rather than this script silently skipping an unpublished collection
+      // or attempting to create a duplicate.
+      if (publishedRevisionById.get(existingId) === 1) {
+        console.log(`skip: "${collection.name}" already exists and is published`);
+        continue;
+      }
+
+      console.log(`resuming: "${collection.name}" (${existingId}) has a draft but was never published — publishing`);
+      const { error: publishError } = await supabase.rpc('publish_collection_revision', {
+        p_collection_id: existingId,
+        p_expected_revision: 1,
+        p_actor_email: actorEmail,
+      });
+      if (publishError) throw publishError;
+      console.log(`published: "${collection.name}" (${existingId})`);
       continue;
     }
 

@@ -82,7 +82,7 @@ describe('i18n coverage', () => {
 type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };
 
 interface FakeSupabaseConfig {
-  collections: { id: string; published_revision: number | null }[];
+  collections: { id: string; published_revision: number | null; created_at: string }[];
   collection_drafts: DraftRow[];
   collectionsError?: { message: string } | null;
   collectionDraftsError?: { message: string } | null;
@@ -101,7 +101,8 @@ function slugField(value: string) {
 }
 
 /** Fake Supabase client matching loadPrintCollectionDefinitionsFromDb's real
- *  query shape: `collections.select().not().abortSignal()` then a single
+ *  query shape: `collections.select().not().abortSignal()` (now including
+ *  each collection's own `created_at`, the ordering key) then a single
  *  batched `collection_drafts.select().in().abortSignal()` — the `.in()`
  *  fetch returns every saved revision for the requested collection ids,
  *  mirroring the real batched query the loader filters/sorts in JS. */
@@ -156,7 +157,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('skips unpublished collections entirely', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_draft1', published_revision: null }],
+      collections: [{ id: 'col_draft1', published_revision: null, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         { collection_id: 'col_draft1', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Draft Only', fields: [KIND_FIELD] } },
       ],
@@ -167,7 +168,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('parses a published collection into slug/name/designIds', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_abc123', published_revision: 1 }],
+      collections: [{ id: 'col_abc123', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         {
           collection_id: 'col_abc123',
@@ -188,7 +189,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('falls back to the collection id as slug when no slug field is set', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_xyz789', published_revision: 1 }],
+      collections: [{ id: 'col_xyz789', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         {
           collection_id: 'col_xyz789',
@@ -204,7 +205,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('handles an empty products field as zero designIds, not a crash', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_empty', published_revision: 1 }],
+      collections: [{ id: 'col_empty', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         {
           collection_id: 'col_empty',
@@ -229,7 +230,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('throws when the batched collection_drafts query returns an error', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_abc123', published_revision: 1 }],
+      collections: [{ id: 'col_abc123', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [],
       collectionDraftsError: { message: 'Failed to fetch drafts' },
     });
@@ -238,7 +239,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('picks only the draft revision matching published_revision, ignoring other saved revisions returned by the batched fetch', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_x', published_revision: 2 }],
+      collections: [{ id: 'col_x', published_revision: 2, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         { collection_id: 'col_x', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Old Draft', fields: [KIND_FIELD] } },
         { collection_id: 'col_x', revision: 2, created_at: '2026-01-02T00:00:00Z', payload: { name: 'Published', fields: [KIND_FIELD] } },
@@ -248,11 +249,11 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
     expect(result).toEqual([{ slug: 'col_x', name: 'Published', designIds: [], prints: [] }]);
   });
 
-  it('orders published collections by the published draft\'s created_at, oldest first, regardless of row order', async () => {
+  it('orders published collections by the collection\'s own created_at, oldest first, regardless of row order', async () => {
     const supabase = fakeSupabase({
       collections: [
-        { id: 'col_b', published_revision: 1 },
-        { id: 'col_a', published_revision: 1 },
+        { id: 'col_b', published_revision: 1, created_at: '2026-02-01T00:00:00Z' },
+        { id: 'col_a', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
       ],
       collection_drafts: [
         { collection_id: 'col_b', revision: 1, created_at: '2026-02-01T00:00:00Z', payload: { name: 'B', fields: [KIND_FIELD] } },
@@ -263,9 +264,47 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
     expect(result.map((d) => d.name)).toEqual(['A', 'B']);
   });
 
+  it('orders by the collection\'s created_at, not the published draft\'s — a republish must not reshuffle the storefront', async () => {
+    // col_a was created before col_b, but col_a's *published* revision
+    // (2, matching published_revision) was drafted later than col_b — the
+    // kind of thing that happens the first time someone edits and
+    // republishes col_a through the CMS. save_collection_draft stamps that
+    // new revision with a fresh created_at, so ordering by the draft's
+    // timestamp would move col_a's section after col_b's. The storefront
+    // order must still follow collection creation order.
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_a', published_revision: 2, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_b', published_revision: 1, created_at: '2026-01-02T00:00:00Z' },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_a', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'A rev1', fields: [KIND_FIELD] } },
+        { collection_id: 'col_a', revision: 2, created_at: '2026-03-01T00:00:00Z', payload: { name: 'A', fields: [KIND_FIELD] } },
+        { collection_id: 'col_b', revision: 1, created_at: '2026-01-02T00:00:00Z', payload: { name: 'B', fields: [KIND_FIELD] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.name)).toEqual(['A', 'B']);
+  });
+
+  it('breaks a tie between two collections with an identical created_at by collection id, for deterministic ordering', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_z', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_a', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_z', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Z', fields: [KIND_FIELD] } },
+        { collection_id: 'col_a', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'A', fields: [KIND_FIELD] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.name)).toEqual(['A', 'Z']);
+  });
+
   it('excludes a published collection with no kind field (not a print collection)', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_generic', published_revision: 1 }],
+      collections: [{ id: 'col_generic', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         { collection_id: 'col_generic', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Some Ceramics Collection', fields: [] } },
       ],
@@ -276,7 +315,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
 
   it('excludes a published collection whose kind field has a different value', async () => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_other_kind', published_revision: 1 }],
+      collections: [{ id: 'col_other_kind', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         {
           collection_id: 'col_other_kind',
@@ -295,7 +334,7 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
     ['not a string', { name: 123 }],
   ])('skips a collection whose payload name is %s, rather than crashing', async (_label, payloadOverrides) => {
     const supabase = fakeSupabase({
-      collections: [{ id: 'col_bad_name', published_revision: 1 }],
+      collections: [{ id: 'col_bad_name', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
       collection_drafts: [
         { collection_id: 'col_bad_name', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { ...payloadOverrides, fields: [KIND_FIELD] } },
       ],
@@ -307,8 +346,8 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
   it('de-dupes design ids across collections — the earlier collection (by created_at order) wins', async () => {
     const supabase = fakeSupabase({
       collections: [
-        { id: 'col_first', published_revision: 1 },
-        { id: 'col_second', published_revision: 1 },
+        { id: 'col_first', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_second', published_revision: 1, created_at: '2026-01-02T00:00:00Z' },
       ],
       collection_drafts: [
         { collection_id: 'col_first', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'First', fields: [KIND_FIELD, productsField('fap001,fap002')] } },
@@ -322,9 +361,9 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
   it('de-dupes colliding manually-set slugs by appending a numeric suffix, logging a warning', async () => {
     const supabase = fakeSupabase({
       collections: [
-        { id: 'col_first', published_revision: 1 },
-        { id: 'col_second', published_revision: 1 },
-        { id: 'col_third', published_revision: 1 },
+        { id: 'col_first', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_second', published_revision: 1, created_at: '2026-01-02T00:00:00Z' },
+        { id: 'col_third', published_revision: 1, created_at: '2026-01-03T00:00:00Z' },
       ],
       collection_drafts: [
         { collection_id: 'col_first', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'First', fields: [KIND_FIELD, slugField('same')] } },
@@ -344,7 +383,7 @@ describe('loadPrintCollectionDefinitions (request-cached, fallback-on-failure)',
   it('returns real DB-sourced definitions when the read succeeds', async () => {
     mockGetSupabaseAdmin.mockReturnValue(
       fakeSupabase({
-        collections: [{ id: 'col_abc123', published_revision: 1 }],
+        collections: [{ id: 'col_abc123', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
         collection_drafts: [
           {
             collection_id: 'col_abc123',

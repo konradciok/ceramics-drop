@@ -6,8 +6,13 @@
 the cart, order invoices, client-side GA4/Meta analytics, marketing
 conversion tracking, the product feed, admin listings, and account order
 history — read from the CMS-managed collections data (via
-`loadPrintCollectionDefinitions`, already built in Plan 1), then delete
-the now-fully-unused static curation file and its dead code.
+`loadPrintCollectionDefinitions`, already built in Plan 1). The static
+curation file (`config/print-catalog-curation.json`) and its
+`print-curation.ts` exports are explicitly **retained**, not deleted:
+they stay as the `printDisplayName`/`groupPrintDesigns` parameter-default
+fallback, and `catalog/seed.ts`'s `catalogStatusForPrint` call remains a
+live, out-of-scope consumer of `curationForProduct`/
+`RETIRED_PRINT_CURATION`/`ACTIVE_PRINT_CURATION` (see Task 11).
 
 **Precondition:** Plan 1
 (`docs/superpowers/plans/2026-09-16-fine-art-collections-plan1.md`) is
@@ -17,11 +22,16 @@ homepage/SEO structured data already load and pass it.
 
 **Architecture:** Two different mechanisms, matched to each consumer's
 actual execution context:
-1. **Server contexts with an already-available Supabase client**
-   (webhooks, admin pages, account pages, feed routes) — call
-   `loadPrintCollectionDefinitions(supabase)` directly using the client
-   already in scope, then pass `definitions` into the existing
-   `printDisplayName`/helper-function call, exactly like Plan 1.
+1. **Server contexts** (webhooks, account pages, feed routes) — call
+   `loadPrintCollectionDefinitions()` with no arguments (it resolves its
+   own `getSupabaseAdmin()` client internally and falls back to the
+   static `PRINT_COLLECTIONS` on any Supabase error), then pass
+   `definitions` into the existing `printDisplayName`/helper-function
+   call, exactly like Plan 1. **Admin pages are the one exception:**
+   Task 9's admin listings must read via `adminSupabase()`
+   (`src/lib/admin/clients.ts`), which can target a different Supabase
+   project than the storefront's `getSupabaseAdmin()` — see Task 9 for
+   the scoped, injected-client exception this requires.
 2. **Client-side analytics** — rather than threading `definitions` (and a
    Supabase dependency) into `analytics.ts` itself, each client component
    that already has (or can cheaply get) `definitions` computes the
@@ -228,7 +238,8 @@ git commit -m "feat: let print analytics events accept a pre-resolved item name"
 - Test: `src/lib/cart-lines-server.test.ts` (extend if it exists, else create)
 
 **Interfaces:**
-- Consumes: `loadPrintCollectionDefinitions` (Plan 1), `getSupabaseAdmin()`.
+- Consumes: `loadPrintCollectionDefinitions()` (Plan 1, no-argument —
+  see `src/lib/print-collections.ts`).
 - Produces: `CartLine`'s `print` variant gains a `name: string` field,
   resolved once per cart-lines request.
 
@@ -248,7 +259,6 @@ Create/extend `src/lib/cart-lines-server.test.ts`:
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-vi.mock('./supabase', () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock('./print-collections', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./print-collections')>();
   return {
@@ -260,9 +270,10 @@ vi.mock('./print-collections', async (importOriginal) => {
 });
 
 // getPrintById / registryPrintById / isVariantAvailable / withRegistryMockups
-// are exercised via the real modules in this test — only the two DB-facing
-// calls above are mocked, matching this file's own existing test style (read
-// it first: `git show HEAD:src/lib/cart-lines-server.test.ts` if it exists).
+// are exercised via the real modules in this test — only the DB-facing
+// loadPrintCollectionDefinitions call above is mocked, matching this file's
+// own existing test style (read it first: `git show HEAD:src/lib/cart-lines-server.test.ts`
+// if it exists).
 
 import { resolveCartLinesServer } from './cart-lines-server';
 
@@ -294,7 +305,6 @@ no `name` field yet).
 In `src/lib/cart-lines-server.ts`, add the imports:
 
 ```typescript
-import { getSupabaseAdmin } from './supabase';
 import { loadPrintCollectionDefinitions } from './print-collections';
 import { printDisplayName } from './print-curation';
 ```
@@ -330,7 +340,7 @@ replace with:
 
 ```typescript
 export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine[]> {
-  const definitions = await loadPrintCollectionDefinitions(getSupabaseAdmin());
+  const definitions = await loadPrintCollectionDefinitions();
   const seen = new Set<string>();
 ```
 
@@ -766,9 +776,11 @@ git commit -m "feat: resolve PDP add/remove-to-cart analytics name from the CMS"
 - Test: `src/lib/invoice.test.ts` (extend if it exists)
 
 **Interfaces:**
-- Consumes: `loadPrintCollectionDefinitions`, the `supabase` local
-  variable `createInvoiceForOrder` already resolves internally
-  (`deps?.supabase ?? getSupabaseAdmin()`).
+- Consumes: `loadPrintCollectionDefinitions()` (no-argument — it resolves
+  its own `getSupabaseAdmin()` internally, independent of the `supabase`
+  local variable `createInvoiceForOrder` already resolves via
+  `deps?.supabase ?? getSupabaseAdmin()` for its own Stripe/order-lookup
+  calls).
 
 - [ ] **Step 1: Read the current full file**
 
@@ -796,7 +808,7 @@ replace with:
 ```typescript
   const stripe = deps?.stripe ?? getStripe();
   const supabase = deps?.supabase ?? getSupabaseAdmin();
-  const definitions = await loadPrintCollectionDefinitions(supabase);
+  const definitions = await loadPrintCollectionDefinitions();
 ```
 
 Find:
@@ -825,12 +837,13 @@ Expected: PASS.
 - [ ] **Step 4: Run the full test suite**
 
 Run: `npm run test`
-Expected: PASS — if `invoice.test.ts` mocks `deps.supabase`, confirm its
-mock's `.from('collections')`/`.from('collection_drafts')` chains don't
-error (they'll return empty via a real or mocked builder — add mock
-support for these two tables if the existing test's fake Supabase client
-doesn't already handle arbitrary `.from(table)` calls gracefully; read
-the existing test file first to see its mocking style before assuming).
+Expected: PASS — `loadPrintCollectionDefinitions()` resolves its own
+`getSupabaseAdmin()` client internally, so mocking `deps.supabase` (used
+for the rest of `createInvoiceForOrder`) has no effect on it. If
+`invoice.test.ts` doesn't already mock `./print-collections`, add
+`vi.mock('./print-collections', ...)` returning a stubbed
+`loadPrintCollectionDefinitions: vi.fn(async () => [...])`, matching
+Task 2's test pattern, to keep the test hermetic.
 
 - [ ] **Step 5: Commit**
 
@@ -864,7 +877,6 @@ git -C . show HEAD:src/lib/marketing/conversions.ts
 Add the imports:
 
 ```typescript
-import { getSupabaseAdmin } from '../supabase';
 import { loadPrintCollectionDefinitions } from '../print-collections';
 import type { PrintCollectionDefinition } from '../print-curation';
 ```
@@ -921,7 +933,7 @@ export async function sendPurchaseConversions(
   if (!order || !order.marketing || order.marketing.consent !== 'granted') return;
   if (order.status !== 'paid') return;
 
-  const definitions = await (deps.loadDefinitions ?? (() => loadPrintCollectionDefinitions(getSupabaseAdmin())))();
+  const definitions = await (deps.loadDefinitions ?? loadPrintCollectionDefinitions)();
 ```
 
 Find:
@@ -953,13 +965,14 @@ Expected: PASS.
 
 Run: `npm run test`
 Expected: PASS — existing tests that construct `deps` without
-`loadDefinitions` fall back to the real
-`loadPrintCollectionDefinitions(getSupabaseAdmin())`, which will attempt
-a real Supabase call; if `conversions.test.ts` doesn't already mock
-Supabase globally (check `vi.mock('../supabase', ...)` or similar in the
-existing test file), add a `loadDefinitions: async () => []` stub to
-each existing test's `deps` object to keep tests hermetic — read the
-existing test file first (Step 1 covers this) to match its actual style.
+`loadDefinitions` fall back to the real `loadPrintCollectionDefinitions`,
+which will attempt a real Supabase call via its own internal
+`getSupabaseAdmin()`; if `conversions.test.ts` doesn't already mock
+`../print-collections` (check the existing test file for a
+`vi.mock('../print-collections', ...)` or similar), add a
+`loadDefinitions: async () => []` stub to each existing test's `deps`
+object to keep tests hermetic — read the existing test file first
+(Step 1 covers this) to match its actual style.
 
 - [ ] **Step 5: Commit**
 
@@ -977,7 +990,7 @@ git commit -m "feat: resolve purchase-conversion print item names from the CMS"
 - Test: `src/lib/feed.test.ts` (extend if it exists)
 
 **Interfaces:**
-- Consumes: `loadPrintCollectionDefinitions`, `getSupabaseAdmin()`.
+- Consumes: `loadPrintCollectionDefinitions()` (no-argument).
 
 - [ ] **Step 1: Read the current full file**
 
@@ -987,10 +1000,9 @@ git -C . show HEAD:src/lib/feed.ts
 
 - [ ] **Step 2: Implement**
 
-Add the imports:
+Add the import:
 
 ```typescript
-import { getSupabaseAdmin } from './supabase';
 import { loadPrintCollectionDefinitions } from './print-collections';
 ```
 
@@ -1021,7 +1033,7 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
   const designs = await getPrintDesigns(); // published only, CATALOG_SOURCE-aware
   const pricing = await getPrintPricingConfig(); // global price list, CATALOG_SOURCE-aware
-  const definitions = await loadPrintCollectionDefinitions(getSupabaseAdmin());
+  const definitions = await loadPrintCollectionDefinitions();
 
   return designs.map((design) => {
     const title = printDisplayName(design, singular, definitions);
@@ -1049,13 +1061,25 @@ git commit -m "feat: resolve product-feed print titles from the CMS"
 ### Task 9: Admin listings
 
 **Files:**
+- Modify: `src/lib/print-collections.ts` (give
+  `loadPrintCollectionDefinitions` an optional injected-client parameter
+  — see Step 3)
 - Modify: `src/lib/admin/content.ts`
 - Modify: `src/lib/admin/products.ts`
 - Modify: their calling Server Component pages (found in Step 1)
 
 **Interfaces:**
-- Consumes: `loadPrintCollectionDefinitions`, `adminSupabase()`
-  (`src/lib/admin/clients.ts`).
+- Consumes: `loadPrintCollectionDefinitions(adminSupabase())`,
+  `adminSupabase()` (`src/lib/admin/clients.ts`).
+- Produces: `loadPrintCollectionDefinitions` gains an **optional**
+  `SupabaseClient` parameter defaulting to `getSupabaseAdmin()`, so every
+  other call site established in this plan (Tasks 2, 6, 7, 8, 10 — all
+  no-argument) is unaffected. This is a deliberate, scoped exception to
+  the no-argument convention, justified by admin pages' genuine need to
+  read from whatever project `adminSupabase()` resolves —
+  `ADMIN_SUPABASE_URL`/`ADMIN_SUPABASE_SERVICE_ROLE_KEY` when set, which
+  can differ from the storefront's `SUPABASE_URL`/
+  `SUPABASE_SERVICE_ROLE_KEY` that `getSupabaseAdmin()` always reads.
 
 - [ ] **Step 1: Read the current full files and find every caller**
 
@@ -1108,7 +1132,46 @@ actual file read in Step 1) and add a `definitions?: PrintCollectionDefinition[]
 parameter to its signature, passing it as the third argument to that
 `printDisplayName(...)` call the same way.
 
-- [ ] **Step 3: Update each calling Server Component page**
+- [ ] **Step 3: Give `loadPrintCollectionDefinitions` an optional injected-client parameter**
+
+In `src/lib/print-collections.ts`, find:
+
+```typescript
+export const loadPrintCollectionDefinitions = cache(
+  async (): Promise<PrintCollectionDefinition[]> =>
+    readWithFallback(
+      'printCollectionDefinitions',
+      () => loadPrintCollectionDefinitionsFromDb(getSupabaseAdmin()),
+      PRINT_COLLECTIONS,
+    ),
+);
+```
+
+replace with:
+
+```typescript
+export const loadPrintCollectionDefinitions = cache(
+  async (supabase: SupabaseClient = getSupabaseAdmin()): Promise<PrintCollectionDefinition[]> =>
+    readWithFallback(
+      'printCollectionDefinitions',
+      () => loadPrintCollectionDefinitionsFromDb(supabase),
+      PRINT_COLLECTIONS,
+    ),
+);
+```
+
+Every existing no-argument call site (Tasks 2, 6, 7, 8, 10) is
+unaffected — the default still resolves `getSupabaseAdmin()` exactly as
+before, and the same never-throws/timeout-guarded `readWithFallback`
+behavior applies regardless of which client is passed in. Note one
+caveat worth documenting alongside this change: `cache()` memoizes per
+argument, so a call passing a freshly constructed client (as Task 9's
+admin call below does) won't dedupe against other calls within the same
+request the way the no-argument calls do — acceptable here given admin
+pages' lower traffic and the fact that they don't share a render tree
+with the no-argument storefront callers.
+
+- [ ] **Step 4: Update each calling Server Component page**
 
 For each caller found in Step 1 (`getContentEditorState()`'s call to
 `contentItems()`, and every `productRef()` call site — e.g.
@@ -1116,33 +1179,37 @@ For each caller found in Step 1 (`getContentEditorState()`'s call to
 `src/lib/admin/catalog-list.ts`, `src/lib/admin/fulfillment.ts`): add
 
 ```typescript
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { adminSupabase } from '@/lib/admin/clients';
 import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 ```
 
-load `const definitions = await loadPrintCollectionDefinitions(getSupabaseAdmin());`
-once near that function's other data loading, and pass `definitions` into
-the `contentItems(...)`/`productRef(...)` call. Since `src/lib/admin/catalog-list.ts`
-and `src/lib/admin/fulfillment.ts` are themselves library functions (not
-page components), thread `definitions` as a new parameter through them
-too, loaded by whichever page ultimately calls them — read each file in
-Step 1 to confirm its exact current signature before adding the
-parameter, rather than guessing.
+load `const definitions = await loadPrintCollectionDefinitions(adminSupabase());`
+once near that function's other data loading — deliberately passing
+`adminSupabase()` explicitly here, unlike every other task's no-argument
+call, since admin pages must honor `ADMIN_SUPABASE_URL`/
+`ADMIN_SUPABASE_SERVICE_ROLE_KEY` when set rather than always reading
+the storefront's `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` — and pass
+`definitions` into the `contentItems(...)`/`productRef(...)` call. Since
+`src/lib/admin/catalog-list.ts` and `src/lib/admin/fulfillment.ts` are
+themselves library functions (not page components), thread `definitions`
+as a new parameter through them too, loaded by whichever page ultimately
+calls them — read each file in Step 1 to confirm its exact current
+signature before adding the parameter, rather than guessing.
 
-- [ ] **Step 4: Typecheck**
+- [ ] **Step 5: Typecheck**
 
 Run: `npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Run the full test suite**
+- [ ] **Step 6: Run the full test suite**
 
 Run: `npm run test`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/lib/admin/content.ts src/lib/admin/products.ts src/lib/admin/catalog-list.ts src/lib/admin/fulfillment.ts src/app/admin
+git add src/lib/print-collections.ts src/lib/admin/content.ts src/lib/admin/products.ts src/lib/admin/catalog-list.ts src/lib/admin/fulfillment.ts src/app/admin
 git commit -m "feat: resolve admin listing print labels from the CMS"
 ```
 
@@ -1156,7 +1223,7 @@ git commit -m "feat: resolve admin listing print labels from the CMS"
 - Modify: `src/app/[locale]/konto/zamowienia/[id]/page.tsx`
 
 **Interfaces:**
-- Consumes: `loadPrintCollectionDefinitions`, `getSupabaseAdmin()`.
+- Consumes: `loadPrintCollectionDefinitions()` (no-argument).
 
 - [ ] **Step 1: Read the current full files**
 
@@ -1209,15 +1276,15 @@ In each of `src/app/[locale]/konto/page.tsx` and
 `src/app/[locale]/konto/zamowienia/[id]/page.tsx`, add:
 
 ```typescript
-import { getSupabaseAdmin } from '@/lib/supabase';
 import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 ```
 
-load `definitions` alongside their existing `listAccountOrders()`/
-`getAccountOrder()` calls (via `Promise.all` if there's already a
-parallel-load pattern in that page — match its existing style, found in
-Step 1), and pass it as the fourth argument everywhere `accountItemLabel(item, t, locale)`
-is currently called.
+load `const definitions = await loadPrintCollectionDefinitions();`
+alongside their existing `listAccountOrders()`/`getAccountOrder()` calls
+(via `Promise.all` if there's already a parallel-load pattern in that
+page — match its existing style, found in Step 1), and pass it as the
+fourth argument everywhere `accountItemLabel(item, t, locale)` is
+currently called.
 
 - [ ] **Step 4: Typecheck**
 
@@ -1295,11 +1362,18 @@ default, and document this decision.
 
 Add a comment to the top of `config/print-catalog-curation.json`'s
 sibling doc or `print-curation.ts` itself noting: as of this plan, every
-real caller passes an explicit, CMS-loaded `definitions` array; this
-file/the static exports remain only as the parameter defaults (used if a
-caller is ever added without passing `definitions`, or if the CMS-backed
-loader ever fails and a caller chooses to catch that and fall back). This
-is a deliberate safety net, not dead code.
+naming/grouping caller passes an explicit, CMS-loaded `definitions` array
+to `printDisplayName`/`groupPrintDesigns`; the static
+`PRINT_COLLECTION_DEFINITIONS` export remains only as their parameter
+default (used if a caller is ever added without passing `definitions`,
+or if the CMS-backed loader ever fails and a caller chooses to catch
+that and fall back). Separately, `catalog/seed.ts`'s
+`catalogStatusForPrint` call is a live, unrelated consumer of
+`curationForProduct`/`RETIRED_PRINT_CURATION`/`ACTIVE_PRINT_CURATION` —
+out of scope for both plans and unaffected by the migration. Document
+both reasons the file and its exports stay in place: a deliberate
+fallback default, and a live non-grouping consumer — neither is dead
+code.
 
 - [ ] **Step 4: Run the full test suite one final time**
 
