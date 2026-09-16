@@ -3,6 +3,21 @@ import type { Product } from './types';
 vi.mock('./ceramic-sale-state', () => ({
   withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
 }));
+
+// Deterministic CMS-collection name resolution for print feed titles — only
+// the DB-facing loadPrintCollectionDefinitions call is mocked (same pattern
+// as invoice.test.ts / cart-lines-server.test.ts), so buildFeedItems never
+// makes a real Supabase call to resolve print collection names.
+vi.mock('./print-collections', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./print-collections')>();
+  return {
+    ...actual,
+    loadPrintCollectionDefinitions: vi.fn(async () => [
+      { slug: 'ostrea', name: 'Ostrea', designIds: ['fap001'], prints: [] },
+    ]),
+  };
+});
+
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
 import { getPrintDesigns } from './prints';
 

@@ -1,6 +1,7 @@
 import { printDisplayName } from '@/lib/print-curation';
 import { getPublicProducts, CATEGORIES } from './products';
 import { getPrintDesigns } from './prints';
+import { loadPrintCollectionDefinitions } from './print-collections';
 import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { fromPriceOf } from './print-pricing';
 import { getPrintPricingConfig } from './print-pricing-config/get';
@@ -182,9 +183,10 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
   const designs = await getPrintDesigns(); // published only, CATALOG_SOURCE-aware
   const pricing = await getPrintPricingConfig(); // global price list, CATALOG_SOURCE-aware
+  const definitions = await loadPrintCollectionDefinitions();
 
   return designs.map((design) => {
-    const title = printDisplayName(design, singular);
+    const title = printDisplayName(design, singular, definitions);
     const notes = (msg.notes as Record<string, string[]>)['fine-art-prints'];
     const description = notes?.[design.noteIndex] ?? title;
 
