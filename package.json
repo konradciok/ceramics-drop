@@ -45,6 +45,7 @@
     "print-assets:sandbox-matrix": "tsx scripts/print-assets-sandbox-matrix.ts",
     "print-asset:smoke": "tsx scripts/print-asset-smoke.ts",
     "catalog:backfill": "tsx scripts/backfill-catalog.ts",
+    "backfill:fine-art-collections": "tsx scripts/backfill-fine-art-collections.ts",
     "debug:meta-capi": "node scripts/debug-meta-capi.mjs",
     "generate-image-variants": "node scripts/optimize-images.mjs --variants-only",
     "preview:cf": "npm run build:opennext && opennextjs-cloudflare preview",
