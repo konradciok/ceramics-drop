@@ -56,11 +56,11 @@ function fakeSupabase(config: FakeSupabaseConfig) {
 const ALL_NAMES = (curationSource as { collections: { name: string }[] }).collections.map((c) => c.name);
 
 describe('buildFields', () => {
-  it('produces 4 blank locale description fields, a products field, a slug field, and a kind field, in that order (7 fields)', () => {
+  it('produces a pl description field, 3 blank locale description fields, a products field, a slug field, and a kind field, in that order (7 fields)', () => {
     const fields = buildFields('Ostrea', 'ostrea', ['fap001', 'fap002', 'fap003']);
     expect(fields).toHaveLength(7);
     expect(fields).toEqual([
-      { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'pl', sourceLocale: 'pl' },
+      { key: 'description', label: 'Opis kolekcji', type: 'text', value: 'Ostrea.', locale: 'pl', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'en', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'es', sourceLocale: 'pl' },
       { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },

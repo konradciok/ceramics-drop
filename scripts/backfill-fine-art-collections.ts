@@ -40,10 +40,13 @@ export function generateCollectionId(): string {
 
 export function buildFields(name: string, slug: string, productIds: string[]) {
   return [
-    // Left blank rather than a generated `${name}.` placeholder — a blank
-    // field reads as genuinely unwritten to an operator editing the
-    // collection later; a pre-filled one reads as authored (but wrong) copy.
-    { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'pl', sourceLocale: 'pl' },
+    // Honest, deliberate placeholder (docs/plans/2026-09-16-fine-art-collections-migration.md:182-186):
+    // real copy is written later by the content owner through the CMS. Must
+    // stay non-blank — publish_collection_revision's missing_polish check
+    // (supabase/migrations/20260915120000_cms_api_collections.sql:242-256)
+    // requires at least one non-blank locale:'pl' field, and this is the
+    // only one buildFields supplies.
+    { key: 'description', label: 'Opis kolekcji', type: 'text', value: `${name}.`, locale: 'pl', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'en', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'es', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },
