@@ -69,7 +69,7 @@ export default async function Page({ params }: Props) {
     getPrintPricingConfig(),
     loadPrintCollectionDefinitions(getSupabaseAdmin()),
   ]);
-  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing });
+  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing, definitions });
   return (
     <main>
       <JsonLd data={schema} />

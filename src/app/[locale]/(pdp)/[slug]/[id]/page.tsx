@@ -132,6 +132,7 @@ export default async function Page({ params, searchParams }: Props) {
             tRaw: (key: string) => t.raw(key),
             description: note,
             pricing,
+            definitions,
           })}
         />
         <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} definitions={definitions} />
