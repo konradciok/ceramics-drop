@@ -11,15 +11,21 @@ import source from '../../config/print-catalog-curation.json';
  * `loadPrintCollectionDefinitions()` in print-collections.ts — to
  * `printDisplayName`/`groupPrintDesigns`. This JSON-derived
  * `PRINT_COLLECTION_DEFINITIONS` export remains only as:
- *   1. The parameter default those functions fall back to if a caller is
- *      ever added without passing `definitions`, and the value
- *      `loadPrintCollectionDefinitions()` itself falls back to if the
- *      CMS-backed DB read fails or times out (see print-collections.ts's
- *      `readWithFallback` call).
- *   2. The source of `PRINT_CURATION`/`ACTIVE_PRINT_CURATION`/
- *      `RETIRED_PRINT_CURATION`/`curationForProduct`, which are unrelated
- *      to collection naming/grouping and still power live, unaffected
- *      per-print publication-status consumers: `catalog/seed.ts`'s
+ *   1. The parameter default those functions fall back to. This isn't a
+ *      hypothetical for some future caller — it's already live:
+ *      `analytics.ts`'s print-item builders call `printDisplayName`
+ *      without a `definitions` argument whenever no `nameOverride`/
+ *      `itemName` override is supplied (e.g. the checkout-return
+ *      purchase-confirmation flow), so this default is exercised in
+ *      production today. `loadPrintCollectionDefinitions()` itself also
+ *      falls back to it if the CMS-backed DB read fails or times out (see
+ *      print-collections.ts's `readWithFallback` call).
+ *   2. The same underlying JSON `source` this file also derives
+ *      `PRINT_CURATION`/`ACTIVE_PRINT_CURATION`/`RETIRED_PRINT_CURATION`/
+ *      `curationForProduct` from (independently, not through
+ *      `PRINT_COLLECTION_DEFINITIONS`) — exports unrelated to collection
+ *      naming/grouping that still power live, unaffected per-print
+ *      publication-status consumers: `catalog/seed.ts`'s
  *      `catalogStatusForPrint` call and `src/lib/prints.ts`'s
  *      published/retired registry construction (`curationForProduct()` at
  *      prints.ts:504, explicitly out of scope per Plan 1's Global
