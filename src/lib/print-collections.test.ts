@@ -398,6 +398,44 @@ describe('loadPrintCollectionDefinitions (request-cached, fallback-on-failure)',
     expect(result).toEqual([{ slug: 'col_abc123', name: 'Ostrea', designIds: ['fap001'], prints: [] }]);
   });
 
+  it('reads through an injected SupabaseClient, never falling back to getSupabaseAdmin()', async () => {
+    // getSupabaseAdmin() is mocked to return a *different* fake client, whose
+    // data must never show up in the result — pinning that the admin call
+    // site's supabase param is actually the one read from, not silently
+    // ignored in favor of getSupabaseAdmin() (e.g. a future refactor that
+    // reintroduces a hardcoded getSupabaseAdmin() call).
+    mockGetSupabaseAdmin.mockClear();
+    mockGetSupabaseAdmin.mockReturnValue(
+      fakeSupabase({
+        collections: [{ id: 'col_admin_only', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
+        collection_drafts: [
+          {
+            collection_id: 'col_admin_only',
+            revision: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            payload: { name: 'Should Not Be Used', fields: [KIND_FIELD, productsField('fap999')] },
+          },
+        ],
+      }),
+    );
+    const injectedClient = fakeSupabase({
+      collections: [{ id: 'col_injected', published_revision: 1, created_at: '2026-01-01T00:00:00Z' }],
+      collection_drafts: [
+        {
+          collection_id: 'col_injected',
+          revision: 1,
+          created_at: '2026-01-01T00:00:00Z',
+          payload: { name: 'Injected', fields: [KIND_FIELD, productsField('fap001')] },
+        },
+      ],
+    });
+
+    const result = await loadPrintCollectionDefinitions(injectedClient);
+
+    expect(result).toEqual([{ slug: 'col_injected', name: 'Injected', designIds: ['fap001'], prints: [] }]);
+    expect(mockGetSupabaseAdmin).not.toHaveBeenCalled();
+  });
+
   it('falls back to the static PRINT_COLLECTIONS array when getSupabaseAdmin() throws', async () => {
     mockGetSupabaseAdmin.mockImplementation(() => {
       throw new Error('offline');

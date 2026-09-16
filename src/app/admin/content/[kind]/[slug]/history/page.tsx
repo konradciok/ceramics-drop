@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getContentEditorState } from '@/lib/admin/content';
+import { adminSupabase } from '@/lib/admin/clients';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { CMS_LOCALES } from '@/lib/cms/types';
 import { isCmsKind } from '@/lib/cms/schemas';
 import { formatDateTime, StatusPill } from '@/app/admin/ui';
@@ -13,7 +15,8 @@ type Props = { params: Promise<{ kind: string; slug: string }> };
 export default async function ContentHistoryPage({ params }: Props) {
   const { kind, slug } = await params;
   if (!isCmsKind(kind)) notFound();
-  const state = await getContentEditorState(kind, slug);
+  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
+  const state = await getContentEditorState(kind, slug, definitions);
   if (!state) notFound();
 
   return (
