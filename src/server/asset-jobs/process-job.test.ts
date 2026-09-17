@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }));
+const { mockFrom, mockCaptureAlert } = vi.hoisted(() => ({
+  mockFrom: vi.fn(),
+  mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
+}));
 
 // C-2 guard (mirrors src/server/fulfilment/process-job.test.ts): the queue
 // consumer runs OUTSIDE the request ALS, so getSupabaseAdmin() (which
@@ -15,6 +18,7 @@ vi.mock('@/lib/supabase', () => ({
     throw new Error('getCloudflareContext outside ALS');
   },
 }));
+vi.mock('@/lib/worker-sentry', () => ({ captureWorkerAlert: mockCaptureAlert }));
 
 import { processAssetJob, isAssetJobsQueue } from './process-job';
 
@@ -112,7 +116,7 @@ describe('processAssetJob', () => {
     await expect(processAssetJob(MSG, ENV_BASE, CTX)).rejects.toBeTruthy();
   });
 
-  it('upload row missing: fails the job as failed_action_required (no throw — no queue retry)', async () => {
+  it('upload row missing: fails the job as failed_action_required (no throw — no queue retry) AND fires a synchronous alert', async () => {
     const { calls } = setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: null, error: null },
@@ -121,14 +125,37 @@ describe('processAssetJob', () => {
     const failCall = calls.find((c) => c.op === 'update' && (c.payload as Record<string, unknown>).status === 'failed_action_required');
     expect(failCall).toBeTruthy();
     expect((failCall!.payload as Record<string, unknown>).last_error).toMatch(new RegExp(UPLOAD_ID));
+
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert).toHaveBeenCalledWith(
+      ENV_BASE,
+      expect.objectContaining({
+        message: 'asset_job_failed_action_required',
+        level: 'error',
+        extra: expect.objectContaining({
+          jobId: JOB_ID,
+          uploadId: UPLOAD_ID,
+          lastError: expect.stringMatching(new RegExp(UPLOAD_ID)),
+          attempts: 1,
+        }),
+      }),
+    );
   });
 
-  it('upload not confirmed: fails the job as failed_action_required', async () => {
+  it('upload not confirmed: fails the job as failed_action_required AND fires a synchronous alert', async () => {
     setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: { ...CONFIRMED_UPLOAD, status: 'pending' }, error: null },
     });
     await expect(processAssetJob(MSG, ENV_BASE, CTX)).resolves.toBeUndefined();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert).toHaveBeenCalledWith(
+      ENV_BASE,
+      expect.objectContaining({
+        message: 'asset_job_failed_action_required',
+        extra: expect.objectContaining({ jobId: JOB_ID, uploadId: UPLOAD_ID, lastError: expect.stringMatching(/not confirmed/) }),
+      }),
+    );
   });
 
   it('upload lookup errors: throws so the queue retries', async () => {
@@ -139,24 +166,40 @@ describe('processAssetJob', () => {
     await expect(processAssetJob(MSG, ENV_BASE, CTX)).rejects.toBeTruthy();
   });
 
-  it('PRINT_ASSETS binding missing: fails the job as failed_action_required, no throw', async () => {
+  it('PRINT_ASSETS binding missing: fails the job as failed_action_required, no throw, AND fires a synchronous alert', async () => {
     setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: CONFIRMED_UPLOAD, error: null },
     });
     await expect(processAssetJob(MSG, ENV_BASE, CTX)).resolves.toBeUndefined();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert).toHaveBeenCalledWith(
+      ENV_BASE,
+      expect.objectContaining({
+        message: 'asset_job_failed_action_required',
+        extra: expect.objectContaining({ jobId: JOB_ID, uploadId: UPLOAD_ID, lastError: expect.stringMatching(/PRINT_ASSETS/) }),
+      }),
+    );
   });
 
-  it('R2 object missing: fails the job as failed_action_required, no throw', async () => {
+  it('R2 object missing: fails the job as failed_action_required, no throw, AND fires a synchronous alert', async () => {
     setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: CONFIRMED_UPLOAD, error: null },
     });
     const env = { PRINT_ASSETS: { head: vi.fn().mockResolvedValue(null) } } as unknown as CloudflareEnv;
     await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert).toHaveBeenCalledWith(
+      env,
+      expect.objectContaining({
+        message: 'asset_job_failed_action_required',
+        extra: expect.objectContaining({ jobId: JOB_ID, uploadId: UPLOAD_ID, lastError: expect.stringMatching(/R2 object missing/) }),
+      }),
+    );
   });
 
-  it('R2 head throws: marks failed_retryable AND rethrows so the queue retries', async () => {
+  it('R2 head throws: marks failed_retryable AND rethrows so the queue retries, and does NOT fire the failed_action_required alert', async () => {
     const { calls } = setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: CONFIRMED_UPLOAD, error: null },
@@ -167,9 +210,12 @@ describe('processAssetJob', () => {
     await expect(processAssetJob(MSG, env, CTX)).rejects.toThrow(/R2 down/);
     const failCall = calls.find((c) => c.op === 'update' && (c.payload as Record<string, unknown>).status === 'failed_retryable');
     expect(failCall).toBeTruthy();
+    // failed_retryable already gets its normal chance to retry/backoff/DLQ
+    // through the existing queue machinery — it must not ALSO alert here.
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
   });
 
-  it('happy path (stub success): claims, verifies the upload + R2 object, then marks completed — no Sharp, no asset_id', async () => {
+  it('happy path (stub success): claims, verifies the upload + R2 object, then marks completed — no Sharp, no asset_id, no alert', async () => {
     const { calls } = setup({
       claimResult: { data: { attempts: 0 }, error: null },
       uploadResult: { data: CONFIRMED_UPLOAD, error: null },
@@ -181,6 +227,7 @@ describe('processAssetJob', () => {
     expect(completeCall).toBeTruthy();
     expect(completeCall!.payload).not.toHaveProperty('asset_id');
     expect((completeCall!.payload as Record<string, unknown>).attempts).toBe(1);
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
   });
 
   it('finalize CAS loses the race (concurrent delivery finalized it first): does not throw', async () => {

@@ -1,4 +1,5 @@
 import { supabaseFromEnv } from '@/lib/supabase';
+import { captureWorkerAlert } from '@/lib/worker-sentry';
 import type { AssetJobMessage } from './enqueue';
 
 // print_asset_uploads columns this stub actually needs — subset of
@@ -58,6 +59,28 @@ export async function processAssetJob(
       .update({ status, last_error: lastError, attempts, updated_at: now() })
       .eq('id', jobId);
     if (error) throw error;
+
+    // failed_action_required is TERMINAL and never retried — this function
+    // does not throw for it, so worker.ts's queue() branch acks the message
+    // immediately and it never reaches the ASSET_JOBS_QUEUE DLQ (which only
+    // ever sees retries-exhausted/thrown-error failures — see
+    // handleAssetJobsDlqBatch in worker.ts). Without a fulfilment-style
+    // sweepFailedActionJobs cron (deliberately out of scope for this phase —
+    // see the task report), this synchronous alert is the ONLY
+    // operator-visible signal for this failure class, so it fires right here,
+    // once, at the moment of the terminal transition. Same
+    // log-then-Sentry-capture shape as handleAssetJobsDlqBatch for
+    // consistency. `failed_retryable` deliberately does NOT alert here: it
+    // still gets its normal chance to retry/backoff through the existing
+    // queue machinery, which already alerts on DLQ exhaustion.
+    if (status === 'failed_action_required') {
+      console.error(JSON.stringify({ event: 'asset_job_failed_action_required', jobId, uploadId, lastError, attempts }));
+      await captureWorkerAlert(env, {
+        message: 'asset_job_failed_action_required',
+        level: 'error',
+        extra: { jobId, uploadId, lastError, attempts },
+      });
+    }
   };
 
   // 1. Claim the job with a single conditional update (no read-then-write
