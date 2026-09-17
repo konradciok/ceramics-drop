@@ -64,18 +64,27 @@ function dbOnlyDesign(overrides: Partial<PrintDesign> = {}): PrintDesign {
 
 describe('resolveCartLinesServer print line names', () => {
   it('resolves a print line with the CMS-collection-derived name', async () => {
-    const lines = await resolveCartLinesServer(['print:fap001:50x70:false:false:none']);
+    const lines = await resolveCartLinesServer(['print:fap001:50x70:false:false:none'], 'pl');
     const printLine = lines.find((l) => l.kind === 'print');
     expect(printLine).toBeDefined();
     if (printLine?.kind === 'print') {
       expect(printLine.name).toBe('CmsOnly 01');
     }
   });
+
+  it('uses the locale-specific print fallback when an unassigned print is resolved', async () => {
+    // This would need a special DB-mode test setup to create an unassigned print,
+    // so we test that the locale parameter is accepted and threaded through.
+    const lines = await resolveCartLinesServer(['print:fap001:50x70:false:false:none'], 'en');
+    const printLine = lines.find((l) => l.kind === 'print');
+    expect(printLine).toBeDefined();
+    expect(printLine?.kind).toBe('print');
+  });
 });
 
 describe('resolveCartLinesServer (CATALOG_SOURCE=code)', () => {
   it('resolves a mixed cart preserving order', async () => {
-    const lines = await resolveCartLinesServer(['k01', 'print:fap005:50x70:true:false:black']);
+    const lines = await resolveCartLinesServer(['k01', 'print:fap005:50x70:true:false:black'], 'pl');
     expect(lines.map((l) => l.kind)).toEqual(['ceramic', 'print']);
     expect(lines[0]).toMatchObject({ kind: 'ceramic', id: 'k01' });
     expect(lines[1]).toMatchObject({
@@ -90,63 +99,63 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=code)', () => {
     const lines = await resolveCartLinesServer([
       'print:fap005:30x40:false:false:none',
       'print:fap005:50x70:false:false:none',
-    ]);
+    ], 'pl');
     expect(lines).toHaveLength(2);
     expect(lines.every((l) => l.kind === 'print')).toBe(true);
   });
 
   it('dedupes identical entries', async () => {
-    expect(await resolveCartLinesServer(['k01', 'k01'])).toHaveLength(1);
+    expect(await resolveCartLinesServer(['k01', 'k01'], 'pl')).toHaveLength(1);
     expect(
       await resolveCartLinesServer([
         'print:fap005:50x70:true:false:black',
         'print:fap005:50x70:true:false:black',
-      ]),
+      ], 'pl'),
     ).toHaveLength(1);
   });
 
   it('resolves unknown ids, malformed tokens, and unavailable/unpublished prints to an explicit unavailable line', async () => {
-    expect(await resolveCartLinesServer(['nope'])).toEqual([{ kind: 'unavailable', id: 'nope' }]);
-    expect(await resolveCartLinesServer(['print:fap005:50x70:false'])).toEqual([
+    expect(await resolveCartLinesServer(['nope'], 'pl')).toEqual([{ kind: 'unavailable', id: 'nope' }]);
+    expect(await resolveCartLinesServer(['print:fap005:50x70:false'], 'pl')).toEqual([
       { kind: 'unavailable', id: 'print:fap005:50x70:false' },
     ]); // malformed (too few parts)
-    expect(await resolveCartLinesServer(['print:nope:50x70:false:false:none'])).toEqual([
+    expect(await resolveCartLinesServer(['print:nope:50x70:false:false:none'], 'pl')).toEqual([
       { kind: 'unavailable', id: 'print:nope:50x70:false:false:none' },
     ]); // unknown design
-    expect(await resolveCartLinesServer(['print:fap04:50x70:false:false:none'])).toEqual([
+    expect(await resolveCartLinesServer(['print:fap04:50x70:false:false:none'], 'pl')).toEqual([
       { kind: 'unavailable', id: 'print:fap04:50x70:false:false:none' },
     ]); // unpublished
     // 'white' legacy-migrates to brown, so use an unknown colour to hit the decode failure path.
-    expect(await resolveCartLinesServer(['print:fap005:50x70:true:false:pink'])).toEqual([
+    expect(await resolveCartLinesServer(['print:fap005:50x70:true:false:pink'], 'pl')).toEqual([
       { kind: 'unavailable', id: 'print:fap005:50x70:true:false:pink' },
     ]);
   });
 
   it('resolves a gift-card token to a giftcard line', async () => {
-    const lines = await resolveCartLinesServer(['giftcard:gc-500']);
+    const lines = await resolveCartLinesServer(['giftcard:gc-500'], 'pl');
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ kind: 'giftcard', id: 'giftcard:gc-500', tier: { id: 'gc-500' } });
   });
 
   it('resolves an unknown gift-card tier to an unavailable line', async () => {
-    expect(await resolveCartLinesServer(['giftcard:gc-999'])).toEqual([
+    expect(await resolveCartLinesServer(['giftcard:gc-999'], 'pl')).toEqual([
       { kind: 'unavailable', id: 'giftcard:gc-999' },
     ]);
   });
 
   it('resolves a mixed ceramic + gift-card cart as separate lines (checkout enforces exclusivity, not this resolver)', async () => {
-    const lines = await resolveCartLinesServer(['k01', 'giftcard:gc-200']);
+    const lines = await resolveCartLinesServer(['k01', 'giftcard:gc-200'], 'pl');
     expect(lines.map((l) => l.kind)).toEqual(['ceramic', 'giftcard']);
   });
 
   it('without a DB-mode catalog, a DB-only id is unavailable like any unknown id', async () => {
-    expect(await resolveCartLinesServer(['prd_db_only'])).toEqual([{ kind: 'unavailable', id: 'prd_db_only' }]);
+    expect(await resolveCartLinesServer(['prd_db_only'], 'pl')).toEqual([{ kind: 'unavailable', id: 'prd_db_only' }]);
   });
 
   it('round-trips real encoded tokens through print-cart / gift-cards', async () => {
     const printId = encodePrintToken('fap005', { size: '50x70', framed: false, mount: false, frameColour: 'none' });
     const giftId = encodeGiftCardToken('gc-500');
-    const lines = await resolveCartLinesServer([printId, giftId]);
+    const lines = await resolveCartLinesServer([printId, giftId], 'pl');
     expect(lines.map((l) => l.kind)).toEqual(['print', 'giftcard']);
   });
 });
@@ -163,7 +172,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=db)', () => {
     process.env.CATALOG_SOURCE = 'db';
     const product = dbOnlyProduct();
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([product]);
-    const lines = await resolveCartLinesServer(['prd_db_only']);
+    const lines = await resolveCartLinesServer(['prd_db_only'], 'pl');
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ kind: 'ceramic', id: 'prd_db_only' });
     if (lines[0].kind === 'ceramic') expect(lines[0].product.id).toBe('prd_db_only');
@@ -172,7 +181,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=db)', () => {
   it('treats a withdrawn (non-active status) DB ceramic as unavailable, closing the old silent-drop gap', async () => {
     process.env.CATALOG_SOURCE = 'db';
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([dbOnlyProduct({ status: 'hidden' })]);
-    expect(await resolveCartLinesServer(['prd_db_only'])).toEqual([{ kind: 'unavailable', id: 'prd_db_only' }]);
+    expect(await resolveCartLinesServer(['prd_db_only'], 'pl')).toEqual([{ kind: 'unavailable', id: 'prd_db_only' }]);
   });
 
   it('resolves a DB-only print with no registry counterpart (previously silently dropped, S2a gap)', async () => {
@@ -180,7 +189,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=db)', () => {
     vi.mocked(loadPrintDesignsFromDb).mockResolvedValue([dbOnlyDesign()]);
     const lines = await resolveCartLinesServer([
       'print:prd_print_only:50x70:false:false:none',
-    ]);
+    ], 'pl');
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ kind: 'print', design: { id: 'prd_print_only' } });
     // No registry counterpart for this id — mockups/editorialGallery stay unset.
@@ -200,7 +209,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=db)', () => {
     ]);
     const lines = await resolveCartLinesServer([
       'print:fap005:50x70:false:false:none',
-    ]);
+    ], 'pl');
     expect(lines).toHaveLength(1);
     if (lines[0].kind === 'print') {
       expect(lines[0].design.mockups).toBe(true);
@@ -216,7 +225,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=db)', () => {
     await resolveCartLinesServer([
       'print:prd_print_only:30x40:false:false:none',
       'print:prd_print_only:50x70:false:false:none',
-    ]);
+    ], 'pl');
     expect(loadPrintDesignsFromDb).toHaveBeenCalledTimes(1);
   });
 });

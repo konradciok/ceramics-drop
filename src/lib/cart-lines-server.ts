@@ -38,12 +38,29 @@ import { loadPrintCollectionDefinitions } from './print-collections';
 import { printDisplayName } from './print-curation';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign, PrintVariantSelection, Product } from './types';
+import type { Locale } from '@/i18n/routing';
+
+import plMessages from '../../messages/pl.json';
+import enMessages from '../../messages/en.json';
+import esMessages from '../../messages/es.json';
+import deMessages from '../../messages/de.json';
 
 export type CartLine =
   | { kind: 'ceramic'; id: string; product: Product }
   | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection; name: string }
   | { kind: 'giftcard'; id: string; tier: GiftCardTier }
   | { kind: 'unavailable'; id: string };
+
+type CartLineLocale = Locale;
+
+type Messages = typeof enMessages;
+
+const LOCALE_MESSAGES: Record<CartLineLocale, Messages> = {
+  pl: plMessages as unknown as Messages,
+  en: enMessages,
+  es: esMessages as unknown as Messages,
+  de: deMessages as unknown as Messages,
+};
 
 /** Batch-resolve every ceramic id in one catalog load + one sale-state fetch,
  *  applying the same public-visibility gate isProductPublic() enforces
@@ -67,7 +84,7 @@ async function resolveCeramicProductsById(ids: string[]): Promise<Map<string, Pr
  * cards), server-side and DB-aware. Preserves first-seen order like the
  * resolver it replaces.
  */
-export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine[]> {
+export async function resolveCartLinesServer(rawIds: string[], locale: CartLineLocale = 'pl'): Promise<CartLine[]> {
   // Loaded lazily below, only the first time a valid+available print line
   // actually needs its display name — a cart with no print items (or only
   // unavailable/unknown ones) never pays for the two Supabase reads +
@@ -95,6 +112,10 @@ export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine
     return merged;
   }
 
+  // Locale-aware fallback for unassigned print names
+  const msg = LOCALE_MESSAGES[locale];
+  const printFallback = msg.product.print;
+
   const lines: CartLine[] = [];
   for (const id of orderedIds) {
     if (isGiftCardToken(id)) {
@@ -115,7 +136,7 @@ export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine
         continue;
       }
       if (!definitions) definitions = await loadPrintCollectionDefinitions();
-      lines.push({ kind: 'print', id, design, sel: dec.sel, name: printDisplayName(design, 'Print', definitions) });
+      lines.push({ kind: 'print', id, design, sel: dec.sel, name: printDisplayName(design, printFallback, definitions) });
       continue;
     }
     const product = ceramicProducts.get(id);

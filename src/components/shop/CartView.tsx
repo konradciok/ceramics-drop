@@ -17,6 +17,7 @@ import { currencyFormatter } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
@@ -145,12 +146,12 @@ export function CartView({
   printPricing: PrintPricingConfig;
 }) {
   const t = useTranslations();
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const mounted = useMounted();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
   const replace = useCart((s) => s.replace);
-  const { lines: allLines, status: linesStatus } = useCartLines(ids);
+  const { lines: allLines, status: linesStatus } = useCartLines(ids, locale);
 
   // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
   // the server component). The cart is a locked bundle of (already-`sold`) pieces:

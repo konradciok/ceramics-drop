@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { CartLine } from './cart-lines-server';
+import type { Locale } from '@/i18n/routing';
 
 export type CartLinesState = { status: 'loading' | 'ready' | 'error'; lines: CartLine[] };
 
@@ -17,8 +18,8 @@ export type CartLinesState = { status: 'loading' | 'ready' | 'error'; lines: Car
 const EMPTY_STATE: CartLinesState = { status: 'ready', lines: [] };
 const INITIAL_LOADING_STATE: CartLinesState = { status: 'loading', lines: [] };
 
-export function useCartLines(ids: string[]): CartLinesState {
-  const key = ids.join('|');
+export function useCartLines(ids: string[], locale: Locale = 'pl'): CartLinesState {
+  const key = `${ids.join('|')}|${locale}`;
   const hasIds = ids.length > 0;
   const [asyncState, setAsyncState] = useState<CartLinesState>(INITIAL_LOADING_STATE);
   // Reset to 'loading' the moment `key` changes, adjusting state during
@@ -35,7 +36,7 @@ export function useCartLines(ids: string[]): CartLinesState {
     // computed below during render, not stored/set here.
     if (!hasIds) return;
     let cancelled = false;
-    fetch(`/api/cart-lines?ids=${ids.map(encodeURIComponent).join(',')}`)
+    fetch(`/api/cart-lines?ids=${ids.map(encodeURIComponent).join(',')}&locale=${encodeURIComponent(locale)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('cart_lines_unavailable'))))
       .then(({ lines }: { lines: CartLine[] }) => {
         if (cancelled) return;
