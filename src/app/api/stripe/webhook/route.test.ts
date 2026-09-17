@@ -629,10 +629,11 @@ function proxyChain(result: QueryResult, onCall?: (method: string, args: unknown
   });
 }
 
-function succeededEventRequest() {
+function succeededEventRequest(livemode = true) {
   constructEventAsync.mockResolvedValue({
     type: 'payment_intent.succeeded',
     data: { object: { id: 'pi_1' } },
+    livemode,
   });
   return new Request('http://localhost/api/stripe/webhook', {
     method: 'POST',
@@ -1628,7 +1629,18 @@ describe('webhook createShipment fulfilment routing (Finding 11)', () => {
     expect(res.status).toBe(200);
     expect(enqueueProdigi).toHaveBeenCalledTimes(1);
     expect(vi.mocked(enqueueProdigi).mock.calls[0][0]).toBe('o1');
+    expect(vi.mocked(enqueueProdigi).mock.calls[0][3]).toMatchObject({ livemode: true });
     expect(createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('print line items with a test-mode Stripe event → enqueueProdigi receives livemode: false', async () => {
+    supabaseImpl = paidOrder([{ variant: { size: '50x70', framed: true } }]).supabase;
+
+    const res = await POST(succeededEventRequest(false));
+
+    expect(res.status).toBe(200);
+    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(enqueueProdigi).mock.calls[0][3]).toMatchObject({ livemode: false });
   });
 
   it('defensive mixed order → BOTH pipelines fire (Prodigi pulls only print items itself)', async () => {

@@ -22,6 +22,9 @@ function setup(opts: {
   selectError?: { message: string } | null;
   /** Row returned by the env-flip classification select (active job for the order). */
   activeRow?: Record<string, unknown> | null;
+  /** Row returned by parkLivemodeMismatch's existing-row-by-key lookup (idempotency-key conflict path). */
+  existingByKeyRow?: { id: string; status: string } | null;
+  existingByKeyError?: { message: string } | null;
   /** Rows returned by the park UPDATE's select (empty = CAS lost). */
   parkedRows?: unknown[];
 }) {
@@ -39,8 +42,10 @@ function setup(opts: {
       },
       select: () => ({
         eq: () => ({
-          // Recovery select (idempotency-key conflict path).
+          // Recovery select (idempotency-key conflict path, main enqueue flow).
           single: async () => ({ data: opts.existingRow ?? null, error: opts.selectError ?? null }),
+          // parkLivemodeMismatch's existing-row-by-key lookup (idempotency-key conflict path).
+          maybeSingle: async () => ({ data: opts.existingByKeyRow ?? null, error: opts.existingByKeyError ?? null }),
           // Env-flip classification select (active row for the order).
           not: () => ({
             maybeSingle: async () => ({ data: opts.activeRow ?? null, error: null }),
@@ -242,6 +247,185 @@ describe('enqueueProdigi', () => {
       message: 'fulfilment_env_flip_conflict_delivered_job',
     });
     consoleErrorSpy.mockRestore();
+  });
+
+  // ── livemode vs PRODIGI_ENV mismatch guard (2026-09-02 incident: order 63445e00) ──
+
+  it('live Stripe payment + non-live PRODIGI_ENV: parks as failed_action_required (fulfilment_livemode_mismatch) before the main upsert, alerts once, no queue message', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({ upsertRow: { id: 'job-parked' } });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.upserts).toHaveLength(1); // only the park upsert — the main upsert never runs
+    expect(calls.upserts[0][0]).toMatchObject({
+      order_id: 'ord-1',
+      idempotency_key: 'prodigi:sandbox:order:ord-1:v1',
+      status: 'failed_action_required',
+      prodigi_env: 'sandbox',
+    });
+    expect(String((calls.upserts[0][0] as Record<string, unknown>).last_error)).toContain('livemode_mismatch');
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    expect(mockCaptureAlert.mock.calls[0][1]).toMatchObject({ message: 'fulfilment_livemode_mismatch' });
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('test-mode Stripe payment + PRODIGI_ENV=live: also parks (symmetric direction)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({ upsertRow: { id: 'job-parked' } });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: false }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.upserts).toHaveLength(1);
+    expect(String((calls.upserts[0][0] as Record<string, unknown>).last_error)).toContain('TEST Stripe payment');
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('retry of an already-parked livemode mismatch (idempotency-key conflict, existing row already failed_action_required): no duplicate alert, still resolves', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null, // ignoreDuplicates conflict: no row, no error
+      existingByKeyRow: { id: 'job-existing', status: 'failed_action_required' },
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.upserts).toHaveLength(1);
+    expect(calls.updates).toHaveLength(0); // already parked — no rewrite
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('race with complete-paid-order.ts (mode-less path wins the insert first): a still-claimable existing row (queued) is CAS-transitioned to failed_action_required and alerted', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      existingByKeyRow: { id: 'job-race', status: 'queued' },
+      parkedRows: [{ id: 'job-race' }],
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.updates).toHaveLength(1);
+    expect(calls.updates[0]).toMatchObject({ status: 'failed_action_required', livemode: true });
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('race with a job that already reached a terminal state (shipped): never rewritten, alert-only', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({
+      upsertRow: null,
+      existingByKeyRow: { id: 'job-shipped', status: 'shipped' },
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.updates).toHaveLength(0); // delivered job — history untouched
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('lost CAS race on the existing-row update (job advanced concurrently): resolves without throwing or double-alerting', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    setup({
+      upsertRow: null,
+      existingByKeyRow: { id: 'job-race', status: 'queued' },
+      parkedRows: [], // CAS lost — 0 rows matched
+    });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).resolves.toBeUndefined();
+
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('existing-row lookup failure on conflict propagates (never silently swallowed)', async () => {
+    setup({
+      upsertRow: null,
+      existingByKeyRow: null,
+      existingByKeyError: { message: 'db down' },
+    });
+    const { env } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).rejects.toThrow(/existing job lookup failed/);
+  });
+
+  it('invalid PRODIGI_ENV (neither live nor sandbox) is never treated as a silent match, even for a test payment', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const calls = setup({ upsertRow: { id: 'job-parked' } });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'production'); // typo/misconfigured value
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: false }),
+    ).resolves.toBeUndefined();
+
+    expect(calls.upserts).toHaveLength(1);
+    expect(String((calls.upserts[0][0] as Record<string, unknown>).last_error)).toContain('invalid PRODIGI_ENV');
+    expect(send).not.toHaveBeenCalled();
+    expect(mockCaptureAlert).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('livemode matches PRODIGI_ENV: normal flow proceeds exactly as without the guard', async () => {
+    const calls = setup({ upsertRow: { id: 'job-1' } });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'live');
+
+    await enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true });
+
+    expect(calls.upserts).toHaveLength(1);
+    expect(calls.upserts[0][0]).toMatchObject({ status: 'queued', prodigi_env: 'live' });
+    expect(send).toHaveBeenCalledExactlyOnceWith({ orderId: 'ord-1', jobId: 'job-1' });
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+  });
+
+  it('opts.livemode omitted (e.g. balance-only order path via complete-paid-order.ts): guard skipped, normal flow proceeds', async () => {
+    const calls = setup({ upsertRow: { id: 'job-1' } });
+    const { env, send } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await enqueueProdigi('ord-1', env, {} as ExecutionContext, {});
+
+    expect(calls.upserts).toHaveLength(1);
+    expect(calls.upserts[0][0]).toMatchObject({ status: 'queued' });
+    expect(send).toHaveBeenCalledExactlyOnceWith({ orderId: 'ord-1', jobId: 'job-1' });
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+  });
+
+  it('park upsert DB error propagates, never silently swallowed', async () => {
+    const calls = setup({ upsertError: { message: 'db down' } });
+    const { env } = makeEnv(vi.fn(async () => {}), 'sandbox');
+
+    await expect(
+      enqueueProdigi('ord-1', env, {} as ExecutionContext, { livemode: true }),
+    ).rejects.toThrow(/parkLivemodeMismatch: park upsert failed/);
+    expect(calls.upserts).toHaveLength(1);
   });
 
   it('parseEnvFromIdempotencyKey: full-format match only', () => {

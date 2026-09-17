@@ -207,7 +207,7 @@ export async function createInvoiceForOrder(
         amount: it.unit_price,
         currency: orderCurrency,
         description: label,
-      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}` });
+      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}_${it.id}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;
