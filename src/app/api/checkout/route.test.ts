@@ -69,6 +69,18 @@ const toMinor = vi.fn((v: number) => Math.round(v * 100));
 const shippingGrosze = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 2_000 : 3_000));
 const shippingEuroCents = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_000));
 const shippingGBPPence = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_200));
+// The same price list in the table shape the /v1/shipping-rates cutover reads —
+// MAJOR units, since checkout now composes shippingOfCurrency with toMinor.
+const DEFAULT_DOMESTIC_SHIPPING = {
+  pln: { paczkomat: 20, kurier: 30, odbior: 0 },
+  eur: { paczkomat: 5, kurier: 10, odbior: 0 },
+  gbp: { paczkomat: 5, kurier: 12, odbior: 0 },
+};
+type DomesticRates = typeof DEFAULT_DOMESTIC_SHIPPING;
+const shippingOfCurrency = vi.fn(
+  (currency: keyof DomesticRates, method: keyof DomesticRates['pln'], rates: DomesticRates = DEFAULT_DOMESTIC_SHIPPING) =>
+    (rates[currency] ?? rates.eur)[method],
+);
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -135,7 +147,21 @@ vi.mock('@/lib/pricing', () => ({
   shippingGrosze,
   shippingEuroCents,
   shippingGBPPence,
+  shippingOfCurrency,
+  DEFAULT_DOMESTIC_SHIPPING,
 }));
+
+// Real shipping-rates/get.ts (getShippingRatesForCheckout) runs for real in
+// every test — CATALOG_SOURCE defaults to 'code' in this file, so it
+// short-circuits to CODE_SHIPPING_RATES (the two constant tables above and the
+// real print-shipping SHIPPING_EUR) without touching this mock. The two tests
+// that stub CATALOG_SOURCE=db get the same values back from here, so the
+// cutover cannot change any expected amount — only where they came from.
+const loadShippingRatesFromDb = vi.fn(async () => ({
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+}));
+vi.mock('@/lib/shipping-rates/load', () => ({ loadShippingRatesFromDb }));
 
 // Real print-pricing-config/get.ts (getPrintPricingConfigForCheckout) runs
 // for real in every test — CATALOG_SOURCE defaults to 'code' in this file,
@@ -1638,6 +1664,98 @@ describe('POST /api/checkout', () => {
       expect(insertOrders).toHaveBeenCalledWith(
         expect.objectContaining({ discount: 8_800, subtotal: 9_000, total: 200 }),
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Priority 7's one-deploy cutover: BOTH shipping tracks priced from the
+  // CMS-published tables, through the single getShippingRatesForCheckout()
+  // read. These tests exist to prove the flip actually happened for each
+  // branch — and, in the last one, that a failure moves both branches
+  // together, which is the property the plan calls "never split across a
+  // deploy boundary".
+  // -------------------------------------------------------------------------
+  describe('CMS-published shipping rates (one-deploy cutover)', () => {
+    const PUBLISHED_DOMESTIC = {
+      pln: { paczkomat: 24, kurier: 44, odbior: 0 },
+      eur: { paczkomat: 6, kurier: 11, odbior: 0 },
+      gbp: { paczkomat: 6, kurier: 13, odbior: 0 },
+    };
+
+    const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
+      const { POST } = await import('./route');
+      return POST(new Request('http://localhost/api/checkout', { method: 'POST', body: JSON.stringify(body), ...init }));
+    };
+
+    async function publishedRates(international?: Record<string, { framed: number; loose: number }>) {
+      const { DEFAULT_INTERNATIONAL_SHIPPING } = await import('@/lib/print-shipping');
+      return {
+        domestic: PUBLISHED_DOMESTIC,
+        international: { ...DEFAULT_INTERNATIONAL_SHIPPING, ...international },
+      };
+    }
+
+    it('domestic: charges the published PLN rate, not the hardcoded constant', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
+      validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+      try {
+        const res = await post(makeCheckoutBody({ delivery_method: 'kurier' }));
+        expect(res.status).toBe(200);
+        // 44 zł, not the constant's 30 zł.
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 4_400 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('international: charges the published EUR table, still converted at the pricing config\'s single FX source', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates({ DE: { framed: 50, loose: 5 } }));
+      // eurToPln = 10 comes from the PRICING config, never from the shipping
+      // tables — 50 EUR x 10 = 500 PLN proves both halves at once.
+      const CUSTOM_PRICING = { ...DEFAULT_PRINT_PRICING, eurToPln: 10 };
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+        printPricing: CUSTOM_PRICING,
+      } as unknown as ReturnType<typeof validateCart>);
+      try {
+        const res = await post(makeCheckoutBody(PRINT_BODY));
+        expect(res.status).toBe(200);
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 50_000 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('a failed read degrades BOTH branches to the code constants in the same deploy — never one track on each source', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        loadShippingRatesFromDb.mockRejectedValueOnce(new Error('supabase down'));
+        loadShippingRatesFromDb.mockRejectedValueOnce(new Error('supabase down'));
+
+        validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+        expect((await post(makeCheckoutBody({ delivery_method: 'kurier' }))).status).toBe(200);
+        // The SHIPPING_PLN constant, not PUBLISHED_DOMESTIC's 44.
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 3_000 }));
+
+        insertOrders.mockClear();
+        validateCart.mockReturnValueOnce({
+          ok: true,
+          items: [PRINT_ITEM],
+          printPricing: DEFAULT_PRINT_PRICING,
+        } as unknown as ReturnType<typeof validateCart>);
+        expect((await post(makeCheckoutBody(PRINT_BODY))).status).toBe(200);
+        // print-shipping.ts's own constant table, likewise.
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'pln', DEFAULT_PRINT_PRICING)) }),
+        );
+      } finally {
+        errSpy.mockRestore();
+        vi.unstubAllEnvs();
+      }
     });
   });
 });

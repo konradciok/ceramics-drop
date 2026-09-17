@@ -10,7 +10,7 @@ import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { validatePrintDelivery, type PrintShippingAddress } from '@/lib/print-delivery';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
-import { shippingGrosze, shippingEuroCents, shippingGBPPence, toMinor } from '@/lib/pricing';
+import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
   normalizePromoCode,
   fetchPromoByCode,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
 import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForCheckout } from '@/lib/shipping-rates/get';
 import { validateGiftCardContact } from '@/lib/gift-cards';
 import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
@@ -204,6 +205,24 @@ export async function POST(req: Request) {
   // Shipping is explicit in both branches — the discount applies to the
   // merchandise subtotal only, so shipping can no longer be derived later as
   // `amount − subtotal`.
+  //
+  // ONE-DEPLOY CUTOVER (plan Priority 7): BOTH shipping tracks are priced from
+  // the CMS-published rates, read here exactly once. A single accessor
+  // returning both tables is what makes the cutover atomic by construction —
+  // there is no arrangement of this code in which domestic reads the DB while
+  // international reads the constants, or vice versa, and a fallback (see
+  // src/lib/shipping-rates/last-known-good.ts) moves both together.
+  //
+  // It never throws: unlike the print pricing config below, shipping has a safe
+  // value to charge in every outage tier — ultimately the very constants both
+  // tracks were served from before this cutover existed — so a Supabase hiccup
+  // degrades the rate rather than blocking the purchase.
+  //
+  // The EUR→PLN/GBP conversion used by the international branch still comes
+  // from the print pricing config (`printPricing` below), NOT from these
+  // tables: one currency pair, one source, so an order's items and its shipping
+  // can never be converted at two different rates.
+  const shippingRates = await getShippingRatesForCheckout();
   let shipMinor: number;
   if (hasPrints && printAddress) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
@@ -227,7 +246,13 @@ export async function POST(req: Request) {
         return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
       }
     }
-    const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency, printPricing);
+    const shipMajor = printShippingOf(
+      printAddress.country_code,
+      hasFramed,
+      chargeCurrency,
+      printPricing,
+      shippingRates.international,
+    );
     shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
@@ -244,10 +269,10 @@ export async function POST(req: Request) {
       }));
     }
   } else {
-    shipMinor =
-      chargeCurrency === 'eur' ? shippingEuroCents(method) :
-      chargeCurrency === 'gbp' ? shippingGBPPence(method) :
-      shippingGrosze(method);
+    // Domestic (InPost) and the gift-card 'odbior' sentinel. The three
+    // per-currency price lists are independently maintained, exactly as the
+    // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
+    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, shippingRates.domestic));
   }
   const discountMinor = promo
     ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)
