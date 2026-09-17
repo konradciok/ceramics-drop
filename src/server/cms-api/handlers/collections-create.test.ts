@@ -69,7 +69,7 @@ describe('collectionsCreateRoute', () => {
     expect((await res.json()).code).toBe('VALIDATION_FAILED');
   });
 
-  it('creates the collection with a col_-prefixed id, seeds exactly 5 default fields, and completes the idempotency key on success', async () => {
+  it('creates the collection with a col_-prefixed id, seeds exactly 6 default fields, and completes the idempotency key on success', async () => {
     const rpc = vi.fn().mockResolvedValue({ error: null });
     const res = await collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc));
     expect(res.status).toBe(200);
@@ -83,9 +83,9 @@ describe('collectionsCreateRoute', () => {
     );
 
     const payload = rpc.mock.calls[0][1].p_payload as { name: string; fields: Array<Record<string, unknown>> };
-    expect(payload.fields).toHaveLength(5);
+    expect(payload.fields).toHaveLength(6);
 
-    const descriptionFields = payload.fields.filter((f) => f.type === 'text');
+    const descriptionFields = payload.fields.filter((f) => f.key === 'description');
     expect(descriptionFields).toHaveLength(4);
     expect(descriptionFields.map((f) => f.locale).sort()).toEqual(['de', 'en', 'es', 'pl']);
     for (const field of descriptionFields) {
@@ -96,6 +96,20 @@ describe('collectionsCreateRoute', () => {
     expect(productIdsFields).toHaveLength(1);
     expect(productIdsFields[0].locale).toBe('none');
     expect(productIdsFields[0].value).toBe('');
+
+    // Task 1 — the storefront (ceramics-drop/src/lib/print-collections.ts)
+    // only surfaces a collection whose `kind` field is exactly
+    // 'print-collection'; every freshly created collection must be seeded
+    // with it so it's never silently invisible to the storefront.
+    const kindField = payload.fields.find((f) => f.key === 'kind');
+    expect(kindField).toEqual({
+      key: 'kind',
+      label: 'Rodzaj',
+      type: 'text',
+      value: 'print-collection',
+      locale: 'none',
+      sourceLocale: 'none',
+    });
 
     expect(idempotency.completeIdempotencyKey).toHaveBeenCalledWith(
       expect.anything(),

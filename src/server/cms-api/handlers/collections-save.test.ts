@@ -108,4 +108,93 @@ describe('collectionsSaveRoute', () => {
       p_actor_email: 'anna@studio.pl',
     });
   });
+
+  // Task 1 — Protect the print-collection kind tag. The storefront
+  // (ceramics-drop/src/lib/print-collections.ts) only surfaces a collection
+  // whose `kind` field is exactly 'print-collection'; a save must never be
+  // able to change or drop that value once set, regardless of what a client
+  // (including a raw API call bypassing the CMS UI's read-only badge)
+  // submits for the `kind` key.
+  describe('kind-tag protection', () => {
+    const priorKindField = {
+      key: 'kind',
+      label: 'Rodzaj',
+      type: 'text' as const,
+      value: 'print-collection',
+      locale: 'none' as const,
+      sourceLocale: 'none' as const,
+    };
+
+    it('overrides a client-submitted kind value change back to the prior value', async () => {
+      vi.mocked(collectionsMapping.loadCollectionResponse).mockResolvedValueOnce({
+        id: 'col_1',
+        kind: 'collections',
+        name: 'Stara nazwa',
+        revision: 1,
+        publishedRevision: 1,
+        fields: [priorKindField, ...validFields],
+      } as never);
+      const rpc = vi.fn().mockResolvedValue({ error: null });
+      const tamperedFields = [
+        { ...priorKindField, value: 'not-a-print-collection' },
+        ...validFields,
+      ];
+      const res = await collectionsSaveRoute.handler(
+        req({ expectedRevision: 1, name: 'Nowa nazwa', fields: tamperedFields }),
+        {} as CloudflareEnv,
+        { id: 'col_1' },
+        ctxWith(rpc),
+      );
+      expect(res.status).toBe(200);
+      const sentPayload = rpc.mock.calls[0][1].p_payload as { fields: Array<Record<string, unknown>> };
+      expect(sentPayload.fields.filter((f) => f.key === 'kind')).toEqual([priorKindField]);
+    });
+
+    it('silently re-adds an omitted kind field back with the prior value', async () => {
+      vi.mocked(collectionsMapping.loadCollectionResponse).mockResolvedValueOnce({
+        id: 'col_1',
+        kind: 'collections',
+        name: 'Stara nazwa',
+        revision: 1,
+        publishedRevision: 1,
+        fields: [priorKindField, ...validFields],
+      } as never);
+      const rpc = vi.fn().mockResolvedValue({ error: null });
+      const res = await collectionsSaveRoute.handler(
+        // validFields carries no `kind` key at all — the client omitted it.
+        req({ expectedRevision: 1, name: 'Nowa nazwa', fields: validFields }),
+        {} as CloudflareEnv,
+        { id: 'col_1' },
+        ctxWith(rpc),
+      );
+      expect(res.status).toBe(200);
+      const sentPayload = rpc.mock.calls[0][1].p_payload as { fields: Array<Record<string, unknown>> };
+      expect(sentPayload.fields.filter((f) => f.key === 'kind')).toEqual([priorKindField]);
+    });
+
+    it('leaves fields untouched (no invention) when the collection has never had a kind field', async () => {
+      vi.mocked(collectionsMapping.loadCollectionResponse).mockResolvedValueOnce({
+        id: 'col_1',
+        kind: 'collections',
+        name: 'Stara nazwa',
+        revision: 1,
+        publishedRevision: null,
+        fields: validFields, // no kind field anywhere in the prior draft
+      } as never);
+      const rpc = vi.fn().mockResolvedValue({ error: null });
+      const res = await collectionsSaveRoute.handler(
+        req({ expectedRevision: 1, name: 'Nowa nazwa', fields: validFields }),
+        {} as CloudflareEnv,
+        { id: 'col_1' },
+        ctxWith(rpc),
+      );
+      expect(res.status).toBe(200);
+      expect(rpc).toHaveBeenCalledWith('save_collection_draft', {
+        p_collection_id: 'col_1',
+        p_expected_revision: 1,
+        p_payload: { name: 'Nowa nazwa', fields: validFields },
+        p_actor_email: 'anna@studio.pl',
+      });
+    });
+  });
 });
