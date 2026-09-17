@@ -125,6 +125,34 @@ describe('orderFulfillmentQueue', () => {
   });
 });
 
+describe('orderFulfillmentQueue threads definitions through item enrichment', () => {
+  it('uses definitions to resolve print naming (discriminating fixture)', () => {
+    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
+    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the ref.label
+    // proves that the definitions parameter was actually threaded through to productRef
+    // and printDisplayName, not silently dropped in favor of the static fallback.
+    const discriminatingDefs = [
+      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
+    ];
+    const rows = [
+      order({
+        id: '00000000-0000-0000-0000-000000000001',
+        delivery_method: 'paczkomat',
+        // Mixed order (ceramic + print) so it stays in InPost queue (not treated as print-only/prodigi)
+        items: [
+          { product_id: 'k01', unit_price: 10000, variant: null },
+          { product_id: 'fap005', unit_price: 30000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' } },
+        ],
+      }),
+    ];
+    const queue = orderFulfillmentQueue(rows, discriminatingDefs);
+    expect(queue).toHaveLength(1);
+    const printItem = queue[0].itemsEnriched.find((i) => i.product_id === 'fap005')!;
+    expect(printItem.ref.label).toContain('CmsOnly 01');
+    expect(printItem.ref.label).not.toContain('Horizons');
+  });
+});
+
 describe('fulfillmentQueueIndex', () => {
   const queue = orderFulfillmentQueue([
     order({ id: '00000000-0000-0000-0000-000000000001', paid_at: '2026-06-18T10:00:00Z' }),
