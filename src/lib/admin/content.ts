@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { printDisplayName } from '@/lib/print-curation';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { adminSupabase } from './clients';
@@ -137,8 +138,8 @@ function localeState(locale: CmsLocale, kind: CmsDocumentKind, slug: string, ver
   };
 }
 
-async function getRawDocument(kind: CmsDocumentKind, slug: string): Promise<RawDocument | null> {
-  const supabase = adminSupabase();
+async function getRawDocument(kind: CmsDocumentKind, slug: string, client?: SupabaseClient): Promise<RawDocument | null> {
+  const supabase = client ?? adminSupabase();
   const { data, error } = await supabase
     .from('cms_documents')
     .select('id, kind, slug, status, updated_at, published_at, cms_document_versions(id, document_id, locale, version, status, payload, created_by, created_at)')
@@ -149,8 +150,8 @@ async function getRawDocument(kind: CmsDocumentKind, slug: string): Promise<RawD
   return (data as RawDocument | null) ?? null;
 }
 
-export async function listContentSummaries(status?: string): Promise<ContentSummary[]> {
-  const supabase = adminSupabase();
+export async function listContentSummaries(status?: string, client?: SupabaseClient): Promise<ContentSummary[]> {
+  const supabase = client ?? adminSupabase();
   const { data, error } = await supabase
     .from('cms_documents')
     .select('id, kind, slug, status, updated_at, published_at, cms_document_versions(locale, version, status)')
@@ -189,10 +190,11 @@ export async function getContentEditorState(
   kind: CmsDocumentKind,
   slug: string,
   definitions?: PrintCollectionDefinition[],
+  client?: SupabaseClient,
 ): Promise<ContentEditorState | null> {
   const doc = editableDocument(kind, slug);
   if (!doc) return null;
-  const row = await getRawDocument(kind, slug);
+  const row = await getRawDocument(kind, slug, client);
   const versions = (row?.cms_document_versions ?? []) as CmsVersionRow[];
   const locales = Object.fromEntries(CMS_LOCALES.map((locale) => [
     locale,
@@ -217,9 +219,9 @@ export async function getContentEditorState(
  * required — a plain upsert would UPDATE on conflict and could demote an
  * already-published document's status back to 'draft'.
  */
-async function ensureDocument(kind: CmsDocumentKind, slug: string): Promise<string> {
-  const supabase = adminSupabase();
-  const existing = await getRawDocument(kind, slug);
+async function ensureDocument(kind: CmsDocumentKind, slug: string, client?: SupabaseClient): Promise<string> {
+  const supabase = client ?? adminSupabase();
+  const existing = await getRawDocument(kind, slug, client);
   if (existing) return existing.id;
 
   const { data, error } = await supabase
@@ -232,13 +234,13 @@ async function ensureDocument(kind: CmsDocumentKind, slug: string): Promise<stri
 
   // Lost the race: DO NOTHING matched an existing row instead of inserting,
   // so no row came back from this upsert — re-read the winner's row.
-  const raced = await getRawDocument(kind, slug);
+  const raced = await getRawDocument(kind, slug, client);
   if (!raced) throw new Error('document_not_found');
   return raced.id;
 }
 
-async function nextVersion(documentId: string, locale: CmsLocale): Promise<number> {
-  const supabase = adminSupabase();
+async function nextVersion(documentId: string, locale: CmsLocale, client?: SupabaseClient): Promise<number> {
+  const supabase = client ?? adminSupabase();
   const { data, error } = await supabase
     .from('cms_document_versions')
     .select('version')
@@ -256,12 +258,13 @@ export async function saveDraft(params: {
   locale: CmsLocale;
   payload: unknown;
   actorEmail?: string | null;
+  client?: SupabaseClient;
 }): Promise<CmsVersionRow> {
   if (!editableDocument(params.kind, params.slug)) throw new Error('unsupported_document');
   const payload = validateCmsPayload(params.kind, params.slug, params.payload);
-  const supabase = adminSupabase();
-  const documentId = await ensureDocument(params.kind, params.slug);
-  const version = await nextVersion(documentId, params.locale);
+  const supabase = params.client ?? adminSupabase();
+  const documentId = await ensureDocument(params.kind, params.slug, params.client);
+  const version = await nextVersion(documentId, params.locale, params.client);
   const { data, error } = await supabase
     .from('cms_document_versions')
     .insert({
@@ -293,9 +296,10 @@ export async function publishVersion(params: {
   locale: CmsLocale;
   version: number;
   actorEmail?: string | null;
+  client?: SupabaseClient;
 }): Promise<CmsVersionRow> {
   if (!editableDocument(params.kind, params.slug)) throw new Error('unsupported_document');
-  const row = await getRawDocument(params.kind, params.slug);
+  const row = await getRawDocument(params.kind, params.slug, params.client);
   if (!row) throw new Error('document_not_found');
 
   const versions = (row.cms_document_versions ?? []) as CmsVersionRow[];
@@ -309,7 +313,7 @@ export async function publishVersion(params: {
   // in one Postgres transaction under a document-level FOR UPDATE lock (see
   // migration publish_cms_version). The storefront already falls back per-locale
   // when a locale has no published version, so only the requested locale is gated.
-  const supabase = adminSupabase();
+  const supabase = params.client ?? adminSupabase();
   const { data, error } = await supabase.rpc('publish_cms_version', {
     p_document_id: row.id,
     p_locale: params.locale,
@@ -337,9 +341,10 @@ export async function revertVersion(params: {
   locale: CmsLocale;
   version: number;
   actorEmail?: string | null;
+  client?: SupabaseClient;
 }): Promise<CmsVersionRow> {
   if (!editableDocument(params.kind, params.slug)) throw new Error('unsupported_document');
-  const row = await getRawDocument(params.kind, params.slug);
+  const row = await getRawDocument(params.kind, params.slug, params.client);
   if (!row) throw new Error('document_not_found');
   const source = ((row.cms_document_versions ?? []) as CmsVersionRow[]).find(
     (v) => v.locale === params.locale && v.version === params.version,
@@ -351,8 +356,9 @@ export async function revertVersion(params: {
     locale: params.locale,
     payload: source.payload,
     actorEmail: params.actorEmail,
+    client: params.client,
   });
-  const supabase = adminSupabase();
+  const supabase = params.client ?? adminSupabase();
   await supabase.from('cms_audit_log').insert({
     document_id: row.id,
     actor_email: params.actorEmail ?? null,

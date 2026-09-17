@@ -36,7 +36,7 @@ export const previewsRoute: RouteDef = {
     // dedicated content preview endpoint).
     const contentParts = decodeContentResourceId(resourceId);
     if (contentParts) {
-      const resource = await loadContentResource(contentParts.kind, contentParts.slug, contentParts.locale);
+      const resource = await loadContentResource(contentParts.kind, contentParts.slug, contentParts.locale, ctx.supabase);
       if (!resource) {
         return errorResponse('NOT_FOUND', `Content ${resourceId} does not exist.`, 404, ctx.requestId);
       }

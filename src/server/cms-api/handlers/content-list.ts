@@ -9,8 +9,8 @@ import { loadAllContentResources } from '../content-mapping';
 export const contentListRoute: RouteDef = {
   method: 'GET',
   path: '/v1/content',
-  handler: async (_req, _env, _params, _ctx) => {
-    const items = await loadAllContentResources();
+  handler: async (_req, _env, _params, ctx) => {
+    const items = await loadAllContentResources(ctx.supabase);
     return jsonResponse({ items });
   },
 };

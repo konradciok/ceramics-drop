@@ -57,7 +57,7 @@ export const contentPublicationPostRoute: RouteDef = {
       // content-save.ts: read the current (locale-scoped) revision first,
       // require expectedRevision to match it, THEN publish exactly that
       // version — a read-then-write check, not an atomic DB-level CAS.
-      const current = await loadContentResource(parts.kind, parts.slug, parts.locale);
+      const current = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
       if (!current) {
         await releaseSafely(ctx, idempotencyKey, leaseToken);
         return errorResponse('NOT_FOUND', `Content ${params.id} does not exist.`, 404, ctx.requestId);
@@ -74,7 +74,7 @@ export const contentPublicationPostRoute: RouteDef = {
       }
 
       try {
-        await publishVersion({ kind: parts.kind, slug: parts.slug, locale: parts.locale, version: expectedRevision, actorEmail: ctx.actorEmail });
+        await publishVersion({ kind: parts.kind, slug: parts.slug, locale: parts.locale, version: expectedRevision, actorEmail: ctx.actorEmail, client: ctx.supabase });
       } catch (err) {
         await releaseSafely(ctx, idempotencyKey, leaseToken);
         if (err instanceof Error && (err.message === 'unsupported_document' || err.message === 'document_not_found' || err.message === 'version_not_found')) {
@@ -83,7 +83,7 @@ export const contentPublicationPostRoute: RouteDef = {
         throw err;
       }
 
-      const resource = await loadContentResource(parts.kind, parts.slug, parts.locale);
+      const resource = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
       await completeIdempotencyKey(ctx.supabase, 'content:publication', idempotencyKey, leaseToken, 200, resource);
       return jsonResponse(resource);
     } catch (err) {

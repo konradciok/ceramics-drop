@@ -102,6 +102,19 @@ describe('previewsRoute', () => {
       expect(new Date(body.expiresAt).getTime()).toBeGreaterThan(Date.now());
     });
 
+    it('threads ctx.supabase into loadContentResource, not content.ts\'s default client', async () => {
+      vi.mocked(contentMapping.loadContentResource).mockResolvedValue({
+        id: 'product_notes:kubki:pl',
+        kind: 'content',
+        name: 'kubki',
+        revision: 1,
+        publishedRevision: null,
+        fields: [],
+      });
+      await previewsRoute.handler(req({ resourceId: 'product_notes:kubki:pl', revision: 1 }), {} as CloudflareEnv, {}, ctx);
+      expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
+    });
+
     it('mints a preview URL for the home document at the site root', async () => {
       vi.mocked(contentMapping.loadContentResource).mockResolvedValue({
         id: 'page:home:pl',

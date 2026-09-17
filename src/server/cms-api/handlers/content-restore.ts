@@ -57,7 +57,7 @@ export const contentRestorePostRoute: RouteDef = {
       // an old version's payload as a brand-new draft; it never touches
       // publish state, matching restore_collection_draft's semantics — see
       // Global Constraint 19) has no built-in optimistic-concurrency check.
-      const current = await loadContentResource(parts.kind, parts.slug, parts.locale);
+      const current = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
       if (!current) {
         await releaseSafely(ctx, idempotencyKey, leaseToken);
         return errorResponse('NOT_FOUND', `Content ${params.id} does not exist.`, 404, ctx.requestId);
@@ -74,7 +74,7 @@ export const contentRestorePostRoute: RouteDef = {
       }
 
       try {
-        await revertVersion({ kind: parts.kind, slug: parts.slug, locale: parts.locale, version: sourceRevision, actorEmail: ctx.actorEmail });
+        await revertVersion({ kind: parts.kind, slug: parts.slug, locale: parts.locale, version: sourceRevision, actorEmail: ctx.actorEmail, client: ctx.supabase });
       } catch (err) {
         await releaseSafely(ctx, idempotencyKey, leaseToken);
         if (err instanceof Error && (err.message === 'unsupported_document' || err.message === 'document_not_found')) {
@@ -86,7 +86,7 @@ export const contentRestorePostRoute: RouteDef = {
         throw err;
       }
 
-      const resource = await loadContentResource(parts.kind, parts.slug, parts.locale);
+      const resource = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
       await completeIdempotencyKey(ctx.supabase, 'content:restore', idempotencyKey, leaseToken, 200, resource);
       return jsonResponse(resource);
     } catch (err) {

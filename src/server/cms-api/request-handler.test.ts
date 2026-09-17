@@ -146,4 +146,52 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(422);
     expect((await res.json()).code).toBe('IDEMPOTENCY_REQUIRED');
   });
+
+  // Regression test for the CmsApi/content.ts getCloudflareContext() gap:
+  // CmsApi is a WorkerEntrypoint invoked over a Cloudflare service binding
+  // (see cms-ceramics/wrangler.jsonc's STORE binding), never wrapped by
+  // @opennextjs/cloudflare's `runWithCloudflareRequestContext` the way the
+  // default Next.js `fetch` export is. content.ts's `adminSupabase()`
+  // (used as content.ts's fallback client) calls `getCloudflareContext()`,
+  // which throws outside that wrapper. Before content.ts's five I/O
+  // functions (getRawDocument/listContentSummaries/getContentEditorState/
+  // ensureDocument/nextVersion, and the public saveDraft/publishVersion/
+  // revertVersion) accepted an injectable client that content-mapping.ts's
+  // wrappers thread through from `ctx.supabase`, this exact request threw
+  // that getCloudflareContext error (there is no Cloudflare request
+  // context anywhere in this Vitest process — the real production failure
+  // mode). This test exercises the real, unmocked call chain
+  // (content-list.ts -> content-mapping.ts's loadAllContentResources ->
+  // content.ts's getContentEditorState -> getRawDocument) — nothing here
+  // is mocked with vi.mock; only the Supabase client itself is a minimal
+  // stand-in, the same role `deps.makeSupabase(env)` plays in production.
+  it('GET /v1/content (real, unmocked content.ts path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    // `cms_documents` reports "no document saved yet" for every slug (a
+    // legitimate real-world state — a brand-new document); content.ts
+    // falls back to its own default per-locale payload with no further
+    // Supabase calls, so this minimal stub is sufficient for the whole
+    // read path to complete.
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table !== 'cms_documents') throw new Error(`unexpected table in repro stub: ${table}`);
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({ data: null, error: null }),
+              }),
+            }),
+          }),
+        };
+      },
+    } as unknown as never;
+    const res = await handleCmsApiRequest(reqWithToken('/v1/content', token), baseEnv, { makeSupabase: () => fakeSupabase });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.items)).toBe(true);
+    // EDITABLE_DOCUMENTS.length (12) x CMS_LOCALES.length (4) — see
+    // content-mapping.ts's loadAllContentResources.
+    expect(body.items.length).toBe(48);
+  });
 });

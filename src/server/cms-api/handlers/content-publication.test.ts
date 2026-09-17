@@ -85,7 +85,8 @@ describe('contentPublicationPostRoute', () => {
   });
 
   it('publishes the current revision and completes the idempotency key', async () => {
-    const res = await contentPublicationPostRoute.handler(req({ expectedRevision: 2 }), {} as CloudflareEnv, { id: 'x' }, ctxFor());
+    const ctx = ctxFor();
+    const res = await contentPublicationPostRoute.handler(req({ expectedRevision: 2 }), {} as CloudflareEnv, { id: 'x' }, ctx);
     expect(res.status).toBe(200);
     expect(adminContent.publishVersion).toHaveBeenCalledWith({
       kind: 'product_notes',
@@ -93,8 +94,15 @@ describe('contentPublicationPostRoute', () => {
       locale: 'pl',
       version: 2,
       actorEmail: 'anna@studio.pl',
+      client: ctx.supabase,
     });
     expect(idempotency.completeIdempotencyKey).toHaveBeenCalled();
+  });
+
+  it('threads ctx.supabase into loadContentResource, not content.ts\'s default client', async () => {
+    const ctx = ctxFor();
+    await contentPublicationPostRoute.handler(req({ expectedRevision: 2 }), {} as CloudflareEnv, { id: 'x' }, ctx);
+    expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
   });
 
   it('maps a version_not_found error from publishVersion to 404', async () => {

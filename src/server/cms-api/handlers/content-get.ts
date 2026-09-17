@@ -10,7 +10,7 @@ export const contentGetRoute: RouteDef = {
     if (!parts) {
       return errorResponse('NOT_FOUND', `Content ${params.id} does not exist.`, 404, ctx.requestId);
     }
-    const resource = await loadContentResource(parts.kind, parts.slug, parts.locale);
+    const resource = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
     if (!resource) {
       return errorResponse('NOT_FOUND', `Content ${params.id} does not exist.`, 404, ctx.requestId);
     }

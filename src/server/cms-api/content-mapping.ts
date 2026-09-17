@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   EDITABLE_DOCUMENTS,
   editableDocument,
@@ -201,16 +202,26 @@ export type ContentResourceState = { resource: ContentResponse; payload: CmsPayl
  * Returns null only when content.ts does not recognize kind/slug as an
  * editable document at all — a real document with zero saved drafts yet
  * still returns a (revision: 0) state, not null.
+ *
+ * `supabase` is required (not defaulted) and must be the CmsApi handler
+ * context's `ctx.supabase` (built by `deps.makeSupabase(env)` — see
+ * request-handler.ts). content.ts's own default client
+ * (`adminSupabase()`/`getCloudflareContext()`) only works inside a request
+ * wrapped by `runWithCloudflareRequestContext`; `CmsApi` is a
+ * `WorkerEntrypoint` invoked over a service binding and is never wrapped
+ * that way, so relying on content.ts's default here would throw in
+ * production. Passing the client explicitly, rather than making it
+ * optional, prevents that failure mode from silently reappearing.
  */
-export async function loadContentResourceState(kind: CmsDocumentKind, slug: string, locale: CmsLocale): Promise<ContentResourceState | null> {
-  const state = await getContentEditorState(kind, slug);
+export async function loadContentResourceState(kind: CmsDocumentKind, slug: string, locale: CmsLocale, supabase: SupabaseClient): Promise<ContentResourceState | null> {
+  const state = await getContentEditorState(kind, slug, undefined, supabase);
   if (!state) return null;
   const localeState = state.locales[locale];
   return { resource: toContentResource(state, locale, localeState), payload: localeState.payload };
 }
 
-export async function loadContentResource(kind: CmsDocumentKind, slug: string, locale: CmsLocale): Promise<ContentResponse | null> {
-  const state = await loadContentResourceState(kind, slug, locale);
+export async function loadContentResource(kind: CmsDocumentKind, slug: string, locale: CmsLocale, supabase: SupabaseClient): Promise<ContentResponse | null> {
+  const state = await loadContentResourceState(kind, slug, locale, supabase);
   return state?.resource ?? null;
 }
 
@@ -223,8 +234,8 @@ export async function loadContentResource(kind: CmsDocumentKind, slug: string, l
  * once); mirrors collections-mapping.ts's per-id N+1 query pattern at a
  * comparable, small, admin-panel scale.
  */
-export async function loadAllContentResources(): Promise<ContentResponse[]> {
-  const states = await Promise.all(EDITABLE_DOCUMENTS.map((doc) => getContentEditorState(doc.kind, doc.slug)));
+export async function loadAllContentResources(supabase: SupabaseClient): Promise<ContentResponse[]> {
+  const states = await Promise.all(EDITABLE_DOCUMENTS.map((doc) => getContentEditorState(doc.kind, doc.slug, undefined, supabase)));
   const items: ContentResponse[] = [];
   for (const state of states) {
     if (!state) continue; // defensive: content.ts's own allowlist disagreeing with itself should not be possible

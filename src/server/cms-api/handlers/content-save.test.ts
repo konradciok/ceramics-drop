@@ -80,14 +80,23 @@ describe('contentSaveRoute', () => {
   });
 
   it('calls saveDraft with the decoded kind/slug/locale and unflattened payload', async () => {
-    await contentSaveRoute.handler(req({ expectedRevision: 1, name: 'kubki', fields: [validField] }), {} as CloudflareEnv, { id: 'x' }, ctxFor());
+    const ctx = ctxFor();
+    await contentSaveRoute.handler(req({ expectedRevision: 1, name: 'kubki', fields: [validField] }), {} as CloudflareEnv, { id: 'x' }, ctx);
     expect(adminContent.saveDraft).toHaveBeenCalledWith({
       kind: 'product_notes',
       slug: 'kubki',
       locale: 'pl',
       payload: { notes: { 'kubki-01': 'A note' } },
       actorEmail: 'anna@studio.pl',
+      client: ctx.supabase,
     });
+  });
+
+  it('threads ctx.supabase into loadContentResourceState and loadContentResource, not content.ts\'s default client', async () => {
+    const ctx = ctxFor();
+    await contentSaveRoute.handler(req({ expectedRevision: 1, name: 'kubki', fields: [validField] }), {} as CloudflareEnv, { id: 'x' }, ctx);
+    expect(contentMapping.loadContentResourceState).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
+    expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
   });
 
   it('never persists the client-submitted name (content.ts has no name slot)', async () => {

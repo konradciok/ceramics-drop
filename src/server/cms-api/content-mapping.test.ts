@@ -319,38 +319,53 @@ describe('toContentResource', () => {
 // I/O wrappers over content.ts (mocked)
 // ---------------------------------------------------------------------------
 
+// A stand-in for the CmsApi handler context's `ctx.supabase` (the client
+// `request-handler.ts` builds via `deps.makeSupabase(env)`). Every wrapper
+// below must thread this through to content.ts's `getContentEditorState`
+// rather than let it fall through to content.ts's own default
+// (`adminSupabase()`, which depends on `getCloudflareContext()` and throws
+// when `CmsApi` is invoked over its real service-binding path) — see
+// content-mapping.ts's loadContentResourceState doc comment.
+const fakeSupabase = { __marker: 'fake-supabase-client' } as unknown as import('@supabase/supabase-js').SupabaseClient;
+
 describe('loadContentResourceState', () => {
   it('returns null when content.ts reports no such editable document', async () => {
     vi.mocked(getContentEditorState).mockResolvedValue(null);
-    const result = await loadContentResourceState('product_notes', 'unknown', 'pl');
+    const result = await loadContentResourceState('product_notes', 'unknown', 'pl', fakeSupabase);
     expect(result).toBeNull();
   });
 
   it('returns the mapped resource and raw payload for a real document/locale', async () => {
     vi.mocked(getContentEditorState).mockResolvedValue(makeState());
-    const result = await loadContentResourceState('product_notes', 'kubki', 'pl');
+    const result = await loadContentResourceState('product_notes', 'kubki', 'pl', fakeSupabase);
     expect(result?.resource.id).toBe('product_notes:kubki:pl');
     expect(result?.payload).toEqual({ notes: { 'kubki-01': 'A', 'kubki-02': 'B' } });
+  });
+
+  it('passes the given supabase client through to content.ts, not its default', async () => {
+    vi.mocked(getContentEditorState).mockResolvedValue(makeState());
+    await loadContentResourceState('product_notes', 'kubki', 'pl', fakeSupabase);
+    expect(getContentEditorState).toHaveBeenCalledWith('product_notes', 'kubki', undefined, fakeSupabase);
   });
 });
 
 describe('loadContentResource', () => {
   it('returns just the mapped resource', async () => {
     vi.mocked(getContentEditorState).mockResolvedValue(makeState());
-    const result = await loadContentResource('product_notes', 'kubki', 'en');
+    const result = await loadContentResource('product_notes', 'kubki', 'en', fakeSupabase);
     expect(result?.id).toBe('product_notes:kubki:en');
   });
 
   it('returns null when the underlying state is null', async () => {
     vi.mocked(getContentEditorState).mockResolvedValue(null);
-    expect(await loadContentResource('product_notes', 'kubki', 'pl')).toBeNull();
+    expect(await loadContentResource('product_notes', 'kubki', 'pl', fakeSupabase)).toBeNull();
   });
 });
 
 describe('loadAllContentResources', () => {
   it('returns 4 resources (one per locale) for every EDITABLE_DOCUMENTS entry', async () => {
     vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) => makeState({ kind, slug, label: slug }));
-    const items = await loadAllContentResources();
+    const items = await loadAllContentResources(fakeSupabase);
     // 9 categories + fine-art-prints (product_notes) + print-pdp + home = 12 documents x 4 locales.
     expect(items).toHaveLength(48);
     expect(items.filter((r) => r.kind === 'content')).toHaveLength(48);
@@ -365,8 +380,16 @@ describe('loadAllContentResources', () => {
     vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) =>
       slug === 'kubki' ? null : makeState({ kind, slug, label: slug }),
     );
-    const items = await loadAllContentResources();
+    const items = await loadAllContentResources(fakeSupabase);
     expect(items.some((r) => r.id.startsWith('product_notes:kubki:'))).toBe(false);
     expect(items).toHaveLength(44); // 11 remaining documents x 4 locales
+  });
+
+  it('passes the given supabase client through to every getContentEditorState call', async () => {
+    vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) => makeState({ kind, slug, label: slug }));
+    await loadAllContentResources(fakeSupabase);
+    for (const call of vi.mocked(getContentEditorState).mock.calls) {
+      expect(call[3]).toBe(fakeSupabase);
+    }
   });
 });

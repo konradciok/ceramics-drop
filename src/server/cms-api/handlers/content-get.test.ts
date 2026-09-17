@@ -43,16 +43,17 @@ describe('contentGetRoute', () => {
       publishedRevision: 1,
       fields: [],
     });
+    const ctx = ctxFor();
     const res = await contentGetRoute.handler(
       new Request('https://x.test/v1/content/product_notes:kubki:pl'),
       {} as CloudflareEnv,
       { id: 'product_notes:kubki:pl' },
-      ctxFor(),
+      ctx,
     );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.id).toBe('product_notes:kubki:pl');
     expect(body.revision).toBe(2);
-    expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl');
+    expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
   });
 });

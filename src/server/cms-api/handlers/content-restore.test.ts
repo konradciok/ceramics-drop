@@ -65,7 +65,8 @@ describe('contentRestorePostRoute', () => {
   });
 
   it('restores the source revision as a new draft and completes the idempotency key', async () => {
-    const res = await contentRestorePostRoute.handler(req({ expectedRevision: 3, sourceRevision: 1 }), {} as CloudflareEnv, { id: 'x' }, ctxFor());
+    const ctx = ctxFor();
+    const res = await contentRestorePostRoute.handler(req({ expectedRevision: 3, sourceRevision: 1 }), {} as CloudflareEnv, { id: 'x' }, ctx);
     expect(res.status).toBe(200);
     expect(adminContent.revertVersion).toHaveBeenCalledWith({
       kind: 'product_notes',
@@ -73,8 +74,15 @@ describe('contentRestorePostRoute', () => {
       locale: 'pl',
       version: 1,
       actorEmail: 'anna@studio.pl',
+      client: ctx.supabase,
     });
     expect(idempotency.completeIdempotencyKey).toHaveBeenCalled();
+  });
+
+  it('threads ctx.supabase into loadContentResource, not content.ts\'s default client', async () => {
+    const ctx = ctxFor();
+    await contentRestorePostRoute.handler(req({ expectedRevision: 3, sourceRevision: 1 }), {} as CloudflareEnv, { id: 'x' }, ctx);
+    expect(contentMapping.loadContentResource).toHaveBeenCalledWith('product_notes', 'kubki', 'pl', ctx.supabase);
   });
 
   it('maps a version_not_found error from revertVersion to 404 naming the missing source revision', async () => {

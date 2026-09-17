@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { contentListRoute } from './content-list';
 import type { HandlerContext } from '../router';
+import * as contentMapping from '../content-mapping';
 
 vi.mock('../content-mapping', () => ({
   loadAllContentResources: vi.fn(async () => [
@@ -38,5 +39,11 @@ describe('contentListRoute', () => {
     const body = await res.json();
     expect(body.items[0].id).toBe('product_notes:kubki:pl');
     expect(body.items[1].id).toBe('product_notes:kubki:en');
+  });
+
+  it('passes ctx.supabase through to loadAllContentResources', async () => {
+    const ctx = ctxFor();
+    await contentListRoute.handler(new Request('https://x.test/v1/content'), {} as CloudflareEnv, {}, ctx);
+    expect(contentMapping.loadAllContentResources).toHaveBeenCalledWith(ctx.supabase);
   });
 });

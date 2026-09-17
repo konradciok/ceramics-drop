@@ -44,7 +44,7 @@ export const contentSaveRoute: RouteDef = {
     // race), not the atomic DB-level CAS collections/products get — an
     // accepted trade-off given content.ts stays unmodified (Task 5 brief);
     // low-risk for a single-operator admin panel.
-    const current = await loadContentResourceState(parts.kind, parts.slug, parts.locale);
+    const current = await loadContentResourceState(parts.kind, parts.slug, parts.locale, ctx.supabase);
     if (!current) {
       return errorResponse('NOT_FOUND', `Content ${params.id} does not exist.`, 404, ctx.requestId);
     }
@@ -64,7 +64,7 @@ export const contentSaveRoute: RouteDef = {
     const payload = unflattenContentFields({ kind: parts.kind, slug: parts.slug }, fields, current.payload);
 
     try {
-      await saveDraft({ kind: parts.kind, slug: parts.slug, locale: parts.locale, payload, actorEmail: ctx.actorEmail });
+      await saveDraft({ kind: parts.kind, slug: parts.slug, locale: parts.locale, payload, actorEmail: ctx.actorEmail, client: ctx.supabase });
     } catch (err) {
       // content.ts's saveDraft validates the reconstructed payload itself
       // via validateCmsPayload (cms/schemas.ts) and throws a ZodError on
@@ -84,7 +84,7 @@ export const contentSaveRoute: RouteDef = {
       throw err;
     }
 
-    const resource = await loadContentResource(parts.kind, parts.slug, parts.locale);
+    const resource = await loadContentResource(parts.kind, parts.slug, parts.locale, ctx.supabase);
     return jsonResponse(resource);
   },
 };
