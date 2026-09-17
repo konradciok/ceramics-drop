@@ -230,6 +230,13 @@ describe('parsePricingFields — eur_to_* boundaries (DB: numeric(8,4), check > 
     expect(errorsFor({ [key]: '4.2137' })).toEqual({});
   });
 
+  // Trailing zeros are not precision. '4.25000' IS 4.25, and numeric(8,4)
+  // stores it exactly — rejecting it would diverge from the RPC, whose scale
+  // test is "v x 10000 is a whole number", not "count the literal's digits".
+  it.each(rateKeys)('%s accepts a value padded past 4 decimals with zeros', (key) => {
+    expect(errorsFor({ [key]: '4.25000' })).toEqual({});
+  });
+
   it.each(rateKeys)('%s rejects a blank value', (key) => {
     expect(errorsFor({ [key]: '' })).toHaveProperty(key);
   });

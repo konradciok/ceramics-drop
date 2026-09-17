@@ -127,8 +127,10 @@ function invalidKeys(values: Record<string, string>): string[] {
       continue;
     }
     const n = Number(raw);
-    const scale = raw.includes('.') ? raw.split('.')[1].length : 0;
-    if (n <= 0 || n > 100 || scale > 4) invalid.push(key);
+    // "v x 10000 is a whole number", matching the RPC — trailing-zero
+    // agnostic, so '4.25000' is accepted (it IS 4.25) and '4.25005' is not.
+    const scaled = n * 10000;
+    if (n <= 0 || n > 100 || Math.abs(scaled - Math.round(scaled)) > 1e-6) invalid.push(key);
   }
   return invalid;
 }

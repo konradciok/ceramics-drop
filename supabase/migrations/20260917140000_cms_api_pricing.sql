@@ -280,7 +280,12 @@ begin
     else
       v_num := v_text::numeric;
       -- base_*_eur checks (> 0); frame_*_eur / mount_*_eur check (>= 0).
-      if left(v_key, 5) = 'base_' then
+      -- The upper bound is `integer`'s own: without it, a wider literal would
+      -- pass every check here and then fail the ::integer cast below with an
+      -- unmapped 22003, i.e. a 500 instead of a named error.
+      if v_num > 2147483647 then
+        v_invalid := array_append(v_invalid, v_key);
+      elsif left(v_key, 5) = 'base_' then
         if v_num <= 0 then v_invalid := array_append(v_invalid, v_key); end if;
       else
         if v_num < 0 then v_invalid := array_append(v_invalid, v_key); end if;
@@ -295,7 +300,13 @@ begin
       v_invalid := array_append(v_invalid, v_key);
     else
       v_num := v_text::numeric;
-      if v_num <= 0 or v_num > 100 or scale(v_num) > 4 then
+      -- The scale test is `v * 10000 is a whole number`, NOT `scale(v) <= 4`:
+      -- scale() counts the literal's trailing zeros, so scale('4.25000') is 5
+      -- and would reject a value that is exactly 4.25 — while
+      -- src/lib/print-pricing-config/schema.ts's `rate` refine (the TS side of
+      -- this same rule) accepts it. numeric arithmetic is exact, so this
+      -- version is trailing-zero agnostic and cannot disagree with TS.
+      if v_num <= 0 or v_num > 100 or v_num * 10000 <> trunc(v_num * 10000) then
         v_invalid := array_append(v_invalid, v_key);
       end if;
     end if;

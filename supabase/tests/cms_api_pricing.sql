@@ -13,7 +13,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(36);
+select plan(37);
 
 -- Backfill ---------------------------------------------------------------------
 select is(
@@ -215,6 +215,14 @@ select throws_ok(
   $$ select tap_publish_with('eur_to_gbp', '0.86005') $$,
   'pricing_invalid',
   'publish: a 5-decimal rate numeric(8,4) would silently round is rejected'
+);
+
+-- Trailing zeros are not precision: '0.86000' IS 0.86. The scale test is
+-- "v x 10000 is whole", not scale(), which would count the literal's zeros and
+-- diverge from the TS validator.
+select lives_ok(
+  $$ select tap_publish_with('eur_to_gbp', '0.86000') $$,
+  'publish: a rate padded past 4 decimals with zeros is accepted'
 );
 
 select throws_ok(
