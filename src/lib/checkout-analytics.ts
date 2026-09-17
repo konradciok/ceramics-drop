@@ -9,13 +9,8 @@ import {
   type AnalyticsItem,
   type DataLayerEvent,
 } from './analytics';
-import { isPrintToken, decodePrintToken } from './print-cart';
-import { loadPrintCollectionDefinitions } from './print-collections';
-import { printDisplayName } from './print-curation';
-import { registryPrintById } from './prints';
 import type { Product } from './types';
 import type { CurrencyCode } from './format';
-import type { PrintCollectionDefinition } from './print-curation';
 
 type CheckoutStartOptions = {
   shippingCost: number;
@@ -32,8 +27,6 @@ type CheckoutStartOptions = {
 
 type ConfirmedPurchaseOptions = CheckoutStartOptions & {
   orderNo: string;
-  /** Optional CMS-collection definitions loader; defaults to loadPrintCollectionDefinitions. */
-  loadDefinitions?: () => Promise<PrintCollectionDefinition[]>;
 };
 
 type SimpleStorage = Pick<Storage, 'getItem' | 'setItem'> & {
@@ -126,29 +119,29 @@ export async function pushConfirmedPurchaseByIdsOnce(
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
   if (safeGetItem(storage, key) === '1') return false;
 
-  // Cheap upfront check — ids is already in hand, so scanning it for
-  // a print token costs nothing — and only pays for
-  // loadPrintCollectionDefinitions()'s two Supabase reads + fallback
-  // machinery when the order actually contains a print token (see
-  // the buildPrintNameOverrides branch below, the only consumer).
-  const hasPrintToken = ids.some((id) => isPrintToken(id));
-  const definitions = hasPrintToken
-    ? await (options.loadDefinitions ?? loadPrintCollectionDefinitions)()
-    : [];
-
-  // Build nameOverrides for print tokens using CMS-derived collection names.
-  const nameOverrides = ids.map((id) => {
-    if (!isPrintToken(id)) return undefined;
-    const dec = decodePrintToken(id);
-    if (!dec) return undefined;
-    const design = registryPrintById(dec.designId);
-    return design ? printDisplayName(design, undefined, definitions) : undefined;
-  });
-
+  // NO CMS-derived print names here, deliberately. This module is structurally
+  // BROWSER code: every caller is a `'use client'` component (the /koszyk/return
+  // page's useEffect, CartView, GiftCardConfigurator). Reaching the CMS for
+  // collection names means loadPrintCollectionDefinitions() →
+  // getSupabaseAdmin() → getCloudflareContext(), which throws outside a
+  // Cloudflare Workers request context — i.e. always, in a browser. The throw is
+  // swallowed by readWithFallback and the result is PRINT_COLLECTIONS, which is
+  // exactly the static default printDisplayName already uses on its own. So the
+  // lookup could only ever compute the string it was meant to replace, while
+  // dragging @supabase/supabase-js and @opennextjs/cloudflare into three client
+  // bundles. Item names therefore stay on printDisplayName's static fallback ON
+  // PURPOSE, not by accident.
+  //
+  // The server-side conversion path (src/lib/marketing/conversions.ts — Meta
+  // CAPI / GA4 Measurement Protocol) DOES use CMS names, correctly, because it
+  // genuinely runs server-side. Giving this browser dataLayer push the same
+  // names would need new server-side plumbing (e.g. names resolved server-side
+  // and handed to the client), which is out of scope here.
+  //
   // Resolve both ceramic ids and print tokens; a print-only order would otherwise
   // produce zero items here, skipping the browser purchase event (and tripping a
   // false reportPurchaseGapOnce 'unresolvable_ids' alert).
-  const items = analyticsItemsForIds(ids, options.itemPrices, nameOverrides);
+  const items = analyticsItemsForIds(ids, options.itemPrices);
   if (items.length === 0) return false;
 
   (options.push ?? pushDataLayer)(buildPurchaseEventFromItems(items, options));
@@ -261,8 +254,8 @@ export async function pushConfirmedPurchaseFromRememberedCheckout(
   paymentIntentId: string,
   orderNoOrOptions:
     | string
-    | { orderNo?: string; push?: (event: DataLayerEvent) => void; storage?: SimpleStorage; loadDefinitions?: () => Promise<PrintCollectionDefinition[]> },
-  maybeOptions?: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage; loadDefinitions?: () => Promise<PrintCollectionDefinition[]> },
+    | { orderNo?: string; push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
+  maybeOptions?: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
 ): Promise<boolean> {
   const options =
     typeof orderNoOrOptions === 'string'
@@ -287,7 +280,6 @@ export async function pushConfirmedPurchaseFromRememberedCheckout(
     discountMinor: snapshot.discountMinor,
     push: options.push,
     storage,
-    loadDefinitions: options.loadDefinitions,
   });
 
   if (fired) forgetRememberedCheckout(storage);

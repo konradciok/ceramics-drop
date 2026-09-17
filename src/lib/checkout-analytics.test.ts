@@ -1,6 +1,9 @@
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
+import { registryPrintById } from './prints';
 import { toAnalyticsItem } from './analytics';
+import { printDisplayName } from './print-curation';
 import {
   forgetRememberedCheckout,
   hasFiredPurchaseOnce,
@@ -575,19 +578,29 @@ describe('cookie-hardened snapshot and user_data on purchase event', () => {
   });
 });
 
-describe('print collection naming — CMS-derived lazy-loading', () => {
-  it('avoids loading CMS definitions when ids contain no print tokens', async () => {
+describe('print naming stays on the STATIC fallback (browser-side by construction)', () => {
+  /**
+   * This module is only ever imported by `'use client'` components, so it can
+   * never reach the CMS: loadPrintCollectionDefinitions() →
+   * getSupabaseAdmin() → getCloudflareContext() throws outside a Workers
+   * request context, and its fallback is PRINT_COLLECTION_DEFINITIONS — the
+   * same static list printDisplayName already defaults to. These tests pin the
+   * deliberate choice so a future "let's enrich the names from the CMS here"
+   * change has to confront the boundary rather than reintroduce a silent no-op
+   * (and re-drag @supabase/supabase-js into three client bundles).
+   */
+  it('names a print token from the static print-curation definitions', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
-    const mockLoadDefinitions = vi.fn();
+    const design = registryPrintById('fap005');
+    if (!design) throw new Error('Missing print fixture: fap005');
 
-    // Ceramic-only ids: loadDefinitions should never be called.
-    const fired = await pushConfirmedPurchaseByIdsOnce('pi_ceramic_only', ['k01', 'k04'], {
-      orderNo: 'ACC-CERAMIC',
+    const fired = await pushConfirmedPurchaseByIdsOnce('pi_static_print', ['print:fap005:50x70:true:false:black'], {
+      orderNo: 'ACC-STATIC',
       shippingCost: 18,
       shippingMethod: 'kurier',
+      itemPrices: [35000],
       push,
-      loadDefinitions: mockLoadDefinitions,
       storage: {
         getItem: (key: string) => storage.get(key) ?? null,
         setItem: (key: string, value: string) => storage.set(key, value),
@@ -595,33 +608,16 @@ describe('print collection naming — CMS-derived lazy-loading', () => {
     });
 
     expect(fired).toBe(true);
-    expect(mockLoadDefinitions).not.toHaveBeenCalled();
-    expect(push).toHaveBeenCalledTimes(1);
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    const items = (event.ecommerce as { items: { item_name: string }[] }).items;
+    expect(items[0].item_name).toBe(printDisplayName(design));
   });
 
-  it('lazily loads CMS definitions only when ids contain print tokens', async () => {
-    const push = vi.fn();
-    const storage = new Map<string, string>();
-    const mockLoadDefinitions = vi.fn().mockResolvedValue([
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ]);
-
-    // Print token present: loadDefinitions should be called.
-    const printToken = 'print:fap005:a3:satin:oak';
-    await pushConfirmedPurchaseByIdsOnce('pi_cms_print', [printToken], {
-      orderNo: 'ACC-CMS',
-      shippingCost: 18,
-      shippingMethod: 'kurier',
-      itemPrices: [35000],
-      push,
-      loadDefinitions: mockLoadDefinitions,
-      storage: {
-        getItem: (key: string) => storage.get(key) ?? null,
-        setItem: (key: string, value: string) => storage.set(key, value),
-      },
-    });
-
-    expect(mockLoadDefinitions).toHaveBeenCalledOnce();
+  it('does not import the Supabase-backed CMS collection loader at all', async () => {
+    // A module-level assertion rather than a behavioural one: the point is the
+    // import EDGE, which is what pulls server-only code into a client bundle.
+    const source = await readFile(new URL('./checkout-analytics.ts', import.meta.url), 'utf8');
+    expect(source).not.toContain('print-collections');
   });
 });
 
