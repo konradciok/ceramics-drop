@@ -15,7 +15,10 @@ type UploadRowForProcessing = {
   r2_key: string;
   ratio: string;
   content_type: 'image/jpeg' | 'image/png';
-  product_id: string | null;
+  // NOT NULL since Task 12 (see the product migration above); the runtime
+  // guard below is kept anyway — the column is only as good as the row that
+  // reached it, and this consumer reads rows it did not write.
+  product_id: string;
 };
 
 /**
@@ -130,11 +133,15 @@ export async function processAssetJob(
     await failJob('failed_action_required', `upload ${uploadId} is not confirmed (status=${uploadRow.status})`, attempts);
     return;
   }
-  // The structural gap this phase inherited: an upload carries no product
-  // association yet (POST /v1/uploads has no productId in the contract), but
-  // print_fulfilment_assets.product_id is NOT NULL. See the new column's
-  // migration header. Fail loudly rather than "complete" a job that can
-  // produce no asset row.
+  // Task 12 closed the product-association gap this phase originally
+  // inherited: POST /v1/uploads now REQUIRES productId, validates it against
+  // the active print variants, and print_asset_uploads.product_id is NOT NULL
+  // (see the column's migration header). This check is therefore defensive
+  // rather than load-bearing — deliberately kept, because
+  // print_fulfilment_assets.product_id is NOT NULL and this consumer reads
+  // rows it did not write (a pre-migration backfill, a direct DB write, a
+  // future nullable relaxation). Fail loudly rather than "complete" a job that
+  // can produce no asset row.
   if (!uploadRow.product_id) {
     await failJob(
       'failed_action_required',

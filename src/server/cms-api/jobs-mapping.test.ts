@@ -98,6 +98,25 @@ describe('requeueJobRow', () => {
     expect(inFn).toHaveBeenCalledWith('status', ['failed_retryable', 'failed_action_required']);
   });
 
+  it('clears last_error, so a retried job stops reporting the previous failure through GET /v1/jobs', async () => {
+    // The CMS polls GET /v1/jobs; without this the operator keeps seeing the
+    // error text of the failure they just retried away, against a job that is
+    // now queued (and later processing, then completed).
+    const inFn = vi.fn().mockReturnValue({
+      select: () => ({
+        maybeSingle: async () => ({ data: { ...BASE_ROW, status: 'queued', last_error: null }, error: null }),
+      }),
+    });
+    const eq = vi.fn().mockReturnValue({ in: inFn });
+    const update = vi.fn().mockReturnValue({ eq });
+    const supabase = { from: vi.fn().mockReturnValue({ update }) } as never;
+
+    const row = await requeueJobRow(supabase, 'job-1');
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ status: 'queued', last_error: null }));
+    expect(mapJobRowToResponse(row!)).toMatchObject({ status: 'queued', error: '' });
+  });
+
   it('returns null when the CAS matches no row (lost race / already advanced)', async () => {
     const supabase = {
       from: vi.fn().mockReturnValue({

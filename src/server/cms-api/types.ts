@@ -59,9 +59,10 @@ export type ProductResponse = {
   availability: ProductAvailability;
 };
 
-// --- Generic Field[]/Resource shape (collections, content, pricing,
-// shipping-rates — this task only implements collections; the contract's
-// `Field`/`Resource` schemas are shared verbatim across all four kinds). See
+// --- Generic Field[]/Resource shape, shared verbatim by all four resource
+// kinds. All four are implemented: collections, content, pricing and
+// shipping-rates each have their own *-mapping.ts / *-validation.ts pair and
+// handler set, and all of them round-trip through these types. See
 // contracts/cms-v1.json's Field/Resource schemas — greenfield, not derived
 // from ProductDraft/ProductResponse above (those are ceramics-specific).
 export type FieldType = 'text' | 'richtext' | 'number' | 'productIds';

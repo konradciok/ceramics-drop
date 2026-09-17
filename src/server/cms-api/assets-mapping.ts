@@ -31,6 +31,25 @@ import type { AssetResponse } from './types';
 //     label is preserved, human-readably, in `name` instead.
 //   - Asset.ratio (contract: required string) has no stored column; computed
 //     from width_px/height_px via computeAssetRatio.
+//
+// ⚠️ SCOPE DISCLOSURE — what a completed job produces is NOT visible here.
+// Task 11's Container processor stages its derivatives as
+// print_fulfilment_assets rows with status 'staged', and this listing
+// deliberately excludes 'staged' (see the first bullet above: Asset.url is a
+// required non-null string and a staged row has no servable URL yet). There is
+// also NO CmsApi route for `publish_print_asset_revision` — nothing under /v1
+// promotes a staged revision to 'ready'. So an operator can upload, watch the
+// job reach 'completed' via GET /v1/jobs, and still see nothing new in
+// GET /v1/assets; promotion happens outside CmsApi, through the existing
+// print-assets publish path (src/lib/print-assets-publish.ts,
+// scripts/print-assets-upload.ts).
+//
+// That is DELIBERATE, not an oversight: this work implements the plan's
+// Phases 1-3 (upload intent → durable job → Container-rendered derivatives)
+// and stops before Phase 4 (cutover), where the promotion route and the
+// staged-asset visibility it needs belong. Do not "fix" it by widening the
+// status filter here — a staged row genuinely has no URL to serve, so listing
+// it would violate the contract's own Asset schema.
 // ---------------------------------------------------------------------------
 
 type PrintFulfilmentAssetRow = {

@@ -22,11 +22,12 @@ const STATUS_MAP: Record<PrintAssetJobRow['status'], JobResponse['status']> = {
 };
 
 /**
- * `progress` has no real tracking in this stub phase (no Sharp step reports
- * partial progress) — 0 while not yet done, 100 once genuinely 'completed'.
- * Phase 3's real processor is the natural place to report real intermediate
- * values; this is a defensible placeholder satisfying the contract's
- * required-integer field without inventing false precision.
+ * `progress` is still coarse — 0 while not yet done, 100 once genuinely
+ * 'completed'. Phase 3's processor (process-job.ts) runs each profile through
+ * the Container as one indivisible step and persists no per-profile counter,
+ * so there is no intermediate value to report that would not be invented. A
+ * defensible placeholder satisfying the contract's required-integer field
+ * without false precision; a real percentage needs a progress column first.
  */
 function mapProgress(status: PrintAssetJobRow['status']): number {
   return status === 'completed' ? 100 : 0;
@@ -35,10 +36,15 @@ function mapProgress(status: PrintAssetJobRow['status']): number {
 export function mapJobRowToResponse(row: PrintAssetJobRow): JobResponse {
   return {
     id: row.id,
-    // assetId mirrors upload_id in this phase — same convention as
-    // uploads-mapping.ts's mapUploadRowToIntent ("assetId mirrors id"):
-    // nothing downstream of this stub materializes a distinct asset identity
-    // yet (asset_id stays null until Phase 3 actually produces one).
+    // assetId on the wire is deliberately the UPLOAD id, not the job's
+    // asset_id column — same convention as uploads-mapping.ts's
+    // mapUploadRowToIntent ("assetId mirrors id"). It is what round-trips:
+    // POST /v1/jobs takes an assetId and resolves it as an upload id, so a
+    // Job read back from here can be re-submitted verbatim. (Phase 3's
+    // processor does now populate print_asset_jobs.asset_id — the staged
+    // print_fulfilment_assets row it produced — but that identity belongs to
+    // a table GET /v1/assets does not yet list while staged, and exposing it
+    // here would break the round-trip above. See assets-mapping.ts's header.)
     assetId: row.upload_id,
     revision: row.asset_revision,
     status: STATUS_MAP[row.status],
@@ -74,11 +80,17 @@ const RETRYABLE_FROM_STATUSES = ['failed_retryable', 'failed_action_required'] a
  * otherwise advanced) — the caller (jobs-retry.ts) distinguishes those via its
  * own preceding getJobRowById read, exactly as uploads-confirm.ts
  * distinguishes NOT_FOUND from REVISION_CONFLICT.
+ *
+ * `last_error` is cleared in the same statement: mapJobRowToResponse surfaces
+ * it as Job.error, and the CMS polls GET /v1/jobs, so leaving the previous
+ * failure's text behind would show an operator a queued/processing (and
+ * eventually completed) job still captioned with the error they just retried
+ * away. process-job.ts writes a fresh last_error if this attempt fails again.
  */
 export async function requeueJobRow(supabase: SupabaseClient, id: string): Promise<PrintAssetJobRow | null> {
   const { data, error } = await supabase
     .from('print_asset_jobs')
-    .update({ status: 'queued', updated_at: new Date().toISOString() })
+    .update({ status: 'queued', last_error: null, updated_at: new Date().toISOString() })
     .eq('id', id)
     .in('status', [...RETRYABLE_FROM_STATUSES])
     .select('*')

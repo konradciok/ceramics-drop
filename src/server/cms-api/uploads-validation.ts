@@ -10,6 +10,11 @@ export const uploadCreateSchema = z
     filename: z.string().trim().min(1),
     contentType: z.enum(UPLOAD_CONTENT_TYPES),
     bytes: z.number().int().positive(),
+    // Shape-only here (non-empty string). Membership of the real print-ratio
+    // set is checked in uploads-create.ts via profiles.ts's isPrintRatio —
+    // the same predicate process-job.ts applies — so this module stays free of
+    // the print-pipeline import. The check happens at upload-intent time
+    // either way; see uploads-create.ts's fieldErrors.ratio branch.
     ratio: z.string().trim().min(1),
     // Task 12: closes the product-association gap Task 11's Container
     // processor self-flagged — required going forward (nothing in this

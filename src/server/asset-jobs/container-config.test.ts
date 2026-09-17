@@ -248,9 +248,16 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
 
   /**
    * Every first-party module reachable from `entry`, plus every bare package
-   * specifier seen anywhere in that graph. VALUE imports only: `import type`
-   * is erased by the bundler and can never drag a native addon into the
-   * Workers isolate.
+   * specifier seen anywhere in that graph. VALUE edges only: `import type` /
+   * `export type` are erased by the bundler and can never drag a native addon
+   * into the Workers isolate.
+   *
+   * BOTH `import … from` and `export … from` are followed. A re-export is a
+   * real bundler edge — `src/server/asset-jobs/container.ts`'s
+   * `export { PRINT_ASSET_PROCESSOR_NAME } from './container-names';` pulls
+   * that module in exactly like an import would — so a walker that only
+   * followed `import` would silently under-report the graph it claims to cover
+   * and could pass vacuously on a barrel-shaped tree.
    */
   function importGraph(entry: string): { modules: Set<string>; packages: Set<string>; edges: Map<string, string> } {
     const modules = new Set<string>();
@@ -262,9 +269,9 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
       if (modules.has(current)) continue;
       modules.add(current);
       const source = read(current);
-      for (const match of source.matchAll(/^\s*import\s+([^;]*?)\s*from\s+['"]([^'"]+)['"]/gm)) {
+      for (const match of source.matchAll(/^\s*(?:import|export)\s+([^;]*?)\s*from\s+['"]([^'"]+)['"]/gm)) {
         const [, clause, specifier] = match;
-        if (/^type\b/.test(clause.trim())) continue; // `import type … from` — erased
+        if (/^type\b/.test(clause.trim())) continue; // `import type … from` / `export type … from` — erased
         const resolved = resolveSpecifier(current, specifier);
         if (resolved === null) {
           packages.add(specifier);
@@ -286,7 +293,16 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
   // Sharp-reaching module — direct or six hops down through `@/lib/*` — breaks
   // the deployment at runtime, not at build. A direct-import regex would miss
   // the indirect route entirely, so this walks the graph.
+  //
+  // The first two entries are the REAL deployed-bundle roots — `worker.ts` is
+  // the Worker entry point wrangler bundles, and `src/server/cms-api/entrypoint.ts`
+  // roots the whole CmsApi handler tree it mounts. Guarding only the
+  // asset-jobs/* modules below would leave every one of those handlers free to
+  // pull Sharp in from the side; anything bundled at all is reachable from one
+  // of these two.
   it.each([
+    'worker.ts',
+    'src/server/cms-api/entrypoint.ts',
     'src/server/asset-jobs/process-job.ts',
     'src/server/asset-jobs/container-render.ts',
     'src/server/asset-jobs/container-protocol.ts',
@@ -316,6 +332,19 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
     expect(modules.has('src/server/print-assets/container-handler.ts')).toBe(true);
     expect(modules.has('src/server/print-assets/derivatives.ts')).toBe(true); // one hop deeper
     expect(packages.has('sharp')).toBe(true);
+  });
+
+  it('the walker follows `export … from` re-exports, not just `import … from`', () => {
+    // container.ts reaches container-names.ts ONLY through
+    // `export { PRINT_ASSET_PROCESSOR_NAME } from './container-names';`. If
+    // this regresses, every barrel/re-export hop above goes unwalked and the
+    // green results there are worth less than they look.
+    expect(read('src/server/asset-jobs/container.ts')).toMatch(
+      /^\s*export\s+\{[^}]*\}\s*from\s+'\.\/container-names'/m,
+    );
+    expect(importGraph('src/server/asset-jobs/container.ts').modules).toContain(
+      'src/server/asset-jobs/container-names.ts',
+    );
   });
 
   it('the container entry point is the ONLY place that reaches the Sharp render handler', () => {

@@ -16,7 +16,8 @@ import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } fr
 // reference check, rather than inventing a second, divergent one. Pure +
 // one Supabase read, no Sharp — safe in this Worker-bundled handler (see
 // profiles.ts's own header comment on that boundary).
-import { loadActivePrintVariants } from '@/server/asset-jobs/profiles';
+import { isPrintRatio, loadActivePrintVariants } from '@/server/asset-jobs/profiles';
+import { PRINT_RATIOS } from '@/lib/print-assets-prepare';
 
 // POST /v1/uploads: issues an upload intent (a new print_asset_uploads row)
 // plus an R2 presigned PUT URL the client uploads the file bytes to directly
@@ -66,6 +67,20 @@ export const uploadsCreateRoute: RouteDef = {
     }
 
     const upload = validated.data;
+
+    // Same "reject at upload-intent time, not at job time" principle as the
+    // productId check below. The zod schema can only see that `ratio` is a
+    // non-empty string; an unrecognized one used to survive all the way to
+    // process-job.ts, which fails the job `failed_action_required` — i.e. the
+    // operator has already picked a file, uploaded the bytes and created a job
+    // before finding out the ratio was never valid. isPrintRatio is the SAME
+    // predicate process-job.ts applies, so the two can't drift apart.
+    if (!isPrintRatio(upload.ratio)) {
+      await release();
+      return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
+        fieldErrors: { ratio: `Nieznany format "${upload.ratio}". Dozwolone: ${PRINT_RATIOS.join(', ')}.` },
+      });
+    }
 
     // Task 12: a productId that doesn't resolve to a real, active print
     // product is rejected here — at upload-intent time, with a clear 4xx —

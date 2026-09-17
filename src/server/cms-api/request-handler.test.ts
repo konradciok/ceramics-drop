@@ -331,7 +331,10 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
       reqWithToken('/v1/uploads', token, {
         method: 'POST',
         headers: { 'Idempotency-Key': 'up-key-1' },
-        body: JSON.stringify({ filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5', productId: 'print-01' }),
+        // '3x4' — a real member of PRINT_RATIOS. uploads-create.ts rejects
+        // anything outside that set at upload-intent time (final-review
+        // Finding 5), so this end-to-end path needs a genuine ratio.
+        body: JSON.stringify({ filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '3x4', productId: 'print-01' }),
       }),
       envWithCreds,
       { makeSupabase: () => fakeSupabase },
@@ -451,7 +454,7 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
       filename: 'kubek-01.jpg',
       content_type: 'image/jpeg',
       declared_byte_size: 1000,
-      ratio: '4:5',
+      ratio: '3x4',
       r2_key: 'uploads/upload-1.jpg',
       status: 'confirmed',
       revision: 1,

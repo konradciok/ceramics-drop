@@ -4,6 +4,7 @@ import type { HandlerContext } from '../router';
 import * as idempotency from '../idempotency';
 import * as mapping from '../uploads-mapping';
 import * as profiles from '@/server/asset-jobs/profiles';
+import { PRINT_RATIOS } from '@/lib/print-assets-prepare';
 
 vi.mock('../idempotency');
 vi.mock('../uploads-mapping', () => ({
@@ -17,9 +18,15 @@ vi.mock('../uploads-mapping', () => ({
 // Task 12: product-reference validation reuses profiles.ts's
 // loadActivePrintVariants (Task 11's "load active print variants for a
 // product" logic) rather than inventing a new check — see uploads-create.ts.
-vi.mock('@/server/asset-jobs/profiles', () => ({ loadActivePrintVariants: vi.fn() }));
+// Only the DB-backed loader is stubbed; `isPrintRatio` keeps its REAL
+// implementation, so the ratio rejection below is tested against the same
+// PRINT_RATIOS set process-job.ts applies rather than against a fake.
+vi.mock('@/server/asset-jobs/profiles', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/server/asset-jobs/profiles')>()),
+  loadActivePrintVariants: vi.fn(),
+}));
 
-const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5', productId: 'print-01' };
+const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '3x4', productId: 'print-01' };
 
 function req(body: unknown, idempotencyKey: string | null = 'key-1') {
   const headers: Record<string, string> = {};
@@ -121,6 +128,33 @@ describe('uploadsCreateRoute', () => {
     expect(mapping.resolveR2PresignCredentials).not.toHaveBeenCalled();
   });
 
+  // Final-review Finding 5: `ratio` used to be shape-validated only (any
+  // non-empty string), so an unrecognized one was not caught until
+  // process-job.ts failed the job `failed_action_required` — after the
+  // operator had already uploaded the file and created a job. Same
+  // reject-at-intent-time treatment productId got in Task 12.
+  it('releases the idempotency key and returns 422 VALIDATION_FAILED (fieldErrors.ratio) for a ratio outside PRINT_RATIOS', async () => {
+    const res = await uploadsCreateRoute.handler(req({ ...validBody, ratio: '4:5' }), fakeEnv, {}, ctx());
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(body.fieldErrors.ratio).toContain('4:5');
+    expect(body.fieldErrors.ratio).toContain('3x4'); // lists the allowed set
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    // Rejected before any of the downstream work — no product lookup, no
+    // presign, no row.
+    expect(profiles.loadActivePrintVariants).not.toHaveBeenCalled();
+    expect(mapping.resolveR2PresignCredentials).not.toHaveBeenCalled();
+    expect(mapping.insertUploadRow).not.toHaveBeenCalled();
+  });
+
+  it('accepts every ratio process-job.ts can actually process', async () => {
+    for (const ratio of PRINT_RATIOS) {
+      const res = await uploadsCreateRoute.handler(req({ ...validBody, ratio }), fakeEnv, {}, ctx());
+      expect(res.status, `ratio ${ratio} must be accepted`).toBe(200);
+    }
+  });
+
   it('inserts the row, presigns the PUT URL, and completes the idempotency key on success', async () => {
     const res = await uploadsCreateRoute.handler(req(validBody), fakeEnv, {}, ctx());
     expect(res.status).toBe(200);
@@ -138,7 +172,7 @@ describe('uploadsCreateRoute', () => {
         filename: 'kubek-01.jpg',
         contentType: 'image/jpeg',
         bytes: 1000,
-        ratio: '4:5',
+        ratio: '3x4',
         productId: 'print-01',
         createdBy: 'anna@studio.pl',
         r2Key: expect.stringMatching(/^uploads\/.+\.jpg$/),
