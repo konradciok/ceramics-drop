@@ -31,6 +31,11 @@ import { pricingSaveRoute } from './handlers/pricing-save';
 import { pricingPublicationPostRoute } from './handlers/pricing-publication';
 import { pricingRestorePostRoute } from './handlers/pricing-restore';
 import { pricingPreviewPostRoute } from './handlers/pricing-preview';
+import { shippingRatesListRoute } from './handlers/shipping-rates-list';
+import { shippingRatesGetRoute } from './handlers/shipping-rates-get';
+import { shippingRatesSaveRoute } from './handlers/shipping-rates-save';
+import { shippingRatesPublicationPostRoute } from './handlers/shipping-rates-publication';
+import { shippingRatesRestorePostRoute } from './handlers/shipping-rates-restore';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -65,6 +70,11 @@ const routes: RouteDef[] = [
   pricingPublicationPostRoute,
   pricingRestorePostRoute,
   pricingPreviewPostRoute,
+  shippingRatesListRoute,
+  shippingRatesGetRoute,
+  shippingRatesSaveRoute,
+  shippingRatesPublicationPostRoute,
+  shippingRatesRestorePostRoute,
 ];
 
 const dispatch = createRouter(routes);

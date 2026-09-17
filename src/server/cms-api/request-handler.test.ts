@@ -125,13 +125,13 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
   });
 
   it('404s an unregistered S2/S3/S4 path even carrying a fully valid owner token', async () => {
-    // Collections, content and (as of Task 6) pricing routes are all
-    // registered — repointed at /v1/shipping-rates, which is still genuinely
-    // unimplemented (no shipping-rates handler/route exists anywhere under
+    // Collections, content, pricing and (as of Task 7) shipping-rates routes
+    // are all registered — repointed at /v1/assets, which is still genuinely
+    // unimplemented (S3; no assets handler/route exists anywhere under
     // src/server/cms-api/handlers/), so this still proves the same S2/S3/S4
     // router fallback.
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const res = await handleCmsApiRequest(reqWithToken('/v1/shipping-rates', token), baseEnv, deps);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/assets', token), baseEnv, deps);
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
   });
@@ -167,6 +167,48 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     const body = await res.json();
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({ id: 'print-pricing', kind: 'pricing', revision: 1, publishedRevision: 1 });
+  });
+
+  // Task 7 — the same guard for the shipping-rates handlers: they must never
+  // reach for adminSupabase() / getCloudflareContext() (the Task 5 gap
+  // documented on the /v1/content test below). This exercises the real,
+  // unmocked read path (shipping-rates-list.ts -> shipping-rates-mapping.ts's
+  // loadAllShippingRateResources) through the full entrypoint with nothing but
+  // a minimal Supabase stand-in in deps.makeSupabase — exactly the role it
+  // plays in production. If any shipping-rates module acquired a
+  // getCloudflareContext() dependency, this would throw rather than return 200.
+  it('GET /v1/shipping-rates (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table !== 'shipping_rates' && table !== 'shipping_rate_drafts') {
+          throw new Error(`unexpected table in shipping-rates stub: ${table}`);
+        }
+        let rateId = '';
+        const builder = {
+          select: () => builder,
+          eq: (_col: string, value: string) => {
+            rateId = value;
+            return builder;
+          },
+          order: () => builder,
+          limit: () => builder,
+          maybeSingle: async () => ({
+            data:
+              table === 'shipping_rates'
+                ? { published_revision: 1 }
+                : { revision: 1, payload: { fields: [{ key: `${rateId}_probe`, label: 'p', type: 'number', value: '1', locale: 'none', sourceLocale: 'none' }] } },
+            error: null,
+          }),
+        };
+        return builder;
+      },
+    } as unknown as never;
+    const res = await handleCmsApiRequest(reqWithToken('/v1/shipping-rates', token), baseEnv, { makeSupabase: () => fakeSupabase });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items.map((i: { id: string }) => i.id)).toEqual(['domestic', 'international']);
+    expect(body.items[0]).toMatchObject({ kind: 'shipping-rates', revision: 1, publishedRevision: 1 });
   });
 
   it('422s POST /v1/products with a valid owner token but no Idempotency-Key', async () => {

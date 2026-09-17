@@ -3,7 +3,7 @@
   "info": {
     "title": "Anna Ciok Studio — CMS Admin API",
     "version": "1.0.0",
-    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections (S2) is implemented; content/pricing/shipping-rates (S2/S4) and assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
+    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections, content, pricing and shipping-rates (S2/S4) are implemented; assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
   },
   "security": [ { "cloudflareAccess": [] } ],
   "paths": {
