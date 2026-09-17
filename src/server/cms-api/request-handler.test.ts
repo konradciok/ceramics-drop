@@ -125,15 +125,48 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
   });
 
   it('404s an unregistered S2/S3/S4 path even carrying a fully valid owner token', async () => {
-    // Collections and content routes are registered as of these tasks —
-    // repointed at /v1/pricing, which is still genuinely unimplemented (no
-    // pricing handler/route exists anywhere under
-    // src/server/cms-api/handlers/), so this still proves the same
-    // S2/S3/S4 router fallback.
+    // Collections, content and (as of Task 6) pricing routes are all
+    // registered — repointed at /v1/shipping-rates, which is still genuinely
+    // unimplemented (no shipping-rates handler/route exists anywhere under
+    // src/server/cms-api/handlers/), so this still proves the same S2/S3/S4
+    // router fallback.
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const res = await handleCmsApiRequest(reqWithToken('/v1/pricing', token), baseEnv, deps);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/shipping-rates', token), baseEnv, deps);
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
+  });
+
+  // Task 6 — the pricing handlers must never reach for adminSupabase() /
+  // getCloudflareContext() (the Task 5 gap documented on the /v1/content test
+  // below). This exercises the real, unmocked pricing read path
+  // (pricing-list.ts -> pricing-mapping.ts's loadPricingResource) through the
+  // full entrypoint with nothing but a minimal Supabase stand-in in
+  // deps.makeSupabase — exactly the role it plays in production. If any
+  // pricing module acquired a getCloudflareContext() dependency, this would
+  // throw rather than return 200.
+  it('GET /v1/pricing (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    const rowsByTable: Record<string, unknown> = {
+      print_pricing_config: { published_revision: 1 },
+      pricing_config_drafts: { revision: 1, payload: { fields: [] } },
+    };
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (!(table in rowsByTable)) throw new Error(`unexpected table in pricing stub: ${table}`);
+        const builder = {
+          select: () => builder,
+          order: () => builder,
+          limit: () => builder,
+          maybeSingle: async () => ({ data: rowsByTable[table], error: null }),
+        };
+        return builder;
+      },
+    } as unknown as never;
+    const res = await handleCmsApiRequest(reqWithToken('/v1/pricing', token), baseEnv, { makeSupabase: () => fakeSupabase });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({ id: 'print-pricing', kind: 'pricing', revision: 1, publishedRevision: 1 });
   });
 
   it('422s POST /v1/products with a valid owner token but no Idempotency-Key', async () => {
