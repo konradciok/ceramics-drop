@@ -2,6 +2,11 @@
  * Sharp-based derivative generation, extracted from scripts/lib/ into a
  * pure module that the future Container and CLI both use.
  *
+ * ⚠️  CRITICAL: This module depends on `sharp` — a native Node.js addon that
+ * cannot run in the Cloudflare Workers V8 isolate. This module MUST ONLY be
+ * called from Node-side code (the CLI today, the Cloudflare Container in Phase 1).
+ * NEVER import or call this from anything `worker.ts` bundles into the runtime.
+ *
  * Takes Buffers and metadata objects instead of file paths, so it can run
  * in environments without a local filesystem (the Cloudflare Container in Phase 1).
  *
