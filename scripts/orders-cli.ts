@@ -200,6 +200,28 @@ function resolveStripeKey(env: Record<string, string | undefined>): string {
   return key;
 }
 
+/**
+ * Strict ISO-8601 date/date-time validation for --since flags. `Date.parse`
+ * alone accepts some non-ISO strings and silently normalizes calendar
+ * overflow (e.g. '2026-02-30' becomes March 2), so a malformed --since could
+ * apply a different boundary than the operator intended instead of failing
+ * with invalid_arguments.
+ */
+export function isStrictIsoDate(value: string): boolean {
+  const isoPattern = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
+  const m = isoPattern.exec(value);
+  if (!m) return false;
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return false;
+  const [, y, mo, d] = m;
+  const parsed = new Date(ms);
+  return (
+    parsed.getUTCFullYear() === Number(y) &&
+    parsed.getUTCMonth() + 1 === Number(mo) &&
+    parsed.getUTCDate() === Number(d)
+  );
+}
+
 function supabaseRefOf(url: string): string {
   try {
     return new URL(url).hostname.split('.')[0];
@@ -454,14 +476,26 @@ type ProdigiEnvCheckAnomaly = {
   jobId: string;
   jobStatus: string;
   prodigiEnv: string | null;
+  livemode: boolean | null;
+  problem: 'live_payment_nonlive_env' | 'test_payment_live_env' | 'missing_prodigi_env';
+};
+
+/** Couldn't determine ground truth for a legacy (pre-livemode-column) row — surfaced, not silently passed or hard-failed. */
+type ProdigiEnvCheckUnverifiable = {
+  orderId: string;
+  jobId: string;
+  jobStatus: string;
+  prodigiEnv: string | null;
   paymentIntentId: string | null;
-  stripeLivemode: boolean | null;
-  problem:
-    | 'live_payment_nonlive_env'
-    | 'test_payment_live_env'
-    | 'missing_prodigi_env'
-    | 'no_payment_intent'
-    | 'stripe_lookup_failed';
+  reason: 'stripe_lookup_failed';
+};
+
+/** No Stripe mode exists to compare against (e.g. a print paid entirely from gift-card/store-credit balance) — not an anomaly. */
+type ProdigiEnvCheckModeless = {
+  orderId: string;
+  jobId: string;
+  jobStatus: string;
+  prodigiEnv: string | null;
 };
 
 type FulfilmentJobRow = {
@@ -469,90 +503,129 @@ type FulfilmentJobRow = {
   order_id: string;
   status: string;
   prodigi_env: string | null;
+  livemode: boolean | null;
   created_at: string;
 };
 
+/** Supabase's default API max_rows — page past it with a stable created_at+id ordering so a large fulfilment_jobs table is never silently truncated. */
+const FULFILMENT_JOBS_PAGE_SIZE = 1000;
+
+async function fetchAllFulfilmentJobs(
+  supabase: SupabaseClient,
+  sinceIso: string | undefined,
+): Promise<FulfilmentJobRow[]> {
+  const jobs: FulfilmentJobRow[] = [];
+  for (let from = 0; ; from += FULFILMENT_JOBS_PAGE_SIZE) {
+    let query = supabase
+      .from('fulfilment_jobs')
+      .select('id, order_id, status, prodigi_env, livemode, created_at');
+    if (sinceIso) query = query.gte('created_at', sinceIso);
+    const { data, error } = await query
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + FULFILMENT_JOBS_PAGE_SIZE - 1);
+    if (error) throw new CliError(`fulfilment_jobs lookup failed: ${error.message}`, 4, 'action_failed');
+    const page = (data ?? []) as FulfilmentJobRow[];
+    jobs.push(...page);
+    if (page.length < FULFILMENT_JOBS_PAGE_SIZE) break;
+  }
+  return jobs;
+}
+
 /**
- * For every fulfilment_jobs row (optionally bounded by --since on created_at
- * — unbounded by default, Prodigi order volume is currently near-zero),
- * retrieves the order's Stripe PaymentIntent and compares `.livemode`
- * against the row's persisted `prodigi_env`. A live payment fulfilled under
- * a non-live env, or a test payment fulfilled under live, both count as an
- * anomaly — this is exactly how the 2026-09-02 incident went undetected.
+ * For every fulfilment_jobs row (optionally bounded by --since on created_at),
+ * compares its Stripe payment mode against its persisted `prodigi_env`. A
+ * live payment fulfilled under a non-live env, or a test payment fulfilled
+ * under live, both count as an anomaly — this is exactly how the 2026-09-02
+ * incident (order 63445e00) went undetected.
+ *
+ * Ground truth is the `livemode` persisted on the job at enqueue time
+ * (enqueueProdigi, since this guard shipped) — no Stripe call needed for
+ * those rows at all. For legacy rows enqueued before that column existed,
+ * this falls back to retrieving the order's PaymentIntent from Stripe, but
+ * a single Stripe API key can only retrieve PaymentIntents created in its
+ * own mode (test keys can't read live objects and vice versa) — so that
+ * fallback can fail to resolve a legacy row even though nothing is actually
+ * wrong. Such rows are reported as `unverifiable`, distinct from a
+ * confirmed `anomaly`, so they neither silently pass nor wrongly fail the
+ * command. A row with no Stripe PaymentIntent at all (e.g. a print paid
+ * entirely from gift-card/store-credit balance via complete-paid-order.ts)
+ * is reported as `modeless`, never as an anomaly.
  */
 async function prodigiEnvCheck(
   supabase: SupabaseClient,
   stripe: Stripe,
   sinceIso: string | undefined,
 ): Promise<unknown> {
-  let query = supabase
-    .from('fulfilment_jobs')
-    .select('id, order_id, status, prodigi_env, created_at')
-    .order('created_at', { ascending: true });
-  if (sinceIso) query = query.gte('created_at', sinceIso);
-  const { data: jobRows, error: jobsErr } = await query;
-  if (jobsErr) throw new CliError(`fulfilment_jobs lookup failed: ${jobsErr.message}`, 4, 'action_failed');
-  const jobs = (jobRows ?? []) as FulfilmentJobRow[];
-  if (jobs.length === 0) return { since: sinceIso ?? null, scanned: 0, anomalies: [] };
+  const jobs = await fetchAllFulfilmentJobs(supabase, sinceIso);
+  if (jobs.length === 0) return { since: sinceIso ?? null, scanned: 0, anomalies: [], unverifiable: [], modeless: [] };
 
-  const orderIds = [...new Set(jobs.map((j) => j.order_id))];
-  const { data: orderRows, error: ordersErr } = await supabase
-    .from('orders')
-    .select('id, payment_intent_id')
-    .in('id', orderIds);
-  if (ordersErr) throw new CliError(`orders lookup failed: ${ordersErr.message}`, 4, 'action_failed');
-  const piByOrder = new Map(
-    ((orderRows ?? []) as Array<{ id: string; payment_intent_id: string | null }>).map(
-      (o) => [o.id, o.payment_intent_id] as const,
-    ),
-  );
+  // Only rows lacking a persisted livemode ever need an orders/Stripe lookup.
+  const needsOrderLookup = jobs.filter((j) => j.prodigi_env !== null && j.livemode === null);
+  const orderIds = [...new Set(needsOrderLookup.map((j) => j.order_id))];
+  const piByOrder = new Map<string, string | null>();
+  if (orderIds.length > 0) {
+    const { data: orderRows, error: ordersErr } = await supabase
+      .from('orders')
+      .select('id, payment_intent_id')
+      .in('id', orderIds);
+    if (ordersErr) throw new CliError(`orders lookup failed: ${ordersErr.message}`, 4, 'action_failed');
+    for (const o of (orderRows ?? []) as Array<{ id: string; payment_intent_id: string | null }>) {
+      piByOrder.set(o.id, o.payment_intent_id);
+    }
+  }
 
-  // Sequential, not concurrency-limited: Prodigi order volume is currently
-  // near-zero (4 orders total as of this guard's authorship). Revisit if
-  // volume grows enough for a plain for-loop of Stripe retrieves to matter.
   const anomalies: ProdigiEnvCheckAnomaly[] = [];
+  const unverifiable: ProdigiEnvCheckUnverifiable[] = [];
+  const modeless: ProdigiEnvCheckModeless[] = [];
+
+  // Sequential, not concurrency-limited: only legacy rows (predating the
+  // livemode column) ever reach a Stripe call, a fixed and shrinking set.
   for (const job of jobs) {
-    const paymentIntentId = piByOrder.get(job.order_id) ?? null;
-    const base = {
-      orderId: job.order_id,
-      jobId: job.id,
-      jobStatus: job.status,
-      prodigiEnv: job.prodigi_env,
-      paymentIntentId,
-    };
+    const base = { orderId: job.order_id, jobId: job.id, jobStatus: job.status, prodigiEnv: job.prodigi_env };
+
     if (job.prodigi_env === null) {
-      anomalies.push({ ...base, stripeLivemode: null, problem: 'missing_prodigi_env' });
-      continue;
-    }
-    if (!paymentIntentId) {
-      anomalies.push({ ...base, stripeLivemode: null, problem: 'no_payment_intent' });
-      continue;
-    }
-    let livemode: boolean;
-    try {
-      livemode = (await stripe.paymentIntents.retrieve(paymentIntentId)).livemode;
-    } catch {
-      anomalies.push({ ...base, stripeLivemode: null, problem: 'stripe_lookup_failed' });
+      anomalies.push({ ...base, livemode: job.livemode, problem: 'missing_prodigi_env' });
       continue;
     }
     const isLiveEnv = job.prodigi_env === 'live';
-    if (livemode === isLiveEnv) continue;
-    anomalies.push({
-      ...base,
-      stripeLivemode: livemode,
-      problem: livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env',
-    });
+
+    if (job.livemode !== null) {
+      if (job.livemode !== isLiveEnv) {
+        anomalies.push({
+          ...base,
+          livemode: job.livemode,
+          problem: job.livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env',
+        });
+      }
+      continue;
+    }
+
+    const paymentIntentId = piByOrder.get(job.order_id) ?? null;
+    if (!paymentIntentId) {
+      modeless.push(base);
+      continue;
+    }
+    try {
+      const livemode = (await stripe.paymentIntents.retrieve(paymentIntentId)).livemode;
+      if (livemode !== isLiveEnv) {
+        anomalies.push({ ...base, livemode, problem: livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env' });
+      }
+    } catch {
+      unverifiable.push({ ...base, paymentIntentId, reason: 'stripe_lookup_failed' });
+    }
   }
 
+  const result = { since: sinceIso ?? null, scanned: jobs.length, anomalies, unverifiable, modeless };
   if (anomalies.length > 0) {
     throw new CliError(
       `prodigi-env-check found ${anomalies.length} order(s) where the Stripe payment mode and PRODIGI_ENV disagree`,
       4,
       'prodigi_env_mismatch',
-      { since: sinceIso ?? null, scanned: jobs.length, anomalies },
+      result,
     );
   }
-  return { since: sinceIso ?? null, scanned: jobs.length, anomalies: [] };
+  return result;
 }
 
 // ── reconcile-refunds: full-refund convergence sweep (Opp-3) ─────────────────
@@ -918,7 +991,7 @@ async function execute(
     if (positionals.length !== 1) {
       throw new CliError('Expected prodigi-env-check [--since ISO8601]', 2, 'invalid_arguments');
     }
-    if (options.since !== undefined && Number.isNaN(Date.parse(options.since))) {
+    if (options.since !== undefined && !isStrictIsoDate(options.since)) {
       throw new CliError(`--since must be an ISO-8601 date, got '${options.since}'`, 2, 'invalid_arguments');
     }
     const { url, key } = resolveSupabaseCreds(env);
