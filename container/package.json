@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "Node/Sharp print-asset derivative processor that runs inside the Cloudflare Container (Priority 8 / Phase 3). Deliberately separate from the root package.json so the image installs three packages instead of the whole Next.js app.",
   "type": "module",
-  "comment:versions": "These three ranges MUST stay identical to the root package.json's, because the image runs the repo's own src/ sources against them. src/server/asset-jobs/container-manifest.test.ts enforces that.",
+  "comment:versions": "These three ranges MUST stay identical to the root package.json's, because the image runs the repo's own src/ sources against them. src/server/asset-jobs/container-config.test.ts enforces that.",
   "dependencies": {
     "sharp": "^0.34.5",
     "tsx": "^4.20.6",

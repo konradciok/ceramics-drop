@@ -87,10 +87,20 @@
   // migration. The three OpenNext DO classes worker.ts re-exports have never
   // been bound or migrated (this repo uses only the incremental cache), so
   // tag v1 registers exactly one class.
+  //
+  // ⚠️ `name` is DELIBERATELY OMITTED here and in env.preview. A container
+  // APPLICATION is account-scoped by name — not per-Worker — and wrangler's
+  // deploy path looks an existing application up BY NAME and throws a UserError
+  // when it finds one bound to a different Durable Object namespace. Hardcoding
+  // the same `name` in both environments would therefore hard-fail whichever of
+  // the two deploys second — precisely the "deploy to preview first" sequence
+  // this change recommends. Omitting it lets wrangler derive
+  // `${workerName}-${class_name}`, which already differs per environment
+  // (`ceramics-drop-preview` vs `ceramics-drop`). Do not "tidy" a `name` back in
+  // unless you give each environment its own distinct one.
   "containers": [
     {
       "class_name": "PrintAssetProcessor",
-      "name": "print-asset-processor",
       "image": "./container/Dockerfile",
       "image_build_context": ".",
       "instance_type": "standard-3",
@@ -182,14 +192,15 @@
       // `containers` and `durable_objects` are NON-inheritable keys — an env
       // that omits them gets nothing, so they are repeated here rather than
       // inherited from the top level. (`migrations` IS inheritable and is
-      // deliberately declared only once, at the top level.) Same class name
-      // and instance name: the preview Worker gets its own separate container
-      // and its own separate DO namespace because it is a different Worker
-      // script (`ceramics-drop-preview`).
+      // deliberately declared only once, at the top level.) Same class name:
+      // the preview Worker gets its own separate container application and its
+      // own separate DO namespace because it is a different Worker script
+      // (`ceramics-drop-preview`) — but ONLY because no explicit `name` is set
+      // here. See the top-level block's warning: a hardcoded, shared container
+      // application name would make these two environments collide at deploy.
       "containers": [
         {
           "class_name": "PrintAssetProcessor",
-          "name": "print-asset-processor",
           "image": "./container/Dockerfile",
           "image_build_context": ".",
           "instance_type": "standard-3",

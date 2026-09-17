@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { CONTAINER_PORT } from './container-protocol';
-import { PRINT_ASSET_PROCESSOR_NAME } from './container-names';
 
 /**
  * Static guards for the Cloudflare Container wiring (Priority 8 / Phase 3).
@@ -96,8 +97,31 @@ describe('wrangler container binding', () => {
     expect(entry?.image_build_context).toBe('.');
   });
 
-  it('names the instance the same string the code addresses it by', () => {
-    expect(entry?.name).toBe(PRINT_ASSET_PROCESSOR_NAME);
+  // A container APPLICATION name is ACCOUNT-scoped, not per-Worker: wrangler's
+  // deploy path looks an existing application up by name and throws when it
+  // finds one bound to a different Durable Object namespace. Two environments
+  // sharing one hardcoded name therefore hard-fail whichever deploys second —
+  // exactly the "deploy to preview first" sequence this change recommends.
+  //
+  // (It is also NOT the same namespace as PRINT_ASSET_PROCESSOR_NAME, which is a
+  // Durable Object INSTANCE id passed to getByName(). An earlier version of this
+  // file asserted the two were equal; they are unrelated, and wrangler's derived
+  // default makes them unequal anyway.)
+  it('production and preview do not share a container application name', () => {
+    const prod = wrangler.containers?.[0].name;
+    const preview = wrangler.env?.preview?.containers?.[0].name;
+    if (prod === undefined && preview === undefined) return; // both derived — distinct by construction
+    expect(prod, 'if one environment names its container application, both must').toBeDefined();
+    expect(preview, 'if one environment names its container application, both must').toBeDefined();
+    expect(prod).not.toBe(preview);
+  });
+
+  it('omits `name` entirely so wrangler derives a per-environment default', () => {
+    // `${workerName}-${class_name}`, and workerName already carries the env
+    // suffix for a named environment. Documented here so a future "tidy-up"
+    // that adds a shared name back is caught by the test above too.
+    expect(wrangler.containers?.[0].name).toBeUndefined();
+    expect(wrangler.env?.preview?.containers?.[0].name).toBeUndefined();
   });
 });
 
@@ -201,29 +225,97 @@ describe('container image', () => {
   });
 });
 
-describe('Sharp boundary', () => {
-  const sharpReaching = ['src/server/print-assets/derivatives', 'src/server/print-assets/container-handler', 'sharp'];
+describe('Sharp boundary (TRANSITIVE — walks the whole first-party import graph)', () => {
+  const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+
+  /**
+   * Resolve one import specifier to a repo-relative `.ts` path, or null for a
+   * bare package (which is checked by name instead) or an unresolvable path.
+   * Handles the two forms this codebase uses: the `@/…` alias (→ `src/…`) and
+   * relative paths. Both `x.ts` and `x/index.ts` are tried.
+   */
+  function resolveSpecifier(fromRel: string, specifier: string): string | null {
+    let base: string;
+    if (specifier.startsWith('@/')) base = path.join('src', specifier.slice(2));
+    else if (specifier.startsWith('.')) base = path.posix.join(path.posix.dirname(fromRel), specifier);
+    else return null; // bare package — matched by name, not resolved
+    const normalized = base.split(path.sep).join('/').replace(/\.(ts|tsx|js)$/, '');
+    for (const candidate of [`${normalized}.ts`, `${normalized}/index.ts`]) {
+      if (existsSync(path.join(ROOT, candidate))) return candidate;
+    }
+    return null;
+  }
+
+  /**
+   * Every first-party module reachable from `entry`, plus every bare package
+   * specifier seen anywhere in that graph. VALUE imports only: `import type`
+   * is erased by the bundler and can never drag a native addon into the
+   * Workers isolate.
+   */
+  function importGraph(entry: string): { modules: Set<string>; packages: Set<string>; edges: Map<string, string> } {
+    const modules = new Set<string>();
+    const packages = new Set<string>();
+    const edges = new Map<string, string>(); // module → the module that imported it
+    const queue = [entry];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (modules.has(current)) continue;
+      modules.add(current);
+      const source = read(current);
+      for (const match of source.matchAll(/^\s*import\s+([^;]*?)\s*from\s+['"]([^'"]+)['"]/gm)) {
+        const [, clause, specifier] = match;
+        if (/^type\b/.test(clause.trim())) continue; // `import type … from` — erased
+        const resolved = resolveSpecifier(current, specifier);
+        if (resolved === null) {
+          packages.add(specifier);
+          if (!edges.has(specifier)) edges.set(specifier, current);
+          continue;
+        }
+        if (!edges.has(resolved)) edges.set(resolved, current);
+        queue.push(resolved);
+      }
+    }
+    return { modules, packages, edges };
+  }
+
+  const FORBIDDEN_MODULES = ['src/server/print-assets/derivatives.ts', 'src/server/print-assets/container-handler.ts'];
+  const FORBIDDEN_PACKAGES = ['sharp'];
 
   // The whole point of the container is that the Workers isolate never touches
-  // Sharp. These three modules are bundled into worker.ts; a single import of a
-  // Sharp-reaching module here breaks the deployment at runtime, not at build.
+  // Sharp. These modules are bundled into worker.ts; ONE import of a
+  // Sharp-reaching module — direct or six hops down through `@/lib/*` — breaks
+  // the deployment at runtime, not at build. A direct-import regex would miss
+  // the indirect route entirely, so this walks the graph.
   it.each([
     'src/server/asset-jobs/process-job.ts',
     'src/server/asset-jobs/container-render.ts',
     'src/server/asset-jobs/container-protocol.ts',
     'src/server/asset-jobs/profiles.ts',
     'src/server/asset-jobs/container.ts',
-  ])('%s imports nothing that reaches Sharp', (rel) => {
-    const source = read(rel);
-    const imports = [...source.matchAll(/^\s*import[^;]*?from\s+'([^']+)'/gm)].map((m) => m[1]);
-    for (const specifier of imports) {
-      for (const forbidden of sharpReaching) {
-        expect(
-          specifier.endsWith(forbidden) || specifier === forbidden,
-          `${rel} imports "${specifier}" — Sharp cannot run in the Workers V8 isolate`,
-        ).toBe(false);
-      }
+  ])('nothing reachable from %s reaches Sharp, at any depth', (rel) => {
+    const { modules, packages, edges } = importGraph(rel);
+    for (const forbidden of FORBIDDEN_MODULES) {
+      expect(
+        modules.has(forbidden),
+        `${rel} reaches ${forbidden} (via ${edges.get(forbidden) ?? '?'}) — Sharp cannot run in the Workers V8 isolate`,
+      ).toBe(false);
     }
+    for (const forbidden of FORBIDDEN_PACKAGES) {
+      expect(
+        packages.has(forbidden),
+        `${rel} reaches the "${forbidden}" package (via ${edges.get(forbidden) ?? '?'}) — it is a native Node addon`,
+      ).toBe(false);
+    }
+  });
+
+  it('the walker actually detects a transitive reach (guard against a vacuous pass)', () => {
+    // container/server.ts → src/server/print-assets/container-handler.ts → sharp.
+    // If this stops failing the way it should, the walker above is broken and
+    // its green results mean nothing.
+    const { modules, packages } = importGraph('container/server.ts');
+    expect(modules.has('src/server/print-assets/container-handler.ts')).toBe(true);
+    expect(modules.has('src/server/print-assets/derivatives.ts')).toBe(true); // one hop deeper
+    expect(packages.has('sharp')).toBe(true);
   });
 
   it('the container entry point is the ONLY place that reaches the Sharp render handler', () => {

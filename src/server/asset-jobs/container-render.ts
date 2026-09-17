@@ -53,13 +53,33 @@ export interface ContainerRequestInit {
   method: 'POST';
   headers: Record<string, string>;
   body: ReadableStream;
+  /**
+   * The render deadline. The container deliberately sets no transport timeout
+   * of its own (`container/server.ts` zeroes `requestTimeout`/`headersTimeout`,
+   * because a legitimate 160 MP render can run for minutes) — so THIS is the
+   * only thing that stops a wedged render from stranding its job forever and,
+   * through the Durable Object's exclusive-run chain, blocking every profile
+   * queued behind it.
+   */
+  signal: AbortSignal;
 }
+
+/**
+ * Wall-clock ceiling on one derivative. Generous: the plan's own sizing is a
+ * single `standard-3` (2 vCPU) processing one job at a time, and a 160 MP
+ * master legitimately takes minutes. It exists to bound a HANG, not to police
+ * slowness — a render that hits this is reported retryable, so the queue's
+ * normal backoff/DLQ machinery takes over.
+ */
+export const RENDER_TIMEOUT_MS = 10 * 60 * 1000;
 
 /** Injected effects — the real ones are `env.PRINT_ASSETS` and the container's TCP port. */
 export interface RenderDeps {
   bucket: Pick<R2Bucket, 'get' | 'put'>;
   /** `ctx.container.getTcpPort(CONTAINER_PORT).fetch` in production. */
   containerFetch: (url: string, init: ContainerRequestInit) => Promise<Response>;
+  /** Injectable purely so tests need not burn real time; defaults to AbortSignal.timeout. */
+  renderSignal?: () => AbortSignal;
 }
 
 export interface RenderInput {
@@ -103,13 +123,26 @@ export function buildDerivativeSpec(input: RenderInput): DerivativeSpec {
  *
  * Idempotent by construction: the key embeds the derivative's own sha256, and
  * `composeFullBleedDerivative` is deterministic, so a retried job re-derives
- * byte-identical output and re-writes the SAME key. That is why this does a
- * plain `put` rather than the CLI's conditional `If-None-Match: *` PUT
- * (`scripts/lib/r2.ts`'s r2PutIfAbsent): R2 BINDINGS expose no conditional
- * write, and an unconditional overwrite of a content-addressed key with the
- * same bytes is a no-op in effect. The CLI's stronger "never overwrite"
- * guarantee exists because an operator can mix revisions by hand; this path
- * cannot.
+ * byte-identical output and re-writes the SAME key.
+ *
+ * ── Why an UNCONDITIONAL put ─────────────────────────────────────────────────
+ * R2 bindings DO expose a conditional write — `R2PutOptions.onlyIf` (an
+ * `R2Conditional`, e.g. `{ etagDoesNotMatch: '*' }`) is the binding-level
+ * equivalent of the `If-None-Match: *` PUT the CLI's `scripts/lib/r2.ts`
+ * `r2PutIfAbsent` issues through the S3 API. This path deliberately does not
+ * use it: a conditional write would REFUSE to overwrite, which is the wrong
+ * behaviour here, because a previous attempt can legitimately have left a
+ * TRUNCATED object under this key (container OOM or reset after the response
+ * headers were already sent). An unconditional re-put heals that; a conditional
+ * one would cement the corruption forever under an immutable content-addressed
+ * key. The CLI's stronger "never overwrite" posture exists because an operator
+ * can mix revisions by hand — this path cannot.
+ *
+ * Integrity is instead enforced by `R2PutOptions.sha256`: R2 hashes the bytes
+ * it actually receives server-side and REJECTS the write if the digest does not
+ * match the one the container claimed. Without it, a truncated response body
+ * would be stored happily under a key asserting a hash it does not have, and
+ * the job would complete "successfully" with a corrupt asset.
  */
 export async function renderAndStoreDerivative(deps: RenderDeps, input: RenderInput): Promise<RenderResult> {
   let source: R2ObjectBody | null;
@@ -132,8 +165,21 @@ export async function renderAndStoreDerivative(deps: RenderDeps, input: RenderIn
         'content-type': input.sourceContentType,
       },
       body: source.body,
+      signal: (deps.renderSignal ?? (() => AbortSignal.timeout(RENDER_TIMEOUT_MS)))(),
     });
   } catch (e) {
+    // A timeout is reported separately from a connection failure: both are
+    // retryable, but "the container wedged on this image" and "the container is
+    // not answering at all" are different operational stories in the job's
+    // last_error.
+    const name = e instanceof Error ? e.name : '';
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      return {
+        kind: 'retryable',
+        code: 'CONTAINER_TIMEOUT',
+        message: `container render exceeded ${RENDER_TIMEOUT_MS}ms for profile ${input.target.w}x${input.target.h}`,
+      };
+    }
     return { kind: 'retryable', code: 'CONTAINER_UNREACHABLE', message: `container fetch failed: ${String(e)}` };
   }
 
@@ -168,8 +214,16 @@ export async function renderAndStoreDerivative(deps: RenderDeps, input: RenderIn
   const contentType = contentTypeForFormat(meta.format);
   const r2Key = buildR2Key(input.productId, input.revision, meta.width, meta.height, meta.sha256, meta.format);
   try {
-    await deps.bucket.put(r2Key, response.body, { httpMetadata: { contentType } });
+    // `sha256` closes the content-addressing loop: R2 hashes what it actually
+    // receives and rejects the write on a mismatch, so a body that truncates
+    // after the headers were sent can never be stored under a key asserting a
+    // digest it does not have. Without this, the loop asserts integrity it
+    // never checks.
+    await deps.bucket.put(r2Key, response.body, { httpMetadata: { contentType }, sha256: meta.sha256 });
   } catch (e) {
+    // Includes R2's own digest-mismatch rejection. Retryable, not permanent: a
+    // truncated transfer is exactly the kind of fault a retry fixes, and the
+    // unconditional re-put then heals any short object already at the key.
     return { kind: 'retryable', code: 'R2_PUT_FAILED', message: `R2 put failed for ${r2Key}: ${String(e)}` };
   }
 

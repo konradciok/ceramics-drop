@@ -14,7 +14,7 @@ WORKDIR /app
 # Three runtime dependencies only (sharp + zod + tsx) — see container/package.json.
 # `npm install` rather than `npm ci`: this image deliberately carries no
 # lockfile of its own, and the ranges are asserted against the root
-# package.json by src/server/asset-jobs/container-manifest.test.ts.
+# package.json by src/server/asset-jobs/container-config.test.ts.
 #
 # sharp ships prebuilt linux-x64 libvips binaries, so no apt build toolchain is
 # needed here. If a future sharp bump ever drops that prebuild, this layer is

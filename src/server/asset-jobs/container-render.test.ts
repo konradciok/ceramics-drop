@@ -7,7 +7,13 @@ import {
   MAX_SOURCE_BYTES,
   MAX_SOURCE_PIXELS,
 } from './container-protocol';
-import { buildDerivativeSpec, renderAndStoreDerivative, type ContainerRequestInit, type RenderInput } from './container-render';
+import {
+  RENDER_TIMEOUT_MS,
+  buildDerivativeSpec,
+  renderAndStoreDerivative,
+  type ContainerRequestInit,
+  type RenderInput,
+} from './container-render';
 
 const SHA = 'b'.repeat(64);
 
@@ -36,16 +42,44 @@ function makeDeps(opts: {
   get?: () => Promise<R2ObjectBody | null>;
   put?: (key: string, value: unknown, options?: unknown) => Promise<unknown>;
   fetch?: (url: string, init: ContainerRequestInit) => Promise<Response>;
+  renderSignal?: () => AbortSignal;
 }) {
   const put = vi.fn(opts.put ?? (async () => ({})));
   const get = vi.fn(opts.get ?? (async () => sourceObject()));
   const containerFetch = vi.fn(opts.fetch ?? (async () => okResponse()));
   return {
-    deps: { bucket: { get, put } as unknown as Pick<R2Bucket, 'get' | 'put'>, containerFetch },
+    deps: {
+      bucket: { get, put } as unknown as Pick<R2Bucket, 'get' | 'put'>,
+      containerFetch,
+      ...(opts.renderSignal ? { renderSignal: opts.renderSignal } : {}),
+    },
     get,
     put,
     containerFetch,
   };
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * A fake R2 that reproduces the ONE behaviour this pipeline now relies on: a
+ * `put` carrying an `sha256` option REJECTS when the bytes actually received do
+ * not hash to that digest (real R2 verifies this server-side). Without such a
+ * stand-in the corrupted-write path cannot be exercised at all.
+ */
+function digestCheckingPut() {
+  return vi.fn(async (key: string, value: unknown, options?: { sha256?: string }) => {
+    if (!options?.sha256) return { key };
+    const received = await new Response(value as BodyInit).text();
+    const digest = await sha256Hex(received);
+    if (digest !== options.sha256) {
+      throw new Error(`put: the SHA-256 checksum you specified did not match what we received (key=${key})`);
+    }
+    return { key };
+  });
 }
 
 describe('buildDerivativeSpec', () => {
@@ -84,7 +118,9 @@ describe('renderAndStoreDerivative', () => {
     // metadata travels in headers rather than a JSON envelope).
     const [key, , options] = put.mock.calls[0];
     expect(key).toBe(`prints/print-001/${INPUT.revision}/3600x4800-${SHA}.jpg`);
-    expect(options).toEqual({ httpMetadata: { contentType: 'image/jpeg' } });
+    // The SAME digest goes into the key AND into the put options, so R2 verifies
+    // server-side that the bytes it stored are the bytes the key claims.
+    expect(options).toEqual({ httpMetadata: { contentType: 'image/jpeg' }, sha256: SHA });
 
     const [url, init] = containerFetch.mock.calls[0];
     expect(url).toMatch(/\/v1\/derivative$/);
@@ -182,6 +218,82 @@ describe('renderAndStoreDerivative', () => {
       },
     });
     expect(await renderAndStoreDerivative(deps, INPUT)).toMatchObject({ kind: 'retryable', code: 'R2_PUT_FAILED' });
+  });
+
+  // ── Content-addressing integrity (review finding #2) ───────────────────────
+
+  it('a body that truncates after the headers were sent is REJECTED, not stored under a lying key', async () => {
+    // The real failure: the container OOMs or the connection resets mid-body.
+    // Headers (including the sha of the FULL derivative) already went out, so
+    // the Worker builds the right key — and would happily store a short object
+    // under it, completing the job with a corrupt asset.
+    const honestSha = await sha256Hex('the complete derivative bytes');
+    const put = digestCheckingPut();
+    const deps = {
+      bucket: { get: async () => sourceObject(), put } as unknown as Pick<R2Bucket, 'get' | 'put'>,
+      containerFetch: async () =>
+        new Response('the complete deriv', {
+          status: 200,
+          headers: encodeResultHeaders({ sha256: honestSha, byteSize: 29, width: 3600, height: 4800, format: 'jpg' }),
+        }),
+    };
+
+    const result = await renderAndStoreDerivative(deps, INPUT);
+    expect(result).toMatchObject({ kind: 'retryable', code: 'R2_PUT_FAILED' });
+    expect(result).toMatchObject({ message: expect.stringMatching(/checksum/i) });
+    expect(put).toHaveBeenCalledTimes(1); // it was attempted — and refused
+  });
+
+  it('an intact body passes the same digest check and is stored', async () => {
+    // The control for the test above: identical machinery, honest bytes.
+    const body = 'the complete derivative bytes';
+    const honestSha = await sha256Hex(body);
+    const put = digestCheckingPut();
+    const deps = {
+      bucket: { get: async () => sourceObject(), put } as unknown as Pick<R2Bucket, 'get' | 'put'>,
+      containerFetch: async () =>
+        new Response(body, {
+          status: 200,
+          headers: encodeResultHeaders({ sha256: honestSha, byteSize: body.length, width: 3600, height: 4800, format: 'jpg' }),
+        }),
+    };
+    expect(await renderAndStoreDerivative(deps, INPUT)).toMatchObject({ kind: 'ok', asset: { sha256: honestSha } });
+  });
+
+  // ── Render deadline (review finding #3) ────────────────────────────────────
+
+  it('defaults to a real render deadline rather than no deadline at all', async () => {
+    const { deps, containerFetch } = makeDeps({});
+    await renderAndStoreDerivative(deps, INPUT);
+    const signal = containerFetch.mock.calls[0][1].signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal.aborted).toBe(false);
+    expect(RENDER_TIMEOUT_MS).toBeGreaterThan(0);
+  });
+
+  it('a wedged render is aborted and reported as CONTAINER_TIMEOUT (retryable), never left hanging', async () => {
+    // A container that accepts the request and then never answers — the exact
+    // case container/server.ts's zeroed requestTimeout/headersTimeout permits.
+    const { deps, put } = makeDeps({
+      renderSignal: () => AbortSignal.timeout(20),
+      fetch: (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => reject(init.signal.reason));
+        }),
+    });
+    const result = await renderAndStoreDerivative(deps, INPUT);
+    expect(result).toMatchObject({ kind: 'retryable', code: 'CONTAINER_TIMEOUT' });
+    expect(result).toMatchObject({ message: expect.stringContaining('3600x4800') });
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes a timeout from an unreachable container in the job\'s last_error', async () => {
+    const { deps } = makeDeps({
+      fetch: async () => {
+        throw new Error('connection refused');
+      },
+    });
+    expect(await renderAndStoreDerivative(deps, INPUT)).toMatchObject({ code: 'CONTAINER_UNREACHABLE' });
   });
 
   it('a png source produces a png derivative under a .png key with image/png', async () => {
