@@ -36,6 +36,7 @@ import { decodeGiftCardToken, getGiftCardTier, isGiftCardToken } from './gift-ca
 import type { GiftCardTier } from './gift-cards';
 import { loadPrintCollectionDefinitions } from './print-collections';
 import { printDisplayName } from './print-curation';
+import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign, PrintVariantSelection, Product } from './types';
 
 export type CartLine =
@@ -67,7 +68,11 @@ async function resolveCeramicProductsById(ids: string[]): Promise<Map<string, Pr
  * resolver it replaces.
  */
 export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine[]> {
-  const definitions = await loadPrintCollectionDefinitions();
+  // Loaded lazily below, only the first time a valid+available print line
+  // actually needs its display name — a cart with no print items (or only
+  // unavailable/unknown ones) never pays for the two Supabase reads +
+  // fallback machinery inside loadPrintCollectionDefinitions().
+  let definitions: PrintCollectionDefinition[] | undefined;
   const seen = new Set<string>();
   const orderedIds: string[] = [];
   for (const id of rawIds) {
@@ -109,6 +114,7 @@ export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine
         lines.push({ kind: 'unavailable', id });
         continue;
       }
+      if (!definitions) definitions = await loadPrintCollectionDefinitions();
       lines.push({ kind: 'print', id, design, sel: dec.sel, name: printDisplayName(design, 'Print', definitions) });
       continue;
     }

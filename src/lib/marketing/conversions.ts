@@ -53,7 +53,15 @@ export async function sendPurchaseConversions(
   if (!order || !order.marketing || order.marketing.consent !== 'granted') return;
   if (order.status !== 'paid') return;
 
-  const definitions = await (deps.loadDefinitions ?? loadPrintCollectionDefinitions)();
+  // Cheap upfront check — order.items is already in hand, so scanning it for
+  // a print variant costs nothing — and only pays for
+  // loadPrintCollectionDefinitions()'s two Supabase reads + fallback
+  // machinery when the order actually contains a print line (see the
+  // item.variant branch in grossGa4Items below, the only consumer).
+  const hasPrintVariant = order.items.some((item) => item.variant);
+  const definitions = hasPrintVariant
+    ? await (deps.loadDefinitions ?? loadPrintCollectionDefinitions)()
+    : [];
 
   const m = order.marketing;
   const eventTimeSecs = Math.floor(new Date(m.captured_at).getTime() / 1000);
