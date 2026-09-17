@@ -89,11 +89,11 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('confirmed payment by ids can be guarded to fire only once per payment intent', () => {
+  it('confirmed payment by ids can be guarded to fire only once per payment intent', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
 
-    const first = pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
+    const first = await pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
       orderNo: 'ACC-3000',
       shippingCost: 18,
       shippingMethod: 'kurier',
@@ -104,7 +104,7 @@ describe('checkout analytics semantics', () => {
       },
     });
 
-    const second = pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
+    const second = await pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
       orderNo: 'ACC-3000',
       shippingCost: 18,
       shippingMethod: 'kurier',
@@ -125,7 +125,7 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('can remember checkout state and later emit purchase from that snapshot once payment succeeds', () => {
+  it('can remember checkout state and later emit purchase from that snapshot once payment succeeds', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
     const session = {
@@ -140,7 +140,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
       push,
       storage: session,
     });
@@ -168,7 +168,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
     expect(
-      pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
+      await pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
         push,
         storage: session,
       }),
@@ -176,7 +176,7 @@ describe('checkout analytics semantics', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it('round-trips coupon + discountMinor through the snapshot into the purchase event', () => {
+  it('round-trips coupon + discountMinor through the snapshot into the purchase event', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (k: string) => storage.get(k) ?? null,
@@ -193,7 +193,7 @@ describe('checkout analytics semantics', () => {
     });
 
     const push = vi.fn();
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
 
     expect(fired).toBe(true);
     expect(push).toHaveBeenCalledWith(
@@ -203,7 +203,7 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('rejects a fractional, negative, or non-finite discountMinor in a tampered snapshot (falls back to no discount)', () => {
+  it('rejects a fractional, negative, or non-finite discountMinor in a tampered snapshot (falls back to no discount)', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (k: string) => storage.get(k) ?? null,
@@ -217,7 +217,7 @@ describe('checkout analytics semantics', () => {
       const push = vi.fn();
       // Distinct payment_intent per iteration — the per-PI dedupe guard would
       // otherwise suppress the 2nd/3rd fires under a reused id.
-      const fired = pushConfirmedPurchaseFromRememberedCheckout(`pi_tamper_${i}`, 'ACC-tamper', { push, storage: session });
+      const fired = await pushConfirmedPurchaseFromRememberedCheckout(`pi_tamper_${i}`, 'ACC-tamper', { push, storage: session });
       expect(fired).toBe(true);
       // coupon still rides through (it's validated independently) but the
       // rejected discountMinor must not be applied — value stays undiscounted.
@@ -279,11 +279,11 @@ describe('checkout analytics semantics', () => {
     expect(event.meta).toMatchObject({ currency: 'EUR' });
   });
 
-  it('does not emit purchase from remembered checkout when no snapshot exists', () => {
+  it('does not emit purchase from remembered checkout when no snapshot exists', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_missing', 'ACC-404', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_missing', 'ACC-404', {
       push,
       storage: {
         getItem: (key: string) => storage.get(key) ?? null,
@@ -296,7 +296,7 @@ describe('checkout analytics semantics', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('uses payment_intent id as transaction id fallback on the return page', () => {
+  it('uses payment_intent id as transaction id fallback on the return page', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
     const session = {
@@ -311,7 +311,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_789', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_789', {
       push,
       storage: session,
     });
@@ -483,7 +483,7 @@ describe('checkout analytics semantics', () => {
     expect(hasFiredPurchaseOnce('pi_x', throwing)).toBe(false);
   });
 
-  it('can explicitly forget a remembered checkout snapshot', () => {
+  it('can explicitly forget a remembered checkout snapshot', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (key: string) => storage.get(key) ?? null,
@@ -500,7 +500,7 @@ describe('checkout analytics semantics', () => {
 
     const push = vi.fn();
     expect(
-      pushConfirmedPurchaseFromRememberedCheckout('pi_forgotten', 'ACC-789', {
+      await pushConfirmedPurchaseFromRememberedCheckout('pi_forgotten', 'ACC-789', {
         push,
         storage: session,
       }),
@@ -555,7 +555,7 @@ describe('cookie-hardened snapshot and user_data on purchase event', () => {
     expect(Object.prototype.hasOwnProperty.call(event, 'user_data')).toBe(false);
   });
 
-  it('purchase still fires when storage is empty but snapshot was written (simulates sessionStorage eviction)', () => {
+  it('purchase still fires when storage is empty but snapshot was written (simulates sessionStorage eviction)', async () => {
     // In the browser, the cookie path fills this gap; in tests the cookie API is
     // absent so this correctly returns false.
     const push = vi.fn();
@@ -565,13 +565,63 @@ describe('cookie-hardened snapshot and user_data on purchase event', () => {
       removeItem: () => {},
     };
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_evicted', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_evicted', {
       push,
       storage: emptyStorage,
     });
 
     expect(fired).toBe(false);
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('print collection naming — CMS-derived lazy-loading', () => {
+  it('avoids loading CMS definitions when ids contain no print tokens', async () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const mockLoadDefinitions = vi.fn();
+
+    // Ceramic-only ids: loadDefinitions should never be called.
+    const fired = await pushConfirmedPurchaseByIdsOnce('pi_ceramic_only', ['k01', 'k04'], {
+      orderNo: 'ACC-CERAMIC',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      push,
+      loadDefinitions: mockLoadDefinitions,
+      storage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    });
+
+    expect(fired).toBe(true);
+    expect(mockLoadDefinitions).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it('lazily loads CMS definitions only when ids contain print tokens', async () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const mockLoadDefinitions = vi.fn().mockResolvedValue([
+      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
+    ]);
+
+    // Print token present: loadDefinitions should be called.
+    const printToken = 'print:fap005:a3:satin:oak';
+    await pushConfirmedPurchaseByIdsOnce('pi_cms_print', [printToken], {
+      orderNo: 'ACC-CMS',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      itemPrices: [35000],
+      push,
+      loadDefinitions: mockLoadDefinitions,
+      storage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    });
+
+    expect(mockLoadDefinitions).toHaveBeenCalledOnce();
   });
 });
 
@@ -610,19 +660,21 @@ describe('checkout analytics never breaks the storefront when storage throws', (
     expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', () => {
+  it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', async () => {
     const push = vi.fn();
 
     let fired = false;
-    expect(() => {
-      fired = pushConfirmedPurchaseByIdsOnce('pi_throw', ['k01', 'k04'], {
+    try {
+      fired = await pushConfirmedPurchaseByIdsOnce('pi_throw', ['k01', 'k04'], {
         orderNo: 'ACC-THROW',
         shippingCost: 18,
         shippingMethod: 'kurier',
         push,
         storage: throwingStorage,
       });
-    }).not.toThrow();
+    } catch {
+      // Should not throw
+    }
 
     expect(fired).toBe(true);
     expect(push).toHaveBeenCalledTimes(1);
@@ -653,16 +705,18 @@ describe('checkout analytics never breaks the storefront when storage throws', (
     );
   });
 
-  it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', () => {
+  it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', async () => {
     const push = vi.fn();
 
     let fired = true;
-    expect(() => {
-      fired = pushConfirmedPurchaseFromRememberedCheckout('pi_throw_return', 'ACC-X', {
+    try {
+      fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_throw_return', 'ACC-X', {
         push,
         storage: throwingStorage,
       });
-    }).not.toThrow();
+    } catch {
+      // Should not throw
+    }
 
     // Snapshot read fails safely → treated as no snapshot, so nothing is emitted.
     expect(fired).toBe(false);

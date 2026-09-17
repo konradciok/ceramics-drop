@@ -9,8 +9,13 @@ import {
   type AnalyticsItem,
   type DataLayerEvent,
 } from './analytics';
+import { isPrintToken, decodePrintToken } from './print-cart';
+import { loadPrintCollectionDefinitions } from './print-collections';
+import { printDisplayName } from './print-curation';
+import { registryPrintById } from './prints';
 import type { Product } from './types';
 import type { CurrencyCode } from './format';
+import type { PrintCollectionDefinition } from './print-curation';
 
 type CheckoutStartOptions = {
   shippingCost: number;
@@ -27,6 +32,8 @@ type CheckoutStartOptions = {
 
 type ConfirmedPurchaseOptions = CheckoutStartOptions & {
   orderNo: string;
+  /** Optional CMS-collection definitions loader; defaults to loadPrintCollectionDefinitions. */
+  loadDefinitions?: () => Promise<PrintCollectionDefinition[]>;
 };
 
 type SimpleStorage = Pick<Storage, 'getItem' | 'setItem'> & {
@@ -110,19 +117,38 @@ export function pushConfirmedPurchase(
   );
 }
 
-export function pushConfirmedPurchaseByIdsOnce(
+export async function pushConfirmedPurchaseByIdsOnce(
   paymentIntentId: string,
   ids: string[],
   options: ConfirmedPurchaseOptions & { storage?: SimpleStorage },
-): boolean {
+): Promise<boolean> {
   const storage = options.storage ?? getDefaultStorage();
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
   if (safeGetItem(storage, key) === '1') return false;
 
+  // Cheap upfront check — ids is already in hand, so scanning it for
+  // a print token costs nothing — and only pays for
+  // loadPrintCollectionDefinitions()'s two Supabase reads + fallback
+  // machinery when the order actually contains a print token (see
+  // the buildPrintNameOverrides branch below, the only consumer).
+  const hasPrintToken = ids.some((id) => isPrintToken(id));
+  const definitions = hasPrintToken
+    ? await (options.loadDefinitions ?? loadPrintCollectionDefinitions)()
+    : [];
+
+  // Build nameOverrides for print tokens using CMS-derived collection names.
+  const nameOverrides = ids.map((id) => {
+    if (!isPrintToken(id)) return undefined;
+    const dec = decodePrintToken(id);
+    if (!dec) return undefined;
+    const design = registryPrintById(dec.designId);
+    return design ? printDisplayName(design, undefined, definitions) : undefined;
+  });
+
   // Resolve both ceramic ids and print tokens; a print-only order would otherwise
   // produce zero items here, skipping the browser purchase event (and tripping a
   // false reportPurchaseGapOnce 'unresolvable_ids' alert).
-  const items = analyticsItemsForIds(ids, options.itemPrices);
+  const items = analyticsItemsForIds(ids, options.itemPrices, nameOverrides);
   if (items.length === 0) return false;
 
   (options.push ?? pushDataLayer)(buildPurchaseEventFromItems(items, options));
@@ -231,13 +257,13 @@ export function forgetRememberedCheckout(storage = getDefaultStorage()): void {
   clearCookieSnapshot();
 }
 
-export function pushConfirmedPurchaseFromRememberedCheckout(
+export async function pushConfirmedPurchaseFromRememberedCheckout(
   paymentIntentId: string,
   orderNoOrOptions:
     | string
-    | { orderNo?: string; push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
-  maybeOptions?: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
-): boolean {
+    | { orderNo?: string; push?: (event: DataLayerEvent) => void; storage?: SimpleStorage; loadDefinitions?: () => Promise<PrintCollectionDefinition[]> },
+  maybeOptions?: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage; loadDefinitions?: () => Promise<PrintCollectionDefinition[]> },
+): Promise<boolean> {
   const options =
     typeof orderNoOrOptions === 'string'
       ? maybeOptions ?? {}
@@ -250,7 +276,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
   const snapshot = readCheckoutSnapshot(storage);
   if (!snapshot) return false;
 
-  const fired = pushConfirmedPurchaseByIdsOnce(paymentIntentId, snapshot.ids, {
+  const fired = await pushConfirmedPurchaseByIdsOnce(paymentIntentId, snapshot.ids, {
     orderNo,
     shippingCost: snapshot.shippingCost,
     shippingMethod: snapshot.shippingMethod,
@@ -261,6 +287,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
     discountMinor: snapshot.discountMinor,
     push: options.push,
     storage,
+    loadDefinitions: options.loadDefinitions,
   });
 
   if (fired) forgetRememberedCheckout(storage);
