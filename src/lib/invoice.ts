@@ -4,6 +4,8 @@ import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
 import { registryPrintById } from './prints';
+import { loadPrintCollectionDefinitions } from './print-collections';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { variantLabel } from './print-cart';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import type { PrintVariantSelection } from './types';
@@ -76,6 +78,15 @@ export async function createInvoiceForOrder(
     .from('order_items').select('*').eq('order_id', order.id);
   if (itemsError) throw new Error(`Invoice items lookup failed: ${itemsError.message}`);
   if (!items || items.length === 0) throw new Error('Invoice order has no items');
+
+  // Loaded lazily below, only the first time a non-gift-card print item's
+  // line label actually needs a resolved design name (see the items loop
+  // further down). Reached only past the invoiced_at idempotency guard
+  // above — Stripe webhook retries and duplicate events routinely hit that
+  // early return — and even past it, a retry that finds the invoice already
+  // finalized/paid never enters the items loop at all, so this DB read
+  // (with its own timeout) would otherwise be wasted work in both cases.
+  let definitions: PrintCollectionDefinition[] | undefined;
 
   const addr = normalizeShippingAddress(order.shipping_address);
   const customerShipping =
@@ -179,7 +190,8 @@ export async function createInvoiceForOrder(
         const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
-        label = (design ? printDisplayName(design, printName) : printName)
+        if (design && !definitions) definitions = await loadPrintCollectionDefinitions();
+        label = (design ? printDisplayName(design, printName, definitions) : printName)
           + ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
         idempotencySuffix = `_${variant.prodigiSku}`;
       } else {

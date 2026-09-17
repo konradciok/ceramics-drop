@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProductEditorState, listProductAudit } from '@/lib/admin/catalog-list';
+import { adminSupabase } from '@/lib/admin/clients';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { ProductEditor } from './ProductEditor';
 import { formatDateTime } from '../../ui';
 
@@ -26,8 +28,9 @@ function auditActionLabel(action: string): string {
  *  CATALOG_SOURCE=db mode; the code registry is unaffected. */
 export default async function ProductEditorPage({ params }: Props) {
   const { id } = await params;
+  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
   const [state, audit] = await Promise.all([
-    getProductEditorState(id),
+    getProductEditorState(id, definitions),
     listProductAudit(id),
   ]);
   if (!state) notFound();

@@ -10,6 +10,26 @@ vi.mock('./catalog/load', () => ({
   loadPrintDesignsFromDb: vi.fn(),
 }));
 import { loadCeramicProductsFromDb, loadPrintDesignsFromDb } from './catalog/load';
+
+// Deterministic CMS-collection name resolution for the print-line-name test
+// below — only the DB-facing loadPrintCollectionDefinitions call is mocked
+// (matching this file's own convention of mocking just the DB-facing loader,
+// not getPrintById/registryPrintById/isVariantAvailable/withRegistryMockups,
+// which stay real).
+vi.mock('./print-collections', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./print-collections')>();
+  return {
+    ...actual,
+    loadPrintCollectionDefinitions: vi.fn(async () => [
+      // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
+      // default also names fap001's collection 'Ostrea', so asserting on that
+      // name wouldn't prove this mocked `definitions` value was actually used
+      // versus the static fallback silently winning.
+      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
+    ]),
+  };
+});
+
 import { resolveCartLinesServer } from './cart-lines-server';
 
 function dbOnlyProduct(overrides: Partial<Product> = {}): Product {
@@ -41,6 +61,17 @@ function dbOnlyDesign(overrides: Partial<PrintDesign> = {}): PrintDesign {
     ...overrides,
   };
 }
+
+describe('resolveCartLinesServer print line names', () => {
+  it('resolves a print line with the CMS-collection-derived name', async () => {
+    const lines = await resolveCartLinesServer(['print:fap001:50x70:false:false:none']);
+    const printLine = lines.find((l) => l.kind === 'print');
+    expect(printLine).toBeDefined();
+    if (printLine?.kind === 'print') {
+      expect(printLine.name).toBe('CmsOnly 01');
+    }
+  });
+});
 
 describe('resolveCartLinesServer (CATALOG_SOURCE=code)', () => {
   it('resolves a mixed cart preserving order', async () => {

@@ -50,7 +50,13 @@ export async function PrintCollectionScreen({
   // and the configurator's initial selection on the PDP the tile links to.
   const analyticsItems: PrintListItem[] = ordered.map((d) => {
     const sel: PrintVariantSelection = { size: d.sizes[0], framed: false, mount: false, frameColour: 'none' };
-    return { id: d.id, num: d.num, variantLabel: variantLabel(sel, locale), price: fromPriceOf(d, printCurrency, pricing) };
+    return {
+      id: d.id,
+      num: d.num,
+      variantLabel: variantLabel(sel, locale),
+      price: fromPriceOf(d, printCurrency, pricing),
+      itemName: printDisplayName(d, t('product.print'), definitions),
+    };
   });
 
   return (

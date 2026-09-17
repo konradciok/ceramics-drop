@@ -623,3 +623,30 @@ describe('gift-card funnel builders', () => {
     expect(analyticsItemForId('giftcard:not-a-tier', 120)).toBeNull();
   });
 });
+
+describe('printAnalyticsItem with an itemName override', () => {
+  it('uses PrintItemInput.itemName when provided, instead of deriving from printDisplayName', () => {
+    const e = buildPrintAddToCartEvent(
+      { id: 'fap001', num: '01', variantLabel: '50x70', price: 100, itemName: 'Custom Override Name' },
+      { currency: 'EUR' },
+    );
+    expect(e.ecommerce?.items[0].item_name).toBe('Custom Override Name');
+  });
+
+  it('falls back to printDisplayName when itemName is omitted', () => {
+    const e = buildPrintAddToCartEvent({ id: 'fap001', num: '01', variantLabel: '50x70', price: 100 }, { currency: 'EUR' });
+    expect(e.ecommerce?.items[0].item_name).toBe('Ostrea 01');
+  });
+});
+
+describe('analyticsItemForId with a nameOverride', () => {
+  it('uses nameOverride for a print token when provided', () => {
+    const item = analyticsItemForId('print:fap005:50x70:true:false:black', 220, 'Custom Print Name');
+    expect(item?.item_name).toBe('Custom Print Name');
+  });
+
+  it('falls back to printDisplayName when nameOverride is omitted', () => {
+    const item = analyticsItemForId('print:fap005:50x70:true:false:black', 220);
+    expect(item?.item_name).not.toBe('Custom Print Name');
+  });
+});

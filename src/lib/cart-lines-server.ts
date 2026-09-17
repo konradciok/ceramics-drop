@@ -34,11 +34,14 @@ import { withRegistryMockups } from './print-mockups';
 import { decodePrintToken, isPrintToken } from './print-cart';
 import { decodeGiftCardToken, getGiftCardTier, isGiftCardToken } from './gift-cards';
 import type { GiftCardTier } from './gift-cards';
+import { loadPrintCollectionDefinitions } from './print-collections';
+import { printDisplayName } from './print-curation';
+import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign, PrintVariantSelection, Product } from './types';
 
 export type CartLine =
   | { kind: 'ceramic'; id: string; product: Product }
-  | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection }
+  | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection; name: string }
   | { kind: 'giftcard'; id: string; tier: GiftCardTier }
   | { kind: 'unavailable'; id: string };
 
@@ -65,6 +68,11 @@ async function resolveCeramicProductsById(ids: string[]): Promise<Map<string, Pr
  * resolver it replaces.
  */
 export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine[]> {
+  // Loaded lazily below, only the first time a valid+available print line
+  // actually needs its display name — a cart with no print items (or only
+  // unavailable/unknown ones) never pays for the two Supabase reads +
+  // fallback machinery inside loadPrintCollectionDefinitions().
+  let definitions: PrintCollectionDefinition[] | undefined;
   const seen = new Set<string>();
   const orderedIds: string[] = [];
   for (const id of rawIds) {
@@ -106,7 +114,8 @@ export async function resolveCartLinesServer(rawIds: string[]): Promise<CartLine
         lines.push({ kind: 'unavailable', id });
         continue;
       }
-      lines.push({ kind: 'print', id, design, sel: dec.sel });
+      if (!definitions) definitions = await loadPrintCollectionDefinitions();
+      lines.push({ kind: 'print', id, design, sel: dec.sel, name: printDisplayName(design, 'Print', definitions) });
       continue;
     }
     const product = ceramicProducts.get(id);

@@ -9,6 +9,8 @@ import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type Met
 import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
 import type { MarketingContext } from './context';
 import { normalizeShippingAddress } from '../shipping-address';
+import { loadPrintCollectionDefinitions } from '../print-collections';
+import type { PrintCollectionDefinition } from '../print-curation';
 
 export type ConversionOrder = {
   payment_intent_id: string;
@@ -40,6 +42,7 @@ export type ConversionsDeps = {
   sendGa4?: typeof sendGa4Purchase;
   appVersion?: string;
   appGitSha?: string;
+  loadDefinitions?: () => Promise<PrintCollectionDefinition[]>;
 };
 
 export async function sendPurchaseConversions(
@@ -49,6 +52,16 @@ export async function sendPurchaseConversions(
   const order = await deps.loadOrder(paymentIntentId);
   if (!order || !order.marketing || order.marketing.consent !== 'granted') return;
   if (order.status !== 'paid') return;
+
+  // Cheap upfront check — order.items is already in hand, so scanning it for
+  // a print variant costs nothing — and only pays for
+  // loadPrintCollectionDefinitions()'s two Supabase reads + fallback
+  // machinery when the order actually contains a print line (see the
+  // item.variant branch in grossGa4Items below, the only consumer).
+  const hasPrintVariant = order.items.some((item) => item.variant);
+  const definitions = hasPrintVariant
+    ? await (deps.loadDefinitions ?? loadPrintCollectionDefinitions)()
+    : [];
 
   const m = order.marketing;
   const eventTimeSecs = Math.floor(new Date(m.captured_at).getTime() / 1000);
@@ -71,7 +84,7 @@ export async function sendPurchaseConversions(
       const design = registryPrintById(item.product_id);
       return {
         item_id: item.product_id,
-        item_name: design ? printDisplayName(design) : item.product_id,
+        item_name: design ? printDisplayName(design, undefined, definitions) : item.product_id,
         price: item.unit_price / 100,
         quantity: 1 as const,
         item_category: 'fine-art-prints',

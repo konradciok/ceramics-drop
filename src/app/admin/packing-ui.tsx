@@ -6,6 +6,7 @@
  */
 import { productRef } from '@/lib/admin/products';
 import { CUSTOM_CARTONS, PARCEL_LABEL, recommendPacking, type PackedParcel, type PackingConfidence } from '@/lib/packing';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 
 /** e.g. "Karton K2 (44 × 32 × 18 cm)" or an explicit stock-box fallback. */
 function cartonLabel(parcel: PackedParcel): string {
@@ -31,7 +32,15 @@ export function packingCell(deliveryMethod: string | null, productIds: string[])
 }
 
 /** The "Pakowanie" panel body (wrapped in its own `adm-panel`). */
-export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: string | null; productIds: string[] }) {
+export function PackingPanel({
+  deliveryMethod,
+  productIds,
+  definitions,
+}: {
+  deliveryMethod: string | null;
+  productIds: string[];
+  definitions?: PrintCollectionDefinition[];
+}) {
   const packing = deliveryMethod === 'odbior' ? null : recommendPacking(productIds);
 
   const shipxWarnings: string[] = [];
@@ -71,7 +80,7 @@ export function PackingPanel({ deliveryMethod, productIds }: { deliveryMethod: s
             <div className="adm-item" key={`${parcel.size}-${i}`}>
               <div className="adm-item-meta">
                 <div>Paczka {i + 1} · {PARCEL_LABEL[parcel.size]} · {cartonLabel(parcel)}</div>
-                <div className="id">{parcel.itemIds.map((pid) => productRef(pid).label).join(', ')}</div>
+                <div className="id">{parcel.itemIds.map((pid) => productRef(pid, undefined, definitions).label).join(', ')}</div>
               </div>
               <div className="adm-num">{kg(parcel.weightKg)}</div>
             </div>

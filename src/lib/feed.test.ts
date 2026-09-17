@@ -3,6 +3,27 @@ import type { Product } from './types';
 vi.mock('./ceramic-sale-state', () => ({
   withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
 }));
+
+// Deterministic CMS-collection name resolution for print feed titles — only
+// the DB-facing loadPrintCollectionDefinitions call is mocked (same pattern
+// as invoice.test.ts / cart-lines-server.test.ts), so buildFeedItems never
+// makes a real Supabase call to resolve print collection names.
+vi.mock('./print-collections', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./print-collections')>();
+  return {
+    ...actual,
+    // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
+    // default also names fap001's collection 'Ostrea', so asserting on that
+    // name wouldn't prove this mocked `definitions` value was actually used
+    // versus the static fallback silently winning (see the print-title
+    // assertion in the 'fine-art-print feed rows' describe block below,
+    // which pins on 'CmsOnly 01').
+    loadPrintCollectionDefinitions: vi.fn(async () => [
+      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
+    ]),
+  };
+});
+
 import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
 import { getPrintDesigns } from './prints';
 
@@ -151,5 +172,11 @@ describe('fine-art-print feed rows', () => {
     const items = await buildFeedItems('en', new Set());
     expect(buildMetaXml(items, 'en')).toContain('<g:id>fap005</g:id>');
     expect(buildGoogleXml(items, 'en')).toContain('<g:id>fap005</g:id>');
+  });
+
+  it('titles a fine-art print with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
+    const items = await buildFeedItems('en', new Set());
+    const fap001 = items.find((i) => i.id === 'fap001');
+    expect(fap001?.title).toBe('CmsOnly 01');
   });
 });

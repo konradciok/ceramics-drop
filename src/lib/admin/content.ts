@@ -1,4 +1,5 @@
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { adminSupabase } from './clients';
 import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
@@ -90,13 +91,13 @@ export function editableDocument(kind: string, slug: string): EditableContentDoc
   return EDITABLE_DOCUMENTS.find((doc) => doc.kind === kind && doc.slug === slug) ?? null;
 }
 
-export function contentItems(slug: string): ContentItem[] {
+export function contentItems(slug: string, definitions?: PrintCollectionDefinition[]): ContentItem[] {
   if (slug === PRINT_PDP_SLUG) return [];
   if (slug === HOME_PAGE_SLUG) return [];
   if (slug === 'fine-art-prints') {
     return registryPrintDesigns().map((design) => ({
       id: design.id,
-      label: printDisplayName(design, 'Druk'),
+      label: printDisplayName(design, 'Druk', definitions),
       image: design.image,
     }));
   }
@@ -184,7 +185,11 @@ export async function listContentSummaries(status?: string): Promise<ContentSumm
   });
 }
 
-export async function getContentEditorState(kind: CmsDocumentKind, slug: string): Promise<ContentEditorState | null> {
+export async function getContentEditorState(
+  kind: CmsDocumentKind,
+  slug: string,
+  definitions?: PrintCollectionDefinition[],
+): Promise<ContentEditorState | null> {
   const doc = editableDocument(kind, slug);
   if (!doc) return null;
   const row = await getRawDocument(kind, slug);
@@ -196,7 +201,7 @@ export async function getContentEditorState(kind: CmsDocumentKind, slug: string)
   return {
     ...doc,
     documentId: row?.id ?? null,
-    items: contentItems(slug),
+    items: contentItems(slug, definitions),
     locales,
   };
 }

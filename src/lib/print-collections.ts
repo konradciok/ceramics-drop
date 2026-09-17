@@ -195,12 +195,29 @@ export async function loadPrintCollectionDefinitionsFromDb(
  * degrades to the static `PRINT_COLLECTIONS` array (same shape
  * `printDisplayName` already defaults to), preserving pre-migration
  * rendering exactly — this migration's stated goal.
+ *
+ * Admin (injected-client) calls — e.g. `loadPrintCollectionDefinitions(adminSupabase())`
+ * from the various /admin pages — do NOT benefit from this memoization the
+ * way the zero-argument storefront calls do: `adminSupabase()` (see
+ * src/lib/admin/clients.ts) constructs a brand-new client object on every
+ * call, and `cache()` memoizes by argument identity, so every admin call is
+ * a cache miss and always performs its own fresh DB round-trips. Harmless
+ * today since each admin page calls this exactly once per render, but keep
+ * it in mind before adding a second call within one admin render.
  */
 export const loadPrintCollectionDefinitions = cache(
-  async (): Promise<PrintCollectionDefinition[]> =>
+  async (supabase?: SupabaseClient): Promise<PrintCollectionDefinition[]> =>
     readWithFallback(
       'printCollectionDefinitions',
-      () => loadPrintCollectionDefinitionsFromDb(getSupabaseAdmin()),
+      // getSupabaseAdmin() is resolved here, inside readWithFallback's own
+      // try/catch, not as a default-parameter expression — a default param
+      // (`supabase: SupabaseClient = getSupabaseAdmin()`) evaluates before
+      // this function body runs, so a throwing getSupabaseAdmin() (e.g. a
+      // missing env var) would escape readWithFallback entirely and violate
+      // this function's documented never-throws guarantee. Confirmed by
+      // print-collections.test.ts's "falls back ... when getSupabaseAdmin()
+      // throws" case.
+      () => loadPrintCollectionDefinitionsFromDb(supabase ?? getSupabaseAdmin()),
       PRINT_COLLECTIONS,
     ),
 );

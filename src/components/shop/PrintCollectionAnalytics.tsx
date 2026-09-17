@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { buildPrintSelectItemEvent, buildPrintViewItemListEvent, pushDataLayer } from '@/lib/analytics';
 import type { CurrencyCode } from '@/lib/format';
 
-export type PrintListItem = { id: string; num: string; variantLabel: string; price: number };
+export type PrintListItem = { id: string; num: string; variantLabel: string; price: number; itemName?: string };
 
 /** Client wrapper for the server-rendered print tile grid: view_item_list once
  *  on mount, select_item on tile click. Tiles stay server <Link>s; this only
