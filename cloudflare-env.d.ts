@@ -67,6 +67,18 @@ interface CloudflareEnv {
   PRODIGI_CALLBACK_TOKEN: string;
   PRINT_ASSET_TOKEN_SECRET: string;
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
+  // R2 S3-compatible API credentials for Worker-side presigned PUT URLs
+  // (POST /v1/uploads — src/server/cms-api/uploads-mapping.ts). Same three
+  // values scripts/lib/r2.ts's resolveR2ConditionalCredentials already reads
+  // for the CLI upload operator (R2_S3_ACCOUNT_ID/ACCESS_KEY_ID/SECRET_ACCESS_KEY)
+  // — deliberately the same names so a `.dev.vars` already set up for those
+  // scripts (which `wrangler dev` also reads into this env) works here too.
+  // Optional: uploads-create.ts fails closed (500) rather than crash the
+  // Worker when unset, same posture as the STUDIO_RETURN_*/NEWSLETTER_CONFIRM_SECRET
+  // fail-closed optional secrets above.
+  R2_S3_ACCOUNT_ID?: string;
+  R2_S3_ACCESS_KEY_ID?: string;
+  R2_S3_SECRET_ACCESS_KEY?: string;
   // CMS preview-token HMAC secret (admin draft preview links). Dedicated, fail-closed.
   CMS_PREVIEW_SECRET: string;
   // Newsletter double-opt-in HMAC secret (confirm-link tokens). Dedicated, fail-closed:

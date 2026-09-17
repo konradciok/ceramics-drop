@@ -125,13 +125,14 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
   });
 
   it('404s an unregistered S2/S3/S4 path even carrying a fully valid owner token', async () => {
-    // Collections, content, pricing and (as of Task 7) shipping-rates routes
-    // are all registered — repointed at /v1/assets, which is still genuinely
-    // unimplemented (S3; no assets handler/route exists anywhere under
-    // src/server/cms-api/handlers/), so this still proves the same S2/S3/S4
-    // router fallback.
+    // Collections, content, pricing, shipping-rates (Task 7) and (as of
+    // Task 9) uploads/assets routes are all registered — repointed at
+    // /v1/jobs, which is still genuinely unimplemented (Phase 2 — a separate,
+    // later task builds the job queue; no jobs handler/route exists anywhere
+    // under src/server/cms-api/handlers/), so this still proves the same
+    // S2/S3/S4 router fallback.
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const res = await handleCmsApiRequest(reqWithToken('/v1/assets', token), baseEnv, deps);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/jobs', token), baseEnv, deps);
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
   });
@@ -209,6 +210,119 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     const body = await res.json();
     expect(body.items.map((i: { id: string }) => i.id)).toEqual(['domestic', 'international']);
     expect(body.items[0]).toMatchObject({ kind: 'shipping-rates', revision: 1, publishedRevision: 1 });
+  });
+
+  // Task 9 — the uploads/assets handlers must never reach for adminSupabase()
+  // / getCloudflareContext() either (the Task 5 gap documented on the
+  // /v1/content test below). This exercises the real, unmocked read path
+  // (assets-list.ts -> assets-mapping.ts's loadAssetList, including a REAL
+  // signPrintAssetUrl HMAC signature — not mocked) through the full
+  // entrypoint with nothing but a minimal Supabase stand-in in
+  // deps.makeSupabase — exactly the role it plays in production.
+  it('GET /v1/assets (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table === 'print_fulfilment_assets') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({
+                  data: [
+                    { id: 'a1', product_id: 'fap01', revision: '2026-07-11-r1', profile_key: null, status: 'ready', width_px: 3600, height_px: 4800 },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'print_variant_asset_assignments') {
+          return { select: async () => ({ data: [], error: null }) };
+        }
+        throw new Error(`unexpected table in assets stub: ${table}`);
+      },
+    } as unknown as never;
+    const envWithSecret = { ...baseEnv, PRINT_ASSET_TOKEN_SECRET: 'test-secret' } as CloudflareEnv;
+    const res = await handleCmsApiRequest(reqWithToken('/v1/assets', token), envWithSecret, { makeSupabase: () => fakeSupabase });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({ id: 'a1', status: 'ready', ratio: '3:4' });
+    expect(body.items[0].url).toMatch(/^https:\/\/anna-ciok\.studio\/api\/print-assets\/a1\?exp=\d+&sig=[0-9a-f]{64}$/);
+  });
+
+  // Task 9 — same guard for POST /v1/uploads: the real, unmocked write path
+  // (uploads-create.ts -> uploads-mapping.ts's insertUploadRow/presignUploadPutUrl,
+  // including a real aws4fetch SigV4 signature — not mocked) through the full
+  // entrypoint. Also proves the idempotency claim goes through ctx.supabase.
+  it('POST /v1/uploads (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    let insertedRow: Record<string, unknown> | undefined;
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table === 'cms_api_idempotency_keys') {
+          const chain = { eq: () => chain, select: () => ({ maybeSingle: async () => ({ data: { id: 'lease_1' }, error: null }) }) };
+          return {
+            insert: () => ({ select: () => ({ maybeSingle: async () => ({ data: { id: 'lease_1' }, error: null }) }) }),
+            update: () => chain,
+          };
+        }
+        if (table === 'print_asset_uploads') {
+          return {
+            insert: (payload: Record<string, unknown>) => ({
+              select: () => ({
+                single: async () => {
+                  insertedRow = payload;
+                  return {
+                    data: {
+                      id: payload.id,
+                      filename: payload.filename,
+                      content_type: payload.content_type,
+                      declared_byte_size: payload.declared_byte_size,
+                      ratio: payload.ratio,
+                      r2_key: payload.r2_key,
+                      status: 'pending',
+                      revision: 0,
+                      confirmed_byte_size: null,
+                      confirmed_content_type: null,
+                      created_by: payload.created_by,
+                      created_at: '2026-09-17T12:00:00.000Z',
+                      expires_at: payload.expires_at,
+                      updated_at: '2026-09-17T12:00:00.000Z',
+                    },
+                    error: null,
+                  };
+                },
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table in uploads stub: ${table}`);
+      },
+    } as unknown as never;
+    const envWithCreds = {
+      ...baseEnv,
+      R2_S3_ACCOUNT_ID: 'acct123',
+      R2_S3_ACCESS_KEY_ID: 'AKIAEXAMPLE',
+      R2_S3_SECRET_ACCESS_KEY: 'secretExampleValue',
+    } as CloudflareEnv;
+    const res = await handleCmsApiRequest(
+      reqWithToken('/v1/uploads', token, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': 'up-key-1' },
+        body: JSON.stringify({ filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5' }),
+      }),
+      envWithCreds,
+      { makeSupabase: () => fakeSupabase },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.assetId).toBe(body.id);
+    expect(body.uploadUrl).toMatch(/^https:\/\/acct123\.r2\.cloudflarestorage\.com\/anna-ciok-print-assets\/uploads\/[0-9a-f-]+\.jpg\?/);
+    expect(body.uploadUrl).toContain('X-Amz-Algorithm=AWS4-HMAC-SHA256');
+    expect(body.uploadUrl).toMatch(/X-Amz-Signature=[0-9a-f]{64}/);
+    expect(insertedRow?.created_by).toBe(OWNER_EMAIL);
   });
 
   it('422s POST /v1/products with a valid owner token but no Idempotency-Key', async () => {

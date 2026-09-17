@@ -86,3 +86,20 @@ export type CollectionResponse = {
   publishedRevision: number | null;
   fields: Field[];
 };
+
+// --- Asset (contracts/cms-v1.json's Asset schema) — shared by
+// uploads-mapping.ts's mapConfirmedUploadToAsset (POST /v1/uploads/{id}/confirm's
+// response) and assets-mapping.ts's mapping of print_fulfilment_assets rows
+// (GET /v1/assets) — same wire type, two different source tables (Task 9).
+export type AssetStatus = 'uploaded' | 'processing' | 'ready' | 'failed';
+
+export type AssetResponse = {
+  id: string;
+  name: string;
+  revision: number;
+  status: AssetStatus;
+  ratio: string;
+  url: string;
+  usages: string[];
+  error: string;
+};
