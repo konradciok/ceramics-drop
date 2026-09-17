@@ -268,6 +268,25 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
             update: () => chain,
           };
         }
+        // Task 12: loadActivePrintVariants (profiles.ts) reads these two
+        // tables to validate the request body's productId before the handler
+        // ever reaches print_asset_uploads — same real, unmocked-logic path
+        // this test exists to exercise, so stub them with a real active
+        // print product rather than mocking the check itself away.
+        if (table === 'products') {
+          return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { status: 'active' }, error: null }) }) }) };
+        }
+        if (table === 'product_variants') {
+          const chain = {
+            eq: () => chain,
+            then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+              Promise.resolve({
+                data: [{ variant_key: '30x40:false:false:black', print_area_width_px: 3600, print_area_height_px: 4800 }],
+                error: null,
+              }).then(resolve, reject),
+          };
+          return { select: () => chain };
+        }
         if (table === 'print_asset_uploads') {
           return {
             insert: (payload: Record<string, unknown>) => ({
@@ -281,6 +300,7 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
                       content_type: payload.content_type,
                       declared_byte_size: payload.declared_byte_size,
                       ratio: payload.ratio,
+                      product_id: payload.product_id,
                       r2_key: payload.r2_key,
                       status: 'pending',
                       revision: 0,
@@ -311,7 +331,7 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
       reqWithToken('/v1/uploads', token, {
         method: 'POST',
         headers: { 'Idempotency-Key': 'up-key-1' },
-        body: JSON.stringify({ filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5' }),
+        body: JSON.stringify({ filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5', productId: 'print-01' }),
       }),
       envWithCreds,
       { makeSupabase: () => fakeSupabase },
@@ -323,6 +343,7 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(body.uploadUrl).toContain('X-Amz-Algorithm=AWS4-HMAC-SHA256');
     expect(body.uploadUrl).toMatch(/X-Amz-Signature=[0-9a-f]{64}/);
     expect(insertedRow?.created_by).toBe(OWNER_EMAIL);
+    expect(insertedRow?.product_id).toBe('print-01');
   });
 
   it('422s POST /v1/products with a valid owner token but no Idempotency-Key', async () => {

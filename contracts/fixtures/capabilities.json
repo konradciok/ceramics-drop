@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "productTypes": ["ceramic", "print"],
   "productStatuses": ["draft", "active", "hidden", "archived"],
   "ceramicCategories": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"],

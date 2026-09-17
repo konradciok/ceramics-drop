@@ -3,6 +3,7 @@ import { uploadsCreateRoute } from './uploads-create';
 import type { HandlerContext } from '../router';
 import * as idempotency from '../idempotency';
 import * as mapping from '../uploads-mapping';
+import * as profiles from '@/server/asset-jobs/profiles';
 
 vi.mock('../idempotency');
 vi.mock('../uploads-mapping', () => ({
@@ -13,8 +14,12 @@ vi.mock('../uploads-mapping', () => ({
   presignUploadPutUrl: vi.fn(),
   resolveR2PresignCredentials: vi.fn(),
 }));
+// Task 12: product-reference validation reuses profiles.ts's
+// loadActivePrintVariants (Task 11's "load active print variants for a
+// product" logic) rather than inventing a new check — see uploads-create.ts.
+vi.mock('@/server/asset-jobs/profiles', () => ({ loadActivePrintVariants: vi.fn() }));
 
-const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5' };
+const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 1000, ratio: '4:5', productId: 'print-01' };
 
 function req(body: unknown, idempotencyKey: string | null = 'key-1') {
   const headers: Record<string, string> = {};
@@ -39,6 +44,10 @@ describe('uploadsCreateRoute', () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
     vi.mocked(idempotency.completeIdempotencyKey).mockResolvedValue(undefined);
     vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);
+    vi.mocked(profiles.loadActivePrintVariants).mockResolvedValue({
+      kind: 'ok',
+      variants: [{ variantKey: '30x40:false:false:black', w: 3600, h: 4800 }],
+    });
     vi.mocked(mapping.insertUploadRow).mockResolvedValue({ id: 'up_1', expires_at: '2026-09-17T12:15:00.000Z' } as never);
     vi.mocked(mapping.resolveR2PresignCredentials).mockReturnValue({ accountId: 'a', accessKeyId: 'b', secretAccessKey: 'c' });
     vi.mocked(mapping.presignUploadPutUrl).mockResolvedValue('https://signed.example/put');
@@ -92,6 +101,26 @@ describe('uploadsCreateRoute', () => {
     expect(mapping.insertUploadRow).not.toHaveBeenCalled();
   });
 
+  // Task 12: productId must resolve to a real, active print product — a 4xx
+  // at upload-intent time, not a job that silently fails hours later
+  // (process-job.ts's own "no product_id" branch stays as defense-in-depth
+  // for pre-existing/malformed rows only, per the task brief).
+  it('releases the idempotency key and returns 422 VALIDATION_FAILED (fieldErrors.productId) when the product is not a real active print product', async () => {
+    vi.mocked(profiles.loadActivePrintVariants).mockResolvedValue({
+      kind: 'invalid',
+      message: 'unknown product "nope" — no row in products',
+    });
+    const res = await uploadsCreateRoute.handler(req({ ...validBody, productId: 'nope' }), fakeEnv, {}, ctx());
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(body.fieldErrors.productId).toMatch(/unknown product/);
+    expect(profiles.loadActivePrintVariants).toHaveBeenCalledWith(expect.anything(), 'nope');
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    expect(mapping.insertUploadRow).not.toHaveBeenCalled();
+    expect(mapping.resolveR2PresignCredentials).not.toHaveBeenCalled();
+  });
+
   it('inserts the row, presigns the PUT URL, and completes the idempotency key on success', async () => {
     const res = await uploadsCreateRoute.handler(req(validBody), fakeEnv, {}, ctx());
     expect(res.status).toBe(200);
@@ -102,6 +131,7 @@ describe('uploadsCreateRoute', () => {
       expiresAt: '2026-09-17T12:15:00.000Z',
     });
 
+    expect(profiles.loadActivePrintVariants).toHaveBeenCalledWith(expect.anything(), 'print-01');
     expect(mapping.insertUploadRow).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -109,6 +139,7 @@ describe('uploadsCreateRoute', () => {
         contentType: 'image/jpeg',
         bytes: 1000,
         ratio: '4:5',
+        productId: 'print-01',
         createdBy: 'anna@studio.pl',
         r2Key: expect.stringMatching(/^uploads\/.+\.jpg$/),
       }),

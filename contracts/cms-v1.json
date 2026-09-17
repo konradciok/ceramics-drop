@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Anna Ciok Studio — CMS Admin API",
-    "version": "1.0.0",
-    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections, content, pricing and shipping-rates (S2/S4) are implemented; assets/uploads/jobs (S3) are documented but return 404 not_implemented until their packages land."
+    "version": "1.1.0",
+    "description": "Private admin API reachable only via a Cloudflare Service Binding named entrypoint (CmsApi). S1 implements session/capabilities/products/publication/availability/proofs/audit/previews; collections, content, pricing, shipping-rates and assets/uploads/jobs (S2-S4) are implemented. 1.1.0: POST /v1/uploads now requires productId (Task 12 — closes the product-association gap Task 11's Container processor self-flagged)."
   },
   "security": [ { "cloudflareAccess": [] } ],
   "paths": {
@@ -423,7 +423,7 @@
         "additionalProperties": false
       },
       "AssetList": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Asset" } } }, "required": ["items"], "additionalProperties": false },
-      "Upload": { "type": "object", "properties": { "filename": { "type": "string" }, "contentType": { "type": "string", "enum": ["image/jpeg", "image/png"] }, "bytes": { "type": "integer" }, "ratio": { "type": "string" } }, "required": ["filename", "contentType", "bytes", "ratio"], "additionalProperties": false },
+      "Upload": { "type": "object", "properties": { "filename": { "type": "string" }, "contentType": { "type": "string", "enum": ["image/jpeg", "image/png"] }, "bytes": { "type": "integer" }, "ratio": { "type": "string" }, "productId": { "type": "string" } }, "required": ["filename", "contentType", "bytes", "ratio", "productId"], "additionalProperties": false },
       "UploadIntent": { "type": "object", "properties": { "id": { "type": "string" }, "assetId": { "type": "string" }, "uploadUrl": { "type": "string" }, "expiresAt": { "type": "string" } }, "required": ["id", "assetId", "uploadUrl", "expiresAt"], "additionalProperties": false },
       "Job": {
         "type": "object",

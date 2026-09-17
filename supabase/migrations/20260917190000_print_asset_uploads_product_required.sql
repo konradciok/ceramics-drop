@@ -1,0 +1,38 @@
+-- CMS API — print_asset_uploads.product_id NOT NULL (Task 12: closes the
+-- product-association gap Task 11's Container processor self-flagged).
+-- -----------------------------------------------------------------------------
+-- 20260917180000_print_asset_uploads_product.sql added product_id NULLABLE,
+-- deliberately, because at that time nothing upstream of it (POST
+-- /v1/uploads) yet accepted or persisted a productId — every row that
+-- existed then had none, and a NOT NULL column would have broken every
+-- existing/in-flight upload row. See that migration's own header for the
+-- full account of the gap.
+--
+-- That precondition no longer holds. This task extends POST /v1/uploads
+-- (src/server/cms-api/handlers/uploads-create.ts) to REQUIRE productId in
+-- the request body (contracts/cms-v1.json's Upload schema) and to validate
+-- it against a real, active print product — via
+-- src/server/asset-jobs/profiles.ts's loadActivePrintVariants, the SAME
+-- check the Container's queue consumer (process-job.ts) already relies on —
+-- before the row is ever inserted. Every row insertUploadRow writes from
+-- here on carries a product_id.
+--
+-- Nothing on this branch has been deployed yet (no live callers, no real
+-- production data — same Docker-unreachable, can't-live-test posture as
+-- every other migration here), so there is no backfill to perform and no
+-- risk of breaking an existing row: tightening the column now, rather than
+-- leaving it open-ended with only handler-layer enforcement, is a genuine
+-- close of the gap Task 11 found, not a cosmetic one.
+--
+-- process-job.ts's `if (!uploadRow.product_id)` failed_action_required
+-- branch is UNCHANGED by this migration and stays in place as defense in
+-- depth for any pre-existing/malformed row a future direct insert or manual
+-- data fix could still produce — this constraint makes that branch
+-- unreachable through the normal POST /v1/uploads path, not dead code.
+alter table print_asset_uploads
+  alter column product_id set not null;
+
+-- ============================================================
+-- Rollback (manual):
+--   alter table print_asset_uploads alter column product_id drop not null;
+-- ============================================================

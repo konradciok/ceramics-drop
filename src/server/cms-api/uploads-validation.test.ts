@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { validateUploadCreate } from './uploads-validation';
 
-const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 123456, ratio: '4:5' };
+const validBody = { filename: 'kubek-01.jpg', contentType: 'image/jpeg', bytes: 123456, ratio: '4:5', productId: 'print-01' };
 
 describe('validateUploadCreate', () => {
   it('accepts a valid body', () => {
@@ -43,6 +43,26 @@ describe('validateUploadCreate', () => {
   it('rejects a blank ratio', () => {
     const result = validateUploadCreate({ ...validBody, ratio: '' });
     expect(result.ok).toBe(false);
+  });
+
+  // Task 12: the product-association gap Task 11's Container processor
+  // self-flagged (see profiles.ts's caller in process-job.ts) — productId is
+  // now a required field on the request body itself, not just a nullable DB
+  // column nothing populates.
+  it('rejects a missing productId, naming it in fieldErrors', () => {
+    const rest: Record<string, unknown> = { ...validBody };
+    delete rest.productId;
+    const result = validateUploadCreate(rest);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.fieldErrors.productId).toBeDefined();
+  });
+
+  it('rejects a blank productId', () => {
+    expect(validateUploadCreate({ ...validBody, productId: '' }).ok).toBe(false);
+  });
+
+  it('rejects a whitespace-only productId', () => {
+    expect(validateUploadCreate({ ...validBody, productId: '   ' }).ok).toBe(false);
   });
 
   it('rejects a missing field, naming it in fieldErrors', () => {

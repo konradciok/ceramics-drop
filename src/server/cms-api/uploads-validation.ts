@@ -11,6 +11,14 @@ export const uploadCreateSchema = z
     contentType: z.enum(UPLOAD_CONTENT_TYPES),
     bytes: z.number().int().positive(),
     ratio: z.string().trim().min(1),
+    // Task 12: closes the product-association gap Task 11's Container
+    // processor self-flagged — required going forward (nothing in this
+    // pipeline has been deployed yet, so there is no backward-compatibility
+    // constraint to preserve). Shape-only here (non-empty string); whether it
+    // actually names a real, active print product is a DB-backed check the
+    // handler performs via profiles.ts's loadActivePrintVariants, not
+    // something zod can validate.
+    productId: z.string().trim().min(1),
   })
   .strict();
 

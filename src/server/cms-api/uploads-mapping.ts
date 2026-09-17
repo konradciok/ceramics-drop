@@ -13,6 +13,14 @@ export type UploadRow = {
   content_type: 'image/jpeg' | 'image/png';
   declared_byte_size: number;
   ratio: string;
+  // Task 12: required on every row insertUploadRow writes from here on
+  // (supabase/migrations/20260917190000_print_asset_uploads_product_required.sql
+  // tightens the column itself to NOT NULL). Typed as a plain string, not
+  // string | null, for that reason — process-job.ts's own narrower
+  // UploadRowForProcessing type keeps `product_id: string | null` on purpose,
+  // as defense-in-depth for any pre-existing/malformed row the DB constraint
+  // doesn't retroactively cover.
+  product_id: string;
   r2_key: string;
   status: 'pending' | 'confirmed';
   revision: number;
@@ -194,6 +202,7 @@ export type NewUploadInput = {
   contentType: 'image/jpeg' | 'image/png';
   bytes: number;
   ratio: string;
+  productId: string;
   r2Key: string;
   createdBy: string;
   expiresAt: string;
@@ -208,6 +217,7 @@ export async function insertUploadRow(supabase: SupabaseClient, input: NewUpload
       content_type: input.contentType,
       declared_byte_size: input.bytes,
       ratio: input.ratio,
+      product_id: input.productId,
       r2_key: input.r2Key,
       created_by: input.createdBy,
       expires_at: input.expiresAt,

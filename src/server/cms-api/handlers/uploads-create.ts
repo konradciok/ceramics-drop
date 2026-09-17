@@ -10,6 +10,13 @@ import {
   resolveR2PresignCredentials,
 } from '../uploads-mapping';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from '../idempotency';
+// Task 12: closes the product-association gap Task 11's Container processor
+// (process-job.ts) self-flagged — reuses this codebase's existing "load
+// active print variants for a product" logic (Task 11) as the productId
+// reference check, rather than inventing a second, divergent one. Pure +
+// one Supabase read, no Sharp — safe in this Worker-bundled handler (see
+// profiles.ts's own header comment on that boundary).
+import { loadActivePrintVariants } from '@/server/asset-jobs/profiles';
 
 // POST /v1/uploads: issues an upload intent (a new print_asset_uploads row)
 // plus an R2 presigned PUT URL the client uploads the file bytes to directly
@@ -42,8 +49,7 @@ export const uploadsCreateRoute: RouteDef = {
     }
     const { leaseToken } = claim;
 
-    const validated = validateUploadCreate(body);
-    if (!validated.ok) {
+    const release = async () => {
       try {
         await releaseIdempotencyKey(ctx.supabase, 'uploads:create', idempotencyKey, leaseToken);
       } catch {
@@ -51,10 +57,31 @@ export const uploadsCreateRoute: RouteDef = {
         // LEASE_MS in idempotency.ts lets a later request reclaim it (same
         // rationale as collections-create.ts's equivalent branch).
       }
+    };
+
+    const validated = validateUploadCreate(body);
+    if (!validated.ok) {
+      await release();
       return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, { fieldErrors: validated.fieldErrors });
     }
 
     const upload = validated.data;
+
+    // Task 12: a productId that doesn't resolve to a real, active print
+    // product is rejected here — at upload-intent time, with a clear 4xx —
+    // rather than discovered later when the Container job fails
+    // (process-job.ts's failed_action_required path). Reuses
+    // loadActivePrintVariants verbatim: it already fails closed for an
+    // unknown product, a non-active product, a product with no active print
+    // variants, and a variant missing seeded print-area pixels — exactly the
+    // set of conditions that would otherwise doom this upload's eventual job.
+    const productCheck = await loadActivePrintVariants(ctx.supabase, upload.productId);
+    if (productCheck.kind === 'invalid') {
+      await release();
+      return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
+        fieldErrors: { productId: productCheck.message },
+      });
+    }
 
     try {
       const id = crypto.randomUUID();
@@ -80,6 +107,7 @@ export const uploadsCreateRoute: RouteDef = {
         contentType: upload.contentType,
         bytes: upload.bytes,
         ratio: upload.ratio,
+        productId: upload.productId,
         r2Key,
         createdBy: ctx.actorEmail,
         expiresAt,
@@ -89,11 +117,7 @@ export const uploadsCreateRoute: RouteDef = {
       await completeIdempotencyKey(ctx.supabase, 'uploads:create', idempotencyKey, leaseToken, 200, intent);
       return jsonResponse(intent, 200);
     } catch (err) {
-      try {
-        await releaseIdempotencyKey(ctx.supabase, 'uploads:create', idempotencyKey, leaseToken);
-      } catch {
-        // ignore — see comment above
-      }
+      await release();
       throw err;
     }
   },
