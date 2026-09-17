@@ -35,7 +35,13 @@
     }
   ],
   "queues": {
-    "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
+    "producers": [
+      { "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" },
+      // Priority 8 / Phase 2 (Task 10) — durable job queue for print-asset
+      // processing. Mirrors FULFILMENT_QUEUE's shape exactly; see worker.ts's
+      // queue() handler and src/server/asset-jobs/{enqueue,process-job}.ts.
+      { "binding": "ASSET_JOBS_QUEUE", "queue": "print-asset-jobs" }
+    ],
     "consumers": [{
       "queue": "prodigi-fulfilment",
       "max_batch_size": 1,
@@ -47,6 +53,15 @@
       // a handler bug cannot unbounded-retry; the no-loop guarantee comes from
       // ackAll in the handler (the normal path never retries).
       "queue": "prodigi-fulfilment-dlq",
+      "max_retries": 1
+    }, {
+      "queue": "print-asset-jobs",
+      "max_batch_size": 1,
+      "max_retries": 10,
+      "dead_letter_queue": "print-asset-jobs-dlq"
+    }, {
+      // Same alert-only posture as prodigi-fulfilment-dlq above.
+      "queue": "print-asset-jobs-dlq",
       "max_retries": 1
     }]
   },
@@ -100,7 +115,10 @@
         }
       ],
       "queues": {
-        "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment-preview" }],
+        "producers": [
+          { "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment-preview" },
+          { "binding": "ASSET_JOBS_QUEUE", "queue": "print-asset-jobs-preview" }
+        ],
         "consumers": [{
           "queue": "prodigi-fulfilment-preview",
           "max_batch_size": 1,
@@ -110,6 +128,14 @@
           "dead_letter_queue": "prodigi-fulfilment-preview-dlq"
         }, {
           "queue": "prodigi-fulfilment-preview-dlq",
+          "max_retries": 1
+        }, {
+          "queue": "print-asset-jobs-preview",
+          "max_batch_size": 1,
+          "max_retries": 3,
+          "dead_letter_queue": "print-asset-jobs-preview-dlq"
+        }, {
+          "queue": "print-asset-jobs-preview-dlq",
           "max_retries": 1
         }]
       },

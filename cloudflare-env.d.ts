@@ -58,6 +58,11 @@ interface CloudflareEnv {
   // Prodigi Print-on-Demand — CF Queue, R2 bucket, and API secrets.
   FULFILMENT_QUEUE: Queue;
   PRINT_ASSETS: R2Bucket;
+  // Print-asset processing job queue (Priority 8 / Phase 2 — durable job
+  // queue). Mirrors FULFILMENT_QUEUE's binding shape; see wrangler.jsonc's
+  // ASSET_JOBS_QUEUE producer/consumer/DLQ declarations and
+  // src/server/asset-jobs/{enqueue,process-job}.ts.
+  ASSET_JOBS_QUEUE: Queue;
   PRODIGI_API_KEY_SANDBOX: string;
   PRODIGI_API_KEY_LIVE: string;
   PRODIGI_ENV: string;

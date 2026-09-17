@@ -39,6 +39,9 @@ import { shippingRatesRestorePostRoute } from './handlers/shipping-rates-restore
 import { uploadsCreateRoute } from './handlers/uploads-create';
 import { uploadsConfirmRoute } from './handlers/uploads-confirm';
 import { assetsListRoute } from './handlers/assets-list';
+import { jobsListRoute } from './handlers/jobs-list';
+import { jobsCreateRoute } from './handlers/jobs-create';
+import { jobsRetryRoute } from './handlers/jobs-retry';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -81,6 +84,9 @@ const routes: RouteDef[] = [
   uploadsCreateRoute,
   uploadsConfirmRoute,
   assetsListRoute,
+  jobsListRoute,
+  jobsCreateRoute,
+  jobsRetryRoute,
 ];
 
 const dispatch = createRouter(routes);

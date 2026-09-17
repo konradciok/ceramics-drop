@@ -124,15 +124,15 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(404);
   });
 
-  it('404s an unregistered S2/S3/S4 path even carrying a fully valid owner token', async () => {
-    // Collections, content, pricing, shipping-rates (Task 7) and (as of
-    // Task 9) uploads/assets routes are all registered — repointed at
-    // /v1/jobs, which is still genuinely unimplemented (Phase 2 — a separate,
-    // later task builds the job queue; no jobs handler/route exists anywhere
-    // under src/server/cms-api/handlers/), so this still proves the same
-    // S2/S3/S4 router fallback.
+  it('404s an unregistered path even carrying a fully valid owner token', async () => {
+    // Every contracts/cms-v1.json S1-S4 path is now registered — collections,
+    // content, pricing, shipping-rates (Task 7), uploads/assets (Task 9), and
+    // (as of Task 10, Phase 2) jobs. There is no longer a real future
+    // contract path left to point this at, so this now uses a path that is
+    // not in the contract at all, purely to prove the router's own
+    // NOT_IMPLEMENTED fallback still works.
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const res = await handleCmsApiRequest(reqWithToken('/v1/jobs', token), baseEnv, deps);
+    const res = await handleCmsApiRequest(reqWithToken('/v1/does-not-exist', token), baseEnv, deps);
     expect(res.status).toBe(404);
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
   });
@@ -382,5 +382,111 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     // EDITABLE_DOCUMENTS.length (12) x CMS_LOCALES.length (4) — see
     // content-mapping.ts's loadAllContentResources.
     expect(body.items.length).toBe(48);
+  });
+
+  // Task 10 (Priority 8 / Phase 2) — the jobs handlers must never reach for
+  // adminSupabase() / getCloudflareContext() either (the Task 5 gap documented
+  // on the /v1/content test above). This exercises the real, unmocked read
+  // path (jobs-list.ts -> jobs-mapping.ts's listJobRows/mapJobRowToResponse)
+  // through the full entrypoint with nothing but a minimal Supabase stand-in
+  // in deps.makeSupabase — exactly the role it plays in production.
+  it('GET /v1/jobs (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    const jobRow = {
+      id: 'job-1',
+      upload_id: 'upload-1',
+      asset_id: null,
+      asset_revision: 1,
+      status: 'queued',
+      attempts: 0,
+      idempotency_key: 'print-asset-job:upload-1:v1',
+      last_error: null,
+      created_at: '2026-09-17T12:00:00.000Z',
+      updated_at: '2026-09-17T12:00:00.000Z',
+    };
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table !== 'print_asset_jobs') throw new Error(`unexpected table in jobs-list stub: ${table}`);
+        return { select: () => ({ order: async () => ({ data: [jobRow], error: null }) }) };
+      },
+    } as unknown as never;
+    const res = await handleCmsApiRequest(reqWithToken('/v1/jobs', token), baseEnv, { makeSupabase: () => fakeSupabase });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toEqual([{ id: 'job-1', assetId: 'upload-1', revision: 1, status: 'queued', progress: 0, error: '' }]);
+  });
+
+  // Task 10 — same guard for the WRITE path, POST /v1/jobs: the real,
+  // unmocked chain (jobs-create.ts -> uploads-mapping.ts's getUploadRowById ->
+  // asset-jobs/enqueue.ts's enqueueAssetJob, including a real
+  // env.ASSET_JOBS_QUEUE.send() call — not mocked) through the full
+  // entrypoint. Also proves the idempotency claim goes through ctx.supabase,
+  // and that the ASSET_JOBS_QUEUE binding is read straight off `env` (not
+  // resolved via getCloudflareContext()).
+  it('POST /v1/jobs (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
+    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    const uploadRow = {
+      id: 'upload-1',
+      filename: 'kubek-01.jpg',
+      content_type: 'image/jpeg',
+      declared_byte_size: 1000,
+      ratio: '4:5',
+      r2_key: 'uploads/upload-1.jpg',
+      status: 'confirmed',
+      revision: 1,
+      confirmed_byte_size: 1000,
+      confirmed_content_type: 'image/jpeg',
+      created_by: OWNER_EMAIL,
+      created_at: '2026-09-17T12:00:00.000Z',
+      expires_at: '2026-09-17T12:15:00.000Z',
+      updated_at: '2026-09-17T12:05:00.000Z',
+    };
+    let insertedJob: Record<string, unknown> | undefined;
+    const fakeSupabase = {
+      from: (table: string) => {
+        if (table === 'cms_api_idempotency_keys') {
+          const chain = { eq: () => chain, select: () => ({ maybeSingle: async () => ({ data: { id: 'lease_1' }, error: null }) }) };
+          return {
+            insert: () => ({ select: () => ({ maybeSingle: async () => ({ data: { id: 'lease_1' }, error: null }) }) }),
+            update: () => chain,
+          };
+        }
+        if (table === 'print_asset_uploads') {
+          return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: uploadRow, error: null }) }) }) };
+        }
+        if (table === 'print_asset_jobs') {
+          return {
+            upsert: (payload: Record<string, unknown>) => ({
+              select: () => ({
+                maybeSingle: async () => {
+                  insertedJob = payload;
+                  return {
+                    data: { ...payload, asset_id: null, attempts: 0, last_error: null, created_at: '2026-09-17T12:10:00.000Z', updated_at: '2026-09-17T12:10:00.000Z' },
+                    error: null,
+                  };
+                },
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table in jobs-create stub: ${table}`);
+      },
+    } as unknown as never;
+    const queueSend = vi.fn().mockResolvedValue(undefined);
+    const envWithQueue = { ...baseEnv, ASSET_JOBS_QUEUE: { send: queueSend } } as unknown as CloudflareEnv;
+    const res = await handleCmsApiRequest(
+      reqWithToken('/v1/jobs', token, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': 'job-key-1' },
+        body: JSON.stringify({ assetId: 'upload-1', expectedRevision: 1 }),
+      }),
+      envWithQueue,
+      { makeSupabase: () => fakeSupabase },
+    );
+    expect(res.status).toBe(202);
+    const body = await res.json();
+    expect(body).toMatchObject({ assetId: 'upload-1', revision: 1, status: 'queued', progress: 0, error: '' });
+    expect(insertedJob?.upload_id).toBe('upload-1');
+    expect(queueSend).toHaveBeenCalledWith({ jobId: body.id, uploadId: 'upload-1' });
   });
 });

@@ -103,3 +103,18 @@ export type AssetResponse = {
   usages: string[];
   error: string;
 };
+
+// --- Job (contracts/cms-v1.json's Job schema) — Priority 8 / Phase 2 (Task
+// 10). See src/server/cms-api/jobs-mapping.ts for the print_asset_jobs row ->
+// wire mapping and src/server/asset-jobs/{enqueue,process-job}.ts for the
+// underlying durable job queue.
+export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
+export type JobResponse = {
+  id: string;
+  assetId: string;
+  revision: number;
+  status: JobStatus;
+  progress: number;
+  error: string;
+};
