@@ -89,6 +89,7 @@ order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
 order create-shipment <uuid> [--recreate] --confirm <uuid>
 webhook-config-check
+prodigi-env-check [--since ISO8601]
 reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]`;
 
 type ParsedOptions = {
@@ -437,6 +438,121 @@ async function webhookConfigCheck(stripe: Stripe): Promise<unknown> {
   }
 
   return { sdkApiVersion: sdkVersion, endpoints: reports };
+}
+
+// ── prodigi-env-check: Stripe livemode vs PRODIGI_ENV drift guard ────────────
+// Incident: 2026-09-02, order 63445e00-b433-45bc-a42e-d723c273c091 — a LIVE
+// Stripe payment's fulfilment job was submitted to Prodigi SANDBOX because
+// production PRODIGI_ENV was misconfigured. Sandbox fully simulates the
+// happy path (fake tracking number, imagestorage-sandbox.blob.core.windows.net
+// asset URLs), so nothing errored and no alert fired. Read-only: cross-checks
+// every fulfilment_jobs row's persisted prodigi_env against its order's real
+// Stripe PaymentIntent.livemode.
+
+type ProdigiEnvCheckAnomaly = {
+  orderId: string;
+  jobId: string;
+  jobStatus: string;
+  prodigiEnv: string | null;
+  paymentIntentId: string | null;
+  stripeLivemode: boolean | null;
+  problem:
+    | 'live_payment_nonlive_env'
+    | 'test_payment_live_env'
+    | 'missing_prodigi_env'
+    | 'no_payment_intent'
+    | 'stripe_lookup_failed';
+};
+
+type FulfilmentJobRow = {
+  id: string;
+  order_id: string;
+  status: string;
+  prodigi_env: string | null;
+  created_at: string;
+};
+
+/**
+ * For every fulfilment_jobs row (optionally bounded by --since on created_at
+ * — unbounded by default, Prodigi order volume is currently near-zero),
+ * retrieves the order's Stripe PaymentIntent and compares `.livemode`
+ * against the row's persisted `prodigi_env`. A live payment fulfilled under
+ * a non-live env, or a test payment fulfilled under live, both count as an
+ * anomaly — this is exactly how the 2026-09-02 incident went undetected.
+ */
+async function prodigiEnvCheck(
+  supabase: SupabaseClient,
+  stripe: Stripe,
+  sinceIso: string | undefined,
+): Promise<unknown> {
+  let query = supabase
+    .from('fulfilment_jobs')
+    .select('id, order_id, status, prodigi_env, created_at')
+    .order('created_at', { ascending: true });
+  if (sinceIso) query = query.gte('created_at', sinceIso);
+  const { data: jobRows, error: jobsErr } = await query;
+  if (jobsErr) throw new CliError(`fulfilment_jobs lookup failed: ${jobsErr.message}`, 4, 'action_failed');
+  const jobs = (jobRows ?? []) as FulfilmentJobRow[];
+  if (jobs.length === 0) return { since: sinceIso ?? null, scanned: 0, anomalies: [] };
+
+  const orderIds = [...new Set(jobs.map((j) => j.order_id))];
+  const { data: orderRows, error: ordersErr } = await supabase
+    .from('orders')
+    .select('id, payment_intent_id')
+    .in('id', orderIds);
+  if (ordersErr) throw new CliError(`orders lookup failed: ${ordersErr.message}`, 4, 'action_failed');
+  const piByOrder = new Map(
+    ((orderRows ?? []) as Array<{ id: string; payment_intent_id: string | null }>).map(
+      (o) => [o.id, o.payment_intent_id] as const,
+    ),
+  );
+
+  // Sequential, not concurrency-limited: Prodigi order volume is currently
+  // near-zero (4 orders total as of this guard's authorship). Revisit if
+  // volume grows enough for a plain for-loop of Stripe retrieves to matter.
+  const anomalies: ProdigiEnvCheckAnomaly[] = [];
+  for (const job of jobs) {
+    const paymentIntentId = piByOrder.get(job.order_id) ?? null;
+    const base = {
+      orderId: job.order_id,
+      jobId: job.id,
+      jobStatus: job.status,
+      prodigiEnv: job.prodigi_env,
+      paymentIntentId,
+    };
+    if (job.prodigi_env === null) {
+      anomalies.push({ ...base, stripeLivemode: null, problem: 'missing_prodigi_env' });
+      continue;
+    }
+    if (!paymentIntentId) {
+      anomalies.push({ ...base, stripeLivemode: null, problem: 'no_payment_intent' });
+      continue;
+    }
+    let livemode: boolean;
+    try {
+      livemode = (await stripe.paymentIntents.retrieve(paymentIntentId)).livemode;
+    } catch {
+      anomalies.push({ ...base, stripeLivemode: null, problem: 'stripe_lookup_failed' });
+      continue;
+    }
+    const isLiveEnv = job.prodigi_env === 'live';
+    if (livemode === isLiveEnv) continue;
+    anomalies.push({
+      ...base,
+      stripeLivemode: livemode,
+      problem: livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env',
+    });
+  }
+
+  if (anomalies.length > 0) {
+    throw new CliError(
+      `prodigi-env-check found ${anomalies.length} order(s) where the Stripe payment mode and PRODIGI_ENV disagree`,
+      4,
+      'prodigi_env_mismatch',
+      { since: sinceIso ?? null, scanned: jobs.length, anomalies },
+    );
+  }
+  return { since: sinceIso ?? null, scanned: jobs.length, anomalies: [] };
 }
 
 // ── reconcile-refunds: full-refund convergence sweep (Opp-3) ─────────────────
@@ -796,6 +912,19 @@ async function execute(
     if (positionals.length !== 1) throw new CliError('Expected webhook-config-check', 2, 'invalid_arguments');
     const stripe = deps.stripeFactory(resolveStripeKey(env));
     return webhookConfigCheck(stripe);
+  }
+
+  if (resource === 'prodigi-env-check') {
+    if (positionals.length !== 1) {
+      throw new CliError('Expected prodigi-env-check [--since ISO8601]', 2, 'invalid_arguments');
+    }
+    if (options.since !== undefined && Number.isNaN(Date.parse(options.since))) {
+      throw new CliError(`--since must be an ISO-8601 date, got '${options.since}'`, 2, 'invalid_arguments');
+    }
+    const { url, key } = resolveSupabaseCreds(env);
+    const supabase = deps.supabaseFactory(url, key);
+    const stripe = deps.stripeFactory(resolveStripeKey(env));
+    return prodigiEnvCheck(supabase, stripe, options.since);
   }
 
   if (resource === 'reconcile-refunds') {

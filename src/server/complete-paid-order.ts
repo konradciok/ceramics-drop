@@ -31,7 +31,9 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
     if (itemsError || !items?.length) throw new Error('Paid order items could not be loaded');
     if (!order.email) throw new Error('Paid order recipient missing');
     if (order.fulfilment_type === 'prodigi') {
-      await enqueueProdigi(orderId, env, ctx, supabase);
+      // livemode deliberately omitted: this path handles balance/gift-card
+      // payments with no Stripe PaymentIntent mode to compare against.
+      await enqueueProdigi(orderId, env, ctx, { client: supabase });
     } else if (order.fulfilment_type === 'inpost') {
       const shipment = await createShipmentForOrder({ supabase, inpost: inpostFromEnv(env) }, orderId);
       if (shipment.status !== 200) throw new Error('Paid order shipment requires retry');

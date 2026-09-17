@@ -34,9 +34,23 @@ export async function enqueueProdigi(
   orderId: string,
   env: CloudflareEnv,
   ctx: ExecutionContext,
-  client?: ReturnType<typeof getSupabaseAdmin>,
+  opts?: { client?: ReturnType<typeof getSupabaseAdmin>; livemode?: boolean },
 ): Promise<void> {
-  const supabase = client ?? getSupabaseAdmin();
+  const supabase = opts?.client ?? getSupabaseAdmin();
+
+  // 2026-09-02 incident (order 63445e00): a real Stripe payment's fulfilment
+  // job was submitted to Prodigi SANDBOX because PRODIGI_ENV was misconfigured
+  // in production. Sandbox fully simulates the happy path (fake tracking,
+  // no errors), so nothing alerted. When the caller supplies the Stripe
+  // event's livemode, catch that class of misconfiguration before it can
+  // silently recur — never guess when it's omitted (e.g. balance-only orders
+  // routed through complete-paid-order.ts have no Stripe mode to compare).
+  if (opts?.livemode !== undefined) {
+    if (await parkLivemodeMismatch(supabase, orderId, env, opts.livemode)) {
+      return; // misconfigured order parked as a failed_action_required audit row
+    }
+  }
+
   const idempotencyKey = `prodigi:${env.PRODIGI_ENV}:order:${orderId}:v1`;
 
   // Upsert is idempotent: duplicate webhook → same unique idempotency_key → no
@@ -164,5 +178,71 @@ async function parkEnvFlipConflict(
     rowEnv,
     currentEnv: env.PRODIGI_ENV,
   }));
+  return true;
+}
+
+/**
+ * Guards the 2026-09-02 incident class (order 63445e00): a Stripe payment's
+ * `event.livemode` disagreeing with the CURRENT `env.PRODIGI_ENV` at the
+ * moment of the ORIGINAL enqueue — as opposed to `parkEnvFlipConflict`, which
+ * only catches an order being RE-enqueued under a different env than it was
+ * first enqueued under. Runs before the normal upsert so a misconfigured
+ * order never gets a queued/sandbox-bound job row — only a
+ * `failed_action_required` audit row, picked up by the existing 15-min
+ * `sweepFailedActionJobs` cron (worker.ts), which alerts the studio.
+ *
+ * Uses the same idempotency_key as the normal path, so a Stripe redelivery
+ * of the same event safely no-ops (ignoreDuplicates) instead of double-
+ * parking or double-alerting.
+ */
+async function parkLivemodeMismatch(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  orderId: string,
+  env: CloudflareEnv,
+  livemode: boolean,
+): Promise<boolean> {
+  const isLiveEnv = env.PRODIGI_ENV === 'live';
+  if (livemode === isLiveEnv) return false; // matches — proceed normally
+
+  const idempotencyKey = `prodigi:${env.PRODIGI_ENV}:order:${orderId}:v1`;
+  const lastError = livemode
+    ? `livemode_mismatch: a LIVE Stripe payment enqueued fulfilment under PRODIGI_ENV=${env.PRODIGI_ENV} — real order would ship from sandbox; fix PRODIGI_ENV and resolve manually`
+    : `livemode_mismatch: a TEST Stripe payment enqueued fulfilment under PRODIGI_ENV=live — would burn real Prodigi production credits; resolve manually`;
+
+  const { data, error } = await supabase
+    .from('fulfilment_jobs')
+    .upsert(
+      {
+        id: crypto.randomUUID(),
+        order_id: orderId,
+        idempotency_key: idempotencyKey,
+        status: 'failed_action_required',
+        prodigi_env: env.PRODIGI_ENV,
+        last_error: lastError,
+      },
+      { onConflict: 'idempotency_key', ignoreDuplicates: true },
+    )
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    throw new Error(`parkLivemodeMismatch: park upsert failed for ${orderId}: ${error.message}`);
+  }
+
+  console.error(JSON.stringify({
+    event: 'fulfilment_livemode_mismatch',
+    orderId,
+    livemode,
+    prodigiEnv: env.PRODIGI_ENV,
+  }));
+
+  if (data?.id) {
+    // First park only — ignoreDuplicates returned no row on a repeat Stripe
+    // redelivery, so we don't re-alert on every retry of the same event.
+    await captureWorkerAlert(env, {
+      message: 'fulfilment_livemode_mismatch',
+      level: 'error',
+      extra: { orderId, livemode, prodigiEnv: env.PRODIGI_ENV },
+    });
+  }
   return true;
 }

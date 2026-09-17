@@ -23,7 +23,7 @@ const ORDER = {
   total: 10500,
 };
 
-const ITEMS = [{ order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
+const ITEMS = [{ id: 'oi-1', order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
 
 const stripeMock = {
   customers: { create: vi.fn(), list: vi.fn(), update: vi.fn() },
@@ -331,8 +331,8 @@ describe('createOrderInvoice', () => {
     // the draft invoice was stuck with one line.
     const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
-      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
     ];
     await createOrderInvoice('pi_1');
     const keys = stripeMock.invoiceItems.create.mock.calls
@@ -342,11 +342,31 @@ describe('createOrderInvoice', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
+  it('gives two frame colours of the same framed design/size distinct idempotency keys even though they share a SKU', async () => {
+    // frameColour never affects price (AGENTS.md) or SKU (PRODIGI_SKU_MAP
+    // collapses frameColour per framed size), so two colourways of the SAME
+    // design+size+framed combo share product_id AND prodigiSku. Only the
+    // per-order_item id keeps the two invoiceItems.create calls from colliding.
+    const black = { size: '30x40', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-12X16' };
+    const natural = { size: '30x40', framed: true, mount: false, frameColour: 'natural', prodigiSku: 'GLOBAL-CFP-12X16' };
+    itemRows = [
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: black },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: natural },
+    ];
+    await createOrderInvoice('pi_1');
+    const keys = stripeMock.invoiceItems.create.mock.calls
+      .map((c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey)
+      .filter((k: string) => k !== 'ii2_ord-1_shipping');
+    expect(keys).toEqual(['ii2_ord-1_fap016_GLOBAL-CFP-12X16_oi-1', 'ii2_ord-1_fap016_GLOBAL-CFP-12X16_oi-2']);
+  });
+
   it('labels a gift-card line item with the tier amount, not a print/ceramic description', async () => {
-    itemRows = [{ order_id: 'ord-1', product_id: 'gc-500', unit_price: 50000, variant: { kind: 'giftcard', tierId: 'gc-500' } }];
+    itemRows = [
+      { id: 'oi-gc-1', order_id: 'ord-1', product_id: 'gc-500', unit_price: 50000, variant: { kind: 'giftcard', tierId: 'gc-500' } },
+    ];
     await createOrderInvoice('pi_1');
     const call = stripeMock.invoiceItems.create.mock.calls.find(
-      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_gc-500_gc-500',
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_gc-500_gc-500_oi-gc-1',
     );
     expect(call).toBeDefined();
     expect((call![0] as { description: string }).description).toContain('500 zł');
@@ -359,8 +379,8 @@ describe('createOrderInvoice', () => {
     // add only the missing ones, and still pass the total guard.
     const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
-      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
     ];
     // First pass on a clean draft: learn the exact label the code emits for fap016.
     await createOrderInvoice('pi_1');
@@ -395,8 +415,8 @@ describe('createOrderInvoice', () => {
   it('keeps two variants of the same design on distinct idempotency keys', async () => {
     const base = { size: '70x100', framed: false, mount: false, frameColour: 'none' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: { ...base, prodigiSku: 'GLOBAL-FAP-28X40' } },
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 30000, variant: { ...base, size: '50x70', prodigiSku: 'GLOBAL-FAP-20X28' } },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: { ...base, prodigiSku: 'GLOBAL-FAP-28X40' } },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap016', unit_price: 30000, variant: { ...base, size: '50x70', prodigiSku: 'GLOBAL-FAP-20X28' } },
     ];
     await createOrderInvoice('pi_1');
     const keys = stripeMock.invoiceItems.create.mock.calls
@@ -409,6 +429,7 @@ describe('createOrderInvoice', () => {
   it('labels a fine-art print line item with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
     itemRows = [
       {
+        id: 'oi-1',
         order_id: 'ord-1',
         product_id: 'fap001',
         unit_price: 35000,
@@ -417,7 +438,7 @@ describe('createOrderInvoice', () => {
     ];
     await createOrderInvoice('pi_1');
     const call = stripeMock.invoiceItems.create.mock.calls.find(
-      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_fap001_GLOBAL-FAP-28X40',
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_fap001_GLOBAL-FAP-28X40_oi-1',
     );
     expect(call).toBeDefined();
     expect((call![0] as { description: string }).description).toContain('CmsOnly 01');

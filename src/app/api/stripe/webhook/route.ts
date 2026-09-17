@@ -964,7 +964,7 @@ export async function POST(req: Request) {
       // Prodigi fulfilment: prints only. enqueueProdigi throws on failure →
       // Stripe retries (idempotent via the job's idempotency_key).
       if (hasPrints) {
-        await enqueueProdigi(orderId, env, ctx);
+        await enqueueProdigi(orderId, env, ctx, { livemode: event.livemode });
       }
 
       // InPost fulfilment: ceramics only — skip for print-only orders.
