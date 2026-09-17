@@ -224,7 +224,18 @@ export async function POST(req: Request) {
   // can never be converted at two different rates.
   const shippingRates = await getShippingRatesForCheckout();
   let shipMinor: number;
-  if (hasPrints && printAddress) {
+  if (hasGiftCards) {
+    // Gift cards have no physical delivery at all — the buyer always receives
+    // the code themselves. `method` is the 'odbior' sentinel here (see the
+    // fulfilmentType block above), not a delivery choice the buyer made, so its
+    // price must never be charged. That used to be safe implicitly, because
+    // SHIPPING_*.odbior were hardcoded zeros; as of the /v1/shipping-rates
+    // cutover odbior_pln/eur/gbp are operator-editable, and a non-zero
+    // studio-pickup price would otherwise silently start charging gift-card
+    // orders shipping. Zero here is a property of the fulfilment type, not a
+    // value read from any price list.
+    shipMinor = 0;
+  } else if (hasPrints && printAddress) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
@@ -269,7 +280,7 @@ export async function POST(req: Request) {
       }));
     }
   } else {
-    // Domestic (InPost) and the gift-card 'odbior' sentinel. The three
+    // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
     // per-currency price lists are independently maintained, exactly as the
     // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
     shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, shippingRates.domestic));

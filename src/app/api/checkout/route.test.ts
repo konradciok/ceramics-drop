@@ -1025,6 +1025,43 @@ describe('POST /api/checkout', () => {
       );
     });
 
+    // The discriminating version of the test above: 'odbior' is only a sentinel
+    // for "no physical delivery" on a gift-card order, and as of the
+    // /v1/shipping-rates cutover its price is operator-editable. Publish a
+    // non-zero studio-pickup price in EVERY currency and the gift-card order
+    // must still be charged exactly the tier price — zero shipping is a
+    // property of the fulfilment type, never a value read from a price list.
+    it('charges zero shipping even when the published odbior rate is non-zero', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce({
+        domestic: {
+          pln: { paczkomat: 20, kurier: 30, odbior: 15 },
+          eur: { paczkomat: 5, kurier: 10, odbior: 4 },
+          gbp: { paczkomat: 5, kurier: 12, odbior: 3 },
+        },
+        international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+      });
+      try {
+        giftCardCart();
+        const res = await post();
+        expect(res.status).toBe(200);
+        // 1500 grosze of studio pickup must NOT appear anywhere.
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({
+            shipping: 0,
+            subtotal: GIFT_CARD_ITEM.unit_price,
+            total: GIFT_CARD_ITEM.unit_price,
+          }),
+        );
+        expect(createPaymentIntent).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: GIFT_CARD_ITEM.unit_price }),
+          expect.anything(),
+        );
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
     it('rejects a promo code on a gift-card cart (no arbitrage)', async () => {
       giftCardCart();
       const res = await post({ promo_code: 'WELCOME10' });
