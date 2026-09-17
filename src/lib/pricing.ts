@@ -23,6 +23,15 @@ export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 /**
  * Customer-facing delivery price (zloty) per method. Placeholder figures —
  * confirm against the studio's InPost rates before launch.
+ *
+ * NEVER DELETE. As of the CmsApi /v1/shipping-rates cutover
+ * (supabase/migrations/20260917150000_cms_api_shipping_rates.sql) this map and
+ * its EUR/GBP siblings below are ALSO the seed of the `domestic` resource's
+ * published revision 1 — src/server/cms-api/shipping-rates-mapping.test.ts
+ * parses that migration and fails CI if the two ever disagree — and, collected
+ * into DEFAULT_DOMESTIC_SHIPPING below, they remain the outage/code-mode
+ * fallback src/lib/shipping-rates/last-known-good.ts degrades to. Same role
+ * DEFAULT_PRINT_PRICING plays for print pricing.
  */
 export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
   paczkomat: 20,
@@ -140,18 +149,40 @@ export function priceOfCurrency(
 }
 
 /**
+ * The three per-currency domestic price lists as one value — the shape
+ * src/lib/shipping-rates/ reads from the DB and falls back to in code mode.
+ * Each currency stays independently maintained (never FX-derived), exactly as
+ * the three constants above always have been.
+ */
+export type DomesticShippingRates = Record<Currency, Record<DeliveryMethod, number>>;
+
+export const DEFAULT_DOMESTIC_SHIPPING: DomesticShippingRates = {
+  pln: SHIPPING_PLN,
+  eur: SHIPPING_EUR,
+  gbp: SHIPPING_GBP,
+};
+
+/**
  * Display shipping price (major units) for a delivery method in a display
  * currency. Unknown currencies hit the EUR default.
+ *
+ * `rates` overrides the code constants with the CMS-published table — checkout
+ * passes src/lib/shipping-rates/get.ts's DB-backed one; every display surface
+ * (PDP, cart) keeps the default.
  */
-export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): number {
+export function shippingOfCurrency(
+  currency: Currency,
+  method: DeliveryMethod,
+  rates: DomesticShippingRates = DEFAULT_DOMESTIC_SHIPPING,
+): number {
   switch (currency) {
     case 'pln':
-      return SHIPPING_PLN[method];
+      return rates.pln[method];
     case 'gbp':
-      return SHIPPING_GBP[method];
+      return rates.gbp[method];
     case 'eur':
     default:
-      return SHIPPING_EUR[method];
+      return rates.eur[method];
   }
 }
 
