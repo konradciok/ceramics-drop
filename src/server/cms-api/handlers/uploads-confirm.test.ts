@@ -46,6 +46,12 @@ function envWithHead(headResult: unknown) {
 
 describe('uploadsConfirmRoute', () => {
   beforeEach(() => {
+    // Mocks are module-level (shared across every test in this file) — clear
+    // call history before re-arming the defaults below, so a
+    // `.not.toHaveBeenCalled()` assertion in one test can never be satisfied
+    // by a lack-of-call in a DIFFERENT, earlier test (see the matching fix in
+    // uploads-create.test.ts).
+    vi.clearAllMocks();
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
     vi.mocked(idempotency.completeIdempotencyKey).mockResolvedValue(undefined);
     vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);

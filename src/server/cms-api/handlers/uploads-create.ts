@@ -61,6 +61,19 @@ export const uploadsCreateRoute: RouteDef = {
       const r2Key = buildUploadR2Key(id, upload.contentType);
       const expiresAt = new Date(Date.now() + UPLOAD_PRESIGN_TTL_SECS * 1000).toISOString();
 
+      // Resolve credentials and presign BEFORE writing anything — a
+      // misconfigured deployment (missing R2_S3_* secrets) must fail closed
+      // with no row left behind. insertUploadRow uses a fresh
+      // crypto.randomUUID() every call (not derived from the idempotency
+      // key), so a row committed here before a later step throws would be
+      // orphaned: a client retry with the same Idempotency-Key would insert
+      // a SECOND, unrelated row rather than resuming the failed one — the
+      // idempotency ledger's replay only covers what this handler itself
+      // completed, not partial DB side effects. Nothing below this point can
+      // fail before the insert.
+      const credentials = resolveR2PresignCredentials(env);
+      const uploadUrl = await presignUploadPutUrl(credentials, r2Key);
+
       const row = await insertUploadRow(ctx.supabase, {
         id,
         filename: upload.filename,
@@ -71,9 +84,6 @@ export const uploadsCreateRoute: RouteDef = {
         createdBy: ctx.actorEmail,
         expiresAt,
       });
-
-      const credentials = resolveR2PresignCredentials(env);
-      const uploadUrl = await presignUploadPutUrl(credentials, r2Key);
 
       const intent = mapUploadRowToIntent(row, uploadUrl);
       await completeIdempotencyKey(ctx.supabase, 'uploads:create', idempotencyKey, leaseToken, 200, intent);

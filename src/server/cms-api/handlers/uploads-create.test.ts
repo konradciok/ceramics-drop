@@ -30,6 +30,12 @@ const fakeEnv = { PRINT_ASSETS: {} } as unknown as CloudflareEnv;
 
 describe('uploadsCreateRoute', () => {
   beforeEach(() => {
+    // Mocks are module-level (shared across every test in this file) — clear
+    // call history AND any per-test mockImplementation/mockRejectedValue
+    // override before re-arming the defaults below, so a later test's
+    // `.not.toHaveBeenCalled()` assertion reflects only that test's own run,
+    // not a prior test's leftover call count.
+    vi.clearAllMocks();
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
     vi.mocked(idempotency.completeIdempotencyKey).mockResolvedValue(undefined);
     vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);
@@ -122,12 +128,31 @@ describe('uploadsCreateRoute', () => {
     );
   });
 
-  it('releases the idempotency key and propagates the error when R2 credentials are missing', async () => {
+  // Ordering fix (post-review Finding 1): credential resolution and presign
+  // MUST happen before the print_asset_uploads insert, so a misconfigured
+  // deployment never leaves an orphaned, unconfirmable row behind — a retry
+  // with the same Idempotency-Key would otherwise mint a brand-new
+  // crypto.randomUUID() row rather than resuming the failed one (the
+  // idempotency ledger only replays what the handler itself completed, not
+  // partial DB side effects it made along the way). Asserting
+  // insertUploadRow was never called is the genuinely discriminating check
+  // here — merely asserting a 500/thrown error would also have passed under
+  // the old (buggy) insert-then-presign ordering.
+  it('releases the idempotency key, propagates the error, and NEVER inserts a row when R2 credentials are missing', async () => {
     const credError = new Error('Missing R2 S3 credential(s) for upload presigning: R2_S3_ACCOUNT_ID.');
     vi.mocked(mapping.resolveR2PresignCredentials).mockImplementation(() => {
       throw credError;
     });
     await expect(uploadsCreateRoute.handler(req(validBody), fakeEnv, {}, ctx())).rejects.toBe(credError);
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    expect(mapping.insertUploadRow).not.toHaveBeenCalled();
+  });
+
+  it('releases the idempotency key, propagates the error, and NEVER inserts a row when presigning itself fails', async () => {
+    const presignError = new Error('R2 presign boom');
+    vi.mocked(mapping.presignUploadPutUrl).mockRejectedValue(presignError);
+    await expect(uploadsCreateRoute.handler(req(validBody), fakeEnv, {}, ctx())).rejects.toBe(presignError);
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    expect(mapping.insertUploadRow).not.toHaveBeenCalled();
   });
 });

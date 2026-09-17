@@ -17,6 +17,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // HEAD. On success the row moves pending -> confirmed (== "awaiting
 // processing"; nothing in this phase processes it further — see the task
 // brief's Phase 1/Phase 2 boundary).
+//
+// A row that is never confirmed (client never PUT, or PUT but never called
+// this endpoint) simply stays `pending` past its print_asset_uploads.expires_at
+// — nothing here or elsewhere sweeps/expires it yet. See that column's
+// comment in the migration: enforcement needs scheduled/background
+// execution this Worker doesn't have for this table yet, deliberately
+// deferred to Phase 2's job-queue work, not silently dropped.
 export const uploadsConfirmRoute: RouteDef = {
   method: 'POST',
   path: '/v1/uploads/{id}/confirm',

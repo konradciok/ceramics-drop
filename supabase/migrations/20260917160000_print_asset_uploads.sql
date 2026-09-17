@@ -58,8 +58,19 @@ create table print_asset_uploads (
 
   created_by             text not null,
   created_at             timestamptz not null default now(),
-  -- Presigned PUT URL expiry (echoed as UploadIntent.expiresAt) — informational
-  -- only; the R2 S3 API itself is what actually rejects an expired PUT.
+  -- Presigned PUT URL expiry (echoed as UploadIntent.expiresAt) — the R2 S3
+  -- API itself is what actually rejects an expired PUT.
+  --
+  -- KNOWN GAP (disclosed, not fixed here): nothing in this phase reads or
+  -- sweeps this column. A row whose presigned URL expires unused (the
+  -- client never PUT, or PUT but never confirmed) stays `pending` forever —
+  -- a bounded, Cloudflare-Access-gated resource-accumulation gap, not an
+  -- attacker-reachable one at scale, but a real one. Enforcing/sweeping
+  -- expired uploads needs scheduled/background execution (a cron Trigger or
+  -- the queue consumer), which does not exist yet in this Worker for this
+  -- table — that is explicitly Phase 2 scope (the next task on this branch
+  -- builds the job-queue/worker.ts infrastructure it would run on). Tracked
+  -- there, not silently deferred.
   expires_at             timestamptz not null,
   updated_at             timestamptz not null default now()
 );
