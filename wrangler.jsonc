@@ -68,6 +68,43 @@
   "r2_buckets": [
     { "binding": "PRINT_ASSETS", "bucket_name": "anna-ciok-print-assets" }
   ],
+  // Priority 8 / Phase 3 (Task 11) — the Node/Sharp derivative processor.
+  // Master plan (cms-ceramics/docs/plans/2026-09-09-cms-v1.md §S3): "Początkowo
+  // jedna instancja `standard-3`, jedno zadanie naraz, profile przetwarzane
+  // kolejno; kontener usypiany po bezczynności. Ten typ oferuje 8 GiB pamięci."
+  //   - standard-3 = 2 vCPU / 8 GiB / 16 GB disk
+  //     (https://developers.cloudflare.com/containers/platform/limits/)
+  //   - max_instances 1 = "one instance"; the queue consumer + the DO's own
+  //     serialisation give "one job at a time".
+  //   - idle sleep is set in code, not here: container.ts calls
+  //     ctx.container.setInactivityTimeout(10m).
+  //   - image_build_context is the REPO ROOT because the image runs this
+  //     repo's own src/lib + src/server sources (see container/Dockerfile).
+  //
+  // ⚠️ A Container is backed by a Durable Object, so this needs BOTH the
+  // durable_objects binding below AND a `migrations` entry with
+  // new_sqlite_classes (NOT new_classes) — this Worker's first ever DO
+  // migration. The three OpenNext DO classes worker.ts re-exports have never
+  // been bound or migrated (this repo uses only the incremental cache), so
+  // tag v1 registers exactly one class.
+  "containers": [
+    {
+      "class_name": "PrintAssetProcessor",
+      "name": "print-asset-processor",
+      "image": "./container/Dockerfile",
+      "image_build_context": ".",
+      "instance_type": "standard-3",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "PRINT_ASSET_PROCESSOR", "class_name": "PrintAssetProcessor" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PrintAssetProcessor"] }
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
@@ -142,6 +179,28 @@
       "r2_buckets": [
         { "binding": "PRINT_ASSETS", "bucket_name": "anna-ciok-print-assets" }
       ],
+      // `containers` and `durable_objects` are NON-inheritable keys — an env
+      // that omits them gets nothing, so they are repeated here rather than
+      // inherited from the top level. (`migrations` IS inheritable and is
+      // deliberately declared only once, at the top level.) Same class name
+      // and instance name: the preview Worker gets its own separate container
+      // and its own separate DO namespace because it is a different Worker
+      // script (`ceramics-drop-preview`).
+      "containers": [
+        {
+          "class_name": "PrintAssetProcessor",
+          "name": "print-asset-processor",
+          "image": "./container/Dockerfile",
+          "image_build_context": ".",
+          "instance_type": "standard-3",
+          "max_instances": 1
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "PRINT_ASSET_PROCESSOR", "class_name": "PrintAssetProcessor" }
+        ]
+      },
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1,

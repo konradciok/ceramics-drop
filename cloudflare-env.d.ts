@@ -9,6 +9,25 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+/**
+ * The exact slice of the PRINT_ASSET_PROCESSOR Durable Object namespace this
+ * codebase uses. Hand-written (rather than `DurableObjectNamespace<...>`)
+ * because this file is shared by BOTH tsconfigs: the app build resolves binding
+ * shapes from cloudflare-bindings.d.ts, which has no DO types, while
+ * tsconfig.worker.json resolves them from @cloudflare/workers-types, whose
+ * generic `DurableObjectNamespace<T>` constrains T to an RPC-branded class. A
+ * plain structural interface is the one shape both accept.
+ */
+interface PrintAssetProcessorStub {
+  renderDerivative(
+    input: import('./src/server/asset-jobs/container-render').RenderInput,
+  ): Promise<import('./src/server/asset-jobs/container-render').RenderResult>;
+}
+
+interface PrintAssetProcessorNamespace {
+  getByName(name: string): PrintAssetProcessorStub;
+}
+
 interface CloudflareEnv {
   ASSETS: Fetcher;
   WORKER_SELF_REFERENCE: Service<typeof import('./.open-next/worker').default>;
@@ -63,6 +82,17 @@ interface CloudflareEnv {
   // ASSET_JOBS_QUEUE producer/consumer/DLQ declarations and
   // src/server/asset-jobs/{enqueue,process-job}.ts.
   ASSET_JOBS_QUEUE: Queue;
+  /**
+   * Priority 8 / Phase 3 — the Cloudflare Container (Node/Sharp) that turns a
+   * confirmed upload into print derivatives. A Container is addressed through
+   * its backing Durable Object namespace, so this is a DO binding rather than a
+   * bespoke "container" binding (see wrangler.jsonc's `containers` +
+   * `durable_objects` pair). Optional on purpose — same fail-closed posture as
+   * the R2_S3_* secrets: a deployment without it fails the job as
+   * `failed_action_required` with an explicit message rather than crashing the
+   * queue consumer.
+   */
+  PRINT_ASSET_PROCESSOR?: PrintAssetProcessorNamespace;
   PRODIGI_API_KEY_SANDBOX: string;
   PRODIGI_API_KEY_LIVE: string;
   PRODIGI_ENV: string;

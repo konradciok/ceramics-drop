@@ -634,3 +634,8 @@ async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
 // @ts-ignore `.open-next/worker.js` is generated at build time
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js';
 export { CmsApi } from './src/server/cms-api/entrypoint';
+// Priority 8 / Phase 3 — the Durable Object that owns the Node/Sharp
+// Cloudflare Container. wrangler.jsonc's `containers[].class_name` and its
+// `durable_objects.bindings[].class_name` both name this class, so this export
+// is what makes the binding resolvable at deploy time.
+export { PrintAssetProcessor } from './src/server/asset-jobs/container';

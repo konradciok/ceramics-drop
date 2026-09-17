@@ -1,13 +1,21 @@
 import { supabaseFromEnv } from '@/lib/supabase';
 import { captureWorkerAlert } from '@/lib/worker-sentry';
+import type { StagedAssetRow } from '@/lib/print-assets-publish';
 import type { AssetJobMessage } from './enqueue';
+import { PRINT_ASSET_PROCESSOR_NAME } from './container-names';
+import type { RenderInput, RenderResult } from './container-render';
+import { assetRevisionForUpload, isPrintRatio, loadActivePrintVariants, selectProfilesForRatio } from './profiles';
 
-// print_asset_uploads columns this stub actually needs — subset of
-// uploads-mapping.ts's UploadRow.
+// print_asset_uploads columns this consumer needs — subset of
+// uploads-mapping.ts's UploadRow, plus `product_id`
+// (supabase/migrations/20260917180000_print_asset_uploads_product.sql).
 type UploadRowForProcessing = {
   id: string;
   status: 'pending' | 'confirmed';
   r2_key: string;
+  ratio: string;
+  content_type: 'image/jpeg' | 'image/png';
+  product_id: string | null;
 };
 
 /**
@@ -25,17 +33,22 @@ export function isAssetJobsQueue(queueName: string): boolean {
 }
 
 /**
- * Queue consumer for ASSET_JOBS_QUEUE — the per-message handler worker.ts's
- * queue() branch calls into. Mirrors src/server/fulfilment/process-job.ts's
- * CAS-claim / fail-or-finalize structure directly (per the plan's own
- * instruction to copy that structure rather than reaching for Durable
- * Objects), stubbed per this phase's explicit scope: it claims the row,
- * verifies its ACTUAL prerequisites exist (the upload row is 'confirmed', the
- * uploaded object is still in R2), and marks a stub terminal state — NO Sharp,
- * NO derivative generation, NO call into src/server/print-assets/derivatives.ts.
- * Phase 3 (a separate, later task) replaces steps 3+ below with the real
- * Container-based processor; the claim/fail/finalize scaffolding around it
- * does not need to change for that.
+ * Queue consumer for ASSET_JOBS_QUEUE.
+ *
+ * Task 10 (Phase 2) built the durable-job scaffolding around this: the
+ * single-statement CAS claim, the attempts/lease bookkeeping, the
+ * failed_retryable-vs-failed_action_required split, and the rethrow-to-retry
+ * contract that feeds Cloudflare Queues' backoff and the DLQ. NONE of that
+ * changes here. Task 11 (Phase 3) replaces ONLY what happens between the claim
+ * and the finalize: instead of a stub "the input exists, call it done", the
+ * consumer now plans the work, hands each profile to the Cloudflare Container
+ * (a Node/Sharp process — see src/server/asset-jobs/container.ts and
+ * container/server.ts), and stages the resulting `print_fulfilment_assets` rows.
+ *
+ * ⚠️  Sharp boundary: this file runs as a Workers queue consumer in the V8
+ * isolate. It must NEVER import src/server/print-assets/derivatives.ts (or
+ * anything else that reaches `sharp`). The only Sharp in this pipeline lives
+ * behind the container's HTTP port.
  */
 export async function processAssetJob(
   msg: AssetJobMessage,
@@ -100,13 +113,10 @@ export async function processAssetJob(
 
   const attempts = ((job as { attempts: number }).attempts ?? 0) + 1;
 
-  // 2. Load the upload row this job is processing — a stub processor still
-  // needs its input to genuinely exist and be in the expected state; this is
-  // deliberately the ONLY validation it performs (no Sharp, no derivative
-  // decode of the bytes).
+  // 2. Load the upload row this job is processing.
   const { data: upload, error: uploadErr } = await supabase
     .from('print_asset_uploads')
-    .select('id, status, r2_key')
+    .select('id, status, r2_key, ratio, content_type, product_id')
     .eq('id', uploadId)
     .maybeSingle();
 
@@ -120,14 +130,37 @@ export async function processAssetJob(
     await failJob('failed_action_required', `upload ${uploadId} is not confirmed (status=${uploadRow.status})`, attempts);
     return;
   }
+  // The structural gap this phase inherited: an upload carries no product
+  // association yet (POST /v1/uploads has no productId in the contract), but
+  // print_fulfilment_assets.product_id is NOT NULL. See the new column's
+  // migration header. Fail loudly rather than "complete" a job that can
+  // produce no asset row.
+  if (!uploadRow.product_id) {
+    await failJob(
+      'failed_action_required',
+      `upload ${uploadId} has no product_id — cannot stage print_fulfilment_assets rows for it`,
+      attempts,
+    );
+    return;
+  }
+  if (!isPrintRatio(uploadRow.ratio)) {
+    await failJob('failed_action_required', `upload ${uploadId} declares unknown ratio "${uploadRow.ratio}"`, attempts);
+    return;
+  }
 
-  // 3. Confirm the uploaded object still exists in R2 — the same existence
-  // check uploads-confirm.ts performed at confirm time (still no
-  // Sharp/derivative decode, just an R2 HEAD).
+  // 3. Bindings. Both are fail-closed config faults an operator must fix, not
+  // conditions a retry can clear.
   if (!env.PRINT_ASSETS) {
     await failJob('failed_action_required', 'PRINT_ASSETS binding missing — cannot verify uploaded object', attempts);
     return;
   }
+  if (!env.PRINT_ASSET_PROCESSOR) {
+    await failJob('failed_action_required', 'PRINT_ASSET_PROCESSOR container binding missing — cannot process derivatives', attempts);
+    return;
+  }
+
+  // 4. Confirm the uploaded object still exists in R2 before waking a
+  // container for it — a cheap HEAD is far cheaper than a cold start.
   let object;
   try {
     object = await env.PRINT_ASSETS.head(uploadRow.r2_key);
@@ -140,15 +173,105 @@ export async function processAssetJob(
     return;
   }
 
-  // 4. STUB terminal success. Phase 3 replaces this step with the real
-  // Container-based Sharp derivative pipeline; `asset_id` stays null here —
-  // nothing downstream reads a completed stub job's asset_id yet. Same
-  // finalize-CAS-may-lose-the-race tolerance as fulfilment/process-job.ts: a
-  // concurrent delivery of the same message could have finalized this job
-  // first, so 0 rows updated is logged, not thrown.
+  // 5. Plan the work from the catalogue: which distinct target dimensions this
+  // ratio's master is responsible for.
+  const variants = await loadActivePrintVariants(supabase, uploadRow.product_id);
+  if (variants.kind === 'invalid') {
+    await failJob('failed_action_required', variants.message, attempts);
+    return;
+  }
+  const selection = selectProfilesForRatio(variants.variants, uploadRow.ratio);
+  if (selection.kind === 'invalid') {
+    await failJob('failed_action_required', selection.message, attempts);
+    return;
+  }
+
+  // 6. Render each profile through the container, SEQUENTIALLY — the plan's
+  // "jedno zadanie naraz, profile przetwarzane kolejno" (one job at a time,
+  // profiles processed in order) on a single `standard-3` instance. The DO
+  // serialises internally too; this loop keeps the memory profile of the whole
+  // pipeline to one derivative at a time.
+  const revision = assetRevisionForUpload(uploadId);
+  const format = uploadRow.content_type === 'image/png' ? 'png' : 'jpg';
+  const processor = env.PRINT_ASSET_PROCESSOR.getByName(PRINT_ASSET_PROCESSOR_NAME);
+  const staged: StagedAssetRow[] = [];
+
+  for (const profile of selection.profiles) {
+    const input: RenderInput = {
+      jobId,
+      uploadId,
+      productId: uploadRow.product_id,
+      revision,
+      sourceKey: uploadRow.r2_key,
+      sourceContentType: uploadRow.content_type,
+      expectedRatio: uploadRow.ratio,
+      target: { w: profile.w, h: profile.h },
+      format,
+    };
+
+    let result: RenderResult;
+    try {
+      result = await processor.renderDerivative(input);
+    } catch (e) {
+      // An RPC-level throw (container crash, DO eviction, network fault) is
+      // always transient from this consumer's point of view.
+      const message = `container RPC failed for profile ${profile.profileKey}: ${String(e)}`;
+      await failJob('failed_retryable', message, attempts);
+      throw e; // queue retries
+    }
+
+    if (result.kind === 'permanent') {
+      await failJob('failed_action_required', `profile ${profile.profileKey}: ${result.code} — ${result.message}`, attempts);
+      return;
+    }
+    if (result.kind === 'retryable') {
+      const message = `profile ${profile.profileKey}: ${result.code} — ${result.message}`;
+      await failJob('failed_retryable', message, attempts);
+      throw new Error(message); // queue retries
+    }
+    staged.push(result.asset);
+  }
+
+  // 7. Stage the produced derivatives. `ignoreDuplicates` on the
+  // content-addressed r2_key makes a retried job a no-op rather than a
+  // conflict — and, critically, never an UPDATE: an asset already promoted
+  // past `staged` would be rejected by the migration's
+  // guard_print_asset_immutable trigger if this tried to write it back down to
+  // 'staged'. The ids are then read back by key (the upsert returns nothing
+  // for rows it ignored).
+  const { error: stageErr } = await supabase
+    .from('print_fulfilment_assets')
+    .upsert(staged, { onConflict: 'r2_key', ignoreDuplicates: true });
+  if (stageErr) throw stageErr; // transient DB error → queue retry
+
+  const keys = staged.map((row) => row.r2_key);
+  const { data: assetRows, error: readBackErr } = await supabase
+    .from('print_fulfilment_assets')
+    .select('id, r2_key')
+    .in('r2_key', keys);
+  if (readBackErr) throw readBackErr;
+
+  const byKey = new Map(((assetRows ?? []) as { id: string; r2_key: string }[]).map((row) => [row.r2_key, row.id]));
+  const missingKeys = keys.filter((key) => !byKey.has(key));
+  if (missingKeys.length > 0) {
+    // The rows were just written; their absence means the write silently did
+    // not land. Retry rather than finalize a job with no assets behind it.
+    const message = `staged asset rows missing after upsert: ${missingKeys.join(', ')}`;
+    await failJob('failed_retryable', message, attempts);
+    throw new Error(message);
+  }
+
+  // 8. Finalize. `asset_id` points at the FIRST profile's asset — the column is
+  // a single uuid but a job legitimately produces one row per profile, so it
+  // names the job's primary output deterministically (profiles are sorted by
+  // profileKey in distinctProfiles). Every row of the set is discoverable via
+  // (product_id, revision). Same finalize-CAS-may-lose-the-race tolerance as
+  // fulfilment/process-job.ts: a concurrent delivery of the same message could
+  // have finalized this job first, so 0 rows updated is logged, not thrown.
+  const primaryAssetId = byKey.get(keys[0]) ?? null;
   const { data: finalized, error: doneErr } = await supabase
     .from('print_asset_jobs')
-    .update({ status: 'completed', attempts, updated_at: now() })
+    .update({ status: 'completed', asset_id: primaryAssetId, attempts, updated_at: now() })
     .eq('id', jobId)
     .in('status', ['processing'])
     .select('id')

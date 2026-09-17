@@ -1,0 +1,30 @@
+# Build context for container/Dockerfile is the REPO ROOT (wrangler.jsonc's
+# `image_build_context: "."`), so without this file every Docker build would
+# ship hundreds of megabytes of node_modules and build output to the daemon.
+# Only container/, src/lib/ and src/server/ are actually COPYed.
+node_modules
+.next
+.open-next
+.git
+.github
+.vercel
+.wrangler
+coverage
+playwright-report
+test-results
+e2e
+public
+local-admin
+prodigi
+messages
+docs
+scripts
+config
+contracts
+supabase
+*.log
+*.tsbuildinfo
+.env*
+!.env.example
+.dev.vars*
+.secrets

@@ -34,7 +34,15 @@ function read(rel: string): string {
   return stripComments(readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8'));
 }
 
-const QUEUE_CONSUMER_FILES = ['src/server/fulfilment/process-job.ts'];
+const QUEUE_CONSUMER_FILES = [
+  'src/server/fulfilment/process-job.ts',
+  // Priority 8's ASSET_JOBS_QUEUE consumer and the modules it reaches on the
+  // queue path (Tasks 10 + 11). Same hazard, same rule.
+  'src/server/asset-jobs/process-job.ts',
+  'src/server/asset-jobs/profiles.ts',
+  'src/server/asset-jobs/container-render.ts',
+  'src/server/asset-jobs/container.ts',
+];
 
 describe('queue-context safety (C-2 regression guard)', () => {
   it.each(QUEUE_CONSUMER_FILES)(
