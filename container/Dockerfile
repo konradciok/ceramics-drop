@@ -35,6 +35,14 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
+# Drop root: the base image ships a non-root `node` user that can already
+# read everything COPYed above, and nothing at runtime writes into /app.
+# `enableInternet: false` and no DB/R2 credentials already keep this
+# container off any real boundary, but running the Sharp-decoding process as
+# root is still unnecessary privilege for the one process here that decodes
+# untrusted image bytes.
+USER node
+
 # tsx type-strips on the fly; `import type` specifiers (including the `@/…`
 # aliased ones in container-protocol.ts) are erased, so no tsconfig path
 # resolution is needed at runtime. Every VALUE import in this graph is relative.
