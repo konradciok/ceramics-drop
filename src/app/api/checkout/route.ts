@@ -35,6 +35,7 @@ import type { AuthCookie } from '@/lib/auth/supabase-server';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
+import type { CheckoutAmounts } from '@/lib/checkout-client';
 import type { MarketingContext } from '@/lib/marketing/context';
 import { resolveGaClientId } from '@/lib/marketing/context';
 
@@ -290,6 +291,30 @@ export async function POST(req: Request) {
     : 0;
   const amount = subtotalMinor - discountMinor + shipMinor;
 
+  // The figures the charge is actually built from, handed back on every
+  // success response so the cart can stop showing its own estimate the moment
+  // a PaymentIntent exists.
+  //
+  // The cart computes its summary from the CODE-default rate tables; the
+  // amounts above come from the CMS-published bundle read at the top of this
+  // handler. A publish between page load and pay moves one and not the other,
+  // and the buyer would otherwise look at one total while Stripe charged
+  // another — the same desync the promo row is already frozen against
+  // (CartView.tsx, the `clientSecret` guard on promo removal).
+  //
+  // These are minor units in `chargeCurrency`, which travels with them: the
+  // header currency switcher stays live behind the mounted Stripe form, so a
+  // number without its currency could be re-rendered under the wrong symbol.
+  // Nested under one key on purpose — it is a single atomic snapshot, and it
+  // keeps the legacy top-level `discount` field-presence rule below intact.
+  const amounts: CheckoutAmounts = {
+    currency: chargeCurrency,
+    subtotal: subtotalMinor,
+    shipping: shipMinor,
+    discount: discountMinor,
+    total: amount,
+  };
+
   // A stable client-supplied attemptId lets a retried/duplicated POST (network
   // retry, second tab) re-enter its own reservation and PaymentIntent instead
   // of 409-ing itself (F4). It's unguessable (122 random bits from
@@ -383,7 +408,10 @@ export async function POST(req: Request) {
         },
         items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: i.variant ? { kind: 'print', ...i.variant } : null })),
       });
-      return respond(result, { headers: { 'Cache-Control': 'no-store' } });
+      // Same summary renders behind a gift-card-funded checkout, so it gets
+      // the same authoritative figures. `total` here is still the full order
+      // total; the gift-card/cash split rides `result` as it always did.
+      return respond({ ...result, amounts }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
       const reason = error instanceof Error ? error.message : '';
       const publicErrors = ['gift_card_invalid','gift_card_empty','gift_card_currency','gift_card_excluded','gift_card_attempt_conflict','order_attempt_conflict','ceramic_unavailable'];
@@ -745,10 +773,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // Field-presence rule: a no-promo response stays byte-identical to the
-  // legacy shape — `discount` appears only when a promo is applied.
+  // Field-presence rule: `discount` at the top level still appears only when a
+  // promo is applied (the client reads it to re-sync its promo preview).
+  // `amounts` is unconditional — it is the charge itself, and a summary that
+  // only sometimes tracked the charge would be the bug all over again.
   return respond({
     client_secret: paymentIntent.client_secret,
     ...(promo ? { discount: discountMinor } : {}),
+    amounts,
   });
 }

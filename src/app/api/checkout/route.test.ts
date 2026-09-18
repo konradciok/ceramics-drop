@@ -432,6 +432,13 @@ describe('POST /api/checkout', () => {
     ...overrides,
   });
 
+  // Every success response carries `amounts`: the minor-unit figures the
+  // PaymentIntent was priced from, so the cart renders what will actually be
+  // charged instead of its own code-default estimate. For the default body
+  // above that's the k01 ceramic at 9 000 gr with free 'odbior' pickup.
+  const DEFAULT_AMOUNTS = { currency: 'pln', subtotal: 9_000, shipping: 0, discount: 0, total: 9_000 };
+  const amountsWith = (overrides: Partial<typeof DEFAULT_AMOUNTS> = {}) => ({ ...DEFAULT_AMOUNTS, ...overrides });
+
   it('passes a Stripe idempotency key derived from the supplied attemptId', async () => {
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {
@@ -563,7 +570,7 @@ describe('POST /api/checkout', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
     expect(insertOrderItems).not.toHaveBeenCalled();
@@ -581,7 +588,7 @@ describe('POST /api/checkout', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
     expect(insertOrderItems).toHaveBeenCalledTimes(1);
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
@@ -1438,7 +1445,7 @@ describe('POST /api/checkout', () => {
       // Normal persistence/response path reached, within the (shrunk) deadline
       // rather than hanging on the stalled auth call.
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
       expect(Date.now() - started).toBeLessThan(1500);
       // Session degraded to anonymous — the order is a guest order.
       expect(insertOrders).toHaveBeenCalledTimes(1);
@@ -1486,7 +1493,11 @@ describe('POST /api/checkout', () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: '  welcome10 ' }));
       expect(res.status).toBe(200);
       // subtotal 9000, 10% → 900 off; odbior shipping 0 → amount 8100.
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 900,
+        amounts: amountsWith({ discount: 900, total: 8_100 }),
+      });
       expect(fetchPromoByCode).toHaveBeenCalledWith(expect.anything(), 'WELCOME10');
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1533,7 +1544,11 @@ describe('POST /api/checkout', () => {
         { headers: { Cookie: 'currency_pref=eur' } },
       );
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 1_000 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 1_000,
+        amounts: { currency: 'eur', subtotal: 42_000, shipping: shipEur, discount: 1_000, total: 42_000 - 1_000 + shipEur },
+      });
       expect(insertOrders).toHaveBeenCalledWith(
         expect.objectContaining({
           promo_code: 'ART10',
@@ -1646,11 +1661,16 @@ describe('POST /api/checkout', () => {
       }
     });
 
-    it('no promo_code → success JSON carries NO discount field (byte-identical legacy response)', async () => {
+    it('no promo_code → success JSON carries NO top-level discount field', async () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID }));
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json).toEqual({ client_secret: 'cs_test' });
+      // `amounts` is unconditional — it IS the charge, and a summary that only
+      // sometimes tracked the charge would be the desync all over again. The
+      // top-level `discount` keeps its promo-only presence rule: the client
+      // reads it to re-sync the promo preview and must not see a bare 0 where
+      // no code was applied.
+      expect(json).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
       expect(json).not.toHaveProperty('discount');
       expect(claimPromoRpc).not.toHaveBeenCalled();
       expect(fetchPromoByCode).not.toHaveBeenCalled();
@@ -1662,7 +1682,11 @@ describe('POST /api/checkout', () => {
       selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 900,
+        amounts: amountsWith({ discount: 900, total: 8_100 }),
+      });
       // The claim RPC is re-entrant for the same order+promo — still called.
       expect(claimPromoRpc).toHaveBeenCalledWith('claim_promo_redemption', {
         p_promo_id: PROMO_ID,
@@ -1693,7 +1717,11 @@ describe('POST /api/checkout', () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'GRATIS' }));
       expect(res.status).toBe(200);
       // subtotal 9000, shipping 0: max discount = 9000 + 0 - 200 = 8800.
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 8_800 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 8_800,
+        amounts: amountsWith({ discount: 8_800, total: 200 }),
+      });
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ amount: 200 }),
         expect.anything(),
@@ -1761,6 +1789,42 @@ describe('POST /api/checkout', () => {
         const res = await post(makeCheckoutBody(PRINT_BODY));
         expect(res.status).toBe(200);
         expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 50_000 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    // The gap this closes: the cart's summary is computed from the CODE-default
+    // tables, so if the response only carried `client_secret` the buyer could
+    // read 30 zł shipping while Stripe charged the published 44 zł. The
+    // response has to hand the cart the figures the charge was built from.
+    it('hands the client the PUBLISHED shipping/total, not the figures the cart would compute itself', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
+      validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+      try {
+        const res = await post(makeCheckoutBody({ delivery_method: 'kurier' }));
+        expect(res.status).toBe(200);
+        const { amounts } = (await res.json()) as { amounts: Record<string, unknown> };
+        // Published kurier is 44 zł; the constant the cart prices from is 30 zł.
+        expect(amounts).toEqual({
+          currency: 'pln',
+          subtotal: 9_000,
+          shipping: 4_400,
+          discount: 0,
+          total: 13_400,
+        });
+        // The client-side estimate for the same cart, for contrast — this is
+        // exactly the number the summary used to keep showing.
+        expect(toMinor(shippingOfCurrency('pln', 'kurier'))).toBe(3_000);
+        // And the response figures are the ones actually charged and persisted.
+        expect(createPaymentIntent).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 13_400, currency: 'pln' }),
+          expect.anything(),
+        );
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({ shipping: 4_400, total: 13_400, subtotal: 9_000 }),
+        );
       } finally {
         vi.unstubAllEnvs();
       }

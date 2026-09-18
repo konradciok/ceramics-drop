@@ -37,7 +37,14 @@ import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
-import { attemptIdentityKey, checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
+import {
+  attemptIdentityKey,
+  cartSummaryAmounts,
+  checkoutPreBodyError,
+  parseCheckoutAmounts,
+  shouldKeepAttemptIdOnCatch,
+  type CheckoutAmounts,
+} from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
@@ -190,6 +197,12 @@ export function CartView({
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // What /api/checkout actually priced the PaymentIntent from (minor units).
+  // Everything below re-computes continuously from the code-default rate
+  // tables; these do not. Once `clientSecret` exists the summary renders THESE
+  // — a CMS rate republish (or a currency flip) mid-payment can no longer
+  // leave the buyer reading a number Stripe will not charge.
+  const [confirmedAmounts, setConfirmedAmounts] = useState<CheckoutAmounts | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [inventoryReady, setInventoryReady] = useState(false);
   const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
@@ -330,6 +343,18 @@ export function CartView({
   const total = subtotal + shipCost - promoDiscount;
   const cardSplit = giftCard?.currency === printCurrency && total > 0
     ? splitGiftCardPayment(Math.round(total * 100), giftCard.available, STRIPE_MINIMUM_MINOR[printCurrency]) : null;
+  // The figures the order summary renders. Before the PaymentIntent exists
+  // this is the live estimate above — a legitimate pre-payment quote that must
+  // keep tracking the buyer's delivery/promo/currency choices. After it
+  // exists, the server's confirmed amounts win outright: the charge is locked,
+  // so the display has to be too (same reasoning as the frozen promo row
+  // below). A missing/malformed `amounts` payload parses to null and simply
+  // leaves the estimate in place — never a blank or garbled price.
+  const summary = cartSummaryAmounts(
+    { currency, subtotal, shipping: shipCost, discount: promoDiscount, total },
+    clientSecret ? confirmedAmounts : null,
+  );
+  const { fmt: sumFmt } = currencyFormatter(summary.currency);
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
   const countryOptions = PRINT_COUNTRIES
@@ -668,7 +693,7 @@ export function CartView({
         setCheckoutError(errorMessage);
         return;
       }
-      const response = (await res.json()) as { status?: string; confirmation_url?: string; client_secret?: string; discount?: number; gift_card_amount?: number; cash_amount?: number };
+      const response = (await res.json()) as { status?: string; confirmation_url?: string; client_secret?: string; discount?: number; gift_card_amount?: number; cash_amount?: number; amounts?: unknown };
       if (response.status === 'paid' && response.confirmation_url) {
         const confirmation = new URL(response.confirmation_url, window.location.origin);
         if (confirmation.origin !== window.location.origin) throw new Error('Invalid confirmation URL');
@@ -690,6 +715,11 @@ export function CartView({
       // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
       // event for print-only and mixed carts (and never false-alarms a "purchase gap").
       rememberCheckoutForReturn(lines.map((l) => l.id), {
+        // Deliberately the client-side estimate, not the server's confirmed
+        // shipping: GA4 needs PER-ITEM prices, which only exist client-side,
+        // so an event mixing server shipping with client item prices would not
+        // reconcile. The snapshot stays internally consistent; the display
+        // (which has no such constraint) uses the confirmed figures.
         shippingCost: shipCost,
         shippingMethod: ship,
         currency: analyticsCurrency,
@@ -702,6 +732,11 @@ export function CartView({
       });
       // A later, separate purchase must never reuse this attemptId.
       if (!giftCard) resetAttemptId();
+      // Kept adjacent to (and ahead of) setClientSecret: `clientSecret` is what
+      // switches the summary over to these figures, and the two must land in
+      // the same render. React batches both here; the ordering keeps that true
+      // if this ever moves out of an event handler.
+      setConfirmedAmounts(parseCheckoutAmounts(response.amounts));
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -1069,7 +1104,10 @@ export function CartView({
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
-              <span className="v">{fmt(total)}</span>
+              {/* !clientSecret here, so `summary` is the estimate by
+                  definition — routed through it anyway so every rendered
+                  total in this component has exactly one source. */}
+              <span className="v">{sumFmt(summary.total)}</span>
             </div>
           )}
           {clientSecret ? (
@@ -1134,13 +1172,17 @@ export function CartView({
             );
           })}
         </ul>
+        {/* All four summary figures come from one snapshot (`summary`) so the
+            rows always add up: swapping only shipping/total for the server's
+            numbers while items stayed client-priced would show a subtotal that
+            no longer reconciles with the total below it. */}
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
-          <span className="v">{fmt(subtotal)}</span>
+          <span className="v" data-testid="summary-subtotal">{sumFmt(summary.subtotal)}</span>
         </div>
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
-          <span className="v">{shipCost > 0 ? fmt(shipCost) : t('cart.free')}</span>
+          <span className="v" data-testid="summary-shipping">{summary.shipping > 0 ? sumFmt(summary.shipping) : t('cart.free')}</span>
         </div>
         {promo ? (
           <div className="sum-row promo-row" data-testid="promo-discount-row">
@@ -1160,7 +1202,7 @@ export function CartView({
                 </button>
               )}
             </span>
-            <span className="v">-{fmt(promoDiscount)}</span>
+            <span className="v" data-testid="summary-discount">-{sumFmt(summary.discount)}</span>
           </div>
         ) : clientSecret || giftCard ? null : (
           <div className="promo-entry">
@@ -1213,7 +1255,7 @@ export function CartView({
         )}
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
-          <span className="v">{fmt(total)}</span>
+          <span className="v" data-testid="summary-total">{sumFmt(summary.total)}</span>
         </div>
         {!promo && <GiftCardPayment key={printCurrency} card={giftCard} onChange={setGiftCard}
           total={Math.round(total * 100)} currency={printCurrency} locked={submitting || !!clientSecret} confirmed={balancePayment} />}
