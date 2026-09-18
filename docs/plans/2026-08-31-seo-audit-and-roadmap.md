@@ -55,7 +55,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 1. ~~Zbudować mapę przekierowań legacy Shopify → aktualne URL-e dla najgłośniejszych landing pages z GA4 (§13.4)~~ **W TOKU 2026-09-02** — PR [#280](https://github.com/konradciok/ceramics-drop/pull/280) otwarty: `scripts/ga4-data.mjs` rozszerzony o pełniejszy raport (`landing-pages`, 90 dni, top 300), dwa jednoznaczne mapowania wdrożone w `src/lib/legacy-redirects.ts` (`/pages/about-me → /o-studiu`, `/pages/contact → /kontakt`); większość ruchu (stare handles `novocumulus-NN`/`cumulus-NN`/...) pozostaje świadomym 404 do czasu weryfikacji przez właściciela/artystkę, który obraz odpowiada któremu `fapNNN` — rejestr printów był resetowany 2026-08-17, więc nie ma formuły numerycznej.
 2. ~~Ustawić Cloudflare 301/308 `www → apex`...~~ **ROZSTRZYGNIĘTE 2026-09-02** — zob. pozycję 4 executive summary powyżej.
 3. Zmienić awaryjną politykę publicznego katalogu na fail-closed lub last-known-good dla widoczności, bez ujawniania wpisów niepublicznych.
-4. Naprawić `?preview=` na PDP i dodać macierz testów `preview`/404/noindex.
+4. ~~Naprawić `?preview=` na PDP i dodać macierz testów `preview`/404/noindex.~~ **ROZSTRZYGNIĘTE 2026-09-03** — PR [#283](https://github.com/konradciok/ceramics-drop/pull/283) (fix) + PR [#285](https://github.com/konradciok/ceramics-drop/pull/285) (testy), zob. SEO-004/SEO-011.
 5. Uzgodnić docelowe rynki GMC i kontrakt waluty; dopiero potem wybrać stabilne URL-e/parametry feedowe albo oficjalną konwersję walut. (Zerowy zrealizowany przychód EUR/GBP na 2026-08-31 obniża pilność względem P0-01/P0-06/P0-07, ale nie względem inwestycji w ruch międzynarodowy.)
 6. ~~Dodać wymiary/aspect ratio do kart printów; potwierdzić CLS w 5-run lab i później w CrUX.~~ **PR OTWARTY 2026-09-02** — [#278](https://github.com/konradciok/ceramics-drop/pull/278): `width={700} height={1000}` na `PrintCollectionScreen.tsx`'s `<img>` (uniform 7:10 dla wszystkich 41 designów); CrUX p75 follow-up po merge/28 dniach pozostaje.
 7. Wprowadzić limity/formaty i responsywne pochodne dla hero CMS.
@@ -148,15 +148,16 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Zależności / koszt:** katalog/admin/edge; **M (2–4 dni)**; ryzyko czasowej niedostępności zamiast ekspozycji — świadomy trade-off.
 - **Weryfikacja:** failure-mode tests dla draft/hidden/archived/sold/showroom i trzech konsumentów; alarm na fallback.
 
-### SEO-004 — pusty parametr preview na PDP jest indeksowalny
+### SEO-004 — pusty parametr preview na PDP jest indeksowalny (ROZSTRZYGNIĘTE 2026-09-03 — PR #283 merged)
 
-- **Kategoria / ważność / confidence:** indexability; **medium**; **confirmed**.
+- **Kategoria / ważność / confidence:** indexability; ~~**medium**~~ **resolved**; **confirmed, fixed**.
 - **Dowód:** PDP używa truthiness `preview ? ...` (`src/app/[locale]/(pdp)/[slug]/[id]/page.tsx:31-36`), home poprawnie sprawdza obecność (`src/app/[locale]/page.tsx:78-91`). Runtime `?preview=` na PDP nie emituje noindex, a niepuste `?preview=x` emituje.
 - **Wpływ:** query duplicate może wejść do indeksu mimo clean canonical; narusza intencję komentarza i preview guardrail.
 - **Reprodukcja:** `GET /kubki/k04?preview=` i sprawdzić meta robots.
 - **Rozwiązanie:** rozróżnić brak klucza od pustej wartości, współdzielony helper/test.
 - **Zależności / koszt:** brak; **S**.
 - **Weryfikacja:** empty/nonempty/repeated preview na home, ceramic PDP, print PDP → noindex, canonical bez query.
+- **Aktualizacja 2026-09-03:** PR [#283](https://github.com/konradciok/ceramics-drop/pull/283). `preview ? {...} : undefined` (truthy check) zamieniony na `previewRobots()` — presence check (`!== undefined`) współdzielony przez home i PDP (`src/lib/seo/robots.ts`, testowany jednostkowo dla absent/empty/invalid/repeated-key). Zweryfikowane na lokalnym buildzie: `?preview=` (pusty) na PDP teraz poprawnie emituje `noindex, nofollow`. Regresyjny dowód w Playwright dodany w #285 (zob. SEO-011).
 
 ### SEO-005 — print collection ma niestabilny layout (PR OTWARTY 2026-09-02 — #278, oczekuje merge)
 
@@ -220,7 +221,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Weryfikacja:** head tests + LinkedIn/Facebook/X debugger ręcznie po deployu.
 - **Aktualizacja 2026-09-02:** PR [#279](https://github.com/konradciok/ceramics-drop/pull/279) dodaje `openGraph.images` override dla `/fine-art-prints` (pierwszy kurowany design, prawdziwy stosunek 7:10 zamiast przycinania do 1200×630), `/sklep` i `/showroom` (kurowane zdjęcie `HOME_EDITORIAL_IMAGE` z istniejącym, zlokalizowanym alt). Zweryfikowane lokalnym renderem — `og:image` na wszystkich trzech nie wskazuje już na `kubek-1.webp`. Zakres rozszerzony o `/showroom` (ten sam bug, ten sam jednolinijkowy fix). Share-debugger check po deployu pozostaje.
 
-### SEO-011 — brak finalnej bramki regresyjnej SEO
+### SEO-011 — brak finalnej bramki regresyjnej SEO (CZĘŚCIOWO ROZSTRZYGNIĘTE 2026-09-03 — PR #285 merged)
 
 - **Kategoria / ważność / confidence:** tests/process; **medium**; **confirmed**.
 - **Dowód:** istnieją dobre unit tests (`src/app/sitemap.test.ts`, `src/lib/seo/urls.test.ts`, `src/lib/seo/structured-data.test.ts`, `src/lib/feed.test.ts`), lecz nie ma E2E finalnego head/status/hreflang/feed parity. Audyt ujawnił pusty preview i `www`, których unity nie wykryły.
@@ -229,6 +230,7 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 - **Rozwiązanie:** repo-native SEO contract suite na Vitest + Playwright; bez zewnętrznych usług w required CI.
 - **Zależności / koszt:** CI/webServer build; **M**.
 - **Weryfikacja:** testy zawodzą na kontrolowanych mutacjach fixture; czas i flakiness w limicie.
+- **Aktualizacja 2026-09-03:** PR [#285](https://github.com/konradciok/ceramics-drop/pull/285) dodaje `e2e/seo-metadata.spec.ts` + `e2e/seo-routing.spec.ts` (`@ci`, hermetyczny build+serve) — pokrywa dokładnie wiersze „Metadata renderer”, „Preview query matrix” i „404/wrong slug/removed mapping” z §9: canonical/hreflang reciprocity/title/description/robots dla home + reprezentatywnej pary ceramika/print PDP w 2 locale, pełna macierz preview (absent/empty/invalid/repeated-key — bezpośredni dowód regresyjny dla SEO-004), 404 dla wrong-category/nonexistent/removed/unmapped-legacy oraz redirect legacy → destination z realną weryfikacją `<head>` celu. **Częściowe** rozstrzygnięcie: `alternatesFor`/`productAlternates` matrix (Vitest) też rozszerzone, ale JSON-LD/schema, sitemap projection i feed/checkout price contract (pozostałe wiersze §9) nie są w zakresie tego PR. Znany, udokumentowany flake print-PDP (Chromium/Next streaming timing, nigdy nie reprodukowany bezpośrednim HTTP) obsłużony przez scoped `retries: 2`.
 
 ### SEO-012 — monitoring organiczny nie jest potwierdzony operacyjnie
 
@@ -391,7 +393,7 @@ Legenda: **S** ≤1 dzień, **M** 2–4 dni, **L** 5–10 dni (przed estymacją 
 |---|---|---|---|---|
 | P0-01 | Jeden canonical host; Cloudflare Redirect Rule, `docs/cloudflare-deployment.md` tylko jeśli runbook wymaga aktualizacji | Cloudflare access; S; ryzyko pętli; edge owner | www/http → apex/https w 1 hop, path/query zachowane, apex 200, sitemap/canonical apex | GSC duplicate host trend 28 dni; O; **nie PR aplikacyjny**, osobny change record — **ROZSTRZYGNIĘTE 2026-09-02, live na produkcji (zob. SEO-001)** |
 | P0-02 | Fail-closed public catalog projection; `src/lib/products.ts`, catalog loaders, sitemap/feed tests | DB/catalog; M; ryzyko pustszego storefrontu przy outage; Next dev | draft/hidden/archived nigdy publiczne przy DB error; sold/showroom zachowane; alarm fallback | Zero exposure in synthetic failure; K; osobny PR |
-| P0-03 | Jednolity preview noindex; PDP/home helper + metadata tests | Brak; S; niskie; Next dev | brak/empty/nonempty/repeated query matrix; preview noindex,nofollow; clean canonical | Crawl query variants; K; osobny mały PR |
+| P0-03 | Jednolity preview noindex; PDP/home helper + metadata tests | Brak; S; niskie; Next dev | brak/empty/nonempty/repeated query matrix; preview noindex,nofollow; clean canonical | Crawl query variants; K; osobny mały PR — **ROZSTRZYGNIĘTE 2026-09-03, PR #283 (zob. SEO-004)** |
 | P0-04 | Udokumentowany currency/GMC contract i decyzja A/B/C; `src/lib/currency*`, feed/schema/pricing docs | GMC targets + owner; M spike; wysokie ryzyko złej decyzji bez danych; merchant+dev | Dla każdego target feedu cena/waluta identyczna na landing HTML, JSON-LD i checkout; zachowanie bez cookie deterministyczne | GMC mismatch baseline i 28 dni; K/O; spike osobno, implementacja w następnym PR |
 | P0-05 | Potwierdzenie zewnętrznych konsol i baseline | GSC/GMC/Bing/GA4/CrUX access; S; niskie; analytics owner | Domain property, sitemap submitted, GMC association, export baseline, owner/cadence | Baseline zapisany z datą; O; bez PR lub docs-only PR — **GA4 baseline potwierdzony 2026-08-31 (§13.3, §13.7); GSC domain-verification potwierdzona przez DNS TXT (§13.5); pozostaje GMC/Bing/CrUX** |
 | P0-06 | ~~Zatrzymać incydent 504~~ **ROZSTRZYGNIĘTE 2026-09-02 — false alarm (§13.2), root cause = zone `early_hints:on`, nie aplikacja.** Pozostaje: (a) właściciel wyłącza `early_hints` w Cloudflare (Speed → Content Optimization) — operacja ręczna, poza PR; (b) opcjonalnie alert na realne 5xx (`requestSource != earlyHintsCache`) niezależny od Sentry, jeśli chcemy pokrycia na przyszłość | Cloudflare dashboard toggle; XS; zero ryzyka aplikacyjnego; zone owner | `requestSource:"earlyHintsCache"` = 0 wierszy w GraphQL po zmianie; ogólna `edgeResponseStatus:504` rate spada do <0,1% rolling 24h | Cloudflare GraphQL Analytics 504 rate filtrowane `requestSource:"eyeball"`; O; brak PR aplikacyjnego — `docs:` PR tylko na aktualizację tego dokumentu |
@@ -401,7 +403,7 @@ Legenda: **S** ≤1 dzień, **M** 2–4 dni, **L** 5–10 dni (przed estymacją 
 
 | ID | Rezultat / pliki lub moduły | Zależności; est.; ryzyko; owner | Acceptance criteria i testy | Pomiar / typ / PR |
 |---|---|---|---|---|
-| P1-01 | Hermetyczny SEO contract suite; nowe test helpers/specs, bez usługi zewnętrznej | P0-02/04 fixtures; M; CI time; QA/Next dev | reprezentatywna macierz z sekcji 9, head/status/schema/sitemap/feed parity; <3 min dodatkowego CI | regresje wykrywane pre-merge; K; osobny PR |
+| P1-01 | Hermetyczny SEO contract suite; nowe test helpers/specs, bez usługi zewnętrznej | P0-02/04 fixtures; M; CI time; QA/Next dev | reprezentatywna macierz z sekcji 9, head/status/schema/sitemap/feed parity; <3 min dodatkowego CI | regresje wykrywane pre-merge; K; osobny PR — **CZĘŚCIOWO ROZSTRZYGNIĘTE 2026-09-03, PR #285 (head/status/404/hreflang/preview; schema/sitemap/feed parity pozostają, zob. SEO-011)** |
 | P1-02 | Zero print-grid CLS; `PrintCollectionScreen.tsx`, print media model, CSS | dimensions; S/M; małe; frontend/perf | width+height/aspect; 5-run CLS każdy ≤0.1, median ≤0.05; no broken natural ratio | CrUX p75 po 28/56 dni; K; osobny PR — **PR OTWARTY 2026-09-02, #278 (zob. SEO-005)** |
 | P1-03 | Guard i responsive delivery hero CMS; upload/media route/HomeHero | Cloudflare plan choice; S guard + M/L transform; editor UX risk; edge/frontend | format/size/dimension validation; mobile/desktop sources; fallback; budgets zapisane | transfer/LCP/error rate; K/O; guard PR, transform PR osobno |
 | P1-04 | Evergreen collection metadata i poprawne counts; message files + metadata resolver | translator/editor; S/M; małe | brak fałszywych liczb; 4 locale; unikalne nonempty title/description | CTR baseline/28–90 dni; T/K; osobny PR |
@@ -777,7 +779,7 @@ Wyniki:
 -1. ~~**Incydent, nie PR:** zdiagnozować i zatrzymać 504 storm (SEO-016, §13.2)~~ **ROZSTRZYGNIĘTE 2026-09-02** — false alarm, root cause = Cloudflare zone `early_hints:on` (nigdy używany świadomie przez aplikację), nie aplikacja/Worker; pozostaje jedna ręczna operacja Cloudflare (wyłączyć Early Hints) do wykonania przez właściciela, nie PR.
 0. ~~**PR 0 — legacy Shopify redirects:** mapa przekierowań dla top landing pages z GA4 (SEO-017, §13.4); tanie, bezpieczne, mierzalny zwrot w 28 dni.~~ **W TOKU 2026-09-02 — PR [#280](https://github.com/konradciok/ceramics-drop/pull/280), zob. SEO-017.**
 0b. ~~**Operacja przed PR-ami:** Cloudflare `www → apex` 301/308 + change record i smoke matrix.~~ **ROZSTRZYGNIĘTE 2026-09-02, zob. SEO-001.**
-1. **PR 1 — SEO safety net:** preview fix + final head/status/404/hreflang contract tests dla reprezentatywnej macierzy.
+1. ~~**PR 1 — SEO safety net:** preview fix + final head/status/404/hreflang contract tests dla reprezentatywnej macierzy.~~ **ROZSTRZYGNIĘTE 2026-09-03 — PR [#283](https://github.com/konradciok/ceramics-drop/pull/283) (fix) + PR [#285](https://github.com/konradciok/ceramics-drop/pull/285) (contract suite), zob. SEO-004/SEO-011.**
 2. **PR 2 — catalog visibility fail-closed:** failure-mode projection i testy sitemap/feed/PDP; bez mieszania z contentem.
 3. ~~**PR 3 — print layout stability:** wymiary/aspect ratio i LCP loading policy; mały, mierzalny frontend PR.~~ **PR OTWARTY 2026-09-02 — [#278](https://github.com/konradciok/ceramics-drop/pull/278), zob. SEO-005** (LCP loading-policy część — nie lazy-loadować pierwszy viewport — nie zaimplementowana w tym PR, tylko wymiary/aspect ratio).
 4. **PR 4a/4b — CMS hero:** najpierw upload budgets/validation, potem osobny spike/PR responsive Cloudflare derivatives.
