@@ -6,6 +6,7 @@ import { readPrintPricingConfig } from '@/lib/print-pricing-config/repository';
 import type { PrintPricingConfig } from '@/lib/print-pricing';
 import { buildPricingFields } from '@/server/cms-api/pricing-mapping';
 import { actorEmail, parseJson } from '@/lib/admin/product-routes';
+import { supabaseTimeout } from '@/lib/supabase-timeout';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,7 @@ async function publishPrintPricingConfig(
     .select('revision')
     .order('revision', { ascending: false })
     .limit(1)
+    .abortSignal(supabaseTimeout())
     .maybeSingle();
   if (latest.error) throw new Error(`load pricing revision: ${latest.error.message}`);
   const currentRevision = (latest.data as { revision: number } | null)?.revision ?? 0;
