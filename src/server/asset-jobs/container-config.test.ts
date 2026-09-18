@@ -269,9 +269,23 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
       if (modules.has(current)) continue;
       modules.add(current);
       const source = read(current);
-      for (const match of source.matchAll(/^\s*(?:import|export)\s+([^;]*?)\s*from\s+['"]([^'"]+)['"]/gm)) {
-        const [, clause, specifier] = match;
-        if (/^type\b/.test(clause.trim())) continue; // `import type … from` / `export type … from` — erased
+      // Three alternatives: (1) `import/export … from '…'` (named/namespace/
+      // re-export — has a `clause` to type-check), (2) a bare side-effect
+      // import `import '…'` (no clause, no binding), (3) a literal dynamic
+      // `import('…')` (also no clause). A regex that only matched (1) missed
+      // (2) and (3) entirely — either form can drag `sharp` or another
+      // Sharp-reaching module into the Worker bundle without this walker
+      // noticing, since esbuild bundles a statically-analyzable `import()`
+      // just like a static import.
+      const EDGE_RE =
+        /^\s*(?:import|export)\s+([^;]*?)\s*from\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]\s*\)/gm;
+      for (const match of source.matchAll(EDGE_RE)) {
+        const [, clause, fromSpec, sideEffectSpec, dynamicSpec] = match;
+        const specifier = fromSpec ?? sideEffectSpec ?? dynamicSpec;
+        if (specifier === undefined) continue; // defensive; one of the three alternatives always captures
+        // `import type … from` / `export type … from` — erased by the bundler.
+        // Only alternative (1) ever has a clause to check; (2)/(3) have none.
+        if (clause !== undefined && /^type\b/.test(clause.trim())) continue;
         const resolved = resolveSpecifier(current, specifier);
         if (resolved === null) {
           packages.add(specifier);
@@ -349,5 +363,15 @@ describe('Sharp boundary (TRANSITIVE — walks the whole first-party import grap
 
   it('the container entry point is the ONLY place that reaches the Sharp render handler', () => {
     expect(read('container/server.ts')).toContain('src/server/print-assets/container-handler');
+  });
+
+  it('detects a bare side-effect import (`import "sharp"`, no bindings) — the form a from-clause-only regex would miss', () => {
+    const { packages } = importGraph('src/server/asset-jobs/__fixtures__/sharp-side-effect-import.ts');
+    expect(packages.has('sharp')).toBe(true);
+  });
+
+  it('detects a literal dynamic import (`import("sharp")`) — esbuild bundles it just like a static import', () => {
+    const { packages } = importGraph('src/server/asset-jobs/__fixtures__/sharp-dynamic-import.ts');
+    expect(packages.has('sharp')).toBe(true);
   });
 });
