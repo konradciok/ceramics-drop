@@ -8,6 +8,29 @@
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Disable wrangler's local-dev container simulation (Docker-backed). This has
+  // no effect on `wrangler deploy` or production Container behaviour — it only
+  // stops `wrangler dev` / `getPlatformProxy()` (called via this repo's
+  // `initOpenNextCloudflareForDev()` in next.config.ts, which runs during
+  // `next build` too, not just `next dev`) from trying to connect to a local
+  // Docker daemon. Without this, `getPlatformProxy`'s own
+  // `getMiniflareOptionsFromConfig` hardcodes `containerBuildId: void 0` (it
+  // never calls `generateContainerBuildId()`, unlike a real `wrangler dev`
+  // session) while still gating on `containerDOClassNames.size && enableContainers`,
+  // so `getImageNameFromDOClassName`'s `assert(containerBuildId, ...)` always
+  // throws once a `containers` binding exists (PrintAssetProcessor, Task 11) —
+  // regardless of whether Docker is even installed. Verified against
+  // node_modules/wrangler/wrangler-dist/cli.js (search
+  // "Build ID should be set if containers"). Deliberately NOT repeated under
+  // env.preview: unlike `containers`/`durable_objects` below, `dev` is a
+  // top-level-only setting — it is absent from RawEnvironment in
+  // config-schema.json (which has additionalProperties: false, so adding it
+  // under env.preview would violate the schema), and wrangler's config
+  // builder reads `dev` from the raw top-level config unconditionally
+  // (`rawConfig.dev`, cli.js ~line 29718), never from the selected
+  // environment's block — so it already applies to every `--env` including
+  // preview.
+  "dev": { "enable_containers": false },
   // Storefront catalogue source: 'db' reads shadow tables (Stage 3b flip). Rollback → remove or set 'code'.
   "vars": {
     "CATALOG_SOURCE": "db"
