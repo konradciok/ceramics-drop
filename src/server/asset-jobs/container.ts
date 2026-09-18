@@ -113,7 +113,14 @@ export class PrintAssetProcessor extends DurableObject<CloudflareEnv> {
     let lastError = 'no attempt made';
     while (Date.now() < deadline) {
       try {
-        const response = await fetcher.fetch(`${CONTAINER_ORIGIN}${HEALTH_PATH}`);
+        // getTcpPort().fetch() has no implicit timeout — a documented
+        // Cloudflare Containers gotcha. Without one, a container process that
+        // never starts listening can hang this call forever, which would
+        // never let the loop recheck `deadline` and would stack every later
+        // call behind this one in runExclusive's queue.
+        const response = await fetcher.fetch(`${CONTAINER_ORIGIN}${HEALTH_PATH}`, {
+          signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+        });
         if (response.ok) {
           await response.body?.cancel();
           return { kind: 'ok', fetcher };
