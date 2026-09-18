@@ -27,6 +27,11 @@ const INPUT: RenderInput = {
   expectedRatio: '3x4',
   target: { w: 3600, h: 4800 },
   format: 'jpg',
+  // Finding 2 (job-wide render deadline): renderAndStoreDerivative itself does
+  // not read this field — only container.ts (untested here; see its own file
+  // header on why) derives timeouts from it — so a fixed future timestamp is
+  // enough to satisfy the type.
+  deadlineMs: Date.now() + 10 * 60 * 1000,
 };
 
 function sourceObject() {

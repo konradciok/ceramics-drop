@@ -95,6 +95,28 @@ export interface RenderInput {
   expectedRatio: string;
   target: { w: number; h: number };
   format: DerivativeFormat;
+  /**
+   * Job-wide render deadline (CodeRabbit PR #318 round 2, Finding 2): an
+   * absolute `Date.now()`-scale timestamp, computed ONCE in process-job.ts
+   * before its profile loop and carried unchanged across every profile of the
+   * same job — NOT a fresh per-profile budget. `selectProfilesForRatio` can
+   * return more than one profile, each rendered sequentially through its own
+   * `RENDER_TIMEOUT_MS`-bounded RPC; without a shared ceiling, two slow
+   * profiles could together exceed Cloudflare Queues' 15-minute consumer
+   * wall-clock limit and get hard-killed mid-RPC, leaving the row `processing`
+   * with no chance to fail it retryably.
+   *
+   * This module does not read the field directly — `container.ts` (the DO
+   * side of this RPC boundary) derives each profile's actual readiness-poll
+   * and render-request timeouts from `Math.max(0, deadlineMs - Date.now())`
+   * and passes the result in as `RenderDeps.renderSignal`, capped at
+   * `RENDER_TIMEOUT_MS` so a single profile early in the loop can never eat
+   * the whole remaining budget. It travels on `RenderInput` (crossing the
+   * Worker → Durable Object RPC boundary as plain structured-cloneable data)
+   * rather than as shared in-process state, which is all a DO method can rely
+   * on the caller for.
+   */
+  deadlineMs: number;
 }
 
 export type RenderResult =

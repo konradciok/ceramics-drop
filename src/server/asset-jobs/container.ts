@@ -36,7 +36,7 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import { CONTAINER_ORIGIN, CONTAINER_PORT, HEALTH_PATH } from './container-protocol';
-import { renderAndStoreDerivative, type RenderInput, type RenderResult } from './container-render';
+import { renderAndStoreDerivative, RENDER_TIMEOUT_MS, type RenderInput, type RenderResult } from './container-render';
 
 export { PRINT_ASSET_PROCESSOR_NAME } from './container-names';
 
@@ -70,22 +70,45 @@ export class PrintAssetProcessor extends DurableObject<CloudflareEnv> {
    * Render one derivative profile: R2 → container → R2. Returns a plain
    * structured-cloneable `RenderResult`; it never throws for an expected
    * failure, so the queue consumer can classify the outcome itself.
+   *
+   * CodeRabbit PR #318 round 2, Finding 2: `input.deadlineMs` is the SAME
+   * absolute job-wide budget for every profile of this job (see
+   * `RenderInput.deadlineMs`'s doc comment) — this method derives its OWN
+   * readiness-poll and render-request timeouts from whatever of that budget is
+   * still left when it actually runs, rather than always granting each
+   * profile a fresh `READY_TIMEOUT_MS`/`RENDER_TIMEOUT_MS`. That is what keeps
+   * a second (or third) slow profile from pushing the whole invocation past
+   * Cloudflare Queues' consumer wall-clock limit.
    */
   async renderDerivative(input: RenderInput): Promise<RenderResult> {
     return this.runExclusive(async () => {
-      const port = await this.ensureContainerReady();
+      const readyBudgetMs = Math.max(0, input.deadlineMs - Date.now());
+      const port = await this.ensureContainerReady(readyBudgetMs);
       if (port.kind === 'error') return port.result;
+      // Recomputed, not reused: ensureContainerReady's poll loop can itself
+      // consume a meaningful slice of the budget (cold start pulls the image
+      // and starts Node), so the render request gets whatever is left NOW.
+      const renderBudgetMs = Math.max(0, input.deadlineMs - Date.now());
       return renderAndStoreDerivative(
         {
           bucket: this.env.PRINT_ASSETS,
           containerFetch: (url, init) => port.fetcher.fetch(url, init as unknown as RequestInit),
+          // RENDER_TIMEOUT_MS stays the per-profile UPPER bound (a render never
+          // gets granted more than it would today) — Math.min means a job with
+          // lots of budget left still can't let one profile run unbounded, and
+          // a job running low on budget gets a request that aborts before the
+          // job-wide deadline, not after it.
+          renderSignal: () => AbortSignal.timeout(Math.max(1, Math.min(RENDER_TIMEOUT_MS, renderBudgetMs))),
         },
         input,
       );
     });
   }
 
-  private async ensureContainerReady(): Promise<{ kind: 'ok'; fetcher: Fetcher } | { kind: 'error'; result: RenderResult }> {
+  /** `budgetMs`: the job-wide deadline's remaining slice (Finding 2) this readiness poll may spend at most — see `renderDerivative`. */
+  private async ensureContainerReady(
+    budgetMs: number,
+  ): Promise<{ kind: 'ok'; fetcher: Fetcher } | { kind: 'error'; result: RenderResult }> {
     const container = this.ctx.container;
     if (!container) {
       // Config fault (no `containers` entry for this class, or a local dev run
@@ -109,7 +132,12 @@ export class PrintAssetProcessor extends DurableObject<CloudflareEnv> {
     await container.setInactivityTimeout(SLEEP_AFTER_MS);
 
     const fetcher = container.getTcpPort(CONTAINER_PORT);
-    const deadline = Date.now() + READY_TIMEOUT_MS;
+    // READY_TIMEOUT_MS stays the upper bound (cold start never gets granted
+    // more than it does today); Math.min means a job running low on its
+    // job-wide deadline gets a shorter readiness budget instead of polling
+    // past that deadline before even starting the render request.
+    const readyTimeoutMs = Math.max(0, Math.min(READY_TIMEOUT_MS, budgetMs));
+    const deadline = Date.now() + readyTimeoutMs;
     let lastError = 'no attempt made';
     while (Date.now() < deadline) {
       try {
@@ -137,7 +165,7 @@ export class PrintAssetProcessor extends DurableObject<CloudflareEnv> {
       result: {
         kind: 'retryable',
         code: 'CONTAINER_NOT_READY',
-        message: `container did not become ready within ${READY_TIMEOUT_MS}ms: ${lastError}`,
+        message: `container did not become ready within ${readyTimeoutMs}ms: ${lastError}`,
       },
     };
   }

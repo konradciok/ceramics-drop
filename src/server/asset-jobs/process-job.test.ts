@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 vi.mock('@/lib/worker-sentry', () => ({ captureWorkerAlert: mockCaptureAlert }));
 
-import { processAssetJob, isAssetJobsQueue } from './process-job';
+import { processAssetJob, isAssetJobsQueue, JOB_DEADLINE_MS } from './process-job';
 import type { RenderResult } from './container-render';
 
 describe('isAssetJobsQueue', () => {
@@ -82,30 +82,47 @@ const OK_RESULT: RenderResult = {
 /** Builds a thenable Supabase-query-builder-like chain (mirrors
  *  fulfilment/process-job.test.ts's makeChain helper). Every chained method
  *  returns the same chain object; awaiting it resolves to `result`, unless a
- *  method name is overridden to resolve to something else. */
-function makeChain(result: unknown, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+ *  method name is overridden to resolve to something else.
+ *  `orLog`, if given, records every `.or(filter)` call's filter string —
+ *  Finding 1's claim query is the only caller of `.or()` in this file, so
+ *  tests use it to assert the exact OR-filter shape without pinning the
+ *  whole query builder. */
+function makeChain(result: unknown, overrides: Record<string, unknown> = {}, orLog?: string[]): Record<string, unknown> {
   const chain: Record<string, unknown> = {
     then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => Promise.resolve(result).then(res, rej),
   };
   for (const m of ['update', 'upsert', 'eq', 'in', 'select']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
+  chain.or = vi.fn((filter: string) => {
+    orLog?.push(filter);
+    return chain;
+  });
   Object.assign(chain, overrides);
   return chain;
 }
 
 type SetupOptions = {
   claimResult?: { data: unknown; error: unknown };
+  /** The status-lookup fired ONLY when the claim misses (Finding 1's
+   *  terminal-vs-active-lease disposition check). Defaults to 'completed' —
+   *  i.e. "the claim missed because the job is already done", the ordinary
+   *  duplicate-delivery case. */
+  claimMissLookupResult?: { data: unknown; error: unknown };
   uploadResult?: { data: unknown; error: unknown };
   productResult?: { data: unknown; error: unknown };
   variantsResult?: { data: unknown; error: unknown };
   stageResult?: { data: unknown; error: unknown };
   readBackResult?: { data: unknown; error: unknown };
   finalizeResult?: { data: unknown; error: unknown };
+  /** The `failJob(...)` write's own CAS result (lease_token fencing). Defaults
+   *  to "matched" — a normal, non-fenced failure write. */
+  failResult?: { data: unknown; error: unknown };
 };
 
 function setup(opts: SetupOptions) {
   const calls: { table: string; op: string; payload?: unknown; options?: unknown }[] = [];
+  const orFilters: string[] = [];
   let jobUpdateCount = 0;
 
   mockFrom.mockImplementation((table: string) => {
@@ -116,17 +133,32 @@ function setup(opts: SetupOptions) {
           calls.push({ table, op: 'update', payload });
           // 1st update = claim; later ones = finalize (status 'completed') or fail.
           if (jobUpdateCount === 1) {
-            return makeChain(undefined, {
-              select: () => makeChain(undefined, { maybeSingle: async () => opts.claimResult ?? { data: { attempts: 0 }, error: null } }),
-            });
+            return makeChain(
+              undefined,
+              { select: () => makeChain(undefined, { maybeSingle: async () => opts.claimResult ?? { data: { attempts: 0 }, error: null } }) },
+              orFilters,
+            );
           }
           if (payload.status === 'completed') {
             return makeChain(undefined, {
               select: () => makeChain(undefined, { maybeSingle: async () => opts.finalizeResult ?? { data: { id: JOB_ID }, error: null } }),
             });
           }
-          return makeChain({ data: null, error: null });
+          // A fail write (failed_retryable / failed_action_required) — also
+          // CAS'd on lease_token now (Finding 1), so it needs the same
+          // select().maybeSingle() tail as claim/finalize.
+          return makeChain(undefined, {
+            select: () => makeChain(undefined, { maybeSingle: async () => opts.failResult ?? { data: { id: JOB_ID }, error: null } }),
+          });
         },
+        // The claim-miss status lookup (`.select('status').eq('id', jobId).maybeSingle()`).
+        select: () =>
+          makeChain(undefined, {
+            eq: () =>
+              makeChain(undefined, {
+                maybeSingle: async () => opts.claimMissLookupResult ?? { data: { status: 'completed' }, error: null },
+              }),
+          }),
       };
     }
     if (table === 'print_asset_uploads') {
@@ -156,7 +188,7 @@ function setup(opts: SetupOptions) {
     throw new Error(`unexpected table: ${table}`);
   });
 
-  return { calls };
+  return { calls, orFilters };
 }
 
 function makeEnv(opts: { head?: unknown; render?: (input: unknown) => Promise<RenderResult>; processor?: unknown } = {}): CloudflareEnv {
@@ -181,10 +213,16 @@ function failCall(calls: { op: string; payload?: unknown }[], status: string) {
 describe('processAssetJob — Task 10 claim/fail/finalize machinery (unchanged by Phase 3)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('claim miss (already terminal / duplicate delivery): returns without touching the upload table', async () => {
-    setup({ claimResult: { data: null, error: null } });
+  it('claim miss, row is terminal (already completed / duplicate delivery): returns without touching the upload table', async () => {
+    setup({ claimResult: { data: null, error: null }, claimMissLookupResult: { data: { status: 'completed' }, error: null } });
     await processAssetJob(MSG, makeEnv(), CTX);
-    expect(mockFrom).toHaveBeenCalledTimes(1); // only the claim update — no upload lookup
+    // claim update + the Finding-1 status lookup that classifies the miss — still no upload lookup.
+    expect(mockFrom).toHaveBeenCalledTimes(2);
+  });
+
+  it('claim miss, row is genuinely gone (no row found by the status lookup): returns without touching the upload table', async () => {
+    setup({ claimResult: { data: null, error: null }, claimMissLookupResult: { data: null, error: null } });
+    await expect(processAssetJob(MSG, makeEnv(), CTX)).resolves.toBeUndefined();
   });
 
   it('claim error: throws so the queue retries', async () => {
@@ -261,6 +299,7 @@ describe('processAssetJob — Phase 3 container processing', () => {
       expectedRatio: '3x4',
       target: { w: 3600, h: 4800 },
       format: 'jpg',
+      deadlineMs: expect.any(Number), // Finding 2: the job-wide render deadline
     });
 
     const upsert = calls.find((c) => c.op === 'upsert');
@@ -399,5 +438,149 @@ describe('processAssetJob — Phase 3 container processing', () => {
   it('finalize CAS loses the race (a concurrent delivery finalized it first): does not throw', async () => {
     setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null }, finalizeResult: { data: null, error: null } });
     await expect(processAssetJob(MSG, makeEnv(), CTX)).resolves.toBeUndefined();
+  });
+});
+
+// ── Task G (CodeRabbit PR #318 round 2): Finding 1 (lease + fencing) and
+// Finding 2 (job-wide render deadline) regression coverage ──────────────────
+describe('processAssetJob — Finding 1: claim lease + fencing token', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('the claim query only reclaims `processing` when its lease has EXPIRED — an active lease is not reclaimed, and the miss is retried rather than acked', async () => {
+    const { orFilters } = setup({
+      claimResult: { data: null, error: null }, // the (mocked) DB correctly excluded the still-active-lease row
+      claimMissLookupResult: { data: { status: 'processing' }, error: null }, // ...because it is still processing
+    });
+    // Throws (not resolves): acking here would permanently drop the message —
+    // if the active-lease holder actually crashed, nothing would ever arrive
+    // to reclaim the row once its lease genuinely expires (see the inline
+    // comment on this branch in process-job.ts). Throwing makes worker.ts
+    // retry with backoff instead.
+    await expect(processAssetJob(MSG, makeEnv(), CTX)).rejects.toThrow(/lease.*active/i);
+
+    // The claim query's OR filter is what actually encodes "processing is
+    // claimable ONLY with an expired lease" — asserted here so a regression
+    // that drops the `and(...)` clause (making `processing` unconditionally
+    // claimable again, like before this fix) fails this test even though the
+    // mock's claimResult is hardcoded.
+    expect(orFilters).toHaveLength(1);
+    expect(orFilters[0]).toContain('status.eq.queued');
+    expect(orFilters[0]).toContain('status.eq.failed_retryable');
+    expect(orFilters[0]).toMatch(/and\(status\.eq\.processing,lease_expires_at\.lt\.[^,)]+\)/);
+  });
+
+  it('an expired lease IS reclaimed: the claim succeeds and mints a fresh lease_token + lease_expires_at in the SAME update', async () => {
+    const { calls, orFilters } = setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null } });
+    const env = makeEnv();
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+
+    // Same OR-filter shape as the active-lease test above — this time the
+    // (mocked) DB is presumed to have matched it because the lease had
+    // expired; the filter text itself doesn't change between the two cases,
+    // only whether a real Postgres would match it.
+    expect(orFilters[0]).toMatch(/and\(status\.eq\.processing,lease_expires_at\.lt\.[^,)]+\)/);
+
+    const claim = failCall(calls, 'processing')!; // the claim update itself sets status: 'processing'
+    const payload = claim.payload as Record<string, unknown>;
+    expect(payload.lease_token).toEqual(expect.any(String));
+    expect(payload.lease_expires_at).toEqual(expect.any(String));
+    // A real UUID, not a placeholder — crypto.randomUUID()'s shape.
+    expect(payload.lease_token).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  });
+
+  it('fencing: a failJob write whose lease_token no longer matches the row (reclaimed by a second worker) is a no-op, not a corrupting write', async () => {
+    const { calls } = setup({
+      uploadResult: { data: CONFIRMED_UPLOAD, error: null },
+      // Simulates a second worker having already reclaimed this row (a fresh
+      // lease_token) by the time THIS worker's failJob write reaches the DB —
+      // the update's `.eq('lease_token', ourToken)` predicate matches 0 rows.
+      failResult: { data: null, error: null },
+    });
+    const env = makeEnv({ render: async () => ({ kind: 'permanent', code: 'WOULD_UPSCALE', message: 'too small' }) });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    // The permanent-result branch still returns normally — failJob's own
+    // fencing no-op does not surface as a throw or a rejected promise; it is
+    // silently absorbed exactly like the existing finalize-race tolerance.
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+
+    // The write was attempted (the call is recorded)...
+    expect(failCall(calls, 'failed_action_required')).toBeTruthy();
+    // ...but because it was fenced out, the action-required alert — which
+    // would misattribute this job's outcome to a worker that no longer owns
+    // it — must NOT fire.
+    expect(mockCaptureAlert).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/no-op.*lease_token/));
+
+    warnSpy.mockRestore();
+  });
+});
+
+describe('processAssetJob — Finding 2: job-wide render deadline', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('a profile whose remaining job-wide budget is already exhausted fails CONTAINER_TIMEOUT/retryable WITHOUT ever calling the container', async () => {
+    const { calls } = setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null } });
+    const env = makeEnv();
+
+    // Date.now() is called exactly three times before the loop's first
+    // pre-check in this single-profile fixture: (1) computing lease_expires_at
+    // at claim time, (2) computing the job-wide `deadlineMs` right before the
+    // loop, (3) the loop's own remaining-budget check for the first (only)
+    // profile. Returning the SAME instant for (1)-(2) and an instant well past
+    // JOB_DEADLINE_MS for (3) simulates "the deadline was already exceeded by
+    // the time the loop re-checked it" without waiting 12 real minutes.
+    const baseTime = 1_800_000_000_000;
+    let dateNowCalls = 0;
+    const dateSpy = vi.spyOn(Date, 'now').mockImplementation(() => {
+      dateNowCalls += 1;
+      return dateNowCalls <= 2 ? baseTime : baseTime + JOB_DEADLINE_MS + 1;
+    });
+
+    try {
+      await expect(processAssetJob(MSG, env, CTX)).rejects.toThrow(/CONTAINER_TIMEOUT/);
+    } finally {
+      dateSpy.mockRestore();
+    }
+
+    expect(renderSpy(env)).not.toHaveBeenCalled(); // the container RPC was never made
+    const fail = failCall(calls, 'failed_retryable')!;
+    expect((fail.payload as Record<string, unknown>).last_error).toMatch(/CONTAINER_TIMEOUT/);
+    expect(mockCaptureAlert).not.toHaveBeenCalled(); // failed_retryable never alerts synchronously
+  });
+
+  it('a profile with budget remaining is still handed the SAME job-wide deadlineMs — not a fresh per-profile one', async () => {
+    const { calls } = setup({
+      uploadResult: { data: CONFIRMED_UPLOAD, error: null },
+      variantsResult: {
+        data: [
+          { variant_key: '30x40:false:false:black', print_area_width_px: 3600, print_area_height_px: 4800 },
+          { variant_key: '50x70:false:false:black', print_area_width_px: 5400, print_area_height_px: 7200 },
+        ],
+        error: null,
+      },
+      readBackResult: {
+        data: [
+          { id: ASSET_ID, r2_key: R2_KEY },
+          { id: '44444444-4444-4444-4444-444444444444', r2_key: `${R2_KEY}-2` },
+        ],
+        error: null,
+      },
+    });
+    const seenDeadlines: number[] = [];
+    const env = makeEnv({
+      render: async (input) => {
+        seenDeadlines.push((input as { deadlineMs: number }).deadlineMs);
+        if (OK_RESULT.kind !== 'ok') throw new Error('unreachable');
+        return seenDeadlines.length === 1
+          ? OK_RESULT
+          : { kind: 'ok', asset: { ...OK_RESULT.asset, r2_key: `${R2_KEY}-2`, profile_key: '5400x7200' } };
+      },
+    });
+
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+    expect(calls.find((c) => c.op === 'update' && (c.payload as Record<string, unknown>)?.status === 'completed')).toBeTruthy();
+    expect(seenDeadlines).toHaveLength(2);
+    expect(seenDeadlines[0]).toBe(seenDeadlines[1]); // same absolute deadline, not re-derived per profile
   });
 });
