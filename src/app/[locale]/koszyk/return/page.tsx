@@ -36,7 +36,7 @@ export default function ReturnPage() {
           case 'succeeded': {
             // Fires the purchase event once per payment intent and clears the
             // remembered snapshot internally on success.
-            const fired = pushConfirmedPurchaseFromRememberedCheckout(paymentIntent.id, {});
+            const fired = await pushConfirmedPurchaseFromRememberedCheckout(paymentIntent.id, {});
             if (!fired) {
               // The PI succeeded but the browser purchase event did not fire. reportPurchaseGapOnce
               // returns null for benign cases (purchase already fired — a refresh — or the gap was

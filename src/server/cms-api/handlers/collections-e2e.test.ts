@@ -212,7 +212,10 @@ describe('collections end-to-end: create -> save -> publish -> restore', () => {
     expect(createRes.status).toBe(200);
     const created = await createRes.json();
     expect(created).toMatchObject({ kind: 'collections', name: 'Spokojne formy', revision: 1, publishedRevision: null });
-    expect(created.fields).toHaveLength(5);
+    // Task 1: six default fields now, including the seeded 'kind' tag the
+    // storefront (ceramics-drop/src/lib/print-collections.ts) requires.
+    expect(created.fields).toHaveLength(6);
+    expect(created.fields.find((f: Field) => f.key === 'kind')).toMatchObject({ value: 'print-collection' });
     const collectionId = created.id as string;
     expect(collectionId).toMatch(/^col_[0-9a-f]{10}$/);
 
@@ -231,7 +234,11 @@ describe('collections end-to-end: create -> save -> publish -> restore', () => {
     const saved = await saveRes.json();
     expect(saved.revision).toBe(2);
     expect(saved.publishedRevision).toBeNull();
-    expect(saved.fields).toEqual(publishableFields);
+    // Task 1: publishableFields deliberately omits `kind` — the save handler
+    // must silently carry revision 1's seeded kind field forward instead of
+    // dropping it, proving withProtectedKind runs for real here (this file
+    // does not mock collections-save.ts or collections-mapping.ts).
+    expect(saved.fields).toEqual([...publishableFields, { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' }]);
 
     // 3. publish — at the freshly-saved revision, with a valid product id in
     // the productIds field, so product_ref_invalid/missing_polish are both
@@ -269,7 +276,9 @@ describe('collections end-to-end: create -> save -> publish -> restore', () => {
     const restored = await restoreRes.json();
     expect(restored.revision).toBe(3);
     expect(restored.publishedRevision).toBe(2);
-    expect(restored.fields).toHaveLength(5);
+    // Task 1: restoring revision 1 brings back its 6 seeded fields (including
+    // the original 'kind' field), same as the create assertion above.
+    expect(restored.fields).toHaveLength(6);
     const restoredPlField = restored.fields.find((f: Field) => f.locale === 'pl');
     // The restored payload is revision 1's (the original blank-pl default
     // draft), not revision 2's (the published one) — proves restore copied

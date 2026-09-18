@@ -20,6 +20,28 @@ import { collectionsCreateRoute } from './handlers/collections-create';
 import { collectionsSaveRoute } from './handlers/collections-save';
 import { collectionsPublicationPostRoute } from './handlers/collections-publication';
 import { collectionsRestorePostRoute } from './handlers/collections-restore';
+import { contentListRoute } from './handlers/content-list';
+import { contentGetRoute } from './handlers/content-get';
+import { contentSaveRoute } from './handlers/content-save';
+import { contentPublicationPostRoute } from './handlers/content-publication';
+import { contentRestorePostRoute } from './handlers/content-restore';
+import { pricingListRoute } from './handlers/pricing-list';
+import { pricingGetRoute } from './handlers/pricing-get';
+import { pricingSaveRoute } from './handlers/pricing-save';
+import { pricingPublicationPostRoute } from './handlers/pricing-publication';
+import { pricingRestorePostRoute } from './handlers/pricing-restore';
+import { pricingPreviewPostRoute } from './handlers/pricing-preview';
+import { shippingRatesListRoute } from './handlers/shipping-rates-list';
+import { shippingRatesGetRoute } from './handlers/shipping-rates-get';
+import { shippingRatesSaveRoute } from './handlers/shipping-rates-save';
+import { shippingRatesPublicationPostRoute } from './handlers/shipping-rates-publication';
+import { shippingRatesRestorePostRoute } from './handlers/shipping-rates-restore';
+import { uploadsCreateRoute } from './handlers/uploads-create';
+import { uploadsConfirmRoute } from './handlers/uploads-confirm';
+import { assetsListRoute } from './handlers/assets-list';
+import { jobsListRoute } from './handlers/jobs-list';
+import { jobsCreateRoute } from './handlers/jobs-create';
+import { jobsRetryRoute } from './handlers/jobs-retry';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -43,6 +65,28 @@ const routes: RouteDef[] = [
   collectionsSaveRoute,
   collectionsPublicationPostRoute,
   collectionsRestorePostRoute,
+  contentListRoute,
+  contentGetRoute,
+  contentSaveRoute,
+  contentPublicationPostRoute,
+  contentRestorePostRoute,
+  pricingListRoute,
+  pricingGetRoute,
+  pricingSaveRoute,
+  pricingPublicationPostRoute,
+  pricingRestorePostRoute,
+  pricingPreviewPostRoute,
+  shippingRatesListRoute,
+  shippingRatesGetRoute,
+  shippingRatesSaveRoute,
+  shippingRatesPublicationPostRoute,
+  shippingRatesRestorePostRoute,
+  uploadsCreateRoute,
+  uploadsConfirmRoute,
+  assetsListRoute,
+  jobsListRoute,
+  jobsCreateRoute,
+  jobsRetryRoute,
 ];
 
 const dispatch = createRouter(routes);

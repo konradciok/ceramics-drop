@@ -9,6 +9,8 @@ import { captureWorkerAlert, type WorkerAlertLevel } from './src/lib/worker-sent
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import { buildDlqAlert, buildDlqBatchAlertEmail, isDlqQueue } from './src/server/fulfilment/dlq';
+import { processAssetJob, isAssetJobsQueue } from './src/server/asset-jobs/process-job';
+import type { AssetJobMessage } from './src/server/asset-jobs/enqueue';
 import {
   buildFailedActionAlert,
   type FailedActionJobInput,
@@ -18,6 +20,7 @@ import {
   STRANDED_STATUSES,
   type StrandedJobInput,
 } from './src/server/fulfilment/stranded-job-alert';
+import { sweepStrandedAssetJobs } from './src/server/asset-jobs/stranded-job-alert';
 import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-orders';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
@@ -60,19 +63,61 @@ export default {
   },
 
   async queue(
-    batch: MessageBatch<FulfilmentJobMessage>,
+    batch: MessageBatch<FulfilmentJobMessage | AssetJobMessage>,
     env: CloudflareEnv,
     ctx: ExecutionContext,
   ) {
-    // Route on the queue name. The DLQ consumer is alert-only: it logs + fires
-    // Sentry + emails the studio, then acks every message — it NEVER retries,
-    // so a poison message cannot loop back through the system.
+    // Route on the queue name — first by pipeline (fulfilment vs. Priority 8's
+    // asset-jobs pipeline, Task 10), then, within each, on DLQ vs. primary.
+    // isAssetJobsQueue matches BOTH print-asset-jobs and its
+    // -dlq/-preview counterparts (mirrors isDlqQueue's own suffix-based
+    // matching), so it must be checked before the generic isDlqQueue branch —
+    // otherwise an asset-jobs DLQ message would fall into the fulfilment DLQ
+    // handler below, which assumes a FulfilmentJobMessage body shape.
+    if (isAssetJobsQueue(batch.queue)) {
+      const assetBatch = batch as MessageBatch<AssetJobMessage>;
+      if (isDlqQueue(assetBatch.queue)) {
+        await handleAssetJobsDlqBatch(assetBatch, env);
+        return;
+      }
+      for (const msg of assetBatch.messages) {
+        await processAssetJob(msg.body, env, ctx)
+          .then(() => msg.ack())
+          .catch((err) => {
+            const disposition = decideMessageDisposition(err);
+            // Same coarse retry/ack log signal as the fulfilment branch below
+            // (L-21) — full per-item detail is persisted to
+            // print_asset_jobs.last_error by processAssetJob itself.
+            const e = err as { name?: string; code?: string | number; status?: string | number };
+            console.error(
+              JSON.stringify({
+                event: 'asset_job_queue_error',
+                jobId: msg.body?.jobId,
+                uploadId: msg.body?.uploadId,
+                attempt: msg.attempts,
+                disposition,
+                errorName: err instanceof Error ? err.name : typeof err,
+                ...(e?.code !== undefined ? { errorCode: e.code } : {}),
+                ...(e?.status !== undefined ? { errorStatus: e.status } : {}),
+              }),
+            );
+            if (disposition === 'ack') msg.ack();
+            // Same exponential backoff schedule as the fulfilment branch (M-23).
+            else msg.retry({ delaySeconds: Math.min(2 ** msg.attempts * 30, 3600) });
+          });
+      }
+      return;
+    }
+
+    // The DLQ consumer is alert-only: it logs + fires Sentry + emails the
+    // studio, then acks every message — it NEVER retries, so a poison message
+    // cannot loop back through the system.
     if (isDlqQueue(batch.queue)) {
-      await handleDlqBatch(batch, env, ctx);
+      await handleDlqBatch(batch as MessageBatch<FulfilmentJobMessage>, env, ctx);
       return;
     }
     for (const msg of batch.messages) {
-      await processJob(msg.body, env, ctx)
+      await processJob(msg.body as FulfilmentJobMessage, env, ctx)
         .then(() => msg.ack())
         .catch((err) => {
           const disposition = decideMessageDisposition(err);
@@ -86,7 +131,7 @@ export default {
           console.error(
             JSON.stringify({
               event: 'fulfilment_queue_error',
-              orderId: msg.body?.orderId,
+              orderId: (msg.body as FulfilmentJobMessage)?.orderId,
               attempt: msg.attempts,
               disposition,
               errorName: err instanceof Error ? err.name : typeof err,
@@ -148,6 +193,22 @@ export default {
         });
       }),
     );
+    // The print_asset_jobs counterpart of the M-10 sweep above (CodeRabbit,
+    // PR #318): enqueueAssetJob writes the job row BEFORE awaiting the queue
+    // send, so a send failure leaves a `queued` row with no message in flight
+    // and nothing watching it. Same posture as sweepStrandedJobs — alert once
+    // (own `stranded_alerted_at` column), let the operator re-dispatch via the
+    // existing POST /v1/jobs (idempotent per upload) or POST /v1/jobs/{id}/retry.
+    ctx.waitUntil(
+      sweepStrandedAssetJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'asset_job_stranded_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'asset_job_stranded_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
+    );
     // M-12: reconciliation for POST-submission orders whose callbacks were lost
     // — re-polls stale non-terminal prodigi_orders and re-runs the callback
     // merge, alerting when an order stops progressing. Complements M-10 (which
@@ -178,7 +239,7 @@ export default {
       }),
     );
   },
-} satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
+} satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage | AssetJobMessage>;
 
 /**
  * Alert-only consumer for `prodigi-fulfilment-dlq`. For each message: build the
@@ -264,6 +325,41 @@ async function sendDlqAlertEmail(env: CloudflareEnv, sections: string[]): Promis
     }
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Alert-only consumer for the asset-jobs DLQ (print-asset-jobs-dlq /
+ * print-asset-jobs-preview-dlq) — Priority 8 / Phase 2 (Task 10). Mirrors
+ * handleDlqBatch's ack-only/no-loop shape above, deliberately kept lighter:
+ * this stub phase proves the queue/DLQ machinery itself, not a full studio
+ * email pipeline for it (unlike fulfilment, this pipeline has no admin UI or
+ * on-call rotation depending on it yet) — a structured log line + Sentry
+ * capture is enough for an operator to notice and dig into
+ * print_asset_jobs.last_error. A full HTML batch email (buildDlqBatchAlertEmail's
+ * equivalent) can be added later exactly the same way if this queue proves it
+ * needs one; nothing here forecloses that.
+ */
+async function handleAssetJobsDlqBatch(batch: MessageBatch<AssetJobMessage>, env: CloudflareEnv): Promise<void> {
+  for (const msg of batch.messages) {
+    const jobId = typeof msg.body?.jobId === 'string' ? msg.body.jobId : null;
+    const uploadId = typeof msg.body?.uploadId === 'string' ? msg.body.uploadId : null;
+    console.error(
+      JSON.stringify({
+        event: 'asset_job_dlq_message',
+        queue: batch.queue,
+        messageId: msg.id,
+        jobId,
+        uploadId,
+        attempts: msg.attempts,
+      }),
+    );
+    await captureWorkerAlert(env, {
+      message: 'asset_job_dlq_poison_message',
+      level: 'error',
+      extra: { queue: batch.queue, messageId: msg.id, jobId, uploadId, attempts: msg.attempts },
+    });
+    msg.ack(); // alert-only — ack every message, never retry/requeue
   }
 }
 
@@ -555,3 +651,8 @@ async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
 // @ts-ignore `.open-next/worker.js` is generated at build time
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js';
 export { CmsApi } from './src/server/cms-api/entrypoint';
+// Priority 8 / Phase 3 — the Durable Object that owns the Node/Sharp
+// Cloudflare Container. wrangler.jsonc's `containers[].class_name` and its
+// `durable_objects.bindings[].class_name` both name this class, so this export
+// is what makes the binding resolvable at deploy time.
+export { PrintAssetProcessor } from './src/server/asset-jobs/container';

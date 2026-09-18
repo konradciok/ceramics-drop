@@ -69,6 +69,18 @@ const toMinor = vi.fn((v: number) => Math.round(v * 100));
 const shippingGrosze = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 2_000 : 3_000));
 const shippingEuroCents = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_000));
 const shippingGBPPence = vi.fn((method: string) => (method === 'odbior' ? 0 : method === 'paczkomat' ? 500 : 1_200));
+// The same price list in the table shape the /v1/shipping-rates cutover reads —
+// MAJOR units, since checkout now composes shippingOfCurrency with toMinor.
+const DEFAULT_DOMESTIC_SHIPPING = {
+  pln: { paczkomat: 20, kurier: 30, odbior: 0 },
+  eur: { paczkomat: 5, kurier: 10, odbior: 0 },
+  gbp: { paczkomat: 5, kurier: 12, odbior: 0 },
+};
+type DomesticRates = typeof DEFAULT_DOMESTIC_SHIPPING;
+const shippingOfCurrency = vi.fn(
+  (currency: keyof DomesticRates, method: keyof DomesticRates['pln'], rates: DomesticRates = DEFAULT_DOMESTIC_SHIPPING) =>
+    (rates[currency] ?? rates.eur)[method],
+);
 
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -135,7 +147,21 @@ vi.mock('@/lib/pricing', () => ({
   shippingGrosze,
   shippingEuroCents,
   shippingGBPPence,
+  shippingOfCurrency,
+  DEFAULT_DOMESTIC_SHIPPING,
 }));
+
+// Real shipping-rates/get.ts (getShippingRatesForCheckout) runs for real in
+// every test — CATALOG_SOURCE defaults to 'code' in this file, so it
+// short-circuits to CODE_SHIPPING_RATES (the two constant tables above and the
+// real print-shipping SHIPPING_EUR) without touching this mock. The two tests
+// that stub CATALOG_SOURCE=db get the same values back from here, so the
+// cutover cannot change any expected amount — only where they came from.
+const loadShippingRatesFromDb = vi.fn(async () => ({
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+}));
+vi.mock('@/lib/shipping-rates/load', () => ({ loadShippingRatesFromDb }));
 
 // Real print-pricing-config/get.ts (getPrintPricingConfigForCheckout) runs
 // for real in every test — CATALOG_SOURCE defaults to 'code' in this file,
@@ -406,6 +432,13 @@ describe('POST /api/checkout', () => {
     ...overrides,
   });
 
+  // Every success response carries `amounts`: the minor-unit figures the
+  // PaymentIntent was priced from, so the cart renders what will actually be
+  // charged instead of its own code-default estimate. For the default body
+  // above that's the k01 ceramic at 9 000 gr with free 'odbior' pickup.
+  const DEFAULT_AMOUNTS = { currency: 'pln', subtotal: 9_000, shipping: 0, discount: 0, total: 9_000 };
+  const amountsWith = (overrides: Partial<typeof DEFAULT_AMOUNTS> = {}) => ({ ...DEFAULT_AMOUNTS, ...overrides });
+
   it('passes a Stripe idempotency key derived from the supplied attemptId', async () => {
     const { POST } = await import('./route');
     const req = new Request('http://localhost/api/checkout', {
@@ -537,7 +570,7 @@ describe('POST /api/checkout', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
     expect(insertOrderItems).not.toHaveBeenCalled();
@@ -555,7 +588,7 @@ describe('POST /api/checkout', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+    expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
     expect(insertOrderItems).toHaveBeenCalledTimes(1);
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
     expect(releaseHold).not.toHaveBeenCalled();
@@ -999,6 +1032,43 @@ describe('POST /api/checkout', () => {
       );
     });
 
+    // The discriminating version of the test above: 'odbior' is only a sentinel
+    // for "no physical delivery" on a gift-card order, and as of the
+    // /v1/shipping-rates cutover its price is operator-editable. Publish a
+    // non-zero studio-pickup price in EVERY currency and the gift-card order
+    // must still be charged exactly the tier price — zero shipping is a
+    // property of the fulfilment type, never a value read from a price list.
+    it('charges zero shipping even when the published odbior rate is non-zero', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce({
+        domestic: {
+          pln: { paczkomat: 20, kurier: 30, odbior: 15 },
+          eur: { paczkomat: 5, kurier: 10, odbior: 4 },
+          gbp: { paczkomat: 5, kurier: 12, odbior: 3 },
+        },
+        international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+      });
+      try {
+        giftCardCart();
+        const res = await post();
+        expect(res.status).toBe(200);
+        // 1500 grosze of studio pickup must NOT appear anywhere.
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({
+            shipping: 0,
+            subtotal: GIFT_CARD_ITEM.unit_price,
+            total: GIFT_CARD_ITEM.unit_price,
+          }),
+        );
+        expect(createPaymentIntent).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: GIFT_CARD_ITEM.unit_price }),
+          expect.anything(),
+        );
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
     it('rejects a promo code on a gift-card cart (no arbitrage)', async () => {
       giftCardCart();
       const res = await post({ promo_code: 'WELCOME10' });
@@ -1375,7 +1445,7 @@ describe('POST /api/checkout', () => {
       // Normal persistence/response path reached, within the (shrunk) deadline
       // rather than hanging on the stalled auth call.
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test' });
+      expect(await res.json()).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
       expect(Date.now() - started).toBeLessThan(1500);
       // Session degraded to anonymous — the order is a guest order.
       expect(insertOrders).toHaveBeenCalledTimes(1);
@@ -1423,7 +1493,11 @@ describe('POST /api/checkout', () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: '  welcome10 ' }));
       expect(res.status).toBe(200);
       // subtotal 9000, 10% → 900 off; odbior shipping 0 → amount 8100.
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 900,
+        amounts: amountsWith({ discount: 900, total: 8_100 }),
+      });
       expect(fetchPromoByCode).toHaveBeenCalledWith(expect.anything(), 'WELCOME10');
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1470,7 +1544,11 @@ describe('POST /api/checkout', () => {
         { headers: { Cookie: 'currency_pref=eur' } },
       );
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 1_000 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 1_000,
+        amounts: { currency: 'eur', subtotal: 42_000, shipping: shipEur, discount: 1_000, total: 42_000 - 1_000 + shipEur },
+      });
       expect(insertOrders).toHaveBeenCalledWith(
         expect.objectContaining({
           promo_code: 'ART10',
@@ -1583,11 +1661,16 @@ describe('POST /api/checkout', () => {
       }
     });
 
-    it('no promo_code → success JSON carries NO discount field (byte-identical legacy response)', async () => {
+    it('no promo_code → success JSON carries NO top-level discount field', async () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID }));
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json).toEqual({ client_secret: 'cs_test' });
+      // `amounts` is unconditional — it IS the charge, and a summary that only
+      // sometimes tracked the charge would be the desync all over again. The
+      // top-level `discount` keeps its promo-only presence rule: the client
+      // reads it to re-sync the promo preview and must not see a bare 0 where
+      // no code was applied.
+      expect(json).toEqual({ client_secret: 'cs_test', amounts: DEFAULT_AMOUNTS });
       expect(json).not.toHaveProperty('discount');
       expect(claimPromoRpc).not.toHaveBeenCalled();
       expect(fetchPromoByCode).not.toHaveBeenCalled();
@@ -1599,7 +1682,11 @@ describe('POST /api/checkout', () => {
       selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'WELCOME10' }));
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 900 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 900,
+        amounts: amountsWith({ discount: 900, total: 8_100 }),
+      });
       // The claim RPC is re-entrant for the same order+promo — still called.
       expect(claimPromoRpc).toHaveBeenCalledWith('claim_promo_redemption', {
         p_promo_id: PROMO_ID,
@@ -1630,7 +1717,11 @@ describe('POST /api/checkout', () => {
       const res = await post(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, promo_code: 'GRATIS' }));
       expect(res.status).toBe(200);
       // subtotal 9000, shipping 0: max discount = 9000 + 0 - 200 = 8800.
-      expect(await res.json()).toEqual({ client_secret: 'cs_test', discount: 8_800 });
+      expect(await res.json()).toEqual({
+        client_secret: 'cs_test',
+        discount: 8_800,
+        amounts: amountsWith({ discount: 8_800, total: 200 }),
+      });
       expect(createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ amount: 200 }),
         expect.anything(),
@@ -1638,6 +1729,134 @@ describe('POST /api/checkout', () => {
       expect(insertOrders).toHaveBeenCalledWith(
         expect.objectContaining({ discount: 8_800, subtotal: 9_000, total: 200 }),
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Priority 7's one-deploy cutover: BOTH shipping tracks priced from the
+  // CMS-published tables, through the single getShippingRatesForCheckout()
+  // read. These tests exist to prove the flip actually happened for each
+  // branch — and, in the last one, that a failure moves both branches
+  // together, which is the property the plan calls "never split across a
+  // deploy boundary".
+  // -------------------------------------------------------------------------
+  describe('CMS-published shipping rates (one-deploy cutover)', () => {
+    const PUBLISHED_DOMESTIC = {
+      pln: { paczkomat: 24, kurier: 44, odbior: 0 },
+      eur: { paczkomat: 6, kurier: 11, odbior: 0 },
+      gbp: { paczkomat: 6, kurier: 13, odbior: 0 },
+    };
+
+    const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
+      const { POST } = await import('./route');
+      return POST(new Request('http://localhost/api/checkout', { method: 'POST', body: JSON.stringify(body), ...init }));
+    };
+
+    async function publishedRates(international?: Record<string, { framed: number; loose: number }>) {
+      const { DEFAULT_INTERNATIONAL_SHIPPING } = await import('@/lib/print-shipping');
+      return {
+        domestic: PUBLISHED_DOMESTIC,
+        international: { ...DEFAULT_INTERNATIONAL_SHIPPING, ...international },
+      };
+    }
+
+    it('domestic: charges the published PLN rate, not the hardcoded constant', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
+      validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+      try {
+        const res = await post(makeCheckoutBody({ delivery_method: 'kurier' }));
+        expect(res.status).toBe(200);
+        // 44 zł, not the constant's 30 zł.
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 4_400 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('international: charges the published EUR table, still converted at the pricing config\'s single FX source', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates({ DE: { framed: 50, loose: 5 } }));
+      // eurToPln = 10 comes from the PRICING config, never from the shipping
+      // tables — 50 EUR x 10 = 500 PLN proves both halves at once.
+      const CUSTOM_PRICING = { ...DEFAULT_PRINT_PRICING, eurToPln: 10 };
+      validateCart.mockReturnValueOnce({
+        ok: true,
+        items: [PRINT_ITEM],
+        printPricing: CUSTOM_PRICING,
+      } as unknown as ReturnType<typeof validateCart>);
+      try {
+        const res = await post(makeCheckoutBody(PRINT_BODY));
+        expect(res.status).toBe(200);
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 50_000 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    // The gap this closes: the cart's summary is computed from the CODE-default
+    // tables, so if the response only carried `client_secret` the buyer could
+    // read 30 zł shipping while Stripe charged the published 44 zł. The
+    // response has to hand the cart the figures the charge was built from.
+    it('hands the client the PUBLISHED shipping/total, not the figures the cart would compute itself', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
+      validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+      try {
+        const res = await post(makeCheckoutBody({ delivery_method: 'kurier' }));
+        expect(res.status).toBe(200);
+        const { amounts } = (await res.json()) as { amounts: Record<string, unknown> };
+        // Published kurier is 44 zł; the constant the cart prices from is 30 zł.
+        expect(amounts).toEqual({
+          currency: 'pln',
+          subtotal: 9_000,
+          shipping: 4_400,
+          discount: 0,
+          total: 13_400,
+        });
+        // The client-side estimate for the same cart, for contrast — this is
+        // exactly the number the summary used to keep showing.
+        expect(toMinor(shippingOfCurrency('pln', 'kurier'))).toBe(3_000);
+        // And the response figures are the ones actually charged and persisted.
+        expect(createPaymentIntent).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 13_400, currency: 'pln' }),
+          expect.anything(),
+        );
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({ shipping: 4_400, total: 13_400, subtotal: 9_000 }),
+        );
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('a failed read degrades BOTH branches to the code constants in the same deploy — never one track on each source', async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        loadShippingRatesFromDb.mockRejectedValueOnce(new Error('supabase down'));
+        loadShippingRatesFromDb.mockRejectedValueOnce(new Error('supabase down'));
+
+        validateDelivery.mockReturnValueOnce(kurierDelivery(null) as unknown as ReturnType<typeof validateDelivery>);
+        expect((await post(makeCheckoutBody({ delivery_method: 'kurier' }))).status).toBe(200);
+        // The SHIPPING_PLN constant, not PUBLISHED_DOMESTIC's 44.
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 3_000 }));
+
+        insertOrders.mockClear();
+        validateCart.mockReturnValueOnce({
+          ok: true,
+          items: [PRINT_ITEM],
+          printPricing: DEFAULT_PRINT_PRICING,
+        } as unknown as ReturnType<typeof validateCart>);
+        expect((await post(makeCheckoutBody(PRINT_BODY))).status).toBe(200);
+        // print-shipping.ts's own constant table, likewise.
+        expect(insertOrders).toHaveBeenCalledWith(
+          expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'pln', DEFAULT_PRINT_PRICING)) }),
+        );
+      } finally {
+        errSpy.mockRestore();
+        vi.unstubAllEnvs();
+      }
     });
   });
 });

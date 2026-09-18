@@ -3,6 +3,7 @@ import { validateCart } from './checkout';
 import { PRICE_PLN, SHIPPING_PLN, toMinor, orderAmountGrosze, shippingGrosze, priceOf, priceOfCurrency, shippingOfCurrency } from './pricing';
 import { PRICE_EUR, SHIPPING_EUR, shippingEuroCents, orderAmountEuroCents } from './pricing';
 import { PRICE_GBP, SHIPPING_GBP, shippingGBPPence, orderAmountGBPPence } from './pricing';
+import type { DomesticShippingRates } from './pricing';
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
@@ -171,6 +172,44 @@ describe('shippingOfCurrency', () => {
     expect(shippingOfCurrency('eur', 'kurier')).toBe(10);
     expect(shippingOfCurrency('gbp', 'kurier')).toBe(12);
     expect(shippingOfCurrency('pln', 'odbior')).toBe(0);
+  });
+
+  // The `rates` parameter is what checkout passes the CMS-published domestic
+  // table through (src/lib/shipping-rates/get.ts -> src/app/api/checkout/route.ts,
+  // the /v1/shipping-rates cutover). checkout's own tests mock this module, so
+  // without the cases below nothing anywhere would notice the parameter being
+  // ignored — a regression to `SHIPPING_PLN[method]` would leave every suite
+  // green while every real domestic order charged the stale hardcoded rate.
+  //
+  // Every value in PUBLISHED deliberately differs from the corresponding
+  // SHIPPING_PLN/EUR/GBP constant, so each assertion fails if the argument is
+  // dropped and the constant is used instead.
+  describe('with a published rate table injected', () => {
+    const PUBLISHED: DomesticShippingRates = {
+      pln: { paczkomat: 24, kurier: 44, odbior: 15 }, // constants: 20 / 30 / 0
+      eur: { paczkomat: 7, kurier: 13, odbior: 4 }, //  constants:  5 / 10 / 0
+      gbp: { paczkomat: 8, kurier: 17, odbior: 3 }, //  constants:  5 / 12 / 0
+    };
+
+    it('reads PLN from the injected table, not SHIPPING_PLN', () => {
+      expect(shippingOfCurrency('pln', 'kurier', PUBLISHED)).toBe(44);
+      expect(SHIPPING_PLN.kurier).toBe(30);
+    });
+
+    it('reads EUR from the injected table, not SHIPPING_EUR', () => {
+      expect(shippingOfCurrency('eur', 'paczkomat', PUBLISHED)).toBe(7);
+      expect(SHIPPING_EUR.paczkomat).toBe(5);
+    });
+
+    it('reads GBP from the injected table, not SHIPPING_GBP — including a non-free odbior', () => {
+      expect(shippingOfCurrency('gbp', 'odbior', PUBLISHED)).toBe(3);
+      expect(SHIPPING_GBP.odbior).toBe(0);
+    });
+
+    it('still defaults to the code constants when no table is passed', () => {
+      // Display surfaces (PDP, cart) call it this way and must be unaffected.
+      expect(shippingOfCurrency('pln', 'kurier')).toBe(SHIPPING_PLN.kurier);
+    });
   });
 });
 

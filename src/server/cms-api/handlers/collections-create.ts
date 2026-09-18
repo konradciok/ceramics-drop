@@ -9,17 +9,26 @@ function generateCollectionId(): string {
   return `col_${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`;
 }
 
-// Default payload seeded on create — Global Constraint 3's Field shape, five
-// fields total: four locale description fields plus one productIds-type
-// field. key/label values mirror cms-ceramics' own mock fixture for its
-// default collection (src/lib/mock/fixtures.ts's `collection-01`: a single
-// `key: "description"` distinguished per-locale by the `locale` field rather
-// than a per-locale key suffix, plus a `key: "products"` productIds field) —
-// that mock is this API's local-dev parity target (Global Constraint 18).
-// sourceLocale is "pl" on every description field (including the pl one
-// itself), matching the same fixture's `content` resources, which always
-// carry `sourceLocale: "pl"` regardless of the field's own locale — pl is
-// the translation source of truth.
+// Default payload seeded on create — Global Constraint 3's Field shape, six
+// fields total: four locale description fields, one productIds-type field,
+// and one 'kind' tag field. key/label values mirror cms-ceramics' own mock
+// fixture for its default collection (src/lib/mock/fixtures.ts's
+// `collection-01`: a single `key: "description"` distinguished per-locale by
+// the `locale` field rather than a per-locale key suffix, plus a
+// `key: "products"` productIds field) — that mock is this API's local-dev
+// parity target (Global Constraint 18). sourceLocale is "pl" on every
+// description field (including the pl one itself), matching the same
+// fixture's `content` resources, which always carry `sourceLocale: "pl"`
+// regardless of the field's own locale — pl is the translation source of
+// truth.
+//
+// The 'kind' field (Task 1 — Protect the print-collection kind tag): the
+// storefront (ceramics-drop/src/lib/print-collections.ts) only surfaces a
+// collection whose `kind` field value is exactly 'print-collection' — every
+// freshly created collection must be seeded with it or it can never reach
+// the storefront. collections-save.ts's withProtectedKind carries this value
+// forward on every subsequent save, ignoring whatever a client submits for
+// the `kind` key.
 function defaultFields(): Field[] {
   return [
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'pl', sourceLocale: 'pl' },
@@ -27,6 +36,7 @@ function defaultFields(): Field[] {
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'es', sourceLocale: 'pl' },
     { key: 'description', label: 'Opis kolekcji', type: 'text', value: '', locale: 'de', sourceLocale: 'pl' },
     { key: 'products', label: 'Produkty i kolejność', type: 'productIds', value: '', locale: 'none', sourceLocale: 'none' },
+    { key: 'kind', label: 'Rodzaj', type: 'text', value: 'print-collection', locale: 'none', sourceLocale: 'none' },
   ];
 }
 

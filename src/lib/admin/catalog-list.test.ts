@@ -139,4 +139,18 @@ describe('assembleProductRows', () => {
       expect(Number(printRows[i].num)).toBeGreaterThanOrEqual(Number(printRows[i - 1].num));
     }
   });
+
+  it('threads definitions through productRef for print naming (discriminating fixture)', () => {
+    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
+    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the title
+    // proves that the definitions parameter was actually threaded through to
+    // productRef and printDisplayName, not silently dropped in favor of the static fallback.
+    const discriminatingDefs = [
+      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
+    ];
+    const rows = assembleProductRows(catalog, new Map(), discriminatingDefs);
+    const fap005 = rows.find((r) => r.id === 'fap005')!;
+    expect(fap005.title).toContain('CmsOnly 01');
+    expect(fap005.title).not.toContain('Horizons');
+  });
 });

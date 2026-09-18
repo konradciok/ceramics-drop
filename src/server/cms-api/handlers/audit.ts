@@ -1,5 +1,7 @@
-import type { RouteDef } from '../router';
+import type { RouteDef, HandlerContext } from '../router';
 import { jsonResponse, errorResponse } from '../http';
+import { decodeContentResourceId, encodeContentResourceId } from '../content-mapping';
+import type { ContentResourceIdParts } from '../content-mapping';
 
 type AuditRow = {
   id: string;
@@ -11,6 +13,16 @@ type AuditRow = {
   created_at: string;
 };
 
+type ContentAuditRow = {
+  id: string;
+  document_id: string | null;
+  actor_email: string | null;
+  action: string;
+  locale: string | null;
+  version: number | null;
+  created_at: string;
+};
+
 export const auditRoute: RouteDef = {
   method: 'GET',
   path: '/v1/audit',
@@ -19,6 +31,14 @@ export const auditRoute: RouteDef = {
     const resourceId = url.searchParams.get('resourceId');
     if (!resourceId) {
       return errorResponse('VALIDATION_FAILED', 'resourceId is required.', 422, ctx.requestId);
+    }
+
+    // Content resource ids ("${kind}:${slug}:${locale}") route to
+    // cms_audit_log (scoped by document_id + locale) instead of
+    // catalog_audit_log — a structurally different table (Task 5 brief).
+    const contentParts = decodeContentResourceId(resourceId);
+    if (contentParts) {
+      return contentAuditResponse(ctx, contentParts);
     }
 
     // catalog_audit_log rows are scoped by exactly one of product_id /
@@ -51,3 +71,49 @@ export const auditRoute: RouteDef = {
     return jsonResponse({ items });
   },
 };
+
+async function contentAuditResponse(ctx: HandlerContext, parts: ContentResourceIdParts) {
+  // cms_audit_log rows are keyed by document_id (a cms_documents.id uuid),
+  // not by (kind, slug) directly — resolve the document row first. A
+  // document that has never been saved (no cms_documents row yet) simply
+  // has no audit history: return an empty list rather than 404, matching
+  // GET /v1/audit's existing "resourceId not found → empty items" posture
+  // for products/collections (the catalog_audit_log branch above never
+  // 404s on an unknown id either).
+  const { data: docRow, error: docErr } = await ctx.supabase
+    .from('cms_documents')
+    .select('id')
+    .eq('kind', parts.kind)
+    .eq('slug', parts.slug)
+    .maybeSingle();
+  if (docErr) throw docErr;
+  if (!docRow) return jsonResponse({ items: [] });
+
+  const { data, error } = await ctx.supabase
+    .from('cms_audit_log')
+    .select('id, document_id, actor_email, action, locale, version, created_at')
+    .eq('document_id', (docRow as { id: string }).id)
+    .eq('locale', parts.locale)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+
+  const items = ((data ?? []) as ContentAuditRow[]).map((row) => ({
+    id: row.id,
+    // Reconstructed from the request's own (kind, slug, locale) rather than
+    // read off the row: cms_audit_log's `locale` column can legitimately be
+    // null for some historical row shapes elsewhere in this table's use, so
+    // trusting the validated request parts is simpler and always correct
+    // for content, which is scoped to exactly one locale per resource id.
+    resourceId: encodeContentResourceId(parts.kind, parts.slug, parts.locale),
+    // `version` is nullable today for every row (Task 5's migration adds
+    // the column, but content.ts's audit-log inserts stay unmodified and so
+    // never populate it) — see 20260917130000_cms_audit_log_version.sql.
+    revision: row.version,
+    action: row.action,
+    actor: row.actor_email ?? 'system',
+    createdAt: row.created_at,
+  }));
+
+  return jsonResponse({ items });
+}

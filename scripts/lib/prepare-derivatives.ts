@@ -1,20 +1,24 @@
 /**
- * Sharp composition for `scripts/print-assets-prepare.ts` (Phase 2a).
+ * CLI wrapper for derivative generation (Phase 0 extraction).
  *
- * This is the ONLY module in the print-asset-pipeline that touches Sharp for
- * derivative generation. It stays under scripts/lib/ (not src/lib/) — Sharp is
- * a native binding incompatible with the Cloudflare Workers runtime that
- * src/lib/ bundles into (mirrors why sync-prodigi-skus.ts's Node-only Prodigi
- * fetch logic lives in scripts/, not src/lib/).
+ * This module wraps the extracted `src/server/print-assets/derivatives.ts` module,
+ * handling file I/O (loading from disk, validation, writing to disk).
+ * The pure Sharp composition logic lives in the extracted module, which the CLI
+ * calls after loading files into Buffers.
  *
  * Pure placement math lives in src/lib/print-assets-prepare.ts and is
- * validated by the caller (the script) before this module runs Sharp.
+ * validated by the caller (the script) before this module runs.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import sharp from 'sharp';
 import type { DerivativeFormat, Placement } from '../../src/lib/print-assets-prepare';
+import {
+  composePrepareDerivative,
+  composeFullBleedDerivative as composeFullBleedBuffer,
+  signatureDensity,
+  rasterizeSignature as rasterizeSignatureBuffer,
+} from '../../src/server/print-assets/derivatives';
 
 export interface ComposeInput {
   artworkPath: string;
@@ -32,149 +36,54 @@ export interface DerivativeResult {
   buffer: Buffer;
 }
 
-// Baseline DPI Sharp/librsvg use to resolve an SVG's unitless intrinsic size.
-const BASE_SVG_DPI = 72;
-// Hard ceiling on the density we'll ever ask librsvg to rasterise at.
-const MAX_SVG_DENSITY = 2400;
-// Hard ceiling on the resulting raster pixel count (decode-time memory).
-const MAX_SIGNATURE_RASTER_PIXELS = 50_000_000;
+// Re-export these from the extracted module for backward compatibility
+export { signatureDensity };
 
 /**
- * DPI that contain-scales a signature SVG's intrinsic size up to its target
- * zone — never below the 72dpi baseline (no downscaling below source
- * resolution), and never past a fixed density/pixel budget. Decoding a small
- * signature at 72dpi and letting `.resize()` upscale the raster afterwards
- * produces a blurry result on large canvases; deriving the density up front
- * and asking librsvg to rasterise at that density directly keeps edges crisp
- * without an unbounded (memory-blowing) decode on a huge zone.
- */
-export function signatureDensity(
-  zone: { width: number; height: number },
-  intrinsic: { width: number; height: number },
-): number {
-  if (
-    !Number.isFinite(zone.width) ||
-    !Number.isFinite(zone.height) ||
-    zone.width <= 0 ||
-    zone.height <= 0
-  ) {
-    throw new Error(`Invalid signature zone ${zone.width}x${zone.height}`);
-  }
-  if (
-    !Number.isFinite(intrinsic.width) ||
-    !Number.isFinite(intrinsic.height) ||
-    intrinsic.width <= 0 ||
-    intrinsic.height <= 0
-  ) {
-    throw new Error(`Signature SVG has invalid intrinsic dimensions ${intrinsic.width}x${intrinsic.height}`);
-  }
-  const containScale = Math.max(
-    1,
-    Math.min(zone.width / intrinsic.width, zone.height / intrinsic.height),
-  );
-  const density = Math.ceil(BASE_SVG_DPI * containScale);
-  const rasterWidth = Math.ceil((intrinsic.width * density) / BASE_SVG_DPI);
-  const rasterHeight = Math.ceil((intrinsic.height * density) / BASE_SVG_DPI);
-  if (density > MAX_SVG_DENSITY || rasterWidth * rasterHeight > MAX_SIGNATURE_RASTER_PIXELS) {
-    throw new Error(
-      `Signature SVG exceeds the safe density budget: ${density}dpi, ${rasterWidth}x${rasterHeight}px`,
-    );
-  }
-  return density;
-}
-
-/**
- * Rasterise a signature SVG at a bounded contain-scale density, then resize
- * (letterboxed, transparent background) into the exact target zone.
+ * Rasterise a signature SVG from a file path at a bounded contain-scale density,
+ * then resize (letterboxed, transparent background) into the exact target zone.
+ *
+ * File I/O wrapper around the extracted module's Buffer-based rasterizeSignature.
  */
 export async function rasterizeSignature(
   signatureSvgPath: string,
   zone: { width: number; height: number },
 ): Promise<Buffer> {
-  const metadata = await sharp(signatureSvgPath, { density: BASE_SVG_DPI }).metadata();
-  if (!metadata.width || !metadata.height) {
-    throw new Error(`Signature SVG has no resolvable intrinsic pixel dimensions: ${signatureSvgPath}`);
-  }
-  const density = signatureDensity(zone, { width: metadata.width, height: metadata.height });
-  return sharp(signatureSvgPath, {
-    density,
-    limitInputPixels: MAX_SIGNATURE_RASTER_PIXELS,
-    unlimited: false,
-  })
-    .resize(zone.width, zone.height, {
-      fit: 'contain',
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .toBuffer();
+  const svgBuffer = fs.readFileSync(signatureSvgPath);
+  return rasterizeSignatureBuffer(svgBuffer, zone);
 }
 
 /**
  * Compose one exact-pixel Prodigi derivative by layering the artwork master and
- * (optionally) an SVG signature onto a solid background canvas, using a resolved
- * proportional placement. Pure layout math lives in src/lib/print-assets-prepare.ts
- * and is validated by the caller before this runs Sharp.
+ * (optionally) an SVG signature onto a solid background canvas. File I/O wrapper
+ * that loads files and calls the extracted module's Buffer-based implementation.
  *
- * Deterministic: fixed JPEG quality / chroma / mozjpeg, fixed PNG settings, and a
- * fixed input file + placement → byte-identical output across runs. Sharp
- * colour-manages artwork into sRGB; `.withMetadata()` embeds the output sRGB
- * profile so the configured RGB background and artwork share one declared
- * colour space.
- *
- * An RGBA artwork master is acceptable here (unlike the old crop path): alpha
- * composites onto the configured opaque background, and the output is flattened —
- * no transparency reaches Prodigi.
+ * Pure layout math and Sharp composition logic live in src/server/print-assets/derivatives.ts.
  */
 export async function composeDerivative(input: ComposeInput): Promise<DerivativeResult> {
   const { artworkPath, signatureSvgPath, background, placement, target, format } = input;
 
-  // 1. Base canvas = exact target pixels, filled with the configured background.
-  const canvas = sharp({
-    create: { width: target.w, height: target.h, channels: 3, background },
+  // Load files into Buffers and delegate to the extracted module
+  const artworkBuffer = fs.readFileSync(artworkPath);
+  const signatureSvgBuffer = signatureSvgPath ? fs.readFileSync(signatureSvgPath) : null;
+
+  return composePrepareDerivative({
+    artworkBuffer,
+    signatureSvgBuffer,
+    background,
+    placement,
+    target,
+    format,
   });
-
-  // 2. Artwork: resize to the contain-computed output dims and place centred in its box.
-  const artworkLayer = await sharp(artworkPath)
-    .resize(placement.artworkOut.width, placement.artworkOut.height, { fit: 'fill' })
-    .toBuffer();
-
-  const overlays: sharp.OverlayOptions[] = [
-    { input: artworkLayer, left: placement.artworkPos.x, top: placement.artworkPos.y },
-  ];
-
-  // 3. Signature: rasterise the SVG at a bounded contain-scale density into its
-  // zone (never blurry-upscaled, never an unbounded decode), place centred in the zone.
-  if (signatureSvgPath && placement.signatureBox) {
-    const zone = placement.signatureBox;
-    const sigLayer = await rasterizeSignature(signatureSvgPath, zone);
-    overlays.push({ input: sigLayer, left: zone.x, top: zone.y });
-  }
-
-  // Composite can promote an RGB canvas to RGBA when an overlay has alpha.
-  // Flatten once for both encoders so even PNG fulfilment assets are explicitly
-  // three-channel and cannot carry a latent alpha channel to Prodigi.
-  let pipeline = canvas.composite(overlays).flatten({ background }).removeAlpha().withMetadata();
-
-  if (format === 'jpg') {
-    pipeline = pipeline.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
-  } else {
-    pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: false });
-  }
-
-  const buffer = await pipeline.toBuffer();
-  const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
-
-  return { sha256, byteSize: buffer.byteLength, format, buffer };
 }
 
 /**
- * Compose one exact-pixel full-bleed derivative: a plain resize of the
- * per-ratio master to the exact target pixels — no background canvas, no
- * overlay, no crop. The caller (scripts/print-assets-prepare.ts) has already
- * validated the source's ratio matches its assigned profile ratio and that no
- * upscale is required (src/lib/print-assets-prepare.ts `assertSourceMatchesRatio`
- * / `validateNoUpscale`), so `fit: 'fill'` here only ever applies the
- * negligible (<=0.5%) correction that tolerance allows — never a real crop or
- * letterbox. Lanczos3 kernel per plan; sRGB embedded via `.withMetadata()`.
+ * Compose one exact-pixel full-bleed derivative: a plain resize of the source
+ * to exact target pixels. File I/O wrapper that loads the file and calls the
+ * extracted module's Buffer-based implementation.
+ *
+ * The caller has already validated no upscale is required, so `fit: 'fill'`
+ * here only ever applies negligible (<=0.5%) correction tolerance.
  */
 export async function composeFullBleedDerivative(input: {
   sourcePath: string;
@@ -183,22 +92,12 @@ export async function composeFullBleedDerivative(input: {
 }): Promise<DerivativeResult> {
   const { sourcePath, target, format } = input;
 
-  let pipeline = sharp(sourcePath)
-    .resize(target.w, target.h, { fit: 'fill', kernel: sharp.kernel.lanczos3 })
-    .toColourspace('srgb')
-    .removeAlpha()
-    .withMetadata();
-
-  if (format === 'jpg') {
-    pipeline = pipeline.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
-  } else {
-    pipeline = pipeline.png({ compressionLevel: 9, adaptiveFiltering: false });
-  }
-
-  const buffer = await pipeline.toBuffer();
-  const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
-
-  return { sha256, byteSize: buffer.byteLength, format, buffer };
+  const sourceBuffer = fs.readFileSync(sourcePath);
+  return composeFullBleedBuffer({
+    sourceBuffer,
+    target,
+    format,
+  });
 }
 
 /** Require a self-contained path-only SVG that Sharp can decode. */

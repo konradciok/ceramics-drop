@@ -85,6 +85,17 @@ async function writePricingAudit(
  * Replace the global print pricing config (the row is validated by the route's
  * Zod parse before this runs; DB check constraints back it up). Throws
  * `print_pricing_missing` when the seed row is absent.
+ *
+ * RETIRED as a write path by the CmsApi pricing cutover (plan step 8): this
+ * unversioned `.update().eq('id', true)` has no production caller any more.
+ * /api/admin/print-pricing now goes through save_pricing_draft +
+ * publish_pricing_revision (supabase/migrations/20260917140000_cms_api_pricing.sql),
+ * so every write leaves behind a draft revision and a
+ * print_pricing_config.published_revision that matches the row's own values.
+ * Writing the row directly desynchronises that pointer — demonstrated in
+ * src/server/cms-api/handlers/pricing-e2e.test.ts. Kept, with its own tests,
+ * as the documented reference for what the cutover moved away from; do not
+ * wire it back up.
  */
 export async function updatePrintPricingConfig(
   supabase: SupabaseClient,

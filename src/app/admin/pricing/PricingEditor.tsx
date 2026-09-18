@@ -203,12 +203,23 @@ export function PricingEditor({ initial, locked }: { initial: PrintPricingConfig
           ))}
         </section>
 
-        <div className="adm-actions">
-          <button className="adm-btn" disabled={busy || locked} onClick={save}>
-            {busy ? 'Zapisywanie…' : 'Zapisz cennik'}
-          </button>
-          {dirty && <span className="adm-action-msg">Niezapisane zmiany</span>}
-        </div>
+        {/* Read-only mode (CmsApi pricing cutover, plan step 7): every input
+            above is already `disabled={locked}`, but a disabled form with no
+            explanation reads as a bug. Say where editing moved instead of
+            showing a save button that cannot do anything. */}
+        {locked ? (
+          <p className="adm-banner">
+            Cennik jest tu tylko do podglądu. Zmiany wprowadzasz w panelu CMS (Ceny printów) — zapis
+            i publikacja przechodzą przez wersjonowaną ścieżkę /v1/pricing.
+          </p>
+        ) : (
+          <div className="adm-actions">
+            <button className="adm-btn" disabled={busy} onClick={save}>
+              {busy ? 'Zapisywanie…' : 'Zapisz cennik'}
+            </button>
+            {dirty && <span className="adm-action-msg">Niezapisane zmiany</span>}
+          </div>
+        )}
       </div>
 
       <aside className="adm-detail-side">

@@ -10,7 +10,7 @@ describe('sessionRoute', () => {
     const body = await res.json();
     expect(body.email).toBe('anna@anna-ciok.studio');
     expect(body.writesEnabled).toBe(true);
-    expect(body.contractVersion).toBe('1.0.0');
+    expect(body.contractVersion).toBe('1.1.0');
   });
 
   it('reports environment=integration when CMS_API_ENVIRONMENT=integration', async () => {

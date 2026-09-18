@@ -8,6 +8,29 @@
   },
   "compatibility_date": "2026-06-02",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Disable wrangler's local-dev container simulation (Docker-backed). This has
+  // no effect on `wrangler deploy` or production Container behaviour — it only
+  // stops `wrangler dev` / `getPlatformProxy()` (called via this repo's
+  // `initOpenNextCloudflareForDev()` in next.config.ts, which runs during
+  // `next build` too, not just `next dev`) from trying to connect to a local
+  // Docker daemon. Without this, `getPlatformProxy`'s own
+  // `getMiniflareOptionsFromConfig` hardcodes `containerBuildId: void 0` (it
+  // never calls `generateContainerBuildId()`, unlike a real `wrangler dev`
+  // session) while still gating on `containerDOClassNames.size && enableContainers`,
+  // so `getImageNameFromDOClassName`'s `assert(containerBuildId, ...)` always
+  // throws once a `containers` binding exists (PrintAssetProcessor, Task 11) —
+  // regardless of whether Docker is even installed. Verified against
+  // node_modules/wrangler/wrangler-dist/cli.js (search
+  // "Build ID should be set if containers"). Deliberately NOT repeated under
+  // env.preview: unlike `containers`/`durable_objects` below, `dev` is a
+  // top-level-only setting — it is absent from RawEnvironment in
+  // config-schema.json (which has additionalProperties: false, so adding it
+  // under env.preview would violate the schema), and wrangler's config
+  // builder reads `dev` from the raw top-level config unconditionally
+  // (`rawConfig.dev`, cli.js ~line 29718), never from the selected
+  // environment's block — so it already applies to every `--env` including
+  // preview.
+  "dev": { "enable_containers": false },
   // Storefront catalogue source: 'db' reads shadow tables (Stage 3b flip). Rollback → remove or set 'code'.
   "vars": {
     "CATALOG_SOURCE": "db"
@@ -35,7 +58,13 @@
     }
   ],
   "queues": {
-    "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" }],
+    "producers": [
+      { "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment" },
+      // Priority 8 / Phase 2 (Task 10) — durable job queue for print-asset
+      // processing. Mirrors FULFILMENT_QUEUE's shape exactly; see worker.ts's
+      // queue() handler and src/server/asset-jobs/{enqueue,process-job}.ts.
+      { "binding": "ASSET_JOBS_QUEUE", "queue": "print-asset-jobs" }
+    ],
     "consumers": [{
       "queue": "prodigi-fulfilment",
       "max_batch_size": 1,
@@ -48,10 +77,66 @@
       // ackAll in the handler (the normal path never retries).
       "queue": "prodigi-fulfilment-dlq",
       "max_retries": 1
+    }, {
+      "queue": "print-asset-jobs",
+      "max_batch_size": 1,
+      "max_retries": 10,
+      "dead_letter_queue": "print-asset-jobs-dlq"
+    }, {
+      // Same alert-only posture as prodigi-fulfilment-dlq above.
+      "queue": "print-asset-jobs-dlq",
+      "max_retries": 1
     }]
   },
   "r2_buckets": [
     { "binding": "PRINT_ASSETS", "bucket_name": "anna-ciok-print-assets" }
+  ],
+  // Priority 8 / Phase 3 (Task 11) — the Node/Sharp derivative processor.
+  // Master plan (cms-ceramics/docs/plans/2026-09-09-cms-v1.md §S3): "Początkowo
+  // jedna instancja `standard-3`, jedno zadanie naraz, profile przetwarzane
+  // kolejno; kontener usypiany po bezczynności. Ten typ oferuje 8 GiB pamięci."
+  //   - standard-3 = 2 vCPU / 8 GiB / 16 GB disk
+  //     (https://developers.cloudflare.com/containers/platform/limits/)
+  //   - max_instances 1 = "one instance"; the queue consumer + the DO's own
+  //     serialisation give "one job at a time".
+  //   - idle sleep is set in code, not here: container.ts calls
+  //     ctx.container.setInactivityTimeout(10m).
+  //   - image_build_context is the REPO ROOT because the image runs this
+  //     repo's own src/lib + src/server sources (see container/Dockerfile).
+  //
+  // ⚠️ A Container is backed by a Durable Object, so this needs BOTH the
+  // durable_objects binding below AND a `migrations` entry with
+  // new_sqlite_classes (NOT new_classes) — this Worker's first ever DO
+  // migration. The three OpenNext DO classes worker.ts re-exports have never
+  // been bound or migrated (this repo uses only the incremental cache), so
+  // tag v1 registers exactly one class.
+  //
+  // ⚠️ `name` is DELIBERATELY OMITTED here and in env.preview. A container
+  // APPLICATION is account-scoped by name — not per-Worker — and wrangler's
+  // deploy path looks an existing application up BY NAME and throws a UserError
+  // when it finds one bound to a different Durable Object namespace. Hardcoding
+  // the same `name` in both environments would therefore hard-fail whichever of
+  // the two deploys second — precisely the "deploy to preview first" sequence
+  // this change recommends. Omitting it lets wrangler derive
+  // `${workerName}-${class_name}`, which already differs per environment
+  // (`ceramics-drop-preview` vs `ceramics-drop`). Do not "tidy" a `name` back in
+  // unless you give each environment its own distinct one.
+  "containers": [
+    {
+      "class_name": "PrintAssetProcessor",
+      "image": "./container/Dockerfile",
+      "image_build_context": ".",
+      "instance_type": "standard-3",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "PRINT_ASSET_PROCESSOR", "class_name": "PrintAssetProcessor" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PrintAssetProcessor"] }
   ],
   "observability": {
     "enabled": true,
@@ -100,7 +185,10 @@
         }
       ],
       "queues": {
-        "producers": [{ "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment-preview" }],
+        "producers": [
+          { "binding": "FULFILMENT_QUEUE", "queue": "prodigi-fulfilment-preview" },
+          { "binding": "ASSET_JOBS_QUEUE", "queue": "print-asset-jobs-preview" }
+        ],
         "consumers": [{
           "queue": "prodigi-fulfilment-preview",
           "max_batch_size": 1,
@@ -111,11 +199,42 @@
         }, {
           "queue": "prodigi-fulfilment-preview-dlq",
           "max_retries": 1
+        }, {
+          "queue": "print-asset-jobs-preview",
+          "max_batch_size": 1,
+          "max_retries": 3,
+          "dead_letter_queue": "print-asset-jobs-preview-dlq"
+        }, {
+          "queue": "print-asset-jobs-preview-dlq",
+          "max_retries": 1
         }]
       },
       "r2_buckets": [
         { "binding": "PRINT_ASSETS", "bucket_name": "anna-ciok-print-assets" }
       ],
+      // `containers` and `durable_objects` are NON-inheritable keys — an env
+      // that omits them gets nothing, so they are repeated here rather than
+      // inherited from the top level. (`migrations` IS inheritable and is
+      // deliberately declared only once, at the top level.) Same class name:
+      // the preview Worker gets its own separate container application and its
+      // own separate DO namespace because it is a different Worker script
+      // (`ceramics-drop-preview`) — but ONLY because no explicit `name` is set
+      // here. See the top-level block's warning: a hardcoded, shared container
+      // application name would make these two environments collide at deploy.
+      "containers": [
+        {
+          "class_name": "PrintAssetProcessor",
+          "image": "./container/Dockerfile",
+          "image_build_context": ".",
+          "instance_type": "standard-3",
+          "max_instances": 1
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "PRINT_ASSET_PROCESSOR", "class_name": "PrintAssetProcessor" }
+        ]
+      },
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { useCartLines } from '@/lib/use-cart-lines';
 import { isGiftCardToken } from '@/lib/gift-cards';
@@ -11,15 +11,17 @@ import { priceOfCurrency } from '@/lib/pricing';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import type { Locale } from '@/i18n/routing';
 
 /** Sticky bottom bar summarising the current selection. */
 export function SelectionBar() {
   const t = useTranslations();
+  const locale = useLocale() as Locale;
   const currency = useCurrency();
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const clear = useCart((s) => s.clear);
-  const { lines, status } = useCartLines(ids);
+  const { lines, status } = useCartLines(ids, locale);
 
   // Selection scope is ceramics only — prints/gift cards aren't added from
   // the gallery/PDP selection flow this bar summarises. Sold/showroom pieces

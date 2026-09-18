@@ -1,10 +1,152 @@
 import { describe, it, expect } from 'vitest';
 import {
   attemptIdentityKey,
+  cartSummaryAmounts,
   checkoutPreBodyError,
+  parseCheckoutAmounts,
+  resolveConfirmedAmounts,
   shouldKeepAttemptIdOnCatch,
   CHECKOUT_KEEP_ATTEMPT_STATUSES,
 } from './checkout-client';
+
+describe('cart summary vs. what Stripe will charge', () => {
+  // The cart prices shipping from the CODE-default tables; /api/checkout prices
+  // the PaymentIntent from the CMS-published bundle. A publish between page
+  // load and payment moves one and not the other, so once the PaymentIntent
+  // exists the server's figures have to win — otherwise the buyer reads one
+  // total and is charged another, with nothing in the UI showing the real one.
+
+  /** What the cart computed for itself: 90 zł of goods + the constant 30 zł kurier. */
+  const ESTIMATE = { currency: 'pln', subtotal: 90, shipping: 30, discount: 0, total: 120 } as const;
+  /** What checkout actually charged: the published 44 zł kurier rate. */
+  const CONFIRMED = { currency: 'pln', subtotal: 9_000, shipping: 4_400, discount: 0, total: 13_400 } as const;
+
+  it('shows the live estimate while there is nothing authoritative yet', () => {
+    // Pre-PaymentIntent the estimate is a legitimate quote and must keep
+    // tracking the buyer's delivery/promo/currency choices.
+    expect(cartSummaryAmounts(ESTIMATE, null)).toEqual({ ...ESTIMATE, confirmed: false });
+  });
+
+  it('the SERVER figures win once the PaymentIntent exists — not the client-computed ones', () => {
+    const summary = cartSummaryAmounts(ESTIMATE, CONFIRMED);
+    expect(summary.shipping).toBe(44);
+    expect(summary.total).toBe(134);
+    // The values the cart would otherwise have gone on displaying.
+    expect(summary.shipping).not.toBe(ESTIMATE.shipping);
+    expect(summary.total).not.toBe(ESTIMATE.total);
+    expect(summary.confirmed).toBe(true);
+  });
+
+  it('swaps the whole snapshot, so the displayed rows still reconcile', () => {
+    // Swapping only shipping/total would leave a subtotal that no longer adds
+    // up to the total printed under it.
+    const summary = cartSummaryAmounts(
+      { currency: 'pln', subtotal: 90, shipping: 30, discount: 10, total: 110 },
+      { currency: 'pln', subtotal: 9_500, shipping: 4_400, discount: 1_000, total: 12_900 },
+    );
+    expect(summary.subtotal - summary.discount + summary.shipping).toBe(summary.total);
+    expect(summary).toEqual({ currency: 'pln', subtotal: 95, shipping: 44, discount: 10, total: 129, confirmed: true });
+  });
+
+  it('carries the charged currency, so a mid-payment currency switch cannot relabel the amount', () => {
+    // The header switcher stays live behind the mounted Stripe form.
+    const summary = cartSummaryAmounts({ ...ESTIMATE, currency: 'gbp' }, CONFIRMED);
+    expect(summary.currency).toBe('pln');
+    expect(summary.total).toBe(134);
+  });
+
+  it('gives the gift-card panel the charged currency once confirmed, the live one before', () => {
+    // GiftCardPayment formats the server-confirmed cash remainder — the amount
+    // Stripe actually takes — so once that exists it must be labelled in the
+    // charged currency, not whatever the switcher now says. Before
+    // confirmation nothing is charged yet and the live currency is correct (it
+    // is also what `giftCard.currency` is matched against on apply).
+    // CartView derives exactly this pair: `confirmed ? currency : printCurrency`.
+    const afterSwitch = cartSummaryAmounts({ ...ESTIMATE, currency: 'gbp' }, CONFIRMED);
+    expect(afterSwitch.confirmed).toBe(true);
+    expect(afterSwitch.currency).toBe('pln');
+
+    const beforePayment = cartSummaryAmounts({ ...ESTIMATE, currency: 'gbp' }, null);
+    expect(beforePayment.confirmed).toBe(false);
+    expect(beforePayment.currency).toBe('gbp');
+  });
+});
+
+describe('parseCheckoutAmounts', () => {
+  const VALID = { currency: 'eur', subtotal: 4_200, shipping: 1_500, discount: 100, total: 5_600 };
+
+  it('accepts a well-formed payload', () => {
+    expect(parseCheckoutAmounts(VALID)).toEqual(VALID);
+  });
+
+  it('falls back to null rather than render a garbled or partial price', () => {
+    // Each of these must leave the cart on its own estimate — no worse than
+    // before the field existed, and never a blank/NaN price on a payment page.
+    expect(parseCheckoutAmounts(undefined)).toBeNull();        // older deployment
+    expect(parseCheckoutAmounts(null)).toBeNull();
+    expect(parseCheckoutAmounts('13400')).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: undefined })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: '5600' })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: 56.5 })).toBeNull();   // minor units are integers
+    expect(parseCheckoutAmounts({ ...VALID, shipping: -1 })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: Number.NaN })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, currency: 'usd' })).toBeNull(); // not a sellable currency
+    expect(parseCheckoutAmounts({ ...VALID, currency: undefined })).toBeNull();
+  });
+
+  it('accepts a zero-shipping, zero-discount order (pickup, gift card)', () => {
+    const free = { currency: 'pln', subtotal: 9_000, shipping: 0, discount: 0, total: 9_000 };
+    expect(parseCheckoutAmounts(free)).toEqual(free);
+  });
+
+  it('rejects a payload whose total does not reconcile with subtotal - discount + shipping', () => {
+    // Every field is individually valid, but they don't add up — a snapshot
+    // like this would render contradictory order rows on the cart summary.
+    expect(parseCheckoutAmounts({ ...VALID, total: VALID.total + 1 })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: VALID.total - 1 })).toBeNull();
+  });
+
+  it('rejects a discount greater than the subtotal', () => {
+    expect(
+      parseCheckoutAmounts({ currency: 'eur', subtotal: 1_000, shipping: 500, discount: 1_500, total: 0 }),
+    ).toBeNull();
+  });
+});
+
+describe('resolveConfirmedAmounts (Finding 1: absent vs. malformed amounts)', () => {
+  const VALID = { currency: 'eur', subtotal: 4_200, shipping: 1_500, discount: 100, total: 5_600 };
+
+  it('treats an entirely absent `amounts` field as the legitimate older-deployment case', () => {
+    // No `amounts` key at all — the caller should keep its own live estimate,
+    // not reject the response. `response.amounts` is `undefined` here exactly
+    // as it would be after `JSON.parse` on a body that never included the key.
+    expect(resolveConfirmedAmounts(undefined)).toEqual({ ok: true, amounts: null });
+  });
+
+  it('parses a well-formed `amounts` field through to the caller', () => {
+    expect(resolveConfirmedAmounts(VALID)).toEqual({ ok: true, amounts: VALID });
+  });
+
+  it('rejects the whole response when `amounts` is PRESENT but malformed — never falls back to the estimate', () => {
+    // This is the bug Finding 1 closes: a present-but-garbled payload used to
+    // come back as `{ amounts: null }`, which a caller could (and did)
+    // mistake for "nothing confirmed yet, show the live estimate" — the exact
+    // same shape as the legitimate absent-field case above. `ok: false` here
+    // is what lets the caller tell the two apart and reject instead.
+    expect(resolveConfirmedAmounts(null)).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts('5600')).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, total: undefined })).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, currency: 'usd' })).toEqual({ ok: false });
+  });
+
+  it('rejects an arithmetically incoherent `amounts` field the same way (Finding 2 composes with Finding 1)', () => {
+    // A reconciliation failure is a malformed payload, so it must route
+    // through the same reject path as any other malformed `amounts` — not
+    // bypass it and fall back to the estimate.
+    expect(resolveConfirmedAmounts({ ...VALID, total: VALID.total + 1 })).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, discount: VALID.subtotal + 1 })).toEqual({ ok: false });
+  });
+});
 
 describe('attemptIdentityKey (promo hard gate)', () => {
   // The Stripe idempotency key `pi_create_<orderId>` is amount-sensitive and

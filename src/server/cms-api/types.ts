@@ -59,9 +59,10 @@ export type ProductResponse = {
   availability: ProductAvailability;
 };
 
-// --- Generic Field[]/Resource shape (collections, content, pricing,
-// shipping-rates — this task only implements collections; the contract's
-// `Field`/`Resource` schemas are shared verbatim across all four kinds). See
+// --- Generic Field[]/Resource shape, shared verbatim by all four resource
+// kinds. All four are implemented: collections, content, pricing and
+// shipping-rates each have their own *-mapping.ts / *-validation.ts pair and
+// handler set, and all of them round-trip through these types. See
 // contracts/cms-v1.json's Field/Resource schemas — greenfield, not derived
 // from ProductDraft/ProductResponse above (those are ceramics-specific).
 export type FieldType = 'text' | 'richtext' | 'number' | 'productIds';
@@ -85,4 +86,36 @@ export type CollectionResponse = {
   revision: number;
   publishedRevision: number | null;
   fields: Field[];
+};
+
+// --- Asset (contracts/cms-v1.json's Asset schema) — shared by
+// uploads-mapping.ts's mapConfirmedUploadToAsset (POST /v1/uploads/{id}/confirm's
+// response) and assets-mapping.ts's mapping of print_fulfilment_assets rows
+// (GET /v1/assets) — same wire type, two different source tables (Task 9).
+export type AssetStatus = 'uploaded' | 'processing' | 'ready' | 'failed';
+
+export type AssetResponse = {
+  id: string;
+  name: string;
+  revision: number;
+  status: AssetStatus;
+  ratio: string;
+  url: string;
+  usages: string[];
+  error: string;
+};
+
+// --- Job (contracts/cms-v1.json's Job schema) — Priority 8 / Phase 2 (Task
+// 10). See src/server/cms-api/jobs-mapping.ts for the print_asset_jobs row ->
+// wire mapping and src/server/asset-jobs/{enqueue,process-job}.ts for the
+// underlying durable job queue.
+export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
+export type JobResponse = {
+  id: string;
+  assetId: string;
+  revision: number;
+  status: JobStatus;
+  progress: number;
+  error: string;
 };

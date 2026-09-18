@@ -9,6 +9,25 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+/**
+ * The exact slice of the PRINT_ASSET_PROCESSOR Durable Object namespace this
+ * codebase uses. Hand-written (rather than `DurableObjectNamespace<...>`)
+ * because this file is shared by BOTH tsconfigs: the app build resolves binding
+ * shapes from cloudflare-bindings.d.ts, which has no DO types, while
+ * tsconfig.worker.json resolves them from @cloudflare/workers-types, whose
+ * generic `DurableObjectNamespace<T>` constrains T to an RPC-branded class. A
+ * plain structural interface is the one shape both accept.
+ */
+interface PrintAssetProcessorStub {
+  renderDerivative(
+    input: import('./src/server/asset-jobs/container-render').RenderInput,
+  ): Promise<import('./src/server/asset-jobs/container-render').RenderResult>;
+}
+
+interface PrintAssetProcessorNamespace {
+  getByName(name: string): PrintAssetProcessorStub;
+}
+
 interface CloudflareEnv {
   ASSETS: Fetcher;
   WORKER_SELF_REFERENCE: Service<typeof import('./.open-next/worker').default>;
@@ -58,6 +77,22 @@ interface CloudflareEnv {
   // Prodigi Print-on-Demand — CF Queue, R2 bucket, and API secrets.
   FULFILMENT_QUEUE: Queue;
   PRINT_ASSETS: R2Bucket;
+  // Print-asset processing job queue (Priority 8 / Phase 2 — durable job
+  // queue). Mirrors FULFILMENT_QUEUE's binding shape; see wrangler.jsonc's
+  // ASSET_JOBS_QUEUE producer/consumer/DLQ declarations and
+  // src/server/asset-jobs/{enqueue,process-job}.ts.
+  ASSET_JOBS_QUEUE: Queue;
+  /**
+   * Priority 8 / Phase 3 — the Cloudflare Container (Node/Sharp) that turns a
+   * confirmed upload into print derivatives. A Container is addressed through
+   * its backing Durable Object namespace, so this is a DO binding rather than a
+   * bespoke "container" binding (see wrangler.jsonc's `containers` +
+   * `durable_objects` pair). Optional on purpose — same fail-closed posture as
+   * the R2_S3_* secrets: a deployment without it fails the job as
+   * `failed_action_required` with an explicit message rather than crashing the
+   * queue consumer.
+   */
+  PRINT_ASSET_PROCESSOR?: PrintAssetProcessorNamespace;
   PRODIGI_API_KEY_SANDBOX: string;
   PRODIGI_API_KEY_LIVE: string;
   PRODIGI_ENV: string;
@@ -67,6 +102,18 @@ interface CloudflareEnv {
   PRODIGI_CALLBACK_TOKEN: string;
   PRINT_ASSET_TOKEN_SECRET: string;
   PRODIGI_DEFAULT_SHIPPING_METHOD: string;
+  // R2 S3-compatible API credentials for Worker-side presigned PUT URLs
+  // (POST /v1/uploads — src/server/cms-api/uploads-mapping.ts). Same three
+  // values scripts/lib/r2.ts's resolveR2ConditionalCredentials already reads
+  // for the CLI upload operator (R2_S3_ACCOUNT_ID/ACCESS_KEY_ID/SECRET_ACCESS_KEY)
+  // — deliberately the same names so a `.dev.vars` already set up for those
+  // scripts (which `wrangler dev` also reads into this env) works here too.
+  // Optional: uploads-create.ts fails closed (500) rather than crash the
+  // Worker when unset, same posture as the STUDIO_RETURN_*/NEWSLETTER_CONFIRM_SECRET
+  // fail-closed optional secrets above.
+  R2_S3_ACCOUNT_ID?: string;
+  R2_S3_ACCESS_KEY_ID?: string;
+  R2_S3_SECRET_ACCESS_KEY?: string;
   // CMS preview-token HMAC secret (admin draft preview links). Dedicated, fail-closed.
   CMS_PREVIEW_SECRET: string;
   // Newsletter double-opt-in HMAC secret (confirm-link tokens). Dedicated, fail-closed:
