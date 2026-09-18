@@ -82,7 +82,7 @@ export const uploadsConfirmRoute: RouteDef = {
         await release();
         return errorResponse('NOT_FOUND', `Upload ${params.id} does not exist.`, 404, ctx.requestId);
       }
-      if (current.revision !== expectedRevision) {
+      if (current.status !== 'pending' || current.revision !== expectedRevision) {
         await release();
         return errorResponse(
           'REVISION_CONFLICT',

@@ -124,6 +124,22 @@ describe('uploadsConfirmRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
+  it('409s REVISION_CONFLICT (not 200) when re-confirming an already-confirmed row whose revision still matches', async () => {
+    // Finding #4 (CodeRabbit round 2): confirmUploadRow always CAS-writes
+    // revision to 1, so an already-confirmed row still has revision === 1.
+    // A client resending {"expectedRevision": 1} must not pass the guard —
+    // the table's contract is exactly one pending -> confirmed transition.
+    vi.mocked(mapping.getUploadRowById).mockResolvedValue({ ...pendingRow, status: 'confirmed', revision: 1 } as never);
+    const env = envWithHead({ size: 1000, httpMetadata: { contentType: 'image/jpeg' } });
+    const res = await uploadsConfirmRoute.handler(req(UPLOAD_ID, { expectedRevision: 1 }), env, { id: UPLOAD_ID }, ctx());
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.code).toBe('REVISION_CONFLICT');
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    expect(mapping.confirmUploadRow).not.toHaveBeenCalled();
+    expect(env.PRINT_ASSETS.head).not.toHaveBeenCalled();
+  });
+
   it('422s and releases the key when the R2 object does not exist', async () => {
     const res = await uploadsConfirmRoute.handler(req(UPLOAD_ID, { expectedRevision: 0 }), envWithHead(null), { id: UPLOAD_ID }, ctx());
     expect(res.status).toBe(422);
