@@ -113,6 +113,36 @@ describe('buildStrandedAssetJobAlert', () => {
     expect(STRANDED_ASSET_JOB_STATUSES).not.toContain('failed_action_required');
   });
 
+  it("the cutoff clears the queue's ENTIRE retry budget (never alerts a job still retrying)", () => {
+    // Mirrors wrangler.jsonc's `max_retries: 10` for print-asset-jobs and
+    // worker.ts's `Math.min(2 ** msg.attempts * 30, 3600)` backoff. Computed
+    // rather than hardcoded so this fails loudly if either value changes.
+    const MAX_RETRIES = 10;
+    let retryBudgetMs = 0;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      retryBudgetMs += Math.min(2 ** attempt * 30, 3600) * 1000;
+    }
+    // 60+120+240+480+960+1920 (=3780s) + 4*3600 (=14400s) = 18180s ≈ 5h03m.
+    // The escalating head is 63 minutes on its own — totalling only the capped
+    // tail gives a wrong ≈4h, which is how this constant was first set too low.
+    expect(retryBudgetMs).toBe(18_180_000);
+
+    // The whole point of the cutoff: a job inside this window is still being
+    // auto-retried and is about to produce a DLQ alert of its own, so alerting
+    // it as "stranded" would be a duplicate.
+    expect(STRANDED_ASSET_JOB_AFTER_MS).toBeGreaterThan(retryBudgetMs);
+    // …with real margin for per-attempt processing time and the 15-min cron
+    // granularity, not a few seconds of accidental slack.
+    expect(STRANDED_ASSET_JOB_AFTER_MS - retryBudgetMs).toBeGreaterThanOrEqual(30 * 60 * 1000);
+  });
+
+  it('states the real cutoff in the email, derived from the constant', () => {
+    const hours = STRANDED_ASSET_JOB_AFTER_MS / (60 * 60 * 1000);
+    const alert = buildStrandedAssetJobAlert([job()]);
+    expect(alert.email.subject).toContain(`>${hours}h`);
+    expect(alert.email.html).toContain(`ponad ${hours} godzin`);
+  });
+
   it('builds a warning-level Sentry payload + log with per-job status/attempts/createdAt', () => {
     const alert = buildStrandedAssetJobAlert([
       job({ id: 'j1', status: 'failed_retryable', attempts: 3, lastError: 'container RPC failed' }),

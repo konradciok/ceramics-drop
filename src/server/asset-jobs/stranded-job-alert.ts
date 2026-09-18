@@ -59,16 +59,31 @@ export const STRANDED_ASSET_JOB_STATUSES = ['queued', 'failed_retryable'] as con
 /**
  * Age (on `created_at`) past which a still-undispatched job is stranded.
  *
- * 4h, not the fulfilment sweep's 2h — a deliberate, load-bearing difference.
+ * 6h, not the fulfilment sweep's 2h — a deliberate, load-bearing difference.
+ * This cutoff must sit OUTSIDE the queue's own retry budget, or the sweep
+ * alerts on jobs that are still legitimately retrying and duplicates the DLQ
+ * alert that follows shortly after.
+ *
  * wrangler.jsonc gives `print-asset-jobs` max_retries 10, and worker.ts retries
- * with `Math.min(2 ** attempts * 30, 3600)` seconds of backoff; the full
- * schedule (60s, 120s, 240s, 480s, 960s, 1920s, then 3600s repeating) spans
- * ≈4h before the message is exhausted into the DLQ. A 2h cutoff would therefore
- * alert on every job that is still legitimately retrying and is about to get a
- * DLQ alert of its own anyway. 4h means "the queue has had its entire retry
- * budget and this row still never progressed".
+ * with `Math.min(2 ** attempts * 30, 3600)` seconds of backoff, so the full
+ * delay schedule is:
+ *
+ *   attempt  1     2      3      4      5      6      7-10
+ *   delay    60s   120s   240s   480s   960s   1920s  3600s each
+ *   ------------------------------------------------------------
+ *   sum = 3780s (attempts 1-6) + 14400s (attempts 7-10) = 18180s ≈ 5h03m
+ *
+ * — i.e. the escalating head of the schedule contributes a full 63 minutes on
+ * top of the four capped 1h retries; totalling only the capped tail gives a
+ * wrong ≈4h. Plus per-attempt processing time (each attempt wakes the container
+ * and renders), the real exhaustion window is 5h03m and change.
+ *
+ * 6h therefore clears the whole budget with ~57 minutes of margin for that
+ * processing time, the 15-minute cron granularity, and clock skew. It means
+ * "the queue has had its entire retry budget and this row still never
+ * progressed".
  */
-export const STRANDED_ASSET_JOB_AFTER_MS = 4 * 60 * 60 * 1000;
+export const STRANDED_ASSET_JOB_AFTER_MS = 6 * 60 * 60 * 1000;
 
 /** Batch cap per cron run — bounds the email/Sentry payload; backlog drains next tick. */
 export const STRANDED_ASSET_JOB_BATCH_LIMIT = 100;
@@ -206,8 +221,8 @@ export function buildStrandedAssetJobAlert(jobs: StrandedAssetJobInput[]): Stran
  *
  * Predicate keys on `created_at`, not `updated_at`: a `failed_retryable` job's
  * `updated_at` is bumped on every retry, so an `updated_at` threshold would miss
- * a job that has been failing for hours. `created_at < now()-4h` on these
- * statuses means "existed >4h and still never reached a terminal state" = stuck.
+ * a job that has been failing for hours. `created_at < now()-6h` on these
+ * statuses means "existed >6h and still never reached a terminal state" = stuck.
  *
  * Throws on a query/mark failure — the caller alerts a dead sweep.
  */
