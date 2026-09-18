@@ -449,13 +449,17 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
   // resolved via getCloudflareContext()).
   it('POST /v1/jobs (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
+    // jobs-create.ts's assetId validation now requires a UUID shape (Task D
+    // item 2 — print_asset_uploads.id is a uuid column), so this real-path
+    // fixture uses one instead of the placeholder 'upload-1'.
+    const uploadId = '33333333-3333-3333-3333-333333333333';
     const uploadRow = {
-      id: 'upload-1',
+      id: uploadId,
       filename: 'kubek-01.jpg',
       content_type: 'image/jpeg',
       declared_byte_size: 1000,
       ratio: '3x4',
-      r2_key: 'uploads/upload-1.jpg',
+      r2_key: `uploads/${uploadId}.jpg`,
       status: 'confirmed',
       revision: 1,
       confirmed_byte_size: 1000,
@@ -502,15 +506,15 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
       reqWithToken('/v1/jobs', token, {
         method: 'POST',
         headers: { 'Idempotency-Key': 'job-key-1' },
-        body: JSON.stringify({ assetId: 'upload-1', expectedRevision: 1 }),
+        body: JSON.stringify({ assetId: uploadId, expectedRevision: 1 }),
       }),
       envWithQueue,
       { makeSupabase: () => fakeSupabase },
     );
     expect(res.status).toBe(202);
     const body = await res.json();
-    expect(body).toMatchObject({ assetId: 'upload-1', revision: 1, status: 'queued', progress: 0, error: '' });
-    expect(insertedJob?.upload_id).toBe('upload-1');
-    expect(queueSend).toHaveBeenCalledWith({ jobId: body.id, uploadId: 'upload-1' });
+    expect(body).toMatchObject({ assetId: uploadId, revision: 1, status: 'queued', progress: 0, error: '' });
+    expect(insertedJob?.upload_id).toBe(uploadId);
+    expect(queueSend).toHaveBeenCalledWith({ jobId: body.id, uploadId });
   });
 });

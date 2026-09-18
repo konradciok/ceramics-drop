@@ -5,6 +5,10 @@ import { mapJobRowToResponse } from '../jobs-mapping';
 import { enqueueAssetJob } from '@/server/asset-jobs/enqueue';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from '../idempotency';
 
+// print_asset_uploads.id is a uuid column — same malformed-id-before-any-other-work
+// discipline as uploads-confirm.ts's / jobs-retry.ts's UUID_RE guard.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // POST /v1/jobs: turns a CONFIRMED print_asset_uploads row (Task 9, Phase 1)
 // into a print_asset_jobs row + an ASSET_JOBS_QUEUE message — the entry point
 // into Phase 2's durable job queue (src/server/asset-jobs/enqueue.ts). The
@@ -35,7 +39,7 @@ export const jobsCreateRoute: RouteDef = {
 
     const parsed = body as { assetId?: unknown; expectedRevision?: unknown };
     const fieldErrors: Record<string, string> = {};
-    if (typeof parsed.assetId !== 'string' || parsed.assetId.length === 0) fieldErrors.assetId = 'required';
+    if (typeof parsed.assetId !== 'string' || !UUID_RE.test(parsed.assetId)) fieldErrors.assetId = 'required';
     if (!Number.isInteger(parsed.expectedRevision)) fieldErrors.expectedRevision = 'required';
     if (Object.keys(fieldErrors).length > 0) {
       return errorResponse('VALIDATION_FAILED', 'assetId and expectedRevision are required.', 422, ctx.requestId, { fieldErrors });

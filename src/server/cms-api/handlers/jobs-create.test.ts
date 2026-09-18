@@ -90,6 +90,14 @@ describe('jobsCreateRoute', () => {
     expect(idempotency.claimIdempotencyKey).not.toHaveBeenCalled();
   });
 
+  it('rejects a non-UUID assetId with fieldErrors, before claiming idempotency (would otherwise surface as a 500 from an invalid Postgres uuid comparison)', async () => {
+    const res = await jobsCreateRoute.handler(req({ assetId: 'not-a-uuid', expectedRevision: 1 }), ENV, {}, ctx());
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.fieldErrors).toEqual({ assetId: 'required' });
+    expect(idempotency.claimIdempotencyKey).not.toHaveBeenCalled();
+  });
+
   it('idempotency replay: returns the stored response and never touches the upload table', async () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'replay', status: 202, body: jobResponse });
     const res = await jobsCreateRoute.handler(req({ assetId: ASSET_ID, expectedRevision: 1 }), ENV, {}, ctx());
