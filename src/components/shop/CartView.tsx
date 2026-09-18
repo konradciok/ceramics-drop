@@ -41,7 +41,7 @@ import {
   attemptIdentityKey,
   cartSummaryAmounts,
   checkoutPreBodyError,
-  parseCheckoutAmounts,
+  resolveConfirmedAmounts,
   shouldKeepAttemptIdOnCatch,
   type CheckoutAmounts,
 } from '@/lib/checkout-client';
@@ -712,6 +712,13 @@ export function CartView({
       }
       const { client_secret, discount } = response;
       if (!client_secret) throw new Error('Missing payment response');
+      // Reject a present-but-unparseable `amounts` the same way a missing
+      // client_secret is rejected above — before anything below mounts the
+      // payment form on pricing data that can't be trusted. An entirely
+      // absent `amounts` (older deployment) is not an error; see
+      // resolveConfirmedAmounts.
+      const resolvedAmounts = resolveConfirmedAmounts(response.amounts);
+      if (!resolvedAmounts.ok) throw new Error('Malformed payment amounts');
       if (typeof response.gift_card_amount === 'number' && typeof response.cash_amount === 'number') {
         setBalancePayment({ giftCard: response.gift_card_amount, cash: response.cash_amount });
       }
@@ -744,7 +751,7 @@ export function CartView({
       // switches the summary over to these figures, and the two must land in
       // the same render. React batches both here; the ordering keeps that true
       // if this ever moves out of an event handler.
-      setConfirmedAmounts(parseCheckoutAmounts(response.amounts));
+      setConfirmedAmounts(resolvedAmounts.amounts);
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh

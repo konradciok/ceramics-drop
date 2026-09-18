@@ -42,22 +42,63 @@ const isMinorAmount = (value: unknown): value is number =>
 
 /**
  * Narrows an untrusted `amounts` payload. Returns null on anything malformed
- * or missing so the caller keeps its own estimate — a client talking to an
- * older deployment (no `amounts` field) is no worse off than before this
- * field existed, and a garbled payload can never be rendered as a price.
+ * or missing — this function alone cannot tell "the field was never sent" (an
+ * older deployment) apart from "the field was sent and is garbage" (a broken
+ * response on a live deployment), which matter very differently to a caller:
+ * the former is fine to fall back from, the latter is not. See
+ * `resolveConfirmedAmounts`, which makes that distinction.
  */
 export function parseCheckoutAmounts(value: unknown): CheckoutAmounts | null {
   if (typeof value !== 'object' || value === null) return null;
   const raw = value as Record<string, unknown>;
   if (!(SELLABLE_CURRENCIES as readonly string[]).includes(raw.currency as string)) return null;
   if (!AMOUNT_KEYS.every((key) => isMinorAmount(raw[key]))) return null;
+  const subtotal = raw.subtotal as number;
+  const shipping = raw.shipping as number;
+  const discount = raw.discount as number;
+  const total = raw.total as number;
+  // Individually valid fields can still be mutually incoherent (e.g. a
+  // truncated/tampered/buggy payload) — reject rather than render order rows
+  // that don't add up in front of the buyer.
+  const expectedTotal = subtotal - discount + shipping;
+  if (discount > subtotal || !Number.isSafeInteger(expectedTotal) || total !== expectedTotal) {
+    return null;
+  }
   return {
     currency: raw.currency as Currency,
-    subtotal: raw.subtotal as number,
-    shipping: raw.shipping as number,
-    discount: raw.discount as number,
-    total: raw.total as number,
+    subtotal,
+    shipping,
+    discount,
+    total,
   };
+}
+
+/**
+ * What a checkout response's `amounts` field (whatever it was, including
+ * absent — pass `response.amounts`) means for the caller, told apart from
+ * `parseCheckoutAmounts` alone.
+ *
+ * `{ ok: true, amounts: null }` — the field was never sent at all. This is a
+ * client talking to an older deployment that predates it: a legitimate,
+ * intentional backward-compat case, no worse off than before the field
+ * existed. The caller keeps its own live estimate.
+ *
+ * `{ ok: false }` — the field WAS sent and failed to parse (garbled, or
+ * arithmetically incoherent). On a live deployment this means the response
+ * itself is broken. The caller must reject the whole response — falling back
+ * to the mutable client estimate here would silently show the buyer a stale
+ * total right next to a mounted Stripe payment form.
+ *
+ * `{ ok: true, amounts: CheckoutAmounts }` — parsed cleanly; these are what
+ * Stripe will charge.
+ */
+export function resolveConfirmedAmounts(
+  amounts: unknown,
+): { ok: true; amounts: CheckoutAmounts | null } | { ok: false } {
+  if (amounts === undefined) return { ok: true, amounts: null };
+  const parsed = parseCheckoutAmounts(amounts);
+  if (!parsed) return { ok: false };
+  return { ok: true, amounts: parsed };
 }
 
 /** Cart-summary figures in MAJOR units, plus which side they came from. */

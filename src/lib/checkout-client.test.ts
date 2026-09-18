@@ -4,6 +4,7 @@ import {
   cartSummaryAmounts,
   checkoutPreBodyError,
   parseCheckoutAmounts,
+  resolveConfirmedAmounts,
   shouldKeepAttemptIdOnCatch,
   CHECKOUT_KEEP_ATTEMPT_STATUSES,
 } from './checkout-client';
@@ -96,6 +97,54 @@ describe('parseCheckoutAmounts', () => {
   it('accepts a zero-shipping, zero-discount order (pickup, gift card)', () => {
     const free = { currency: 'pln', subtotal: 9_000, shipping: 0, discount: 0, total: 9_000 };
     expect(parseCheckoutAmounts(free)).toEqual(free);
+  });
+
+  it('rejects a payload whose total does not reconcile with subtotal - discount + shipping', () => {
+    // Every field is individually valid, but they don't add up — a snapshot
+    // like this would render contradictory order rows on the cart summary.
+    expect(parseCheckoutAmounts({ ...VALID, total: VALID.total + 1 })).toBeNull();
+    expect(parseCheckoutAmounts({ ...VALID, total: VALID.total - 1 })).toBeNull();
+  });
+
+  it('rejects a discount greater than the subtotal', () => {
+    expect(
+      parseCheckoutAmounts({ currency: 'eur', subtotal: 1_000, shipping: 500, discount: 1_500, total: 0 }),
+    ).toBeNull();
+  });
+});
+
+describe('resolveConfirmedAmounts (Finding 1: absent vs. malformed amounts)', () => {
+  const VALID = { currency: 'eur', subtotal: 4_200, shipping: 1_500, discount: 100, total: 5_600 };
+
+  it('treats an entirely absent `amounts` field as the legitimate older-deployment case', () => {
+    // No `amounts` key at all — the caller should keep its own live estimate,
+    // not reject the response. `response.amounts` is `undefined` here exactly
+    // as it would be after `JSON.parse` on a body that never included the key.
+    expect(resolveConfirmedAmounts(undefined)).toEqual({ ok: true, amounts: null });
+  });
+
+  it('parses a well-formed `amounts` field through to the caller', () => {
+    expect(resolveConfirmedAmounts(VALID)).toEqual({ ok: true, amounts: VALID });
+  });
+
+  it('rejects the whole response when `amounts` is PRESENT but malformed — never falls back to the estimate', () => {
+    // This is the bug Finding 1 closes: a present-but-garbled payload used to
+    // come back as `{ amounts: null }`, which a caller could (and did)
+    // mistake for "nothing confirmed yet, show the live estimate" — the exact
+    // same shape as the legitimate absent-field case above. `ok: false` here
+    // is what lets the caller tell the two apart and reject instead.
+    expect(resolveConfirmedAmounts(null)).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts('5600')).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, total: undefined })).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, currency: 'usd' })).toEqual({ ok: false });
+  });
+
+  it('rejects an arithmetically incoherent `amounts` field the same way (Finding 2 composes with Finding 1)', () => {
+    // A reconciliation failure is a malformed payload, so it must route
+    // through the same reject path as any other malformed `amounts` — not
+    // bypass it and fall back to the estimate.
+    expect(resolveConfirmedAmounts({ ...VALID, total: VALID.total + 1 })).toEqual({ ok: false });
+    expect(resolveConfirmedAmounts({ ...VALID, discount: VALID.subtotal + 1 })).toEqual({ ok: false });
   });
 });
 
