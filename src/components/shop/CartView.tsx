@@ -355,6 +355,14 @@ export function CartView({
     clientSecret ? confirmedAmounts : null,
   );
   const { fmt: sumFmt } = currencyFormatter(summary.currency);
+  // GiftCardPayment formats server-confirmed minor amounts — including the
+  // cash remainder Stripe will actually take. Once those exist it has to use
+  // the CHARGED currency, not the live switcher's: the header switcher stays
+  // usable behind the mounted payment form, and relabelling the cash-due
+  // figure is the same desync the summary rows above are protected against.
+  // Before confirmation there is nothing charged yet, so the live currency is
+  // correct (and is what `giftCard.currency` is matched against).
+  const giftCardCurrency = summary.confirmed ? summary.currency : printCurrency;
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
   const countryOptions = PRINT_COUNTRIES
@@ -1257,8 +1265,8 @@ export function CartView({
           <span className="k">{t('cart.total')}</span>
           <span className="v" data-testid="summary-total">{sumFmt(summary.total)}</span>
         </div>
-        {!promo && <GiftCardPayment key={printCurrency} card={giftCard} onChange={setGiftCard}
-          total={Math.round(total * 100)} currency={printCurrency} locked={submitting || !!clientSecret} confirmed={balancePayment} />}
+        {!promo && <GiftCardPayment key={giftCardCurrency} card={giftCard} onChange={setGiftCard}
+          total={Math.round(total * 100)} currency={giftCardCurrency} locked={submitting || !!clientSecret} confirmed={balancePayment} />}
         <div className="cart-delivery-notice">
           <strong>{t('deliveryNotice.title')}</strong>
           <p>{t('deliveryNotice.p1')}</p>

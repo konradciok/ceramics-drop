@@ -1,9 +1,9 @@
 import { SELLABLE_CURRENCIES, type Currency } from './currency';
 
 /**
- * The amounts POST /api/checkout actually priced the PaymentIntent from —
- * minor units, in the currency it charged. Returned under `amounts` on every
- * success response (see src/app/api/checkout/route.ts).
+ * The amounts POST /api/checkout actually priced the order from — minor units,
+ * in the currency it charged. Returned under `amounts` on every success
+ * response (see src/app/api/checkout/route.ts).
  *
  * Why this exists: the cart's own summary is computed from the CODE-default
  * rate tables, while checkout prices the charge from the CMS-published bundle
@@ -22,7 +22,16 @@ export type CheckoutAmounts = {
   subtotal: number;
   shipping: number;
   discount: number;
-  /** subtotal − discount + shipping — exactly the PaymentIntent amount. */
+  /**
+   * The ORDER total: subtotal − discount + shipping. It is what the buyer
+   * owes, which is what a cart summary renders — but it is NOT always what
+   * Stripe charges. On a gift-card-funded order the PaymentIntent is created
+   * for the cash remainder alone (`ensureBalanceIntent`,
+   * src/server/gift-card-checkout.ts), with the card balance covering the
+   * rest, so never label this figure "you will be charged X". That split
+   * arrives on the same response as `cash_amount` / `gift_card_amount`, and
+   * GiftCardPayment renders it.
+   */
   total: number;
 };
 

@@ -53,6 +53,22 @@ describe('cart summary vs. what Stripe will charge', () => {
     expect(summary.currency).toBe('pln');
     expect(summary.total).toBe(134);
   });
+
+  it('gives the gift-card panel the charged currency once confirmed, the live one before', () => {
+    // GiftCardPayment formats the server-confirmed cash remainder — the amount
+    // Stripe actually takes — so once that exists it must be labelled in the
+    // charged currency, not whatever the switcher now says. Before
+    // confirmation nothing is charged yet and the live currency is correct (it
+    // is also what `giftCard.currency` is matched against on apply).
+    // CartView derives exactly this pair: `confirmed ? currency : printCurrency`.
+    const afterSwitch = cartSummaryAmounts({ ...ESTIMATE, currency: 'gbp' }, CONFIRMED);
+    expect(afterSwitch.confirmed).toBe(true);
+    expect(afterSwitch.currency).toBe('pln');
+
+    const beforePayment = cartSummaryAmounts({ ...ESTIMATE, currency: 'gbp' }, null);
+    expect(beforePayment.confirmed).toBe(false);
+    expect(beforePayment.currency).toBe('gbp');
+  });
 });
 
 describe('parseCheckoutAmounts', () => {
