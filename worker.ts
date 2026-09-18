@@ -20,6 +20,7 @@ import {
   STRANDED_STATUSES,
   type StrandedJobInput,
 } from './src/server/fulfilment/stranded-job-alert';
+import { sweepStrandedAssetJobs } from './src/server/asset-jobs/stranded-job-alert';
 import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-orders';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
@@ -187,6 +188,22 @@ export default {
         console.error(JSON.stringify({ event: 'stranded_sweep_error', error: String(err) }));
         await captureWorkerAlert(env, {
           message: 'stranded_sweep_error',
+          level: 'error',
+          extra: { error: String(err) },
+        });
+      }),
+    );
+    // The print_asset_jobs counterpart of the M-10 sweep above (CodeRabbit,
+    // PR #318): enqueueAssetJob writes the job row BEFORE awaiting the queue
+    // send, so a send failure leaves a `queued` row with no message in flight
+    // and nothing watching it. Same posture as sweepStrandedJobs — alert once
+    // (own `stranded_alerted_at` column), let the operator re-dispatch via the
+    // existing POST /v1/jobs (idempotent per upload) or POST /v1/jobs/{id}/retry.
+    ctx.waitUntil(
+      sweepStrandedAssetJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'asset_job_stranded_sweep_error', error: String(err) }));
+        await captureWorkerAlert(env, {
+          message: 'asset_job_stranded_sweep_error',
           level: 'error',
           extra: { error: String(err) },
         });
