@@ -68,37 +68,46 @@ export const uploadsCreateRoute: RouteDef = {
 
     const upload = validated.data;
 
-    // Same "reject at upload-intent time, not at job time" principle as the
-    // productId check below. The zod schema can only see that `ratio` is a
-    // non-empty string; an unrecognized one used to survive all the way to
-    // process-job.ts, which fails the job `failed_action_required` — i.e. the
-    // operator has already picked a file, uploaded the bytes and created a job
-    // before finding out the ratio was never valid. isPrintRatio is the SAME
-    // predicate process-job.ts applies, so the two can't drift apart.
-    if (!isPrintRatio(upload.ratio)) {
-      await release();
-      return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
-        fieldErrors: { ratio: `Nieznany format "${upload.ratio}". Dozwolone: ${PRINT_RATIOS.join(', ')}.` },
-      });
-    }
-
-    // Task 12: a productId that doesn't resolve to a real, active print
-    // product is rejected here — at upload-intent time, with a clear 4xx —
-    // rather than discovered later when the Container job fails
-    // (process-job.ts's failed_action_required path). Reuses
-    // loadActivePrintVariants verbatim: it already fails closed for an
-    // unknown product, a non-active product, a product with no active print
-    // variants, and a variant missing seeded print-area pixels — exactly the
-    // set of conditions that would otherwise doom this upload's eventual job.
-    const productCheck = await loadActivePrintVariants(ctx.supabase, upload.productId);
-    if (productCheck.kind === 'invalid') {
-      await release();
-      return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
-        fieldErrors: { productId: productCheck.message },
-      });
-    }
-
+    // The try/catch below (originally starting after the productId check)
+    // now also wraps the ratio/productId validation: loadActivePrintVariants
+    // issues a Supabase read that can itself throw, and that throw used to
+    // happen BEFORE this handler's release-on-error boundary existed here —
+    // an idempotency lease acquired above would then never be released, and
+    // a client retry with the same Idempotency-Key would get stuck on 409
+    // IDEMPOTENCY_IN_PROGRESS for the full 30s lease window. The explicit
+    // `await release(); return errorResponse(...)` branches below are
+    // unaffected — they return before the catch could ever see them.
     try {
+      // Same "reject at upload-intent time, not at job time" principle as the
+      // productId check below. The zod schema can only see that `ratio` is a
+      // non-empty string; an unrecognized one used to survive all the way to
+      // process-job.ts, which fails the job `failed_action_required` — i.e. the
+      // operator has already picked a file, uploaded the bytes and created a job
+      // before finding out the ratio was never valid. isPrintRatio is the SAME
+      // predicate process-job.ts applies, so the two can't drift apart.
+      if (!isPrintRatio(upload.ratio)) {
+        await release();
+        return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
+          fieldErrors: { ratio: `Nieznany format "${upload.ratio}". Dozwolone: ${PRINT_RATIOS.join(', ')}.` },
+        });
+      }
+
+      // Task 12: a productId that doesn't resolve to a real, active print
+      // product is rejected here — at upload-intent time, with a clear 4xx —
+      // rather than discovered later when the Container job fails
+      // (process-job.ts's failed_action_required path). Reuses
+      // loadActivePrintVariants verbatim: it already fails closed for an
+      // unknown product, a non-active product, a product with no active print
+      // variants, and a variant missing seeded print-area pixels — exactly the
+      // set of conditions that would otherwise doom this upload's eventual job.
+      const productCheck = await loadActivePrintVariants(ctx.supabase, upload.productId);
+      if (productCheck.kind === 'invalid') {
+        await release();
+        return errorResponse('VALIDATION_FAILED', 'Formularz zawiera błędy.', 422, ctx.requestId, {
+          fieldErrors: { productId: productCheck.message },
+        });
+      }
+
       const id = crypto.randomUUID();
       const r2Key = buildUploadR2Key(id, upload.contentType);
       const expiresAt = new Date(Date.now() + UPLOAD_PRESIGN_TTL_SECS * 1000).toISOString();

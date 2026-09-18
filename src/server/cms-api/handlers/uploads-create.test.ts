@@ -203,6 +203,20 @@ describe('uploadsCreateRoute', () => {
   // insertUploadRow was never called is the genuinely discriminating check
   // here — merely asserting a 500/thrown error would also have passed under
   // the old (buggy) insert-then-presign ordering.
+  // Finding #8 (CodeRabbit round 2): loadActivePrintVariants used to run
+  // BEFORE the try/catch that releases the idempotency lease on error. If it
+  // throws (e.g. a Supabase error, not its own {kind: 'invalid'} result), the
+  // handler used to exit without calling release() — a client retry with the
+  // same Idempotency-Key would then get stuck on 409 IDEMPOTENCY_IN_PROGRESS
+  // for the full 30s lease window. The try/catch now wraps this call too.
+  it('releases the idempotency key and propagates the error when loadActivePrintVariants itself throws', async () => {
+    const dbError = new Error('supabase: connection reset');
+    vi.mocked(profiles.loadActivePrintVariants).mockRejectedValue(dbError);
+    await expect(uploadsCreateRoute.handler(req(validBody), fakeEnv, {}, ctx())).rejects.toBe(dbError);
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+    expect(mapping.insertUploadRow).not.toHaveBeenCalled();
+  });
+
   it('releases the idempotency key, propagates the error, and NEVER inserts a row when R2 credentials are missing', async () => {
     const credError = new Error('Missing R2 S3 credential(s) for upload presigning: R2_S3_ACCOUNT_ID.');
     vi.mocked(mapping.resolveR2PresignCredentials).mockImplementation(() => {
