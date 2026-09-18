@@ -106,7 +106,28 @@ export const jobsRetryRoute: RouteDef = {
         return errorResponse('REVISION_CONFLICT', 'To zadanie zostało już ponowione przez inne żądanie.', 409, ctx.requestId);
       }
 
-      await sendAssetJobMessage(env, { jobId: requeued.id, uploadId: requeued.upload_id });
+      try {
+        await sendAssetJobMessage(env, { jobId: requeued.id, uploadId: requeued.upload_id });
+      } catch (sendErr) {
+        // The CAS write above already moved the row to `queued`. If the queue
+        // send itself fails, leaving it `queued` with no message in flight
+        // would strand it forever — the retry endpoint below only accepts
+        // failed_retryable/failed_action_required, so a second retry attempt
+        // would be rejected with 422. Restore the pre-requeue status so the
+        // row is retryable again, then propagate the original error (still
+        // caught by the outer catch, which releases the idempotency lease).
+        const { error: resetError } = await ctx.supabase
+          .from('print_asset_jobs')
+          .update({
+            status: 'failed_retryable',
+            last_error: sendErr instanceof Error ? sendErr.message : String(sendErr),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', requeued.id)
+          .eq('status', 'queued');
+        if (resetError) throw resetError;
+        throw sendErr;
+      }
 
       const job = mapJobRowToResponse(requeued);
       await completeIdempotencyKey(ctx.supabase, 'jobs:retry', idempotencyKey, leaseToken, 202, job);

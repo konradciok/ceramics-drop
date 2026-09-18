@@ -38,8 +38,18 @@ function req(id: string, body: unknown, idempotencyKey: string | null = 'key-1')
   return new Request(`https://x.test/v1/jobs/${id}/retry`, { method: 'POST', headers, body: JSON.stringify(body) });
 }
 
-function ctx(): HandlerContext {
-  return { actorEmail: 'anna@studio.pl', requestId: 'req_1', supabase: {} as never };
+function ctx(supabase: unknown = {}): HandlerContext {
+  return { actorEmail: 'anna@studio.pl', requestId: 'req_1', supabase: supabase as never };
+}
+
+/** Builds a `ctx.supabase` stub for exactly the `.from('print_asset_jobs').update({...}).eq('id', …).eq('status', 'queued')`
+ *  call the send-failure reset path in jobs-retry.ts makes. */
+function resetSupabase(result: { error: unknown } = { error: null }) {
+  const eq2 = vi.fn().mockResolvedValue(result);
+  const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
+  const update = vi.fn().mockReturnValue({ eq: eq1 });
+  const from = vi.fn().mockReturnValue({ update });
+  return { supabase: { from } as never, from, update, eq1, eq2 };
 }
 
 const ENV = { ASSET_JOBS_QUEUE: {} } as unknown as CloudflareEnv;
@@ -128,9 +138,36 @@ describe('jobsRetryRoute', () => {
     expect(idempotency.completeIdempotencyKey).toHaveBeenCalledWith(expect.anything(), 'jobs:retry', 'key-1', 'lease-1', 202, jobResponse);
   });
 
-  it('releases the key and rethrows when sendAssetJobMessage throws', async () => {
+  it('resets the row to failed_retryable, releases the key, and rethrows the original error when sendAssetJobMessage throws', async () => {
+    // Finding #3 (CodeRabbit round 2): requeueJobRow already CAS-wrote the row
+    // to `queued` before this call. If the send itself fails, leaving the row
+    // `queued` with no message in flight would strand it — a second retry
+    // attempt would be rejected 422 since this endpoint only accepts
+    // failed_retryable/failed_action_required. The row must be restored to
+    // failed_retryable so it stays retryable.
     vi.mocked(assetJobs.sendAssetJobMessage).mockRejectedValue(new Error('queue down'));
-    await expect(jobsRetryRoute.handler(req(JOB_ID, { expectedRevision: 1 }), ENV, { id: JOB_ID }, ctx())).rejects.toThrow(/queue down/);
+    const { supabase, from, update, eq1, eq2 } = resetSupabase();
+
+    await expect(jobsRetryRoute.handler(req(JOB_ID, { expectedRevision: 1 }), ENV, { id: JOB_ID }, ctx(supabase))).rejects.toThrow(
+      /queue down/,
+    );
+
+    expect(from).toHaveBeenCalledWith('print_asset_jobs');
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'failed_retryable', last_error: 'queue down' }),
+    );
+    expect(eq1).toHaveBeenCalledWith('id', JOB_ID);
+    expect(eq2).toHaveBeenCalledWith('status', 'queued');
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+  });
+
+  it('throws the reset-write error (not the original send error) when the failed_retryable reset itself fails', async () => {
+    vi.mocked(assetJobs.sendAssetJobMessage).mockRejectedValue(new Error('queue down'));
+    const { supabase } = resetSupabase({ error: { message: 'reset failed' } });
+
+    await expect(jobsRetryRoute.handler(req(JOB_ID, { expectedRevision: 1 }), ENV, { id: JOB_ID }, ctx(supabase))).rejects.toThrow(
+      /reset failed/,
+    );
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 });
