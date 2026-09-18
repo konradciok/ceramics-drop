@@ -86,14 +86,28 @@ const OK_RESULT: RenderResult = {
  *  `orLog`, if given, records every `.or(filter)` call's filter string —
  *  Finding 1's claim query is the only caller of `.or()` in this file, so
  *  tests use it to assert the exact OR-filter shape without pinning the
- *  whole query builder. */
-function makeChain(result: unknown, overrides: Record<string, unknown> = {}, orLog?: string[]): Record<string, unknown> {
+ *  whole query builder.
+ *  `eqLog`, if given, records every `.eq(field, value)` call as a `[field,
+ *  value]` pair — used to prove a specific write genuinely predicates on
+ *  `lease_token` (not just that it happens to no-op when told to), so a
+ *  regression that silently drops the fencing predicate from one write site
+ *  fails the test even though the write's mocked RESULT is unchanged. */
+function makeChain(
+  result: unknown,
+  overrides: Record<string, unknown> = {},
+  orLog?: string[],
+  eqLog?: Array<[string, unknown]>,
+): Record<string, unknown> {
   const chain: Record<string, unknown> = {
     then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => Promise.resolve(result).then(res, rej),
   };
-  for (const m of ['update', 'upsert', 'eq', 'in', 'select']) {
+  for (const m of ['update', 'upsert', 'in', 'select']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
+  chain.eq = vi.fn((field: string, value: unknown) => {
+    eqLog?.push([field, value]);
+    return chain;
+  });
   chain.or = vi.fn((filter: string) => {
     orLog?.push(filter);
     return chain;
@@ -123,6 +137,12 @@ type SetupOptions = {
 function setup(opts: SetupOptions) {
   const calls: { table: string; op: string; payload?: unknown; options?: unknown }[] = [];
   const orFilters: string[] = [];
+  // Every `.eq(field, value)` call made on the FINALIZE update's chain — see
+  // makeChain's doc comment. Distinguishes "the finalize update really does
+  // predicate on lease_token" from "the finalize update merely returned the
+  // mocked result opts.finalizeResult tells it to" (the pre-existing generic
+  // race test only exercised the latter).
+  const finalizeEqCalls: Array<[string, unknown]> = [];
   let jobUpdateCount = 0;
 
   mockFrom.mockImplementation((table: string) => {
@@ -140,9 +160,12 @@ function setup(opts: SetupOptions) {
             );
           }
           if (payload.status === 'completed') {
-            return makeChain(undefined, {
-              select: () => makeChain(undefined, { maybeSingle: async () => opts.finalizeResult ?? { data: { id: JOB_ID }, error: null } }),
-            });
+            return makeChain(
+              undefined,
+              { select: () => makeChain(undefined, { maybeSingle: async () => opts.finalizeResult ?? { data: { id: JOB_ID }, error: null } }) },
+              undefined,
+              finalizeEqCalls,
+            );
           }
           // A fail write (failed_retryable / failed_action_required) — also
           // CAS'd on lease_token now (Finding 1), so it needs the same
@@ -188,7 +211,7 @@ function setup(opts: SetupOptions) {
     throw new Error(`unexpected table: ${table}`);
   });
 
-  return { calls, orFilters };
+  return { calls, orFilters, finalizeEqCalls };
 }
 
 function makeEnv(opts: { head?: unknown; render?: (input: unknown) => Promise<RenderResult>; processor?: unknown } = {}): CloudflareEnv {
@@ -511,6 +534,47 @@ describe('processAssetJob — Finding 1: claim lease + fencing token', () => {
     // it — must NOT fire.
     expect(mockCaptureAlert).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/no-op.*lease_token/));
+
+    warnSpy.mockRestore();
+  });
+
+  it('fencing: the FINALIZE update is also CAS\'d on lease_token — a stale token (a second worker already reclaimed the row) is a no-op, not a corrupting write', async () => {
+    // Distinct from the pre-existing "finalize CAS loses the race... does not
+    // throw" test: that test predates lease_token and only proves the
+    // status-based `.in('status', ['processing'])` CAS still tolerates 0 rows
+    // matched. It could not tell "lost the race via status" apart from "lost
+    // the race via lease_token" — and would keep passing even if a future
+    // edit accidentally dropped the `.eq('lease_token', ...)` predicate from
+    // the finalize update entirely. This test asserts the predicate is
+    // actually THERE, not just that a 0-rows-matched result is tolerated.
+    const { calls, finalizeEqCalls } = setup({
+      uploadResult: { data: CONFIRMED_UPLOAD, error: null },
+      // Simulates a second worker having already reclaimed this row (minted
+      // its own fresh lease_token, e.g. because OUR lease expired mid-render)
+      // by the time this worker's finalize write reaches the DB — the
+      // update's `.eq('lease_token', ourToken)` predicate matches 0 rows.
+      finalizeResult: { data: null, error: null },
+    });
+    const env = makeEnv();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    // The zombie worker's own invocation still resolves normally — losing the
+    // finalize race is not an error from its point of view, exactly like the
+    // pre-existing status-only CAS tolerance.
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+
+    // The finalize update was attempted...
+    expect(calls.find((c) => c.op === 'update' && (c.payload as Record<string, unknown>)?.status === 'completed')).toBeTruthy();
+    // ...and it genuinely predicated on lease_token (not merely on id/status) —
+    // this is what a regression dropping the fencing predicate would break.
+    const leaseTokenPredicates = finalizeEqCalls.filter(([field]) => field === 'lease_token');
+    expect(leaseTokenPredicates).toHaveLength(1);
+    expect(leaseTokenPredicates[0][1]).toEqual(expect.any(String));
+    expect(leaseTokenPredicates[0][1]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+    // The 0-rows-matched outcome is logged, not thrown — it does not corrupt
+    // the row the second (legitimate) worker now owns.
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`job ${JOB_ID} finalized by a concurrent delivery`));
 
     warnSpy.mockRestore();
   });
