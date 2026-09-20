@@ -185,6 +185,26 @@ describe('jobsPublishRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
+  // getJobRowById/getUploadRowById/loadActivePrintVariants each do `if (error)
+  // throw error` internally on a transient Supabase error (unlike the explicit
+  // null/kind checks above, which are normal, expected outcomes). Without the
+  // outer try/catch wrapping the whole post-claim body, a throw here would
+  // propagate straight past every `release()` call to request-handler.ts's
+  // outer catch — leaving the idempotency lease stuck 'processing' for the
+  // full 30s LEASE_MS window. Same regression uploads-create.ts already fixed
+  // once for loadActivePrintVariants specifically (see its own comment).
+  it('propagates (does not swallow) a getJobRowById throw, but still releases the idempotency key first', async () => {
+    const dbError = new Error('db down');
+    vi.mocked(jobsMapping.getJobRowById).mockRejectedValue(dbError);
+
+    await expect(
+      jobsPublishRoute.handler(req(JOB_ID, { expectedRevision: 1 }), {} as never, { id: JOB_ID }, ctx()),
+    ).rejects.toThrow(/db down/);
+
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalledWith(expect.anything(), 'jobs:publish', 'key-1', 'lease-1');
+    expect(idempotency.completeIdempotencyKey).not.toHaveBeenCalled();
+  });
+
   it('409s REVISION_CONFLICT and releases the key when expectedRevision does not match', async () => {
     const res = await jobsPublishRoute.handler(req(JOB_ID, { expectedRevision: 2 }), {} as never, { id: JOB_ID }, ctx());
     expect(res.status).toBe(409);
