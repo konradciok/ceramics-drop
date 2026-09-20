@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockFrom, mockCaptureAlert } = vi.hoisted(() => ({
+const { mockFrom, mockCaptureAlert, mockRpc } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockCaptureAlert: vi.fn(async (...args: unknown[]) => { void args; }),
+  // Task 2 (Priority 8 / Phase 4): process-job.ts now calls
+  // supabase.rpc('promote_print_assets_ready', ...) right after staging —
+  // every test whose job reaches that point needs this to resolve rather
+  // than throw "supabase.rpc is not a function". Defaults to "nothing
+  // promoted" (an empty array is a valid RPC response shape); the dedicated
+  // promotion test below overrides this per-call via mockImplementationOnce.
+  mockRpc: vi.fn(async (): Promise<{ data: unknown; error: unknown }> => ({ data: [], error: null })),
 }));
 
 // C-2 guard (mirrors src/server/fulfilment/process-job.test.ts): the queue
@@ -13,7 +20,7 @@ const { mockFrom, mockCaptureAlert } = vi.hoisted(() => ({
 // queue consumer uses (this repo's only precedent for "how does a queue
 // consumer get its Supabase client").
 vi.mock('@/lib/supabase', () => ({
-  supabaseFromEnv: () => ({ from: mockFrom }),
+  supabaseFromEnv: () => ({ from: mockFrom, rpc: mockRpc }),
   getSupabaseAdmin: () => {
     throw new Error('getCloudflareContext outside ALS');
   },
@@ -336,6 +343,64 @@ describe('processAssetJob — Phase 3 container processing', () => {
     expect(mockCaptureAlert).not.toHaveBeenCalled();
   });
 
+  it('promotes every staged asset to ready as part of a successful finalize (Task 2, Priority 8 / Phase 4)', async () => {
+    setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null } });
+    const env = makeEnv();
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+
+    expect(mockRpc).toHaveBeenCalledWith('promote_print_assets_ready', {
+      p_product_id: PRODUCT_ID,
+      p_revision: REVISION,
+      p_r2_keys: [R2_KEY],
+    });
+  });
+
+  it('promotes ALL staged r2_keys, not just the primary asset, when a job produces more than one profile', async () => {
+    const secondKey = `${R2_KEY}-2`;
+    setup({
+      uploadResult: { data: CONFIRMED_UPLOAD, error: null },
+      variantsResult: {
+        data: [
+          { variant_key: '30x40:false:false:black', print_area_width_px: 3600, print_area_height_px: 4800 },
+          { variant_key: '50x70:false:false:black', print_area_width_px: 5400, print_area_height_px: 7200 },
+        ],
+        error: null,
+      },
+      readBackResult: {
+        data: [
+          { id: ASSET_ID, r2_key: R2_KEY },
+          { id: '44444444-4444-4444-4444-444444444444', r2_key: secondKey },
+        ],
+        error: null,
+      },
+    });
+    let renderCount = 0;
+    const env = makeEnv({
+      render: async () => {
+        renderCount += 1;
+        if (OK_RESULT.kind !== 'ok') throw new Error('unreachable');
+        return renderCount === 1
+          ? OK_RESULT
+          : { kind: 'ok', asset: { ...OK_RESULT.asset, r2_key: secondKey, profile_key: '5400x7200' } };
+      },
+    });
+
+    await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
+
+    expect(mockRpc).toHaveBeenCalledWith('promote_print_assets_ready', {
+      p_product_id: PRODUCT_ID,
+      p_revision: REVISION,
+      p_r2_keys: [R2_KEY, secondKey],
+    });
+  });
+
+  it('a promotion RPC error throws so the queue retries — never finalizes a job whose assets were not promoted', async () => {
+    const { calls } = setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null } });
+    mockRpc.mockImplementationOnce(async () => ({ data: null, error: new Error('promotion_state_changed') }));
+    await expect(processAssetJob(MSG, makeEnv(), CTX)).rejects.toThrow(/promotion_state_changed/);
+    expect(failCall(calls, 'completed')).toBeUndefined();
+  });
+
   it('renders one derivative per distinct profile, sequentially', async () => {
     const order: string[] = [];
     setup({
@@ -449,6 +514,7 @@ describe('processAssetJob — Phase 3 container processing', () => {
   it('a staging-write error throws so the queue retries — never finalizes a job with no assets behind it', async () => {
     setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null }, stageResult: { data: null, error: { message: 'db down' } } });
     await expect(processAssetJob(MSG, makeEnv(), CTX)).rejects.toBeTruthy();
+    expect(mockRpc).not.toHaveBeenCalled(); // never promotes rows that failed to stage
   });
 
   it('staged rows missing on read-back: failed_retryable + rethrow rather than a completed job with a null asset', async () => {
@@ -456,6 +522,7 @@ describe('processAssetJob — Phase 3 container processing', () => {
     await expect(processAssetJob(MSG, makeEnv(), CTX)).rejects.toThrow(/missing after upsert/);
     expect(failCall(calls, 'failed_retryable')).toBeTruthy();
     expect(failCall(calls, 'completed')).toBeUndefined();
+    expect(mockRpc).not.toHaveBeenCalled(); // never promotes rows whose existence wasn't confirmed
   });
 
   it('finalize CAS loses the race (a concurrent delivery finalized it first): does not throw', async () => {
