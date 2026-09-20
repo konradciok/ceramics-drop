@@ -44,7 +44,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import sharp from 'sharp';
 import { MAX_SOURCE_BYTES, MAX_SOURCE_PIXELS, type DerivativeSpec } from '../asset-jobs/container-protocol';
 import { renderFullBleedDerivative } from './container-handler';
-import { composeFullBleedDerivative } from '../../scripts/lib/prepare-derivatives';
+import { composeFullBleedDerivative } from '../../../scripts/lib/prepare-derivatives';
 
 // Regression guard for the print-asset pipeline cutover (Priority 8 / Phase 4):
 // the CmsApi/Container path (renderFullBleedDerivative, buffer-based) and the
