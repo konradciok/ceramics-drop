@@ -129,9 +129,20 @@ function localeState(locale: CmsLocale, kind: CmsDocumentKind, slug: string, ver
   const sorted = [...versions].sort((a, b) => b.version - a.version);
   const latestDraft = sorted.find((v) => v.status === 'draft') ?? null;
   const published = sorted.find((v) => v.status === 'published') ?? null;
+  // The editable payload must come from the overall latest version
+  // (highest version number, regardless of status), not from `latestDraft`.
+  // publish_cms_version demotes a superseded published row back to
+  // status='draft' without changing its version number (see
+  // supabase/migrations/20260709120000_cms_publish_rpc.sql) — so once an
+  // intervening draft (saved after that demoted version but never itself
+  // published) exists, `latestDraft` can point at a lower-numbered, stale
+  // row instead of the true latest write. `sorted[0]` is always correct:
+  // versions are immutable and strictly increasing, so the highest number
+  // is always the most recent save regardless of its current status.
+  const latest = sorted[0] ?? null;
   return {
     locale,
-    payload: latestDraft?.payload ?? published?.payload ?? defaultPayload(kind, slug, locale),
+    payload: latest?.payload ?? defaultPayload(kind, slug, locale),
     latestDraft,
     published,
     versions: sorted,

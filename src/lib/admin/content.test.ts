@@ -84,6 +84,34 @@ function makeFakeSupabase(opts: {
 const mocks = vi.hoisted(() => ({ adminSupabase: vi.fn() }));
 vi.mock('./clients', () => ({ adminSupabase: mocks.adminSupabase }));
 
+// Minimal fake Supabase client for getContentEditorState: a single
+// cms_documents row with an embedded cms_document_versions array, matching
+// getRawDocument's actual select shape.
+function makeContentStateFakeSupabase(row: {
+  id: string;
+  kind: string;
+  slug: string;
+  status: string;
+  updated_at: string;
+  published_at: string | null;
+  cms_document_versions: unknown[];
+}) {
+  return {
+    from: (table: string) => {
+      if (table !== 'cms_documents') throw new Error(`unexpected table in test mock: ${table}`);
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: row, error: null }),
+            }),
+          }),
+        }),
+      };
+    },
+  };
+}
+
 describe('contentItems threads definitions through print naming', () => {
   it('uses definitions to resolve fine-art-print names (discriminating fixture)', async () => {
     // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
@@ -164,5 +192,54 @@ describe('saveDraft -> ensureDocument race safety', () => {
     await expect(
       saveDraft({ kind: 'page', slug: HOME_PAGE_SLUG, locale: 'pl', payload: VALID_HOME_PAYLOAD }),
     ).rejects.toThrow('document_not_found');
+  });
+});
+
+// Reproduces a real production bug (confirmed live via Supabase against
+// document db699e12-2604-4b82-ac61-a1891ce6d950, locale 'pl'): after
+// publish_cms_version demotes a superseded published row back to
+// status='draft' (supabase/migrations/20260709120000_cms_publish_rpc.sql),
+// an intervening draft that was itself never published — but whose version
+// number sits between the demoted row and the new latest published row —
+// can outrank the true latest content. localeState()'s `latestDraft` picks
+// the highest-versioned row with status==='draft', so it stops at that
+// stale intervening draft instead of falling through to `published` (the
+// actual most recent write). The editor then reloads stale field values,
+// and the next save/publish silently discards the real latest content.
+describe('localeState (via getContentEditorState) — stale intervening draft regression', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('uses the true latest version (the published one), not a lower-numbered stale draft left over from an earlier publish/demote', async () => {
+    const v1Published = {
+      id: 'v1', document_id: 'doc-1', locale: 'pl', version: 1, status: 'draft', // demoted back to draft when v3 published
+      payload: { heroLine1: 'a', heroLine2: 'STALE — should never be shown', heroTagline: 'stale', ctaLabel: 'c', heroAlt: '', media: { desktop: null, mobile: null } },
+      created_by: null, created_at: 't1',
+    };
+    const v2NeverPublished = {
+      id: 'v2', document_id: 'doc-1', locale: 'pl', version: 2, status: 'draft', // saved after v1 was published, itself never published
+      payload: { heroLine1: 'a', heroLine2: 'ALSO STALE — never published, must not win', heroTagline: 'also stale', ctaLabel: 'c', heroAlt: '', media: { desktop: null, mobile: null } },
+      created_by: null, created_at: 't2',
+    };
+    const v3CurrentlyPublished = {
+      id: 'v3', document_id: 'doc-1', locale: 'pl', version: 3, status: 'published', // the true latest write
+      payload: { heroLine1: 'a', heroLine2: 'CURRENT — this is what must be shown', heroTagline: 'current', ctaLabel: 'c', heroAlt: '', media: { desktop: null, mobile: null } },
+      created_by: null, created_at: 't3',
+    };
+    const fake = makeContentStateFakeSupabase({
+      id: 'doc-1',
+      kind: 'page',
+      slug: HOME_PAGE_SLUG,
+      status: 'published',
+      updated_at: 'now',
+      published_at: 'now',
+      cms_document_versions: [v1Published, v2NeverPublished, v3CurrentlyPublished],
+    });
+
+    const { getContentEditorState } = await import('./content');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const state = await getContentEditorState('page', HOME_PAGE_SLUG, undefined, fake as any);
+
+    expect(state?.locales.pl.payload).toEqual(v3CurrentlyPublished.payload);
+    expect(state?.locales.pl.versions[0]?.version).toBe(3);
   });
 });
