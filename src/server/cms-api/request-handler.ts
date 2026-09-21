@@ -42,6 +42,7 @@ import { assetsListRoute } from './handlers/assets-list';
 import { jobsListRoute } from './handlers/jobs-list';
 import { jobsCreateRoute } from './handlers/jobs-create';
 import { jobsRetryRoute } from './handlers/jobs-retry';
+import { jobsPublishRoute } from './handlers/jobs-publish';
 
 // Later tasks append their RouteDef exports to this array. Keep it a plain
 // array literal (not a function) so each task's diff is a one-line addition.
@@ -87,6 +88,7 @@ const routes: RouteDef[] = [
   jobsListRoute,
   jobsCreateRoute,
   jobsRetryRoute,
+  jobsPublishRoute,
 ];
 
 const dispatch = createRouter(routes);

@@ -5,6 +5,7 @@ import type { AssetJobMessage } from './enqueue';
 import { PRINT_ASSET_PROCESSOR_NAME } from './container-names';
 import type { RenderInput, RenderResult } from './container-render';
 import { assetRevisionForUpload, isPrintRatio, loadActivePrintVariants, selectProfilesForRatio } from './profiles';
+import { promoteStagedAssets } from './promote';
 
 // print_asset_uploads columns this consumer needs — subset of
 // uploads-mapping.ts's UploadRow, plus `product_id`
@@ -394,6 +395,13 @@ export async function processAssetJob(
     await failJob('failed_retryable', message, attempts);
     throw new Error(message);
   }
+
+  // 7b. Promote every just-staged row to ready (Priority 8 / Phase 4) — see
+  // promote.ts's header comment for why this is safe to do unconditionally
+  // here, unlike the CLI's separate verify step. A promotion failure is
+  // always a transient DB fault or a genuine concurrent-revoke race; treat it
+  // the same as any other DB error in this function: retryable.
+  await promoteStagedAssets(supabase, { productId: uploadRow.product_id, revision, r2Keys: keys });
 
   // 8. Finalize. `asset_id` points at the FIRST profile's asset — the column is
   // a single uuid but a job legitimately produces one row per profile, so it
