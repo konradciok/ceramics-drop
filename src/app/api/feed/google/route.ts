@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSoldIds, getShowroomIds } from '@/lib/inventory';
-import { buildFeedItemsCms, buildGoogleXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
+import { buildFeedItems, buildGoogleXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +11,8 @@ export async function GET(request: Request) {
   const locale: FeedLocale = (param as FeedLocale) ?? 'pl';
 
   try {
-    const [soldIds, showroomIds] = await Promise.all([getSoldIds(), getShowroomIds()]);
-    const items = await buildFeedItemsCms(locale, new Set(soldIds), new Set(showroomIds));
+    // Prints only — no ceramic inventory read is needed here (see lib/feed.ts).
+    const items = await buildFeedItems(locale);
     const xml = buildGoogleXml(items, locale);
 
     return new Response(xml, {

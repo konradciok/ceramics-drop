@@ -1,14 +1,32 @@
+/**
+ * Merchant feeds — fine-art prints only.
+ *
+ * Both the Google Shopping and the Meta Catalog feed carry the print-on-demand
+ * catalogue and nothing else. Ceramics are deliberately excluded: every piece
+ * is one-of-a-kind, so a piece sold at 10:00 keeps being advertised until the
+ * merchant platform's next scheduled fetch (daily at best) — an availability
+ * mismatch and wasted ad spend by construction, not a bug we could tune away.
+ * Prints are print-on-demand: unlimited, always in stock, and the only part of
+ * the catalogue a merchant feed can describe truthfully between fetches.
+ *
+ * Consequence for analytics: ceramic `content_ids` / `item_id` values still
+ * emitted by the pixel + CAPI (`src/lib/analytics.ts`) no longer resolve to a
+ * catalogue row. Decided by the studio owner on 2026-09-21 and accepted: the
+ * studio does not run Meta catalogue / dynamic product ads for ceramics, and
+ * those are the only surfaces that need a catalogue match. Ceramic events keep
+ * carrying `value` + `currency`, so conversion reporting and value-based
+ * audiences are unaffected; the visible cost is unmatched-`content_ids`
+ * warnings in Meta Events Manager. Reopen this only if catalogue-backed ads
+ * for ceramics are ever wanted — that is a feed decision, not an analytics one.
+ */
 import { printDisplayName } from '@/lib/print-curation';
-import { getPublicProducts, CATEGORIES } from './products';
 import { getPrintDesigns } from './prints';
 import { loadPrintCollectionDefinitions } from './print-collections';
-import { priceOf, SHIPPING_PLN, SHIPPING_EUR } from './pricing';
 import { fromPriceOf } from './print-pricing';
 import { getPrintPricingConfig } from './print-pricing-config/get';
 import { printShippingOf, type PrintCountry } from './print-shipping';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
-import { getProductNotes } from './cms/messages';
 import type { CategorySlug } from './types';
 import type { Locale } from '@/i18n/routing';
 
@@ -44,31 +62,16 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
-const PRICE_TIER: Record<CategorySlug, string> = {
-  talerzyki: 'budget',
-  kubki: 'standard',
-  'talerze-srednie': 'standard',
-  'talerze-duze': 'standard',
-  'miski-falowane': 'standard',
-  wazony: 'premium',
-  'wazony-srednie': 'premium',
-  'wazony-duze': 'premium',
-  'duze-michy': 'premium',
-  'fine-art-prints': 'standard', // fine-art prints — merchant feed row (see buildPrintFeedItems)
-};
+/** The one category a merchant feed row can carry. `satisfies` keeps it honest
+ *  against `CategorySlug` if the slug is ever renamed. */
+const FEED_CATEGORY = 'fine-art-prints' satisfies CategorySlug;
 
-const PRODUCT_FAMILY: Record<CategorySlug, string> = {
-  kubki: 'tableware',
-  talerzyki: 'tableware',
-  'talerze-srednie': 'tableware',
-  'talerze-duze': 'tableware',
-  wazony: 'vessels',
-  'wazony-srednie': 'vessels',
-  'wazony-duze': 'vessels',
-  'duze-michy': 'bowls',
-  'miski-falowane': 'bowls',
-  'fine-art-prints': 'prints', // fine-art prints — merchant feed row (see buildPrintFeedItems)
-};
+/** Value is an already-escaped XML entity string (& → &amp;, > → &gt;) —
+ *  insert directly without re-escaping. */
+const GOOGLE_CATEGORY = 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints';
+
+const PRICE_TIER = 'standard';
+const PRODUCT_FAMILY = 'prints';
 
 // Exported so structured-data.ts can reuse the same per-locale shipping
 // destination for `Offer.shippingDetails` — keep the feed and on-page schema
@@ -80,20 +83,6 @@ export const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
   de: 'DE',
 };
 
-// Values are already-escaped XML entities (& → &amp;, > → &gt;) — insert directly without re-escaping.
-const GOOGLE_CATEGORY: Record<CategorySlug, string> = {
-  kubki: 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Cups &amp; Mugs',
-  wazony: 'Home &amp; Garden &gt; Decor &gt; Vases',
-  'wazony-srednie': 'Home &amp; Garden &gt; Decor &gt; Vases',
-  'wazony-duze': 'Home &amp; Garden &gt; Decor &gt; Vases',
-  talerzyki: 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Plates',
-  'talerze-srednie': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Plates',
-  'talerze-duze': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Plates',
-  'duze-michy': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
-  'miski-falowane': 'Home &amp; Garden &gt; Kitchen &amp; Dining &gt; Tableware &gt; Bowls',
-  'fine-art-prints': 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints', // fine-art prints — merchant feed row (see buildPrintFeedItems)
-};
-
 export type FeedItem = {
   id: string;
   title: string;
@@ -103,7 +92,7 @@ export type FeedItem = {
   additionalImages: string[];
   availability: 'in stock' | 'out of stock';
   price: string;
-  category: CategorySlug;
+  category: typeof FEED_CATEGORY;
   material: string;
   productType: string;
   customLabel0: string;
@@ -112,82 +101,36 @@ export type FeedItem = {
   shipping: Array<{ country: string; service: string; price: string }>;
 };
 
-async function buildFeedItemsWithNotes(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string>, notesBySlug?: Partial<Record<CategorySlug, Record<string, string>>>, prefetchedProducts?: Awaited<ReturnType<typeof getPublicProducts>>): Promise<FeedItem[]> {
-  const msg = LOCALE_MESSAGES[locale];
-  const cur = currency(locale);
-  // The CMS builder already loaded the public catalogue (to derive the note
-  // slugs), so reuse it instead of re-reading — under CATALOG_SOURCE=db the
-  // accessor rebuilds catalogue maps per call, so a second read is real work.
-  const products = prefetchedProducts ?? await getPublicProducts();
-
-  return products.map((product) => {
-    const cat = CATEGORIES[product.category];
-    const singularName = (msg.product as Record<string, string>)[cat.singularKey] ?? cat.singularKey;
-    const title = `${singularName} #${product.num}`;
-
-    const cmsNotes = notesBySlug?.[product.category];
-    const description = cmsNotes
-      ? cmsNotes[product.id] ?? title
-      : (msg.notes as Record<string, string[]>)[product.category]?.[product.noteIndex] ?? title;
-
-    const path = `/${product.category}/${product.id}`;
-    const link = absoluteUrl(locale, path);
-
-    const imageLink = `${SITE_URL}${product.image}`;
-    const additionalImages = (product.gallery ?? []).map((g) => `${SITE_URL}${g}`);
-
-    const price = priceOf(product, locale);
-    const priceStr = `${price}.00 ${cur}`;
-
-    const shippingRates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
-    const shippingCountry = SHIPPING_COUNTRY[locale];
-    const shipping = [
-      { country: shippingCountry, service: 'InPost Paczkomat', price: `${shippingRates.paczkomat}.00 ${cur}` },
-      { country: shippingCountry, service: 'InPost Kurier', price: `${shippingRates.kurier}.00 ${cur}` },
-    ];
-
-    return {
-      id: product.id,
-      title,
-      description,
-      link,
-      imageLink,
-      additionalImages,
-      // Showroom pieces are visible but not purchasable — never advertise them
-      // in stock in merchant feeds (matches reserve_pieces + JSON-LD).
-      availability: product.onlineAvailable !== true || soldIds.has(product.id) || showroomIds.has(product.id) ? 'out of stock' : 'in stock',
-      price: priceStr,
-      category: product.category,
-      material: 'Ceramics',
-      productType: `Ceramics > ${singularName}`,
-      customLabel0: PRICE_TIER[product.category],
-      customLabel1: PRODUCT_FAMILY[product.category],
-      customLabel2: product.category,
-      shipping,
-    };
-  });
-}
-
 /**
- * Merchant-feed rows for published fine-art prints. One row per design per
- * locale, id = design id (fap0x) so it matches the fap0x content_ids/item_ids
- * the print pixel + CAPI emit (see buildPrintAddToCartEvent). Prints are
- * print-on-demand: always in stock, priced from the cheapest sellable variant,
- * shipped to a home address (Prodigi) — never a locker.
+ * Merchant-feed rows for published fine-art prints — the whole feed. One row
+ * per design per locale, id = design id (fap0x) so it matches the fap0x
+ * content_ids/item_ids the print pixel + CAPI emit (see
+ * buildPrintAddToCartEvent). Prints are print-on-demand: always in stock,
+ * priced from the cheapest sellable variant, shipped to a home address
+ * (Prodigi) — never a locker.
+ *
+ * Print descriptions come from the static i18n notes, not the CMS: there is no
+ * per-print CMS note document today (the `page:print-pdp` document carries
+ * shared accordion copy, not per-design text). Wire a CMS resolver in here only
+ * once editors actually draft per-design descriptions.
  */
-async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
+export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const msg = LOCALE_MESSAGES[locale];
   const cur = currency(locale); // 'PLN' | 'EUR'
   const chargeable = locale === 'pl' ? 'pln' : 'eur'; // feeds never quote GBP
   const singular = (msg.product as Record<string, string>).print ?? 'Print';
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
-  const designs = await getPrintDesigns(); // published only, CATALOG_SOURCE-aware
-  const pricing = await getPrintPricingConfig(); // global price list, CATALOG_SOURCE-aware
-  const definitions = await loadPrintCollectionDefinitions();
+  // Three independent catalogue reads — under CATALOG_SOURCE=db each is a real
+  // Supabase round trip, so issue them together rather than in sequence.
+  const [designs, pricing, definitions] = await Promise.all([
+    getPrintDesigns(), // published only, CATALOG_SOURCE-aware
+    getPrintPricingConfig(), // global price list, CATALOG_SOURCE-aware
+    loadPrintCollectionDefinitions(),
+  ]);
 
   return designs.map((design) => {
     const title = printDisplayName(design, singular, definitions);
-    const notes = (msg.notes as Record<string, string[]>)['fine-art-prints'];
+    const notes = (msg.notes as Record<string, string[]>)[FEED_CATEGORY];
     const description = notes?.[design.noteIndex] ?? title;
 
     const link = absoluteUrl(locale, `/fine-art-prints/${design.id}`);
@@ -207,30 +150,15 @@ async function buildPrintFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
       additionalImages,
       availability: 'in stock' as const,
       price: `${price}.00 ${cur}`,
-      category: 'fine-art-prints' as CategorySlug,
+      category: FEED_CATEGORY,
       material: 'Fine Art Print',
       productType: `Prints > ${singular}`,
-      customLabel0: PRICE_TIER['fine-art-prints'],
-      customLabel1: PRODUCT_FAMILY['fine-art-prints'],
-      customLabel2: 'fine-art-prints',
+      customLabel0: PRICE_TIER,
+      customLabel1: PRODUCT_FAMILY,
+      customLabel2: FEED_CATEGORY,
       shipping: [{ country, service: 'Prodigi', price: `${shipCost}.00 ${cur}` }],
     };
   });
-}
-
-export async function buildFeedItems(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
-  const ceramics = await buildFeedItemsWithNotes(locale, soldIds, showroomIds);
-  return [...ceramics, ...(await buildPrintFeedItems(locale))];
-}
-
-// ponytail: print feed descriptions use static i18n notes; wire CMS print notes
-// only if editors start drafting them.
-export async function buildFeedItemsCms(locale: FeedLocale, soldIds: Set<string>, showroomIds: Set<string> = new Set()): Promise<FeedItem[]> {
-  const products = await getPublicProducts();
-  const slugs = [...new Set(products.map((product) => product.category))];
-  const entries = await Promise.all(slugs.map(async (slug) => [slug, await getProductNotes(slug, locale)] as const));
-  const ceramics = await buildFeedItemsWithNotes(locale, soldIds, showroomIds, Object.fromEntries(entries) as Partial<Record<CategorySlug, Record<string, string>>>, products);
-  return [...ceramics, ...(await buildPrintFeedItems(locale))];
 }
 
 function itemToGoogleXml(item: FeedItem): string {
@@ -257,7 +185,7 @@ function itemToGoogleXml(item: FeedItem): string {
     <g:condition>new</g:condition>
     <g:identifier_exists>no</g:identifier_exists>
     <g:material>${escapeXml(item.material)}</g:material>
-    <g:google_product_category>${GOOGLE_CATEGORY[item.category]}</g:google_product_category>
+    <g:google_product_category>${GOOGLE_CATEGORY}</g:google_product_category>
     <g:product_type>${escapeXml(item.productType)}</g:product_type>
     <g:custom_label_0>${escapeXml(item.customLabel0)}</g:custom_label_0>
     <g:custom_label_1>${escapeXml(item.customLabel1)}</g:custom_label_1>
@@ -283,7 +211,7 @@ function itemToMetaXml(item: FeedItem): string {
     <g:condition>new</g:condition>
     <g:identifier_exists>no</g:identifier_exists>
     <g:material>${escapeXml(item.material)}</g:material>
-    <g:google_product_category>${GOOGLE_CATEGORY[item.category]}</g:google_product_category>
+    <g:google_product_category>${GOOGLE_CATEGORY}</g:google_product_category>
     <g:product_type>${escapeXml(item.productType)}</g:product_type>
     <g:custom_label_0>${escapeXml(item.customLabel0)}</g:custom_label_0>
     <g:custom_label_1>${escapeXml(item.customLabel1)}</g:custom_label_1>
