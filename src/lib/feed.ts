@@ -11,8 +11,13 @@
  *
  * Consequence for analytics: ceramic `content_ids` / `item_id` values still
  * emitted by the pixel + CAPI (`src/lib/analytics.ts`) no longer resolve to a
- * catalogue row. That is the accepted trade-off of this cut — revisit it with
- * the owner before adding ceramic events back to a catalogue-matched surface.
+ * catalogue row. Decided by the studio owner on 2026-09-21 and accepted: the
+ * studio does not run Meta catalogue / dynamic product ads for ceramics, and
+ * those are the only surfaces that need a catalogue match. Ceramic events keep
+ * carrying `value` + `currency`, so conversion reporting and value-based
+ * audiences are unaffected; the visible cost is unmatched-`content_ids`
+ * warnings in Meta Events Manager. Reopen this only if catalogue-backed ads
+ * for ceramics are ever wanted — that is a feed decision, not an analytics one.
  */
 import { printDisplayName } from '@/lib/print-curation';
 import { getPrintDesigns } from './prints';
