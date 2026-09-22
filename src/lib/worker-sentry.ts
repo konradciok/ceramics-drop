@@ -13,6 +13,28 @@
  * The fetch path keeps its own `@sentry/nextjs` instrumentation (unchanged).
  */
 
+/**
+ * Serialize an unknown catch value for logging/alerting. Several call sites in
+ * this codebase `throw result.error` directly from a Supabase response (e.g.
+ * `src/server/recover-balance-orders.ts`) rather than wrapping it in `new
+ * Error(...)` — that `error` is a plain `{message, details, hint, code}`
+ * object, NOT an `Error` instance, so `String(err)` on it yields the useless
+ * "[object Object]" (this is exactly what the sweep alerts in worker.ts were
+ * sending to Sentry). Prefer `.message` — present on both real `Error`s and
+ * Supabase's `PostgrestError`-shaped objects — before falling back to JSON.
+ */
+export function serializeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object' && typeof (err as { message?: unknown }).message === 'string') {
+    return (err as { message: string }).message;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
 export type WorkerAlertLevel = 'fatal' | 'error' | 'warning' | 'info';
 
 export interface WorkerAlert {

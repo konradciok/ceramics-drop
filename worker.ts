@@ -5,7 +5,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
-import { captureWorkerAlert, type WorkerAlertLevel } from './src/lib/worker-sentry';
+import { captureWorkerAlert, serializeError, type WorkerAlertLevel } from './src/lib/worker-sentry';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import { buildDlqAlert, buildDlqBatchAlertEmail, isDlqQueue } from './src/server/fulfilment/dlq';
@@ -150,7 +150,7 @@ export default {
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {
     ctx.waitUntil(recoverBalanceOrders({ supabase: supabaseFromEnv(env), stripe: stripeFromEnv(env), env, ctx })
       .catch(async (error) => {
-        await captureWorkerAlert(env, { message: 'balance_recovery_sweep_failed', level: 'error', extra: { error: String(error) } });
+        await captureWorkerAlert(env, { message: 'balance_recovery_sweep_failed', level: 'error', extra: { error: serializeError(error) } });
       }));
     // waitUntil discards rejections silently, so catch + log here — otherwise a
     // Supabase/Stripe failure mid-sweep would vanish with no signal that the cron ran.
@@ -158,11 +158,11 @@ export default {
       sweepAbandoned(env).catch(async (err) => {
         // M-15: a dead sweep must alert, not just log — Cron Past Events shows the
         // invocation green regardless, so a silent throw here goes unnoticed.
-        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'abandoned_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -171,11 +171,11 @@ export default {
     // no new failed jobs (or a transient email failure) sends/marks nothing.
     ctx.waitUntil(
       sweepFailedActionJobs(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'failed_action_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -185,11 +185,11 @@ export default {
     // delivered the message). Idempotent via its own `stranded_alerted_at`.
     ctx.waitUntil(
       sweepStrandedJobs(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'stranded_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'stranded_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'stranded_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -201,11 +201,11 @@ export default {
     // existing POST /v1/jobs (idempotent per upload) or POST /v1/jobs/{id}/retry.
     ctx.waitUntil(
       sweepStrandedAssetJobs(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'asset_job_stranded_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'asset_job_stranded_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'asset_job_stranded_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -215,11 +215,11 @@ export default {
     // deliberately ignores fulfilment_submitted/in_production).
     ctx.waitUntil(
       sweepStaleProdigiOrders(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'prodigi_reconcile_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'prodigi_reconcile_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'prodigi_reconcile_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -230,11 +230,11 @@ export default {
     // redeemed AND alert.
     ctx.waitUntil(
       sweepPromoRedemptions(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'promo_reconcile_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'promo_reconcile_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'promo_reconcile_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
