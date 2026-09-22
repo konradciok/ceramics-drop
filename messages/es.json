@@ -83,6 +83,7 @@
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
+    "refundPolicy": "Política de devoluciones",
     "sklep": "Fine Art Print",
     "showroom": "Cerámica",
     "gallery": "Galería",
@@ -134,6 +135,7 @@
     "dostawa": "Envíos y devoluciones",
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
+    "refundPolicy": "Política de devoluciones",
     "copy": "© 2026 Anna Ciok — cerámica y pintura, cada pieza de una sola autora",
     "giftCard": "Tarjeta regalo"
   },
@@ -693,6 +695,30 @@
     "s6H": "Tus derechos",
     "s6P": "Tienes derecho a acceder a tus datos, corregirlos, borrarlos y limitar su tratamiento. Basta con que me escribas — responderé lo más rápido que pueda."
   },
+  "refund": {
+    "eyebrow": "Documentos",
+    "h1": "Política de <em>devoluciones.</em>",
+    "lead": "Cómo funcionan las devoluciones y el derecho de desistimiento en Anna Ciok Studio — de acuerdo con los Términos y la página de Envíos y devoluciones.",
+    "toc": "Contenido",
+    "toc1": "§1 Derecho de desistimiento",
+    "toc2": "§2 Cómo solicitar una devolución",
+    "toc3": "§3 Condiciones de la devolución",
+    "toc4": "§4 Reembolsos",
+    "toc5": "§5 Reclamaciones",
+    "updated": "Versión: septiembre de 2026",
+    "s1H": "§1 Derecho de desistimiento",
+    "s1P": "Como consumidor, tienes derecho a desistir de la compra en un plazo de <strong>14 días</strong> desde la recepción del artículo, sin indicar motivo. Las reglas generales de compra se describen en los <termsLink>Términos</termsLink>, y los costes y plazos de envío en la página de <shippingLink>Envíos y devoluciones</shippingLink>.",
+    "s2H": "§2 Cómo solicitar una devolución",
+    "s2P": "Escribe a <mailLink>ania@ciok.art</mailLink> para avisar de que desistes de la compra. Indica tu número de pedido si lo tienes, y qué artículos incluye la devolución. No necesitas una cuenta en la tienda.",
+    "s3H": "§3 Condiciones de la devolución",
+    "s3P": "El artículo devuelto debe estar sin daños, preferiblemente en su embalaje original.",
+    "s3Li1": "El coste del envío de vuelta corre a cargo del comprador",
+    "s3Li2": "Envía el artículo a: Anna Ciok Studio, San Pedro Abajo 12, 38500 Guimar, Tenerife, España — Islas Canarias",
+    "s4H": "§4 Reembolsos",
+    "s4P": "El reembolso se realiza en un plazo de <strong>14 días</strong> desde que recibo el artículo de vuelta, con el mismo método de pago utilizado en la compra.",
+    "s5H": "§5 Reclamaciones",
+    "s5P": "Si un artículo llega dañado o no coincide con la descripción, presenta una reclamación por correo, adjuntando fotos. La resuelvo en un plazo de 14 días y — según tu elección — cambio el artículo o devuelvo el importe completo con el envío incluido."
+  },
   "notes": {
     "kubki": [
       "Flor azul con cabeza redonda y hojas en espiga. El motivo corre verticalmente por la taza clara.",
@@ -901,6 +927,7 @@
     "regulamin": "Condiciones de la tienda Anna Ciok Studio: pedido, pago, envío y devoluciones de cerámica pintada a mano, en lenguaje claro.",
     "polityka": "Política de privacidad de Anna Ciok Studio: qué datos recogemos al comprar, para qué sirven y cuánto tiempo se conservan.",
     "dostawa": "Envíos de Anna Ciok Studio: coste, plazo de entrega, embalaje protector y la política de devolución de 14 días.",
+    "refundPolicy": "Política de devoluciones de Anna Ciok Studio: 14 días de derecho de desistimiento, cómo solicitar una devolución y el plazo de reembolso.",
     "collections": {
       "kubki": "Tazas de cerámica pintadas a mano, 300 ml — cada una única. 29 piezas irrepetibles del drop de junio de Anna Ciok.",
       "wazony": "Jarrones pequeños de cerámica pintados a mano. Nueve piezas panzudas y únicas del drop de junio de Anna Ciok.",

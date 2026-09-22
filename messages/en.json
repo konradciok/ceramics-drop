@@ -83,6 +83,7 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
+    "refundPolicy": "Refund policy",
     "sklep": "Fine Art Print",
     "showroom": "Ceramics",
     "gallery": "Gallery",
@@ -134,6 +135,7 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
+    "refundPolicy": "Refund policy",
     "copy": "© 2026 Anna Ciok — ceramics and painting, every piece by one maker",
     "giftCard": "Gift Card"
   },
@@ -693,6 +695,30 @@
     "s6H": "Your rights",
     "s6P": "You have the right to access your data, correct it, delete it and restrict its processing. Just write to me — I’ll reply as fast as I can."
   },
+  "refund": {
+    "eyebrow": "Documents",
+    "h1": "Refund <em>policy.</em>",
+    "lead": "How returns and the right of withdrawal work at Anna Ciok Studio — consistent with the Terms and the Shipping & returns page.",
+    "toc": "Contents",
+    "toc1": "§1 Right of withdrawal",
+    "toc2": "§2 How to request a return",
+    "toc3": "§3 Return conditions",
+    "toc4": "§4 Refunds",
+    "toc5": "§5 Complaints",
+    "updated": "Version: September 2026",
+    "s1H": "§1 Right of withdrawal",
+    "s1P": "As a consumer, you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the item, without giving a reason. The general rules of purchase are described in the <termsLink>Terms</termsLink>, and shipping costs and timing on the <shippingLink>Shipping & returns</shippingLink> page.",
+    "s2H": "§2 How to request a return",
+    "s2P": "Write to <mailLink>ania@ciok.art</mailLink> to let me know you're withdrawing from the purchase. Include your order number if you have it, and tell me which items the return covers. No shop account is needed.",
+    "s3H": "§3 Return conditions",
+    "s3P": "The returned item should be undamaged, ideally in its original packaging.",
+    "s3Li1": "The buyer covers the cost of return shipping",
+    "s3Li2": "Send the item back to: Anna Ciok Studio, San Pedro Abajo 12, 38500 Guimar, Tenerife, Spain — Canary Islands",
+    "s4H": "§4 Refunds",
+    "s4P": "The refund is made within <strong>14 days</strong> of receiving the item back, using the same payment method used for the purchase.",
+    "s5H": "§5 Complaints",
+    "s5P": "If an item arrives damaged or not as described, file a complaint by email, attaching photos. I review it within 14 days and — depending on your choice — replace the item or refund the full amount including shipping."
+  },
   "notes": {
     "kubki": [
       "A blue flower with a round head and herringbone leaves. A simple motif runs vertically through the light mug.",
@@ -901,6 +927,7 @@
     "regulamin": "Shop terms for Anna Ciok Studio — ordering, payment, shipping and returns for hand-painted ceramics, in plain language.",
     "polityka": "Privacy policy for Anna Ciok Studio: what data we collect at checkout, what it's used for, and how long we keep it.",
     "dostawa": "Shipping for Anna Ciok Studio: cost, delivery time, protective packing, and the 14-day return policy explained.",
+    "refundPolicy": "Refund policy for Anna Ciok Studio: the 14-day right of withdrawal, how to request a return, and refund timing.",
     "collections": {
       "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 29 unique pieces from Anna Ciok's June 2026 drop.",
       "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
