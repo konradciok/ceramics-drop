@@ -83,6 +83,7 @@
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
+    "refundPolicy": "Polityka zwrotów",
     "sklep": "Fine Art Print",
     "showroom": "Ceramika",
     "gallery": "Galeria",
@@ -134,6 +135,7 @@
     "dostawa": "Dostawa i zwroty",
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
+    "refundPolicy": "Polityka zwrotów",
     "copy": "© 2026 Anna Ciok — ceramika i malarstwo, każda praca ma jedną autorkę",
     "giftCard": "Karta podarunkowa"
   },
@@ -693,6 +695,30 @@
     "s6H": "Twoje prawa",
     "s6P": "Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia oraz ograniczenia przetwarzania. Wystarczy, że napiszesz — odpowiem najszybciej, jak potrafię."
   },
+  "refund": {
+    "eyebrow": "Dokumenty",
+    "h1": "Polityka <em>zwrotów.</em>",
+    "lead": "Zasady zwrotu towaru i odstąpienia od umowy w sklepie Anna Ciok Studio — zgodnie z Regulaminem i stroną Dostawa i zwroty.",
+    "toc": "Spis treści",
+    "toc1": "§1 Prawo odstąpienia od umowy",
+    "toc2": "§2 Jak zgłosić zwrot",
+    "toc3": "§3 Warunki zwrotu towaru",
+    "toc4": "§4 Zwrot płatności",
+    "toc5": "§5 Reklamacje",
+    "updated": "Wersja: wrzesień 2026",
+    "s1H": "§1 Prawo odstąpienia od umowy",
+    "s1P": "Kupując jako konsument, masz prawo odstąpić od umowy w ciągu <strong>14 dni</strong> od otrzymania towaru, bez podawania przyczyny. Ogólne zasady zakupów opisuje <termsLink>Regulamin</termsLink>, a koszty i czas dostawy — strona <shippingLink>Dostawa i zwroty</shippingLink>.",
+    "s2H": "§2 Jak zgłosić zwrot",
+    "s2P": "Napisz na adres <mailLink>ania@ciok.art</mailLink> i poinformuj o odstąpieniu od umowy. Podaj numer zamówienia, jeśli go masz, oraz wskaż, których produktów dotyczy zwrot. Konto w sklepie nie jest potrzebne.",
+    "s3H": "§3 Warunki zwrotu towaru",
+    "s3P": "Zwracany towar powinien być nieuszkodzony, najlepiej w oryginalnym opakowaniu.",
+    "s3Li1": "Koszt odesłania towaru ponosi kupujący",
+    "s3Li2": "Towar odeślij na adres: Anna Ciok Studio, San Pedro Abajo 12, 38500 Guimar, Teneryfa, Hiszpania — Wyspy Kanaryjskie",
+    "s4H": "§4 Zwrot płatności",
+    "s4P": "Zwrot środków następuje w ciągu <strong>14 dni</strong> od poinformowania mnie o odstąpieniu od umowy, tą samą metodą płatności, której użyto przy zakupie. Może zostać wstrzymany do otrzymania towaru z powrotem albo dowodu jego nadania — zależnie od tego, co nastąpi wcześniej.",
+    "s5H": "§5 Reklamacje",
+    "s5P": "Jeśli towar dotrze uszkodzony albo niezgodny z opisem, złóż reklamację mailowo, dołączając zdjęcia. Rozpatruję ją w ciągu 14 dni i, zależnie od Twojego wyboru, wymieniam towar albo zwracam pełną kwotę wraz z kosztem wysyłki."
+  },
   "notes": {
     "kubki": [
       "Błękitny kwiat z okrągłą główką i liśćmi w jodełkę. Prosty motyw prowadzi pionowo przez jasny kubek.",
@@ -901,6 +927,7 @@
     "regulamin": "Regulamin sklepu Anna Ciok Studio — zamówienie, płatność, dostawa i zwroty ręcznie malowanej ceramiki, jasnym językiem.",
     "polityka": "Polityka prywatności Anna Ciok Studio: jakie dane zbieramy przy zakupie, do czego służą i jak długo je przechowujemy.",
     "dostawa": "Dostawa ceramiki Anna Ciok Studio: koszt i czas wysyłki, pakowanie na bezpieczny transport oraz zasady 14-dniowego zwrotu.",
+    "refundPolicy": "Polityka zwrotów Anna Ciok Studio: 14 dni na odstąpienie od umowy, sposób zgłoszenia zwrotu i termin zwrotu płatności.",
     "collections": {
       "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",

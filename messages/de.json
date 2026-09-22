@@ -83,6 +83,7 @@
     "dostawa": "Versand & Rücksendungen",
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
+    "refundPolicy": "Rückgaberichtlinie",
     "sklep": "Fine Art Print",
     "showroom": "Keramik",
     "gallery": "Galerie",
@@ -134,6 +135,7 @@
     "dostawa": "Versand & Rücksendungen",
     "regulamin": "AGB",
     "polityka": "Datenschutzrichtlinie",
+    "refundPolicy": "Rückgaberichtlinie",
     "copy": "© 2026 Anna Ciok — Keramik und Malerei, jedes Stück von einer Hand",
     "giftCard": "Geschenkkarte"
   },
@@ -693,6 +695,30 @@
     "s6H": "Deine Rechte",
     "s6P": "Du hast das Recht, auf deine Daten zuzugreifen, sie zu korrigieren, zu löschen und ihre Verarbeitung einzuschränken. Schreib mir einfach — ich antworte so schnell ich kann."
   },
+  "refund": {
+    "eyebrow": "Dokumente",
+    "h1": "Rückgabe<em>richtlinie.</em>",
+    "lead": "Wie Rückgaben und das Widerrufsrecht bei Anna Ciok Studio funktionieren — im Einklang mit den AGB und der Seite Versand & Rücksendungen.",
+    "toc": "Inhalt",
+    "toc1": "§1 Widerrufsrecht",
+    "toc2": "§2 Rückgabe anmelden",
+    "toc3": "§3 Rückgabebedingungen",
+    "toc4": "§4 Erstattung",
+    "toc5": "§5 Reklamationen",
+    "updated": "Version: September 2026",
+    "s1H": "§1 Widerrufsrecht",
+    "s1P": "Als Verbraucher hast du das Recht, innerhalb von <strong>14 Tagen</strong> nach Erhalt des Artikels ohne Angabe von Gründen vom Kauf zurückzutreten. Die allgemeinen Kaufbedingungen stehen in den <termsLink>AGB</termsLink>, Versandkosten und -zeiten auf der Seite <shippingLink>Versand & Rücksendungen</shippingLink>.",
+    "s2H": "§2 Rückgabe anmelden",
+    "s2P": "Schreib an <mailLink>ania@ciok.art</mailLink> und teile mir mit, dass du vom Kauf zurücktrittst. Gib deine Bestellnummer an, falls vorhanden, und welche Artikel die Rückgabe betrifft. Ein Konto im Shop ist nicht nötig.",
+    "s3H": "§3 Rückgabebedingungen",
+    "s3P": "Der zurückgesendete Artikel sollte unbeschädigt sein, idealerweise in der Originalverpackung.",
+    "s3Li1": "Die Kosten für den Rückversand trägt der Käufer",
+    "s3Li2": "Sende den Artikel zurück an: Anna Ciok Studio, San Pedro Abajo 12, 38500 Guimar, Teneriffa, Spanien — Kanarische Inseln",
+    "s4H": "§4 Erstattung",
+    "s4P": "Die Erstattung erfolgt innerhalb von <strong>14 Tagen</strong>, nachdem du mir deinen Rücktritt mitgeteilt hast, über dieselbe Zahlungsmethode, die beim Kauf verwendet wurde. Sie kann zurückgehalten werden, bis der Artikel zurückerhalten wurde oder ein Versandnachweis vorliegt — je nachdem, was zuerst eintritt.",
+    "s5H": "§5 Reklamationen",
+    "s5P": "Wenn ein Artikel beschädigt oder nicht wie beschrieben ankommt, reiche eine Reklamation per E-Mail ein und füge Fotos bei. Ich prüfe sie innerhalb von 14 Tagen und ersetze — je nach deiner Wahl — den Artikel oder erstatte den vollen Betrag einschließlich Versandkosten."
+  },
   "notes": {
     "kubki": [
       "Blaue Blume mit rundem Kopf und Fischgrätblättern. Das einfache Motiv läuft vertikal durch die helle Tasse.",
@@ -901,6 +927,7 @@
     "regulamin": "AGB von Anna Ciok Studio: Bestellung, Zahlung, Versand und Rückgabe handbemalter Keramik, verständlich erklärt.",
     "polityka": "Datenschutz bei Anna Ciok Studio: welche Daten wir beim Kauf erheben, wofür sie genutzt werden und wie lange wir sie speichern.",
     "dostawa": "Versand bei Anna Ciok Studio: Kosten, Lieferzeit, schützende Verpackung und die 14-tägige Rückgaberegelung.",
+    "refundPolicy": "Rückgaberichtlinie von Anna Ciok Studio: 14 Tage Widerrufsrecht, wie du eine Rückgabe meldest und wie lange die Erstattung dauert.",
     "collections": {
       "kubki": "Handbemalte Keramiktassen, 300 ml — jede ein Unikat. 28 einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "wazony": "Kleine handbemalte Keramikvasen. Neun bauchige, einmalige Stücke aus Anna Cioks Juni-2026-Drop.",

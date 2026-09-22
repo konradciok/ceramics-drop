@@ -87,6 +87,9 @@ export async function Footer() {
               <li>
                 <Link href="/polityka-prywatnosci">{t('footer.polityka')}</Link>
               </li>
+              <li>
+                <Link href="/refund-policy">{t('footer.refundPolicy')}</Link>
+              </li>
             </ul>
           </FooterAccordionSection>
 

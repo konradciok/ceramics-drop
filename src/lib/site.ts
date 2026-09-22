@@ -54,6 +54,7 @@ export const SITE_PATHS = [
   '/regulamin',
   '/polityka-prywatnosci',
   '/dostawa-i-zwroty',
+  '/refund-policy',
 ] as const;
 
 /**
