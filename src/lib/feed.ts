@@ -50,6 +50,7 @@ const LOCALE_MESSAGES: Record<FeedLocale, Messages> = {
 
 function currency(locale: FeedLocale): string {
   if (locale === 'pl') return 'PLN';
+  if (locale === 'en') return 'GBP';
   return 'EUR';
 }
 
@@ -90,7 +91,7 @@ const PRODUCT_FAMILY = 'prints';
 // in agreement on where each locale's Offer is quoted for.
 export const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
   pl: 'PL',
-  en: 'IE',
+  en: 'GB',
   es: 'ES',
   de: 'DE',
 };
@@ -128,8 +129,8 @@ export type FeedItem = {
  */
 export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
   const msg = LOCALE_MESSAGES[locale];
-  const cur = currency(locale); // 'PLN' | 'EUR'
-  const chargeable = locale === 'pl' ? 'pln' : 'eur'; // feeds never quote GBP
+  const cur = currency(locale); // 'PLN' | 'GBP' | 'EUR'
+  const chargeable = locale === 'pl' ? 'pln' : locale === 'en' ? 'gbp' : 'eur';
   const singular = (msg.product as Record<string, string>).print ?? 'Print';
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
   // Three independent catalogue reads — under CATALOG_SOURCE=db each is a real
@@ -150,8 +151,11 @@ export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
     const additionalImages = (design.gallery ?? []).map((g) => `${SITE_URL}${g}`);
 
     const price = fromPriceOf(design, chargeable, pricing);
-    // Loose (unframed) rate pairs with the unframed "from" price above.
-    const shipCost = printShippingOf(country, false, chargeable);
+    // Loose (unframed) rate pairs with the unframed "from" price above. Pass
+    // `pricing` through so shipping converts at the same admin-set FX rate
+    // the item price above uses, instead of print-shipping.ts's hardcoded
+    // fallback constants.
+    const shipCost = printShippingOf(country, false, chargeable, pricing);
 
     return {
       id: design.id,

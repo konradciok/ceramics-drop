@@ -68,18 +68,36 @@ describe('buildFeedItems — fine-art prints only', () => {
   it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
     const pl = (await buildFeedItems('pl')).find((i) => i.id === 'fap005');
     const en = (await buildFeedItems('en')).find((i) => i.id === 'fap005');
-    // fap005 cheapest size (30x40) = 105 PLN / 25 EUR (print-pricing SIZE_BASE).
+    // fap005 cheapest size (30x40) = 105 PLN / 22 GBP (print-pricing SIZE_BASE
+    // 25 EUR, derived per DEFAULT_PRINT_PRICING.eurToGbp = 0.86).
     expect(pl?.price).toBe('105.00 PLN');
-    expect(en?.price).toBe('25.00 EUR');
+    expect(en?.price).toBe('22.00 GBP');
     expect(pl?.availability).toBe('in stock'); // print-on-demand — never sold out
     expect(pl?.shipping.length).toBeGreaterThan(0);
   });
 
-  it('quotes EUR for every non-PL locale (GBP is never fed)', async () => {
-    for (const locale of ['en', 'es', 'de'] as const) {
+  it('quotes the display currency per locale: pl → PLN, en → GBP, es/de → EUR', async () => {
+    const pl = await buildFeedItems('pl');
+    expect(pl.every((i) => i.price.endsWith(' PLN'))).toBe(true);
+
+    const en = await buildFeedItems('en');
+    expect(en.length).toBeGreaterThan(0);
+    expect(en.every((i) => i.price.endsWith(' GBP'))).toBe(true);
+
+    for (const locale of ['es', 'de'] as const) {
       const items = await buildFeedItems(locale);
       expect(items.every((i) => i.price.endsWith(' EUR'))).toBe(true);
     }
+  });
+
+  it('ships the en feed to GB, on the Prodigi GB rate quoted in GBP', async () => {
+    const items = await buildFeedItems('en');
+    expect(items.length).toBeGreaterThan(0);
+    items.forEach((item) => {
+      expect(item.shipping).toEqual([
+        { country: 'GB', service: 'Prodigi', price: expect.stringMatching(/^\d+\.00 GBP$/) },
+      ]);
+    });
   });
 
   it('titles a fine-art print with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
@@ -123,6 +141,14 @@ describe('buildGoogleXml', () => {
     const xml = buildGoogleXml([sampleItem], 'en');
     expect(xml).toContain('<g:country>IE</g:country>');
     expect(xml).toContain('<g:service>Prodigi</g:service>');
+  });
+
+  it('ships the real en feed to GB, matching its GBP pricing', async () => {
+    const items = await buildFeedItems('en');
+    const xml = buildGoogleXml(items, 'en');
+    expect(xml).toContain('<g:country>GB</g:country>');
+    expect(xml).not.toContain('<g:country>IE</g:country>');
+    expect(xml).toContain('.00 GBP</g:price>');
   });
 
   it('renders a real print g:id and no ceramic ids', async () => {

@@ -85,21 +85,23 @@ function merchantReturnPolicy(locale: Locale) {
 /**
  * Prints ship by Prodigi courier — no InPost rates apply. Uses the locale's
  * representative market (`SHIPPING_COUNTRY`) with Prodigi's real per-country
- * rate for both the loose and framed variant (see print-shipping.ts).
+ * rate for both the loose and framed variant (see print-shipping.ts). `rates`
+ * is the admin-set FX config, threaded through so shipping converts at the
+ * same rate the item price uses (see fromPriceOf/priceOfVariant call sites)
+ * instead of print-shipping.ts's hardcoded fallback constants.
  */
-function printShippingDetailsFor(locale: Locale) {
+function printShippingDetailsFor(locale: Locale, rates: PrintPricingConfig) {
   const country = SHIPPING_COUNTRY[locale] as PrintCountry;
-  const currency = locale === 'pl' ? 'pln' : 'eur';
-  const priceCurrency = locale === 'pl' ? 'PLN' : 'EUR';
+  const { currency, priceCurrency } = printCurrencyFor(locale);
   return [
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
   ];
@@ -132,9 +134,10 @@ function sellableVariantPrices(
   return prices;
 }
 
-/** Locale → (currency code pair) for print schemas — locale default (pl→PLN, else EUR). */
-function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur'; priceCurrency: 'PLN' | 'EUR' } {
+/** Locale → (currency code pair) for print schemas: pl→PLN, en→GBP, es/de→EUR — mirrors feed.ts's `currency()`/`chargeable`. */
+function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
   if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
+  if (locale === 'en') return { currency: 'gbp', priceCurrency: 'GBP' };
   return { currency: 'eur', priceCurrency: 'EUR' };
 }
 
@@ -299,7 +302,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, d
                 offerCount: prices.length,
                 availability: 'https://schema.org/InStock',
                 url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
-                shippingDetails: printShippingDetailsFor(locale),
+                shippingDetails: printShippingDetailsFor(locale, pricing),
                 hasMerchantReturnPolicy: printReturnPolicy(locale),
               },
             },
@@ -367,7 +370,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
           url: productUrl,
-          shippingDetails: printShippingDetailsFor(locale),
+          shippingDetails: printShippingDetailsFor(locale, pricing),
           hasMerchantReturnPolicy: printReturnPolicy(locale),
         },
       },
