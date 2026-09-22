@@ -101,13 +101,22 @@ describe('buildGoogleXml', () => {
     expect(buildGoogleXml([sampleItem], 'en')).toContain('<g:identifier_exists>no</g:identifier_exists>');
   });
 
-  it('declares the Fine Art Prints google_product_category and no ceramic taxonomy', () => {
+  it('declares the Posters/Prints/Visual Artwork google_product_category and no ceramic taxonomy', () => {
     const xml = buildGoogleXml([sampleItem], 'en');
-    expect(xml).toContain(
-      '<g:google_product_category>Arts &amp; Entertainment &gt; Fine Art &gt; Prints</g:google_product_category>',
-    );
+    // 500044 = Home & Garden > Decor > Artwork > Posters, Prints, & Visual Artwork.
+    expect(xml).toContain('<g:google_product_category>500044</g:google_product_category>');
     expect(xml).not.toContain('Tableware');
     expect(xml).not.toContain('Vases');
+  });
+
+  it('emits google_product_category as a bare numeric taxonomy id', () => {
+    // Guards the escaping trap the path form carried: a path string has to be
+    // stored pre-escaped and inserted raw, so a regression there emits either a
+    // broken document or an id Merchant Center rejects. A bare integer cannot.
+    for (const xml of [buildGoogleXml([sampleItem], 'en'), buildMetaXml([sampleItem], 'en')]) {
+      const value = /<g:google_product_category>([^<]*)<\/g:google_product_category>/.exec(xml)?.[1];
+      expect(value).toMatch(/^\d+$/);
+    }
   });
 
   it('includes g:shipping with the per-locale Prodigi rate', () => {
@@ -137,9 +146,9 @@ describe('buildMetaXml', () => {
     );
   });
 
-  it('declares the Fine Art Prints google_product_category', () => {
+  it('declares the Posters/Prints/Visual Artwork google_product_category', () => {
     expect(buildMetaXml([sampleItem], 'en')).toContain(
-      '<g:google_product_category>Arts &amp; Entertainment &gt; Fine Art &gt; Prints</g:google_product_category>',
+      '<g:google_product_category>500044</g:google_product_category>',
     );
   });
 

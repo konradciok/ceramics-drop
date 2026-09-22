@@ -66,9 +66,21 @@ function escapeXml(s: string): string {
  *  against `CategorySlug` if the slug is ever renamed. */
 const FEED_CATEGORY = 'fine-art-prints' satisfies CategorySlug;
 
-/** Value is an already-escaped XML entity string (& → &amp;, > → &gt;) —
- *  insert directly without re-escaping. */
-const GOOGLE_CATEGORY = 'Arts &amp; Entertainment &gt; Fine Art &gt; Prints';
+/**
+ * `google_product_category` as Google's numeric taxonomy ID:
+ * 500044 = Home & Garden > Decor > Artwork > Posters, Prints, & Visual Artwork.
+ *
+ * Google accepts either the numeric ID or the full path string, one per item,
+ * never both. The ID is the safer of the two here: it survives Google rewording
+ * a taxonomy node, and it carries no `&`/`>` so it needs no XML escaping — the
+ * path form had to be stored pre-escaped and inserted raw, which is one edit
+ * away from emitting a broken document.
+ *
+ * Do not restore the previous value, `Arts & Entertainment > Fine Art > Prints`:
+ * that was never a node in Google's taxonomy (there is no `Fine Art` branch
+ * under `Arts & Entertainment`), so Merchant Center rejected it outright.
+ */
+const GOOGLE_CATEGORY = '500044';
 
 const PRICE_TIER = 'standard';
 const PRODUCT_FAMILY = 'prints';
