@@ -46,7 +46,7 @@ type Node = {
 };
 
 /** locale → expected shipping/return-policy market country, mirrors SHIPPING_COUNTRY in feed.ts. */
-const MARKET_COUNTRY: Record<'pl' | 'en' | 'es' | 'de', string> = { pl: 'PL', en: 'IE', es: 'ES', de: 'DE' };
+const MARKET_COUNTRY: Record<'pl' | 'en' | 'es' | 'de', string> = { pl: 'PL', en: 'GB', es: 'ES', de: 'DE' };
 
 /**
  * Stub raw-message accessor: for `notes.*` keys, returns an array-like proxy
@@ -160,14 +160,14 @@ describe('collectionSchema', () => {
     });
   });
 
-  it('en locale emits EUR currency and PRICE_EUR price in collection offers', async () => {
+  it('en locale emits EUR currency and PRICE_EUR price in collection offers (ceramics stay EUR-priced even though the market country is GB)', async () => {
     const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t, tRaw });
     const enNodes = enGraph['@graph'] as unknown as Node[];
     (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('EUR');
       expect((item.offers as unknown as { price: number }).price).toBe(PRICE_EUR.kubki);
       expect(item.offers.shippingDetails?.[0].shippingRate.currency).toBe('EUR');
-      expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe('IE');
+      expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe('GB');
     });
   });
 
@@ -345,14 +345,17 @@ describe('printCollectionSchema', () => {
     });
   });
 
-  it('en locale ships in EUR on the IE Prodigi rate', async () => {
+  it('en locale ships in GBP on the GB Prodigi rate, agreeing with the merchant feed', async () => {
     const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
     const items = (enGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
     items.forEach(({ item }) => {
-      const [loose] = item.offers.shippingDetails ?? [];
-      expect(loose.shippingRate.currency).toBe('EUR');
-      expect(loose.shippingRate.value).toBe(printShippingOf('IE', false, 'eur'));
-      expect(loose.shippingDestination.addressCountry).toBe('IE');
+      expect(item.offers.priceCurrency).toBe('GBP');
+      const [loose, framed] = item.offers.shippingDetails ?? [];
+      expect(loose.shippingRate.currency).toBe('GBP');
+      expect(loose.shippingRate.value).toBe(printShippingOf('GB', false, 'gbp', DEFAULT_PRINT_PRICING));
+      expect(loose.shippingDestination.addressCountry).toBe('GB');
+      expect(framed.shippingRate.currency).toBe('GBP');
+      expect(framed.shippingRate.value).toBe(printShippingOf('GB', true, 'gbp', DEFAULT_PRINT_PRICING));
     });
   });
 
@@ -403,5 +406,20 @@ describe('printProductSchema', () => {
     const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions });
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     expect(nodes[1]['name']).toBe('Custom Collection 01');
+  });
+
+  it('en locale prices and ships the PDP offer in GBP/GB, matching the merchant feed', () => {
+    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING });
+    const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
+      priceCurrency: string;
+      shippingDetails: ShippingDetail[];
+      hasMerchantReturnPolicy: ReturnPolicy;
+    };
+    expect(offer.priceCurrency).toBe('GBP');
+    offer.shippingDetails.forEach((rate) => {
+      expect(rate.shippingRate.currency).toBe('GBP');
+      expect(rate.shippingDestination.addressCountry).toBe('GB');
+    });
+    expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe('GB');
   });
 });
