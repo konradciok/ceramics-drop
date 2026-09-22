@@ -29,7 +29,10 @@ export function serializeError(err: unknown): string {
     return (err as { message: string }).message;
   }
   try {
-    return JSON.stringify(err);
+    // JSON.stringify returns undefined (not a string) for undefined, a
+    // function, or a symbol — fall back to String() so the `: string`
+    // contract holds and the error field is never silently dropped.
+    return JSON.stringify(err) ?? String(err);
   } catch {
     return String(err);
   }

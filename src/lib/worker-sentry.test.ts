@@ -21,6 +21,10 @@ describe('serializeError', () => {
     expect(serializeError('plain string')).toBe('"plain string"');
     expect(serializeError(42)).toBe('42');
   });
+
+  it('falls back to String() when JSON.stringify would return undefined (e.g. a caught `undefined`)', () => {
+    expect(serializeError(undefined)).toBe('undefined');
+  });
 });
 
 describe('parseSentryDsn', () => {
