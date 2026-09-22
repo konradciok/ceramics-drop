@@ -2,7 +2,7 @@ import { completePaidOrder, type PaidOrderDeps } from './complete-paid-order';
 import { ensureBalanceIntent } from './gift-card-checkout';
 import { abortBalanceOrder, processBalanceIntent } from './balance-payment-events';
 import { finishBalanceRefund, refundBalanceOrder } from './balance-refunds';
-import { captureWorkerAlert } from '@/lib/worker-sentry';
+import { captureWorkerAlert, serializeError } from '@/lib/worker-sentry';
 
 /** Each row is independent: one payment requiring review cannot starve others. */
 export async function recoverBalanceOrders(deps: PaidOrderDeps): Promise<void> {
@@ -19,7 +19,7 @@ export async function recoverBalanceOrders(deps: PaidOrderDeps): Promise<void> {
   async function run(orderId: string, work: () => Promise<unknown>) {
     try { await work(); }
     catch (error) {
-      await captureWorkerAlert(deps.env, { message: 'balance_order_recovery_failed', level: 'error', extra: { orderId, error: String(error) } });
+      await captureWorkerAlert(deps.env, { message: 'balance_order_recovery_failed', level: 'error', extra: { orderId, error: serializeError(error) } });
     }
   }
   for (const order of paid.data ?? []) await run(order.id, () => completePaidOrder(order.id, deps));
