@@ -498,9 +498,10 @@ describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
 describe('buildOrderConfirmationEmail — print copy (kind: print)', () => {
   const locales = ['pl', 'en', 'es', 'de'] as const;
 
-  it.each(locales)('uses Prodigi/courier copy with no InPost/locker/Poland text (%s)', (locale) => {
+  it.each(locales)('uses on-demand/courier copy with no InPost/locker/Poland text (%s)', (locale) => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale, kind: 'print' });
-    expect(html).toContain('Prodigi');
+    // The fulfilment partner is a trade secret — never named in customer copy.
+    expect(html).not.toContain('Prodigi');
     expect(html).not.toContain('InPost');
     expect(html).not.toContain('Paczkomat');
     expect(html).not.toContain('paczkomat');

@@ -1034,15 +1034,17 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
   },
 };
 
-// Print orders: Prodigi produces on demand and couriers across EU/UK — no
-// InPost / Poland / locker language. Same manual-sync rule as the map above.
+// Print orders: produced on demand and couriered across EU/UK — no
+// InPost / Poland / locker language. The copy deliberately does NOT name
+// the fulfilment partner (trade secret — guarded by the email tests).
+// Same manual-sync rule as the map above.
 const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
   pl: {
     subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
     deliveryTitle: 'Informacja o realizacji',
-    deliveryP1: 'Druki fine-art powstają na zamówienie u naszego partnera drukarskiego Prodigi.',
+    deliveryP1: 'Druki fine-art powstają na zamówienie.',
     deliveryP2: 'Produkcja trwa zwykle 2–5 dni roboczych. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
     deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
@@ -1052,7 +1054,7 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
     thankYou: 'Thank you for your order! It\'s confirmed — your print is on its way to production.',
     deliveryTitle: 'Fulfilment information',
-    deliveryP1: 'Fine-art prints are produced on demand by our print partner Prodigi.',
+    deliveryP1: 'Fine-art prints are produced on demand.',
     deliveryP2: 'Production usually takes 2–5 business days. Once your order ships, you\'ll receive an email with a tracking number.',
     deliveryP3: 'Courier delivery across the EU and the UK.',
     signOff: 'Talk soon! Anna Ciok Studio',
@@ -1062,7 +1064,7 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
     deliveryTitle: 'Información sobre la producción',
-    deliveryP1: 'Las láminas fine-art se producen bajo demanda con nuestro socio de impresión Prodigi.',
+    deliveryP1: 'Las láminas fine-art se producen bajo demanda.',
     deliveryP2: 'La producción suele tardar de 2 a 5 días laborables. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
     deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
@@ -1072,7 +1074,7 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
     thankYou: 'Danke für deine Bestellung! Sie ist bestätigt — dein Druck geht jetzt in die Produktion.',
     deliveryTitle: 'Informationen zur Herstellung',
-    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung bei unserem Druckpartner Prodigi gefertigt.',
+    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung gefertigt.',
     deliveryP2: 'Die Produktion dauert in der Regel 2–5 Werktage. Sobald deine Bestellung versandt wurde, erhältst du eine E-Mail mit der Sendungsnummer.',
     deliveryP3: 'Kurierlieferung innerhalb der EU und nach Großbritannien.',
     signOff: 'Bis bald! Anna Ciok Studio',
