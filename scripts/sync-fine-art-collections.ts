@@ -59,33 +59,50 @@ async function loadPublishedPrintCollectionsByName(supabase: SupabaseClient): Pr
     .select('id, published_revision')
     .not('published_revision', 'is', null);
   if (collectionsError) throw collectionsError;
+  if (!collections || collections.length === 0) return new Map();
 
-  const revisionById = new Map<string, number>(
-    (collections ?? []).map((c) => [c.id as string, c.published_revision as number]),
-  );
-  const ids = [...revisionById.keys()];
-  if (ids.length === 0) return new Map();
-
+  // Fetch exactly one row per collection — its published revision — via an
+  // OR of (collection_id, revision) pairs, never the full draft history.
+  // Filtering "revision = published_revision" in JS after an unbounded
+  // `.in('collection_id', ids)` select would silently truncate under
+  // Supabase's default ~1000-row page size once enough historical
+  // revisions accumulate, possibly dropping the one row a collection
+  // actually needs. This way the result set is bounded by
+  // `collections.length`, never by total revision count.
+  const orFilter = collections
+    .map((c) => `and(collection_id.eq.${c.id},revision.eq.${c.published_revision})`)
+    .join(',');
   const { data: drafts, error: draftsError } = await supabase
     .from('collection_drafts')
     .select('collection_id, revision, payload')
-    .in('collection_id', ids);
+    .or(orFilter);
   if (draftsError) throw draftsError;
 
   const byName = new Map<string, PublishedRow>();
   for (const row of drafts ?? []) {
-    const collectionId = row.collection_id as string;
-    const revision = row.revision as number;
-    if (revision !== revisionById.get(collectionId)) continue; // not the published revision
-
     const payload = row.payload as CollectionPayload;
     if (typeof payload?.name !== 'string') continue;
     const isPrintCollection = (payload.fields ?? []).some((f) => f.key === 'kind' && f.value === 'print-collection');
     if (!isPrintCollection) continue;
 
-    byName.set(payload.name, { collectionId, revision, payload });
+    byName.set(payload.name, { collectionId: row.collection_id as string, revision: row.revision as number, payload });
   }
   return byName;
+}
+
+/** The newest saved revision for a collection, published or not — used to
+ *  detect a pending CMS edit before this script bases a write on the
+ *  (older) published payload. */
+async function latestDraftRevision(supabase: SupabaseClient, collectionId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('collection_drafts')
+    .select('revision')
+    .eq('collection_id', collectionId)
+    .order('revision', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.revision as number | undefined) ?? 0;
 }
 
 export async function runSync(supabase: SupabaseClient, { confirm }: { confirm: boolean }): Promise<void> {
@@ -113,6 +130,24 @@ export async function runSync(supabase: SupabaseClient, { confirm }: { confirm: 
     console.log(`\nCHANGE: "${collection.name}"`);
     console.log(`  old: ${liveIds || '(empty)'}`);
     console.log(`  new: ${desiredIds}`);
+
+    // A newer, unpublished draft (e.g. a pending CMS edit) means the
+    // published payload this diff is based on is stale. Writing anyway
+    // would either be rejected by save_collection_draft's own optimistic-
+    // concurrency check (p_expected_revision no longer matches the latest
+    // revision) or, worse, silently discard that pending draft's edits by
+    // basing the new revision on the older published payload instead of it.
+    const latestRevision = await latestDraftRevision(supabase, live.collectionId);
+    if (latestRevision !== live.revision) {
+      console.log(
+        `  PENDING DRAFT: revision ${latestRevision} exists but published is only ${live.revision} — ` +
+        'resolve (publish or discard) that draft in the CMS before syncing this collection.',
+      );
+      if (confirm) {
+        throw new Error(`"${collection.name}" has a pending unpublished draft — aborting before writing it.`);
+      }
+      continue;
+    }
 
     if (!confirm) continue;
 
