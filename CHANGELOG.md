@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.16.0](https://github.com/konradciok/ceramics-drop/compare/v0.15.0...v0.16.0) (2026-09-25)
+
+
+### Features
+
+* add /refund-policy page in all 4 locales ([#327](https://github.com/konradciok/ceramics-drop/issues/327)) ([99aa70e](https://github.com/konradciok/ceramics-drop/commit/99aa70e67aac69499ae56fa039cd1030631ed648))
+* **feed:** retarget the en merchant feed and print PDP schema to GB/GBP ([#325](https://github.com/konradciok/ceramics-drop/issues/325)) ([a5d1803](https://github.com/konradciok/ceramics-drop/commit/a5d180326a4b61fe5d7f038e8c4a7251e035a5a2))
+* **prints:** reconcile fine-art-print collection membership with new curation ([70f8efc](https://github.com/konradciok/ceramics-drop/commit/70f8efcc6f561682fd221a62ef5d3d991371af3a))
+* **prints:** reconcile print collections with new curation ([f66dd81](https://github.com/konradciok/ceramics-drop/commit/f66dd81828cb87caabab5d720b296c1500e9a3e0))
+
+
+### Bug Fixes
+
+* **copy:** refresh /sklep fine-art-prints lead across all locales ([#324](https://github.com/konradciok/ceramics-drop/issues/324)) ([762d2ad](https://github.com/konradciok/ceramics-drop/commit/762d2adbd2259b66c519f2a76ffd456818a274ba))
+* **email:** stop naming the print fulfilment partner in customer confirmation copy ([38a43fd](https://github.com/konradciok/ceramics-drop/commit/38a43fd7493b2cf44f7a53f2b9f0269fc3be425e))
+* **email:** stop naming the print fulfilment partner in customer confirmation copy ([a03fbf9](https://github.com/konradciok/ceramics-drop/commit/a03fbf9ced587151ee43f49750ed54b5c0718003))
+* **feed:** emit a real google_product_category for fine-art prints ([39565a8](https://github.com/konradciok/ceramics-drop/commit/39565a8ffb5886dce5c9b1e01ff27e1cae15282c))
+* **feed:** emit a real google_product_category for fine-art prints ([9234cd0](https://github.com/konradciok/ceramics-drop/commit/9234cd006d63bce6711ffd2026113140c1a6fa38))
+* serialize non-Error catch values in worker cron sweep alerts ([2fa8968](https://github.com/konradciok/ceramics-drop/commit/2fa896808927add9819a871d2960d5a1944139d8))
+
 ## [0.15.0](https://github.com/konradciok/ceramics-drop/compare/v0.14.0...v0.15.0) (2026-09-21)
 
 
