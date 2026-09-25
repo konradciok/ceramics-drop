@@ -20,13 +20,20 @@
    feature existed both tracks were served entirely from these constants, so
    failing closed would be a pure availability regression).
 
-   Display surfaces — the cart, PDP, the product feed, structured data — keep
-   reading the code constants directly for now; only the money path is cut over
-   (the plan's scope). They call printShippingOf / shippingOfCurrency with no
-   table argument, which resolves to those same constants.
+   Cart display now reads the SAME published rates as checkout, via
+   getShippingRatesForDisplay() below — mirroring the print-pricing-config
+   split (getPrintPricingConfig vs getPrintPricingConfigForCheckout). This
+   closes the one gap that mattered: a buyer could previously see one price
+   in the cart and be charged a different (correct) one at checkout after an
+   admin edited the CMS rates. The PDP/feed/structured-data surfaces still
+   read the code constants directly — those are pre-purchase SEO/marketing
+   surfaces with no live cart to reconcile against, not a price the buyer is
+   about to pay, so cutting them over is unchanged scope (see feed.ts /
+   structured-data.ts for that boundary).
    ============================================================ */
 import * as Sentry from '@sentry/nextjs';
 import { catalogSource } from '../catalog/source';
+import { readWithFallback } from '../supabase-timeout';
 import {
   CODE_SHIPPING_RATES,
   recordShippingRatesSuccess,
@@ -52,4 +59,19 @@ export async function getShippingRatesForCheckout(): Promise<ShippingRatesBundle
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'shipping-rates-checkout', fallbackTier: tier } });
     return rates;
   }
+}
+
+/**
+ * For DISPLAY only (the cart page) — degrades to CODE_SHIPPING_RATES on a DB
+ * read failure so a transient hiccup never hard-fails the cart render. A
+ * stale rate shown before the buyer has paid is not a money-safety issue
+ * (checkout re-resolves authoritatively via getShippingRatesForCheckout).
+ * Same posture as print-pricing-config/get.ts's getPrintPricingConfig().
+ */
+export async function getShippingRatesForDisplay(): Promise<ShippingRatesBundle> {
+  if (catalogSource() === 'code') return CODE_SHIPPING_RATES;
+  return readWithFallback('shipping-rates-display', async () => {
+    const { loadShippingRatesFromDb } = await import('./load');
+    return await loadShippingRatesFromDb();
+  }, CODE_SHIPPING_RATES);
 }
