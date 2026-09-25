@@ -22,18 +22,21 @@
 
    Cart display now reads the SAME published rates as checkout, via
    getShippingRatesForDisplay() below — mirroring the print-pricing-config
-   split (getPrintPricingConfig vs getPrintPricingConfigForCheckout). This
-   closes the one gap that mattered: a buyer could previously see one price
-   in the cart and be charged a different (correct) one at checkout after an
-   admin edited the CMS rates. The PDP/feed/structured-data surfaces still
-   read the code constants directly — those are pre-purchase SEO/marketing
-   surfaces with no live cart to reconcile against, not a price the buyer is
-   about to pay, so cutting them over is unchanged scope (see feed.ts /
-   structured-data.ts for that boundary).
+   split (getPrintPricingConfig vs getPrintPricingConfigForCheckout), but with
+   ONE deliberate difference from that mirror: both shipping accessors share
+   the SAME fallback ladder (last-known-good, then code-default) on a DB read
+   failure, and both feed the same last-known-good store on success. Without
+   that, a checkout-side success followed by a display-side failure (or vice
+   versa) could still show the buyer a cart price different from what
+   checkout charges — the exact gap this accessor exists to close. The
+   PDP/feed/structured-data surfaces still read the code constants directly —
+   those are pre-purchase SEO/marketing surfaces with no live cart to
+   reconcile against, not a price the buyer is about to pay, so cutting them
+   over is unchanged scope (see feed.ts / structured-data.ts for that
+   boundary).
    ============================================================ */
 import * as Sentry from '@sentry/nextjs';
 import { catalogSource } from '../catalog/source';
-import { readWithFallback } from '../supabase-timeout';
 import {
   CODE_SHIPPING_RATES,
   recordShippingRatesSuccess,
@@ -62,16 +65,29 @@ export async function getShippingRatesForCheckout(): Promise<ShippingRatesBundle
 }
 
 /**
- * For DISPLAY only (the cart page) — degrades to CODE_SHIPPING_RATES on a DB
- * read failure so a transient hiccup never hard-fails the cart render. A
- * stale rate shown before the buyer has paid is not a money-safety issue
- * (checkout re-resolves authoritatively via getShippingRatesForCheckout).
- * Same posture as print-pricing-config/get.ts's getPrintPricingConfig().
+ * For DISPLAY only (the cart page) — never throws, so a DB read failure
+ * never hard-fails the cart render (checkout re-resolves authoritatively and
+ * independently regardless). On failure it shares the exact SAME fallback
+ * ladder as getShippingRatesForCheckout — last-known-good first, then the
+ * code constants — rather than jumping straight to the code constants: the
+ * two accessors share the module-scoped last-known-good store (both record a
+ * success into it), so whichever one last completed a DB read is what the
+ * other degrades to on failure. Without this, a checkout-side success
+ * followed by a display-side failure (or vice versa) could again show the
+ * buyer a cart price different from what checkout charges — the exact class
+ * of bug this accessor exists to close (flagged in review, see PR #330).
  */
 export async function getShippingRatesForDisplay(): Promise<ShippingRatesBundle> {
   if (catalogSource() === 'code') return CODE_SHIPPING_RATES;
-  return readWithFallback('shipping-rates-display', async () => {
+  try {
     const { loadShippingRatesFromDb } = await import('./load');
-    return await loadShippingRatesFromDb();
-  }, CODE_SHIPPING_RATES);
+    const rates = await loadShippingRatesFromDb();
+    recordShippingRatesSuccess(rates);
+    return rates;
+  } catch (err) {
+    const { rates, tier } = resolveShippingRatesFallback();
+    console.error('[shipping-rates] DB read failed (display); using fallback', { fallbackTier: tier }, err);
+    Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'shipping-rates-display', fallbackTier: tier } });
+    return rates;
+  }
 }

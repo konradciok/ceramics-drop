@@ -87,11 +87,40 @@ describe('getShippingRatesForDisplay', () => {
     await expect(getShippingRatesForDisplay()).resolves.toEqual(DB_RATES);
   });
 
-  it('falls back to the code constants when the DB read fails (no throw — a display hiccup must not break the cart)', async () => {
+  it('on a cold isolate, a DB outage degrades to the code constants (no throw)', async () => {
     vi.stubEnv('CATALOG_SOURCE', 'db');
     vi.mocked(loadShippingRatesFromDb).mockRejectedValue(new Error('supabase down'));
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(getShippingRatesForDisplay()).resolves.toEqual(CODE_SHIPPING_RATES);
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ tags: { supabaseTimeoutLabel: 'shipping-rates-display', fallbackTier: 'code-default' } }),
+    );
+    errSpy.mockRestore();
+  });
+
+  it('after a prior successful checkout read, a display-side failure degrades to that SAME last-known-good table — not the stale code constants', async () => {
+    // This is the drift CodeRabbit flagged on PR #330: the checkout and
+    // display accessors must share one fallback ladder, or a buyer could see
+    // one shipping price in the cart and be charged a different one.
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    vi.mocked(loadShippingRatesFromDb).mockResolvedValueOnce(DB_RATES);
+    await getShippingRatesForCheckout();
+
+    vi.mocked(loadShippingRatesFromDb).mockRejectedValueOnce(new Error('supabase down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(getShippingRatesForDisplay()).resolves.toEqual(DB_RATES);
+    errSpy.mockRestore();
+  });
+
+  it('after a prior successful display read, a checkout-side failure degrades to that SAME last-known-good table', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    vi.mocked(loadShippingRatesFromDb).mockResolvedValueOnce(DB_RATES);
+    await getShippingRatesForDisplay();
+
+    vi.mocked(loadShippingRatesFromDb).mockRejectedValueOnce(new Error('supabase down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(getShippingRatesForCheckout()).resolves.toEqual(DB_RATES);
     errSpy.mockRestore();
   });
 });
