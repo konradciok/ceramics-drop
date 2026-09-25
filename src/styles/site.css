@@ -1275,8 +1275,6 @@ ul { list-style:none; padding:0; margin:0; }
 .return-btn { align-self:flex-start; background:var(--c-espresso); color:var(--c-paper); border:none; cursor:pointer; border-radius:999px; padding:13px 26px; font-family:var(--f-cond); font-size:13px; letter-spacing:.16em; text-transform:uppercase; min-height:44px; transition:background .25s; }
 .return-btn:hover:not(:disabled) { background:var(--c-terracotta); }
 .return-btn:disabled { opacity:.5; cursor:not-allowed; }
-.return-msg { font-family:var(--f-cond); font-size:14px; margin-top:4px; }
-.return-msg-error, .return-msg-ineligible { color:var(--c-terracotta-deep); }
 
 /* ─── PRODUCT DETAIL PAGE (PDP) ──────────────────────────── */
 .pdp { padding:clamp(32px,5vw,64px) var(--gut) var(--section-y); }

@@ -1,15 +1,12 @@
 import {
   analyticsItemsForIds,
-  buildBeginCheckoutEvent,
   buildBeginCheckoutEventFromItems,
   buildEngagementEvent,
-  buildPurchaseEvent,
   buildPurchaseEventFromItems,
   pushDataLayer,
   type AnalyticsItem,
   type DataLayerEvent,
 } from './analytics';
-import type { Product } from './types';
 import type { CurrencyCode } from './format';
 
 type CheckoutStartOptions = {
@@ -50,21 +47,6 @@ type CheckoutSnapshot = {
   discountMinor?: number;
 };
 
-export function pushCheckoutStarted(
-  products: Product[],
-  { shippingCost, shippingMethod, userData, currency, itemPrices, push = pushDataLayer }: CheckoutStartOptions,
-): void {
-  push(
-    buildBeginCheckoutEvent(products, {
-      shippingCost,
-      shippingMethod,
-      userData,
-      currency,
-      itemPrices,
-    }),
-  );
-}
-
 /** begin_checkout from pre-resolved AnalyticsItems (mixed ceramic + print carts). */
 export function pushCheckoutStartedItems(
   items: AnalyticsItem[],
@@ -92,22 +74,6 @@ export function pushCheckoutStartedItemsOnce(
   pushCheckoutStartedItems(items, options);
   safeSetItem(storage, key, '1');
   return true;
-}
-
-export function pushConfirmedPurchase(
-  products: Product[],
-  { orderNo, shippingCost, shippingMethod, userData, currency, itemPrices, push = pushDataLayer }: ConfirmedPurchaseOptions,
-): void {
-  push(
-    buildPurchaseEvent(products, {
-      orderNo,
-      shippingCost,
-      shippingMethod,
-      userData,
-      currency,
-      itemPrices,
-    }),
-  );
 }
 
 export async function pushConfirmedPurchaseByIdsOnce(
