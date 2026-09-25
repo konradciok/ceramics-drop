@@ -20,10 +20,20 @@
    feature existed both tracks were served entirely from these constants, so
    failing closed would be a pure availability regression).
 
-   Display surfaces — the cart, PDP, the product feed, structured data — keep
-   reading the code constants directly for now; only the money path is cut over
-   (the plan's scope). They call printShippingOf / shippingOfCurrency with no
-   table argument, which resolves to those same constants.
+   Cart display now reads the SAME published rates as checkout, via
+   getShippingRatesForDisplay() below — mirroring the print-pricing-config
+   split (getPrintPricingConfig vs getPrintPricingConfigForCheckout), but with
+   ONE deliberate difference from that mirror: both shipping accessors share
+   the SAME fallback ladder (last-known-good, then code-default) on a DB read
+   failure, and both feed the same last-known-good store on success. Without
+   that, a checkout-side success followed by a display-side failure (or vice
+   versa) could still show the buyer a cart price different from what
+   checkout charges — the exact gap this accessor exists to close. The
+   PDP/feed/structured-data surfaces still read the code constants directly —
+   those are pre-purchase SEO/marketing surfaces with no live cart to
+   reconcile against, not a price the buyer is about to pay, so cutting them
+   over is unchanged scope (see feed.ts / structured-data.ts for that
+   boundary).
    ============================================================ */
 import * as Sentry from '@sentry/nextjs';
 import { catalogSource } from '../catalog/source';
@@ -50,6 +60,34 @@ export async function getShippingRatesForCheckout(): Promise<ShippingRatesBundle
     // Sentry, distinct from a generic Supabase hiccup — same convention as
     // print-pricing-config/get.ts and catalog/last-known-good.ts.
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'shipping-rates-checkout', fallbackTier: tier } });
+    return rates;
+  }
+}
+
+/**
+ * For DISPLAY only (the cart page) — never throws, so a DB read failure
+ * never hard-fails the cart render (checkout re-resolves authoritatively and
+ * independently regardless). On failure it shares the exact SAME fallback
+ * ladder as getShippingRatesForCheckout — last-known-good first, then the
+ * code constants — rather than jumping straight to the code constants: the
+ * two accessors share the module-scoped last-known-good store (both record a
+ * success into it), so whichever one last completed a DB read is what the
+ * other degrades to on failure. Without this, a checkout-side success
+ * followed by a display-side failure (or vice versa) could again show the
+ * buyer a cart price different from what checkout charges — the exact class
+ * of bug this accessor exists to close (flagged in review, see PR #330).
+ */
+export async function getShippingRatesForDisplay(): Promise<ShippingRatesBundle> {
+  if (catalogSource() === 'code') return CODE_SHIPPING_RATES;
+  try {
+    const { loadShippingRatesFromDb } = await import('./load');
+    const rates = await loadShippingRatesFromDb();
+    recordShippingRatesSuccess(rates);
+    return rates;
+  } catch (err) {
+    const { rates, tier } = resolveShippingRatesFallback();
+    console.error('[shipping-rates] DB read failed (display); using fallback', { fallbackTier: tier }, err);
+    Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'shipping-rates-display', fallbackTier: tier } });
     return rates;
   }
 }
