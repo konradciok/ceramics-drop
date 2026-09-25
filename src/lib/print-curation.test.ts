@@ -22,8 +22,8 @@ describe('fine-art print curation map', () => {
         );
       });
     }
-    expect(printDisplayName({ id: 'fap004', num: '24' })).toBe('Signs 01');
-    expect(printDisplayName({ id: 'fap008', num: '25' })).toBe('Signs 02');
+    expect(printDisplayName({ id: 'fap004', num: '30' })).toBe('Signs 01');
+    expect(printDisplayName({ id: 'fap008', num: '32' })).toBe('Ciala 01');
     expect(printDisplayName({ id: 'unknown', num: '42' }, 'Druk')).toBe('Druk Nº 42');
   });
 
@@ -41,7 +41,14 @@ describe('fine-art print curation map', () => {
     );
   });
 
-  it('keeps the migration rollout snapshot aligned with the authored curation', () => {
+  it('keeps the migration rollout snapshot unchanged since it was applied', () => {
+    // supabase/migrations/20260828120000_curate_fine_art_prints.sql already
+    // ran against production — its temporary print_curation_map rollout gate
+    // is a frozen historical artifact of the curation authored on 2026-08-28,
+    // not a live reflection of config/print-catalog-curation.json. Later
+    // curation edits (e.g. the 2026-09-25 collection reshuffle) intentionally
+    // diverge from it — this pins the *migration file itself* against silent
+    // edits, not against `source`.
     const migration = readFileSync(
       new URL('../../supabase/migrations/20260828120000_curate_fine_art_prints.sql', import.meta.url),
       'utf8',
@@ -55,20 +62,31 @@ describe('fine-art print curation map', () => {
       valuesBlock![1].matchAll(/\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g),
       ([, id, num, status]) => ({ id, num, status }),
     );
-    const authoredRows = [
-      ...source.collections.flatMap(({ prints }) => prints.map(({ productId, number }) => ({
-        id: productId,
-        num: number,
-        status: 'active',
-      }))),
-      ...source.retired.map(({ productId, sourceNumber }) => ({
-        id: productId,
-        num: sourceNumber,
-        status: 'archived',
-      })),
+    const originalAuthoredRows = [
+      { id: 'fap001', num: '01', status: 'active' }, { id: 'fap002', num: '02', status: 'active' },
+      { id: 'fap003', num: '03', status: 'active' }, { id: 'fap006', num: '04', status: 'active' },
+      { id: 'fap007', num: '05', status: 'active' }, { id: 'fap010', num: '06', status: 'active' },
+      { id: 'fap012', num: '07', status: 'active' }, { id: 'fap014', num: '08', status: 'active' },
+      { id: 'fap016', num: '09', status: 'active' }, { id: 'fap011', num: '10', status: 'active' },
+      { id: 'fap018', num: '11', status: 'active' }, { id: 'fap036', num: '12', status: 'active' },
+      { id: 'fap041', num: '13', status: 'active' }, { id: 'fap005', num: '14', status: 'active' },
+      { id: 'fap023', num: '15', status: 'active' }, { id: 'fap026', num: '16', status: 'active' },
+      { id: 'fap038', num: '17', status: 'active' }, { id: 'fap039', num: '18', status: 'active' },
+      { id: 'fap024', num: '19', status: 'active' }, { id: 'fap027', num: '20', status: 'active' },
+      { id: 'fap030', num: '21', status: 'active' }, { id: 'fap031', num: '22', status: 'active' },
+      { id: 'fap032', num: '23', status: 'active' }, { id: 'fap004', num: '24', status: 'active' },
+      { id: 'fap008', num: '25', status: 'active' }, { id: 'fap025', num: '26', status: 'active' },
+      { id: 'fap033', num: '27', status: 'active' }, { id: 'fap019', num: '28', status: 'active' },
+      { id: 'fap020', num: '29', status: 'active' }, { id: 'fap021', num: '30', status: 'active' },
+      { id: 'fap034', num: '31', status: 'active' }, { id: 'fap015', num: '32', status: 'active' },
+      { id: 'fap028', num: '33', status: 'active' }, { id: 'fap035', num: '34', status: 'active' },
+      { id: 'fap040', num: '35', status: 'active' }, { id: 'fap009', num: '36', status: 'active' },
+      { id: 'fap013', num: '37', status: 'active' }, { id: 'fap017', num: '38', status: 'active' },
+      { id: 'fap022', num: '39', status: 'active' },
+      { id: 'fap029', num: '029', status: 'archived' }, { id: 'fap037', num: '037', status: 'archived' },
     ];
 
-    expect(migrationRows).toEqual(authoredRows);
+    expect(migrationRows).toEqual(originalAuthoredRows);
   });
 
   it('preserves the authored collection and numbering invariants', () => {
@@ -79,7 +97,7 @@ describe('fine-art print curation map', () => {
     expect(ACTIVE_PRINT_CURATION.map(({ number }) => number)).toEqual(
       Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
-    expect(PRINT_COLLECTION_DEFINITIONS.every(({ prints }) => prints.length >= 4 && prints.length <= 5)).toBe(true);
+    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
     expect(RETIRED_PRINT_CURATION.map(({ productId }) => productId)).toEqual(['fap029', 'fap037']);
 
     for (const item of PRINT_CURATION) {
@@ -93,7 +111,7 @@ describe('fine-art print curation map', () => {
   });
 
   it('projects active and retired lookup behavior', () => {
-    expect(curationForProduct('fap041')?.number).toBe('13');
+    expect(curationForProduct('fap041')?.number).toBe('16');
     expect(curationForProduct('fap029')).toBeUndefined();
     expect(curationForProduct('unknown')).toBeUndefined();
     expect(catalogStatusForPrint('fap041')).toBe('active');

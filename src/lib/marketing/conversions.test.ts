@@ -126,7 +126,7 @@ describe('sendPurchaseConversions', () => {
     const d = deps({
       // Exercises the CMS-resolved naming path with a fixture whose name the
       // static PRINT_COLLECTION_DEFINITIONS default cannot produce for fap005
-      // (it maps fap005 to 'Horizons'): this pins that `definitions` is
+      // (it maps fap005 to 'Signs'): this pins that `definitions` is
       // actually threaded through to printDisplayName, not silently dropped
       // in favor of the static fallback (which would happen to also resolve
       // fap005 to a plausible-looking name and let this test pass either way).

@@ -24,7 +24,7 @@ are separate identities. They no longer have to contain the same number.
 
 All asset and fulfilment commands continue to accept the stable product ID,
 for example `--product fap041`, even when the storefront shows that design as
-`Nº 13`. When translating a storefront number back to a source folder or
+`Nº 16`. When translating a storefront number back to a source folder or
 product ID, consult the curation mapping first; do not infer either identity
 from the display number.
 
@@ -247,7 +247,7 @@ where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
 Compare variant/media/assignment/asset counts to Step 3. Then verify:
 
 - storefront: nine sections in the configured order, identical fixed names in
-  two locales, numbers `01`–`39`, `fap041` as Nº 13 in Linea, and no public
+  two locales, numbers `01`–`39`, `fap041` as Nº 16 in Linea, and no public
   PDP/tile for `fap029` or `fap037`;
 - admin: both archived stable IDs remain inspectable with their retained media,
   variants, assignments, and assets;

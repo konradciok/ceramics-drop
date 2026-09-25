@@ -114,7 +114,7 @@ function makeContentStateFakeSupabase(row: {
 
 describe('contentItems threads definitions through print naming', () => {
   it('uses definitions to resolve fine-art-print names (discriminating fixture)', async () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
+    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
     // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the label
     // proves that the definitions parameter was actually threaded through to
     // printDisplayName, not silently dropped in favor of the static fallback.
@@ -126,7 +126,7 @@ describe('contentItems threads definitions through print naming', () => {
     const fap005Item = items.find((item) => item.id === 'fap005');
     expect(fap005Item).toBeDefined();
     expect(fap005Item?.label).toBe('CmsOnly 01');
-    expect(fap005Item?.label).not.toContain('Horizons');
+    expect(fap005Item?.label).not.toContain('Signs');
   });
 });
 

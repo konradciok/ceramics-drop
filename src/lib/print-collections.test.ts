@@ -42,7 +42,7 @@ describe('PRINT_COLLECTIONS integrity', () => {
   });
 
   it('derives its ordered members from the curation map', () => {
-    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 4, 4, 5, 5, 4, 4, 4, 4]);
+    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
   });
 });
 
@@ -55,7 +55,7 @@ describe('groupPrintDesigns', () => {
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
       'Signs', 'Ciala', 'Balance', 'Verticles',
     ]);
-    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 4, 4, 5, 5, 4, 4, 4, 4]);
+    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
     expect(groups.flatMap(({ designs }) => designs.map(({ num }) => num))).toEqual(
       Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
     );

@@ -94,7 +94,7 @@ export function validatePrintCuration(input: PrintCurationSource): void {
   if (active.map((item) => item.number).join() !== expectedNumbers.join()) fail('active numbers must be 01 through 39 in authored order');
   if (new Set(active.map((item) => item.number)).size !== 39) fail('active numbers must be unique');
   for (const collection of input.collections) {
-  if (collection.prints.length < 4 || collection.prints.length > 5) fail(`${collection.slug} must contain 4 or 5 prints`);
+  if (collection.prints.length < 1) fail(`${collection.slug} must contain at least 1 print`);
   }
   for (const item of retired) {
   if (!active.some((candidate) => candidate.productId === item.duplicateOf)) fail(`${item.productId} duplicateOf must be active`);
