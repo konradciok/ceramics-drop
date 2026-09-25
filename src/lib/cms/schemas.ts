@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { registryPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
 import { IMAGE_KEY_RE, VIDEO_KEY_RE } from '@/lib/site-media';
-import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
+import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
 
 const PRINTS_SLUG = 'fine-art-prints';
@@ -164,10 +164,6 @@ export function validateCmsPayload(kind: CmsDocumentKind, slug: string, payload:
       if (slug === 'delivery') return deliveryNoticeSchema.parse(payload);
       throw new Error(`Unsupported notice document: ${slug}`);
   }
-}
-
-export function isCmsLocale(value: string): value is CmsLocale {
-  return CMS_LOCALES.includes(value as CmsLocale);
 }
 
 export function isCmsKind(value: string): value is CmsDocumentKind {

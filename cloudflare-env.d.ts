@@ -55,19 +55,6 @@ interface CloudflareEnv {
   STUDIO_NOTIFY_EMAIL: string;
   /** Svix signing secret for the Resend delivery/bounce/complaint webhook. */
   RESEND_WEBHOOK_SECRET: string;
-  // Studio return address — used as the receiver on InPost return shipments.
-  // All fields required to enable POST /api/returns; endpoint returns 503 if any are missing.
-  STUDIO_RETURN_FIRST_NAME?: string;
-  STUDIO_RETURN_LAST_NAME?: string;
-  /** Defaults to STUDIO_NOTIFY_EMAIL when unset. */
-  STUDIO_RETURN_EMAIL?: string;
-  STUDIO_RETURN_PHONE?: string;
-  STUDIO_RETURN_ADDRESS_STREET?: string;
-  STUDIO_RETURN_ADDRESS_BUILDING?: string;
-  STUDIO_RETURN_ADDRESS_CITY?: string;
-  STUDIO_RETURN_ADDRESS_POSTAL?: string;
-  /** Optional: paczkomat code pre-assigned as the return drop-off target (e.g. KRA010). */
-  STUDIO_RETURN_POINT?: string;
   // Server-side conversions (Meta CAPI + GA4 Measurement Protocol).
   META_CAPI_ACCESS_TOKEN?: string;
   META_TEST_EVENT_CODE?: string;
@@ -109,8 +96,8 @@ interface CloudflareEnv {
   // — deliberately the same names so a `.dev.vars` already set up for those
   // scripts (which `wrangler dev` also reads into this env) works here too.
   // Optional: uploads-create.ts fails closed (500) rather than crash the
-  // Worker when unset, same posture as the STUDIO_RETURN_*/NEWSLETTER_CONFIRM_SECRET
-  // fail-closed optional secrets above.
+  // Worker when unset, same posture as the NEWSLETTER_CONFIRM_SECRET
+  // fail-closed optional secret above.
   R2_S3_ACCOUNT_ID?: string;
   R2_S3_ACCESS_KEY_ID?: string;
   R2_S3_SECRET_ACCESS_KEY?: string;

@@ -70,11 +70,6 @@ export function emailMutedParagraph(html: string): string {
   return `<p style="margin-top:0;margin-bottom:16px;${MUTED_STYLE}">${html}</p>`;
 }
 
-/** Uppercase label above a detail block. */
-export function emailFieldLabel(text: string): string {
-  return `<p style="margin-top:0;margin-bottom:4px;${LABEL_STYLE}">${text}</p>`;
-}
-
 /** CTA button (table-based, Outlook-safe). */
 export function emailButton(href: string, label: string): string {
   return `<table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;margin-bottom:16px;">
