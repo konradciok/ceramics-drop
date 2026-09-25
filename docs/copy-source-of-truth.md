@@ -37,7 +37,7 @@ Rozmiary standardowe w konfiguracji: **30 × 40 cm, 50 × 70 cm, 70 × 100 cm**.
 
 ## 3. Potwierdzone nazwy produktów
 
-Sprawdzono 2026-09-09 w kodzie oraz w HTML publicznej [kolekcji](https://anna-ciok.studio/fine-art-prints), odpowiedź HTTP 200. Widocznych jest 39 różnych nazw:
+Sprawdzono 2026-09-09 w kodzie oraz w HTML publicznej [kolekcji](https://anna-ciok.studio/fine-art-prints), odpowiedź HTTP 200. W tamtym momencie widocznych było 39 różnych nazw, po 4–5 na kolekcję:
 
 - Ostrea 01–05
 - Gestures 01–04
@@ -48,6 +48,8 @@ Sprawdzono 2026-09-09 w kodzie oraz w HTML publicznej [kolekcji](https://anna-ci
 - Ciala 01–04
 - Balance 01–04
 - Verticles 01–04
+
+**Aktualizacja 2026-09-25:** przynależność prac do kolekcji została przełożona na nowy podział (arkusz Google „Kolekcje printów”); liczebności przestały być zbalansowane 4–5. Aktualny rozkład: Ostrea 01–05, Gestures 01–08, Linea 01–09, Horizons 01–02, Portals 01–05, Signs 01–02, Ciala 01–02, Balance 01–02, Verticles 01–04 (wciąż 39 nazw łącznie). Które konkretnie `fapNNN` odpowiadają którym nazwom, patrz aktualna wersja `config/print-catalog-curation.json` — ten plik jest bieżącym źródłem prawdy, poprzednia lista wyżej to tylko zapis stanu z 2026-09-09.
 
 Pisownia **Ciala** i **Verticles** pozostaje bez zmian. Źródła: `config/print-catalog-curation.json` oraz `printDisplayName()` w `src/lib/print-curation.ts`. Funkcja numeruje nazwy osobno w każdej kolekcji. Globalne numery w mapie i stabilne identyfikatory `fapNNN` pełnią inną rolę; nie wolno ich renumerować przy redakcji copy. Publiczny odczyt nie potwierdza wykonania wszystkich wcześniejszych migracji ani gotowości każdego wariantu do zakupu.
 

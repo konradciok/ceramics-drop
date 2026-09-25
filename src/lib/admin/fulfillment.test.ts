@@ -127,7 +127,7 @@ describe('orderFulfillmentQueue', () => {
 
 describe('orderFulfillmentQueue threads definitions through item enrichment', () => {
   it('uses definitions to resolve print naming (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
+    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
     // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the ref.label
     // proves that the definitions parameter was actually threaded through to productRef
     // and printDisplayName, not silently dropped in favor of the static fallback.
@@ -149,7 +149,7 @@ describe('orderFulfillmentQueue threads definitions through item enrichment', ()
     expect(queue).toHaveLength(1);
     const printItem = queue[0].itemsEnriched.find((i) => i.product_id === 'fap005')!;
     expect(printItem.ref.label).toContain('CmsOnly 01');
-    expect(printItem.ref.label).not.toContain('Horizons');
+    expect(printItem.ref.label).not.toContain('Signs');
   });
 });
 

@@ -42,7 +42,7 @@ describe('accountItemLabel', () => {
   });
 
   it('threads definitions through printDisplayName for print items (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Horizons 01'.
+    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
     // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the name
     // proves that the definitions parameter was actually threaded through to
     // printDisplayName, not silently dropped in favor of the static fallback.
@@ -59,7 +59,7 @@ describe('accountItemLabel', () => {
       discriminatingDefs,
     );
     expect(label.name).toBe('CmsOnly 01');
-    expect(label.name).not.toContain('Horizons');
+    expect(label.name).not.toContain('Signs');
   });
 
   it('degrades unknown print ids to the raw product_id', () => {
