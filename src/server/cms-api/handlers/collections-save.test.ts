@@ -198,3 +198,21 @@ describe('collectionsSaveRoute', () => {
     });
   });
 });
+
+describe('collectionsSaveRoute — post-write read-back returns null (#314)', () => {
+  it('returns 500 INTERNAL_ERROR instead of 200 null', async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    vi.mocked(collectionsMapping.loadCollectionResponse)
+      .mockResolvedValueOnce({ id: 'col_1', kind: 'collections', name: 'Nowa nazwa', revision: 1, publishedRevision: null, fields: validFields } as never)
+      .mockResolvedValueOnce(null);
+    const res = await collectionsSaveRoute.handler(
+      req({ expectedRevision: 1, name: 'Nowa nazwa', fields: validFields }),
+      {} as CloudflareEnv,
+      { id: 'col_1' },
+      ctxWith(rpc),
+    );
+    expect(rpc).toHaveBeenCalledWith('save_collection_draft', expect.anything());
+    expect(res.status).toBe(500);
+    expect((await res.json()).code).toBe('INTERNAL_ERROR');
+  });
+});
