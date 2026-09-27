@@ -9,7 +9,7 @@ audit.
 | Source | What was run | Result |
 |---|---|---|
 | Local toolchain | `npm ci`, `npm run lint`, `npm run typecheck`, `npx vitest run` | Lint 0 errors / 1 warning · typecheck clean · **3596 passed, 2 skipped** (274 files) |
-| Dependencies | `npm audit --omit=dev`, `npm outdated` | 8 advisories (1 critical, 6 high, 1 moderate) — see F-01 |
+| Dependencies | `npm audit --omit=dev`, `npm outdated` | 8 vulnerable packages (1 critical, 6 high, 1 moderate), plus one newer Next.js advisory not yet in the npm database — see F-01 |
 | Sentry (`y9608071l-anna-ciok`, de region, project `ceramics-drop`) | Unresolved issues, last 30 d, plus issue detail | 20 unresolved; details in F-02, F-06, F-07 |
 | Sentry (`anna-ciok-studio`, us region) | Unresolved issues | Empty — **not the org production reports to** |
 | Supabase prod (`wnlysejenowymjdxlnaq`) | Migration list, security + performance advisors, read-only SQL on operational tables | 79/79 migrations applied (repo == prod); advisors in F-10/F-11; operational state in the section below |
@@ -48,7 +48,7 @@ operator must confirm).
 
 **F-01 · Next.js 16.2.9 has a critical advisory; no npm dependency automation** — Verified
 
-- `next@16.2.9` falls in the range of 11 advisories. Two are **critical** and fixed only in `>=16.3.3`: GHSA-2xp9-vwfh-vxw4 (RCE in the Image Optimization API with AVIF) and GHSA-p293-qw3h-jr36 (Windows-hosted only, not relevant here). The high ones (fixed in `>=16.2.11`) are Server Action DoS, SSRF in rewrites, and a middleware bypass (Turbopack only, not relevant here). The moderate ones are response-body cache confusion and disclosure of Server Function endpoints.
+- `next@16.2.9` falls in the range of 12 advisories. Three are **critical**. GHSA-2xp9-vwfh-vxw4 (RCE in the Image Optimization API with AVIF) and GHSA-p293-qw3h-jr36 (Windows-hosted only, not relevant here) are fixed in `>=16.3.3`. GHSA-vcvr-r3jv-pc5j (RCE in the Node.js `next/og` `ImageResponse`, published 2026-09-22, fixed in `16.3.6`) was not yet in the `npm audit` database this audit ran against. The repo does not import `next/og` today, so it is not exploitable here, but only `16.3.6` clears all three. The high ones (fixed in `>=16.2.11`) are Server Action DoS, SSRF in rewrites, and a middleware bypass (Turbopack only, not relevant here). The moderate ones are response-body cache confusion and disclosure of Server Function endpoints.
 - Exposure is reduced but not removed. Product images use a native `<img>`, not `next/image`. The worker bundle still includes the Next image-optimiser route, and whether OpenNext serves `/_next/image` has not been checked.
 - `sharp@0.34.5` (direct dependency, used in the asset-processing container on CMS uploads) is affected by high-severity libvips/libheif CVEs. The fix is `0.35.x`, which is semver-major. The input comes only from the owner, which lowers the risk.
 - Transitive highs: `postcss`, `fast-uri`, `brace-expansion`, `browserslist`, `nanoid`. `npm audit fix` resolves them without breaking changes.
