@@ -80,11 +80,13 @@ const PRINT_COLLECTION_KIND = 'print-collection';
 export async function loadPrintCollectionDefinitionsFromDb(
   supabase: SupabaseClient,
 ): Promise<PrintCollectionDefinition[]> {
+  // Collections and their published drafts share one total read budget.
+  const signal = supabaseTimeout();
   const { data: collections, error: collectionsError } = await supabase
     .from('collections')
     .select('id, published_revision, created_at')
     .not('published_revision', 'is', null)
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (collectionsError) throw collectionsError;
 
   const rows = (collections ?? []) as { id: string; published_revision: number; created_at: string }[];
@@ -108,7 +110,7 @@ export async function loadPrintCollectionDefinitionsFromDb(
     .from('collection_drafts')
     .select('collection_id, revision, payload, created_at')
     .in('collection_id', ids)
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (draftsError) throw draftsError;
 
   type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };

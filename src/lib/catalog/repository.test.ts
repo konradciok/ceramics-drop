@@ -331,3 +331,30 @@ describe('fail-closed read guard — per-reader behavior', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('catalog load timeout budget', () => {
+  it.each(['ceramic', 'print'] as const)('%s shares one deadline across all query stages', async (type) => {
+    const signals: AbortSignal[] = [];
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const from = vi.fn((table: string) => {
+      const data = table === 'products'
+        ? [type === 'ceramic' ? ceramicRow({ id: 'k01', price_pln: 120 }) : PRINT_DRAFT]
+        : [];
+      const chain = makeChain({ data, error: null });
+      chain.abortSignal = vi.fn((signal: AbortSignal) => {
+        signals.push(signal);
+        return chain;
+      });
+      return chain;
+    });
+    try {
+      const client = { from } as unknown as SupabaseClient;
+      await (type === 'ceramic' ? readCeramicProducts(client) : readPrintDesigns(client));
+      expect(signals).toHaveLength(type === 'ceramic' ? 2 : 3);
+      expect(new Set(signals).size).toBe(1);
+      expect(timeout).toHaveBeenCalledExactlyOnceWith(5000);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+});
