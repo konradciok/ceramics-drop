@@ -15,6 +15,7 @@
         noteIndex per category. Stable ids survive; only num/category
         change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
+import { cache } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
@@ -341,7 +342,9 @@ const REGISTRY_CATALOG: CeramicCatalog = {
   byCategory: PRODUCTS_BY_CATEGORY,
 };
 
-async function loadCeramicCatalog(): Promise<CeramicCatalog> {
+// Share successes and fallbacks across metadata and components in one render.
+// React clears this cache between requests; route handlers still read directly.
+const loadCeramicCatalog = cache(async (): Promise<CeramicCatalog> => {
   if (catalogSource() === 'code') return REGISTRY_CATALOG;
   // Resilience default: a DB read failure (including a bounded Supabase
   // timeout — see supabase-timeout.ts) degrades first to this isolate's
@@ -380,7 +383,7 @@ async function loadCeramicCatalog(): Promise<CeramicCatalog> {
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
     return catalog;
   }
-}
+});
 
 /**
  * Returns every product across the nine categories, each with image

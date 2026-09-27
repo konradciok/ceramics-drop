@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { PrintDesign, PrintVariantSelection } from './types';
 import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
@@ -537,7 +538,9 @@ export function registryPrintById(id: string): PrintDesign | undefined {
  * the DB path keeps Cloudflare-only code out of the default 'code' flag and
  * breaks the load → repository → seed → prints import cycle.
  */
-async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<string, PrintDesign> }> {
+// Share successes and fallbacks across metadata and components in one render.
+// React clears this cache between requests; route handlers still read directly.
+const loadPrintCatalog = cache(async (): Promise<{ designs: PrintDesign[]; byId: Map<string, PrintDesign> }> => {
   if (catalogSource() === 'code') {
     return { designs: PRINT_DESIGNS, byId: BY_ID };
   }
@@ -549,7 +552,7 @@ async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<s
     const designs = await loadPrintDesignsFromDb();
     return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
   }, { designs: PRINT_DESIGNS, byId: BY_ID });
-}
+});
 
 /** Published designs in registry order. */
 export async function getPrintDesigns(): Promise<PrintDesign[]> {
