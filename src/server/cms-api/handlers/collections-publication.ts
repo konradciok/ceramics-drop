@@ -119,6 +119,18 @@ export const collectionsPublicationPostRoute: RouteDef = {
       }
 
       const collection = await loadCollectionResponse(ctx.supabase, params.id);
+      if (!collection) {
+        // The write committed but the re-read found nothing — never complete
+        // the key with a null body (a replay would then return `200 null`
+        // forever). Release it instead so a retry re-runs, swallowing a
+        // release failure for the same reason as the branches above.
+        try {
+          await releaseIdempotencyKey(ctx.supabase, 'collections:publication', idempotencyKey, leaseToken);
+        } catch {
+          // ignore — see comment above
+        }
+        return errorResponse('INTERNAL_ERROR', `Collection ${params.id} could not be read back after the write.`, 500, ctx.requestId);
+      }
       await completeIdempotencyKey(ctx.supabase, 'collections:publication', idempotencyKey, leaseToken, 200, collection);
       return jsonResponse(collection);
     } catch (err) {

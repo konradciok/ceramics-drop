@@ -69,4 +69,12 @@ describe('availabilityRoute', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).availability).toBe('sold');
   });
+  it('returns 500 INTERNAL_ERROR (not 200 null) when the post-write reload returns null (#314)', async () => {
+    vi.mocked(mapping.loadProductResponse).mockResolvedValueOnce(ceramicProduct).mockResolvedValueOnce(null);
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const res = await availabilityRoute.handler(req({ expectedRevision: 2, availability: 'sold', showroom: false }), {} as CloudflareEnv, { id: 'k01' }, ctxWith(rpc));
+    expect(rpc).toHaveBeenCalledWith('set_piece_availability_guarded', expect.anything());
+    expect(res.status).toBe(500);
+    expect((await res.json()).code).toBe('INTERNAL_ERROR');
+  });
 });
