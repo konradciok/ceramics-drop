@@ -63,10 +63,12 @@ describeLocal('fresh local catalog backfill publication gate', () => {
       .eq('type', 'print')
       .order('id');
     assertQuery('read backfilled prints', backfilled);
-    expect(backfilled.data).toHaveLength(41);
+    const expectedPrints = seed.products
+      .filter(({ type }) => type === 'print')
+      .map(({ id, status }) => ({ id, status: status === 'active' ? 'draft' : status }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    expect(backfilled.data).toEqual(expectedPrints);
     expect(backfilled.data?.filter(({ status }) => status === 'active')).toEqual([]);
-    expect(backfilled.data?.filter(({ status }) => status === 'draft')).toHaveLength(39);
-    expect(backfilled.data?.filter(({ status }) => status === 'archived')).toHaveLength(2);
 
     const productId = 'fap001';
     const variants = await supabase
