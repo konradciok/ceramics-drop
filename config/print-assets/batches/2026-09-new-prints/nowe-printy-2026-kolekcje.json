@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "status": "prepared_locally_not_published",
+  "namingRule": "Preserve original series numbers; never derive displayName from positionInCollection. Collection names are the same in pl/en/es/de.",
+  "collectionPlacement": "Append this batch after existing collections; retain existing collection order.",
+  "collections": [
+    {
+      "name": "Aurora",
+      "slug": "aurora",
+      "kind": "print-collection",
+      "positionInNewBatch": 1,
+      "prints": [
+        {
+          "folder": "print-042",
+          "productId": "fap042",
+          "displayName": "Aurora 01",
+          "seriesNumber": "01",
+          "positionInCollection": 1
+        },
+        {
+          "folder": "print-043",
+          "productId": "fap043",
+          "displayName": "Aurora 02",
+          "seriesNumber": "02",
+          "positionInCollection": 2
+        },
+        {
+          "folder": "print-044",
+          "productId": "fap044",
+          "displayName": "Aurora 04",
+          "seriesNumber": "04",
+          "positionInCollection": 3
+        }
+      ]
+    },
+    {
+      "name": "Cirrus",
+      "slug": "cirrus",
+      "kind": "print-collection",
+      "positionInNewBatch": 2,
+      "prints": [
+        {
+          "folder": "print-045",
+          "productId": "fap045",
+          "displayName": "Cirrus 01",
+          "seriesNumber": "01",
+          "positionInCollection": 1
+        }
+      ]
+    },
+    {
+      "name": "Cumulonimbus",
+      "slug": "cumulonimbus",
+      "kind": "print-collection",
+      "positionInNewBatch": 3,
+      "prints": [
+        {
+          "folder": "print-046",
+          "productId": "fap046",
+          "displayName": "Cumulonimbus 03",
+          "seriesNumber": "03",
+          "positionInCollection": 1
+        },
+        {
+          "folder": "print-047",
+          "productId": "fap047",
+          "displayName": "Cumulonimbus 06",
+          "seriesNumber": "06",
+          "positionInCollection": 2
+        }
+      ]
+    },
+    {
+      "name": "Cumulus",
+      "slug": "cumulus",
+      "kind": "print-collection",
+      "positionInNewBatch": 4,
+      "prints": [
+        {
+          "folder": "print-048",
+          "productId": "fap048",
+          "displayName": "Cumulus 01",
+          "seriesNumber": "01",
+          "positionInCollection": 1
+        },
+        {
+          "folder": "print-049",
+          "productId": "fap049",
+          "displayName": "Cumulus 06",
+          "seriesNumber": "06",
+          "positionInCollection": 2
+        }
+      ]
+    },
+    {
+      "name": "Obsidian",
+      "slug": "obsidian",
+      "kind": "print-collection",
+      "positionInNewBatch": 5,
+      "prints": [
+        {
+          "folder": "print-050",
+          "productId": "fap050",
+          "displayName": "Obsidian 02",
+          "seriesNumber": "02",
+          "positionInCollection": 1
+        },
+        {
+          "folder": "print-051",
+          "productId": "fap051",
+          "displayName": "Obsidian 03",
+          "seriesNumber": "03",
+          "positionInCollection": 2
+        },
+        {
+          "folder": "print-052",
+          "productId": "fap052",
+          "displayName": "Obsidian 04",
+          "seriesNumber": "04",
+          "positionInCollection": 3
+        },
+        {
+          "folder": "print-053",
+          "productId": "fap053",
+          "displayName": "Obsidian 05",
+          "seriesNumber": "05",
+          "positionInCollection": 4
+        }
+      ]
+    },
+    {
+      "name": "Scopulus",
+      "slug": "scopulus",
+      "kind": "print-collection",
+      "positionInNewBatch": 6,
+      "prints": [
+        {
+          "folder": "print-054",
+          "productId": "fap054",
+          "displayName": "Scopulus 02",
+          "seriesNumber": "02",
+          "positionInCollection": 1
+        }
+      ]
+    },
+    {
+      "name": "Unda",
+      "slug": "unda",
+      "kind": "print-collection",
+      "positionInNewBatch": 7,
+      "prints": [
+        {
+          "folder": "print-055",
+          "productId": "fap055",
+          "displayName": "Unda 04",
+          "seriesNumber": "04",
+          "positionInCollection": 1
+        },
+        {
+          "folder": "print-056",
+          "productId": "fap056",
+          "displayName": "Unda 05",
+          "seriesNumber": "05",
+          "positionInCollection": 2
+        }
+      ]
+    },
+    {
+      "name": "Tachylite",
+      "slug": "tachylite",
+      "kind": "print-collection",
+      "positionInNewBatch": 8,
+      "prints": [
+        {
+          "folder": "print-057",
+          "productId": "fap057",
+          "displayName": "Tachylite 03",
+          "seriesNumber": "03",
+          "positionInCollection": 1
+        }
+      ]
+    }
+  ],
+  "idVerification": {
+    "checkedAt": "2026-09-29T09:32:12.519Z",
+    "supabaseHost": "wnlysejenowymjdxlnaq.supabase.co",
+    "databaseTablesChecked": [
+      "products",
+      "product_variants",
+      "product_media",
+      "product_drafts",
+      "print_fulfilment_assets",
+      "print_variant_asset_assignments"
+    ],
+    "databaseConflicts": 0,
+    "r2Bucket": "anna-ciok-print-assets",
+    "r2Conflicts": 0,
+    "allocation": "assigned_in_local_batch_mapping",
+    "databaseReservation": false,
+    "recheckBeforeImport": true
+  }
+}
