@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-29T09:32:12.519Z",
+  "supabaseHost": "wnlysejenowymjdxlnaq.supabase.co",
+  "databaseTablesChecked": [
+    "products",
+    "product_variants",
+    "product_media",
+    "product_drafts",
+    "print_fulfilment_assets",
+    "print_variant_asset_assignments"
+  ],
+  "databaseConflicts": 0,
+  "r2Bucket": "anna-ciok-print-assets",
+  "r2Conflicts": 0,
+  "allocation": "assigned_in_local_batch_mapping",
+  "databaseReservation": false,
+  "recheckBeforeImport": true
+}

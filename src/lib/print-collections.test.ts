@@ -27,11 +27,11 @@ describe('PRINT_COLLECTIONS integrity', () => {
     expect(slugs).not.toContain(UNASSIGNED_COLLECTION);
   });
 
-  it('every member id refers to a published registry design', () => {
-    const published = new Map(PRINT_DESIGNS.filter((d) => d.published).map((d) => [d.id, d]));
+  it('every member id refers to a known registry design, including staged drafts', () => {
+    const published = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
     for (const { slug, designIds } of PRINT_COLLECTIONS) {
       for (const id of designIds) {
-        expect(published.has(id), `${slug} → ${id} must be a published design`).toBe(true);
+        expect(published.has(id), `${slug} → ${id} must be a known design`).toBe(true);
       }
     }
   });
@@ -42,7 +42,7 @@ describe('PRINT_COLLECTIONS integrity', () => {
   });
 
   it('derives its ordered members from the curation map', () => {
-    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
+    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 1, 2, 2, 4, 1, 2, 1]);
   });
 });
 

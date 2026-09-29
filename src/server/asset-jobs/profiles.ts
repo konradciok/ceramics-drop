@@ -81,10 +81,11 @@ export async function loadActivePrintVariants(
   if (product.error) throw product.error;
   if (!product.data) return { kind: 'invalid', message: `unknown product "${productId}" — no row in products` };
   const status = (product.data as { status: string }).status;
-  if (status !== 'active') {
+  // Rendering a draft does not activate it: publication and readiness remain guarded.
+  if (status !== 'active' && status !== 'draft') {
     return {
       kind: 'invalid',
-      message: `product "${productId}" is not active (status="${status}") — refusing to stage derivatives for a draft/hidden/archived product`,
+      message: `product "${productId}" is not active or draft (status="${status}") — refusing to stage derivatives for a hidden/archived product`,
     };
   }
 

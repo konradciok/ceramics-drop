@@ -1,0 +1,1125 @@
+{
+  "status": "local_hero_and_frame_mockups_generated",
+  "products": [
+    {
+      "productId": "fap042",
+      "sourceSha256": "6196ec6fc3a9cee240ae1c5e4005b6340303a85ce0efc3da03cb281a660d5cae",
+      "files": [
+        {
+          "path": "public/uploads/fap-042.webp",
+          "sha256": "27068da21de93b0eb7a534c88e80c09c0aca07acdeba8d71640287ee394d9085"
+        },
+        {
+          "path": "public/uploads/fap-042-400w.webp",
+          "sha256": "eb2796df1245f330204017217397d6eb2fb3f19787627aa47b6e26b0d0e0f9d4"
+        },
+        {
+          "path": "public/uploads/fap-042-800w.webp",
+          "sha256": "b071adaabe2342d4e3420624a5d6ff4e09865405a4105d2408cd8b329b0374c0"
+        },
+        {
+          "path": "public/uploads/fap-042-1600w.webp",
+          "sha256": "27068da21de93b0eb7a534c88e80c09c0aca07acdeba8d71640287ee394d9085"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-black.webp",
+          "sha256": "1c6fef2d7a8583615c90d71097243e0e905d77a490fa3869896bbe322b716b93"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-black-400w.webp",
+          "sha256": "8ce2b6bd47f236d1fde02662ce368b1e2991b1d179b137cc32e9144fe7a87de8"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-black-800w.webp",
+          "sha256": "6988bd162107299d4be543d4a010cc8380da67072eeef707544d9a63fc58b327"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-black-1600w.webp",
+          "sha256": "1c6fef2d7a8583615c90d71097243e0e905d77a490fa3869896bbe322b716b93"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-natural.webp",
+          "sha256": "b3cfe4c04803ee178829b186dc334d5755becc0bb9cdd51596bbb70cf01a1dd6"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-natural-400w.webp",
+          "sha256": "4632c3633de711f91525a662e89af490b812f6ef323637fdd2b6c813369237f5"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-natural-800w.webp",
+          "sha256": "c1dcafb4191aada70deac7e320ad535db679104859306c5832833ef969c5317d"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-natural-1600w.webp",
+          "sha256": "b3cfe4c04803ee178829b186dc334d5755becc0bb9cdd51596bbb70cf01a1dd6"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-brown.webp",
+          "sha256": "cee4f0b73b3f7484837d4ca67ac72ecfd677dbdee3badbde4051fd1d8d5327a4"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-brown-400w.webp",
+          "sha256": "1f028a2a339d648d335452df70aa57ac3a671ffe6762285b59ab142d4743c327"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-brown-800w.webp",
+          "sha256": "e39b3c2de1ec15dafdbd09cf8498f57ab3602910131f68fed5a2bec44b1b01f5"
+        },
+        {
+          "path": "public/uploads/fap-042-mock-framed-brown-1600w.webp",
+          "sha256": "cee4f0b73b3f7484837d4ca67ac72ecfd677dbdee3badbde4051fd1d8d5327a4"
+        }
+      ]
+    },
+    {
+      "productId": "fap043",
+      "sourceSha256": "53879ef6bd3dcc884d1ece1a21ec60d1a8268d54721eb86ad6c1b9eb7adea3fd",
+      "files": [
+        {
+          "path": "public/uploads/fap-043.webp",
+          "sha256": "b49e0a29571117bdd22046af301af7b765d6f65c44f7ac75556cab750c744d62"
+        },
+        {
+          "path": "public/uploads/fap-043-400w.webp",
+          "sha256": "9113366b82b8adb05370ee9f6a45f57ba8be444515bd6d5c90670ddf3994d7b0"
+        },
+        {
+          "path": "public/uploads/fap-043-800w.webp",
+          "sha256": "627f0c0529c0b4a8b1a49c8e8b017ad8bb810c1601ee73f00a62dec2430eb89f"
+        },
+        {
+          "path": "public/uploads/fap-043-1600w.webp",
+          "sha256": "b49e0a29571117bdd22046af301af7b765d6f65c44f7ac75556cab750c744d62"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-black.webp",
+          "sha256": "a8ec36ca653afa51d015aacc26b344d1f16a05a90e28442cddbc478f9cbd24b0"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-black-400w.webp",
+          "sha256": "59eea9b4b518e22f05344ab703f14ef78813c9f5347642d278579f7ec073f162"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-black-800w.webp",
+          "sha256": "5a15680c3dadef63d0ff9c7634160e07e07d2615cf4ffebf191b27886faf7e2a"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-black-1600w.webp",
+          "sha256": "a8ec36ca653afa51d015aacc26b344d1f16a05a90e28442cddbc478f9cbd24b0"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-natural.webp",
+          "sha256": "bedca13d2b94f910154ab96789fe01155e73924772085c8ba5edd6d0885665fe"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-natural-400w.webp",
+          "sha256": "354b21411d1283911ab5462e3bf2feb3fc3784f602928cfeb7fa08cd542ec9f1"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-natural-800w.webp",
+          "sha256": "534de6e0ee350dfe3b4f34fd7c16f763947e3fa08aeafc211d010841110ec0a6"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-natural-1600w.webp",
+          "sha256": "bedca13d2b94f910154ab96789fe01155e73924772085c8ba5edd6d0885665fe"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-brown.webp",
+          "sha256": "b7eb748cb62605d9903ab66d99bcb6a512c038f13ebf453b3a2c786a91a80364"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-brown-400w.webp",
+          "sha256": "88c1da6a83078760738f08ab95c88a9ddc3a349446b8758e9c52c6b25966a68d"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-brown-800w.webp",
+          "sha256": "45362e5eccd1cdcf10fa5f4f333e5ae81953fdf886adb45ec556cac495513994"
+        },
+        {
+          "path": "public/uploads/fap-043-mock-framed-brown-1600w.webp",
+          "sha256": "b7eb748cb62605d9903ab66d99bcb6a512c038f13ebf453b3a2c786a91a80364"
+        }
+      ]
+    },
+    {
+      "productId": "fap044",
+      "sourceSha256": "b023bec95ea91d937eb893f08e2d8479a688af8e8a4b49bca7ad8dde9d2961b2",
+      "files": [
+        {
+          "path": "public/uploads/fap-044.webp",
+          "sha256": "ab9492496ae95999f7d5c508109f1d4d8e768b3a2c2404fd58fafa054ad48d8e"
+        },
+        {
+          "path": "public/uploads/fap-044-400w.webp",
+          "sha256": "aaa8d346aa45b37b6eee045e500d2d254c8f427ca472eee7cc56a2d4aaddc31a"
+        },
+        {
+          "path": "public/uploads/fap-044-800w.webp",
+          "sha256": "bb43ad34ed35b912a828e27500f05429edbeade38666de6f5cc6b196a2f07110"
+        },
+        {
+          "path": "public/uploads/fap-044-1600w.webp",
+          "sha256": "ab9492496ae95999f7d5c508109f1d4d8e768b3a2c2404fd58fafa054ad48d8e"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-black.webp",
+          "sha256": "23b8daf041253525c4c212178eb4a5a5109056212e9229b8d67678fdaa46730b"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-black-400w.webp",
+          "sha256": "ee3c008e7a1de29d2cae48ddc5a02ad4ff9c24f1d30707af5c4e68dd1122d0bc"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-black-800w.webp",
+          "sha256": "d4667be8aa2e8086383629fc925f5b8e087e0e892e10c8091f19071e17170c49"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-black-1600w.webp",
+          "sha256": "23b8daf041253525c4c212178eb4a5a5109056212e9229b8d67678fdaa46730b"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-natural.webp",
+          "sha256": "39dd58361c8d0ab01a53ebbcc9075232afdf0ab80aeb1237d2335416b41d1e7b"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-natural-400w.webp",
+          "sha256": "51b2b4a96e56fbd87ff812ee66f6e10ae30b3b3162fc8ae7eedf8a613f026380"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-natural-800w.webp",
+          "sha256": "e3c4767f1b0301ee57d00484d3a7820f302904c80d2c06280840891c0cc0176d"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-natural-1600w.webp",
+          "sha256": "39dd58361c8d0ab01a53ebbcc9075232afdf0ab80aeb1237d2335416b41d1e7b"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-brown.webp",
+          "sha256": "4cdc29e48e491f1afaf31bf20a780829c642d5cc93b214bdde81f888567c8039"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-brown-400w.webp",
+          "sha256": "72939c4e6e0e861a575ea5a931a39c7949471133f5c1f02c8bb5d7e41829c60e"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-brown-800w.webp",
+          "sha256": "9268b55aa201dd911fe68c7e89af524d432a1fc70626398fe4a2cdcb5aa7527a"
+        },
+        {
+          "path": "public/uploads/fap-044-mock-framed-brown-1600w.webp",
+          "sha256": "4cdc29e48e491f1afaf31bf20a780829c642d5cc93b214bdde81f888567c8039"
+        }
+      ]
+    },
+    {
+      "productId": "fap045",
+      "sourceSha256": "73fb3bfbf1425c68ee6032b170840ecdff307c904bba0d5e7e9be0c3ad2dd0bd",
+      "files": [
+        {
+          "path": "public/uploads/fap-045.webp",
+          "sha256": "cca15e56725b696750652054aecd63d57ac6eb08a4b43ef74412325e7c6831c7"
+        },
+        {
+          "path": "public/uploads/fap-045-400w.webp",
+          "sha256": "5588bdba9b09eeaf3ed060b48c940831921ee2a2f3a56e207cd5cb30c9c681a4"
+        },
+        {
+          "path": "public/uploads/fap-045-800w.webp",
+          "sha256": "a58c80cbb3463d15584068d84a097d32a4e08c3aaba98a3ff08d8b1137e8b90e"
+        },
+        {
+          "path": "public/uploads/fap-045-1600w.webp",
+          "sha256": "cca15e56725b696750652054aecd63d57ac6eb08a4b43ef74412325e7c6831c7"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-black.webp",
+          "sha256": "357e4faf7dbe9edc5363a719cb4210b8b9a4052803875f9de2d3fda8f81d5a2a"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-black-400w.webp",
+          "sha256": "ee1afb2a3b7ebba51147051cf017ef71f4a95742edbd7c4e0113756762a65250"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-black-800w.webp",
+          "sha256": "4d20f1081a31e6124bb3a4260faff84da71b2082764d5df5b5ac345753fb9d6b"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-black-1600w.webp",
+          "sha256": "357e4faf7dbe9edc5363a719cb4210b8b9a4052803875f9de2d3fda8f81d5a2a"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-natural.webp",
+          "sha256": "e5f29d936c45fe385975e15e11487021ce881223b3446433310cbfe534538857"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-natural-400w.webp",
+          "sha256": "2d8d52dd57ceb3c102058de4ca5421a261d92b596a8b96f65404e9e5b7dae260"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-natural-800w.webp",
+          "sha256": "952094b6f8deb18d358b161aac8c6012194fe0bb0f6808d5c9472c4b059b57a0"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-natural-1600w.webp",
+          "sha256": "e5f29d936c45fe385975e15e11487021ce881223b3446433310cbfe534538857"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-brown.webp",
+          "sha256": "06a03529aaa746b5448fd7564a36398e56c9c02266cbf2ba97ac991cb39b8432"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-brown-400w.webp",
+          "sha256": "628831f77d76226f2427a809008396a5075f90ee1d97c18aa546040cae05c265"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-brown-800w.webp",
+          "sha256": "e80b643cc63e4bc46969386c9e6f94e21f717ffe863744534b3eddec81ccc30c"
+        },
+        {
+          "path": "public/uploads/fap-045-mock-framed-brown-1600w.webp",
+          "sha256": "06a03529aaa746b5448fd7564a36398e56c9c02266cbf2ba97ac991cb39b8432"
+        }
+      ]
+    },
+    {
+      "productId": "fap046",
+      "sourceSha256": "be462455742a988163bc3491b66b79590f81eaeff8dd1049da3f241a6524b251",
+      "files": [
+        {
+          "path": "public/uploads/fap-046.webp",
+          "sha256": "695b9f8a24802d72d0e53ad51c76fad144cd8fa9c2187373fe30d2edc8975648"
+        },
+        {
+          "path": "public/uploads/fap-046-400w.webp",
+          "sha256": "ee6375b590f8c54f001fda95384e93b98b171e5a037834b2a062f2ad392e2c3a"
+        },
+        {
+          "path": "public/uploads/fap-046-800w.webp",
+          "sha256": "fef2d07acb1b43ee9034774d25cc3c2afe5ed30141055ac85ed8a1ec80484551"
+        },
+        {
+          "path": "public/uploads/fap-046-1600w.webp",
+          "sha256": "695b9f8a24802d72d0e53ad51c76fad144cd8fa9c2187373fe30d2edc8975648"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-black.webp",
+          "sha256": "7fba930b76123dd8a5a555b3627265820c5f73a0f319da904e04dfc613a29559"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-black-400w.webp",
+          "sha256": "5037adc6c6a8605ed110f54d045b557dbf2f53702af5c79ce5e1ca39a7034fc1"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-black-800w.webp",
+          "sha256": "31ca04aab3ea2aa3d435418ad33ba2f70533fbadeeac911add26c67cc4f349fe"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-black-1600w.webp",
+          "sha256": "7fba930b76123dd8a5a555b3627265820c5f73a0f319da904e04dfc613a29559"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-natural.webp",
+          "sha256": "e6ac6f0e22779d607a95ed81d958c58a61d738074cd63d9dee709d8e2657b0f8"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-natural-400w.webp",
+          "sha256": "4110061cf41cdd1890df13792569ce39bd1402cb1b4e9281e36f4e15d4e72d62"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-natural-800w.webp",
+          "sha256": "4203745224c499bbe83f04a40f33865abeeae7bad1f130ed2c8112a5cf3818b9"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-natural-1600w.webp",
+          "sha256": "e6ac6f0e22779d607a95ed81d958c58a61d738074cd63d9dee709d8e2657b0f8"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-brown.webp",
+          "sha256": "2f8cdf8619579a69647e054de04802a578091d4fb37751a16fa6f49d784f80e5"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-brown-400w.webp",
+          "sha256": "58bfa6e77af0d90255051d6777e3f5fcda391ecc2eb859f9e0a8b619a88b3316"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-brown-800w.webp",
+          "sha256": "d8974fb777ed10e0d04530b2f76254ac74e28d2a7cb291144037d4fcc1ca2aef"
+        },
+        {
+          "path": "public/uploads/fap-046-mock-framed-brown-1600w.webp",
+          "sha256": "2f8cdf8619579a69647e054de04802a578091d4fb37751a16fa6f49d784f80e5"
+        }
+      ]
+    },
+    {
+      "productId": "fap047",
+      "sourceSha256": "2a68c593f8f7451e1c2f57b1d1ab3564004cac88798ea1e96ce78400d7eab63f",
+      "files": [
+        {
+          "path": "public/uploads/fap-047.webp",
+          "sha256": "67aac3be9713f5fbf03e1e5d43ef445a2c957a190f716585c9e4669c4b80a5e8"
+        },
+        {
+          "path": "public/uploads/fap-047-400w.webp",
+          "sha256": "96a3f008a1450603ca57c724aec1e2c5c4ef6cd26296a8cce31048908d74901b"
+        },
+        {
+          "path": "public/uploads/fap-047-800w.webp",
+          "sha256": "b4e143abdb9c42067b4564f31f837182e5edd7824055f8c12fad03e4de263a1b"
+        },
+        {
+          "path": "public/uploads/fap-047-1600w.webp",
+          "sha256": "67aac3be9713f5fbf03e1e5d43ef445a2c957a190f716585c9e4669c4b80a5e8"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-black.webp",
+          "sha256": "893efb28901c0c709b3741ddb0e6d07eaadbc8a4b37d11005ecc49b56b26e44e"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-black-400w.webp",
+          "sha256": "5d1b96fbc9a300bbdd1765d9c7ce9e3c5315e666836197e304f2beb1095d67d5"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-black-800w.webp",
+          "sha256": "61fe594cd489b28279b264c1b4a891f0f16c98257e1d5db683a48143f96e29cf"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-black-1600w.webp",
+          "sha256": "893efb28901c0c709b3741ddb0e6d07eaadbc8a4b37d11005ecc49b56b26e44e"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-natural.webp",
+          "sha256": "7d7c0e3d44c26e8a99a7fe3eeb9cb5e01b3e7e35f8c314392219a680f848cdac"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-natural-400w.webp",
+          "sha256": "26dfc172432e709d4a502f77c99dfc6d6cfcafba3a2ed7bcc3587b02ca1b37c7"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-natural-800w.webp",
+          "sha256": "64cd0dd2a30284dd5f14537c1cc101b499b42cca887c45c3b3df601ce5b00952"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-natural-1600w.webp",
+          "sha256": "7d7c0e3d44c26e8a99a7fe3eeb9cb5e01b3e7e35f8c314392219a680f848cdac"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-brown.webp",
+          "sha256": "c1641084ccd7660e3b9915cfe86b28f7fcdd1db1f8f6968a1cdae03f7878f5a2"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-brown-400w.webp",
+          "sha256": "af07333d1975edfbd522daa90e0ab3532a7723678219fa03cacb0acc5da1a5e3"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-brown-800w.webp",
+          "sha256": "cc7975edcd9b545413ee38fb4c91f269e456ca793641b0340fa13e51141c2f15"
+        },
+        {
+          "path": "public/uploads/fap-047-mock-framed-brown-1600w.webp",
+          "sha256": "c1641084ccd7660e3b9915cfe86b28f7fcdd1db1f8f6968a1cdae03f7878f5a2"
+        }
+      ]
+    },
+    {
+      "productId": "fap048",
+      "sourceSha256": "625e080aaba17f36d74f30e8d5c0f7138779ccfa461a241ce7c61ae4700bf65c",
+      "files": [
+        {
+          "path": "public/uploads/fap-048.webp",
+          "sha256": "eccc5dc95a4004f2afc9a73b9f55e1e0922f7b85a75e6acb5e3967d57ef85240"
+        },
+        {
+          "path": "public/uploads/fap-048-400w.webp",
+          "sha256": "cfced6105ae50244b34bb95239c8b26d3f191a4b7f8c228b2a224df8cf409aa8"
+        },
+        {
+          "path": "public/uploads/fap-048-800w.webp",
+          "sha256": "b970b51c8355e14420ff353b6e5a2cc1e0d39ad3944f5fc50925b1091d177538"
+        },
+        {
+          "path": "public/uploads/fap-048-1600w.webp",
+          "sha256": "eccc5dc95a4004f2afc9a73b9f55e1e0922f7b85a75e6acb5e3967d57ef85240"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-black.webp",
+          "sha256": "88d1e93fcfec4e6954df046076e3c87707c140f3aa51403d0e180037cc0931ea"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-black-400w.webp",
+          "sha256": "076d795c1f8674d8af1033ce860bfcd7a252cd73e5290e14a489bc3a22152e44"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-black-800w.webp",
+          "sha256": "0d7df0aa9707c6da6652414224e2459be20487adf335fc1b7c95c793d9de5a3f"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-black-1600w.webp",
+          "sha256": "88d1e93fcfec4e6954df046076e3c87707c140f3aa51403d0e180037cc0931ea"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-natural.webp",
+          "sha256": "4e01667bea0c4e973e4391ccd9163f87f7ba1d5a24834287e927653f6c0f9544"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-natural-400w.webp",
+          "sha256": "ab31d282a7e489362f0a6f83b454e0f82ab650bf79c1fc3515107b186bfa3b61"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-natural-800w.webp",
+          "sha256": "b18e24387f037324b9007f485328ce2edfadf98bf4f389a11444fb43e850eb88"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-natural-1600w.webp",
+          "sha256": "4e01667bea0c4e973e4391ccd9163f87f7ba1d5a24834287e927653f6c0f9544"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-brown.webp",
+          "sha256": "bd5a0aeb9fe8cff062054ef7296321913d220d814ef8a7c4d78fbd0b3e8ea402"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-brown-400w.webp",
+          "sha256": "90a21816856a160b73b8140ce6895672f9094bd0654b5d18c85b672dfff19ae0"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-brown-800w.webp",
+          "sha256": "4c6eb236ea2716b5414a2419442c898b8e62589c96fdf0f4c82abf8144d158f9"
+        },
+        {
+          "path": "public/uploads/fap-048-mock-framed-brown-1600w.webp",
+          "sha256": "bd5a0aeb9fe8cff062054ef7296321913d220d814ef8a7c4d78fbd0b3e8ea402"
+        }
+      ]
+    },
+    {
+      "productId": "fap049",
+      "sourceSha256": "d4494c837ea06644309a40ac0fd19e5e6cc3b48bed264a7d48c5c430f616507e",
+      "files": [
+        {
+          "path": "public/uploads/fap-049.webp",
+          "sha256": "4fc625dcd5d0ac4e95668f1231126749505f1a52540d18b0ac3e0a4e1c5b72f7"
+        },
+        {
+          "path": "public/uploads/fap-049-400w.webp",
+          "sha256": "cadea49f110105ff0e6b33f2bc98e9a11a6f5cd5027e7ead2d6ee2ce6370019f"
+        },
+        {
+          "path": "public/uploads/fap-049-800w.webp",
+          "sha256": "a7f9c8639998b7e119d18f8dde2afba06d1a7b780718037a3d0ef8a3a57f260f"
+        },
+        {
+          "path": "public/uploads/fap-049-1600w.webp",
+          "sha256": "4fc625dcd5d0ac4e95668f1231126749505f1a52540d18b0ac3e0a4e1c5b72f7"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-black.webp",
+          "sha256": "d87487418804e52b9ac5a559e742079811e90eac0cd318f749c94dc9dac4a167"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-black-400w.webp",
+          "sha256": "2a5b83d9216438b4269d16c238909d281ef11d176f274eed0078dba7aab08f46"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-black-800w.webp",
+          "sha256": "041bf6cdcac7c2f81fb1f060afdd3d674d056f74ea1a982c478fd9c043fbb974"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-black-1600w.webp",
+          "sha256": "d87487418804e52b9ac5a559e742079811e90eac0cd318f749c94dc9dac4a167"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-natural.webp",
+          "sha256": "cda6824c503ea4b7e316369a89a07556b23df6827b8f3e6dc9bc6130deccd9cb"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-natural-400w.webp",
+          "sha256": "71e1f67d31f319fe9ae5cd4bab9c2f647240a6152ba6cec410d6e20035739652"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-natural-800w.webp",
+          "sha256": "dd7d05e0a5d98b4a7f504175e12ea00f3efc22e9fa311a6c4b45de3ba0b46f5d"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-natural-1600w.webp",
+          "sha256": "cda6824c503ea4b7e316369a89a07556b23df6827b8f3e6dc9bc6130deccd9cb"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-brown.webp",
+          "sha256": "f3494a5f281cd50c667be39bf1da38db18424044855bb618efb526ba6f048878"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-brown-400w.webp",
+          "sha256": "4ad11779ff00ab074c66f84e840d02df6654ba0ffe6df851432c820f893a8261"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-brown-800w.webp",
+          "sha256": "0e95540746b7dd72ddd511725a881cfbd7fd1bc33e8120cbd651da97ff378516"
+        },
+        {
+          "path": "public/uploads/fap-049-mock-framed-brown-1600w.webp",
+          "sha256": "f3494a5f281cd50c667be39bf1da38db18424044855bb618efb526ba6f048878"
+        }
+      ]
+    },
+    {
+      "productId": "fap050",
+      "sourceSha256": "bb1dd1ed0f89a471e6020767c165d4e70f457f8e9a30f2985f8369125c37137c",
+      "files": [
+        {
+          "path": "public/uploads/fap-050.webp",
+          "sha256": "dca2f5ba8d0f96f935da1ab71502e44de2556416945fc8cf76c3c10b4413fa94"
+        },
+        {
+          "path": "public/uploads/fap-050-400w.webp",
+          "sha256": "6a51235dbdd2bf619b219d4b39dcdfca6048a832221c0cd566023de8645bde79"
+        },
+        {
+          "path": "public/uploads/fap-050-800w.webp",
+          "sha256": "56148a86462ce9c22924d0dd4a777ea512a4e81a8d5bfa4ea5f449a7231c76e8"
+        },
+        {
+          "path": "public/uploads/fap-050-1600w.webp",
+          "sha256": "dca2f5ba8d0f96f935da1ab71502e44de2556416945fc8cf76c3c10b4413fa94"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-black.webp",
+          "sha256": "90c46bca41699e1f9a8ceb11353ca6db8f108a7d37cc3b9a6fd84814b177ea2f"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-black-400w.webp",
+          "sha256": "03d1a43c76a98ef9731412016adab296aa68c3e6653fb1ae54be467a903a7df2"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-black-800w.webp",
+          "sha256": "261702592ec21f24ae17ab494314ee6f606afd338283d9a9d00ce4fefbaf426b"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-black-1600w.webp",
+          "sha256": "90c46bca41699e1f9a8ceb11353ca6db8f108a7d37cc3b9a6fd84814b177ea2f"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-natural.webp",
+          "sha256": "51afe0d64eff4aeed885660f3e578813354e4e6f32e6fb376644c35959b71aea"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-natural-400w.webp",
+          "sha256": "023a07fed4d494c7f86b3ff14c3222117986f503e59b3518ce4e8df421508066"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-natural-800w.webp",
+          "sha256": "fc57ee2e805818740e2fdb34fc075b217d7c3f2f8a0760dff444b0ef643adfe7"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-natural-1600w.webp",
+          "sha256": "51afe0d64eff4aeed885660f3e578813354e4e6f32e6fb376644c35959b71aea"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-brown.webp",
+          "sha256": "cc4500fe07133af118686e023d97b3d1354328a54f6dc7283b9fe9b65af31035"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-brown-400w.webp",
+          "sha256": "de209435bd02c89effe12af5135da5747442c4924eb23950a51dfa39d502e548"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-brown-800w.webp",
+          "sha256": "f9bf8530fb58878e39f61b3fb0c7ed91f133145c0a4fe05ae820166db25ba1dc"
+        },
+        {
+          "path": "public/uploads/fap-050-mock-framed-brown-1600w.webp",
+          "sha256": "cc4500fe07133af118686e023d97b3d1354328a54f6dc7283b9fe9b65af31035"
+        }
+      ]
+    },
+    {
+      "productId": "fap051",
+      "sourceSha256": "a3b7a091fbdc3a4f9f2833f624d9c59d4e34a6904dfe0d52d4724d4f6e2e7066",
+      "files": [
+        {
+          "path": "public/uploads/fap-051.webp",
+          "sha256": "4fb1290b098a08b22eb23f1a8d061ecc6a57f6855f5752450ab9b57a8bf06b45"
+        },
+        {
+          "path": "public/uploads/fap-051-400w.webp",
+          "sha256": "4da8fcb70eb62705fb73ff572fcd540a27b5c5b2059c8001d00b842b8dd23b48"
+        },
+        {
+          "path": "public/uploads/fap-051-800w.webp",
+          "sha256": "b1c9593880c68102026641e6a5060ce8e775adb33c4ba85dcc2e2b7779c95584"
+        },
+        {
+          "path": "public/uploads/fap-051-1600w.webp",
+          "sha256": "4fb1290b098a08b22eb23f1a8d061ecc6a57f6855f5752450ab9b57a8bf06b45"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-black.webp",
+          "sha256": "b6a903138e54b48246ddfaa53fd4812cf7f763a7105eac2ab7d7059533805bea"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-black-400w.webp",
+          "sha256": "ea42dd7c19ebee55dda3dd8a2abdfb554a5e679eea9c38ea378961a7931d62bc"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-black-800w.webp",
+          "sha256": "ce86e718762856d303d413f0b38b4581f09f53dda1d968b3abaa49feb914ad67"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-black-1600w.webp",
+          "sha256": "b6a903138e54b48246ddfaa53fd4812cf7f763a7105eac2ab7d7059533805bea"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-natural.webp",
+          "sha256": "90f6826ce11f40bf69a92e5eba2093bbbf90a4e524fa6f2b99f787e2712866b8"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-natural-400w.webp",
+          "sha256": "538dda3eed6193d308d7d70dc3963ce83d08bbc4911387155369f28c39e40e65"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-natural-800w.webp",
+          "sha256": "e227f0d7a4c18ce3303c5342df203513f84946158322d9fd4e029e4fdf839b1a"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-natural-1600w.webp",
+          "sha256": "90f6826ce11f40bf69a92e5eba2093bbbf90a4e524fa6f2b99f787e2712866b8"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-brown.webp",
+          "sha256": "07a0eec053a8bf7b93c06628976c637e185b1539cebddf5f3bd496296a4d7001"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-brown-400w.webp",
+          "sha256": "2afad5c6ef40ac6802357687543a74bcb776d7f030e3617a48fce572cbf03a37"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-brown-800w.webp",
+          "sha256": "f7f2aabd83f00c09bfb1a2179efb54670316fcb6ff78aac96692a67c7b111ab5"
+        },
+        {
+          "path": "public/uploads/fap-051-mock-framed-brown-1600w.webp",
+          "sha256": "07a0eec053a8bf7b93c06628976c637e185b1539cebddf5f3bd496296a4d7001"
+        }
+      ]
+    },
+    {
+      "productId": "fap052",
+      "sourceSha256": "7fbebf8a341ae2190610ac6574581adab02bdf4892c02eb95bb320feb0066b38",
+      "files": [
+        {
+          "path": "public/uploads/fap-052.webp",
+          "sha256": "0cdc5c35fa25c76a51e7542adb17df761c989aea51b2392d83c21da613940009"
+        },
+        {
+          "path": "public/uploads/fap-052-400w.webp",
+          "sha256": "1a0eb55d6abc09e4d02d5dc445c1ad46168de02be79bb3ac1eeeb02349ab112f"
+        },
+        {
+          "path": "public/uploads/fap-052-800w.webp",
+          "sha256": "62245e01d3c26909caac39a11adc78ece90b94a3f4c011e79e337e401a87df93"
+        },
+        {
+          "path": "public/uploads/fap-052-1600w.webp",
+          "sha256": "0cdc5c35fa25c76a51e7542adb17df761c989aea51b2392d83c21da613940009"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-black.webp",
+          "sha256": "1b6b5261bdeeb1f8c410d4cb4b080b49f7aca40580c132b8eb335060119b7c49"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-black-400w.webp",
+          "sha256": "9f04e49de8b240a470c421b0d375b1e391357addba2b836e0c85beada0d04a7e"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-black-800w.webp",
+          "sha256": "b076d3da5c8ee38be5cd1b939995f42e8950a2de0eb27e1962db45af8878d381"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-black-1600w.webp",
+          "sha256": "1b6b5261bdeeb1f8c410d4cb4b080b49f7aca40580c132b8eb335060119b7c49"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-natural.webp",
+          "sha256": "03a51c42f78c3eeb1a5941bd0915b7ed3d2ad1dc1dc41717b99f8b1232fc1231"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-natural-400w.webp",
+          "sha256": "c1a849c679a870f863e4f40e43dadc7e8c9613abbb5a3659b767535f4c7ba91c"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-natural-800w.webp",
+          "sha256": "0ee53e1719f78130422ce06bab34a360a1c0d1865f714c4a2f520b75de1232d0"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-natural-1600w.webp",
+          "sha256": "03a51c42f78c3eeb1a5941bd0915b7ed3d2ad1dc1dc41717b99f8b1232fc1231"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-brown.webp",
+          "sha256": "ca2991c611b8a572f7f40de9da926ee263824c010ff312d5d330a18f650624ea"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-brown-400w.webp",
+          "sha256": "635b68f19811fcb92758112ce992e69c5ee71f3edb6b5d6219adbd0fe9c13534"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-brown-800w.webp",
+          "sha256": "81f224dd7a849b458303fe9aae9ab1e36ea7f3b9779e6995564ca55909b58440"
+        },
+        {
+          "path": "public/uploads/fap-052-mock-framed-brown-1600w.webp",
+          "sha256": "ca2991c611b8a572f7f40de9da926ee263824c010ff312d5d330a18f650624ea"
+        }
+      ]
+    },
+    {
+      "productId": "fap053",
+      "sourceSha256": "3c8dd83077a40f0c63bed9041e7e12ce2b32a3b492d41980f1f3481e9169de05",
+      "files": [
+        {
+          "path": "public/uploads/fap-053.webp",
+          "sha256": "158d15f11fa7508df9c8366248449b8ca96e8ed76a0e4a9c37a9286a82eb989d"
+        },
+        {
+          "path": "public/uploads/fap-053-400w.webp",
+          "sha256": "c7190e3db986f943838073e8f55b56d77b06ddb5cb19359db5530951eced9a3b"
+        },
+        {
+          "path": "public/uploads/fap-053-800w.webp",
+          "sha256": "8534cb086b359b907e1122eea3b3694448ad670d2f78aa8a07ab121fab2c6dda"
+        },
+        {
+          "path": "public/uploads/fap-053-1600w.webp",
+          "sha256": "158d15f11fa7508df9c8366248449b8ca96e8ed76a0e4a9c37a9286a82eb989d"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-black.webp",
+          "sha256": "4c5dcca4d82ba63c8c92a03c32f5eb378851671a7a5a839f6185d62c1bfd1fe2"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-black-400w.webp",
+          "sha256": "78cf86642976248bc689fb81e148f7d23a1dda789b865a8ce72f02f184dca6a1"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-black-800w.webp",
+          "sha256": "56f0fa3e6e69feaddcea8483432de7efda6ebf3fdf9dd881ad2a8be7c444fa7c"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-black-1600w.webp",
+          "sha256": "4c5dcca4d82ba63c8c92a03c32f5eb378851671a7a5a839f6185d62c1bfd1fe2"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-natural.webp",
+          "sha256": "4e1421ddc61ea8aa93bfed8ba5f74c30a0c904931d921517cc95bd87c3d92aa1"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-natural-400w.webp",
+          "sha256": "50a4c40af26aed78c06ee8d944e467ed8aa67a4d6025863a25a871cd477d2bdf"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-natural-800w.webp",
+          "sha256": "5e0988e83b9aac2090abbdb86e0002e9f22c14a4aad7b2341285b39c09f92d77"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-natural-1600w.webp",
+          "sha256": "4e1421ddc61ea8aa93bfed8ba5f74c30a0c904931d921517cc95bd87c3d92aa1"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-brown.webp",
+          "sha256": "a797045b3b431264a5ff46f08d4df04f57d36e26159f88150c2330679618bef7"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-brown-400w.webp",
+          "sha256": "3ca3eb492f4c2e26c08088422dc233679b981e25368fa2844291b1feeef63fec"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-brown-800w.webp",
+          "sha256": "837f8aef8673660a7743421f5776a38048e3824721c5ef22d4c75d98f8ba20fd"
+        },
+        {
+          "path": "public/uploads/fap-053-mock-framed-brown-1600w.webp",
+          "sha256": "a797045b3b431264a5ff46f08d4df04f57d36e26159f88150c2330679618bef7"
+        }
+      ]
+    },
+    {
+      "productId": "fap054",
+      "sourceSha256": "78865bc87c3b331efba8cba63f62c40cafb5cd13ac30030dbe1b090fb1dff500",
+      "files": [
+        {
+          "path": "public/uploads/fap-054.webp",
+          "sha256": "9e096ab0b6e01ce54a4b8e7f7761675e0a6313c3520f95cfaa6143fc465af469"
+        },
+        {
+          "path": "public/uploads/fap-054-400w.webp",
+          "sha256": "f0b4bba924cb9be3dd69b6667f882d0acbc3a269e03e1495c91fea31ea837666"
+        },
+        {
+          "path": "public/uploads/fap-054-800w.webp",
+          "sha256": "8c11a3a1f61b3a2fa2c91af1f1aeb0104f24e2984c91d4e8c4a074c2528cf2de"
+        },
+        {
+          "path": "public/uploads/fap-054-1600w.webp",
+          "sha256": "9e096ab0b6e01ce54a4b8e7f7761675e0a6313c3520f95cfaa6143fc465af469"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-black.webp",
+          "sha256": "8f8e7324dc5221555e42055f3bd5da84364a04880f8ac04ff7d846c64f3b6a86"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-black-400w.webp",
+          "sha256": "8fee1ff74ba52013a7121f65da17db4cc8189abfc1b5d1a34b62e0c4a1864861"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-black-800w.webp",
+          "sha256": "e9737aaef6ceb623cb009a46256ea579e1f4300b5fe94295910a6262fcdd0d07"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-black-1600w.webp",
+          "sha256": "8f8e7324dc5221555e42055f3bd5da84364a04880f8ac04ff7d846c64f3b6a86"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-natural.webp",
+          "sha256": "ec26b677f5b3a1b24e7da242a89d5d367ea2ad6304881cd02ab1d8f9bd579514"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-natural-400w.webp",
+          "sha256": "dc83f2d866a4b0e74db71e71eb7032ed3386634b691fdc5ec86a7e9088bf3848"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-natural-800w.webp",
+          "sha256": "013a2dceaf64ce4d3c245b7fb7d5ee9c1efcd7a4dc10e06c651c2e3b16613567"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-natural-1600w.webp",
+          "sha256": "ec26b677f5b3a1b24e7da242a89d5d367ea2ad6304881cd02ab1d8f9bd579514"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-brown.webp",
+          "sha256": "25f2d41e863e393068f5f2a4270c5f7e92c2fe98b529c5ea54b5134b5597ad1a"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-brown-400w.webp",
+          "sha256": "54bd6ecbf5f98dd39e66260de670f3dc815bad02a951d0228bc198f7bf89b3ff"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-brown-800w.webp",
+          "sha256": "a4e67239526dd57131f9651cdc25da93b93341361926a06e182dda9d7d9fb7d2"
+        },
+        {
+          "path": "public/uploads/fap-054-mock-framed-brown-1600w.webp",
+          "sha256": "25f2d41e863e393068f5f2a4270c5f7e92c2fe98b529c5ea54b5134b5597ad1a"
+        }
+      ]
+    },
+    {
+      "productId": "fap055",
+      "sourceSha256": "2942fee37f935f7ce1ee374644e2cff073601f4080d0243e78fad5ff2bee2fc5",
+      "files": [
+        {
+          "path": "public/uploads/fap-055.webp",
+          "sha256": "67c6ec5263836d07e26d9a937b50b46910f4e6155bf74d9e192593ba81d36478"
+        },
+        {
+          "path": "public/uploads/fap-055-400w.webp",
+          "sha256": "f1ec9620ce37d05db93e6d4c2fe27ea48e5e992f8ac60ccf82aab847cd2df3c1"
+        },
+        {
+          "path": "public/uploads/fap-055-800w.webp",
+          "sha256": "f0e9b5482a2e9c5c790ca6e9257fd315e26f90606bdcc40710ff742b317db2ff"
+        },
+        {
+          "path": "public/uploads/fap-055-1600w.webp",
+          "sha256": "67c6ec5263836d07e26d9a937b50b46910f4e6155bf74d9e192593ba81d36478"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-black.webp",
+          "sha256": "c819573c3334b9e598be7d7f365f3f9ea4090f65a7c7e25828181d27d7d1bdd2"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-black-400w.webp",
+          "sha256": "e3c1c15813021ebb360d7e57c6ad678e31ac507ad6d5160bb5bad78948c56d8c"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-black-800w.webp",
+          "sha256": "c7ab4c1e92b33d7723445c6e9500e6225687939be1651a2f85e0d78a6868d439"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-black-1600w.webp",
+          "sha256": "c819573c3334b9e598be7d7f365f3f9ea4090f65a7c7e25828181d27d7d1bdd2"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-natural.webp",
+          "sha256": "abc4eecd95e8c50baca65bc8035798b7bb66e1e295f7e864b057fa181ff44954"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-natural-400w.webp",
+          "sha256": "bba2c46a295174bf9680ac75f58bf4296d0a3059f80521fe442984f0eac0082d"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-natural-800w.webp",
+          "sha256": "f03f757ea92294aac476a6097ec8bfaa20f51ef14226168019e6dd4182304f9b"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-natural-1600w.webp",
+          "sha256": "abc4eecd95e8c50baca65bc8035798b7bb66e1e295f7e864b057fa181ff44954"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-brown.webp",
+          "sha256": "3cf6e652911a6ac177d8480f0cdac04488419be7330e27b70d6c2f5b41a436d8"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-brown-400w.webp",
+          "sha256": "0b00d2d43a41e673e4b956a8218640dd73b0ae8667081c39430f9d5f5464dc85"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-brown-800w.webp",
+          "sha256": "45a559f7c9c4a2202944307ee539607a63dc508b5d1118aaeaec53c8e8fe72d1"
+        },
+        {
+          "path": "public/uploads/fap-055-mock-framed-brown-1600w.webp",
+          "sha256": "3cf6e652911a6ac177d8480f0cdac04488419be7330e27b70d6c2f5b41a436d8"
+        }
+      ]
+    },
+    {
+      "productId": "fap056",
+      "sourceSha256": "21c52e272e20e646ec06f6454f8312aceb1608cfdb87d77d9da967b6897b3bf8",
+      "files": [
+        {
+          "path": "public/uploads/fap-056.webp",
+          "sha256": "cdcab612f978ccc77d6d7aba8dbbc5aa8936dae822821d1b6797126274a847fa"
+        },
+        {
+          "path": "public/uploads/fap-056-400w.webp",
+          "sha256": "2666316093492e53cac4c5da83903eb0118bcf5da1d282ab4c527f64dc978d34"
+        },
+        {
+          "path": "public/uploads/fap-056-800w.webp",
+          "sha256": "e4edd85ae4762ce121bfda83503fc290bc93f89622111005e2b3febc72c681e8"
+        },
+        {
+          "path": "public/uploads/fap-056-1600w.webp",
+          "sha256": "cdcab612f978ccc77d6d7aba8dbbc5aa8936dae822821d1b6797126274a847fa"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-black.webp",
+          "sha256": "9616d007fd83b73f58ce38fdeb48ad082492e6d5117f18b5eb5c95d3205e994f"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-black-400w.webp",
+          "sha256": "39db407a8ea4f3652c1319550a838fc01ca693b49851ddb4c4d822b4aa9f3ca9"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-black-800w.webp",
+          "sha256": "0983a825798ea053c95aa95ceac6fc7ec2fad08cd3ad5fe7833322379f814184"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-black-1600w.webp",
+          "sha256": "9616d007fd83b73f58ce38fdeb48ad082492e6d5117f18b5eb5c95d3205e994f"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-natural.webp",
+          "sha256": "1dcfdfaac89c8ea59cc5dc7a780c95ccc9ccfe6eaecb975143424d24163337dd"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-natural-400w.webp",
+          "sha256": "a81e088609d8c47c74713bea51510b14a466017f50547f5eed236f32859b0af7"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-natural-800w.webp",
+          "sha256": "59fee425bd4f28075b8c3cdc42c3720eb5ada0526b40718e49ceee96bf192871"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-natural-1600w.webp",
+          "sha256": "1dcfdfaac89c8ea59cc5dc7a780c95ccc9ccfe6eaecb975143424d24163337dd"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-brown.webp",
+          "sha256": "d94a6657d6b282cde029bded0000552a8f4904a2113b184c0a710749f5597afb"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-brown-400w.webp",
+          "sha256": "e40956c541194feae7a61ddd0bb3cadfb9991c2dbb67db6ad4cd68fe99fb3fb9"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-brown-800w.webp",
+          "sha256": "213d842a89cf3c0be0314c2d2296203cee8afdaae549b40dbdbd9581e8a4032c"
+        },
+        {
+          "path": "public/uploads/fap-056-mock-framed-brown-1600w.webp",
+          "sha256": "d94a6657d6b282cde029bded0000552a8f4904a2113b184c0a710749f5597afb"
+        }
+      ]
+    },
+    {
+      "productId": "fap057",
+      "sourceSha256": "1bf3ce744ef5ffe1c9614fd158b8254764407207d023466cc851ac0685d77b2e",
+      "files": [
+        {
+          "path": "public/uploads/fap-057.webp",
+          "sha256": "d660d390abc59cdb4a57a5f9a90d43a8683d75378a2ba3965d36e60e66ddd9c0"
+        },
+        {
+          "path": "public/uploads/fap-057-400w.webp",
+          "sha256": "b377c51428097ca62b7944ee4d934892c44bcec0a757ecda07525554b81c91ac"
+        },
+        {
+          "path": "public/uploads/fap-057-800w.webp",
+          "sha256": "4090e29e9d919589ff035a901d0df49097a986751258f6cb314065fdec0d3940"
+        },
+        {
+          "path": "public/uploads/fap-057-1600w.webp",
+          "sha256": "d660d390abc59cdb4a57a5f9a90d43a8683d75378a2ba3965d36e60e66ddd9c0"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-black.webp",
+          "sha256": "f572fe375d5a6b95fe1f29eea41f106c9abb2112afdafc5a2c02513952105d7e"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-black-400w.webp",
+          "sha256": "2274902cdcbc212739b96efc7a9266abbf1a8947d4d3ebd834bc90e127a2cbc9"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-black-800w.webp",
+          "sha256": "e74919ffafccf19929aeca5c409debd3445f9d487cde30fdeed4a9d52e8210bb"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-black-1600w.webp",
+          "sha256": "f572fe375d5a6b95fe1f29eea41f106c9abb2112afdafc5a2c02513952105d7e"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-natural.webp",
+          "sha256": "2a386a27d1b2d44613034dcfa76576288eb23ae445106db133c42e3bf22f71b8"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-natural-400w.webp",
+          "sha256": "98a0866bfb56d41294b974b764dd9a57b9f4bcac61aa7eb7188dcd861a2892eb"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-natural-800w.webp",
+          "sha256": "08ddf3eb066933ad41cffb84d15d5412aac57042fbe6b4ffea5d44fd919792d9"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-natural-1600w.webp",
+          "sha256": "2a386a27d1b2d44613034dcfa76576288eb23ae445106db133c42e3bf22f71b8"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-brown.webp",
+          "sha256": "2a38fe04779a6779465168e2bf338f26e84f2aac7ba945c239ca1e72556afecd"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-brown-400w.webp",
+          "sha256": "7b9065f1818542b6d85f97a6b853601fb94708bb1f66ca4cec95a59fcc17c5ef"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-brown-800w.webp",
+          "sha256": "0cb92c22964e6e4706d3767884e91a3da3892a49c77c073e2c0d498ce829fa3e"
+        },
+        {
+          "path": "public/uploads/fap-057-mock-framed-brown-1600w.webp",
+          "sha256": "2a38fe04779a6779465168e2bf338f26e84f2aac7ba945c239ca1e72556afecd"
+        }
+      ]
+    }
+  ]
+}

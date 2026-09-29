@@ -1,0 +1,262 @@
+{
+  "tool": "Adobe Photoshop 2026",
+  "originalsUnchanged": true,
+  "outputs": [
+    {
+      "file": "design/uploads/master-images-prints/print-042/print-042__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-042/print-042__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-043/print-043__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-043/print-043__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-044/print-044__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-044/print-044__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-045/print-045__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-045/print-045__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-046/print-046__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-046/print-046__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-047/print-047__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-047/print-047__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "full_image_side_margins"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-048/print-048__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-048/print-048__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-049/print-049__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-049/print-049__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-050/print-050__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-050/print-050__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-051/print-051__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-051/print-051__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-052/print-052__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-052/print-052__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-053/print-053__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-053/print-053__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-054/print-054__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-054/print-054__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-055/print-055__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-055/print-055__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-056/print-056__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-056/print-056__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-057/print-057__3x4.jpg",
+      "width": 3600,
+      "height": 4800,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    },
+    {
+      "file": "design/uploads/master-images-prints/print-057/print-057__5x7.jpg",
+      "width": 6000,
+      "height": 8400,
+      "dpi": 300,
+      "profile": true,
+      "method": "crop_background_top_bottom"
+    }
+  ]
+}
