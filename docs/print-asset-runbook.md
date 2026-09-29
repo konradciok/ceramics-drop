@@ -765,3 +765,25 @@ paste-ready `editorialGallery: [...]` snippet per design to
 Ship in ONE PR: the generated `public/uploads/fap-*-life-*.webp` files
 **and** the corresponding `editorialGallery` array on each design in
 `src/lib/prints.ts`.
+
+### Generating the source mockups (`print-assets:mockups-openai`)
+
+The three source PNGs per design can be produced from the master artwork with
+the OpenAI image-edit API (`gpt-image-2`, `POST /v1/images/edits`): the
+artwork is the reference image, so the scene is rendered around it in one step
+(no empty frame, no compositing). Prompts are the three scene blocks in
+`docs/research/the-poster-club/mockups/prompts.md`; wall, sofa, frame tone,
+props and light side vary per design number.
+
+```bash
+OPENAI_API_KEY=… npm run print-assets:mockups-openai -- --range 42-57
+npm run print-assets:mockups-openai -- --product 42 --scene 2 --force
+npm run print-assets:mockups-openai -- --range 42-57 --dry-run   # print prompts only
+```
+
+Output lands in `design/uploads/master-images-prints/print-{NNN}/print-{NNN}_mockup-0{1,2,3}.png`
+(3:4, 1536×2048). `design/` is gitignored, so run it in the main checkout; from
+a worktree the script resolves the main checkout automatically. Existing files
+are skipped unless `--force`. The output is a model rendition of the artwork,
+not a pixel copy — compare colours and fine detail against the master before
+running `print-assets:editorial`.
