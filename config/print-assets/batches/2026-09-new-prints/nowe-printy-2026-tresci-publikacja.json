@@ -1,0 +1,141 @@
+{
+  "completedAt": "2026-09-29T19:53:58.007Z",
+  "status": "published_content_products_still_draft",
+  "productsRemainDraft": true,
+  "pricing": {
+    "baseEur": {
+      "30x40": 42,
+      "50x70": 79,
+      "70x100": 119
+    },
+    "frameEur": {
+      "30x40": 49,
+      "50x70": 79,
+      "70x100": 99
+    },
+    "mountEur": {
+      "30x40": 40,
+      "50x70": 40,
+      "70x100": 40
+    },
+    "eurToPln": 4.25,
+    "eurToGbp": 0.86
+  },
+  "prices": [
+    {
+      "size": "30x40",
+      "framed": false,
+      "pln": 180,
+      "eur": 42,
+      "gbp": 36
+    },
+    {
+      "size": "30x40",
+      "framed": true,
+      "pln": 390,
+      "eur": 91,
+      "gbp": 78
+    },
+    {
+      "size": "50x70",
+      "framed": false,
+      "pln": 335,
+      "eur": 79,
+      "gbp": 68
+    },
+    {
+      "size": "50x70",
+      "framed": true,
+      "pln": 670,
+      "eur": 158,
+      "gbp": 136
+    },
+    {
+      "size": "70x100",
+      "framed": false,
+      "pln": 505,
+      "eur": 119,
+      "gbp": 102
+    },
+    {
+      "size": "70x100",
+      "framed": true,
+      "pln": 925,
+      "eur": 218,
+      "gbp": 187
+    }
+  ],
+  "mediaRows": 16,
+  "collections": [
+    {
+      "id": "col_5b50220472",
+      "name": "Aurora",
+      "revision": 1
+    },
+    {
+      "id": "col_6f5ae74a82",
+      "name": "Cirrus",
+      "revision": 1
+    },
+    {
+      "id": "col_57c486aedc",
+      "name": "Cumulonimbus",
+      "revision": 1
+    },
+    {
+      "id": "col_5fa1493dcd",
+      "name": "Cumulus",
+      "revision": 1
+    },
+    {
+      "id": "col_367b1db407",
+      "name": "Obsidian",
+      "revision": 1
+    },
+    {
+      "id": "col_477822f1a4",
+      "name": "Scopulus",
+      "revision": 1
+    },
+    {
+      "id": "col_d031d9cea6",
+      "name": "Unda",
+      "revision": 1
+    },
+    {
+      "id": "col_13f5ee4861",
+      "name": "Tachylite",
+      "revision": 1
+    }
+  ],
+  "notes": [
+    {
+      "locale": "pl",
+      "version": 6,
+      "payloadSha256": "2e38717a825fe7d16184322ffd422314e4a79d078ed1bcd00ace694e8c0d18e6"
+    },
+    {
+      "locale": "en",
+      "version": 4,
+      "payloadSha256": "befc61b5b9be91705fcce87ebf06468a346844fa18ea8a91aa8d6a32e4723a5c"
+    },
+    {
+      "locale": "es",
+      "version": 4,
+      "payloadSha256": "42ca465a952843b1e99f3943aa2f90cff2568494f46ac35ac39f0ae9aa34f646"
+    },
+    {
+      "locale": "de",
+      "version": 4,
+      "payloadSha256": "4371b6c3e95d0c7f0412d96ad37c88787f4131eb30ce9df49512c656ff7f9b10"
+    }
+  ],
+  "verifiedAt": "2026-09-29T19:55:07.845Z",
+  "verification": {
+    "readBack": true,
+    "existingProductRowsUnchanged": true,
+    "existingCollectionRowsUnchanged": true,
+    "newDescriptionsMatchFallback": true,
+    "productsStillDraft": 16
+  }
+}

@@ -93,20 +93,74 @@
         { "sourceNumber": "017", "productId": "fap017", "number": "38" },
         { "sourceNumber": "022", "productId": "fap022", "number": "39" }
       ]
+    },
+    {
+      "slug": "aurora",
+      "name": "Aurora",
+      "prints": [
+        { "sourceNumber": "042", "productId": "fap042", "number": "40", "seriesNumber": "01", "status": "draft" },
+        { "sourceNumber": "043", "productId": "fap043", "number": "41", "seriesNumber": "02", "status": "draft" },
+        { "sourceNumber": "044", "productId": "fap044", "number": "42", "seriesNumber": "04", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "cirrus",
+      "name": "Cirrus",
+      "prints": [
+        { "sourceNumber": "045", "productId": "fap045", "number": "43", "seriesNumber": "01", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "cumulonimbus",
+      "name": "Cumulonimbus",
+      "prints": [
+        { "sourceNumber": "046", "productId": "fap046", "number": "44", "seriesNumber": "03", "status": "draft" },
+        { "sourceNumber": "047", "productId": "fap047", "number": "45", "seriesNumber": "06", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "cumulus",
+      "name": "Cumulus",
+      "prints": [
+        { "sourceNumber": "048", "productId": "fap048", "number": "46", "seriesNumber": "01", "status": "draft" },
+        { "sourceNumber": "049", "productId": "fap049", "number": "47", "seriesNumber": "06", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "obsidian",
+      "name": "Obsidian",
+      "prints": [
+        { "sourceNumber": "050", "productId": "fap050", "number": "48", "seriesNumber": "02", "status": "draft" },
+        { "sourceNumber": "051", "productId": "fap051", "number": "49", "seriesNumber": "03", "status": "draft" },
+        { "sourceNumber": "052", "productId": "fap052", "number": "50", "seriesNumber": "04", "status": "draft" },
+        { "sourceNumber": "053", "productId": "fap053", "number": "51", "seriesNumber": "05", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "scopulus",
+      "name": "Scopulus",
+      "prints": [
+        { "sourceNumber": "054", "productId": "fap054", "number": "52", "seriesNumber": "02", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "unda",
+      "name": "Unda",
+      "prints": [
+        { "sourceNumber": "055", "productId": "fap055", "number": "53", "seriesNumber": "04", "status": "draft" },
+        { "sourceNumber": "056", "productId": "fap056", "number": "54", "seriesNumber": "05", "status": "draft" }
+      ]
+    },
+    {
+      "slug": "tachylite",
+      "name": "Tachylite",
+      "prints": [
+        { "sourceNumber": "057", "productId": "fap057", "number": "55", "seriesNumber": "03", "status": "draft" }
+      ]
     }
   ],
   "retired": [
-    {
-      "sourceNumber": "029",
-      "productId": "fap029",
-      "duplicateOf": "fap011",
-      "reason": "near-duplicate composition"
-    },
-    {
-      "sourceNumber": "037",
-      "productId": "fap037",
-      "duplicateOf": "fap016",
-      "reason": "near-duplicate composition"
-    }
+    { "sourceNumber": "029", "productId": "fap029", "duplicateOf": "fap011", "reason": "near-duplicate composition" },
+    { "sourceNumber": "037", "productId": "fap037", "duplicateOf": "fap016", "reason": "near-duplicate composition" }
   ]
 }

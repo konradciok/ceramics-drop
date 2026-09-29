@@ -40,6 +40,8 @@ export type PrintCuration = {
   sourceNumber: string;
   productId: string;
   number?: string;
+  seriesNumber?: string;
+  status?: 'draft';
   collectionSlug?: string;
   duplicateOf?: string;
   reason?: string;
@@ -54,7 +56,7 @@ export type PrintCollectionDefinition = {
 
 export type PrintCurationSource = {
   schemaVersion: number;
-  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string }> }>;
+  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string; seriesNumber?: string; status?: 'draft' }> }>;
   retired: Array<{ sourceNumber: string; productId: string; duplicateOf: string; reason: string }>;
 };
 
@@ -89,6 +91,8 @@ export function validatePrintCuration(input: PrintCurationSource): void {
     }
     if (ids.has(item.productId)) fail(`duplicate product ID: ${item.productId}`);
     ids.add(item.productId);
+    if ('status' in item && item.status !== 'draft') fail(`${item.productId} has an invalid status`);
+    if ('seriesNumber' in item && !/^\d{2,}$/.test(item.seriesNumber ?? '')) fail(`${item.productId} has an invalid series number`);
   }
   // Global display numbers remain contiguous and unique. Collection-local
   // names and stable source IDs are separate; neither imposes a batch size.
@@ -121,7 +125,8 @@ const retired: PrintCuration[] = input.retired.map((item) => ({ ...item }));
 const all = [...active, ...retired];
 
 export const PRINT_CURATION = all;
-export const ACTIVE_PRINT_CURATION = active;
+export const ACTIVE_PRINT_CURATION = active.filter((item) => item.status !== 'draft');
+export const DRAFT_PRINT_CURATION = active.filter((item) => item.status === 'draft');
 export const RETIRED_PRINT_CURATION = retired;
 export const PRINT_COLLECTION_DEFINITIONS: PrintCollectionDefinition[] = input.collections.map(({ slug, name, prints }) => ({
   slug,
@@ -131,7 +136,7 @@ export const PRINT_COLLECTION_DEFINITIONS: PrintCollectionDefinition[] = input.c
 }));
 
 export function curationForProduct(id: string): PrintCuration | undefined {
-  return ACTIVE_PRINT_CURATION.find((item) => item.productId === id);
+  return active.find((item) => item.productId === id);
 }
 
 /** Customer-facing name, numbered independently in each authored collection.
@@ -144,13 +149,21 @@ export function printDisplayName(
 ): string {
   for (const collection of definitions) {
     const index = collection.designIds.indexOf(design.id);
-    if (index !== -1) return `${collection.name} ${String(index + 1).padStart(2, '0')}`;
+    if (index !== -1) {
+      const curated = curationForProduct(design.id);
+      // CMS definitions carry membership, while source series numbers remain
+      // stable even when the works are reordered within their collection.
+      const series = collection.prints.find((item) => item.productId === design.id)?.seriesNumber
+        ?? (curated?.collectionSlug === collection.slug ? curated.seriesNumber : undefined);
+      return `${collection.name} ${series ?? String(index + 1).padStart(2, '0')}`;
+    }
   }
   return `${fallback} Nº ${design.num}`;
 }
 
-export function catalogStatusForPrint(id: string): 'active' | 'archived' {
-  if (curationForProduct(id)) return 'active';
+export function catalogStatusForPrint(id: string): 'active' | 'draft' | 'archived' {
+  const curated = curationForProduct(id);
+  if (curated) return curated.status === 'draft' ? 'draft' : 'active';
   if (RETIRED_PRINT_CURATION.some((item) => item.productId === id)) return 'archived';
   throw new Error(`Unknown print ID: ${id}`);
 }

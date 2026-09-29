@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { registryPrintDesigns } from '@/lib/prints';
+import { registryContentPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
 import { IMAGE_KEY_RE, VIDEO_KEY_RE } from '@/lib/site-media';
 import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type CmsLocale, type ProductNotesPayload } from './types';
@@ -87,9 +87,9 @@ export const deliveryNoticeSchema = z.object({
 
 export type ProductNoteEntry = { id: string; noteIndex: number };
 
-/** Live note identities in catalogue order (null = unknown slug). */
+/** Content identities, including staged prints, in catalogue order. */
 export function productNoteEntries(slug: string): ProductNoteEntry[] | null {
-  if (slug === PRINTS_SLUG) return registryPrintDesigns().map(({ id, noteIndex }) => ({ id, noteIndex }));
+  if (slug === PRINTS_SLUG) return registryContentPrintDesigns().map(({ id, noteIndex }) => ({ id, noteIndex }));
   try {
     return registryProductsByCategory(slug as CategorySlug).map(({ id, noteIndex }) => ({ id, noteIndex }));
   } catch {
