@@ -9,9 +9,11 @@ import {
   curationForProduct,
   printDisplayName,
   validatePrintCuration,
+  validatePrintRegistry,
 } from './print-curation';
 import type { PrintCollectionDefinition } from './print-curation';
 import source from '../../config/print-catalog-curation.json';
+import batch from '../../config/print-assets/batches/2026-09-new-prints/nowe-printy-2026-kolekcje.json';
 
 describe('fine-art print curation map', () => {
   it('names every collection independently from 01 in display order', () => {
@@ -119,18 +121,59 @@ describe('fine-art print curation map', () => {
     expect(() => catalogStatusForPrint('unknown')).toThrow(/unknown print/i);
   });
 
-  it('fails descriptively when exact authored invariants are malformed', () => {
-    const names = structuredClone(source);
-    names.collections[0].name = 'Wrong';
-    expect(() => validatePrintCuration(names)).toThrow(/collection names must be exactly/i);
+  it('accepts all 16 new designs and eight new collections without changing existing entries', () => {
+    const extended = structuredClone(source);
+    let number = ACTIVE_PRINT_CURATION.length;
+    for (const collection of batch.collections) {
+      extended.collections.push({ slug: collection.slug, name: collection.name, prints: collection.prints.map((print) => ({
+        sourceNumber: print.folder.replace('print-', ''), productId: print.productId,
+        number: String(++number).padStart(2, '0'),
+      })) });
+    }
+    expect(() => validatePrintCuration(extended)).not.toThrow();
+    const ids = [...extended.collections.flatMap((c) => c.prints.map((p) => p.productId)), ...extended.retired.map((p) => p.productId)];
+    expect(ids).toHaveLength(57);
+    expect(() => validatePrintRegistry(ids, ids.toReversed())).not.toThrow();
+    expect(extended.collections.slice(0, source.collections.length)).toEqual(source.collections);
+    expect(extended.retired).toEqual(source.retired);
+  });
 
+  it('rejects duplicate collection slugs and names, and empty collections', () => {
+    const duplicateSlug = structuredClone(source);
+    duplicateSlug.collections[1].slug = duplicateSlug.collections[0].slug;
+    expect(() => validatePrintCuration(duplicateSlug)).toThrow(/duplicate collection slug/);
+    const duplicateName = structuredClone(source);
+    duplicateName.collections[1].name = duplicateName.collections[0].name;
+    expect(() => validatePrintCuration(duplicateName)).toThrow(/duplicate collection name/);
+    const empty = structuredClone(source);
+    empty.collections[0].prints = [];
+    expect(() => validatePrintCuration(empty)).toThrow(/at least 1 print/);
+  });
+
+  it('rejects duplicate IDs across active and retired designs and invalid source mapping', () => {
+    const duplicate = structuredClone(source);
+    Object.assign(duplicate.retired[0], { productId: 'fap001', sourceNumber: '001' });
+    expect(() => validatePrintCuration(duplicate)).toThrow(/duplicate product ID/);
+    const mismatch = structuredClone(source);
+    mismatch.collections[0].prints[0].productId = 'fap999';
+    expect(() => validatePrintCuration(mismatch)).toThrow(/must match/);
+  });
+
+  it('rejects inconsistent global numbers and retired references', () => {
+    const numbers = structuredClone(source);
+    numbers.collections[0].prints[1].number = '01';
+    expect(() => validatePrintCuration(numbers)).toThrow(/consecutive/);
     const retired = structuredClone(source);
-    retired.retired[0].productId = 'fap040';
-    expect(() => validatePrintCuration(retired)).toThrow(/retired IDs must be exactly/i);
+    retired.retired[0].duplicateOf = 'fap999';
+    expect(() => validatePrintCuration(retired)).toThrow(/duplicateOf must be active/);
+  });
 
-    const universe = structuredClone(source);
-    universe.collections[0].prints[0].productId = 'fap999';
-    expect(() => validatePrintCuration(universe)).toThrow(/product ID universe must be fap001 through fap041/i);
+  it('rejects missing, extra and duplicate source registry identities at any catalogue size', () => {
+    const ids = PRINT_CURATION.map((p) => p.productId);
+    expect(() => validatePrintRegistry([...ids, 'fap042'], ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry(ids.slice(1), ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry([...ids, ids[0]], ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry(ids, [...ids, ids[0]])).toThrow(/same unique IDs/);
   });
 });
 

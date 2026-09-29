@@ -316,3 +316,22 @@ Przydzielono nowe ID w lokalnych definicjach partii i kolekcji:
 | fap057 | Tachylite 03 | print-057 |
 
 To przydział w przygotowywanej partii, a nie rezerwacja ani utworzenie rekordów w produkcyjnej bazie. W tym kroku wykonano wyłącznie odczyty zdalne. Przed importem ponowić sprawdzenie konfliktów. Wynik zapisano w `config/print-assets/batches/2026-09-new-prints/nowe-printy-2026-weryfikacja-id.json`. Ta aktualizacja zastępuje wcześniejsze uwagi o nieprzydzielonych ID i niezweryfikowanym stanie aktywności istniejących produktów.
+
+
+## Punkt 3: poprawki kodu przed importem — 29 września 2026
+
+Wprowadzono lokalnie możliwość rozszerzenia kuracji i rejestru ponad 41 designów oraz przygotowania plików dla produktów w statusie `draft`. Limit nazw/liczby kolekcji zastępują kontrole unikalności; nadal wymagane są spójne ID źródeł, pełne pokrycie rejestru, poprawna numeracja globalna i prawidłowe odwołania wycofanych prac. Test rozszerza istniejącą kurację o wszystkie 16 designów i 8 nowych kolekcji, pozostawiając dotychczasowe wpisy bez zmian.
+
+CLI oraz planowanie zadań CMS dopuszczają `draft` i `active`, z wymaganiem aktywnych wariantów; `hidden` i `archived` pozostają blokowane. Renderowanie i promowanie zasobów nie aktywuje produktu. Guardy aktywacji/publikacji w bazie nie zostały zmienione. Ograniczenie wielu proporcji w jednej rewizji CMS pozostaje; dla tej partii nadal przewidziano CLI.
+
+To poprawki mechanizmu, nie import: 16 nowych wpisów nie dodano jeszcze do aktywnego rejestru ani produkcyjnej bazy. Zachowanie nazw z oryginalnymi numerami serii oraz dostosowanie starego helpera onboardingowego pozostają częścią przygotowania właściwych konfiguracji/importu. Nie wdrożono kodu na produkcję.
+
+Weryfikacja: pełny zestaw testów — 3619 zaliczonych, 2 pominięte; po końcowej korekcie asercji ponownie zaliczono wszystkie 35 testów przetwarzania zasobów. Kontrola typów, build webpack i kontrola katalogu w artefakcie buildu zakończone powodzeniem. Lint bez błędów, z jednym wcześniejszym ostrzeżeniem w niezmienianym teście backfillu kolekcji.
+
+## Punkt 4: źródła i lokalny plan plików — 29 września 2026
+
+Zweryfikowano 48 źródeł dla 16 prac: JPEG, osadzony profil sRGB, 300 DPI, właściwe proporcje i wystarczające wymiary. Sprawdzono identyczność 48 kopii nazwanych rozmiarami oraz zgodność hashy wszystkich 16 oryginałów 7:10 z wcześniejszym raportem. Ponownie obejrzano istniejące podglądy 3:4 i 5:7; zachowano zatwierdzone boczne marginesy w Aurora 01, Aurora 04 i Cumulonimbus 06.
+
+Dodano konfiguracje `config/print-assets/fap042.json`–`fap057.json`, zweryfikowane przez rzeczywisty loader pipeline. Plan `config/print-assets/batches/2026-09-new-prints/nowe-printy-2026-plan-plikow.json` zawiera ścieżki, hashe, metadane oraz trzy planowane profile na produkt: 3600×4800, 6000×8400 i 8400×12000, pokrywające 12 wariantów bez passe-partout. Plan korzysta z lokalnej mapy SKU i `assetPxFor`; podczas właściwego `prepare` źródłem wymagań będą aktywne warianty zapisane w bazie.
+
+Zgodnie z dotychczasową konwencją wymagane pole źródła 2:3 wskazuje celowo nieistniejący plik `NO_MOUNT_SOURCE_2026-09.jpg`. Passe-partout pozostaje wyłączone; jego przywrócenie wymaga nowego źródła. Nie uruchamiano starego helpera onboardingowego, nie generowano jeszcze finalnych pochodnych/proofów, nie zapisywano produktów w bazie ani plików w R2. Następną bramką jest przygotowanie wpisów katalogu i rejestracja draftów z aktywnymi wariantami, z zachowaniem oryginalnych numerów serii.

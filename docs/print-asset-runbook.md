@@ -407,6 +407,23 @@ documented below, once per design.
 
 ## New artwork (first publication)
 
+Asset preparation accepts products in `draft` or `active` status with at least
+one active variant. This applies to the local CLI and the CMS asset-job planner:
+a new print can acquire verified assets while it is still invisible in the
+storefront. `hidden` and `archived` products remain blocked. Preparing, staging,
+or promoting assets never activates the product; the existing guarded status
+RPC still requires complete ready assignments before activation. The CMS
+per-upload/multi-ratio revision limitation still applies.
+
+The curation validator supports additional designs and collections without a
+fixed batch size. It continues to require unique collection names/slugs,
+unique product IDs matching source numbers, consecutive global display numbers,
+valid retirement references, and an exact match between curated and source IDs.
+Historical catalog membership is covered by snapshot tests. Adding a batch still
+requires explicit curation/source entries and their content; this change does
+not automatically import any files from `config/print-assets/batches/`.
+
+
 Place the approved, artwork-only master and, when the product config includes a
 `signature`, its SVG at the canonical gitignored paths:
 

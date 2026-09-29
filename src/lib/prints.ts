@@ -4,7 +4,7 @@ import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
 import { readWithFallback } from './supabase-timeout';
 import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
-import { ACTIVE_PRINT_CURATION, RETIRED_PRINT_CURATION, curationForProduct } from './print-curation';
+import { ACTIVE_PRINT_CURATION, RETIRED_PRINT_CURATION, validatePrintRegistry, curationForProduct } from './print-curation';
 
 // Fine-art-print registry reset 2026-08-17: the prior fap01–fap04 / fap005–
 // fap047 registry (47 ids) is fully retired — old sources were corrupted,
@@ -485,13 +485,10 @@ const SOURCE_PRINT_DESIGNS: PrintSourceDesign[] = [
  * existing DB exactly. Storefront/checkout readers use `PRINT_DESIGNS`.
  */
 const CURATED_PRINTS = [...ACTIVE_PRINT_CURATION, ...RETIRED_PRINT_CURATION];
-const CURATED_IDS = new Set(CURATED_PRINTS.map(({ productId }) => productId));
-const SOURCE_IDS = new Set(SOURCE_PRINT_DESIGNS.map(({ id }) => id));
-
-if (CURATED_IDS.size !== 41 || SOURCE_PRINT_DESIGNS.length !== 41 || SOURCE_IDS.size !== 41 || CURATED_IDS.size !== SOURCE_IDS.size
-  || [...CURATED_IDS].some((id) => !SOURCE_IDS.has(id))) {
-  throw new Error('Print curation and source registry must cover the same 41 IDs');
-}
+validatePrintRegistry(
+  SOURCE_PRINT_DESIGNS.map(({ id }) => id),
+  CURATED_PRINTS.map(({ productId }) => productId),
+);
 
 const SOURCE_BY_ID = new Map(SOURCE_PRINT_DESIGNS.map((design) => [design.id, design]));
 
