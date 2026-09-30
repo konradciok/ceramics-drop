@@ -25,9 +25,11 @@ const KNOWN_SLUGS = CURATION.map((c) => c.slug);
 const SEED_ACTOR = 'backfill-script@ceramics-drop.internal';
 const EDITOR = 'anna@example.com';
 
+/** A filler description above the 80-char indexability floor, tagged so texts differ per collection and locale. */
 const longText = (tag: string) =>
   `${tag}: an abstract watercolour and ink Fine Art Print description, comfortably longer than the eighty character floor.`;
 
+/** An approved-copy entry for one collection: a distinct long text per locale. */
 function approvedEntry(name: string): ApprovedDescriptions['collections'][string] {
   return {
     name,
@@ -35,7 +37,9 @@ function approvedEntry(name: string): ApprovedDescriptions['collections'][string
   };
 }
 
+/** The same entry as it appears in the JSON file (with the designIds the importer ignores). */
 const rawEntry = (name: string) => ({ name, designIds: ['fap001'], description: approvedEntry(name).description });
+/** A whole descriptions file as parsed JSON; `patch` overrides top-level fields such as `status`. */
 const rawFile = (collections: Record<string, unknown>, patch: Record<string, unknown> = {}) => ({
   schemaVersion: 1,
   status: 'approved',
@@ -43,6 +47,7 @@ const rawFile = (collections: Record<string, unknown>, patch: Record<string, unk
   ...patch,
 });
 
+/** A CMS description field for one locale, shaped like the backfill's. */
 function descriptionField(locale: DescriptionLocale, value: string): CmsField {
   return { key: 'description', label: 'Opis kolekcji', type: 'text', value, locale, sourceLocale: 'pl' };
 }
@@ -60,9 +65,11 @@ function printPayload(name: string, slug: string, descriptions: Partial<Record<D
   };
 }
 
+/** The description text a payload stores for a locale. */
 const valueOf = (payload: CmsPayload, locale: DescriptionLocale) =>
   payload.fields.find((f) => f.key === 'description' && f.locale === locale)?.value;
 
+/** A published print collection at revision 1 still holding the seeded placeholder; override per test. */
 function state(overrides: Partial<CollectionState> = {}): CollectionState {
   return {
     id: 'col_ostrea',
@@ -174,6 +181,7 @@ describe('planCollection', () => {
     expect(plan.baseRevision).toBe(1);
     expect(plan.localeActions).toEqual({ pl: 'set', en: 'set', es: 'set', de: 'set' });
     for (const locale of LOCALES) expect(valueOf(plan.payload, locale)).toBe(approved.description[locale]);
+    /** Everything in a payload except its description fields. */
     const notDescription = (p: CmsPayload) => p.fields.filter((f) => f.key !== 'description');
     expect(notDescription(plan.payload)).toEqual(notDescription(before.latestPayload));
     expect(plan.payload.name).toBe('Ostrea');
@@ -255,7 +263,49 @@ describe('planCollection', () => {
   it('does not resume a draft from this script whose text is no longer the approved copy', () => {
     const stale = printPayload('Ostrea', 'ostrea', { ...approved.description, pl: 'Starsza wersja tekstu.' });
     const plan = planCollection('ostrea', approved, state({ latestRevision: 2, latestCreatedBy: IMPORT_ACTOR, latestPayload: stale }), { force: false });
-    expect(plan.status).toBe('skip');
+    expect(plan).toMatchObject({ status: 'skip', reason: expect.stringMatching(/saved by an earlier import no longer matches the approved copy/) });
+  });
+
+  describe('resuming a draft that kept an editor\'s text', () => {
+    const human = 'Opis napisany ręcznie w CMS, zupełnie inny niż zatwierdzony szkic.';
+    // Live: the editor's PL text, other locales still blank. Draft: that PL text kept, approved copy elsewhere.
+    const live = printPayload('Ostrea', 'ostrea', { pl: human });
+    const mixed = printPayload('Ostrea', 'ostrea', { pl: human, en: approved.description.en, es: approved.description.es, de: approved.description.de });
+    /** The state after an interrupted run: the mixed draft saved by the import, unpublished, over the live editor text. */
+    const savedByImport = (over: Partial<CollectionState> = {}) =>
+      state({ latestRevision: 2, latestCreatedBy: IMPORT_ACTOR, publishedPayload: live, latestPayload: mixed, ...over });
+
+    it('resumes: every locale is approved copy or the text that is live', () => {
+      expect(planCollection('ostrea', approved, savedByImport(), { force: false })).toMatchObject({ status: 'resume', revision: 2 });
+    });
+
+    it('does not resume when the kept text is no longer what is live', () => {
+      const changedLive = printPayload('Ostrea', 'ostrea', { pl: 'Inny tekst redakcji.' });
+      expect(planCollection('ostrea', approved, savedByImport({ publishedPayload: changedLive }), { force: false }).status).toBe('skip');
+    });
+
+    it('does not resume a draft that changes anything but descriptions', () => {
+      const tampered = structuredClone(mixed);
+      tampered.fields.find((f) => f.key === 'products')!.value = 'fap001';
+      expect(planCollection('ostrea', approved, savedByImport({ latestPayload: tampered }), { force: false }).status).toBe('skip');
+    });
+
+    it('does not count a seeded placeholder left in the draft as kept copy', () => {
+      const seededLive = printPayload('Ostrea', 'ostrea');
+      const leftPlaceholder = printPayload('Ostrea', 'ostrea', { pl: 'Ostrea.', en: approved.description.en, es: approved.description.es, de: approved.description.de });
+      expect(planCollection('ostrea', approved, savedByImport({ publishedPayload: seededLive, latestPayload: leftPlaceholder }), { force: false }).status).toBe('skip');
+    });
+
+    it('needs the published payload to vouch for kept text: without it only an all-approved draft resumes', () => {
+      expect(planCollection('ostrea', approved, savedByImport({ publishedPayload: undefined }), { force: false }).status).toBe('skip');
+    });
+
+    it("never resumes a draft someone else saved, however much it looks like the import's", () => {
+      expect(planCollection('ostrea', approved, savedByImport({ latestCreatedBy: EDITOR }), { force: false })).toMatchObject({
+        status: 'skip',
+        reason: expect.stringMatching(/unpublished CMS draft \(revision 2\)/),
+      });
+    });
   });
 });
 
@@ -277,14 +327,17 @@ interface FakeOptions {
   readError?: 'collections' | 'collection_drafts';
 }
 
+/** A collection as the backfill leaves it: published at revision 1 with one seeded draft. */
 function seeded(id: string, name: string, slug: string, descriptions?: Partial<Record<DescriptionLocale, string>>): FakeCollection {
   return { id, publishedRevision: 1, drafts: [{ revision: 1, payload: printPayload(name, slug, descriptions), createdBy: SEED_ACTOR }] };
 }
 
+/** In-memory model of the `collections` / `collection_drafts` tables and the two RPCs, so tests assert the resulting CMS state. */
 function fakeDb(initial: FakeCollection[], options: FakeOptions = {}) {
   const collections: FakeCollection[] = structuredClone(initial);
   const calls: { fn: string; params: Record<string, unknown> }[] = [];
   const reads: string[] = [];
+  /** Highest draft revision of a collection (0 when it has none). */
   const latestRevision = (c: FakeCollection) => Math.max(0, ...c.drafts.map((d) => d.revision));
 
   const supabase = {
@@ -345,7 +398,9 @@ function fakeDb(initial: FakeCollection[], options: FakeOptions = {}) {
     },
   } as unknown as SupabaseClient;
 
+  /** The stored collection with this id. */
   const byId = (id: string) => collections.find((c) => c.id === id)!;
+  /** The payload of a collection's newest draft. */
   const latestPayload = (id: string) => byId(id).drafts.at(-1)!.payload;
   return { supabase, collections, calls, reads, byId, latestPayload };
 }
@@ -353,6 +408,7 @@ function fakeDb(initial: FakeCollection[], options: FakeOptions = {}) {
 const APPROVED: ApprovedDescriptions = { collections: { ostrea: approvedEntry('Ostrea'), linea: approvedEntry('Linea') } };
 const OFF = { confirm: false, force: false } as const;
 const ON = { confirm: true, force: false } as const;
+/** Log sink for tests that do not assert on the output. */
 const quiet = () => {};
 
 describe('runImport', () => {
@@ -529,6 +585,33 @@ describe('runImport', () => {
     expect(db.calls.filter((c) => c.fn === 'save_collection_draft')).toHaveLength(1);
   });
 
+  it("recovers from a failed publish even when the saved draft kept an editor's text", async () => {
+    const human = 'Opis napisany ręcznie w CMS, zupełnie inny niż zatwierdzony szkic.';
+    let failPublish = true;
+    const db = fakeDb([seeded('col_ostrea', 'Ostrea', 'ostrea', { pl: human })], {
+      publishError: () => (failPublish ? { message: 'publish failed' } : null),
+    });
+    const only = { collections: { ostrea: APPROVED.collections.ostrea } };
+
+    const first = await runImport(db.supabase, only, ON, quiet);
+    expect(first.plans[0]).toMatchObject({ status: 'apply', localeActions: { pl: 'kept', en: 'set', es: 'set', de: 'set' } });
+    expect(first.errors).toEqual([{ slug: 'ostrea', message: 'publish failed' }]);
+    expect(db.byId('col_ostrea').publishedRevision).toBe(1);
+
+    failPublish = false;
+    const second = await runImport(db.supabase, only, ON, quiet);
+
+    expect(second.plans[0].status).toBe('resume');
+    expect(second.errors).toEqual([]);
+    expect(second.applied).toEqual(['ostrea']);
+    const payload = db.latestPayload('col_ostrea');
+    expect(valueOf(payload, 'pl')).toBe(human);
+    expect(valueOf(payload, 'en')).toBe(APPROVED.collections.ostrea.description.en);
+    expect(db.byId('col_ostrea').publishedRevision).toBe(2);
+    expect(db.byId('col_ostrea').drafts).toHaveLength(2);
+    expect(db.calls.filter((c) => c.fn === 'save_collection_draft')).toHaveLength(1);
+  });
+
   it('surfaces a read failure instead of planning against partial data', async () => {
     const db = fakeDb([seeded('col_ostrea', 'Ostrea', 'ostrea')], { readError: 'collection_drafts' });
     await expect(runImport(db.supabase, APPROVED, ON, quiet)).rejects.toMatchObject({ message: 'collection_drafts read failed' });
@@ -549,6 +632,17 @@ describe('loadCollectionStates', () => {
 
     expect(states.get('ostrea')).toMatchObject({ id: 'col_ostrea', publishedRevision: 1, latestRevision: 3, latestCreatedBy: EDITOR });
     expect(valueOf((states.get('ostrea') as CollectionState).latestPayload, 'pl')).toBe('trzecia');
+  });
+
+  it('keeps the payload of the published revision next to the latest draft', async () => {
+    const collection = seeded('col_ostrea', 'Ostrea', 'ostrea', { pl: 'Opublikowany opis.' });
+    collection.drafts.push({ revision: 2, payload: printPayload('Ostrea', 'ostrea', { pl: 'Nowszy szkic.' }), createdBy: EDITOR });
+
+    const state = (await loadCollectionStates(fakeDb([collection]).supabase)).get('ostrea') as CollectionState;
+
+    expect(state).toMatchObject({ publishedRevision: 1, latestRevision: 2 });
+    expect(valueOf(state.publishedPayload!, 'pl')).toBe('Opublikowany opis.');
+    expect(valueOf(state.latestPayload, 'pl')).toBe('Nowszy szkic.');
   });
 
   it('returns an empty map when the CMS has no collections', async () => {

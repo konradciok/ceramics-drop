@@ -16,7 +16,9 @@
  * is kept unless --force. A collection that has an unpublished draft written
  * by someone else is skipped (publishing on top of it would publish their
  * changes too); a draft this script wrote itself but never published (an
- * interrupted run) is simply published on the next run.
+ * interrupted run) is simply published on the next run — including one that
+ * kept an editor's text for some locale — as long as publishing it can only put
+ * approved copy live (see isResumableImportDraft).
  *
  * Usage:
  *   npm run collections:import-descriptions                       # dry-run: prints the plan
@@ -40,6 +42,7 @@
 import fs from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import curationSource from '../config/print-catalog-curation.json';
 import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
@@ -56,8 +59,14 @@ export const MIN_DESCRIPTION_LENGTH = 80;
 const DEFAULT_FILE = 'docs/copy/2026-09-30-opisy-kolekcji/opisy-kolekcji.json';
 const PRINT_COLLECTION_KIND = 'print-collection';
 
+/** One collection's approved copy: its curated name and one description per locale. */
+export interface ApprovedCollection {
+  name: string;
+  description: Record<DescriptionLocale, string>;
+}
+
 export interface ApprovedDescriptions {
-  collections: Record<string, { name: string; description: Record<DescriptionLocale, string> }>;
+  collections: Record<string, ApprovedCollection>;
 }
 
 export interface CmsField {
@@ -80,6 +89,8 @@ export interface CmsPayload {
 export interface CollectionState {
   id: string;
   publishedRevision: number | null;
+  /** The payload of `publishedRevision` — what is live; undefined when that row was not returned. */
+  publishedPayload?: CmsPayload;
   latestRevision: number;
   latestPayload: CmsPayload;
   latestCreatedBy: string | null;
@@ -107,6 +118,7 @@ export interface ImportResult {
 
 /** Validates the approved-descriptions file; throws a message naming the first problem. */
 export function parseApprovedDescriptions(raw: unknown, knownSlugs: readonly string[]): ApprovedDescriptions {
+  /** Aborts validation with a message that names what is wrong with the file. */
   const fail = (message: string): never => {
     throw new Error(`Invalid descriptions file: ${message}`);
   };
@@ -146,14 +158,47 @@ function isSeedValue(value: string, names: readonly string[]): boolean {
   return v === '' || names.some((name) => v === `${name}.`);
 }
 
+/** The `description` field a payload carries for a locale, if any. */
 function descriptionField(payload: CmsPayload, locale: DescriptionLocale): CmsField | undefined {
   return payload.fields.find((f) => f.key === 'description' && f.locale === locale);
+}
+
+/** The trimmed description text a payload carries for a locale ('' when absent). */
+function descriptionValue(payload: CmsPayload, locale: DescriptionLocale): string {
+  return (descriptionField(payload, locale)?.value ?? '').trim();
+}
+
+/** A payload minus its description fields — everything this script must leave untouched. */
+function withoutDescriptions(payload: CmsPayload): CmsPayload {
+  return { ...payload, fields: payload.fields.filter((f) => f.key !== 'description') };
+}
+
+/**
+ * Whether the unpublished latest draft is one an earlier run of this script saved
+ * and that can be published as is. That holds only when publishing it can put
+ * nothing but approved copy live: every locale is the approved text, or the editor
+ * text that was live (and kept) when the draft was saved, and nothing else differs
+ * from the published payload. Without the published payload only a draft made
+ * entirely of approved copy qualifies.
+ */
+function isResumableImportDraft(state: CollectionState, approved: ApprovedCollection): boolean {
+  if (state.latestCreatedBy !== IMPORT_ACTOR) return false;
+  const draft = state.latestPayload;
+  const live = state.publishedPayload;
+  const names = [live?.name ?? draft.name, approved.name];
+  const onlyApprovedOrLiveCopy = LOCALES.every((locale) => {
+    const value = descriptionValue(draft, locale);
+    if (value === approved.description[locale]) return true;
+    const kept = live ? descriptionValue(live, locale) : '';
+    return kept !== '' && value === kept && !isSeedValue(kept, names);
+  });
+  return onlyApprovedOrLiveCopy && (!live || isDeepStrictEqual(withoutDescriptions(draft), withoutDescriptions(live)));
 }
 
 /** Decide what to do for one collection. Pure — no I/O. */
 export function planCollection(
   slug: string,
-  approved: ApprovedDescriptions['collections'][string],
+  approved: ApprovedCollection,
   state: CollectionState | undefined,
   options: { force: boolean },
 ): CollectionPlan {
@@ -162,15 +207,15 @@ export function planCollection(
   if (state.publishedRevision == null) return { slug, status: 'skip', collectionId: id, reason: 'collection was never published' };
 
   if (state.latestRevision !== state.publishedRevision) {
-    const identical = LOCALES.every((l) => (descriptionField(state.latestPayload, l)?.value ?? '').trim() === approved.description[l]);
-    if (state.latestCreatedBy === IMPORT_ACTOR && identical) {
-      return { slug, status: 'resume', collectionId: id, revision: state.latestRevision };
-    }
+    if (isResumableImportDraft(state, approved)) return { slug, status: 'resume', collectionId: id, revision: state.latestRevision };
     return {
       slug,
       status: 'skip',
       collectionId: id,
-      reason: `an unpublished CMS draft (revision ${state.latestRevision}) exists — publish or discard it first, otherwise this import would publish it too`,
+      reason:
+        state.latestCreatedBy === IMPORT_ACTOR
+          ? `an unpublished draft (revision ${state.latestRevision}) saved by an earlier import no longer matches the approved copy — publish or discard it in the CMS first`
+          : `an unpublished CMS draft (revision ${state.latestRevision}) exists — publish or discard it first, otherwise this import would publish it too`,
     };
   }
 
@@ -213,11 +258,14 @@ export async function loadCollectionStates(supabase: SupabaseClient): Promise<Ma
   if (draftsError) throw draftsError;
 
   const latest = new Map<string, { revision: number; payload: CmsPayload; createdBy: string | null }>();
+  const publishedPayloads = new Map<string, CmsPayload>();
   for (const row of drafts ?? []) {
     const id = row.collection_id as string;
     const revision = row.revision as number;
+    const payload = row.payload as CmsPayload;
+    if (revision === publishedById.get(id)) publishedPayloads.set(id, payload);
     if (!latest.has(id) || revision > latest.get(id)!.revision) {
-      latest.set(id, { revision, payload: row.payload as CmsPayload, createdBy: (row.created_by as string | null) ?? null });
+      latest.set(id, { revision, payload, createdBy: (row.created_by as string | null) ?? null });
     }
   }
 
@@ -230,6 +278,7 @@ export async function loadCollectionStates(supabase: SupabaseClient): Promise<Ma
     bySlug.set(slug, bySlug.has(slug) ? 'duplicate' : {
       id,
       publishedRevision: publishedById.get(id) ?? null,
+      publishedPayload: publishedPayloads.get(id),
       latestRevision: draft.revision,
       latestPayload: draft.payload,
       latestCreatedBy: draft.createdBy,
@@ -238,6 +287,7 @@ export async function loadCollectionStates(supabase: SupabaseClient): Promise<Ma
   return bySlug;
 }
 
+/** One dry-run/plan line for a collection: what would be written, resumed, left alone or skipped. */
 function describePlan(plan: CollectionPlan): string {
   switch (plan.status) {
     case 'apply': return `WRITE   rev ${plan.baseRevision} → ${plan.baseRevision + 1}  ${LOCALES.map((l) => `${l}:${plan.localeActions[l]}`).join(' ')}`;
@@ -312,6 +362,7 @@ export interface CliArgs extends ImportOptions {
   file: string;
 }
 
+/** Parse the CLI flags; throws on an unknown flag, an empty `--only` or a missing `--file` value. */
 export function parseArgs(argv: string[]): CliArgs {
   const out: CliArgs = { confirm: false, force: false, file: DEFAULT_FILE };
   for (let i = 0; i < argv.length; i++) {
@@ -328,6 +379,7 @@ export function parseArgs(argv: string[]): CliArgs {
   return out;
 }
 
+/** CLI entry: validate the approved copy, print the target project, then plan (and with `--confirm` apply) the import. */
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const known = (curationSource as { collections: { slug: string }[] }).collections.map((c) => c.slug);

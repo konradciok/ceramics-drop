@@ -69,7 +69,7 @@ Zasady bezpieczeństwa skryptu:
 
 - **Dry-run domyślnie** — bez `--confirm` tylko czyta CMS i wypisuje plan (co zostanie zapisane, pominięte lub zachowane).
 - **Nie nadpisuje pracy redakcji.** Opis w danym języku jest zastępowany tylko wtedy, gdy w CMS jest pusty albo to zasiany placeholder („Ostrea.”). Cokolwiek napisanego ręcznie zostaje (`kept`), chyba że podasz `--force`.
-- **Nie publikuje cudzych zmian.** Kolekcja z niepublikowanym szkicem innej osoby jest pomijana z komunikatem — inaczej publikacja wciągnęłaby i ten szkic. Szkic zapisany wcześniej przez sam skrypt (przerwany przebieg) jest po prostu publikowany przy następnym uruchomieniu.
+- **Nie publikuje cudzych zmian.** Kolekcja z niepublikowanym szkicem innej osoby jest pomijana z komunikatem — inaczej publikacja wciągnęłaby i ten szkic. Szkic zapisany wcześniej przez sam skrypt (przerwany przebieg) jest publikowany przy następnym uruchomieniu — także gdy zachował tekst wpisany ręcznie w CMS — o ile publikacja może wprowadzić na produkcję wyłącznie zatwierdzone opisy (skrypt porównuje szkic z opublikowaną rewizją: każdy język to zatwierdzony tekst albo tekst, który już jest na stronie, i nic poza opisami się nie różni). W innym wypadku szkic jest pomijany z komunikatem.
 - **Współbieżność.** Zapis i publikacja niosą `expectedRevision`; jeśli ktoś w międzyczasie zapisał zmianę w CMS, RPC zwraca konflikt i skrypt zgłasza błąd tej kolekcji, nie nadpisując niczego.
 - **Cel wypisany przed zapisem** (host projektu Supabase). Publikacje są trwałe — rewizje są tylko dopisywane.
 
