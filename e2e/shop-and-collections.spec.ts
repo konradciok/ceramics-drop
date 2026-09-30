@@ -25,6 +25,10 @@ test.describe('@ci collections hub + shop', () => {
     await cards.first().click();
     await expect(page).toHaveURL(new RegExp(`${href}$`));
     await expect(page.locator('h1')).toBeVisible();
+    // Hermetic code mode has no published copy → the page is noindex → it must not
+    // advertise hreflang alternates (they would point at other noindex pages).
+    await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    await expect(page.locator('head link[rel="alternate"][hreflang]')).toHaveCount(0);
 
     await page.getByTestId('print-tile').first().click();
     await expect(page).toHaveURL(/\/fine-art-prints\/fap\d+$/);

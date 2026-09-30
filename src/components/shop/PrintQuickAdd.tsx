@@ -16,6 +16,10 @@ import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import type { PrintDesign, PrintVariantSelection } from '@/lib/types';
 import { PrintConfigurator } from './PrintConfigurator';
 
+/**
+ * Modal size/frame picker for one design. Mounted only while open; closing it
+ * (Esc, backdrop click or ×) fires `onClose` so the card can unmount it.
+ */
 export default function PrintQuickAdd({
   design,
   name,

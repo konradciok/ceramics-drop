@@ -342,7 +342,7 @@ type PrintCollectionPageSchemaArgs = {
   designs: PrintDesign[];
 };
 
-/** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Shop › Collection) + `ItemList`. No ratings. */
+/** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Collections › Collection) + `ItemList`. No ratings. */
 export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
   const categoryName = t('nav.fineArtPrints');
   const pageUrl = absoluteUrl(locale, `/kolekcje/${slug}`);

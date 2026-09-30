@@ -6,13 +6,19 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { PrintTileGrid } from '@/components/shop/PrintTileGrid';
 import { PrintCollectionAnalytics, type PrintListItem } from '@/components/shop/PrintCollectionAnalytics';
 import { printCollectionPageSchema } from '@/lib/seo/structured-data';
-import { alternatesFor } from '@/lib/seo/urls';
+import { alternatesForIndexableLocales } from '@/lib/seo/urls';
 import { getProductNotes } from '@/lib/cms/messages';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage } from '@/lib/print-mockups';
 import { printDisplayName } from '@/lib/print-curation';
-import { groupPrintDesigns, loadPrintCollectionDefinitions, resolvePrintCollectionPage, UNASSIGNED_COLLECTION } from '@/lib/print-collections';
+import {
+  groupPrintDesigns,
+  indexableCollectionLocales,
+  loadPrintCollectionDefinitions,
+  resolvePrintCollectionPage,
+  UNASSIGNED_COLLECTION,
+} from '@/lib/print-collections';
 import { fromPriceOf } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
 import { currencyFormatter } from '@/lib/format';
@@ -27,6 +33,10 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
+/**
+ * Resolve one collection page for a locale. Undefined (→ 404) for an unknown
+ * slug, the "inne" fallback bucket, or a collection with nothing published.
+ */
 async function load(locale: string, slug: string) {
   if (slug === UNASSIGNED_COLLECTION) return undefined;
   const [designs, definitions] = await Promise.all([getPrintDesigns(), loadPrintCollectionDefinitions()]);
@@ -34,11 +44,15 @@ async function load(locale: string, slug: string) {
   return page && { page, definitions, designs };
 }
 
+/**
+ * Title, description and OG plus indexability: a page without real copy in this
+ * locale, or with too few prints, is `noindex` and declares no hreflang.
+ */
 export async function generateMetadata({ params }: Props, parent: ResolvingMetadata): Promise<Metadata> {
   const { locale, slug } = await params;
   const loaded = await load(locale, slug);
   if (!loaded) return {};
-  const { page } = loaded;
+  const { page, designs, definitions } = loaded;
   const t = await getTranslations({ locale });
   const [hero] = page.designs;
   const previousOpenGraph = (await parent).openGraph ?? {};
@@ -50,7 +64,9 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   return {
     title,
     description,
-    alternates: alternatesFor(locale as Locale, `/kolekcje/${slug}`),
+    // hreflang only across locales where this page is indexable — a noindex
+    // sibling would make the cluster inconsistent (and would disagree with the sitemap).
+    alternates: alternatesForIndexableLocales(locale as Locale, `/kolekcje/${slug}`, indexableCollectionLocales(slug, designs, definitions)),
     // Thin (few prints) or copy-less pages stay reachable but out of the index.
     ...(!page.indexable && { robots: { index: false, follow: true } }),
     openGraph: {
@@ -62,6 +78,7 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   };
 }
 
+/** One collection: breadcrumb, its description, its prints and links to the sibling collections. */
 export default async function Page({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);

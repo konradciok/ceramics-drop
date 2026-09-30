@@ -49,6 +49,11 @@ export interface ShopPromo {
   node: ReactNode;
 }
 
+/**
+ * Toolbar + grid island. `initialView` is the server-parsed query string; every
+ * change updates state, the URL (replaceState) and analytics, and re-applies the
+ * same pure applyShopView() the server used for the first paint.
+ */
 export function PrintShop({
   items,
   initialView,

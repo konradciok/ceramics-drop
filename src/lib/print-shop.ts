@@ -42,6 +42,7 @@ type ParamValue = string | string[] | undefined | null;
 /** Next's `searchParams` record or the browser's `URLSearchParams`. */
 export type ShopParamSource = { get(name: string): string | null } | Record<string, ParamValue>;
 
+/** One query value from a URLSearchParams-like source or Next's searchParams record (first value wins). */
 function readParam(source: ShopParamSource, name: string): string | undefined {
   if (typeof (source as { get?: unknown }).get === 'function') {
     return (source as { get(n: string): string | null }).get(name) ?? undefined;

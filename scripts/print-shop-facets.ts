@@ -53,6 +53,11 @@ function serialise(cfg: PrintShopConfig): string {
   ].join('\n');
 }
 
+/**
+ * Analyse every registry design's thumbnail, merge the suggestions into the
+ * config (reviewed entries are kept unless --force) and write it, or just print
+ * the table with --dry-run. The result is validated before anything is written.
+ */
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes('--dry-run');

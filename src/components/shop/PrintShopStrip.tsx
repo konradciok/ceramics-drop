@@ -13,6 +13,7 @@ import { derivePrice, type PrintPricingConfig } from '@/lib/print-pricing';
 import { PRINT_SIZES } from '@/lib/print-cart';
 import type { Locale } from '@/i18n/routing';
 
+/** Trust facts plus the size/frame price ladder, in the visitor's currency. */
 export async function PrintShopStrip({ locale, pricing }: { locale: Locale; pricing: PrintPricingConfig }) {
   const t = await getTranslations();
   const currency = toChargeableCurrency(await getCurrency(locale));

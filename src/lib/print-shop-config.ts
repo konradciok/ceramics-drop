@@ -28,6 +28,7 @@ export interface PrintShopConfig {
   designs: Record<string, PrintShopDesignEntry>;
 }
 
+/** Throw with a uniform prefix so config errors are recognisable in CI output. */
 function fail(message: string): never {
   throw new Error(`Invalid print shop config: ${message}`);
 }

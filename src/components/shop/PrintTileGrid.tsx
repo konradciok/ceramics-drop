@@ -10,6 +10,7 @@ import { srcSet } from '@/lib/images';
 import type { PrintDesign } from '@/lib/types';
 import type { toChargeableCurrency } from '@/lib/currency';
 
+/** Server-rendered grid of print tiles for the collection pages (the shop uses PrintShopCard). */
 export async function PrintTileGrid({
   designs,
   currency,

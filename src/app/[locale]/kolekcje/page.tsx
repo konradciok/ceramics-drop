@@ -45,6 +45,7 @@ async function loadCards(locale: string) {
     });
 }
 
+/** Hub metadata — the hub is always indexable, so it carries hreflang for every locale. */
 export async function generateMetadata({ params }: Props, parent: ResolvingMetadata): Promise<Metadata> {
   const { locale } = await params;
   const [t, cards] = await Promise.all([getTranslations({ locale }), loadCards(locale)]);
@@ -65,6 +66,10 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   };
 }
 
+/**
+ * The collections hub: an editorial gateway (cover, name, count, teaser — no
+ * prices) into each `/kolekcje/{slug}`; the shop itself lives at `/sklep`.
+ */
 export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);

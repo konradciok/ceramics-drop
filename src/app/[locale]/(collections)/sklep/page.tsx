@@ -38,6 +38,10 @@ type Props = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+/**
+ * Shop metadata. The canonical is always plain `/sklep`: filter and sort query
+ * strings are views of one page, not separate pages, so they never fork the URL.
+ */
 export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata,
@@ -77,6 +81,12 @@ export async function generateMetadata(
   };
 }
 
+/**
+ * The print shop. Loads designs, collections, pricing and asset gating once,
+ * ranks the designs, and hands the FULL list to the PrintShop island together
+ * with the view parsed from the query string (the server renders that view, the
+ * client keeps it in sync) — so every PDP link is in the HTML for crawlers.
+ */
 export default async function Page({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);

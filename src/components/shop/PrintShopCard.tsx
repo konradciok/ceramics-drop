@@ -39,6 +39,10 @@ export interface PrintShopItem extends ShopFilterable {
   usableKeys?: string[];
 }
 
+/**
+ * One tile: image link, hover room shot, badges and the "+" quick add. The link
+ * and the button are siblings (a button must not sit inside an anchor).
+ */
 export function PrintShopCard({
   item,
   priceLabel,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { absoluteUrl, alternatesFor, productAlternates } from './urls';
+import { absoluteUrl, alternatesFor, alternatesForIndexableLocales, languageAlternatesFor, productAlternates } from './urls';
 import { SITE_URL } from '@/lib/site';
 
 describe('absoluteUrl', () => {
@@ -54,5 +54,47 @@ describe('productAlternates', () => {
     expect(languages.es).toBe(`${SITE_URL}/es/fine-art-prints/fap001`);
     expect(languages.de).toBe(`${SITE_URL}/de/fine-art-prints/fap001`);
     expect(languages['x-default']).toBe(languages.pl);
+  });
+});
+
+describe('languageAlternatesFor', () => {
+  it('lists only the given locales plus x-default', () => {
+    expect(languageAlternatesFor('/kolekcje/linea', ['pl', 'de'])).toEqual({
+      pl: `${SITE_URL}/kolekcje/linea`,
+      de: `${SITE_URL}/de/kolekcje/linea`,
+      'x-default': `${SITE_URL}/kolekcje/linea`,
+    });
+  });
+
+  it('points x-default at the first listed locale when the default locale is not among them', () => {
+    const languages = languageAlternatesFor('/kolekcje/linea', ['en', 'de']) as Record<string, string>;
+    expect(languages['x-default']).toBe(`${SITE_URL}/en/kolekcje/linea`);
+    expect(languages.pl).toBeUndefined();
+  });
+
+  it('declares no alternates for fewer than two locales', () => {
+    expect(languageAlternatesFor('/kolekcje/linea', ['pl'])).toBeUndefined();
+    expect(languageAlternatesFor('/kolekcje/linea', [])).toBeUndefined();
+  });
+});
+
+describe('alternatesForIndexableLocales', () => {
+  it('emits a reciprocal hreflang cluster over the indexable locales only', () => {
+    const fromPl = alternatesForIndexableLocales('pl', '/kolekcje/linea', ['pl', 'de']);
+    const fromDe = alternatesForIndexableLocales('de', '/kolekcje/linea', ['pl', 'de']);
+    expect(fromPl?.canonical).toBe(`${SITE_URL}/kolekcje/linea`);
+    expect(fromDe?.canonical).toBe(`${SITE_URL}/de/kolekcje/linea`);
+    expect(fromPl?.languages).toEqual(fromDe?.languages);
+    expect(Object.keys(fromPl?.languages as Record<string, string>).sort()).toEqual(['de', 'pl', 'x-default']);
+  });
+
+  it('omits hreflang on a page that is not itself indexable, keeping its own canonical', () => {
+    const alternates = alternatesForIndexableLocales('en', '/kolekcje/linea', ['pl', 'de']);
+    expect(alternates?.canonical).toBe(`${SITE_URL}/en/kolekcje/linea`);
+    expect(alternates).not.toHaveProperty('languages');
+  });
+
+  it('omits hreflang when no locale is indexable', () => {
+    expect(alternatesForIndexableLocales('pl', '/kolekcje/linea', [])).not.toHaveProperty('languages');
   });
 });

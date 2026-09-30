@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePrintCollectionPage } from './print-collections';
+import { indexableCollectionLocales, resolvePrintCollectionPage } from './print-collections';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
 
@@ -30,5 +30,23 @@ describe('resolvePrintCollectionPage', () => {
   it('returns undefined for unknown slugs and empty groups', () => {
     expect(resolvePrintCollectionPage('nope', 'pl', designs, [def()])).toBeUndefined();
     expect(resolvePrintCollectionPage('linea', 'pl', [], [def()])).toBeUndefined();
+  });
+});
+
+describe('indexableCollectionLocales', () => {
+  const designs = [d('a'), d('b'), d('c')];
+
+  it('lists exactly the locales that have real copy, in routing order', () => {
+    const definitions = [def({ descriptions: { de: long, pl: long, en: 'Linea.' } })];
+    expect(indexableCollectionLocales('linea', designs, definitions)).toEqual(['pl', 'de']);
+  });
+
+  it('is empty for a thin collection even with copy in every locale', () => {
+    const definitions = [def({ descriptions: { pl: long, en: long, es: long, de: long } })];
+    expect(indexableCollectionLocales('linea', designs.slice(0, 2), definitions)).toEqual([]);
+  });
+
+  it('is empty for an unknown slug', () => {
+    expect(indexableCollectionLocales('nope', designs, [def()])).toEqual([]);
   });
 });

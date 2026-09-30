@@ -16,6 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { PRINT_COLLECTION_DEFINITIONS } from './print-curation';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
+import { routing, type Locale } from '@/i18n/routing';
 import { getSupabaseAdmin } from './supabase';
 import { readWithFallback, supabaseTimeout } from './supabase-timeout';
 
@@ -112,6 +113,19 @@ export function resolvePrintCollectionPage(
     description,
     indexable: !!description && group.designs.length >= MIN_INDEXABLE_COLLECTION_DESIGNS,
   };
+}
+
+/**
+ * Locales in which a collection page is indexable (real copy in that locale AND
+ * enough published prints). The single source for the page's hreflang cluster
+ * and its sitemap entries, so metadata and sitemap can never disagree.
+ */
+export function indexableCollectionLocales(
+  slug: string,
+  designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[],
+): Locale[] {
+  return routing.locales.filter((l) => resolvePrintCollectionPage(slug, l, designs, definitions)?.indexable);
 }
 
 /** Payload field convention (see scripts/backfill-fine-art-collections.ts's
