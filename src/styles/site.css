@@ -202,9 +202,11 @@ ul { list-style:none; padding:0; margin:0; }
 
 /* ─── PRINT COLLECTIONS INDEX (nine named series) ────────── */
 .print-collections { background:var(--c-cream); }
-.print-collections-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+.print-collections-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.print-collections-grid .prints-home-meta { flex-wrap:wrap; gap:4px 10px; }
+.print-collections-grid .nm { overflow-wrap:anywhere; }
 @media (min-width:861px) {
-  .print-collections-grid { grid-template-columns:repeat(3,1fr); gap:28px; }
+  .print-collections-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px; }
 }
 
 /* ─── PRINTS (home rail) ──────────────────────────────── */

@@ -365,3 +365,15 @@ Ceny zweryfikowano z aktualnego globalnego cennika Supabase, bez zmieniania go. 
 Podgląd galerii i tekstów: `design/print-assets/2026-09-new-prints-review/galerie-i-opisy.html`. Weryfikacja kodu: **3621 testów zaliczonych, 2 pominięte**, kontrola typów i build webpack wraz z kontrolą tras katalogu zaliczone; lint bez błędów, jedno wcześniejsze ostrzeżenie w teście backfillu kolekcji.
 
 **Następny krok: commit i wdrożenie kompletnego kodu oraz plików strony, potem kontrola adresów mediów i treści.** Dopiero po tej kontroli aktywować 16 produktów przez guarded API/RPC i uzgodnić status aktywny również w mapie fallbacku. Aktualnie wszystkie 16 produktów nadal ma `draft`; nie wykonano deployu ani aktywacji. Nie ponawiać importu ani pełnego backfillu katalogu. Skrypt `scripts/complete-new-print-content-2026.ts` służy do kontroli tej partii (domyślnie tylko odczyt); zapis rozpoznaje istniejące zgodne dane i blokuje konflikty lub nowsze nieopublikowane treści.
+
+## Punkty 9–11: wdrożenie i aktywacja — 30 września 2026
+
+Po scaleniu PR #335 oraz poprawki testu integracyjnego #336 zweryfikowano produkcyjne wdrożenie Cloudflare (`8ce2df32-a548-4e7d-82ed-3c555df495cd`). Wszystkie **448 WebP** pobrane z `anna-ciok.studio` miały identyczne bajty jak wersje lokalne. Wszystkie **48 podpisanych adresów plików do druku** zwróciło HTTP 200, poprawny typ JPEG i zgodny rozmiar. Potwierdzono 192 aktywne warianty, przypisania do gotowych plików, 64 opisy i osiem opublikowanych kolekcji.
+
+Następnie aktywowano **fap042–fap057** przez `update_product_status_guarded`, z kontrolą gotowości i audytem po stronie bazy. Ponowny odczyt potwierdził 16 aktywnych produktów i brak zmian pozostałych produktów. Raport `nowe-printy-2026-aktywacja.json`; operator `scripts/activate-new-prints-2026.ts` domyślnie wykonuje wyłącznie preflight, zapis statusów wymaga `--apply`.
+
+Kontrola po aktywacji: **64 strony produktów** (16 × PL/EN/ES/DE) zwróciły HTTP 200, właściwą nazwę, dokładnie odpowiedni opis i konfigurator. Wszystkie nowe prace są na czterech wersjach listingu i w **ośmiu feedach** (Google i Meta × cztery języki). Sprawdzono również konfigurator i koszyk: Tachylite 03, 70×100 cm, czarna rama — 218 EUR plus 26 EUR dostawy do Hiszpanii. Testową pozycję usunięto, nie tworzono płatnego zamówienia. Raport: `nowe-printy-2026-kontrola-sklepu.json`.
+
+Prodigi sandbox pobrał poprawnie wszystkie trzy reprezentatywne profile Aurora 01: 3600×4800, 6000×8400 i 8400×12000. Zamówienia `ord_1175344`–`ord_1175346` zgłosiły `downloadAssets: Complete`, bez issues. Testowe zamówienia anulowano po kontroli. Raport: `nowe-printy-2026-sandbox.json`. Jest to test pobrania zasobów w sandboxie, nie próba fizycznego wydruku.
+
+Mapa kuracji została uzgodniona z aktywnymi statusami: 55 prac aktywnych, dwie archiwalne. Historyczne raporty poprzednich kroków nadal dokumentują ówczesny stan draftów; najnowszy stan opisuje ta sekcja i raport aktywacji.

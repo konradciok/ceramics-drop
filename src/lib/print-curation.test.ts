@@ -100,7 +100,7 @@ describe('fine-art print curation map', () => {
       'Aurora', 'Cirrus', 'Cumulonimbus', 'Cumulus', 'Obsidian', 'Scopulus', 'Unda', 'Tachylite',
     ]);
     expect(ACTIVE_PRINT_CURATION.map(({ number }) => number)).toEqual(
-      Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
+      Array.from({ length: 55 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
     expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 1, 2, 2, 4, 1, 2, 1]);
     expect(RETIRED_PRINT_CURATION.map(({ productId }) => productId)).toEqual(['fap029', 'fap037']);
@@ -109,7 +109,7 @@ describe('fine-art print curation map', () => {
       expect(item.productId).toBe(`fap${item.sourceNumber}`);
     }
     expect(new Set(PRINT_CURATION.map((item) => item.productId)).size).toBe(57);
-    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(39);
+    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(55);
     for (const retired of RETIRED_PRINT_CURATION) {
       expect(ACTIVE_PRINT_CURATION.some((item) => item.productId === retired.duplicateOf)).toBe(true);
     }
@@ -124,13 +124,13 @@ describe('fine-art print curation map', () => {
     expect(() => catalogStatusForPrint('unknown')).toThrow(/unknown print/i);
   });
 
-  it('keeps all 16 new designs as drafts with original series numbering, including CMS definitions', () => {
-    expect(DRAFT_PRINT_CURATION).toHaveLength(16);
+  it('publishes all 16 approved designs with original series numbering, including CMS definitions', () => {
+    expect(DRAFT_PRINT_CURATION).toHaveLength(0);
     expect(PRINT_CURATION).toHaveLength(57);
     for (const collection of batch.collections) {
       const definition = { slug: collection.slug, name: collection.name, designIds: collection.prints.map(p => p.productId).toReversed(), prints: [] };
       for (const print of collection.prints) {
-        expect(catalogStatusForPrint(print.productId)).toBe('draft');
+        expect(catalogStatusForPrint(print.productId)).toBe('active');
         expect(printDisplayName({ id: print.productId, num: '99' })).toBe(print.displayName);
         expect(printDisplayName({ id: print.productId, num: '99' }, 'Print', [definition])).toBe(print.displayName);
       }

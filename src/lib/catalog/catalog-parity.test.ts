@@ -95,7 +95,7 @@ describe('catalog seed ↔ registry parity', () => {
     expect(ceramics).toHaveLength(registryProducts().length);
   });
 
-  it('projects 57 stable print rows without exposing the 16 new drafts', () => {
+  it('projects 57 stable print rows with the approved active and retired states', () => {
     const printRows = seed.products.filter((p) => p.type === 'print');
     const printRowsById = new Map(printRows.map((row) => [row.id, row]));
     const activeRows = printRows
@@ -103,10 +103,10 @@ describe('catalog seed ↔ registry parity', () => {
       .sort((a, b) => a.num.localeCompare(b.num));
 
     expect(printRows).toHaveLength(57);
-    expect(printRows.filter(row => row.status === 'draft')).toHaveLength(16);
-    expect(activeRows).toHaveLength(39);
+    expect(printRows.filter(row => row.status === 'draft')).toHaveLength(0);
+    expect(activeRows).toHaveLength(55);
     expect(activeRows.map((row) => row.num)).toEqual(
-      Array.from({ length: 39 }, (_, index) => String(index + 1).padStart(2, '0')),
+      Array.from({ length: 55 }, (_, index) => String(index + 1).padStart(2, '0')),
     );
     expect(printRowsById.get('fap029')).toMatchObject({ num: '029', status: 'archived' });
     expect(printRowsById.get('fap037')).toMatchObject({ num: '037', status: 'archived' });
