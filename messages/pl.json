@@ -107,7 +107,8 @@
     "studio": "O studiu",
     "kontakt": "Kontakt",
     "konto": "Konto",
-    "giftCard": "Karta podarunkowa"
+    "giftCard": "Karta podarunkowa",
+    "kolekcje": "Kolekcje"
   },
   "aria": {
     "cart": "Koszyk",
@@ -449,7 +450,7 @@
     "storyP2": "Wybrane prace trafiają do edycji fine art: drukujemy je na papierze o archiwalnej jakości i wysyłamy w formacie, który wybierzesz — bez oprawy albo w drewnianej ramie.",
     "storyCta": "Zobacz kolekcje odbitek",
     "collectionsEyebrow": "Kolekcje",
-    "collectionsTitle": "Dziewięć wątków <em>jednej pracowni.</em>",
+    "collectionsTitle": "Wątki <em>jednej pracowni.</em>",
     "collectionsLead": "Każda kolekcja to osobna seria obrazów — wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni.",
     "collectionsCount": "{count, plural, one {# praca} few {# prace} other {# prac}}",
     "collectionsCta": "Wszystkie kolekcje",
@@ -524,11 +525,6 @@
       "eyebrow": "Czerwcowy drop — 10 prac",
       "title": "Miski z falowanym brzegiem <em>Nº 01–10</em>",
       "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Edycja otwarta",
-      "title": "Odbitki <em>Fine Art</em>",
-      "lead": "Reprodukcje obrazów akwarelą na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy w ciągu 2–3 dni roboczych w całej Unii Europejskiej i Wielkiej Brytanii."
     }
   },
   "studio": {
@@ -1023,7 +1019,8 @@
     "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
+    "seeCollection": "Cała kolekcja {name}"
   },
   "giftCard": {
     "eyebrow": "Prezent",
@@ -1090,5 +1087,66 @@
     "confirmationUnavailable": "Nie udało się otworzyć potwierdzenia. Sprawdź e-mail z zamówieniem lub napisz na ania@ciok.art.",
     "refund": "Zwrócono {cardAmount} na kartę podarunkową i {cashAmount} pierwotną metodą płatności.",
     "usedCardRefund": "Jeśli karta została już częściowo lub w całości wykorzystana, napisz na ania@ciok.art w sprawie zwrotu jej zakupu. Studio sprawdzi historię rozliczeń."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — kolekcja Fine Art Print",
+    "metaDescriptionFallback": "Kolekcja „{name}” — Fine Art Print według obrazów Anny Ciok. Druk na papierze 200 g/m², w ramie lub bez.",
+    "allCollections": "Wszystkie kolekcje",
+    "shopCta": "Przejdź do sklepu",
+    "eyebrow": "Kolekcja — {count, plural, one {# print} few {# printy} other {# printów}}",
+    "otherCollections": "Pozostałe kolekcje"
+  },
+  "collectionsHub": {
+    "eyebrow": "Kolekcje",
+    "title": "Kolekcje <em>Anny Ciok</em>",
+    "lead": "Każda kolekcja to osobna seria obrazów akwarelą i tuszem. Wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni — potem rozmiar i oprawę Fine Art Print.",
+    "metaTitle": "Kolekcje obrazów Anny Ciok",
+    "metaDescription": "{count, plural, one {# kolekcja} few {# kolekcje} other {# kolekcji}} obrazów akwarelą i tuszem Anny Ciok. Wybierz serię i zamów Fine Art Print na papierze 200 g/m², w ramie lub bez.",
+    "shopCta": "Zobacz wszystkie prace w sklepie"
+  },
+  "shop": {
+    "metaTitle": "Sklep: Fine Art Print według obrazów Anny Ciok",
+    "metaDescription": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem — Fine Art Print na papierze 200 g/m², w ramie lub bez. Filtruj według koloru i kolekcji; dostawa w UE i Wielkiej Brytanii.",
+    "eyebrow": "Fine Art Print",
+    "title": "Sklep <em>Fine Art Print</em>",
+    "lead": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę — odbitka jest drukowana na zamówienie i wysyłana w 5–10 dni roboczych.",
+    "priceLadder": "{size} · od {price}",
+    "frameFrom": "Rama +{price}",
+    "priceNote": "Cena zależy od rozmiaru i oprawy — nie od obrazu.",
+    "filtersLabel": "Filtry sklepu",
+    "sortLabel": "Sortuj",
+    "sort": {
+      "featured": "Polecane",
+      "new": "Nowości",
+      "collection": "Kolekcja"
+    },
+    "colourLabel": "Kolor",
+    "colour": {
+      "blue": "Błękity",
+      "green": "Zielenie",
+      "warm": "Ochra i terakota",
+      "pink": "Róż i fiolet",
+      "earth": "Beże i brązy",
+      "mono": "Czerń i szarość"
+    },
+    "collectionLabel": "Kolekcja",
+    "allCollections": "Wszystkie kolekcje",
+    "clear": "Wyczyść filtry",
+    "empty": "Brak prac dla wybranych filtrów.",
+    "emptyCta": "Przeglądaj kolekcje",
+    "badgeNew": "Nowość",
+    "badgePick": "Wybór artystki",
+    "frameColoursLabel": "Ramy: {colours}",
+    "quickAdd": "Szybki wybór rozmiaru i ramy",
+    "quickDetails": "Zobacz szczegóły",
+    "close": "Zamknij",
+    "giftTitle": "Nie wiesz, który obraz wybrać?",
+    "giftLead": "Karta podarunkowa obejmuje Fine Art Print — obdarowana osoba sama wybierze kompozycję, rozmiar i oprawę.",
+    "collectionsTitle": "Przeglądaj według kolekcji",
+    "collectionsCta": "Wszystkie kolekcje",
+    "aboutTitle": "O Fine Art Print Anny Ciok",
+    "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii w 5–10 dni roboczych.",
+    "aboutMore": "Czytaj dalej",
+    "aboutLess": "Zwiń"
   }
 }

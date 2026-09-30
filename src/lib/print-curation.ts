@@ -52,6 +52,8 @@ export type PrintCollectionDefinition = {
   name: string;
   designIds: string[];
   prints: PrintCuration[];
+  /** Localized editorial copy from the CMS `description` fields, keyed by locale. */
+  descriptions?: Partial<Record<string, string>>;
 };
 
 export type PrintCurationSource = {
@@ -159,6 +161,15 @@ export function printDisplayName(
     }
   }
   return `${fallback} Nº ${design.num}`;
+}
+
+/** The collection a design belongs to (first match in array order, same rule as
+ *  printDisplayName), or undefined for designs in no collection ('inne'). */
+export function printCollectionOf(
+  designId: string,
+  definitions: PrintCollectionDefinition[] = PRINT_COLLECTION_DEFINITIONS,
+): PrintCollectionDefinition | undefined {
+  return definitions.find((c) => c.designIds.includes(designId));
 }
 
 export function catalogStatusForPrint(id: string): 'active' | 'draft' | 'archived' {

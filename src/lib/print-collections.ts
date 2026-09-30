@@ -16,6 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { PRINT_COLLECTION_DEFINITIONS } from './print-curation';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
+import { routing, type Locale } from '@/i18n/routing';
 import { getSupabaseAdmin } from './supabase';
 import { readWithFallback, supabaseTimeout } from './supabase-timeout';
 
@@ -53,7 +54,79 @@ export function groupPrintDesigns(
 type CollectionField = {
   key: string;
   value: string;
+  locale?: string;
 };
+
+/** Minimum length for a description to count as real editorial copy. The
+ *  backfill seeds pl with just "<name>." — that must not make a page indexable. */
+export const MIN_COLLECTION_DESCRIPTION_LENGTH = 80;
+
+/** Below this many published prints a collection page is thin: noindex + no sitemap entry. */
+export const MIN_INDEXABLE_COLLECTION_DESIGNS = 3;
+
+export type PrintCollectionPageData = {
+  slug: string;
+  name: string;
+  designs: PrintDesign[];
+  description?: string;
+  indexable: boolean;
+};
+
+/** The locale's real editorial description for a collection, or undefined when
+ *  it is missing / only the seeded "<name>." placeholder. */
+export function collectionDescription(def: PrintCollectionDefinition, locale: string): string | undefined {
+  const raw = def.descriptions?.[locale]?.trim();
+  return raw && raw.length >= MIN_COLLECTION_DESCRIPTION_LENGTH ? raw : undefined;
+}
+
+/** One-to-two-sentence card teaser: the first sentence of a description,
+ *  capped at `max` characters on a word boundary. */
+export function collectionTeaser(description: string | undefined, max = 140): string | undefined {
+  if (!description) return undefined;
+  const firstSentence = description.match(/^.+?[.!?…](?=\s|$)/)?.[0] ?? description;
+  if (firstSentence.length <= max) return firstSentence;
+  const cut = firstSentence.slice(0, max).replace(/\s+\S*$/, '');
+  return `${cut}…`;
+}
+
+/** Resolve one collection page: definition + its published designs + the
+ *  locale's real description. Undefined when the slug is unknown or nothing
+ *  in it is published (→ 404). The 'inne' fallback bucket has no page. */
+export function resolvePrintCollectionPage(
+  slug: string,
+  locale: string,
+  designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[],
+): PrintCollectionPageData | undefined {
+  const def = definitions.find((d) => d.slug === slug);
+  if (!def) return undefined;
+  // By slug, never [0]: with nothing published in this collection its group is
+  // dropped, and the first remaining group would be the 'inne' bucket holding
+  // every OTHER print — a page that must 404 instead.
+  const group = groupPrintDesigns(designs, [def]).find((g) => g.slug === slug);
+  if (!group) return undefined;
+  const description = collectionDescription(def, locale);
+  return {
+    slug,
+    name: def.name,
+    designs: group.designs,
+    description,
+    indexable: !!description && group.designs.length >= MIN_INDEXABLE_COLLECTION_DESIGNS,
+  };
+}
+
+/**
+ * Locales in which a collection page is indexable (real copy in that locale AND
+ * enough published prints). The single source for the page's hreflang cluster
+ * and its sitemap entries, so metadata and sitemap can never disagree.
+ */
+export function indexableCollectionLocales(
+  slug: string,
+  designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[],
+): Locale[] {
+  return routing.locales.filter((l) => resolvePrintCollectionPage(slug, l, designs, definitions)?.indexable);
+}
 
 /** Payload field convention (see scripts/backfill-fine-art-collections.ts's
  *  buildFields): only a collection explicitly tagged with this scopes into
@@ -178,7 +251,12 @@ export async function loadPrintCollectionDefinitionsFromDb(
       console.warn(`[print-collections] duplicate slug "${baseSlug}" — renamed to "${slug}"`);
     }
 
-    definitions.push({ slug, name: payload.name, designIds, prints: [] });
+    const descriptions: Partial<Record<string, string>> = {};
+    for (const f of fields) {
+      if (f.key === 'description' && f.locale && f.value?.trim()) descriptions[f.locale] = f.value.trim();
+    }
+
+    definitions.push({ slug, name: payload.name, designIds, prints: [], ...(Object.keys(descriptions).length > 0 && { descriptions }) });
   }
 
   return definitions;

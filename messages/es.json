@@ -107,7 +107,8 @@
     "studio": "Estudio",
     "kontakt": "Contacto",
     "konto": "Cuenta",
-    "giftCard": "Tarjeta regalo"
+    "giftCard": "Tarjeta regalo",
+    "kolekcje": "Colecciones"
   },
   "aria": {
     "cart": "Carrito",
@@ -449,7 +450,7 @@
     "storyP2": "Las obras seleccionadas entran en edición fine art: se imprimen en papel de calidad de archivo y se envían en el formato que elijas — sin marco o con marco de madera.",
     "storyCta": "Ver las colecciones de impresiones",
     "collectionsEyebrow": "Colecciones",
-    "collectionsTitle": "Nueve series, <em>un mismo estudio.</em>",
+    "collectionsTitle": "Series de <em>un mismo estudio.</em>",
     "collectionsLead": "Cada colección es una serie propia de pinturas — elige el ambiente, el color y el ritmo que mejor encajen en tu espacio.",
     "collectionsCount": "{count, plural, one {# pieza} other {# piezas}}",
     "collectionsCta": "Todas las colecciones",
@@ -524,11 +525,6 @@
       "eyebrow": "Drop de junio — 10 piezas",
       "title": "Cuencos de borde ondulado <em>Nº 01–10</em>",
       "lead": "Cuencos de borde ondulado. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Edición abierta",
-      "title": "Impresiones <em>Fine Art</em>",
-      "lead": "Reproducciones de pinturas en acuarela sobre papel Fine Art de 200 g/m². Elige tamaño y enmarcado — imprimimos y enviamos en 2–3 días laborables, a la Unión Europea y al Reino Unido."
     }
   },
   "studio": {
@@ -1023,7 +1019,8 @@
     "artistBio": "Anna Ciok es una artista afincada en Tenerife que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
-    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
+    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
+    "seeCollection": "Ver toda la colección {name}"
   },
   "giftCard": {
     "eyebrow": "Regalo",
@@ -1090,5 +1087,66 @@
     "confirmationUnavailable": "No hemos podido abrir la confirmación. Revisa el correo del pedido o escribe a ania@ciok.art.",
     "refund": "Se han devuelto {cardAmount} a tu tarjeta regalo y {cashAmount} al método de pago original.",
     "usedCardRefund": "Si la tarjeta ya se ha utilizado parcial o totalmente, escribe a ania@ciok.art para solicitar la devolución de su compra. El estudio revisará el historial de pagos."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — colección Fine Art Print",
+    "metaDescriptionFallback": "La colección «{name}» — Fine Art Print de las pinturas de Anna Ciok en papel de 200 g/m², con o sin marco.",
+    "allCollections": "Todas las colecciones",
+    "shopCta": "Ir a la tienda",
+    "eyebrow": "Colección — {count, plural, one {# lámina} other {# láminas}}",
+    "otherCollections": "Otras colecciones"
+  },
+  "collectionsHub": {
+    "eyebrow": "Colecciones",
+    "title": "Colecciones de <em>Anna Ciok</em>",
+    "lead": "Cada colección es una serie propia de pinturas a la acuarela y tinta. Elige el ambiente, el color y el ritmo más cercanos a tu espacio — después el tamaño y el enmarcado de tu Fine Art Print.",
+    "metaTitle": "Colecciones de pintura de Anna Ciok",
+    "metaDescription": "{count, plural, one {# colección} other {# colecciones}} de pinturas a la acuarela y tinta de Anna Ciok. Elige una serie y pide un Fine Art Print en papel de 200 g/m², con o sin marco.",
+    "shopCta": "Ver todas las láminas en la tienda"
+  },
+  "shop": {
+    "metaTitle": "Tienda de Fine Art Print de las pinturas de Anna Ciok",
+    "metaDescription": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok — Fine Art Print en papel de 200 g/m², con o sin marco. Filtra por color y colección; envío a la UE y al Reino Unido.",
+    "eyebrow": "Fine Art Print",
+    "title": "Tienda de <em>Fine Art Print</em>",
+    "lead": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok. Elige tamaño y enmarcado — cada lámina se imprime bajo pedido y se envía en 5–10 días laborables.",
+    "priceLadder": "{size} · desde {price}",
+    "frameFrom": "Marco +{price}",
+    "priceNote": "El precio depende del tamaño y del enmarcado, no de la pintura.",
+    "filtersLabel": "Filtros de la tienda",
+    "sortLabel": "Ordenar",
+    "sort": {
+      "featured": "Destacados",
+      "new": "Novedades",
+      "collection": "Colección"
+    },
+    "colourLabel": "Color",
+    "colour": {
+      "blue": "Azules",
+      "green": "Verdes",
+      "warm": "Ocre y terracota",
+      "pink": "Rosa y violeta",
+      "earth": "Beige y marrón",
+      "mono": "Negro y gris"
+    },
+    "collectionLabel": "Colección",
+    "allCollections": "Todas las colecciones",
+    "clear": "Borrar filtros",
+    "empty": "No hay obras que coincidan con estos filtros.",
+    "emptyCta": "Ver colecciones",
+    "badgeNew": "Novedad",
+    "badgePick": "Elección de la artista",
+    "frameColoursLabel": "Marcos: {colours}",
+    "quickAdd": "Elegir rápido tamaño y marco",
+    "quickDetails": "Ver detalles",
+    "close": "Cerrar",
+    "giftTitle": "¿No sabes qué pintura elegir?",
+    "giftLead": "La tarjeta regalo cubre Fine Art Print: quien la recibe elige la composición, el tamaño y el enmarcado.",
+    "collectionsTitle": "Explorar por colección",
+    "collectionsCta": "Todas las colecciones",
+    "aboutTitle": "Sobre los Fine Art Print de Anna Ciok",
+    "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido en 5–10 días laborables.",
+    "aboutMore": "Leer más",
+    "aboutLess": "Ver menos"
   }
 }

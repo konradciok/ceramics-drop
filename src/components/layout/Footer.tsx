@@ -46,6 +46,9 @@ export async function Footer() {
                 <Link href="/sklep">{t('nav.fineArtPrints')}</Link>
               </li>
               <li>
+                <Link href="/kolekcje">{t('nav.kolekcje')}</Link>
+              </li>
+              <li>
                 <Link href="/gallery">{t('nav.gallery')}</Link>
               </li>
               <li>

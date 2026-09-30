@@ -173,6 +173,7 @@ npm run print-assets:publish -- --product <ID> --revision <REWIZJA> --confirm <R
 npm run print-assets:gallery -- --product <ID>
 npm run print-assets:mockups -- --product <ID>
 npm run print-assets:editorial -- --product <ID>
+npm run print-assets:facets                       # kolory do filtra w /sklep (config/print-shop.json); CI wymaga koloru dla każdego opublikowanego designu
 ```
 
 `upload` tworzy obiekty R2 i rekordy staged. `verify` pobiera zdalne bajty, sprawdza hash/wymiary i promuje do ready. `publish_print_asset_revision` atomowo przypisuje rewizję do wariantów. `update_product_status_guarded` sprawdza komplet gotowych zasobów przed aktywacją. Sam upload przez MCP nie wykonuje reszty procesu.

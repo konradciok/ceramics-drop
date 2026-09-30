@@ -107,7 +107,8 @@
     "studio": "Studio",
     "kontakt": "Contact",
     "konto": "Account",
-    "giftCard": "Gift Card"
+    "giftCard": "Gift Card",
+    "kolekcje": "Collections"
   },
   "aria": {
     "cart": "Cart",
@@ -449,7 +450,7 @@
     "storyP2": "Selected paintings enter a fine art edition: printed on archival-quality paper and shipped in the format you choose — unframed or in a wooden frame.",
     "storyCta": "Browse the print collections",
     "collectionsEyebrow": "Collections",
-    "collectionsTitle": "Nine threads, <em>one studio.</em>",
+    "collectionsTitle": "Threads of <em>one studio.</em>",
     "collectionsLead": "Each collection is its own series of paintings — pick the mood, colour and rhythm that suits your space.",
     "collectionsCount": "{count, plural, one {# piece} other {# pieces}}",
     "collectionsCta": "All collections",
@@ -524,11 +525,6 @@
       "eyebrow": "June drop — 10 pieces",
       "title": "Wavy-rim bowls <em>Nº 01–10</em>",
       "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Open edition",
-      "title": "Fine Art <em>Prints</em>",
-      "lead": "Reproductions of watercolour paintings on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped within 2–3 business days, anywhere in the EU or UK."
     }
   },
   "studio": {
@@ -1023,7 +1019,8 @@
     "artistBio": "Anna Ciok is a Tenerife-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
-    "accordionShipping": "Prints are produced and shipped by our print partner within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+    "accordionShipping": "Prints are produced and shipped by our print partner within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
+    "seeCollection": "See the whole {name} collection"
   },
   "giftCard": {
     "eyebrow": "Gift",
@@ -1090,5 +1087,66 @@
     "confirmationUnavailable": "We could not open your confirmation. Check your order email or contact ania@ciok.art.",
     "refund": "{cardAmount} was returned to your gift card and {cashAmount} to your original payment method.",
     "usedCardRefund": "If a gift card has been used in part or in full, email ania@ciok.art about refunding its purchase. The studio will review its payment history."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — Fine Art Print collection",
+    "metaDescriptionFallback": "The “{name}” collection — Fine Art Prints of Anna Ciok’s paintings on 200 g/m² paper, framed or unframed.",
+    "allCollections": "All collections",
+    "shopCta": "Go to the shop",
+    "eyebrow": "Collection — {count, plural, one {# print} other {# prints}}",
+    "otherCollections": "More collections"
+  },
+  "collectionsHub": {
+    "eyebrow": "Collections",
+    "title": "Collections by <em>Anna Ciok</em>",
+    "lead": "Each collection is its own series of watercolour and ink paintings. Pick the mood, colour and rhythm closest to your space — then choose the size and framing of your Fine Art Print.",
+    "metaTitle": "Anna Ciok’s painting collections",
+    "metaDescription": "{count, plural, one {# collection} other {# collections}} of Anna Ciok’s watercolour and ink paintings. Choose a series and order a Fine Art Print on 200 g/m² paper, framed or unframed.",
+    "shopCta": "Browse all prints in the shop"
+  },
+  "shop": {
+    "metaTitle": "Shop Fine Art Prints of Anna Ciok’s paintings",
+    "metaDescription": "Reproductions of Anna Ciok’s watercolour and ink paintings — Fine Art Print on 200 g/m² paper, framed or unframed. Filter by colour and collection; delivery across the EU and UK.",
+    "eyebrow": "Fine Art Print",
+    "title": "Shop <em>Fine Art Prints</em>",
+    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order and shipped in 5–10 working days.",
+    "priceLadder": "{size} · from {price}",
+    "frameFrom": "Frame +{price}",
+    "priceNote": "The price depends on size and framing — not on the painting.",
+    "filtersLabel": "Shop filters",
+    "sortLabel": "Sort",
+    "sort": {
+      "featured": "Featured",
+      "new": "New arrivals",
+      "collection": "Collection"
+    },
+    "colourLabel": "Colour",
+    "colour": {
+      "blue": "Blues",
+      "green": "Greens",
+      "warm": "Ochre & terracotta",
+      "pink": "Pink & violet",
+      "earth": "Beige & brown",
+      "mono": "Black & grey"
+    },
+    "collectionLabel": "Collection",
+    "allCollections": "All collections",
+    "clear": "Clear filters",
+    "empty": "No paintings match these filters.",
+    "emptyCta": "Browse collections",
+    "badgeNew": "New",
+    "badgePick": "Artist’s pick",
+    "frameColoursLabel": "Frames: {colours}",
+    "quickAdd": "Quick choose size and frame",
+    "quickDetails": "View details",
+    "close": "Close",
+    "giftTitle": "Not sure which painting to choose?",
+    "giftLead": "A gift card covers Fine Art Print — the recipient picks the composition, size and framing themselves.",
+    "collectionsTitle": "Browse by collection",
+    "collectionsCta": "All collections",
+    "aboutTitle": "About Anna Ciok’s Fine Art Prints",
+    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom in 5–10 working days.",
+    "aboutMore": "Read more",
+    "aboutLess": "Show less"
   }
 }

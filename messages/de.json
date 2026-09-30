@@ -107,7 +107,8 @@
     "studio": "Studio",
     "kontakt": "Kontakt",
     "konto": "Konto",
-    "giftCard": "Geschenkkarte"
+    "giftCard": "Geschenkkarte",
+    "kolekcje": "Kollektionen"
   },
   "aria": {
     "cart": "Warenkorb",
@@ -449,7 +450,7 @@
     "storyP2": "Ausgewählte Arbeiten erscheinen in einer Fine-Art-Edition: gedruckt auf Papier in Archivqualität und verschickt in dem Format, das du wählst — ungerahmt oder im Holzrahmen.",
     "storyCta": "Druckkollektionen ansehen",
     "collectionsEyebrow": "Kollektionen",
-    "collectionsTitle": "Neun Reihen, <em>ein Atelier.</em>",
+    "collectionsTitle": "Reihen <em>eines Ateliers.</em>",
     "collectionsLead": "Jede Kollektion ist eine eigene Bilderserie — wähle die Stimmung, Farbe und den Rhythmus, der zu deinem Raum passt.",
     "collectionsCount": "{count} Gemälde",
     "collectionsCta": "Alle Kollektionen",
@@ -524,11 +525,6 @@
       "eyebrow": "Juni-Drop — 10 Stücke",
       "title": "Schüsseln mit Wellenrand <em>Nº 01–10</em>",
       "lead": "Schüsseln mit Wellenrand. Für Frühstück, Snacks und kleine häusliche Rituale, wobei jedes Stück ein bisschen anders ist."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Offene Edition",
-      "title": "Fine Art <em>Drucke</em>",
-      "lead": "Reproduktionen von Aquarellgemälden auf 200 g/m² Fine Art Papier. Größe und Rahmung wählen — wir drucken und versenden innerhalb von 2–3 Werktagen in die EU oder ins Vereinigte Königreich."
     }
   },
   "studio": {
@@ -1023,7 +1019,8 @@
     "artistBio": "Anna Ciok ist eine auf Teneriffa lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
-    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
+    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe.",
+    "seeCollection": "Ganze Kollektion {name} ansehen"
   },
   "giftCard": {
     "eyebrow": "Geschenk",
@@ -1090,5 +1087,66 @@
     "confirmationUnavailable": "Die Bestätigung konnte nicht geöffnet werden. Prüfe die Bestell-E-Mail oder schreibe an ania@ciok.art.",
     "refund": "{cardAmount} wurden deiner Geschenkkarte und {cashAmount} deinem ursprünglichen Zahlungsmittel erstattet.",
     "usedCardRefund": "Wenn die Karte bereits teilweise oder vollständig verwendet wurde, schreibe wegen einer Erstattung des Kartenkaufs an ania@ciok.art. Das Studio prüft den Zahlungsverlauf."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — Fine-Art-Print-Kollektion",
+    "metaDescriptionFallback": "Die Kollektion „{name}“ — Fine Art Prints nach Anna Cioks Gemälden auf 200-g/m²-Papier, mit oder ohne Rahmen.",
+    "allCollections": "Alle Kollektionen",
+    "shopCta": "Zum Shop",
+    "eyebrow": "Kollektion — {count, plural, one {# Print} other {# Prints}}",
+    "otherCollections": "Weitere Kollektionen"
+  },
+  "collectionsHub": {
+    "eyebrow": "Kollektionen",
+    "title": "Kollektionen von <em>Anna Ciok</em>",
+    "lead": "Jede Kollektion ist eine eigene Serie von Aquarell- und Tuschemalereien. Wähle Stimmung, Farbe und Rhythmus, die zu deinem Raum passen — danach Größe und Rahmung deines Fine Art Prints.",
+    "metaTitle": "Anna Cioks Malerei-Kollektionen",
+    "metaDescription": "{count, plural, one {# Kollektion} other {# Kollektionen}} mit Aquarell- und Tuschemalereien von Anna Ciok. Serie wählen und Fine Art Print auf 200-g/m²-Papier bestellen, mit oder ohne Rahmen.",
+    "shopCta": "Alle Prints im Shop ansehen"
+  },
+  "shop": {
+    "metaTitle": "Shop: Fine Art Prints nach Anna Cioks Gemälden",
+    "metaDescription": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien — Fine Art Print auf 200-g/m²-Papier, mit oder ohne Rahmen. Nach Farbe und Kollektion filtern; Lieferung in die EU und ins Vereinigte Königreich.",
+    "eyebrow": "Fine Art Print",
+    "title": "Shop für <em>Fine Art Prints</em>",
+    "lead": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien. Größe und Rahmung wählen — jeder Print wird auf Bestellung gedruckt und in 5–10 Werktagen versandt.",
+    "priceLadder": "{size} · ab {price}",
+    "frameFrom": "Rahmen +{price}",
+    "priceNote": "Der Preis hängt von Größe und Rahmung ab — nicht vom Gemälde.",
+    "filtersLabel": "Shop-Filter",
+    "sortLabel": "Sortieren",
+    "sort": {
+      "featured": "Empfohlen",
+      "new": "Neuheiten",
+      "collection": "Kollektion"
+    },
+    "colourLabel": "Farbe",
+    "colour": {
+      "blue": "Blautöne",
+      "green": "Grüntöne",
+      "warm": "Ocker & Terrakotta",
+      "pink": "Rosa & Violett",
+      "earth": "Beige & Braun",
+      "mono": "Schwarz & Grau"
+    },
+    "collectionLabel": "Kollektion",
+    "allCollections": "Alle Kollektionen",
+    "clear": "Filter zurücksetzen",
+    "empty": "Keine Arbeiten für diese Filter.",
+    "emptyCta": "Kollektionen ansehen",
+    "badgeNew": "Neu",
+    "badgePick": "Auswahl der Künstlerin",
+    "frameColoursLabel": "Rahmen: {colours}",
+    "quickAdd": "Größe und Rahmen schnell wählen",
+    "quickDetails": "Details ansehen",
+    "close": "Schließen",
+    "giftTitle": "Unsicher, welches Gemälde es sein soll?",
+    "giftLead": "Die Geschenkkarte gilt für Fine Art Print — die beschenkte Person wählt Motiv, Größe und Rahmung selbst.",
+    "collectionsTitle": "Nach Kollektion stöbern",
+    "collectionsCta": "Alle Kollektionen",
+    "aboutTitle": "Über Anna Cioks Fine Art Prints",
+    "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und in 5–10 Werktagen an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt.",
+    "aboutMore": "Weiterlesen",
+    "aboutLess": "Weniger anzeigen"
   }
 }

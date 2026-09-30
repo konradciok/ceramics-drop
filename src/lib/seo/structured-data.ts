@@ -1,4 +1,4 @@
-import { printDisplayName } from '@/lib/print-curation';
+import { printCollectionOf, printDisplayName } from '@/lib/print-curation';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
@@ -261,7 +261,6 @@ type PrintCollectionArgs = {
  */
 export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
-  const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const homeUrl = absoluteUrl(locale, '/');
@@ -282,32 +281,139 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, d
         '@type': 'ItemList',
         name: categoryName,
         numberOfItems: designs.length,
-        itemListElement: designs.map((d, i) => {
-          const prices = sellableVariantPrices(d, currency, pricing);
-          return {
-            '@type': 'ListItem',
+        itemListElement: printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }),
+      },
+    ],
+  };
+}
+
+type PrintListItemsArgs = {
+  designs: PrintDesign[];
+  locale: Locale;
+  singular: string;
+  categoryName: string;
+  notes?: Record<string, string>;
+  rawNotes?: unknown;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+};
+
+/** `ItemList` entries (Product + AggregateOffer per design) shared by the prints hub and collection pages. */
+function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }: PrintListItemsArgs) {
+  const { currency, priceCurrency } = printCurrencyFor(locale);
+  return designs.map((d, i) => {
+    const prices = sellableVariantPrices(d, currency, pricing);
+    return {
+      '@type': 'ListItem' as const,
+      position: i + 1,
+      item: {
+        '@type': 'Product' as const,
+        name: printDisplayName(d, singular, definitions),
+        description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
+        image: `${SITE_URL}${d.image}`,
+        category: categoryName,
+        brand: { '@type': 'Brand' as const, name: PRODUCT_BRAND_NAME },
+        offers: {
+          '@type': 'AggregateOffer' as const,
+          priceCurrency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability: 'https://schema.org/InStock' as const,
+          url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
+          shippingDetails: printShippingDetailsFor(locale, pricing),
+          hasMerchantReturnPolicy: printReturnPolicy(locale),
+        },
+      },
+    };
+  });
+}
+
+type PrintCollectionPageSchemaArgs = {
+  locale: Locale;
+  t: (key: string) => string;
+  tRaw?: (key: string) => unknown;
+  notes?: Record<string, string>;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+  slug: string;
+  name: string;
+  description?: string;
+  designs: PrintDesign[];
+};
+
+/** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Collections › Collection) + `ItemList`. No ratings. */
+export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
+  const categoryName = t('nav.fineArtPrints');
+  const pageUrl = absoluteUrl(locale, `/kolekcje/${slug}`);
+  const items = printListItems({
+    designs, locale, singular: t('product.print'), categoryName, notes, rawNotes: tRaw?.('notes.fine-art-prints'), pricing, definitions,
+  });
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': pageUrl,
+        url: pageUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: { '@type': 'ItemList', numberOfItems: items.length, itemListElement: items },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+          { '@type': 'ListItem', position: 3, name, item: pageUrl },
+        ],
+      },
+    ],
+  };
+}
+
+export type PrintCollectionHubCard = { slug: string; name: string; image: string; count: number; description?: string };
+
+/** `@graph` for the /kolekcje hub: `CollectionPage` + `ItemList` of the collection pages + `BreadcrumbList`. */
+export function printCollectionsHubSchema({ locale, t, cards, description }: {
+  locale: Locale;
+  t: (key: string) => string;
+  cards: PrintCollectionHubCard[];
+  description?: string;
+}): Graph {
+  const hubUrl = absoluteUrl(locale, '/kolekcje');
+  const name = t('nav.kolekcje');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': hubUrl,
+        url: hubUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: cards.length,
+          itemListElement: cards.map((c, i) => ({
+            '@type': 'ListItem' as const,
             position: i + 1,
-            item: {
-              '@type': 'Product',
-              name: printDisplayName(d, singular, definitions),
-              description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
-              image: `${SITE_URL}${d.image}`,
-              category: categoryName,
-              brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
-              offers: {
-                '@type': 'AggregateOffer',
-                priceCurrency,
-                lowPrice: Math.min(...prices),
-                highPrice: Math.max(...prices),
-                offerCount: prices.length,
-                availability: 'https://schema.org/InStock',
-                url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
-                shippingDetails: printShippingDetailsFor(locale, pricing),
-                hasMerchantReturnPolicy: printReturnPolicy(locale),
-              },
-            },
-          };
-        }),
+            url: absoluteUrl(locale, `/kolekcje/${c.slug}`),
+            name: c.name,
+            image: `${SITE_URL}${c.image}`,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name, item: hubUrl },
+        ],
       },
     ],
   };
@@ -337,8 +443,15 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, '/sklep');
+  const collection = printCollectionOf(design.id, definitions);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
+  // Home › Collections › {Collection} › Print; designs in no collection fall back to Home › Shop › Print.
+  const trail = collection
+    ? [
+        { name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+        { name: collection.name, item: absoluteUrl(locale, `/kolekcje/${collection.slug}`) },
+      ]
+    : [{ name: categoryName, item: absoluteUrl(locale, '/sklep') }];
   const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
   const prices = sellableVariantPrices(design, currency, pricing);
 
@@ -349,8 +462,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
-          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
-          { '@type': 'ListItem', position: 3, name, item: productUrl },
+          ...trail.map((crumb, i) => ({ '@type': 'ListItem' as const, position: i + 2, ...crumb })),
+          { '@type': 'ListItem', position: trail.length + 2, name, item: productUrl },
         ],
       },
       {
