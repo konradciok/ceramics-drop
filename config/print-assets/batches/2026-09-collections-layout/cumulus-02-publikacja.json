@@ -1,0 +1,30 @@
+{
+  "status": "published",
+  "completedAt": "2026-09-30T15:33:31.707Z",
+  "productId": "fap058",
+  "previousName": "Cirrus 05",
+  "name": "Cumulus 02",
+  "mediaAlt": "Cumulus 02",
+  "notes": [
+    {
+      "locale": "pl",
+      "version": 8,
+      "payloadSha256": "2a7859d18b37840fff7f396f27c1b74f034e58015f7246f643036cdac65cf238"
+    },
+    {
+      "locale": "en",
+      "version": 6,
+      "payloadSha256": "d4aa843755a932bd3b9fed5db4fb3cebca3f3eed38d90773bb059aab2eb4eded"
+    },
+    {
+      "locale": "es",
+      "version": 6,
+      "payloadSha256": "7ec607e1c3fe6180fdbdaae8dc7c9bdd9eb10144dc80d54067373521be5e7441"
+    },
+    {
+      "locale": "de",
+      "version": 6,
+      "payloadSha256": "3051f828d5355ba3e4ae9b75851e3cf39bc1078bd7272feaa3d9f2366bf52fbd"
+    }
+  ]
+}

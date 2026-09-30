@@ -264,6 +264,21 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
     expect(result.map((d) => d.name)).toEqual(['A', 'B']);
   });
 
+  it('orders known storefront collections by the curation map before CMS creation time', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_aurora', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_obsidian', published_revision: 1, created_at: '2026-02-01T00:00:00Z' },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_aurora', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Aurora', fields: [KIND_FIELD, slugField('aurora')] } },
+        { collection_id: 'col_obsidian', revision: 1, created_at: '2026-02-01T00:00:00Z', payload: { name: 'Obsidian', fields: [KIND_FIELD, slugField('obsidian')] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.name)).toEqual(['Obsidian', 'Aurora']);
+  });
+
   it('orders by the collection\'s created_at, not the published draft\'s — a republish must not reshuffle the storefront', async () => {
     // col_a was created before col_b, but col_a's *published* revision
     // (2, matching published_revision) was drafted later than col_b — the

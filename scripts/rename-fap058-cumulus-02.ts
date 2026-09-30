@@ -30,7 +30,10 @@ async function main() {
   if (productError || documentError || mediaError) throw productError ?? documentError ?? mediaError;
   if (product.status !== 'active') throw new Error(`Expected ${next.productId} active, got ${product.status}`);
   if (media.length !== 1 || media[0].url !== '/uploads/fap-058.webp' || !media[0].is_primary) throw new Error('Unexpected product media');
-  if (![previous.name, next.name].includes(media[0].alt)) throw new Error(`Media alt conflict: ${media[0].alt}`);
+  // catalog:backfill replaces registry media before this one-off rename and the
+  // registry intentionally carries no alt text, so null is the expected state
+  // immediately before publication.
+  if (![null, previous.name, next.name].includes(media[0].alt)) throw new Error(`Media alt conflict: ${media[0].alt}`);
 
   const { data: versions, error: versionsError } = await db.from('cms_document_versions').select('*').eq('document_id', document.id);
   if (versionsError) throw versionsError;
