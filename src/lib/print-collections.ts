@@ -223,12 +223,11 @@ export async function loadPrintCollectionDefinitionsFromDb(
   type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };
   const draftRows = (drafts ?? []) as DraftRow[];
 
-  // Exactly the published draft per collection, ordered oldest-collection-
-  // created-first. Postgres without ORDER BY returns heap order, which can
-  // silently change on the next UPDATE (publish_collection_revision UPDATEs
-  // collections.published_revision) — this ordering is what fixes the
-  // on-page section order (groupPrintDesigns maps over the returned array in
-  // sequence) so a republish can never reshuffle the storefront.
+  // Exactly the published draft per collection. Curated collection slugs use
+  // the explicit order in print-catalog-curation.json; any CMS-only collection
+  // follows afterwards in stable creation order. Postgres without ORDER BY
+  // returns heap order, which can silently change on the next UPDATE
+  // (publish_collection_revision UPDATEs collections.published_revision).
   //
   // Deliberately keyed on the *collection's* created_at, not the draft's:
   // save_collection_draft stamps every new revision with a fresh created_at,
@@ -239,9 +238,21 @@ export async function loadPrintCollectionDefinitionsFromDb(
   // the collection's whole lifetime. The collection id is a deterministic
   // tie-breaker for the (currently impossible, but not DB-enforced) case of
   // two collections sharing an identical created_at.
+  const curatedOrder = new Map(PRINT_COLLECTIONS.map((collection, index) => [collection.slug, index]));
+  const slugOf = (draft: DraftRow): string | undefined => {
+    const payload = draft.payload as { fields?: CollectionField[] };
+    return payload.fields?.find((field) => field.key === 'slug')?.value;
+  };
   const publishedDrafts = draftRows
     .filter((d) => d.revision === publishedRevisionById.get(d.collection_id))
     .sort((a, b) => {
+      const aOrder = curatedOrder.get(slugOf(a) ?? '');
+      const bOrder = curatedOrder.get(slugOf(b) ?? '');
+      if (aOrder !== undefined || bOrder !== undefined) {
+        if (aOrder === undefined) return 1;
+        if (bOrder === undefined) return -1;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+      }
       const aCreatedAt = collectionCreatedAtById.get(a.collection_id) ?? '';
       const bCreatedAt = collectionCreatedAtById.get(b.collection_id) ?? '';
       return aCreatedAt.localeCompare(bCreatedAt) || a.collection_id.localeCompare(b.collection_id);
