@@ -17,6 +17,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`../AGENTS.md`](../AGENTS.md) | active | Canonical agent/project context (architecture, commands, conventions) |
 | [`copy-source-of-truth.md`](copy-source-of-truth.md) | active | Owner-approved brand and terminology decisions; draft PL copy, verified fulfillment facts, and implementation gaps (2026-09-09) |
 | [`copy/2026-09-09/README.md`](copy/2026-09-09/README.md) | active | PL approval package: preview, full key register, proposed CMS changes and draft documents; not published |
+| [`copy/2026-09-30-opisy-kolekcji/README.md`](copy/2026-09-30-opisy-kolekcji/README.md) | active | Owner-approved (2026-09-30) descriptions of the 17 print collections in PL/EN/ES/DE, with the visual notes they rest on, validation results and the import runbook (`npm run collections:import-descriptions`); not yet imported into the CMS |
 | [`plans/2026-09-09-studio-copy-sales-model.md`](plans/2026-09-09-studio-copy-sales-model.md) | active | Owner's complete copy and sales-model implementation plan; PL approval gate first |
 
 ## Guides & runbooks
