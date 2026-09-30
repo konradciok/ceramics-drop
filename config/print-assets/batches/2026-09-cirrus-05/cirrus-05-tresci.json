@@ -1,0 +1,33 @@
+{
+  "status": "published_content_product_still_draft",
+  "completedAt": "2026-09-30T09:56:48.457Z",
+  "productId": "fap058",
+  "media": {
+    "url": "/uploads/fap-058.webp",
+    "alt": "Cirrus 05",
+    "position": 0,
+    "is_primary": true
+  },
+  "notes": [
+    {
+      "locale": "pl",
+      "version": 7,
+      "payloadSha256": "53d69ddf65a440c3fb0cd86a9d78f2839badf7b01cf66b26a4fad5d4324f69f8"
+    },
+    {
+      "locale": "en",
+      "version": 5,
+      "payloadSha256": "5ebd8fb20bd2b8d80f1b1bc4a749abc5f04109892063025df06f4918a64e3fbd"
+    },
+    {
+      "locale": "es",
+      "version": 5,
+      "payloadSha256": "a834697e6121a9ab293efe0e03b8329ea932bb9a20e385b0aef36683e54f31a4"
+    },
+    {
+      "locale": "de",
+      "version": 5,
+      "payloadSha256": "70f13938fcb0f033d3913ed1ce0d9383812c91146408405b3f407c06f26e66da"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ describe('getPrintDesigns', () => {
     const expectedIds = ACTIVE_PRINT_CURATION.map(({ productId }) => productId);
     expect(designs.map(({ id }) => id)).toEqual(expectedIds);
     expect(designs.map(({ num }) => num)).toEqual(
-      Array.from({ length: 55 }, (_, i) => String(i + 1).padStart(2, '0')),
+      Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
     expect(await getPrintById('fap029')).toMatchObject({ published: false });
     expect(await getPrintById('fap037')).toMatchObject({ published: false });

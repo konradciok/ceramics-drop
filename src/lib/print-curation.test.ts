@@ -100,16 +100,16 @@ describe('fine-art print curation map', () => {
       'Aurora', 'Cirrus', 'Cumulonimbus', 'Cumulus', 'Obsidian', 'Scopulus', 'Unda', 'Tachylite',
     ]);
     expect(ACTIVE_PRINT_CURATION.map(({ number }) => number)).toEqual(
-      Array.from({ length: 55 }, (_, i) => String(i + 1).padStart(2, '0')),
+      Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
-    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 1, 2, 2, 4, 1, 2, 1]);
+    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 2, 2, 2, 4, 1, 2, 1]);
     expect(RETIRED_PRINT_CURATION.map(({ productId }) => productId)).toEqual(['fap029', 'fap037']);
 
     for (const item of PRINT_CURATION) {
       expect(item.productId).toBe(`fap${item.sourceNumber}`);
     }
-    expect(new Set(PRINT_CURATION.map((item) => item.productId)).size).toBe(57);
-    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(55);
+    expect(new Set(PRINT_CURATION.map((item) => item.productId)).size).toBe(58);
+    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(56);
     for (const retired of RETIRED_PRINT_CURATION) {
       expect(ACTIVE_PRINT_CURATION.some((item) => item.productId === retired.duplicateOf)).toBe(true);
     }
@@ -126,7 +126,7 @@ describe('fine-art print curation map', () => {
 
   it('publishes all 16 approved designs with original series numbering, including CMS definitions', () => {
     expect(DRAFT_PRINT_CURATION).toHaveLength(0);
-    expect(PRINT_CURATION).toHaveLength(57);
+    expect(PRINT_CURATION).toHaveLength(58);
     for (const collection of batch.collections) {
       const definition = { slug: collection.slug, name: collection.name, designIds: collection.prints.map(p => p.productId).toReversed(), prints: [] };
       for (const print of collection.prints) {

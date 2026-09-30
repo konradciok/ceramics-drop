@@ -652,6 +652,17 @@ const SOURCE_PRINT_DESIGNS: PrintSourceDesign[] = [
     mountAvailable: false,
     mockups: true,
   },
+  {
+    id: 'fap058',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-058.webp',
+    editorialGallery: ['/uploads/fap-058-life-01.webp', '/uploads/fap-058-life-02.webp', '/uploads/fap-058-life-03.webp'],
+    noteIndex: 57,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
 ];
 
 /**
