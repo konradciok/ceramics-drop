@@ -768,8 +768,9 @@ ul { list-style:none; padding:0; margin:0; }
   box-shadow:0 14px 34px -16px rgba(58,40,24,.3); transition:transform .4s var(--ease);
 }
 .collection-card:hover img, .collection-card:focus-visible img { transform:translateY(-4px); }
-.collection-card-meta { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:0 2px; }
-.collection-card-meta .nm { font-family:var(--f-display); font-weight:300; font-size:clamp(20px,1.9vw,26px); line-height:1.05; }
+.collection-card-meta { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 10px; padding:0 2px; }
+/* Long series names ("Cumulonimbus") must wrap inside a 2-up phone card rather than push the page wider. */
+.collection-card-meta .nm { font-family:var(--f-display); font-weight:300; font-size:clamp(20px,1.9vw,26px); line-height:1.05; min-width:0; overflow-wrap:anywhere; }
 .collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; white-space:nowrap; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
 .collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
@@ -848,6 +849,7 @@ ul { list-style:none; padding:0; margin:0; }
 .shop-card-meta { flex-wrap:wrap; row-gap:6px; align-items:baseline; }
 /* Two-up phone grid: the wide-tracked name and the price cannot share a line. */
 @media (max-width:560px) { .shop-card-meta .nm { flex-basis:100%; } }
+.shop-card-meta .nm { min-width:0; overflow-wrap:anywhere; }
 .shop-frame-dots { display:inline-flex; gap:5px; align-items:center; }
 .shop-frame-dots i { width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.2); }
 .shop-frame-dots i[data-frame="black"] { background:#1d1b19; }

@@ -33,6 +33,19 @@ test.describe('@ci collections hub + shop', () => {
     await expect(page.locator(`.pdp-breadcrumb a[href="${href}"]`)).toBeVisible();
   });
 
+  // Long series names ("Cumulonimbus") once pushed the two-up phone grid wider than the viewport.
+  test('hub, a collection page and the shop never scroll horizontally at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    for (const path of ['/kolekcje', '/kolekcje/cumulonimbus', '/sklep']) {
+      await page.goto(path);
+      await expect(page.locator('h1')).toBeVisible();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `${path} must not scroll horizontally`).toBe(0);
+    }
+  });
+
   test('an unknown collection slug is a real 404', async ({ request }) => {
     const response = await request.get('/kolekcje/nonexistent-collection', { maxRedirects: 0 });
     expect(response.status()).toBe(404);
