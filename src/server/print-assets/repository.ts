@@ -297,3 +297,75 @@ export async function getPrintAssetCoverage(
     variants: variantRows,
   };
 }
+
+/** Product ids per query pair. PostgREST caps a response at 1000 rows and a design can carry ~20 variants, so chunk. */
+const BATCH_CHUNK = 40;
+
+/**
+ * Storefront read model for the shop grid: for every requested design, the
+ * variant keys with a usable asset (ready + dimensions match the print area) —
+ * the same predicate as `getPrintAssetCoverage(...).variants[].usable`, in two
+ * queries per chunk of designs instead of two per design. Every requested id
+ * gets an entry (`[]` = nothing usable, gates every variant, matching the PDP).
+ * Throws on a DB error; callers wrap it in `readWithFallback` (fail-open — the
+ * checkout route stays the hard gate).
+ */
+export async function getUsableVariantKeysByProduct(
+  productIds: readonly string[],
+): Promise<Record<string, string[]>> {
+  const supabase = getSupabaseAdmin();
+  const result: Record<string, string[]> = Object.fromEntries(productIds.map((id) => [id, []]));
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < productIds.length; i += BATCH_CHUNK) chunks.push(productIds.slice(i, i + BATCH_CHUNK));
+
+  await Promise.all(
+    chunks.map(async (ids) => {
+      const [variants, assignments] = await Promise.all([
+        supabase
+          .from('product_variants')
+          .select('product_id, variant_key, print_area_width_px, print_area_height_px')
+          .in('product_id', ids)
+          .eq('active', true)
+          .abortSignal(supabaseTimeout()),
+        supabase
+          .from('print_variant_asset_assignments')
+          .select('product_id, variant_key, print_fulfilment_assets(status, width_px, height_px)')
+          .in('product_id', ids)
+          .abortSignal(supabaseTimeout()),
+      ]);
+      if (variants.error)
+        throw new Error(`getUsableVariantKeysByProduct: variants lookup failed: ${variants.error.message}`);
+      if (assignments.error)
+        throw new Error(`getUsableVariantKeysByProduct: assignments lookup failed: ${assignments.error.message}`);
+
+      const assetByKey = new Map<string, Pick<AssetRow, 'status' | 'width_px' | 'height_px'> | null>();
+      for (const row of assignments.data ?? []) {
+        assetByKey.set(
+          `${row.product_id}\u0000${row.variant_key}`,
+          coalesceNestedAsset(
+            row.print_fulfilment_assets as
+              | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>
+              | Pick<AssetRow, 'status' | 'width_px' | 'height_px'>[]
+              | null
+              | undefined,
+          ),
+        );
+      }
+      for (const v of (variants.data ?? []) as Array<{
+        product_id: string;
+        variant_key: string;
+        print_area_width_px: number | null;
+        print_area_height_px: number | null;
+      }>) {
+        const asset = assetByKey.get(`${v.product_id}\u0000${v.variant_key}`) ?? null;
+        if (isUsable(asset, v.print_area_width_px, v.print_area_height_px)) {
+          result[v.product_id]?.push(v.variant_key);
+        }
+      }
+    }),
+  );
+
+  for (const keys of Object.values(result)) keys.sort();
+  return result;
+}

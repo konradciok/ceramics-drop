@@ -50,6 +50,9 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 | `sold_item_view` | buyer clicks an already-sold tile (demand signal for drops) | `item_id`, `item_name`, `item_category`, `price`, `currency` |
 | `newsletter_signup_requested` | footer newsletter POST accepted — step 1 of the double opt-in (a confirmation email was sent; NOT a confirmed subscription — the confirmed-contact count lives in Resend) | — |
 | `shop_filter` | buyer narrows the shop view via the status filter (sold/available) | `filter_status` (`all` \| `available` \| `sold`) |
+| `shop_filter` (print shop) | buyer changes a `/sklep` filter (`PrintShop.tsx`) | `filter_type` (`colour` \| `collection` \| `clear`), `filter_value` (`blue`…, a collection slug or `all`; a leading `-` means the colour was switched off) |
+| `shop_sort` | buyer changes the `/sklep` sort | `filter_type` (`sort`), `filter_value` (`featured` \| `new` \| `collection`) |
+| `print_quick_add_open` | buyer opens the quick size/frame picker on a `/sklep` card (`PrintShopCard.tsx`); the resulting `add_to_cart` comes from the shared `PrintConfigurator` | `item_id` |
 | `checkout_error` | pre-payment `/api/checkout` failure | `reason` (`sold_out` \| `rate_limited` \| `checkout_failed` \| `network_error` \| `response_parse_error` \| `order_conflict` \| `checkout_in_progress`), `status`, `sold_count` |
 | `payment_failed` | Stripe PaymentIntent failed/canceled on `/koszyk/return` | `status` (PaymentIntent status; the PI id is never sent). Deduped once per PaymentIntent via `pushPaymentFailedOnce` so refresh / Strict-Mode double-mount doesn't inflate counts. The `status` param preserves granularity (e.g. `canceled` vs. `requires_payment_method`). |
 | `time_on_page` | 30 s dwell on a page (`AnalyticsEvents.tsx`) | `engagement_seconds` (always 30), `page_path` (token-redacted) |

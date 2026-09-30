@@ -3,7 +3,7 @@ import type { Product } from '@/lib/types';
 vi.mock('@/lib/ceramic-sale-state', () => ({
   withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
 }));
-import { collectionSchema, organizationSchema, printCollectionSchema, printProductSchema, productSchema } from './structured-data';
+import { collectionSchema, organizationSchema, printCollectionPageSchema, printCollectionSchema, printCollectionsHubSchema, printProductSchema, productSchema } from './structured-data';
 import { registryProductsByCategory } from '@/lib/products';
 import { registryPrintDesigns } from '@/lib/prints';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
@@ -421,5 +421,72 @@ describe('printProductSchema', () => {
       expect(rate.shippingDestination.addressCountry).toBe('GB');
     });
     expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe('GB');
+  });
+});
+
+type Crumb = { position: number; name: string; item: string };
+const crumbsOf = (graph: { '@graph': readonly unknown[] }): Crumb[] =>
+  ((graph['@graph'] as { '@type': string; itemListElement?: Crumb[] }[]).find((n) => n['@type'] === 'BreadcrumbList')?.itemListElement) ?? [];
+
+describe('print breadcrumbs run through the collection hub', () => {
+  const design = registryPrintDesigns()[0];
+  const tRawStub = (key: string) => (key.startsWith('notes.') ? Array.from({ length: design.noteIndex + 1 }, () => 'n') : key);
+
+  it('PDP: Home › Collections › {collection} › print when the design belongs to a collection', () => {
+    const definitions: PrintCollectionDefinition[] = [{ slug: 'linea', name: 'Linea', designIds: [design.id], prints: [] }];
+    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions }));
+    expect(crumbs.map((c) => c.position)).toEqual([1, 2, 3, 4]);
+    expect(crumbs.map((c) => c.item)).toEqual([
+      `${SITE_URL}/en`,
+      `${SITE_URL}/en/kolekcje`,
+      `${SITE_URL}/en/kolekcje/linea`,
+      `${SITE_URL}/en/fine-art-prints/${design.id}`,
+    ]);
+    expect(crumbs[1].name).toBe('nav.kolekcje');
+    expect(crumbs[2].name).toBe('Linea');
+  });
+
+  it('PDP: falls back to Home › Shop › print for a design in no collection', () => {
+    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: [] }));
+    expect(crumbs.map((c) => c.item)).toEqual([`${SITE_URL}/en`, `${SITE_URL}/en/sklep`, `${SITE_URL}/en/fine-art-prints/${design.id}`]);
+  });
+
+  it('collection page: CollectionPage + Home › Collections › name + ItemList of its prints', () => {
+    const designs = registryPrintDesigns().slice(0, 3);
+    const graph = printCollectionPageSchema({
+      locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', description: 'Opis kolekcji', designs,
+    });
+    const page = graph['@graph'][0] as unknown as { '@type': string; url: string; description: string; mainEntity: { numberOfItems: number } };
+    expect(page['@type']).toBe('CollectionPage');
+    expect(page.url).toBe(`${SITE_URL}/kolekcje/linea`);
+    expect(page.description).toBe('Opis kolekcji');
+    expect(page.mainEntity.numberOfItems).toBe(3);
+    expect(crumbsOf(graph).map((c) => c.item)).toEqual([SITE_URL, `${SITE_URL}/kolekcje`, `${SITE_URL}/kolekcje/linea`]);
+  });
+
+  it('collection page: omits description when there is none', () => {
+    const graph = printCollectionPageSchema({
+      locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', designs: registryPrintDesigns().slice(0, 1),
+    });
+    expect(graph['@graph'][0]).not.toHaveProperty('description');
+  });
+
+  it('hub: CollectionPage listing each collection page, never a Product', () => {
+    const graph = printCollectionsHubSchema({
+      locale: 'de', t,
+      cards: [
+        { slug: 'a', name: 'A', image: '/uploads/a.webp', count: 3 },
+        { slug: 'b', name: 'B', image: '/uploads/b.webp', count: 5 },
+      ],
+    });
+    const page = graph['@graph'][0] as unknown as { '@type': string; url: string; mainEntity: { itemListElement: { position: number; url: string; name: string }[] } };
+    expect(page['@type']).toBe('CollectionPage');
+    expect(page.url).toBe(`${SITE_URL}/de/kolekcje`);
+    expect(page.mainEntity.itemListElement).toMatchObject([
+      { position: 1, url: `${SITE_URL}/de/kolekcje/a`, name: 'A' },
+      { position: 2, url: `${SITE_URL}/de/kolekcje/b`, name: 'B' },
+    ]);
+    expect(JSON.stringify(graph)).not.toContain('"Product"');
+    expect(crumbsOf(graph).map((c) => c.item)).toEqual([`${SITE_URL}/de`, `${SITE_URL}/de/kolekcje`]);
   });
 });

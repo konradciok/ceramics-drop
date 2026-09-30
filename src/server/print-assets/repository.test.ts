@@ -13,7 +13,7 @@ function makeChain(result: unknown): Record<string, unknown> {
     catch: (fn: (e: unknown) => unknown) => Promise.resolve(result).catch(fn),
     finally: (fn: () => void) => Promise.resolve(result).finally(fn),
   };
-  for (const m of ['eq', 'select', 'order', 'abortSignal']) {
+  for (const m of ['eq', 'in', 'select', 'order', 'abortSignal']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain['maybeSingle'] = vi.fn().mockResolvedValue(result);
@@ -361,6 +361,88 @@ describe('getPrintAssetCoverage', () => {
       usable: false,
       asset: null,
     });
+  });
+});
+
+// ── getUsableVariantKeysByProduct ─────────────────────────────────────────────
+
+describe('getUsableVariantKeysByProduct', () => {
+  const DIMS = { print_area_width_px: 3600, print_area_height_px: 4800 };
+  const READY = { status: 'ready', width_px: 3600, height_px: 4800 };
+
+  function setup(variants: Record<string, unknown>[], assignments: Record<string, unknown>[]) {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'product_variants') return makeChain({ data: variants, error: null });
+      if (table === 'print_variant_asset_assignments') return makeChain({ data: assignments, error: null });
+      return makeChain({ data: null, error: null });
+    });
+  }
+
+  it('returns usable keys per product and [] for products with none', async () => {
+    setup(
+      [
+        { product_id: 'fap01', variant_key: 'b', ...DIMS },
+        { product_id: 'fap01', variant_key: 'a', ...DIMS },
+        { product_id: 'fap02', variant_key: 'a', ...DIMS },
+      ],
+      [
+        { product_id: 'fap01', variant_key: 'a', print_fulfilment_assets: READY },
+        { product_id: 'fap01', variant_key: 'b', print_fulfilment_assets: [READY] },
+        { product_id: 'fap02', variant_key: 'a', print_fulfilment_assets: { ...READY, status: 'revoked' } },
+      ],
+    );
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    expect(await getUsableVariantKeysByProduct(['fap01', 'fap02', 'fap03'])).toEqual({
+      fap01: ['a', 'b'],
+      fap02: [],
+      fap03: [],
+    });
+  });
+
+  it('treats a dimension mismatch and a missing assignment as unusable', async () => {
+    setup(
+      [
+        { product_id: 'fap01', variant_key: 'a', ...DIMS },
+        { product_id: 'fap01', variant_key: 'b', ...DIMS },
+      ],
+      [{ product_id: 'fap01', variant_key: 'a', print_fulfilment_assets: { ...READY, width_px: 100 } }],
+    );
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    expect(await getUsableVariantKeysByProduct(['fap01'])).toEqual({ fap01: [] });
+  });
+
+  it('keeps products apart when they share a variant key', async () => {
+    setup(
+      [
+        { product_id: 'fap01', variant_key: 'a', ...DIMS },
+        { product_id: 'fap02', variant_key: 'a', ...DIMS },
+      ],
+      [{ product_id: 'fap01', variant_key: 'a', print_fulfilment_assets: READY }],
+    );
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    expect(await getUsableVariantKeysByProduct(['fap01', 'fap02'])).toEqual({ fap01: ['a'], fap02: [] });
+  });
+
+  it('chunks large requests into separate query pairs', async () => {
+    setup([], []);
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    const ids = Array.from({ length: 85 }, (_, i) => `fap${String(i + 1).padStart(3, '0')}`);
+    const result = await getUsableVariantKeysByProduct(ids);
+    expect(Object.keys(result)).toHaveLength(85);
+    // 85 ids → 3 chunks → 2 tables each.
+    expect(mockFrom).toHaveBeenCalledTimes(6);
+  });
+
+  it('throws on a database error so the caller can fail open', async () => {
+    setupSingleAssetError();
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    await expect(getUsableVariantKeysByProduct(['fap01'])).rejects.toThrow(/lookup failed/);
+  });
+
+  it('skips the database entirely for an empty request', async () => {
+    const { getUsableVariantKeysByProduct } = await import('./repository');
+    expect(await getUsableVariantKeysByProduct([])).toEqual({});
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });
 

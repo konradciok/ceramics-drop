@@ -405,6 +405,29 @@ flipping `published: true` / running the per-design `prepare → upload →
 verify → publish → gallery [→ mockups]` sequence — those stay exactly as
 documented below, once per design.
 
+## Shop colour filters (`print-assets:facets`)
+
+The `/sklep` colour filter reads `config/print-shop.json` (`designs[id].colours`).
+Every published design needs at least one family — a CI test
+(`src/lib/print-shop-config.test.ts`) fails until it has one, so run this after
+onboarding new designs and before merging:
+
+```bash
+npm run print-assets:facets -- --dry-run   # print id → suggested families + per-family shares, write nothing
+npm run print-assets:facets                # write suggestions for new / unreviewed designs
+npm run print-assets:facets -- --force     # also re-suggest reviewed designs
+```
+
+The script downsamples each design's `public/uploads/fap-NNN-400w.webp`, drops
+the white paper and classifies the remaining pixels (`src/lib/print-colour.ts`)
+into six families — `blue`, `green`, `warm` (ochre/terracotta), `pink`
+(pink/violet), `earth` (beige/brown), `mono` (black/grey) — keeping the
+strongest one or two. It is a **suggestion**: open `config/print-shop.json`,
+fix any design where the eye disagrees and set `"reviewed": true` so a later
+run never overwrites it. `featured` (hand-picked "Artist's pick" ids, pinned
+first in the default order) and `newCount` (how many highest-numbered designs
+carry the "New" badge) are hand-maintained and untouched by the script.
+
 ## New artwork (first publication)
 
 Asset preparation accepts products in `draft` or `active` status with at least
