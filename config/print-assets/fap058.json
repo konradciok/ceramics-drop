@@ -1,0 +1,18 @@
+{
+  "_comment": "Cirrus 05; prepared three-ratio sources. Mount disabled; 2x3 is an intentionally absent sentinel, matching existing configs.",
+  "product": "fap058",
+  "mode": "fullBleed",
+  "format": "jpg",
+  "sources": {
+    "3x4": "design/uploads/master-images-prints/print-058/print-058__3x4.jpg",
+    "5x7": "design/uploads/master-images-prints/print-058/print-058__5x7.jpg",
+    "7x10": "design/uploads/master-images-prints/print-058/print-058__7x10.jpg",
+    "2x3": "design/uploads/master-images-prints/print-058/NO_MOUNT_SOURCE_2026-09.jpg"
+  },
+  "gallery": {
+    "hero": {
+      "sourceProfile": "8400x12000",
+      "uploadStem": "fap-058"
+    }
+  }
+}
