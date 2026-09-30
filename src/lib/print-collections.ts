@@ -89,6 +89,35 @@ export function collectionTeaser(description: string | undefined, max = 140): st
   return `${cut}…`;
 }
 
+/**
+ * Split a description into its first sentence (the page lead, also the hub
+ * card teaser) and the remainder; `rest` is undefined for a one-sentence text.
+ */
+export function splitCollectionDescription(description: string): { lead: string; rest?: string } {
+  const text = description.trim();
+  const lead = text.match(/^.+?[.!?…](?=\s|$)/)?.[0] ?? text;
+  const rest = text.slice(lead.length).trim();
+  return rest ? { lead, rest } : { lead };
+}
+
+/**
+ * `<meta name="description">` text: as many whole sentences as fit in `max`
+ * characters, so a search snippet never breaks mid-sentence. When even the
+ * first sentence is longer, it is cut on a word boundary with an ellipsis.
+ */
+export function collectionMetaDescription(description: string, max = 155): string {
+  const sentences = description.trim().split(/(?<=[.!?…])\s+/);
+  let out = '';
+  for (const sentence of sentences) {
+    const next = out ? `${out} ${sentence}` : sentence;
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+  const cut = sentences[0].slice(0, max - 1).replace(/\s+\S*$/, '');
+  return `${cut}…`;
+}
+
 /** Resolve one collection page: definition + its published designs + the
  *  locale's real description. Undefined when the slug is unknown or nothing
  *  in it is published (→ 404). The 'inne' fallback bucket has no page. */
