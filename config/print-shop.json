@@ -57,6 +57,7 @@
     "fap054": { "colours": ["blue", "warm"], "reviewed": false },
     "fap055": { "colours": ["blue"], "reviewed": false },
     "fap056": { "colours": ["blue"], "reviewed": false },
-    "fap057": { "colours": ["earth", "blue"], "reviewed": false }
+    "fap057": { "colours": ["earth", "blue"], "reviewed": false },
+    "fap058": { "colours": ["blue"], "reviewed": false }
   }
 }

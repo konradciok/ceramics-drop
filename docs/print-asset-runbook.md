@@ -400,7 +400,9 @@ The script never edits `src/lib/prints.ts` itself — it writes ready-to-paste
 hand, then run `npm run catalog:backfill` before the per-design pipeline below.
 
 **Not done by this script (separate manual/content steps):** the `noteIndex`
-description text in `messages/{pl,en,es,de}.json` for each design, and
+description text in `messages/{pl,en,es,de}.json` for each design, the shop
+colour data (`npm run print-assets:facets`, see § Shop colour filters — CI fails
+until every published design has a colour), and
 flipping `published: true` / running the per-design `prepare → upload →
 verify → publish → gallery [→ mockups]` sequence — those stay exactly as
 documented below, once per design.
