@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { buildNewPrintBatch } from './new-print-batch';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../../src/lib/print-cart';
-import { registryPrintDesigns } from '../../src/lib/prints';
 
 describe('September print batch staging', () => {
-  it('stages exactly 16 drafts without exposing unfinished media or public products', () => {
+  it('always stages 16 drafts without placeholder media, even after catalogue activation', () => {
     const seed = buildNewPrintBatch();
     expect(seed.products.map((p) => p.id)).toEqual(Array.from({ length: 16 }, (_, i) => `fap${String(i + 42).padStart(3, '0')}`));
     expect(seed.products.every((p) => p.status === 'draft')).toBe(true);
     expect(seed.media).toEqual([]);
-    expect(registryPrintDesigns().some((p) => seed.products.some((row) => row.id === p.id))).toBe(false);
     expect(seed.products.find((p) => p.id === 'fap044')?.seo_title).toBe('Aurora 04');
     expect(seed.products.find((p) => p.id === 'fap049')?.seo_title).toBe('Cumulus 06');
   });

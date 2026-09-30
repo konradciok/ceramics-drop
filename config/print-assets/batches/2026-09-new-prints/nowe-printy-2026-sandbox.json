@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-09-30T07:28:20.496Z",
+  "productId": "fap042",
+  "runId": "2026-09-30-new-prints",
+  "orders": [
+    {
+      "orderId": "ord_1175344",
+      "environment": "sandbox",
+      "status": {
+        "stage": "InProgress",
+        "issues": [],
+        "details": {
+          "downloadAssets": "Complete",
+          "printReadyAssetsPrepared": "NotStarted",
+          "allocateProductionLocation": "NotStarted",
+          "inProduction": "NotStarted",
+          "shipping": "NotStarted"
+        }
+      },
+      "sku": "GLOBAL-FAP-12X16",
+      "downloadStatus": "Complete",
+      "cancelResult": {
+        "outcome": "Cancelled",
+        "stage": "Cancelled"
+      }
+    },
+    {
+      "orderId": "ord_1175345",
+      "environment": "sandbox",
+      "status": {
+        "stage": "InProgress",
+        "issues": [],
+        "details": {
+          "downloadAssets": "Complete",
+          "printReadyAssetsPrepared": "NotStarted",
+          "allocateProductionLocation": "NotStarted",
+          "inProduction": "NotStarted",
+          "shipping": "NotStarted"
+        }
+      },
+      "sku": "GLOBAL-FAP-20X28",
+      "downloadStatus": "Complete",
+      "cancelResult": {
+        "outcome": "Cancelled",
+        "stage": "Cancelled"
+      }
+    },
+    {
+      "orderId": "ord_1175346",
+      "environment": "sandbox",
+      "status": {
+        "stage": "InProgress",
+        "issues": [],
+        "details": {
+          "downloadAssets": "Complete",
+          "printReadyAssetsPrepared": "NotStarted",
+          "allocateProductionLocation": "NotStarted",
+          "inProduction": "NotStarted",
+          "shipping": "NotStarted"
+        }
+      },
+      "sku": "GLOBAL-FAP-28X40",
+      "downloadStatus": "Complete",
+      "cancelResult": {
+        "outcome": "Cancelled",
+        "stage": "Cancelled"
+      }
+    }
+  ]
+}

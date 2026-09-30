@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-09-30T07:21:47.781Z",
+  "status": "active_verified",
+  "storefrontFiles": 448,
+  "signedAssetProbes": 48,
+  "variants": 192,
+  "descriptions": 64,
+  "collections": 8,
+  "products": [
+    {
+      "id": "fap042",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap043",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap044",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap045",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap046",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap047",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap048",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap049",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap050",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap051",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap052",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap053",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap054",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap055",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap056",
+      "before": "draft",
+      "after": "active"
+    },
+    {
+      "id": "fap057",
+      "before": "draft",
+      "after": "active"
+    }
+  ],
+  "completedAt": "2026-09-30T07:21:49.754Z"
+}

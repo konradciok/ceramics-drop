@@ -98,64 +98,64 @@
       "slug": "aurora",
       "name": "Aurora",
       "prints": [
-        { "sourceNumber": "042", "productId": "fap042", "number": "40", "seriesNumber": "01", "status": "draft" },
-        { "sourceNumber": "043", "productId": "fap043", "number": "41", "seriesNumber": "02", "status": "draft" },
-        { "sourceNumber": "044", "productId": "fap044", "number": "42", "seriesNumber": "04", "status": "draft" }
+        { "sourceNumber": "042", "productId": "fap042", "number": "40", "seriesNumber": "01" },
+        { "sourceNumber": "043", "productId": "fap043", "number": "41", "seriesNumber": "02" },
+        { "sourceNumber": "044", "productId": "fap044", "number": "42", "seriesNumber": "04" }
       ]
     },
     {
       "slug": "cirrus",
       "name": "Cirrus",
       "prints": [
-        { "sourceNumber": "045", "productId": "fap045", "number": "43", "seriesNumber": "01", "status": "draft" }
+        { "sourceNumber": "045", "productId": "fap045", "number": "43", "seriesNumber": "01" }
       ]
     },
     {
       "slug": "cumulonimbus",
       "name": "Cumulonimbus",
       "prints": [
-        { "sourceNumber": "046", "productId": "fap046", "number": "44", "seriesNumber": "03", "status": "draft" },
-        { "sourceNumber": "047", "productId": "fap047", "number": "45", "seriesNumber": "06", "status": "draft" }
+        { "sourceNumber": "046", "productId": "fap046", "number": "44", "seriesNumber": "03" },
+        { "sourceNumber": "047", "productId": "fap047", "number": "45", "seriesNumber": "06" }
       ]
     },
     {
       "slug": "cumulus",
       "name": "Cumulus",
       "prints": [
-        { "sourceNumber": "048", "productId": "fap048", "number": "46", "seriesNumber": "01", "status": "draft" },
-        { "sourceNumber": "049", "productId": "fap049", "number": "47", "seriesNumber": "06", "status": "draft" }
+        { "sourceNumber": "048", "productId": "fap048", "number": "46", "seriesNumber": "01" },
+        { "sourceNumber": "049", "productId": "fap049", "number": "47", "seriesNumber": "06" }
       ]
     },
     {
       "slug": "obsidian",
       "name": "Obsidian",
       "prints": [
-        { "sourceNumber": "050", "productId": "fap050", "number": "48", "seriesNumber": "02", "status": "draft" },
-        { "sourceNumber": "051", "productId": "fap051", "number": "49", "seriesNumber": "03", "status": "draft" },
-        { "sourceNumber": "052", "productId": "fap052", "number": "50", "seriesNumber": "04", "status": "draft" },
-        { "sourceNumber": "053", "productId": "fap053", "number": "51", "seriesNumber": "05", "status": "draft" }
+        { "sourceNumber": "050", "productId": "fap050", "number": "48", "seriesNumber": "02" },
+        { "sourceNumber": "051", "productId": "fap051", "number": "49", "seriesNumber": "03" },
+        { "sourceNumber": "052", "productId": "fap052", "number": "50", "seriesNumber": "04" },
+        { "sourceNumber": "053", "productId": "fap053", "number": "51", "seriesNumber": "05" }
       ]
     },
     {
       "slug": "scopulus",
       "name": "Scopulus",
       "prints": [
-        { "sourceNumber": "054", "productId": "fap054", "number": "52", "seriesNumber": "02", "status": "draft" }
+        { "sourceNumber": "054", "productId": "fap054", "number": "52", "seriesNumber": "02" }
       ]
     },
     {
       "slug": "unda",
       "name": "Unda",
       "prints": [
-        { "sourceNumber": "055", "productId": "fap055", "number": "53", "seriesNumber": "04", "status": "draft" },
-        { "sourceNumber": "056", "productId": "fap056", "number": "54", "seriesNumber": "05", "status": "draft" }
+        { "sourceNumber": "055", "productId": "fap055", "number": "53", "seriesNumber": "04" },
+        { "sourceNumber": "056", "productId": "fap056", "number": "54", "seriesNumber": "05" }
       ]
     },
     {
       "slug": "tachylite",
       "name": "Tachylite",
       "prints": [
-        { "sourceNumber": "057", "productId": "fap057", "number": "55", "seriesNumber": "03", "status": "draft" }
+        { "sourceNumber": "057", "productId": "fap057", "number": "55", "seriesNumber": "03" }
       ]
     }
   ],
