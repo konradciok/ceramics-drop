@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { indexableCollectionLocales, resolvePrintCollectionPage } from './print-collections';
+import {
+  collectionMetaDescription,
+  collectionTeaser,
+  indexableCollectionLocales,
+  resolvePrintCollectionPage,
+  splitCollectionDescription,
+} from './print-collections';
 import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
 
+/** Minimal stand-in design carrying just an id. */
 const d = (id: string) => ({ id }) as PrintDesign;
 const long = 'x'.repeat(100);
+/** A `linea` collection definition with real PL copy over three designs; override per test. */
 const def = (over: Partial<PrintCollectionDefinition> = {}): PrintCollectionDefinition => ({
   slug: 'linea', name: 'Linea', designIds: ['a', 'b', 'c'], prints: [], descriptions: { pl: long, en: 'Linea.' }, ...over,
 });
@@ -48,5 +56,90 @@ describe('indexableCollectionLocales', () => {
 
   it('is empty for an unknown slug', () => {
     expect(indexableCollectionLocales('nope', designs, [def()])).toEqual([]);
+  });
+});
+
+describe('splitCollectionDescription', () => {
+  it('splits into the first sentence and the rest', () => {
+    expect(splitCollectionDescription('Pierwsze zdanie. Drugie zdanie. Trzecie.')).toEqual({
+      lead: 'Pierwsze zdanie.',
+      rest: 'Drugie zdanie. Trzecie.',
+    });
+  });
+
+  it('has no rest for a one-sentence text and trims whitespace', () => {
+    expect(splitCollectionDescription('  Jedno zdanie.  ')).toEqual({ lead: 'Jedno zdanie.' });
+  });
+
+  it('keeps a text with no terminal punctuation as the lead', () => {
+    expect(splitCollectionDescription('Bez kropki na końcu')).toEqual({ lead: 'Bez kropki na końcu' });
+  });
+
+  it('does not split on a dash or a comma', () => {
+    const text = 'Formy — owale, pierścienie — układają się w rytm. Reszta.';
+    expect(splitCollectionDescription(text).lead).toBe('Formy — owale, pierścienie — układają się w rytm.');
+  });
+
+  it('keeps the lead/body split when the first sentence runs across a line break', () => {
+    expect(splitCollectionDescription('Pierwsze zdanie\nz łamaniem linii. Drugie zdanie.')).toEqual({
+      lead: 'Pierwsze zdanie z łamaniem linii.',
+      rest: 'Drugie zdanie.',
+    });
+  });
+
+  it('splits multi-paragraph copy after the first sentence and leaves the body as written', () => {
+    expect(splitCollectionDescription('Pierwsze zdanie.\n\nDrugi akapit.\nTrzeci wiersz.')).toEqual({
+      lead: 'Pierwsze zdanie.',
+      rest: 'Drugi akapit.\nTrzeci wiersz.',
+    });
+  });
+});
+
+describe('collectionTeaser', () => {
+  it('is the first sentence, also when it spans a line break', () => {
+    expect(collectionTeaser('Pierwsze zdanie\nz łamaniem linii. Drugie zdanie.')).toBe('Pierwsze zdanie z łamaniem linii.');
+  });
+
+  it('cuts a long first sentence on a word boundary with an ellipsis', () => {
+    const out = collectionTeaser(`${'słowo '.repeat(40)}koniec.`, 50);
+    expect(out).toBeDefined();
+    expect(out!.length).toBeLessThanOrEqual(50);
+    expect(out!.endsWith('…')).toBe(true);
+  });
+
+  it('is undefined without a description', () => {
+    expect(collectionTeaser(undefined)).toBeUndefined();
+    expect(collectionTeaser('')).toBeUndefined();
+  });
+});
+
+describe('collectionMetaDescription', () => {
+  const s1 = 'A'.repeat(60) + '.';
+  const s2 = 'B'.repeat(60) + '.';
+  const s3 = 'C'.repeat(60) + '.';
+
+  it('packs whole sentences up to the limit and never breaks one', () => {
+    const out = collectionMetaDescription(`${s1} ${s2} ${s3}`, 155);
+    expect(out).toBe(`${s1} ${s2}`);
+    expect(out.length).toBeLessThanOrEqual(155);
+    expect(out.endsWith('.')).toBe(true);
+  });
+
+  it('returns the whole text when it already fits', () => {
+    expect(collectionMetaDescription(`${s1} ${s2}`, 155)).toBe(`${s1} ${s2}`);
+  });
+
+  it('collapses line breaks to single spaces before packing sentences', () => {
+    const out = collectionMetaDescription('Pierwsze zdanie\nz łamaniem linii.\n\nDrugie zdanie.');
+    expect(out).toBe('Pierwsze zdanie z łamaniem linii. Drugie zdanie.');
+    expect(out).not.toMatch(/\n/);
+  });
+
+  it('cuts on a word boundary with an ellipsis when the first sentence alone is too long', () => {
+    const long = `${'słowo '.repeat(40)}koniec.`;
+    const out = collectionMetaDescription(long, 50);
+    expect(out.length).toBeLessThanOrEqual(50);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.slice(0, -1)).toMatch(/słowo$/);
   });
 });

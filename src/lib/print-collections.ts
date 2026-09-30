@@ -79,13 +79,47 @@ export function collectionDescription(def: PrintCollectionDefinition, locale: st
   return raw && raw.length >= MIN_COLLECTION_DESCRIPTION_LENGTH ? raw : undefined;
 }
 
+/**
+ * Split a description into its first sentence (the page lead, also the hub
+ * card teaser) and the remainder; `rest` is undefined for a one-sentence text.
+ * The first sentence may run across a line break (the CMS field is free text):
+ * `s` lets `.` match newlines, and the lead's whitespace is collapsed to single
+ * spaces so it reads as one line.
+ */
+export function splitCollectionDescription(description: string): { lead: string; rest?: string } {
+  const text = description.trim();
+  const sentence = text.match(/^.+?[.!?…](?=\s|$)/s)?.[0] ?? text;
+  const lead = sentence.replace(/\s+/g, ' ');
+  const rest = text.slice(sentence.length).trim();
+  return rest ? { lead, rest } : { lead };
+}
+
 /** One-to-two-sentence card teaser: the first sentence of a description,
  *  capped at `max` characters on a word boundary. */
 export function collectionTeaser(description: string | undefined, max = 140): string | undefined {
   if (!description) return undefined;
-  const firstSentence = description.match(/^.+?[.!?…](?=\s|$)/)?.[0] ?? description;
-  if (firstSentence.length <= max) return firstSentence;
-  const cut = firstSentence.slice(0, max).replace(/\s+\S*$/, '');
+  const { lead } = splitCollectionDescription(description);
+  if (lead.length <= max) return lead;
+  const cut = lead.slice(0, max).replace(/\s+\S*$/, '');
+  return `${cut}…`;
+}
+
+/**
+ * `<meta name="description">` text: as many whole sentences as fit in `max`
+ * characters, so a search snippet never breaks mid-sentence. When even the
+ * first sentence is longer, it is cut on a word boundary with an ellipsis.
+ * Line breaks in the source collapse to spaces (they would count against `max`).
+ */
+export function collectionMetaDescription(description: string, max = 155): string {
+  const sentences = description.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+/);
+  let out = '';
+  for (const sentence of sentences) {
+    const next = out ? `${out} ${sentence}` : sentence;
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+  const cut = sentences[0].slice(0, max - 1).replace(/\s+\S*$/, '');
   return `${cut}…`;
 }
 

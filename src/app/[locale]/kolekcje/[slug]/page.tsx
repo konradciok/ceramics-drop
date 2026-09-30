@@ -13,10 +13,12 @@ import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage } from '@/lib/print-mockups';
 import { printDisplayName } from '@/lib/print-curation';
 import {
+  collectionMetaDescription,
   groupPrintDesigns,
   indexableCollectionLocales,
   loadPrintCollectionDefinitions,
   resolvePrintCollectionPage,
+  splitCollectionDescription,
   UNASSIGNED_COLLECTION,
 } from '@/lib/print-collections';
 import { fromPriceOf } from '@/lib/print-pricing';
@@ -57,8 +59,9 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   const [hero] = page.designs;
   const previousOpenGraph = (await parent).openGraph ?? {};
   const title = t('collectionPage.metaTitle', { name: page.name });
+  // Whole sentences only — a hard slice would cut the snippet mid-sentence.
   const description = page.description
-    ? page.description.slice(0, 160)
+    ? collectionMetaDescription(page.description)
     : t('collectionPage.metaDescriptionFallback', { name: page.name });
   const image = hero ? printListingImage(hero, registryPrintById(hero.id)) : undefined;
   return {
@@ -108,6 +111,9 @@ export default async function Page({ params }: Props) {
     };
   });
 
+  // First sentence = lead (also the hub teaser); the rest reads as body copy beside/below it.
+  const { lead, rest } = page.description ? splitCollectionDescription(page.description) : { lead: undefined, rest: undefined };
+
   const schema = printCollectionPageSchema({
     locale: locale as Locale,
     t: (key) => t(key),
@@ -136,8 +142,9 @@ export default async function Page({ params }: Props) {
           <div>
             <div className="eyebrow">{t('collectionPage.eyebrow', { count: page.designs.length })}</div>
             <h1>{page.name}</h1>
-            {page.description && <p className="lead">{page.description}</p>}
+            {lead && <p className="lead">{lead}</p>}
           </div>
+          {rest && <p className="collection-body">{rest}</p>}
         </div>
       </section>
       <PrintCollectionAnalytics items={items} listId={`collection-${slug}`} listName={page.name} currency={code}>

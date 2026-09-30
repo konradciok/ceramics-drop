@@ -774,6 +774,9 @@ ul { list-style:none; padding:0; margin:0; }
 .collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; white-space:nowrap; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
 .collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
+/* Collection header: the first sentence is the lead, the rest of the description sits
+   beside it on wide screens and wraps below on phones (the lead column is only 42ch). */
+.collection-body { flex:1 1 340px; max-width:58ch; margin:0; font-size:16px; line-height:1.7; opacity:.85; }
 .collection-more { padding-bottom:clamp(48px,6vw,96px); }
 .collection-more-inner { max-width:var(--max); margin:18px auto 0; padding:0 var(--gut); }
 .collection-more-cta { display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(28px,4vw,48px); }
