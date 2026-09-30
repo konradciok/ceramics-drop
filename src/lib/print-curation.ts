@@ -41,6 +41,7 @@ export type PrintCuration = {
   productId: string;
   number?: string;
   seriesNumber?: string;
+  displayName?: string;
   status?: 'draft';
   collectionSlug?: string;
   duplicateOf?: string;
@@ -58,7 +59,8 @@ export type PrintCollectionDefinition = {
 
 export type PrintCurationSource = {
   schemaVersion: number;
-  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string; seriesNumber?: string; status?: 'draft' }> }>;
+  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string; seriesNumber?: string; displayName?: string; status?: 'draft' }> }>;
+  retiredCollections?: Array<{ slug: string; name: string }>;
   retired: Array<{ sourceNumber: string; productId: string; duplicateOf: string; reason: string }>;
 };
 
@@ -83,6 +85,15 @@ export function validatePrintCuration(input: PrintCurationSource): void {
       fail(`${collection.slug} must contain at least 1 print`);
     }
   }
+  const retiredCollections = input.retiredCollections ?? [];
+  if (new Set(retiredCollections.map((collection) => collection.slug)).size !== retiredCollections.length
+    || new Set(retiredCollections.map((collection) => collection.name)).size !== retiredCollections.length) {
+    fail('retired collection slugs and names must be unique');
+  }
+  for (const collection of retiredCollections) {
+    if (!collection.slug?.trim() || !collection.name?.trim()) fail('retired collections require slug and name');
+    if (slugs.has(collection.slug) || names.has(collection.name)) fail(`retired collection is still active: ${collection.name}`);
+  }
   const active = input.collections.flatMap((collection) => collection.prints);
   const all = [...active, ...input.retired];
   const ids = new Set<string>();
@@ -95,6 +106,7 @@ export function validatePrintCuration(input: PrintCurationSource): void {
     ids.add(item.productId);
     if ('status' in item && item.status !== 'draft') fail(`${item.productId} has an invalid status`);
     if ('seriesNumber' in item && !/^\d{2,}$/.test(item.seriesNumber ?? '')) fail(`${item.productId} has an invalid series number`);
+    if ('displayName' in item && !item.displayName?.trim()) fail(`${item.productId} has an invalid display name`);
   }
   // Global display numbers remain contiguous and unique. Collection-local
   // names and stable source IDs are separate; neither imposes a batch size.
@@ -155,7 +167,10 @@ export function printDisplayName(
       const curated = curationForProduct(design.id);
       // CMS definitions carry membership, while source series numbers remain
       // stable even when the works are reordered within their collection.
-      const series = collection.prints.find((item) => item.productId === design.id)?.seriesNumber
+      const collectionPrint = collection.prints.find((item) => item.productId === design.id);
+      const explicitName = collectionPrint?.displayName ?? curated?.displayName;
+      if (explicitName) return explicitName;
+      const series = collectionPrint?.seriesNumber
         ?? (curated?.collectionSlug === collection.slug ? curated.seriesNumber : undefined);
       return `${collection.name} ${series ?? String(index + 1).padStart(2, '0')}`;
     }

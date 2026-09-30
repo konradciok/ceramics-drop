@@ -3,14 +3,14 @@ import { routing } from '@/i18n/routing';
 import { absoluteUrl } from '@/lib/seo/urls';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
 
-// linea (9 prints) has real pl copy only; gestures (8) has real pl + de copy; cirrus (1 print) has copy in every locale but is thin.
+// linea (9 prints) has real pl copy only; gestures (8) has real pl + de copy; signs (2 prints) has copy in every locale but is thin.
 vi.mock('@/lib/print-collections', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/print-collections')>();
   const COPY = 'x'.repeat(120);
   const definitions: PrintCollectionDefinition[] = actual.PRINT_COLLECTIONS.map((c) => {
     if (c.slug === 'linea') return { ...c, descriptions: { pl: COPY, en: 'Linea.' } };
     if (c.slug === 'gestures') return { ...c, descriptions: { pl: COPY, de: COPY, en: 'Gestures.' } };
-    if (c.slug === 'cirrus') return { ...c, descriptions: { pl: COPY, en: COPY, es: COPY, de: COPY } };
+    if (c.slug === 'signs') return { ...c, descriptions: { pl: COPY, en: COPY, es: COPY, de: COPY } };
     return c;
   });
   return { ...actual, loadPrintCollectionDefinitions: async () => definitions };
@@ -43,7 +43,7 @@ describe('sitemap: print collection pages', () => {
 
   it('keeps thin collections (fewer than 3 prints) out even with copy', async () => {
     const urls = [...(await sitemap()).map((e) => e.url)];
-    expect(urls.some((u) => u.includes('/kolekcje/cirrus'))).toBe(false);
+    expect(urls.some((u) => u.includes('/kolekcje/signs'))).toBe(false);
   });
 
   it('gives a collection page hreflang alternates over its indexable locales only', async () => {

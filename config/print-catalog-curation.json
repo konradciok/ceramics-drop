@@ -46,119 +46,96 @@
       "name": "Horizons",
       "prints": [
         { "sourceNumber": "023", "productId": "fap023", "number": "23" },
-        { "sourceNumber": "026", "productId": "fap026", "number": "24" }
+        { "sourceNumber": "026", "productId": "fap026", "number": "24" },
+        { "sourceNumber": "046", "productId": "fap046", "number": "25", "displayName": "Cumulonimbus 03" },
+        { "sourceNumber": "047", "productId": "fap047", "number": "26", "displayName": "Cumulonimbus 06" }
       ]
     },
     {
       "slug": "portals",
       "name": "Portals",
       "prints": [
-        { "sourceNumber": "024", "productId": "fap024", "number": "25" },
-        { "sourceNumber": "027", "productId": "fap027", "number": "26" },
-        { "sourceNumber": "030", "productId": "fap030", "number": "27" },
-        { "sourceNumber": "031", "productId": "fap031", "number": "28" },
-        { "sourceNumber": "032", "productId": "fap032", "number": "29" }
+        { "sourceNumber": "024", "productId": "fap024", "number": "27" },
+        { "sourceNumber": "027", "productId": "fap027", "number": "28" },
+        { "sourceNumber": "030", "productId": "fap030", "number": "29" },
+        { "sourceNumber": "031", "productId": "fap031", "number": "30" },
+        { "sourceNumber": "032", "productId": "fap032", "number": "31" },
+        { "sourceNumber": "055", "productId": "fap055", "number": "32", "displayName": "Unda 04" },
+        { "sourceNumber": "056", "productId": "fap056", "number": "33", "displayName": "Unda 05" }
       ]
     },
     {
       "slug": "signs",
       "name": "Signs",
       "prints": [
-        { "sourceNumber": "004", "productId": "fap004", "number": "30" },
-        { "sourceNumber": "005", "productId": "fap005", "number": "31" }
+        { "sourceNumber": "004", "productId": "fap004", "number": "34" },
+        { "sourceNumber": "005", "productId": "fap005", "number": "35" }
       ]
     },
     {
       "slug": "ciala",
       "name": "Ciala",
       "prints": [
-        { "sourceNumber": "008", "productId": "fap008", "number": "32" },
-        { "sourceNumber": "033", "productId": "fap033", "number": "33" }
+        { "sourceNumber": "008", "productId": "fap008", "number": "36" },
+        { "sourceNumber": "033", "productId": "fap033", "number": "37" }
       ]
     },
     {
       "slug": "balance",
       "name": "Balance",
       "prints": [
-        { "sourceNumber": "028", "productId": "fap028", "number": "34" },
-        { "sourceNumber": "025", "productId": "fap025", "number": "35" }
+        { "sourceNumber": "028", "productId": "fap028", "number": "38" },
+        { "sourceNumber": "025", "productId": "fap025", "number": "39" },
+        { "sourceNumber": "057", "productId": "fap057", "number": "40", "displayName": "Tachylite 03" }
       ]
     },
     {
       "slug": "verticles",
       "name": "Verticles",
       "prints": [
-        { "sourceNumber": "009", "productId": "fap009", "number": "36" },
-        { "sourceNumber": "013", "productId": "fap013", "number": "37" },
-        { "sourceNumber": "017", "productId": "fap017", "number": "38" },
-        { "sourceNumber": "022", "productId": "fap022", "number": "39" }
-      ]
-    },
-    {
-      "slug": "aurora",
-      "name": "Aurora",
-      "prints": [
-        { "sourceNumber": "042", "productId": "fap042", "number": "40", "seriesNumber": "01" },
-        { "sourceNumber": "043", "productId": "fap043", "number": "41", "seriesNumber": "02" },
-        { "sourceNumber": "044", "productId": "fap044", "number": "42", "seriesNumber": "04" }
-      ]
-    },
-    {
-      "slug": "cirrus",
-      "name": "Cirrus",
-      "prints": [
-        { "sourceNumber": "045", "productId": "fap045", "number": "43", "seriesNumber": "01" },
-        { "sourceNumber": "058", "productId": "fap058", "number": "44", "seriesNumber": "05" }
-      ]
-    },
-    {
-      "slug": "cumulonimbus",
-      "name": "Cumulonimbus",
-      "prints": [
-        { "sourceNumber": "046", "productId": "fap046", "number": "45", "seriesNumber": "03" },
-        { "sourceNumber": "047", "productId": "fap047", "number": "46", "seriesNumber": "06" }
-      ]
-    },
-    {
-      "slug": "cumulus",
-      "name": "Cumulus",
-      "prints": [
-        { "sourceNumber": "048", "productId": "fap048", "number": "47", "seriesNumber": "01" },
-        { "sourceNumber": "049", "productId": "fap049", "number": "48", "seriesNumber": "06" }
+        { "sourceNumber": "009", "productId": "fap009", "number": "41" },
+        { "sourceNumber": "013", "productId": "fap013", "number": "42" },
+        { "sourceNumber": "017", "productId": "fap017", "number": "43" },
+        { "sourceNumber": "022", "productId": "fap022", "number": "44" }
       ]
     },
     {
       "slug": "obsidian",
       "name": "Obsidian",
       "prints": [
-        { "sourceNumber": "050", "productId": "fap050", "number": "49", "seriesNumber": "02" },
-        { "sourceNumber": "051", "productId": "fap051", "number": "50", "seriesNumber": "03" },
-        { "sourceNumber": "052", "productId": "fap052", "number": "51", "seriesNumber": "04" },
-        { "sourceNumber": "053", "productId": "fap053", "number": "52", "seriesNumber": "05" }
+        { "sourceNumber": "050", "productId": "fap050", "number": "45", "seriesNumber": "02" },
+        { "sourceNumber": "051", "productId": "fap051", "number": "46", "seriesNumber": "03" },
+        { "sourceNumber": "052", "productId": "fap052", "number": "47", "seriesNumber": "04" },
+        { "sourceNumber": "053", "productId": "fap053", "number": "48", "seriesNumber": "05" }
       ]
     },
     {
-      "slug": "scopulus",
-      "name": "Scopulus",
+      "slug": "aurora",
+      "name": "Aurora",
       "prints": [
-        { "sourceNumber": "054", "productId": "fap054", "number": "53", "seriesNumber": "02" }
+        { "sourceNumber": "042", "productId": "fap042", "number": "49", "seriesNumber": "01" },
+        { "sourceNumber": "043", "productId": "fap043", "number": "50", "seriesNumber": "02" },
+        { "sourceNumber": "044", "productId": "fap044", "number": "51", "seriesNumber": "04" }
       ]
     },
     {
-      "slug": "unda",
-      "name": "Unda",
+      "slug": "cirrus",
+      "name": "Cirrus",
       "prints": [
-        { "sourceNumber": "055", "productId": "fap055", "number": "54", "seriesNumber": "04" },
-        { "sourceNumber": "056", "productId": "fap056", "number": "55", "seriesNumber": "05" }
-      ]
-    },
-    {
-      "slug": "tachylite",
-      "name": "Tachylite",
-      "prints": [
-        { "sourceNumber": "057", "productId": "fap057", "number": "56", "seriesNumber": "03" }
+        { "sourceNumber": "045", "productId": "fap045", "number": "52", "seriesNumber": "01" },
+        { "sourceNumber": "058", "productId": "fap058", "number": "53", "displayName": "Cumulus 02" },
+        { "sourceNumber": "048", "productId": "fap048", "number": "54", "displayName": "Cumulus 01" },
+        { "sourceNumber": "049", "productId": "fap049", "number": "55", "displayName": "Cumulus 06" },
+        { "sourceNumber": "054", "productId": "fap054", "number": "56", "displayName": "Scopulus 02" }
       ]
     }
+  ],
+  "retiredCollections": [
+    { "slug": "cumulonimbus", "name": "Cumulonimbus" },
+    { "slug": "cumulus", "name": "Cumulus" },
+    { "slug": "scopulus", "name": "Scopulus" },
+    { "slug": "unda", "name": "Unda" },
+    { "slug": "tachylite", "name": "Tachylite" }
   ],
   "retired": [
     { "sourceNumber": "029", "productId": "fap029", "duplicateOf": "fap011", "reason": "near-duplicate composition" },

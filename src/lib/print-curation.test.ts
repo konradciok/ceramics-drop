@@ -22,12 +22,17 @@ describe('fine-art print curation map', () => {
     for (const collection of PRINT_COLLECTION_DEFINITIONS) {
       collection.designIds.forEach((id, index) => {
         expect(printDisplayName({ id, num: '99' }, 'Druk')).toBe(
-          `${collection.name} ${collection.prints[index].seriesNumber ?? String(index + 1).padStart(2, '0')}`,
+          collection.prints[index].displayName
+            ?? `${collection.name} ${collection.prints[index].seriesNumber ?? String(index + 1).padStart(2, '0')}`,
         );
       });
     }
     expect(printDisplayName({ id: 'fap004', num: '30' })).toBe('Signs 01');
     expect(printDisplayName({ id: 'fap008', num: '32' })).toBe('Ciala 01');
+    expect(printDisplayName({ id: 'fap046', num: '25' })).toBe('Cumulonimbus 03');
+    expect(printDisplayName({ id: 'fap055', num: '32' })).toBe('Unda 04');
+    expect(printDisplayName({ id: 'fap057', num: '40' })).toBe('Tachylite 03');
+    expect(printDisplayName({ id: 'fap058', num: '53' })).toBe('Cumulus 02');
     expect(printDisplayName({ id: 'unknown', num: '42' }, 'Druk')).toBe('Druk Nº 42');
   });
 
@@ -96,13 +101,13 @@ describe('fine-art print curation map', () => {
   it('preserves the authored collection and numbering invariants', () => {
     expect(PRINT_COLLECTION_DEFINITIONS.map(({ name }) => name)).toEqual([
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
-      'Signs', 'Ciala', 'Balance', 'Verticles',
-      'Aurora', 'Cirrus', 'Cumulonimbus', 'Cumulus', 'Obsidian', 'Scopulus', 'Unda', 'Tachylite',
+      'Signs', 'Ciala', 'Balance', 'Verticles', 'Obsidian', 'Aurora', 'Cirrus',
     ]);
     expect(ACTIVE_PRINT_CURATION.map(({ number }) => number)).toEqual(
       Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
-    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 2, 2, 2, 4, 1, 2, 1]);
+    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
+    expect(source.retiredCollections?.map(({ name }) => name)).toEqual(['Cumulonimbus', 'Cumulus', 'Scopulus', 'Unda', 'Tachylite']);
     expect(RETIRED_PRINT_CURATION.map(({ productId }) => productId)).toEqual(['fap029', 'fap037']);
 
     for (const item of PRINT_CURATION) {
@@ -148,6 +153,9 @@ describe('fine-art print curation map', () => {
     const empty = structuredClone(source);
     empty.collections[0].prints = [];
     expect(() => validatePrintCuration(empty)).toThrow(/at least 1 print/);
+    const stillActive = structuredClone(source);
+    stillActive.retiredCollections = [{ slug: 'ostrea', name: 'Ostrea' }];
+    expect(() => validatePrintCuration(stillActive)).toThrow(/still active/);
   });
 
   it('rejects duplicate IDs across active and retired designs and invalid source mapping', () => {
