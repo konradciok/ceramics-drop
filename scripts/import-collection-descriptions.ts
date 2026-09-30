@@ -58,6 +58,9 @@ export const MIN_DESCRIPTION_LENGTH = 80;
 
 const DEFAULT_FILE = 'docs/copy/2026-09-30-opisy-kolekcji/opisy-kolekcji.json';
 const PRINT_COLLECTION_KIND = 'print-collection';
+const RETIRED_COLLECTION_SLUGS = new Set(
+  ((curationSource as { retiredCollections?: Array<{ slug: string }> }).retiredCollections ?? []).map(({ slug }) => slug),
+);
 
 /** One collection's approved copy: its curated name and one description per locale. */
 export interface ApprovedCollection {
@@ -131,6 +134,10 @@ export function parseApprovedDescriptions(raw: unknown, knownSlugs: readonly str
   const known = new Set(knownSlugs);
   const collections: ApprovedDescriptions['collections'] = {};
   for (const [slug, entry] of Object.entries(file.collections as Record<string, unknown>)) {
+    // The approved copy package predates later owner-directed regrouping.
+    // Keep that package immutable for provenance, but omit collections the
+    // curation map explicitly retired. Any other unknown slug remains an error.
+    if (!known.has(slug) && RETIRED_COLLECTION_SLUGS.has(slug)) continue;
     if (!known.has(slug)) fail(`unknown collection slug "${slug}"`);
     const e = entry as { name?: unknown; description?: Record<string, unknown> } | null;
     if (!e || typeof e.name !== 'string' || !e.name.trim()) return fail(`${slug}: missing name`);

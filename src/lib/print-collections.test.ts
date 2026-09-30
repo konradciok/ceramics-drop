@@ -42,7 +42,7 @@ describe('PRINT_COLLECTIONS integrity', () => {
   });
 
   it('derives its ordered members from the curation map', () => {
-    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 2, 2, 2, 4, 1, 2, 1]);
+    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
   });
 });
 
@@ -53,10 +53,9 @@ describe('groupPrintDesigns', () => {
     const groups = groupPrintDesigns(published);
     expect(groups.map(({ name }) => name)).toEqual([
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
-      'Signs', 'Ciala', 'Balance', 'Verticles',
-      'Aurora', 'Cirrus', 'Cumulonimbus', 'Cumulus', 'Obsidian', 'Scopulus', 'Unda', 'Tachylite',
+      'Signs', 'Ciala', 'Balance', 'Verticles', 'Obsidian', 'Aurora', 'Cirrus',
     ]);
-    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4, 3, 2, 2, 2, 4, 1, 2, 1]);
+    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
     expect(groups.flatMap(({ designs }) => designs.map(({ num }) => num))).toEqual(
       Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
