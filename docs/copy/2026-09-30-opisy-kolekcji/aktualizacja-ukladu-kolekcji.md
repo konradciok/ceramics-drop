@@ -103,8 +103,8 @@ Te same reguły i ten sam walidator co w pierwszym pakiecie, uruchomiony na teks
 
 Import wykonano najpierw jako dry-run (trzy linie `WRITE … pl:set en:set es:set de:set`; Cirrus i Horizons rewizja 4 → 5, Portals 3 → 4), potem z `--confirm`: `3 published, 0 failed, 0 skipped`. `--force` było potrzebne, bo w CMS były już teksty z pierwszego pakietu, a skrypt chroni wszystko, co nie jest pustym polem ani placeholderem. Przed zapisem sprawdzono, że tekst na produkcji jest identyczny z pierwszym pakietem (czyli żadnych ręcznych edycji do nadpisania). Poprzednie wersje zostają w historii rewizji CMS.
 
-Po imporcie na produkcji wszystkie 12 wariantów (3 kolekcje × 4 języki) pokazuje nowy tekst, strony są indeksowalne, meta description składa się z całych zdań, sitemapa ma 10 kolekcji w 4 językach, a hub 12 kart z zajawkami. Komenda (poświadczenia produkcyjne przez `--env-file`; bez `--confirm` to dry-run, który dziś pokaże `unchanged`):
+Po imporcie na produkcji wszystkie 12 wariantów (3 kolekcje × 4 języki) pokazuje nowy tekst, strony są indeksowalne, meta description składa się z całych zdań, sitemapa ma 10 kolekcji w 4 językach, a hub 12 kart z zajawkami. Komenda. Poświadczenia produkcyjne przekazano plikiem poza repozytorium (`--env-file`), z dwiema liniami `SUPABASE_URL=…` i `SUPABASE_SERVICE_ROLE_KEY=…`; po użyciu plik usunięto. Skrypt czyta je w kolejności `.env.local` < `.dev.vars` < `--env-file` < zmienne środowiskowe. Bez `--confirm` to dry-run, który dziś pokaże `unchanged`:
 
 ```bash
-npm run collections:import-descriptions -- --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
+npm run collections:import-descriptions -- --env-file ~/.config/ceramics-drop/prod.env --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
 ```

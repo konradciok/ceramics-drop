@@ -95,10 +95,10 @@ npm run collections:import-descriptions -- --confirm
 
 Stan z 1 października 2026: 12 aktywnych kolekcji ma opisy w czterech językach. Dziesięć z nich (co najmniej 3 prace) jest indeksowalnych i w sitemapie, a Signs i Ciala (po 2 prace) zostają `noindex` (punkt 8). Cirrus, Horizons i Portals mają teksty z [aktualizacji](aktualizacja-ukladu-kolekcji.md), nie z `opisy-kolekcji.json`.
 
-Każdą następną zmianę tekstu wdrażaj jako osobny pakiet (`status: approved`) i wskaż go pełną ścieżką z repozytorium. Wzorzec to aktualizacja z 1 października; dziś jej plan pokaże `unchanged`, a `--confirm` dopisuj dopiero przy nowej zmianie (`--force` nadpisuje także ręczne edycje z CMS, więc przed zapisem porównaj plan z tym, co jest na stronie):
+Każdą następną zmianę tekstu wdrażaj jako osobny pakiet (`status: approved`) i wskaż go pełną ścieżką z repozytorium. Wzorzec to aktualizacja z 1 października; dziś jej plan pokaże `unchanged`, a `--confirm` dopisuj dopiero przy nowej zmianie (`--force` nadpisuje także ręczne edycje z CMS, więc przed zapisem porównaj plan z tym, co jest na stronie). Poświadczenia produkcyjne podaj plikiem poza repozytorium przez `--env-file` (loader czyta `.env.local` < `.dev.vars` < `--env-file` < zmienne środowiskowe) i usuń go po użyciu:
 
 ```bash
-npm run collections:import-descriptions -- --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
+npm run collections:import-descriptions -- --env-file ~/.config/ceramics-drop/prod.env --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
 ```
 
 Odrzucone alternatywy: wklejanie 68 tekstów ręcznie w CMS (dużo klikania, brak śladu w repo) oraz zapas w `messages/*.json` jako wartość zastępcza (działałby od razu po merge’u, ale dubluje źródło prawdy — CMS i tak miałby pierwszeństwo).
