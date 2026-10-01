@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.16.0](https://github.com/konradciok/ceramics-drop/compare/v0.15.0...v0.16.0) (2026-10-01)
+
+
+### Features
+
+* activate verified September print collection ([b9bb27b](https://github.com/konradciok/ceramics-drop/commit/b9bb27bc0b1bf133bca6c6418b90214de015ef36))
+* activate verified September print collection ([27113ad](https://github.com/konradciok/ceramics-drop/commit/27113ad7dfa8eff672f3b55f3799fc2daf2c23fc))
+* add /refund-policy page in all 4 locales ([#327](https://github.com/konradciok/ceramics-drop/issues/327)) ([99aa70e](https://github.com/konradciok/ceramics-drop/commit/99aa70e67aac69499ae56fa039cd1030631ed648))
+* add Cirrus 05 fine art print ([8bc0434](https://github.com/konradciok/ceramics-drop/commit/8bc0434556ebb42771f6647b5bcafe9700508dea))
+* add Cirrus 05 fine art print ([5fd31eb](https://github.com/konradciok/ceramics-drop/commit/5fd31eb040cb0120f6d1a09b4fa71294836d997e))
+* apply new fine art print collection layout ([3a48126](https://github.com/konradciok/ceramics-drop/commit/3a48126e117a2513592f6837d572d81cf83f380b))
+* apply new fine art print collection layout ([e6a4c0d](https://github.com/konradciok/ceramics-drop/commit/e6a4c0df04581fea63e5aeaceb10d559480163a5))
+* **collections:** approved descriptions, header layout and import script ([6f19a53](https://github.com/konradciok/ceramics-drop/commit/6f19a5354fd30e742c5958b1b08eeaaac42c23a1))
+* **collections:** copy update after the regrouping and quoted kept text in the import plan ([c241342](https://github.com/konradciok/ceramics-drop/commit/c2413428ad78911a5c93930e771e5edf787fc744))
+* **collections:** lead + body layout and sentence-safe meta description ([4e19de9](https://github.com/konradciok/ceramics-drop/commit/4e19de998e111f4dddfccf239e6a97d0966ff72e))
+* **collections:** quote the text the description import keeps ([3e16f5b](https://github.com/konradciok/ceramics-drop/commit/3e16f5be8f7d928e77fc501e08aff28bae4625cb))
+* **collections:** script to import the approved collection descriptions ([7ad4a9c](https://github.com/konradciok/ceramics-drop/commit/7ad4a9ce5a4c3741c8e475db7971cb04bf506bbd))
+* **feed:** retarget the en merchant feed and print PDP schema to GB/GBP ([#325](https://github.com/konradciok/ceramics-drop/issues/325)) ([a5d1803](https://github.com/konradciok/ceramics-drop/commit/a5d180326a4b61fe5d7f038e8c4a7251e035a5a2))
+* prepare 16 new prints with galleries and localized content ([7745da1](https://github.com/konradciok/ceramics-drop/commit/7745da157fa316719090c5598fc02656e06be9e0))
+* prepare new print galleries and localized catalogue content ([932bdce](https://github.com/konradciok/ceramics-drop/commit/932bdce480a6899e334243974f01339050171c1a))
+* **prints:** reconcile fine-art-print collection membership with new curation ([70f8efc](https://github.com/konradciok/ceramics-drop/commit/70f8efcc6f561682fd221a62ef5d3d991371af3a))
+* **prints:** reconcile print collections with new curation ([f66dd81](https://github.com/konradciok/ceramics-drop/commit/f66dd81828cb87caabab5d720b296c1500e9a3e0))
+* split the print shop (/sklep) from a new collection hub (/kolekcje) ([e0c08ac](https://github.com/konradciok/ceramics-drop/commit/e0c08ac0b2a06a1a997629ecb09427449297acbe))
+* split the print shop (/sklep) from a new collection hub (/kolekcje) ([0ad2fd9](https://github.com/konradciok/ceramics-drop/commit/0ad2fd9fb2848a31c357ec2de2c4788bf3970a48))
+* support new print batches and draft asset preparation ([5d17b22](https://github.com/konradciok/ceramics-drop/commit/5d17b22343c1b2a478aa6305f85e0a473f344d7e))
+
+
+### Bug Fixes
+
+* add shop colour data for fap058 and list the step in the new-print checklists ([b1e63a6](https://github.com/konradciok/ceramics-drop/commit/b1e63a6cd06be9a0ac9de0771ac48a21ee82bd40))
+* **cms-api:** return 500 instead of 200 null when post-write read-back fails ([55f015a](https://github.com/konradciok/ceramics-drop/commit/55f015ab440b0151ef7bec27811249fb327e2ad2))
+* **cms-api:** return 500 instead of 200 null when post-write read-back fails ([3cdead2](https://github.com/konradciok/ceramics-drop/commit/3cdead2a86c7c52e591fe968795862408bb67e94)), closes [#314](https://github.com/konradciok/ceramics-drop/issues/314)
+* **collections:** keep the lead/body split for descriptions with line breaks ([b8cc9e0](https://github.com/konradciok/ceramics-drop/commit/b8cc9e058d9981696c37cb44a818bb77cf7610f1))
+* **collections:** resume interrupted import drafts that kept an editor's text ([808d03f](https://github.com/konradciok/ceramics-drop/commit/808d03f262251ff5903b305a9add0308f098e3e6))
+* **copy:** refresh /sklep fine-art-prints lead across all locales ([#324](https://github.com/konradciok/ceramics-drop/issues/324)) ([762d2ad](https://github.com/konradciok/ceramics-drop/commit/762d2adbd2259b66c519f2a76ffd456818a274ba))
+* deduplicate storefront reads and bound catalogue load time ([e125f6b](https://github.com/konradciok/ceramics-drop/commit/e125f6bdf69cc5fcec8bb9b10da7d1bdcc8619a1))
+* deduplicate storefront reads and bound catalogue load time ([42217ed](https://github.com/konradciok/ceramics-drop/commit/42217edef941ee9bc480fe5476adb8ca122be2b2))
+* **email:** stop naming the print fulfilment partner in customer confirmation copy ([38a43fd](https://github.com/konradciok/ceramics-drop/commit/38a43fd7493b2cf44f7a53f2b9f0269fc3be425e))
+* **email:** stop naming the print fulfilment partner in customer confirmation copy ([a03fbf9](https://github.com/konradciok/ceramics-drop/commit/a03fbf9ced587151ee43f49750ed54b5c0718003))
+* **feed:** emit a real google_product_category for fine-art prints ([39565a8](https://github.com/konradciok/ceramics-drop/commit/39565a8ffb5886dce5c9b1e01ff27e1cae15282c))
+* **feed:** emit a real google_product_category for fine-art prints ([9234cd0](https://github.com/konradciok/ceramics-drop/commit/9234cd006d63bce6711ffd2026113140c1a6fa38))
+* finalize new print collection rollout ([96da37d](https://github.com/konradciok/ceramics-drop/commit/96da37dc190da0194cdcfe53c5fb3154f9ef840c))
+* finalize print collection rollout ([7473328](https://github.com/konradciok/ceramics-drop/commit/74733283e1646175d2447fd1664021185dc284c0))
+* limit collection hreflang to indexable locales and document new entry points ([335a8cb](https://github.com/konradciok/ceramics-drop/commit/335a8cbcf19796576c6635ca5a99f472d2c9cc52))
+* scope localized euro feed shipping ([#348](https://github.com/konradciok/ceramics-drop/issues/348)) ([941dca4](https://github.com/konradciok/ceramics-drop/commit/941dca4a964c12f843d1df05f010a82ce5be0eec))
+* segment merchant feeds by market ([07115f2](https://github.com/konradciok/ceramics-drop/commit/07115f2d67e398f237fcd6c2f907140330d87fef))
+* serialize non-Error catch values in worker cron sweep alerts ([2fa8968](https://github.com/konradciok/ceramics-drop/commit/2fa896808927add9819a871d2960d5a1944139d8))
+* wrap long collection names on narrow screens ([dc39b13](https://github.com/konradciok/ceramics-drop/commit/dc39b134c538b5daf3e23782bd25b922d8267317))
+* wrap print collection labels on narrow screens ([0dcd56d](https://github.com/konradciok/ceramics-drop/commit/0dcd56d1e90cefd5817d63fe89f54aef38f68ff5))
+
 ## [0.15.0](https://github.com/konradciok/ceramics-drop/compare/v0.14.0...v0.15.0) (2026-09-21)
 
 
