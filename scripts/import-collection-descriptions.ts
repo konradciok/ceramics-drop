@@ -13,7 +13,7 @@
  * It never clobbers editorial work. Per locale, a description is overwritten
  * only when the CMS value is empty or the seeded "<name>." placeholder
  * (scripts/backfill-fine-art-collections.ts); anything else the editor wrote
- * is kept unless --force. A collection that has an unpublished draft written
+ * is kept (the plan quotes it) unless --force. A collection that has an unpublished draft written
  * by someone else is skipped (publishing on top of it would publish their
  * changes too); a draft this script wrote itself but never published (an
  * interrupted run) is simply published on the next run — including one that
@@ -101,10 +101,13 @@ export interface CollectionState {
 
 export type LocaleAction = 'set' | 'unchanged' | 'kept';
 
+/** The description text the CMS currently holds per locale, trimmed ('' when there is none). */
+export type LocaleTexts = Record<DescriptionLocale, string>;
+
 export type CollectionPlan =
-  | { slug: string; status: 'apply'; collectionId: string; baseRevision: number; localeActions: Record<DescriptionLocale, LocaleAction>; payload: CmsPayload }
+  | { slug: string; status: 'apply'; collectionId: string; baseRevision: number; localeActions: Record<DescriptionLocale, LocaleAction>; current: LocaleTexts; payload: CmsPayload }
   | { slug: string; status: 'resume'; collectionId: string; revision: number }
-  | { slug: string; status: 'unchanged'; collectionId: string; localeActions: Record<DescriptionLocale, LocaleAction> }
+  | { slug: string; status: 'unchanged'; collectionId: string; localeActions: Record<DescriptionLocale, LocaleAction>; current: LocaleTexts }
   | { slug: string; status: 'skip'; reason: string; collectionId?: string };
 
 export interface ImportOptions {
@@ -228,13 +231,15 @@ export function planCollection(
 
   const payload: CmsPayload = { ...state.latestPayload, fields: state.latestPayload.fields.map((f) => ({ ...f })) };
   const localeActions = {} as Record<DescriptionLocale, LocaleAction>;
+  const current = {} as LocaleTexts;
   for (const locale of LOCALES) {
     const next = approved.description[locale];
     const field = descriptionField(payload, locale);
-    const current = field?.value ?? '';
-    if (current.trim() === next) {
+    const existing = field?.value ?? '';
+    current[locale] = existing.trim();
+    if (current[locale] === next) {
       localeActions[locale] = 'unchanged';
-    } else if (options.force || isSeedValue(current, [state.latestPayload.name, approved.name])) {
+    } else if (options.force || isSeedValue(existing, [state.latestPayload.name, approved.name])) {
       localeActions[locale] = 'set';
       if (field) field.value = next;
       else payload.fields.push({ key: 'description', label: 'Opis kolekcji', type: 'text', value: next, locale, sourceLocale: 'pl' });
@@ -243,8 +248,8 @@ export function planCollection(
     }
   }
 
-  if (!LOCALES.some((l) => localeActions[l] === 'set')) return { slug, status: 'unchanged', collectionId: id, localeActions };
-  return { slug, status: 'apply', collectionId: id, baseRevision: state.latestRevision, localeActions, payload };
+  if (!LOCALES.some((l) => localeActions[l] === 'set')) return { slug, status: 'unchanged', collectionId: id, localeActions, current };
+  return { slug, status: 'apply', collectionId: id, baseRevision: state.latestRevision, localeActions, current, payload };
 }
 
 /** Reads every print collection's latest draft + publication state, keyed by slug. */
@@ -304,6 +309,22 @@ function describePlan(plan: CollectionPlan): string {
   }
 }
 
+/** How much of a kept text the plan output quotes. */
+const KEPT_PREVIEW_CHARS = 100;
+
+/**
+ * One line per locale whose existing text the plan keeps, quoting that text, so
+ * the operator can judge whether to replace it with --force.
+ */
+function keptPreview(plan: CollectionPlan): string[] {
+  if (plan.status !== 'apply' && plan.status !== 'unchanged') return [];
+  return LOCALES.filter((l) => plan.localeActions[l] === 'kept').map((l) => {
+    const text = plan.current[l];
+    const shown = text.length > KEPT_PREVIEW_CHARS ? `${text.slice(0, KEPT_PREVIEW_CHARS - 1)}…` : text;
+    return `${' '.repeat(15)}${l} kept (${text.length} chars): ${JSON.stringify(shown)}`;
+  });
+}
+
 /** Plans (always) and applies (only with `confirm`) the import. Never throws for a single collection's failure. */
 export async function runImport(
   supabase: SupabaseClient,
@@ -322,7 +343,13 @@ export async function runImport(
     if (state === 'duplicate') return { slug, status: 'skip', reason: 'more than one CMS collection carries this slug' };
     return planCollection(slug, approved.collections[slug], state, { force: options.force });
   });
-  for (const plan of plans) log(`${plan.slug.padEnd(14)} ${describePlan(plan)}`);
+  for (const plan of plans) {
+    log(`${plan.slug.padEnd(14)} ${describePlan(plan)}`);
+    for (const line of keptPreview(plan)) log(line);
+  }
+  if (plans.some((p) => keptPreview(p).length > 0)) {
+    log('\n"kept" = existing text that is neither blank nor the seeded "<name>." placeholder. Replace it with --force (limit with --only).');
+  }
 
   const result: ImportResult = { plans, applied: [], errors: [] };
   if (!options.confirm) {

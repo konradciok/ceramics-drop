@@ -169,6 +169,32 @@ describe('the committed copy package (docs/copy/2026-09-30-opisy-kolekcji)', () 
   });
 });
 
+describe('the regrouping update package (docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json)', () => {
+  const raw = JSON.parse(
+    fs.readFileSync(fileURLToPath(new URL('../docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json', import.meta.url)), 'utf8'),
+  ) as unknown;
+  // Parsed as committed: also guards that the package stays approved and importable.
+  const parsed = parseApprovedDescriptions(raw, KNOWN_SLUGS);
+
+  it('covers exactly the collections whose text changed after the regrouping', () => {
+    expect(Object.keys(parsed.collections).sort()).toEqual(['cirrus', 'horizons', 'portals']);
+  });
+
+  it('keeps the curated names and gives each page a lead and a whole-sentence meta description', () => {
+    for (const [slug, entry] of Object.entries(parsed.collections)) {
+      expect(entry.name).toBe(CURATION.find((c) => c.slug === slug)!.name);
+      for (const locale of LOCALES) {
+        const text = entry.description[locale];
+        expect(text, `${slug}/${locale}`).toContain(entry.name);
+        const meta = collectionMetaDescription(text);
+        expect(meta.length, `${slug}/${locale}`).toBeLessThanOrEqual(155);
+        expect(meta.endsWith('…'), `${slug}/${locale} should not need an ellipsis`).toBe(false);
+        expect(splitCollectionDescription(text).lead.length, `${slug}/${locale} lead`).toBeLessThanOrEqual(140);
+      }
+    }
+  });
+});
+
 describe('planCollection', () => {
   const approved = approvedEntry('Ostrea');
 
@@ -198,6 +224,18 @@ describe('planCollection', () => {
     expect(plan.localeActions).toEqual({ pl: 'kept', en: 'set', es: 'set', de: 'set' });
     expect(valueOf(plan.payload, 'pl')).toBe(edited);
     expect(valueOf(plan.payload, 'en')).toBe(approved.description.en);
+  });
+
+  it('reports the text the CMS holds now, per locale, on apply and unchanged plans', () => {
+    const edited = 'Opis napisany ręcznie w CMS, zupełnie inny niż zatwierdzony szkic.';
+    const apply = planCollection('ostrea', approved, state({ latestPayload: printPayload('Ostrea', 'ostrea', { pl: edited }) }), { force: false });
+    expect(apply.status).toBe('apply');
+    if (apply.status === 'apply') expect(apply.current).toEqual({ pl: edited, en: '', es: '', de: '' });
+
+    const handWritten = printPayload('Ostrea', 'ostrea', { pl: `  ${edited}  `, en: 'Hand-written.', es: 'Escrito a mano.', de: 'Handgeschrieben.' });
+    const unchanged = planCollection('ostrea', approved, state({ latestPayload: handWritten }), { force: false });
+    expect(unchanged.status).toBe('unchanged');
+    if (unchanged.status === 'unchanged') expect(unchanged.current).toEqual({ pl: edited, en: 'Hand-written.', es: 'Escrito a mano.', de: 'Handgeschrieben.' });
   });
 
   it('overwrites an edited description only with force', () => {
@@ -489,6 +527,45 @@ describe('runImport', () => {
     expect(valueOf(payload, 'pl')).toBe(human);
     expect(valueOf(payload, 'en')).toBe(APPROVED.collections.ostrea.description.en);
     expect(db.byId('col_ostrea').publishedRevision).toBe(2);
+  });
+
+  it('quotes every kept text and says how to replace it', async () => {
+    const tagline = 'Falujące pasma, otwarte pętle i miękkie plamy koloru.';
+    const db = fakeDb([
+      seeded('col_aurora', 'Aurora', 'aurora', { pl: tagline, en: 'Wavering bands.', es: 'Franjas ondulantes.', de: 'Wellige Bänder.' }),
+      seeded('col_ostrea', 'Ostrea', 'ostrea'),
+    ]);
+    const lines: string[] = [];
+
+    await runImport(db.supabase, { collections: { aurora: approvedEntry('Aurora'), ostrea: APPROVED.collections.ostrea } }, OFF, (l) => lines.push(l));
+
+    const out = lines.join('\n');
+    expect(out).toContain(`pl kept (${tagline.length} chars): ${JSON.stringify(tagline)}`);
+    expect(out).toContain('en kept (15 chars): "Wavering bands."');
+    expect(out).toMatch(/Replace it with --force/);
+    // Only Aurora keeps anything; Ostrea (seeded) gets no quotes.
+    expect(lines.filter((l) => l.includes('kept ('))).toHaveLength(4);
+  });
+
+  it('shortens a long kept text in the preview and reports its full length', async () => {
+    const db = fakeDb([seeded('col_ostrea', 'Ostrea', 'ostrea', { pl: 'x'.repeat(250) })]);
+    const lines: string[] = [];
+
+    await runImport(db.supabase, { collections: { ostrea: APPROVED.collections.ostrea } }, OFF, (l) => lines.push(l));
+
+    const preview = lines.find((l) => l.includes('pl kept'))!;
+    expect(preview).toContain('(250 chars)');
+    expect(preview).toContain('…');
+    expect(preview.length).toBeLessThan(160);
+  });
+
+  it('prints no "kept" lines or hint when nothing is kept', async () => {
+    const db = fakeDb([seeded('col_ostrea', 'Ostrea', 'ostrea')]);
+    const lines: string[] = [];
+
+    await runImport(db.supabase, { collections: { ostrea: APPROVED.collections.ostrea } }, OFF, (l) => lines.push(l));
+
+    expect(lines.join('\n')).not.toMatch(/kept/);
   });
 
   it("skips a collection carrying someone else's unpublished draft and carries on with the rest", async () => {
