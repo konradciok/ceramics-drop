@@ -72,6 +72,15 @@ describe('buildFeedItems — fine-art prints only', () => {
     }
   });
 
+  it('keeps the EUR market shipping and currency invariant across its supported feed languages', async () => {
+    for (const locale of ['en', 'es', 'de'] as const) {
+      const items = await buildGoogleFeedItems('eu', locale);
+      expect(items.every((item) => item.price.endsWith(' EUR'))).toBe(true);
+      expect(items.every((item) => item.shipping.map((shipping) => shipping.country).join(',') === EU_PRINT_COUNTRIES.join(','))).toBe(true);
+      expect(items.every((item) => item.link.includes(`/${locale === 'en' ? 'en/' : `${locale}/`}fine-art-prints/`))).toBe(true);
+    }
+  });
+
   it('emits exactly one row per published print design, matching the emitted content_ids', async () => {
     const items = await buildFeedItems('en');
     const feedIds = items.map((i) => i.id).sort();

@@ -79,6 +79,11 @@ export const GOOGLE_FEED_MARKETS = {
 
 export type GoogleFeedMarketId = keyof typeof GOOGLE_FEED_MARKETS;
 
+/** Localized product-data variants for the one EUR market. They deliberately
+ * share its countries, prices and shipping; only customer-facing text and the
+ * landing-page language differ. */
+export const EU_FEED_LOCALES: FeedLocale[] = ['en', 'es', 'de'];
+
 export function isGoogleFeedMarketId(value: string | null): value is GoogleFeedMarketId {
   return value !== null && Object.hasOwn(GOOGLE_FEED_MARKETS, value);
 }
@@ -213,9 +218,12 @@ async function buildItems(locale: FeedLocale, market: Pick<GoogleFeedMarket, 'cu
 }
 
 /** Build the product data used by Google Merchant Center. */
-export async function buildGoogleFeedItems(marketId: GoogleFeedMarketId): Promise<FeedItem[]> {
+export async function buildGoogleFeedItems(
+  marketId: GoogleFeedMarketId,
+  locale: FeedLocale = GOOGLE_FEED_MARKETS[marketId].locale,
+): Promise<FeedItem[]> {
   const market = GOOGLE_FEED_MARKETS[marketId];
-  return buildItems(market.locale, market);
+  return buildItems(locale, market);
 }
 
 /**
