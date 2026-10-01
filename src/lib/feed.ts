@@ -24,7 +24,7 @@ import { getPrintDesigns } from './prints';
 import { loadPrintCollectionDefinitions } from './print-collections';
 import { fromPriceOf } from './print-pricing';
 import { getPrintPricingConfig } from './print-pricing-config/get';
-import { printShippingOf, type PrintCountry } from './print-shipping';
+import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from './print-shipping';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
 import type { CategorySlug } from './types';
@@ -48,10 +48,44 @@ const LOCALE_MESSAGES: Record<FeedLocale, Messages> = {
   de: deMessages as unknown as Messages,
 };
 
-function currency(locale: FeedLocale): string {
-  if (locale === 'pl') return 'PLN';
-  if (locale === 'en') return 'GBP';
-  return 'EUR';
+type FeedCurrency = 'pln' | 'eur' | 'gbp';
+
+type GoogleFeedMarket = {
+  locale: FeedLocale;
+  currency: FeedCurrency;
+  currencyCode: 'PLN' | 'EUR' | 'GBP';
+  countries: readonly PrintCountry[];
+};
+
+/** Every EU member served by the print checkout, deliberately excluding the
+ * separately priced PL market and non-EU GB market. Keep this derived from the
+ * checkout country allow-list so a feed can never advertise an unsupported
+ * destination. */
+export const EU_PRINT_COUNTRIES = PRINT_COUNTRIES.filter(
+  (country): country is Exclude<PrintCountry, 'PL' | 'GB'> => country !== 'PL' && country !== 'GB',
+);
+
+/**
+ * Merchant markets, not UI locales. A market is the contract Google sees:
+ * language/landing page, offer currency and every country with product-level
+ * shipping. Do not add a country here unless checkout can complete an order to
+ * it in the same currency.
+ */
+export const GOOGLE_FEED_MARKETS = {
+  pl: { locale: 'pl', currency: 'pln', currencyCode: 'PLN', countries: ['PL'] },
+  gb: { locale: 'en', currency: 'gbp', currencyCode: 'GBP', countries: ['GB'] },
+  eu: { locale: 'en', currency: 'eur', currencyCode: 'EUR', countries: EU_PRINT_COUNTRIES },
+} as const satisfies Record<string, GoogleFeedMarket>;
+
+export type GoogleFeedMarketId = keyof typeof GOOGLE_FEED_MARKETS;
+
+/** Localized product-data variants for the one EUR market. They deliberately
+ * share its countries, prices and shipping; only customer-facing text and the
+ * landing-page language differ. */
+export const EU_FEED_LOCALES: FeedLocale[] = ['en', 'es', 'de'];
+
+export function isGoogleFeedMarketId(value: string | null): value is GoogleFeedMarketId {
+  return value !== null && Object.hasOwn(GOOGLE_FEED_MARKETS, value);
 }
 
 function escapeXml(s: string): string {
@@ -86,9 +120,8 @@ const GOOGLE_CATEGORY = '500044';
 const PRICE_TIER = 'standard';
 const PRODUCT_FAMILY = 'prints';
 
-// Exported so structured-data.ts can reuse the same per-locale shipping
-// destination for `Offer.shippingDetails` — keep the feed and on-page schema
-// in agreement on where each locale's Offer is quoted for.
+// Legacy representative destinations for on-page structured data. Google feed
+// destinations are now defined by GOOGLE_FEED_MARKETS above, never by locale.
 export const SHIPPING_COUNTRY: Record<FeedLocale, string> = {
   pl: 'PL',
   en: 'GB',
@@ -127,12 +160,10 @@ export type FeedItem = {
  * shared accordion copy, not per-design text). Wire a CMS resolver in here only
  * once editors actually draft per-design descriptions.
  */
-export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
+async function buildItems(locale: FeedLocale, market: Pick<GoogleFeedMarket, 'currency' | 'currencyCode' | 'countries'>): Promise<FeedItem[]> {
   const msg = LOCALE_MESSAGES[locale];
-  const cur = currency(locale); // 'PLN' | 'GBP' | 'EUR'
-  const chargeable = locale === 'pl' ? 'pln' : locale === 'en' ? 'gbp' : 'eur';
+  const { currency: chargeable, currencyCode: cur, countries } = market;
   const singular = (msg.product as Record<string, string>).print ?? 'Print';
-  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
   // Three independent catalogue reads — under CATALOG_SOURCE=db each is a real
   // Supabase round trip, so issue them together rather than in sequence.
   const [designs, pricing, definitions] = await Promise.all([
@@ -146,7 +177,12 @@ export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
     const notes = (msg.notes as Record<string, string[]>)[FEED_CATEGORY];
     const description = notes?.[design.noteIndex] ?? title;
 
-    const link = absoluteUrl(locale, `/fine-art-prints/${design.id}`);
+    // The query is consumed by middleware before rendering, overriding an old
+    // visitor cookie. A Google crawl therefore sees the same currency as the
+    // feed even when it has no cookie or arrives from a different country.
+    const linkUrl = new URL(absoluteUrl(locale, `/fine-art-prints/${design.id}`));
+    linkUrl.searchParams.set('currency', chargeable);
+    const link = linkUrl.toString();
     const imageLink = `${SITE_URL}${design.image}`;
     const additionalImages = (design.gallery ?? []).map((g) => `${SITE_URL}${g}`);
 
@@ -155,7 +191,11 @@ export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
     // `pricing` through so shipping converts at the same admin-set FX rate
     // the item price above uses, instead of print-shipping.ts's hardcoded
     // fallback constants.
-    const shipCost = printShippingOf(country, false, chargeable, pricing);
+    const shipping = countries.map((country) => ({
+      country,
+      service: 'Prodigi',
+      price: `${printShippingOf(country, false, chargeable, pricing)}.00 ${cur}`,
+    }));
 
     return {
       id: design.id,
@@ -172,8 +212,32 @@ export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
       customLabel0: PRICE_TIER,
       customLabel1: PRODUCT_FAMILY,
       customLabel2: FEED_CATEGORY,
-      shipping: [{ country, service: 'Prodigi', price: `${shipCost}.00 ${cur}` }],
+      shipping,
     };
+  });
+}
+
+/** Build the product data used by Google Merchant Center. */
+export async function buildGoogleFeedItems(
+  marketId: GoogleFeedMarketId,
+  locale: FeedLocale = GOOGLE_FEED_MARKETS[marketId].locale,
+): Promise<FeedItem[]> {
+  const market = GOOGLE_FEED_MARKETS[marketId];
+  return buildItems(locale, market);
+}
+
+/**
+ * Meta's existing locale feeds keep their locale-specific catalogue language.
+ * They don't serialize the Google-only shipping element, but retain a valid
+ * product price/link pair. Google must use buildGoogleFeedItems instead.
+ */
+export async function buildFeedItems(locale: FeedLocale): Promise<FeedItem[]> {
+  const currency: FeedCurrency = locale === 'pl' ? 'pln' : locale === 'en' ? 'gbp' : 'eur';
+  const currencyCode = currency === 'pln' ? 'PLN' : currency === 'gbp' ? 'GBP' : 'EUR';
+  return buildItems(locale, {
+    currency,
+    currencyCode,
+    countries: [SHIPPING_COUNTRY[locale] as PrintCountry],
   });
 }
 

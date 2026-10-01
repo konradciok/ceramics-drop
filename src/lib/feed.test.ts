@@ -19,7 +19,15 @@ vi.mock('./print-collections', async (importOriginal) => {
   };
 });
 
-import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
+import {
+  buildFeedItems,
+  buildGoogleFeedItems,
+  buildGoogleXml,
+  buildMetaXml,
+  EU_PRINT_COUNTRIES,
+  GOOGLE_FEED_MARKETS,
+  type FeedItem,
+} from './feed';
 import { getPrintDesigns } from './prints';
 import { registryProducts } from './products';
 
@@ -42,6 +50,37 @@ const sampleItem: FeedItem = {
 };
 
 describe('buildFeedItems — fine-art prints only', () => {
+  it('defines exactly the approved PL/GB/EU markets and never exposes PL or GB in the EU market', () => {
+    expect(Object.keys(GOOGLE_FEED_MARKETS)).toEqual(['pl', 'gb', 'eu']);
+    expect(GOOGLE_FEED_MARKETS.pl.countries).toEqual(['PL']);
+    expect(GOOGLE_FEED_MARKETS.gb.countries).toEqual(['GB']);
+    expect(EU_PRINT_COUNTRIES).toHaveLength(26);
+    expect(EU_PRINT_COUNTRIES).not.toContain('PL');
+    expect(EU_PRINT_COUNTRIES).not.toContain('GB');
+  });
+
+  it('gives every Google market a product-level rate in the offer currency for every target country', async () => {
+    for (const [marketId, market] of Object.entries(GOOGLE_FEED_MARKETS)) {
+      const items = await buildGoogleFeedItems(marketId as keyof typeof GOOGLE_FEED_MARKETS);
+      expect(items.length).toBeGreaterThan(0);
+      items.forEach((item) => {
+        expect(item.price).toMatch(new RegExp(` ${market.currencyCode}$`));
+        expect(item.shipping.map((shipping) => shipping.country)).toEqual([...market.countries]);
+        expect(item.shipping.every((shipping) => shipping.price.endsWith(` ${market.currencyCode}`))).toBe(true);
+        expect(item.link).toContain(`currency=${market.currency}`);
+      });
+    }
+  });
+
+  it('keeps the EUR market shipping and currency invariant across its supported feed languages', async () => {
+    for (const locale of ['en', 'es', 'de'] as const) {
+      const items = await buildGoogleFeedItems('eu', locale);
+      expect(items.every((item) => item.price.endsWith(' EUR'))).toBe(true);
+      expect(items.every((item) => item.shipping.map((shipping) => shipping.country).join(',') === EU_PRINT_COUNTRIES.join(','))).toBe(true);
+      expect(items.every((item) => item.link.includes(`/${locale === 'en' ? 'en/' : `${locale}/`}fine-art-prints/`))).toBe(true);
+    }
+  });
+
   it('emits exactly one row per published print design, matching the emitted content_ids', async () => {
     const items = await buildFeedItems('en');
     const feedIds = items.map((i) => i.id).sort();
