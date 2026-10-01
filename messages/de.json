@@ -373,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",
-    "paczkomatD": "Abholung an deinem gewählten Paketfach, in der Regel 1–2 Werktage nachdem ich das Paket übergeben habe.",
+    "paczkomatD": "Abholung an deinem gewählten Paketfach, Lieferung innerhalb von 5 Werktagen.",
     "paczkomatPrice": "ab {price}",
     "courierT": "InPost Kurier",
-    "courierD": "Lieferung an deine Adresse, in der Regel 1–2 Werktage nachdem ich das Paket übergeben habe.",
+    "courierD": "Lieferung an deine Adresse innerhalb von 5 Werktagen.",
     "pickupT": "Persönliche Abholung",
     "pickupD": "Auf Teneriffa (San Pedro Abajo 12, Guimar), nach Vereinbarung.",
     "printT": "Kurierversand",
@@ -440,7 +440,7 @@
       "Druck auf Bestellung",
       "Fine-Art-Papier 200 g/m²",
       "Rahmen: Schwarz, helles oder dunkles Braun",
-      "Lieferung in die EU und nach Großbritannien · 5–10 Tage"
+      "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
     ],
     "storyImageAlt": "Anna Ciok in ihrem Keramik-Studio",
     "editorialImageAlt": "Gerahmte Arbeiten von Anna Ciok in einem sonnenbeschienenen Interieur",
@@ -461,11 +461,11 @@
     "craft2H": "Du wählst <em>Größe und Rahmen</em>",
     "craft2P": "Drei Größen stehen zur Wahl, dazu die Rahmung: ungerahmt oder im Holzrahmen — schwarz, hell- oder dunkelbraun.",
     "craft3H": "Wir drucken <em>und versenden</em>",
-    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder im Vereinigten Königreich versendet.",
+    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung an deine Adresse in der EU oder im Vereinigten Königreich erfolgt innerhalb von 5 Werktagen.",
     "lgMaterialH": "Material & Ausführung",
     "lgMaterialP": "Druck auf Fine-Art-Papier mit 200 g/m², in Archivqualität. Jeder Druck ist ungerahmt oder im Holzrahmen erhältlich: schwarz, hell- oder dunkelbraun.",
     "lgShippingH": "Herstellung & Versand",
-    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet — in der Regel innerhalb von 5–10 Werktagen.",
+    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
     "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
@@ -474,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Versand Drucke",
-    "ctVShipPrints": "EU & Vereinigtes Königreich · 5–10 Werktage"
+    "ctVShipPrints": "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
   },
   "printCollections": {
     "inne": "Weitere Drucke"
@@ -549,9 +549,9 @@
     "fact3K": "Techniken",
     "fact3V": "Keramik <em>und Aquarell</em>",
     "fact3D": "Manche Kompositionen bleiben auf Papier und gehen in eine Fine-Art-Edition ein. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
-    "fact4K": "Versand Keramik",
-    "fact4V": "1–3 <em>Tage</em>",
-    "fact4D": "Keramik verpacke und versende ich selbst innerhalb von 1–3 Werktagen in ganz Polen. Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet, meist innerhalb von 5–10 Tagen, in die EU oder ins Vereinigte Königreich.",
+    "fact4K": "Bearbeitung der Bestellung",
+    "fact4V": "bis zu 2 <em>Tage</em>",
+    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Keramik verpacke und versende ich selbst; Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet.",
     "procEyebrow": "Wie ein Stück entsteht",
     "procH": "Von der ersten Linie <em>zum fertigen Stück.</em>",
     "p1H": "Ich beginne <em>mit einer Linie</em>",
@@ -594,7 +594,7 @@
     "lStudio": "Abholung",
     "vStudio": "Teneriffa — Abholung nach Vereinbarung",
     "lShip": "Versand",
-    "vShip": "Polen · Versand in 1–3 Werktagen",
+    "vShip": "Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen",
     "lReply": "Ich antworte",
     "vReply": "Meist am selben Tag"
   },
@@ -609,7 +609,7 @@
     "toc4": "Abholung",
     "toc5": "Rücksendungen",
     "toc6": "Schäden",
-    "updated": "Aktualisiert: Juni 2026",
+    "updated": "Aktualisiert: Oktober 2026",
     "s1H": "Versand",
     "s1P": "Ich versende per <strong>InPost Paketfach (ab 5 €)</strong> oder <strong>Kurier (10 €)</strong> in ganz Polen. Die Versandkosten sind unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
     "s1Li1": "InPost Parcelshop, ganz Polen — ab 5 €",
@@ -617,7 +617,7 @@
     "s1Li2": "Abholung auf Teneriffa — kostenlos",
     "s1Li3": "Internationaler Versand — schreib mir und ich arrangiere es individuell",
     "s2H": "Bearbeitungszeit",
-    "s2P": "Die Keramikstücke sind fertig und warten bereits in Polen, daher gibt es keine Produktionszeit. Ich versende das Paket innerhalb von <strong>1–3 Werktagen</strong> nach Zahlungseingang, und der Kurier liefert in der Regel am nächsten Tag.",
+    "s2P": "Die Keramikstücke sind fertig und warten bereits in Polen, daher gibt es keine Produktionszeit. Die Bestellung wird innerhalb von <strong>2 Werktagen</strong> nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von <strong>5 Werktagen</strong>.",
     "s2Note": "Ich packe alles selbst, zwischen Studioarbeit und den nächsten Brennvorgängen. Wenn du ein bestimmtes Datum benötigst, schreib mir und ich prüfe, was möglich ist.",
     "s3H": "Verpackung",
     "s3P": "Die Keramik reist von Hand eingewickelt — Folie, Karton und viel Polsterung, damit sich nichts bewegt. Ich kennzeichne die Schachtel als zerbrechlich. Ich versuche, so wenig Plastik wie möglich zu verwenden, ohne das Stück zu gefährden.",
@@ -654,7 +654,7 @@
     "s3H": "§3 Preise & Zahlung",
     "s3P": "Alle Preise werden in Euro (EUR) angegeben und sind Bruttopreise. Die im Warenkorb vor der Bestätigung angezeigten Versandkosten werden zum Bestellbetrag addiert. Die Zahlung wird über einen sicheren externen Zahlungsanbieter, Stripe, abgewickelt.",
     "s4H": "§4 Erfüllung & Versand",
-    "s4P": "Ich versende Bestellungen innerhalb von 1–3 Werktagen nach Zahlungseingang. Details zu Kosten, Zeitrahmen und Abholung sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
+    "s4P": "Die Bestellung wird innerhalb von 2 Werktagen nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Details zu Kosten, Zeitrahmen und Abholung sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
     "s5H": "§5 Widerrufsrecht",
     "s5P": "Ein Verbraucher hat das Recht, innerhalb von 14 Tagen nach Erhalt des Stücks ohne Angabe von Gründen vom Kauf zurückzutreten. Die Erklärung kann einfach per E-Mail gesendet werden. Das zurückgesendete Stück sollte unbeschädigt sein; der Käufer trägt die Rücksendekosten, und die Erstattung erfolgt innerhalb von 14 Tagen.",
     "s6H": "§6 Reklamationen",
@@ -959,7 +959,7 @@
   "deliveryNotice": {
     "title": "Versandinformationen",
     "p1": "Alle Bestellungen in Polen werden per InPost-Kurier oder InPost-Paketfach verschickt.",
-    "p2": "Bestellungen werden innerhalb von 1–3 Werktagen nach dem Kauf versandt.",
+    "p2": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
     "p3": "Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist."
   },
   "consent": {
@@ -1002,7 +1002,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Offene Edition",
     "sectionDelivery": "Lieferung",
-    "deliveryNote": "Produktion und Versand über unseren Druckpartner, 5–10 Werktage",
+    "deliveryNote": "Produktion und Versand über unseren Druckpartner. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa.",
     "sectionCare": "Pflege",
     "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
     "moreFrom": "Weitere Drucke",
@@ -1019,7 +1019,7 @@
     "artistBio": "Anna Ciok ist eine auf Teneriffa lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
-    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe.",
+    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe.",
     "seeCollection": "Ganze Kollektion {name} ansehen"
   },
   "giftCard": {
@@ -1109,7 +1109,7 @@
     "metaDescription": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien — Fine Art Print auf 200-g/m²-Papier, mit oder ohne Rahmen. Nach Farbe und Kollektion filtern; Lieferung in die EU und ins Vereinigte Königreich.",
     "eyebrow": "Fine Art Print",
     "title": "Shop für <em>Fine Art Prints</em>",
-    "lead": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien. Größe und Rahmung wählen — jeder Print wird auf Bestellung gedruckt und in 5–10 Werktagen versandt.",
+    "lead": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien. Größe und Rahmung wählen — jeder Print wird auf Bestellung gedruckt. Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen in Europa.",
     "priceLadder": "{size} · ab {price}",
     "frameFrom": "Rahmen +{price}",
     "priceNote": "Der Preis hängt von Größe und Rahmung ab — nicht vom Gemälde.",
@@ -1145,7 +1145,7 @@
     "collectionsTitle": "Nach Kollektion stöbern",
     "collectionsCta": "Alle Kollektionen",
     "aboutTitle": "Über Anna Cioks Fine Art Prints",
-    "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und in 5–10 Werktagen an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt.",
+    "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
     "aboutMore": "Weiterlesen",
     "aboutLess": "Weniger anzeigen"
   }
