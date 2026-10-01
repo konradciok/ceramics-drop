@@ -71,16 +71,23 @@ function shippingDetailsFor(locale: Locale) {
  * locale's shipping destination); `returnPolicyCountry` is the fixed address
  * returns are actually sent back to.
  */
-function merchantReturnPolicy(locale: Locale) {
+function standardReturnPolicy() {
   return {
     '@type': 'MerchantReturnPolicy' as const,
     returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
     merchantReturnDays: RETURN_WINDOW_DAYS,
     returnMethod: 'https://schema.org/ReturnByMail' as const,
     returnFees: 'https://schema.org/ReturnShippingFees' as const,
-    applicableCountry: SHIPPING_COUNTRY[locale],
     returnPolicyCountry: RETURN_POLICY_COUNTRY,
   };
+}
+
+function merchantReturnPolicy(locale: Locale) {
+  return { ...standardReturnPolicy(), applicableCountry: SHIPPING_COUNTRY[locale] };
+}
+
+function printMarketCountries(currency: 'pln' | 'eur' | 'gbp'): readonly PrintCountry[] {
+  return currency === 'pln' ? ['PL'] : currency === 'gbp' ? ['GB'] : EU_PRINT_COUNTRIES;
 }
 
 /**
@@ -92,15 +99,11 @@ function merchantReturnPolicy(locale: Locale) {
  * instead of print-shipping.ts's hardcoded fallback constants.
  */
 function printShippingDetailsFor(
+  countries: readonly PrintCountry[],
   currency: 'pln' | 'eur' | 'gbp',
   priceCurrency: 'PLN' | 'EUR' | 'GBP',
   rates: PrintPricingConfig,
 ) {
-  const countries: readonly PrintCountry[] = currency === 'pln'
-    ? ['PL']
-    : currency === 'gbp'
-      ? ['GB']
-      : EU_PRINT_COUNTRIES;
   return countries.flatMap((country) => [
     {
       '@type': 'OfferShippingDetails' as const,
@@ -116,8 +119,11 @@ function printShippingDetailsFor(
 }
 
 /** Standard print-on-demand variants share the withdrawal policy. */
-function printReturnPolicy(locale: Locale) {
-  return merchantReturnPolicy(locale);
+function printReturnPolicy(countries: readonly PrintCountry[]) {
+  return {
+    ...standardReturnPolicy(),
+    applicableCountry: countries.length === 1 ? countries[0] : [...countries],
+  };
 }
 
 /** Prices (major units, given currency) of every sellable variant of a design. */
@@ -312,6 +318,7 @@ type PrintListItemsArgs = {
 /** `ItemList` entries (Product + AggregateOffer per design) shared by the prints hub and collection pages. */
 function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }: PrintListItemsArgs) {
   const { currency, priceCurrency } = printCurrencyFor(locale);
+  const countries = printMarketCountries(currency);
   return designs.map((d, i) => {
     const prices = sellableVariantPrices(d, currency, pricing);
     return {
@@ -332,8 +339,8 @@ function printListItems({ designs, locale, singular, categoryName, notes, rawNot
           offerCount: prices.length,
           availability: 'https://schema.org/InStock' as const,
           url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
-                shippingDetails: printShippingDetailsFor(currency, priceCurrency, pricing),
-          hasMerchantReturnPolicy: printReturnPolicy(locale),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
     };
@@ -449,6 +456,7 @@ type PrintProductArgs = {
  */
 export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency }: PrintProductArgs): Graph {
   const { currency, priceCurrency } = printCurrencyFor(locale, displayCurrency);
+  const countries = printMarketCountries(currency);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const name = printDisplayName(design, singular, definitions);
@@ -496,8 +504,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
           url: offerUrl,
-          shippingDetails: printShippingDetailsFor(currency, priceCurrency, pricing),
-          hasMerchantReturnPolicy: printReturnPolicy(locale),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
     ],
