@@ -3,6 +3,7 @@
   "status": "approved",
   "approvedOn": "2026-10-01",
   "approvedBy": "user",
+  "importedOn": "2026-10-01",
   "preparedOn": "2026-09-30",
   "supersedes": "opisy-kolekcji.json",
   "notes": "Update of the approved collection copy after PR #342 regrouped the fine-art collections (12 active, 5 retired). Only the collections whose text changes are listed: Cirrus is rewritten, Horizons and Portals get small corrections; Balance and the other active collections keep their approved text. Import with `npm run collections:import-descriptions -- --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force` (dry-run first; --force because the CMS already holds the first package's text).",

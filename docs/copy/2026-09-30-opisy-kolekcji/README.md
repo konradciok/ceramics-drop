@@ -1,8 +1,8 @@
 # Opisy kolekcji Fine Art Print — zatwierdzone (PL / EN / ES / DE)
 
-Status: **zatwierdzone 30 września 2026 przez użytkownika** (zasada z [copy-source-of-truth.md](../../copy-source-of-truth.md)), **jeszcze nie zaimportowane do CMS** — import uruchamia człowiek z poświadczeniami produkcyjnymi (sekcja 5). Przygotowane po obejrzeniu wszystkich 56 prac.
+Status: **zatwierdzone 30 września 2026 przez użytkownika** (zasada z [copy-source-of-truth.md](../../copy-source-of-truth.md)), i **zaimportowane do CMS tego samego dnia** (sekcja 5). Przygotowane po obejrzeniu wszystkich 56 prac. Po zatwierdzeniu zmienił się układ kolekcji (PR #342: 12 aktywnych, 5 wycofanych), więc tabele i teksty poniżej opisują układ z 30 września, a Cirrus, Horizons i Portals zostały później zaktualizowane (patrz niżej).
 
-- **Aktualizacja po zmianie układu kolekcji (1 października):** [aktualizacja-ukladu-kolekcji.md](aktualizacja-ukladu-kolekcji.md) — nowy tekst Cirrus oraz korekty Horizons i Portals, bo PR #342 zmienił skład tych kolekcji.
+- **Aktualizacja po zmianie układu kolekcji (1 października):** [aktualizacja-ukladu-kolekcji.md](aktualizacja-ukladu-kolekcji.md) — nowy tekst Cirrus oraz korekty Horizons i Portals, bo PR #342 zmienił skład tych kolekcji; zaimportowane 1 października i to one obowiązują zamiast tekstów z tego pakietu.
 - [opisy-kolekcji.json](opisy-kolekcji.json) — te same teksty w formie maszynowej (`kolekcja → język → opis`); to wejście skryptu `npm run collections:import-descriptions` (odmawia pracy, dopóki `status` ≠ `approved`).
 - Poniżej: podsumowanie, metoda, reguły i kontrola, decyzje, wdrożenie, a na końcu wszystkie 68 tekstów wraz z notatką „Co widać”, na której opiera się każdy opis.
 
@@ -64,6 +64,8 @@ Jednorazowy walidator sprawdził wszystkie 68 tekstów; wynik: **0 uwag**.
 
 ## 5. Wdrożenie
 
+> **Stan: wykonane.** Pierwszy pakiet zaimportowano do CMS 30 września 2026, a po zmianie układu kolekcji (PR #342) Cirrus, Horizons i Portals zaktualizowano 1 października z [aktualizacja-ukladu-kolekcji.md](aktualizacja-ukladu-kolekcji.md). Poniższe komendy zostają jako zapis przebiegu i opis zasad działania skryptu. **Nie uruchamiaj ich ponownie z domyślnym plikiem `opisy-kolekcji.json`** — z `--force` przywróciłyby stare teksty Cirrus, Horizons i Portals. Kolejne zmiany tekstu wdrażaj jako osobny pakiet (patrz „Stan po wdrożeniu i przyszłe zmiany”).
+
 Wybrana droga: **skrypt importu** (`scripts/import-collection-descriptions.ts`). Działa przez te same RPC co CMS (`save_collection_draft` → `publish_collection_revision`), więc każdy zapis ma wpis w `catalog_audit_log` (aktor `import-descriptions@ceramics-drop.internal`) i nową, niezmienną rewizję.
 
 Zasady bezpieczeństwa skryptu:
@@ -74,7 +76,7 @@ Zasady bezpieczeństwa skryptu:
 - **Współbieżność.** Zapis i publikacja niosą `expectedRevision`; jeśli ktoś w międzyczasie zapisał zmianę w CMS, RPC zwraca konflikt i skrypt zgłasza błąd tej kolekcji, nie nadpisując niczego.
 - **Cel wypisany przed zapisem** (host projektu Supabase). Publikacje są trwałe — rewizje są tylko dopisywane.
 
-Kolejność uruchomienia (poświadczenia `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` produkcji w `.dev.vars` / `--env-file`):
+Przebieg wdrożenia pierwszego pakietu — historia, nie do ponownego uruchamiania (poświadczenia `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` produkcji w `.dev.vars` / `--env-file`):
 
 ```bash
 # 1. Sam plan, nic nie zapisuje — sprawdź host i kolumny set/kept/unchanged:
@@ -87,13 +89,17 @@ npm run collections:import-descriptions -- --only ostrea --confirm
 npm run collections:import-descriptions -- --confirm
 ```
 
-**Kolekcje z partii z 29.09** (Aurora, Cirrus, Cumulonimbus, Cumulus, Obsidian, Scopulus, Unda, Tachylite) mają w CMS krótkie, jednozdaniowe opisy (poniżej 80 znaków) wpisane przez `scripts/complete-new-print-content-2026.ts`. Strona ich nie wyświetla (próg 80 znaków), ale to nie placeholder `<nazwa>.`, więc dry-run oznacza je `kept` i cytuje istniejący tekst. Żeby zastąpić je zatwierdzonymi opisami (poprzednia wersja zostaje w historii rewizji CMS):
+**Kolekcje z partii z 29.09** (Aurora, Cirrus, Cumulonimbus, Cumulus, Obsidian, Scopulus, Unda, Tachylite) miały w CMS krótkie, jednozdaniowe opisy (poniżej 80 znaków) wpisane przez `scripts/complete-new-print-content-2026.ts`. Strona ich nie wyświetlała (próg 80 znaków), ale to nie placeholder `<nazwa>.`, więc dry-run oznaczał je `kept` i cytował istniejący tekst. Zastąpiono je zatwierdzonymi opisami (`--only <te kolekcje> --force --confirm`); poprzednie wersje zostają w historii rewizji CMS.
+
+### Stan po wdrożeniu i przyszłe zmiany
+
+Stan z 1 października 2026: 12 aktywnych kolekcji ma opisy w czterech językach. Dziesięć z nich (co najmniej 3 prace) jest indeksowalnych i w sitemapie, a Signs i Ciala (po 2 prace) zostają `noindex` (punkt 8). Cirrus, Horizons i Portals mają teksty z [aktualizacji](aktualizacja-ukladu-kolekcji.md), nie z `opisy-kolekcji.json`.
+
+Każdą następną zmianę tekstu wdrażaj jako osobny pakiet (`status: approved`) i wskaż go pełną ścieżką z repozytorium. Wzorzec to aktualizacja z 1 października; dziś jej plan pokaże `unchanged`, a `--confirm` dopisuj dopiero przy nowej zmianie (`--force` nadpisuje także ręczne edycje z CMS, więc przed zapisem porównaj plan z tym, co jest na stronie):
 
 ```bash
-npm run collections:import-descriptions -- --only aurora,cirrus,cumulonimbus,cumulus,obsidian,scopulus,unda,tachylite --force --confirm
+npm run collections:import-descriptions -- --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
 ```
-
-Po imporcie strona każdej kolekcji z co najmniej 3 pracami staje się indeksowalna w językach, w których opis ma ≥ 80 znaków (tu: wszystkie cztery); pozostałe 10 dostaje opis i zajawkę na `/kolekcje`, ale zostaje `noindex` (punkt 8).
 
 Odrzucone alternatywy: wklejanie 68 tekstów ręcznie w CMS (dużo klikania, brak śladu w repo) oraz zapas w `messages/*.json` jako wartość zastępcza (działałby od razu po merge’u, ale dubluje źródło prawdy — CMS i tak miałby pierwszeństwo).
 

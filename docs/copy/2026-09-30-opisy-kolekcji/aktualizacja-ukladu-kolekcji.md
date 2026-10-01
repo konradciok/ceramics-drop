@@ -1,6 +1,6 @@
 # Aktualizacja opisów po zmianie układu kolekcji — zatwierdzone (PL / EN / ES / DE)
 
-Status: **zatwierdzone 1 października 2026 przez użytkownika** ([copy-source-of-truth.md](../../copy-source-of-truth.md)), **jeszcze nie zaimportowane** — import uruchamia człowiek z poświadczeniami produkcyjnymi (sekcja 6). Przygotowane 30 września 2026. Uzupełnia [pakiet zatwierdzony 30 września](README.md); tamten plik zostaje bez zmian jako zapis tego, co zatwierdzono wtedy.
+Status: **zatwierdzone 1 października 2026 przez użytkownika** ([copy-source-of-truth.md](../../copy-source-of-truth.md)), **zaimportowane do CMS 1 października 2026** (sekcja 6). Przygotowane 30 września 2026. Uzupełnia [pakiet zatwierdzony 30 września](README.md); tamten plik zostaje bez zmian jako zapis tego, co zatwierdzono wtedy.
 
 - [aktualizacja-ukladu-kolekcji.json](aktualizacja-ukladu-kolekcji.json) — trzy kolekcje, których tekst się zmienia (`status: approved`).
 
@@ -99,14 +99,12 @@ Prace: fap024, fap027, fap030, fap031, fap032, fap055, fap056 (7).
 
 Te same reguły i ten sam walidator co w pierwszym pakiecie, uruchomiony na tekstach wszystkich 12 aktywnych kolekcji (48 tekstów): **0 uwag**. Sprawdza m.in. długość (co najmniej 80 znaków i 60–135 słów), nazwę kolekcji w pierwszym zdaniu (nie dłuższym niż 140 znaków), frazę „abstrakcyjne / abstract / abstractas / abstrakte” i technikę (akwarela + tusz w danym języku), dokładnie jedno „Fine Art Print”, brak słów wykluczonych przez słownik (limitowane, numerowane, podpisane, nazwa partnera druku, terminy dostawy, waluty, rozmiary), brak liczb oraz brak powtórzeń między opisami. Test w repo (`scripts/import-collection-descriptions.test.ts`) dodatkowo pilnuje, że każdy z tych tekstów daje stronie lead i meta description złożoną z całych zdań.
 
-## 6. Wdrożenie (po akceptacji)
+## 6. Wdrożenie (wykonane 1 października 2026)
 
-1. Dry-run (tylko odczyt); oczekiwane są trzy linie `WRITE … pl:set en:set es:set de:set`:
+Import wykonano najpierw jako dry-run (trzy linie `WRITE … pl:set en:set es:set de:set`; Cirrus i Horizons rewizja 4 → 5, Portals 3 → 4), potem z `--confirm`: `3 published, 0 failed, 0 skipped`. `--force` było potrzebne, bo w CMS były już teksty z pierwszego pakietu, a skrypt chroni wszystko, co nie jest pustym polem ani placeholderem. Przed zapisem sprawdzono, że tekst na produkcji jest identyczny z pierwszym pakietem (czyli żadnych ręcznych edycji do nadpisania). Poprzednie wersje zostają w historii rewizji CMS.
+
+Po imporcie na produkcji wszystkie 12 wariantów (3 kolekcje × 4 języki) pokazuje nowy tekst, strony są indeksowalne, meta description składa się z całych zdań, sitemapa ma 10 kolekcji w 4 językach, a hub 12 kart z zajawkami. Komenda (poświadczenia produkcyjne przez `--env-file`; bez `--confirm` to dry-run, który dziś pokaże `unchanged`):
 
 ```bash
-npm run collections:import-descriptions -- --env-file ~/.config/ceramics-drop/prod.env --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
+npm run collections:import-descriptions -- --file docs/copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.json --only cirrus,horizons,portals --force
 ```
-
-2. To samo z dopisanym `--confirm`.
-
-`--force` jest potrzebne, bo w CMS są już zatwierdzone teksty z pierwszego pakietu, a skrypt chroni wszystko, co nie jest pustym polem ani placeholderem. Poprzednie wersje zostają w historii rewizji CMS.
