@@ -147,8 +147,8 @@ describe('collectionSchema', () => {
       item.offers.shippingDetails?.forEach((rate) => {
         expect(rate.shippingRate.currency).toBe('PLN');
         expect(rate.shippingDestination.addressCountry).toBe('PL');
-        expect(rate.deliveryTime?.handlingTime).toMatchObject({ minValue: 1, maxValue: 3 });
-        expect(rate.deliveryTime?.transitTime).toMatchObject({ minValue: 1, maxValue: 1 });
+        expect(rate.deliveryTime?.handlingTime).toMatchObject({ minValue: 0, maxValue: 2 });
+        expect(rate.deliveryTime?.transitTime).toMatchObject({ minValue: 1, maxValue: 5 });
       });
       expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBe(14);
       expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCategory).toBe(
@@ -248,7 +248,7 @@ describe('productSchema', () => {
     offer.shippingDetails.forEach((rate) => {
       expect(rate.shippingRate.currency).toBe('PLN');
       expect(rate.shippingDestination.addressCountry).toBe('PL');
-      expect(rate.deliveryTime?.handlingTime).toMatchObject({ minValue: 1, maxValue: 3 });
+      expect(rate.deliveryTime?.handlingTime).toMatchObject({ minValue: 0, maxValue: 2 });
     });
     expect(offer.hasMerchantReturnPolicy.merchantReturnDays).toBe(14);
     expect(offer.hasMerchantReturnPolicy.returnFees).toBe('https://schema.org/ReturnShippingFees');

@@ -373,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Odbiór w wybranym paczkomacie, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "paczkomatD": "Odbiór w wybranym paczkomacie, dostawa do 5 dni roboczych.",
     "paczkomatPrice": "od {price}",
     "courierT": "Kurier InPost",
-    "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "courierD": "Dostawa pod adres, do 5 dni roboczych.",
     "pickupT": "Odbiór osobisty",
     "pickupD": "Na Teneryfie (San Pedro Abajo 12, Guimar), po wcześniejszym umówieniu terminu.",
     "printT": "Dostawa kurierem",
@@ -440,7 +440,7 @@
       "Druk na zamówienie",
       "Papier fine art 200 g/m²",
       "Rama: czarna, jasny lub ciemny brąz",
-      "Dostawa w UE i Wielkiej Brytanii · 5–10 dni"
+      "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
     ],
     "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
     "editorialImageAlt": "Oprawnione prace Anny Ciok w słonecznym wnętrzu",
@@ -461,11 +461,11 @@
     "craft2H": "Dobierasz <em>rozmiar i ramę</em>",
     "craft2P": "Do wyboru trzy rozmiary oraz oprawa: bez ramy albo w drewnianej ramie — czarnej, jasnobrązowej lub ciemnobrązowej.",
     "craft3H": "Drukujemy <em>i wysyłamy</em>",
-    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
+    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, a dostawa na adres domowy w Unii Europejskiej i Wielkiej Brytanii trwa do 5 dni roboczych.",
     "lgMaterialH": "Materiał i wykonanie",
     "lgMaterialP": "Druk na papierze fine art o gramaturze 200 g/m², w jakości archiwalnej. Każda odbitka dostępna jest bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "lgShippingH": "Realizacja i wysyłka",
-    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
+    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
     "ctP": "Chcesz zobaczyć pracę na żywo, zapytać o odbitkę w innym rozmiarze albo o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
@@ -474,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Wysyłka odbitek",
-    "ctVShipPrints": "UE i Wielka Brytania · 5–10 dni roboczych"
+    "ctVShipPrints": "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
   },
   "printCollections": {
     "inne": "Pozostałe"
@@ -549,9 +549,9 @@
     "fact3K": "Techniki",
     "fact3V": "Ceramika <em>i akwarela</em>",
     "fact3D": "Jedne kompozycje zostają na papierze i wchodzą do edycji fine art. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
-    "fact4K": "Wysyłka ceramiki",
-    "fact4V": "1–3 <em>dni</em>",
-    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner druku, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
+    "fact4K": "Realizacja zamówienia",
+    "fact4V": "do 2 <em>dni</em>",
+    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Ceramikę pakuję i nadaję sama, a odbitki fine art drukuje i wysyła nasz partner druku.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
@@ -594,7 +594,7 @@
     "lStudio": "Odbiór",
     "vStudio": "Teneryfa · odbiór po umówieniu",
     "lShip": "Wysyłka",
-    "vShip": "Polska · nadanie w 1–3 dni roboczych",
+    "vShip": "Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych",
     "lReply": "Odpowiadam",
     "vReply": "Zwykle tego samego dnia"
   },
@@ -609,7 +609,7 @@
     "toc4": "Odbiór osobisty",
     "toc5": "Zwroty",
     "toc6": "Uszkodzenia",
-    "updated": "Aktualizacja: czerwiec 2026",
+    "updated": "Aktualizacja: październik 2026",
     "s1H": "Wysyłka",
     "s1P": "Prace wysyłam <strong>Paczkomatem InPost (od 20 zł)</strong> albo <strong>kurierem InPost (30 zł)</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
     "s1Li1": "Paczkomat InPost, cała Polska — od 20 zł",
@@ -617,7 +617,7 @@
     "s1Li2": "Odbiór osobisty na Teneryfie — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, wycenię ją indywidualnie",
     "s2H": "Czas realizacji",
-    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Paczkę nadaję w ciągu <strong>1–3 dni roboczych</strong> od zaksięgowania płatności, a InPost dostarcza ją zwykle następnego dnia roboczego po nadaniu.",
+    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Zamówienie jest realizowane do <strong>2 dni roboczych</strong> od zaksięgowania płatności, a dostawa trwa do <strong>5 dni roboczych</strong>.",
     "s2Note": "Pakuję wszystko sama, między pracą w studiu a kolejnymi wypałami. Jeśli zależy Ci na konkretnym terminie, napisz — sprawdzę, co da się zrobić.",
     "s3H": "Pakowanie",
     "s3P": "Ceramikę owijam ręcznie: folia, tektura i dużo wypełnienia, żeby nic nie przesuwało się w pudełku. Opakowanie oznaczam jako kruche i ograniczam plastik tam, gdzie mogę to zrobić bez ryzyka dla pracy.",
@@ -654,7 +654,7 @@
     "s3H": "§3 Ceny i płatność",
     "s3P": "Wszystkie ceny są podane w złotych polskich (PLN) i są cenami brutto. Koszt wysyłki zobaczysz w koszyku przed potwierdzeniem zakupu. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
     "s4H": "§4 Realizacja i wysyłka",
-    "s4P": "Zamówienia nadaję w ciągu 1–3 dni roboczych od zaksięgowania płatności. Szczegóły kosztów, terminów i odbioru osobistego znajdziesz na stronie <link>Dostawa i zwroty</link>.",
+    "s4P": "Zamówienie jest realizowane do 2 dni roboczych od zaksięgowania płatności, dostawa do 5 dni roboczych na terenie Europy. Szczegóły kosztów, terminów i odbioru osobistego znajdziesz na stronie <link>Dostawa i zwroty</link>.",
     "s5H": "§5 Odstąpienie od umowy",
     "s5P": "Konsument ma prawo odstąpić od umowy w ciągu 14 dni od otrzymania pracy, bez podawania przyczyny. Oświadczenie wystarczy przesłać mailem. Zwracana praca powinna być nieuszkodzona; koszt odesłania ponosi kupujący, a zwrot środków następuje w ciągu 14 dni od otrzymania pracy z powrotem.",
     "s6H": "§6 Reklamacje",
@@ -959,7 +959,7 @@
   "deliveryNotice": {
     "title": "Informacja o dostawie",
     "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
-    "p2": "Zamówienia wysyłamy w ciągu 1–3 dni roboczych od złożenia zamówienia.",
+    "p2": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
     "p3": "Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki."
   },
   "consent": {
@@ -1002,7 +1002,7 @@
     "sectionEdition": "Edycja",
     "editionOpen": "Edycja otwarta",
     "sectionDelivery": "Dostawa",
-    "deliveryNote": "Produkcja i wysyłka przez naszego partnera druku, 5–10 dni roboczych",
+    "deliveryNote": "Druk i wysyłka przez naszego partnera druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
     "sectionCare": "Przechowywanie",
     "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
     "moreFrom": "Więcej odbitek",
@@ -1019,7 +1019,7 @@
     "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
+    "accordionShipping": "Odbitki drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
     "seeCollection": "Cała kolekcja {name}"
   },
   "giftCard": {
@@ -1109,7 +1109,7 @@
     "metaDescription": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem — Fine Art Print na papierze 200 g/m², w ramie lub bez. Filtruj według koloru i kolekcji; dostawa w UE i Wielkiej Brytanii.",
     "eyebrow": "Fine Art Print",
     "title": "Sklep <em>Fine Art Print</em>",
-    "lead": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę — odbitka jest drukowana na zamówienie i wysyłana w 5–10 dni roboczych.",
+    "lead": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę — odbitka jest drukowana na zamówienie. Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
     "priceLadder": "{size} · od {price}",
     "frameFrom": "Rama +{price}",
     "priceNote": "Cena zależy od rozmiaru i oprawy — nie od obrazu.",
@@ -1145,7 +1145,7 @@
     "collectionsTitle": "Przeglądaj według kolekcji",
     "collectionsCta": "Wszystkie kolekcje",
     "aboutTitle": "O Fine Art Print Anny Ciok",
-    "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii w 5–10 dni roboczych.",
+    "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
     "aboutMore": "Czytaj dalej",
     "aboutLess": "Zwiń"
   }
