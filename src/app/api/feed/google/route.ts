@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   }
   const locale = localeParam as FeedLocale | null;
   const validLocale = locale === null
-    || (market === 'eu' && (EU_FEED_LOCALES as string[]).includes(locale))
+    || (market === 'eu' && (EU_FEED_LOCALES as readonly string[]).includes(locale))
     || (market === 'pl' && locale === 'pl')
     || (market === 'gb' && locale === 'en');
   if (!validLocale || (locale !== null && !(FEED_LOCALES as string[]).includes(locale))) {

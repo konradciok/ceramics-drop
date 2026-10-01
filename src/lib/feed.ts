@@ -79,10 +79,21 @@ export const GOOGLE_FEED_MARKETS = {
 
 export type GoogleFeedMarketId = keyof typeof GOOGLE_FEED_MARKETS;
 
-/** Localized product-data variants for the one EUR market. They deliberately
- * share its countries, prices and shipping; only customer-facing text and the
- * landing-page language differ. */
-export const EU_FEED_LOCALES: FeedLocale[] = ['en', 'es', 'de'];
+/** Localized product-data variants for the EUR market. */
+export const EU_FEED_LOCALES = ['en', 'es', 'de'] as const satisfies readonly FeedLocale[];
+
+/**
+ * Product-level shipping determines online-ad eligibility in Merchant Center;
+ * data-source country settings alone are only defaults. Keep each localized
+ * EUR variant's shipping scope aligned with the countries it is intended to
+ * serve: English is the Europe-wide catalogue, while German and Spanish stay
+ * deliberately local. Prices remain EUR in every variant.
+ */
+export const EU_FEED_COUNTRIES = {
+  en: EU_PRINT_COUNTRIES,
+  es: ['ES'],
+  de: ['AT', 'DE'],
+} as const satisfies Record<(typeof EU_FEED_LOCALES)[number], readonly PrintCountry[]>;
 
 export function isGoogleFeedMarketId(value: string | null): value is GoogleFeedMarketId {
   return value !== null && Object.hasOwn(GOOGLE_FEED_MARKETS, value);
@@ -223,7 +234,10 @@ export async function buildGoogleFeedItems(
   locale: FeedLocale = GOOGLE_FEED_MARKETS[marketId].locale,
 ): Promise<FeedItem[]> {
   const market = GOOGLE_FEED_MARKETS[marketId];
-  return buildItems(locale, market);
+  const countries = marketId === 'eu'
+    ? EU_FEED_COUNTRIES[locale as keyof typeof EU_FEED_COUNTRIES] ?? market.countries
+    : market.countries;
+  return buildItems(locale, { ...market, countries });
 }
 
 /**
