@@ -2,6 +2,7 @@
 
 Status: **zatwierdzone 30 września 2026 przez użytkownika** (zasada z [copy-source-of-truth.md](../../copy-source-of-truth.md)), **jeszcze nie zaimportowane do CMS** — import uruchamia człowiek z poświadczeniami produkcyjnymi (sekcja 5). Przygotowane po obejrzeniu wszystkich 56 prac.
 
+- **Aktualizacja po zmianie układu kolekcji (1 października):** [aktualizacja-ukladu-kolekcji.md](aktualizacja-ukladu-kolekcji.md) — nowy tekst Cirrus oraz korekty Horizons i Portals, bo PR #342 zmienił skład tych kolekcji.
 - [opisy-kolekcji.json](opisy-kolekcji.json) — te same teksty w formie maszynowej (`kolekcja → język → opis`); to wejście skryptu `npm run collections:import-descriptions` (odmawia pracy, dopóki `status` ≠ `approved`).
 - Poniżej: podsumowanie, metoda, reguły i kontrola, decyzje, wdrożenie, a na końcu wszystkie 68 tekstów wraz z notatką „Co widać”, na której opiera się każdy opis.
 
@@ -84,6 +85,12 @@ npm run collections:import-descriptions -- --only ostrea --confirm
 
 # 3. Reszta:
 npm run collections:import-descriptions -- --confirm
+```
+
+**Kolekcje z partii z 29.09** (Aurora, Cirrus, Cumulonimbus, Cumulus, Obsidian, Scopulus, Unda, Tachylite) mają w CMS krótkie, jednozdaniowe opisy (poniżej 80 znaków) wpisane przez `scripts/complete-new-print-content-2026.ts`. Strona ich nie wyświetla (próg 80 znaków), ale to nie placeholder `<nazwa>.`, więc dry-run oznacza je `kept` i cytuje istniejący tekst. Żeby zastąpić je zatwierdzonymi opisami (poprzednia wersja zostaje w historii rewizji CMS):
+
+```bash
+npm run collections:import-descriptions -- --only aurora,cirrus,cumulonimbus,cumulus,obsidian,scopulus,unda,tachylite --force --confirm
 ```
 
 Po imporcie strona każdej kolekcji z co najmniej 3 pracami staje się indeksowalna w językach, w których opis ma ≥ 80 znaków (tu: wszystkie cztery); pozostałe 10 dostaje opis i zajawkę na `/kolekcje`, ale zostaje `noindex` (punkt 8).
