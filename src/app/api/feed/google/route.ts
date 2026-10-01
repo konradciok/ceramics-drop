@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
-import { buildFeedItems, buildGoogleXml, FEED_LOCALES, type FeedLocale } from '@/lib/feed';
+import { buildGoogleFeedItems, buildGoogleXml, isGoogleFeedMarketId, type GoogleFeedMarketId } from '@/lib/feed';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const param = new URL(request.url).searchParams.get('locale');
-  if (param !== null && !(FEED_LOCALES as string[]).includes(param)) {
-    return NextResponse.json({ error: 'invalid_locale' }, { status: 400 });
+  const market = new URL(request.url).searchParams.get('market');
+  if (!isGoogleFeedMarketId(market)) {
+    return NextResponse.json({ error: 'invalid_market' }, { status: 400 });
   }
-  const locale: FeedLocale = (param as FeedLocale) ?? 'pl';
 
   try {
     // Prints only — no ceramic inventory read is needed here (see lib/feed.ts).
-    const items = await buildFeedItems(locale);
-    const xml = buildGoogleXml(items, locale);
+    const items = await buildGoogleFeedItems(market);
+    const xml = buildGoogleXml(items, market === 'pl' ? 'pl' : 'en');
 
     return new Response(xml, {
       headers: {

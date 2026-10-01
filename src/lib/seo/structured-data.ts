@@ -11,9 +11,10 @@ import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
-import { SHIPPING_COUNTRY } from '@/lib/feed';
+import { EU_PRINT_COUNTRIES, SHIPPING_COUNTRY } from '@/lib/feed';
 import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { RETURNS_POLICY } from '@/lib/returns-policy';
+import type { Currency } from '@/lib/currency';
 
 const PRINTS_SLUG = 'fine-art-prints';
 
@@ -90,10 +91,17 @@ function merchantReturnPolicy(locale: Locale) {
  * same rate the item price uses (see fromPriceOf/priceOfVariant call sites)
  * instead of print-shipping.ts's hardcoded fallback constants.
  */
-function printShippingDetailsFor(locale: Locale, rates: PrintPricingConfig) {
-  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
-  const { currency, priceCurrency } = printCurrencyFor(locale);
-  return [
+function printShippingDetailsFor(
+  currency: 'pln' | 'eur' | 'gbp',
+  priceCurrency: 'PLN' | 'EUR' | 'GBP',
+  rates: PrintPricingConfig,
+) {
+  const countries: readonly PrintCountry[] = currency === 'pln'
+    ? ['PL']
+    : currency === 'gbp'
+      ? ['GB']
+      : EU_PRINT_COUNTRIES;
+  return countries.flatMap((country) => [
     {
       '@type': 'OfferShippingDetails' as const,
       shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates), currency: priceCurrency },
@@ -104,7 +112,7 @@ function printShippingDetailsFor(locale: Locale, rates: PrintPricingConfig) {
       shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
-  ];
+  ]);
 }
 
 /** Standard print-on-demand variants share the withdrawal policy. */
@@ -134,11 +142,14 @@ function sellableVariantPrices(
   return prices;
 }
 
-/** Locale → (currency code pair) for print schemas: pl→PLN, en→GBP, es/de→EUR — mirrors feed.ts's `currency()`/`chargeable`. */
-function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
+/** The PDP supplies its resolved request currency so a Merchant landing URL
+ * always has schema matching the visible offer. */
+function printCurrencyFor(locale: Locale, displayCurrency?: Currency): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
   if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
-  if (locale === 'en') return { currency: 'gbp', priceCurrency: 'GBP' };
-  return { currency: 'eur', priceCurrency: 'EUR' };
+  const currency = displayCurrency ?? (locale === 'en' ? 'gbp' : 'eur');
+  return currency === 'gbp'
+    ? { currency: 'gbp', priceCurrency: 'GBP' }
+    : { currency: 'eur', priceCurrency: 'EUR' };
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
@@ -321,7 +332,7 @@ function printListItems({ designs, locale, singular, categoryName, notes, rawNot
           offerCount: prices.length,
           availability: 'https://schema.org/InStock' as const,
           url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
-          shippingDetails: printShippingDetailsFor(locale, pricing),
+                shippingDetails: printShippingDetailsFor(currency, priceCurrency, pricing),
           hasMerchantReturnPolicy: printReturnPolicy(locale),
         },
       },
@@ -429,14 +440,15 @@ type PrintProductArgs = {
   pricing: PrintPricingConfig;
   /** CMS-resolved collection definitions (id → collection membership) — loaded once by the PDP. */
   definitions?: PrintCollectionDefinition[];
+  displayCurrency?: Currency;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions }: PrintProductArgs): Graph {
-  const { currency, priceCurrency } = printCurrencyFor(locale);
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency }: PrintProductArgs): Graph {
+  const { currency, priceCurrency } = printCurrencyFor(locale, displayCurrency);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const name = printDisplayName(design, singular, definitions);
@@ -445,6 +457,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
   const homeUrl = absoluteUrl(locale, '/');
   const collection = printCollectionOf(design.id, definitions);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
+  const offerUrl = displayCurrency ? `${productUrl}?currency=${currency}` : productUrl;
   // Home › Collections › {Collection} › Print; designs in no collection fall back to Home › Shop › Print.
   const trail = collection
     ? [
@@ -482,8 +495,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           highPrice: Math.max(...prices),
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
-          url: productUrl,
-          shippingDetails: printShippingDetailsFor(locale, pricing),
+          url: offerUrl,
+          shippingDetails: printShippingDetailsFor(currency, priceCurrency, pricing),
           hasMerchantReturnPolicy: printReturnPolicy(locale),
         },
       },

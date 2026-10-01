@@ -17,6 +17,7 @@ import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { getProductNote } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getCurrency } from '@/lib/currency.server';
 import { readWithFallback } from '@/lib/supabase-timeout';
 import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import type { Locale } from '@/i18n/routing';
@@ -100,7 +101,7 @@ export default async function Page({ params, searchParams }: Props) {
     const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const [note, coverage, pricing, pdpContent, definitions] = await Promise.all([
+    const [note, coverage, pricing, pdpContent, definitions, displayCurrency] = await Promise.all([
       getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken),
       readWithFallback<PrintAssetCoverage | null>(
         'printAssetCoverage',
@@ -111,6 +112,7 @@ export default async function Page({ params, searchParams }: Props) {
       getPrintPricingConfig(),
       getPrintPdpContent(locale as Locale, previewToken),
       loadPrintCollectionDefinitions(),
+      getCurrency(locale),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
@@ -132,6 +134,7 @@ export default async function Page({ params, searchParams }: Props) {
             description: note,
             pricing,
             definitions,
+            displayCurrency,
           })}
         />
         <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} definitions={definitions} />
