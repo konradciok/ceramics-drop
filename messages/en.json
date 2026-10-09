@@ -373,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
-    "paczkomatD": "Pick up from your chosen parcel locker, usually 1–2 business days after I hand the parcel over.",
+    "paczkomatD": "Pick up from your chosen parcel locker, delivery within 5 business days.",
     "paczkomatPrice": "from {price}",
     "courierT": "InPost Courier",
-    "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
+    "courierD": "Delivery to your address within 5 business days.",
     "pickupT": "Personal pickup",
     "pickupD": "In Tenerife (San Pedro Abajo 12, Guimar), by appointment.",
     "printT": "Courier delivery",
@@ -440,7 +440,7 @@
       "Printed to order",
       "200 gsm fine art paper",
       "Frames: black, light or dark brown",
-      "Delivery across the EU & UK · 5–10 days"
+      "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
     ],
     "storyImageAlt": "Anna Ciok in her ceramics studio",
     "editorialImageAlt": "Framed Anna Ciok works in a sunlit interior",
@@ -461,11 +461,11 @@
     "craft2H": "You pick <em>size and frame</em>",
     "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
     "craft3H": "We print <em>and ship</em>",
-    "craft3P": "Your print is made and shipped by our print partner within 5–10 business days, to your home address anywhere in the EU or UK.",
+    "craft3P": "Your print is made and shipped by our print partner. Orders are fulfilled within 2 business days, and delivery to your home address in the EU or UK takes up to 5 business days.",
     "lgMaterialH": "Material & finish",
     "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
     "lgShippingH": "Production & shipping",
-    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
+    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
@@ -474,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Prints shipping",
-    "ctVShipPrints": "EU & UK · 5–10 business days"
+    "ctVShipPrints": "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
   },
   "printCollections": {
     "inne": "More prints"
@@ -549,9 +549,9 @@
     "fact3K": "Media",
     "fact3V": "Ceramics <em>& watercolour</em>",
     "fact3D": "Some compositions stay on paper and enter a fine art edition. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
-    "fact4K": "Ceramics shipping",
-    "fact4V": "1–3 <em>days</em>",
-    "fact4D": "I pack and ship ceramics myself within 1–3 business days across Poland. Fine art prints are made and shipped by our print partner, usually within 5–10 days, anywhere in the EU or UK.",
+    "fact4K": "Order fulfilment",
+    "fact4V": "up to 2 <em>days</em>",
+    "fact4D": "Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. I pack and ship ceramics myself; fine art prints are made and shipped by our print partner.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
@@ -594,7 +594,7 @@
     "lStudio": "Pickup",
     "vStudio": "Tenerife — pickup by appointment",
     "lShip": "Shipping",
-    "vShip": "Poland · ships in 1–3 business days",
+    "vShip": "Fulfilment within 2 business days, delivery within 5 business days",
     "lReply": "I reply",
     "vReply": "Usually the same day"
   },
@@ -609,7 +609,7 @@
     "toc4": "Pickup",
     "toc5": "Returns",
     "toc6": "Damage",
-    "updated": "Updated: June 2026",
+    "updated": "Updated: October 2026",
     "s1H": "Shipping",
     "s1P": "I ship by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
     "s1Li1": "InPost Parcel Locker, all of Poland — from 20 zł",
@@ -617,7 +617,7 @@
     "s1Li2": "Pickup in Tenerife — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
     "s2H": "Turnaround",
-    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. I send the parcel within <strong>1–3 business days</strong> of the payment clearing, and the courier usually delivers the next day.",
+    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. Orders are fulfilled within <strong>2 business days</strong> of the payment clearing, with delivery within <strong>5 business days</strong>.",
     "s2Note": "I pack everything myself, between studio work and the next firings. If you need a specific date, write to me and I’ll check what is possible.",
     "s3H": "Packing",
     "s3P": "The ceramics travel wrapped by hand — film, cardboard and plenty of padding so nothing moves. I label the box as fragile. I try to limit plastic wherever I can, without risking the piece.",
@@ -654,7 +654,7 @@
     "s3H": "§3 Prices & payment",
     "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment is handled by a secure external payment provider, Stripe.",
     "s4H": "§4 Fulfilment & shipping",
-    "s4P": "I send orders within 1–3 business days of the payment clearing. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
+    "s4P": "Orders are fulfilled within 2 business days of the payment clearing, with delivery within 5 business days across Europe. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
     "s5H": "§5 Right of withdrawal",
     "s5P": "A consumer has the right to withdraw from the purchase within 14 days of receiving the piece, without giving a reason. The statement can simply be sent by email. The returned piece should be undamaged; the buyer covers the return shipping, and the refund is made within 14 days.",
     "s6H": "§6 Complaints",
@@ -959,7 +959,7 @@
   "deliveryNotice": {
     "title": "Delivery information",
     "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
-    "p2": "Orders are dispatched within 1–3 business days of purchase.",
+    "p2": "Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "p3": "You'll receive the InPost tracking number by email once the parcel is on its way."
   },
   "consent": {
@@ -1002,7 +1002,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Open edition",
     "sectionDelivery": "Delivery",
-    "deliveryNote": "Produced and shipped via our print partner, 5–10 working days",
+    "deliveryNote": "Printed and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe.",
     "sectionCare": "Care",
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
     "moreFrom": "More prints",
@@ -1019,7 +1019,7 @@
     "artistBio": "Anna Ciok is a Tenerife-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
-    "accordionShipping": "Prints are produced and shipped by our print partner within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
+    "accordionShipping": "Prints are produced and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
     "seeCollection": "See the whole {name} collection"
   },
   "giftCard": {
@@ -1109,7 +1109,7 @@
     "metaDescription": "Reproductions of Anna Ciok’s watercolour and ink paintings — Fine Art Print on 200 g/m² paper, framed or unframed. Filter by colour and collection; delivery across the EU and UK.",
     "eyebrow": "Fine Art Print",
     "title": "Shop <em>Fine Art Prints</em>",
-    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order and shipped in 5–10 working days.",
+    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order. Fulfilment within 2 business days, delivery within 5 business days across Europe.",
     "priceLadder": "{size} · from {price}",
     "frameFrom": "Frame +{price}",
     "priceNote": "The price depends on size and framing — not on the painting.",
@@ -1145,7 +1145,7 @@
     "collectionsTitle": "Browse by collection",
     "collectionsCta": "All collections",
     "aboutTitle": "About Anna Ciok’s Fine Art Prints",
-    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom in 5–10 working days.",
+    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "aboutMore": "Read more",
     "aboutLess": "Show less"
   }

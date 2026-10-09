@@ -373,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Recogida en el Paczkomat elegido, normalmente 1–2 días laborables después de entregar el paquete.",
+    "paczkomatD": "Recogida en el Paczkomat elegido, entrega en un máximo de 5 días laborables.",
     "paczkomatPrice": "desde {price}",
     "courierT": "Mensajería InPost",
-    "courierD": "Entrega a domicilio, normalmente 1–2 días laborables después de entregar el paquete.",
+    "courierD": "Entrega a domicilio en un máximo de 5 días laborables.",
     "pickupT": "Recogida personal",
     "pickupD": "En Tenerife (San Pedro Abajo 12, Guimar), con cita previa.",
     "printT": "Envío por mensajería",
@@ -440,7 +440,7 @@
       "Impresión bajo pedido",
       "Papel fine art de 200 g/m²",
       "Marco: negro, marrón claro u oscuro",
-      "Envío a la UE y Reino Unido · 5–10 días"
+      "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
     ],
     "storyImageAlt": "Anna Ciok en su estudio de cerámica",
     "editorialImageAlt": "Obras enmarcadas de Anna Ciok en un interior bañado por el sol",
@@ -461,11 +461,11 @@
     "craft2H": "Eliges <em>tamaño y marco</em>",
     "craft2P": "Puedes elegir entre tres tamaños y un marco — sin marco o de madera, en negro, marrón claro u oscuro.",
     "craft3H": "Imprimimos <em>y enviamos</em>",
-    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión en 5–10 días laborables, a tu dirección en la Unión Europea o el Reino Unido.",
+    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega a tu dirección en la Unión Europea o el Reino Unido tarda hasta 5 días laborables.",
     "lgMaterialH": "Material y acabado",
     "lgMaterialP": "Impresión en papel fine art de 200 g/m², calidad de archivo. Cada impresión está disponible sin marco o con marco de madera: negro, marrón claro u oscuro.",
     "lgShippingH": "Producción y envío",
-    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido — normalmente en 5–10 días laborables.",
+    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
     "ctP": "¿Quieres ver una pieza en persona, preguntar por una impresión en otro tamaño o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
@@ -474,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Envío de impresiones",
-    "ctVShipPrints": "UE y Reino Unido · 5–10 días laborables"
+    "ctVShipPrints": "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
   },
   "printCollections": {
     "inne": "Otras láminas"
@@ -549,9 +549,9 @@
     "fact3K": "Técnicas",
     "fact3V": "Cerámica <em>y acuarela</em>",
     "fact3D": "Unas composiciones se quedan en papel y entran en una edición fine art. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
-    "fact4K": "Envío de cerámica",
-    "fact4V": "1–3 <em>días</em>",
-    "fact4D": "Embalo y envío la cerámica yo misma en 1–3 días laborables por toda Polonia. Las láminas fine art las produce y envía nuestro socio de impresión, normalmente en 5–10 días, a la Unión Europea y al Reino Unido.",
+    "fact4K": "Tramitación del pedido",
+    "fact4V": "hasta 2 <em>días</em>",
+    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Embalo y envío la cerámica yo misma; las láminas fine art las produce y envía nuestro socio de impresión.",
     "procEyebrow": "Cómo se hace una pieza",
     "procH": "De la primera línea <em>a una pieza terminada.</em>",
     "p1H": "Empiezo <em>con una línea</em>",
@@ -594,7 +594,7 @@
     "lStudio": "Recogida",
     "vStudio": "Tenerife — recogida con cita",
     "lShip": "Envío",
-    "vShip": "Polonia · envío en 1–3 días laborables",
+    "vShip": "Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables",
     "lReply": "Respondo",
     "vReply": "Normalmente el mismo día"
   },
@@ -609,7 +609,7 @@
     "toc4": "Recogida",
     "toc5": "Devoluciones",
     "toc6": "Daños",
-    "updated": "Actualizado: junio 2026",
+    "updated": "Actualizado: octubre 2026",
     "s1H": "Envío",
     "s1P": "Envío por <strong>Paczkomat InPost (desde 20 zł)</strong> o <strong>mensajería (30 zł)</strong> a toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
     "s1Li1": "Paczkomat InPost, toda Polonia — desde 20 zł",
@@ -617,7 +617,7 @@
     "s1Li2": "Recogida en Tenerife — gratis",
     "s1Li3": "Envío internacional — escríbeme y lo gestiono de forma individual",
     "s2H": "Plazos",
-    "s2P": "Las piezas de cerámica están terminadas y ya esperan en Polonia, así que no hay tiempo de producción. Envío el paquete en <strong>1–3 días laborables</strong> desde que se confirma el pago, y la mensajería suele entregarlo al día siguiente.",
+    "s2P": "Las piezas de cerámica están terminadas y ya esperan en Polonia, así que no hay tiempo de producción. El pedido se tramita en un máximo de <strong>2 días laborables</strong> desde que se confirma el pago, y la entrega tarda hasta <strong>5 días laborables</strong>.",
     "s2Note": "Embalo todo yo misma, entre el trabajo del estudio y las siguientes cocciones. Si necesitas una fecha concreta, escríbeme y comprobaré qué se puede hacer.",
     "s3H": "Embalaje",
     "s3P": "La cerámica viaja envuelta a mano — film, cartón y bastante relleno para que nada se mueva. Marco la caja como frágil. Intento limitar el plástico siempre que puedo, sin arriesgar la pieza.",
@@ -654,7 +654,7 @@
     "s3H": "§3 Precios y pago",
     "s3P": "Todos los precios se indican en złoty polaco (PLN) y son precios brutos. Verás el coste de envío en el carrito antes de confirmar la compra. El pago lo gestiona un proveedor externo seguro: Stripe.",
     "s4H": "§4 Cumplimiento y envío",
-    "s4P": "Envío los pedidos en 1–3 días laborables desde que se confirma el pago. Los detalles sobre costes, plazos y recogida se describen en la página <link>Envíos y devoluciones</link>.",
+    "s4P": "El pedido se tramita en un máximo de 2 días laborables desde que se confirma el pago, y la entrega tarda hasta 5 días laborables en Europa. Los detalles sobre costes, plazos y recogida se describen en la página <link>Envíos y devoluciones</link>.",
     "s5H": "§5 Derecho de desistimiento",
     "s5P": "El consumidor tiene derecho a desistir de la compra en un plazo de 14 días desde la recepción de la pieza, sin indicar motivo. Basta con enviar la declaración por correo. La pieza devuelta debe estar sin daños; el comprador asume el envío de vuelta y el reembolso se realiza en un plazo de 14 días.",
     "s6H": "§6 Reclamaciones",
@@ -959,7 +959,7 @@
   "deliveryNotice": {
     "title": "Información de envío",
     "p1": "Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.",
-    "p2": "Enviamos los pedidos en un plazo de 1 a 3 días laborables desde la compra.",
+    "p2": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
     "p3": "Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete."
   },
   "consent": {
@@ -1002,7 +1002,7 @@
     "sectionEdition": "Edición",
     "editionOpen": "Edición abierta",
     "sectionDelivery": "Envío",
-    "deliveryNote": "Producido y enviado por nuestro socio de impresión, 5–10 días hábiles",
+    "deliveryNote": "Producido y enviado por nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa.",
     "sectionCare": "Cuidado",
     "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
     "moreFrom": "Más impresiones",
@@ -1019,7 +1019,7 @@
     "artistBio": "Anna Ciok es una artista afincada en Tenerife que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
-    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
+    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
     "seeCollection": "Ver toda la colección {name}"
   },
   "giftCard": {
@@ -1109,7 +1109,7 @@
     "metaDescription": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok — Fine Art Print en papel de 200 g/m², con o sin marco. Filtra por color y colección; envío a la UE y al Reino Unido.",
     "eyebrow": "Fine Art Print",
     "title": "Tienda de <em>Fine Art Print</em>",
-    "lead": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok. Elige tamaño y enmarcado — cada lámina se imprime bajo pedido y se envía en 5–10 días laborables.",
+    "lead": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok. Elige tamaño y enmarcado — cada lámina se imprime bajo pedido. Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables en Europa.",
     "priceLadder": "{size} · desde {price}",
     "frameFrom": "Marco +{price}",
     "priceNote": "El precio depende del tamaño y del enmarcado, no de la pintura.",
@@ -1145,7 +1145,7 @@
     "collectionsTitle": "Explorar por colección",
     "collectionsCta": "Todas las colecciones",
     "aboutTitle": "Sobre los Fine Art Print de Anna Ciok",
-    "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido en 5–10 días laborables.",
+    "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
     "aboutMore": "Leer más",
     "aboutLess": "Ver menos"
   }
