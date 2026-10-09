@@ -28,17 +28,15 @@ export const MARKET_EVENT = {
   startLocal: '20261010T090000',
   endLocal: '20261010T140000',
   timeZone: 'Atlantic/Canary',
-  /** Pin supplied by the studio for the market square. */
-  lat: 28.044737720390916,
-  lng: -16.538546894694644,
+  /** Google Maps link supplied by the studio for the market square. */
+  mapsUrl: 'https://maps.app.goo.gl/U5MMXTApFgmbyVadA',
 } as const;
 
 /** Event copy from the `market.event` messages, used for the calendar link. */
 export type MarketEventCopy = { name: string; place: string; calendarDetails: string; mapLabel: string };
 
 export function marketMapsUrl(): string {
-  const query = `${MARKET_EVENT.lat},${MARKET_EVENT.lng}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return MARKET_EVENT.mapsUrl;
 }
 
 /** Google Calendar "add event" template link for the market. */
