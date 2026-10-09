@@ -23,6 +23,7 @@ import { PRINT_DESIGNS, PRINT_DESIGNS_RAW } from './prints';
 import { designMockupStates, mockupSrc } from './print-mockups';
 import { IMG_WIDTHS } from './images';
 import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
+import { MARKET_IMAGES } from './market-event';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
@@ -71,9 +72,9 @@ function registryImagePaths(): string[] {
   return paths;
 }
 
-/** Direct editorial assets rendered by home, studio, and gallery pages. */
+/** Direct editorial assets rendered by home, studio, gallery and campaign pages. */
 function editorialImagePaths(): string[] {
-  return DIRECT_EDITORIAL_IMAGES.map((image) => image.src);
+  return [...DIRECT_EDITORIAL_IMAGES, ...Object.values(MARKET_IMAGES)].map((image) => image.src);
 }
 
 describe('product asset hygiene', () => {
