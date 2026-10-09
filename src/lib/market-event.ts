@@ -53,12 +53,19 @@ export function marketCalendarUrl(copy: MarketEventCopy): string {
 }
 
 /**
+ * The campaign's main conversion. Unlike the other market events it is NOT a
+ * `site_engagement`: it is its own dataLayer `event` (and a Meta `FindLocation`
+ * standard event) so GA4 / Meta can use it directly as a conversion source.
+ * Built by `buildMarketDirectionsEvent` in src/lib/analytics.ts.
+ */
+export const MARKET_DIRECTIONS_EVENT = 'market_get_directions' as const;
+
+/**
  * `site_engagement` types the page pushes (docs/analytics-stack.md). They ride
  * the existing GTM `site_engagement` → GA4 + Meta `SiteEngagement` routing, so
- * no container change is needed. `directions` is the campaign's main conversion.
+ * no container change is needed.
  */
 export const MARKET_ENGAGEMENT = {
-  directions: 'market_get_directions',
   calendar: 'market_add_to_calendar',
   photoView: 'market_photo_view',
   outbound: 'market_outbound_click',

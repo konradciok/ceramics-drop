@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { IMG_WIDTHS } from '@/lib/images';
 import { registryProductById } from '@/lib/products';
 import {
+  MARKET_DIRECTIONS_EVENT,
   MARKET_ENGAGEMENT,
   MARKET_IMAGES,
   MARKET_SHOWROOM_IDS,
@@ -40,6 +41,11 @@ describe('market event links', () => {
     expect(url.searchParams.get('text')).toBe(COPY.name);
     expect(url.searchParams.get('details')).toContain(marketMapsUrl());
     expect(url.searchParams.get('details')).toContain('Bizum');
+  });
+
+  it('keeps the directions conversion out of site_engagement', () => {
+    expect(MARKET_DIRECTIONS_EVENT).toBe('market_get_directions');
+    expect(Object.values(MARKET_ENGAGEMENT)).not.toContain(MARKET_DIRECTIONS_EVENT);
   });
 
   it('keeps engagement types namespaced and unique', () => {
