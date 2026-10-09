@@ -3,33 +3,38 @@
    (`/en/el-medano`, see src/app/[locale]/el-medano/page.tsx).
 
    Event facts, outbound URLs, the photo sets the page renders and the
-   analytics engagement types it emits. English-only by design: the page
-   serves the `en` locale and every other locale redirects to it, so its
-   copy lives here instead of the four-locale message files.
+   analytics engagement types it emits. All visible copy lives in the
+   `market` message namespace: messages/{pl,en,es,de}.json for the four
+   site locales, messages/market/{fr,nl,no,sv,cs,sk}.json for the page-only
+   languages served at /en/el-medano/<lang> (see src/lib/market-copy.ts).
    ============================================================ */
 import type { EditorialImage } from '@/lib/editorial-images';
 
 export const MARKET_PATH = '/el-medano';
 
-/** The only locale the landing page renders in; the others redirect here. */
-export const MARKET_LOCALE = 'en' as const;
+/** Site locale whose header/footer shell wraps the page-only languages. */
+export const MARKET_SHELL_LOCALE = 'en' as const;
+
+/**
+ * Languages the page ships in beyond the four site locales. They are not
+ * routable site locales: they live at `/en/el-medano/<lang>` inside the `en`
+ * shell and only the page body is translated.
+ */
+export const MARKET_EXTRA_LANGS = ['fr', 'nl', 'no', 'sv', 'cs', 'sk'] as const;
+export type MarketExtraLang = (typeof MARKET_EXTRA_LANGS)[number];
 
 export const MARKET_EVENT = {
-  name: 'Anna Ciok at the El Médano handicraft market',
-  dateLabel: 'Saturday 10 October 2026',
-  shortDateLabel: 'Sat 10 Oct',
-  timeLabel: '9:00 – 14:00',
   /** Local wall-clock times in `timeZone`, Google Calendar `dates` format. */
   startLocal: '20261010T090000',
   endLocal: '20261010T140000',
   timeZone: 'Atlantic/Canary',
-  place: 'Main plaza, El Médano',
-  area: 'Granadilla de Abona, Tenerife',
   /** Pin supplied by the studio for the market square. */
   lat: 28.044737720390916,
   lng: -16.538546894694644,
-  payment: 'Cash, card or Bizum',
 } as const;
+
+/** Event copy from the `market.event` messages, used for the calendar link. */
+export type MarketEventCopy = { name: string; place: string; calendarDetails: string; mapLabel: string };
 
 export function marketMapsUrl(): string {
   const query = `${MARKET_EVENT.lat},${MARKET_EVENT.lng}`;
@@ -37,18 +42,14 @@ export function marketMapsUrl(): string {
 }
 
 /** Google Calendar "add event" template link for the market. */
-export function marketCalendarUrl(): string {
+export function marketCalendarUrl(copy: MarketEventCopy): string {
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: MARKET_EVENT.name,
+    text: copy.name,
     dates: `${MARKET_EVENT.startLocal}/${MARKET_EVENT.endLocal}`,
     ctz: MARKET_EVENT.timeZone,
-    location: `${MARKET_EVENT.place}, Tenerife`,
-    details: [
-      'Hand-painted ceramics and fine art prints by Anna Ciok.',
-      `${MARKET_EVENT.payment}.`,
-      `Map: ${marketMapsUrl()}`,
-    ].join(' '),
+    location: `${copy.place}, Tenerife`,
+    details: [copy.calendarDetails, `${copy.mapLabel}: ${marketMapsUrl()}`].join(' '),
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
@@ -79,52 +80,24 @@ export const MARKET_IMAGES = {
   plateWall: { key: 'plateWall', src: '/uploads/el-medano-plate-wall.webp', width: 1086, height: 1448 },
 } as const satisfies Record<string, EditorialImage>;
 
-export type MarketPhoto = {
-  image: EditorialImage;
-  label: string;
-  caption: string;
-  alt: string;
-};
+/** Photo shown in the lightbox; its label/caption/alt are `market.photos.<key>.*` messages. */
+export type MarketPhoto = { image: EditorialImage };
 
 /** Lookbook row, in display order; the plate-wall band is appended to the same lightbox set. */
 export const MARKET_LOOKBOOK: MarketPhoto[] = [
-  {
-    image: MARKET_IMAGES.studioSet,
-    label: 'Black & terracotta',
-    caption: 'A hat-figure plate, a wave vase and two palm mugs.',
-    alt: 'A plate with a figure in a wide-brimmed hat, a vase with a black wave and two palm mugs on stone plinths',
-  },
-  {
-    image: MARKET_IMAGES.bluePieces,
-    label: 'In blue',
-    caption: 'Graters, hand dishes, a cup and a plate.',
-    alt: 'Blue hand-painted ceramic graters, two hand-shaped dishes, a wave cup and a wave plate on a cream plaster wall',
-  },
-  {
-    image: MARKET_IMAGES.platesOnPrints,
-    label: 'Clay & paper',
-    caption: 'Mermaids, sailors and Fuerte Piba — on plates and on prints.',
-    alt: 'Hand-painted plates with a mermaid, sailors and a woman in a wide-brimmed hat laid on Fuerte Piba and Islas Canarias prints on a wooden table',
-  },
-  {
-    image: MARKET_IMAGES.wallPlates,
-    label: 'On the wall',
-    caption: 'Leaves, a wave and a palm, hung as a small gallery.',
-    alt: 'Three hand-painted plates hung on a textured cream wall: terracotta leaves, a black wave with a terracotta sun, and a terracotta palm inside a black scalloped rim',
-  },
+  { image: MARKET_IMAGES.studioSet },
+  { image: MARKET_IMAGES.bluePieces },
+  { image: MARKET_IMAGES.platesOnPrints },
+  { image: MARKET_IMAGES.wallPlates },
 ];
 
-export const MARKET_PLATE_WALL: MarketPhoto = {
-  image: MARKET_IMAGES.plateWall,
-  label: 'No two alike',
-  caption: 'A whole table of plates, every one painted by hand.',
-  alt: 'Dozens of hand-painted plates in black and terracotta laid out together in the sun: palms, mermaids, hands, shells, leaves and checks',
-};
+export const MARKET_PLATE_WALL: MarketPhoto = { image: MARKET_IMAGES.plateWall };
 
 /**
  * Earlier-collection pieces shown in the "From the showroom" gallery — a taste
  * of the style, not a stock list (most are sold). Ids are stable registry ids;
- * image, number and size come from the code registry at render time.
+ * image, number and size come from the code registry at render time, and each
+ * piece's alt text is a `market.showroom.alt.<id>` message.
  */
 export const MARKET_SHOWROOM_IDS = ['k10', 't20', 'h01', 'g01', 's19', 'w08', 'v01', 'd06'] as const;
 
@@ -134,15 +107,3 @@ export function showroomImageSize(category: string): { width: number; height: nu
     ? { width: 1600, height: 2000 }
     : { width: 2000, height: 2000 };
 }
-
-/** Per-piece alt text (the registry has no descriptive alt for ceramics). */
-export const MARKET_SHOWROOM_ALT: Record<(typeof MARKET_SHOWROOM_IDS)[number], string> = {
-  k10: 'hand-painted with a blue shell',
-  t20: 'a black cactus inside a terracotta rim',
-  h01: 'painted inside with two black palm trees',
-  g01: 'a black palm tree between terracotta borders',
-  s19: 'a black donkey inside a terracotta scalloped rim',
-  w08: 'painted with soft blue cacti and terracotta dots',
-  v01: 'a blue cactus and a terracotta sun',
-  d06: 'a black lobster drawn around the body',
-};

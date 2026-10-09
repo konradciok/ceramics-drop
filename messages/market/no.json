@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Markedet i El Médano · {date}",
+    "description": "Håndmalt keramikk og kunsttrykk av Anna Ciok på håndverksmarkedet i El Médano — lørdag 10. oktober 2026, kl. 9–14, hovedtorget. En unik suvenir fra Tenerife.",
+    "ogTitle": "Denne lørdagen, i El Médano — Anna Ciok",
+    "ogAlt": "Fuerte Piba-trykk og en håndmalt tallerken av Anna Ciok"
+  },
+  "event": {
+    "name": "Anna Ciok på håndverksmarkedet i El Médano",
+    "dateLabel": "lørdag 10. oktober 2026",
+    "shortDateLabel": "lør. 10. okt.",
+    "timeLabel": "kl. 9–14",
+    "place": "Hovedtorget, El Médano",
+    "area": "Granadilla de Abona, Tenerife",
+    "payment": "Kontanter, kort eller Bizum",
+    "calendarDetails": "Håndmalt keramikk og kunsttrykk av Anna Ciok. Kontanter, kort eller Bizum.",
+    "mapLabel": "Kart"
+  },
+  "hero": {
+    "eyebrow": "Håndverksmarked · Mercadillo artesanal",
+    "line1": "Denne lørdagen,",
+    "line2": "i El Médano.",
+    "lead": "Håndmalt keramikk og kunsttrykk, rett fra atelieret mitt på Tenerife. Kom og finn en suvenir som faktisk er fra øya — eller det stykket leiligheten din har manglet.",
+    "when": "Når",
+    "where": "Hvor",
+    "pay": "Betaling",
+    "directions": "Få veibeskrivelse",
+    "calendar": "Legg til i kalender",
+    "imageAlt": "To Fuerte Piba-trykk, ett svart og ett kremfarget, med en håndmalt tallerken imellom på et solfylt betonggulv",
+    "badgeDay": "Lørdag",
+    "badgeNumber": "10",
+    "badgeMonth": "oktober",
+    "captionLabel": "Fra atelieret",
+    "caption": "Fuerte Piba-trykk og en håndmalt tallerken."
+  },
+  "marquee": [
+    "håndmalte tallerkener",
+    "krus og vaser",
+    "kunsttrykk",
+    "unike stykker",
+    "made in Tenerife"
+  ],
+  "take": {
+    "eyebrow": "Ta med Tenerife hjem",
+    "title": "En suvenir som er <em>faktisk herfra.</em>",
+    "p1": "Glem kjøleskapsmagneter. Hver tallerken, hvert krus og hver vase på bordet mitt er malt for hånd i atelieret mitt i Güímar, med motiver fra øya — palmer, den kanariske solen, en havfrue, kvinner med brede hatter.",
+    "p2": "Ingen er like, så stykket du velger på lørdag finnes bare én gang.",
+    "tipTitle": "Flyr du hjem?",
+    "tipText": "Trykk reiser flatt i kofferten — og spør meg gjerne hvordan du pakker keramikk trygt for reisen.",
+    "imageAlt": "Anna holder to hvite vaser håndmalt med blå palmer og terrakotta stripete kanter"
+  },
+  "apartment": {
+    "eyebrow": "Til hjemmet ditt på øya",
+    "title": "Noe <em>til leiligheten.</em>",
+    "p1": "Nettopp flyttet hit, eller vil du gi en feriebolig litt sjel? Len et par trykk mot hyllen, sett en palmevase ved vinduet, spis fra tallerkener ingen andre eier — dristige, solrike stykker laget for kanarisk lys og hvite vegger.",
+    "p2": "Trykkene bærer kanariske ordtak, og figurene som hører til:",
+    "imageAlt": "Innrammede blå trykk Agüita og Chacho, Calma lent mot en trehylle over grønne fliser, i varmt ettermiddagslys"
+  },
+  "lookbook": {
+    "eyebrow": "Lookbook",
+    "title": "På bordet, <em>på veggen.</em>",
+    "aside": "Stykker laget for daglig bruk — og like fornøyde hengt på veggen ved siden av et trykk.",
+    "viewLarger": "Forstørr: {caption}"
+  },
+  "photos": {
+    "studioSet": {
+      "label": "Svart og terrakotta",
+      "caption": "En tallerken med hattefigur, en bølgevase og to palmekrus.",
+      "alt": "En tallerken med en figur i bredbrettet hatt, en vase med svart bølge og to palmekrus på steinsokler"
+    },
+    "bluePieces": {
+      "label": "I blått",
+      "caption": "Rivjern, håndskåler, en kopp og en tallerken.",
+      "alt": "Blå håndmalte keramikkrivjern, to håndformede skåler, en bølgekopp og en bølgetallerken mot en kremfarget pusset vegg"
+    },
+    "platesOnPrints": {
+      "label": "Leire og papir",
+      "caption": "Havfruer, sjøfolk og Fuerte Piba — på tallerkener og på trykk.",
+      "alt": "Håndmalte tallerkener med en havfrue, sjøfolk og en kvinne i bredbrettet hatt, lagt på Fuerte Piba- og Islas Canarias-trykk på et trebord"
+    },
+    "wallPlates": {
+      "label": "På veggen",
+      "caption": "Blader, en bølge og en palme, hengt opp som et lite galleri.",
+      "alt": "Tre håndmalte tallerkener hengt på en teksturert kremfarget vegg: terrakotta blader, en svart bølge med terrakotta sol og en terrakotta palme inni en svart bølgekant"
+    },
+    "plateWall": {
+      "label": "Ingen er like",
+      "caption": "Et helt bord med tallerkener, hver og en malt for hånd.",
+      "alt": "Dusinvis av håndmalte tallerkener i svart og terrakotta lagt sammen i solen: palmer, havfruer, hender, skjell, blader og ruter"
+    }
+  },
+  "wall": {
+    "ariaLabel": "En vegg av håndmalte tallerkener",
+    "view": "Forstørr bildet av tallerkenveggen",
+    "line1": "Ingen er like.",
+    "line2": "Hver tallerken malt for hånd."
+  },
+  "table": {
+    "eyebrow": "På bordet",
+    "title": "Det du finner <em>på lørdag.</em>",
+    "items": [
+      {
+        "title": "Tallerkener",
+        "text": "Fra små tallerkener til store serveringsfat."
+      },
+      {
+        "title": "Krus",
+        "text": "For en rolig café con leche på terrassen."
+      },
+      {
+        "title": "Vaser",
+        "text": "Små, mellomstore og store — palmer inkludert."
+      },
+      {
+        "title": "Boller",
+        "text": "Store serveringsboller og boller med bølgekant."
+      },
+      {
+        "title": "Kunsttrykk",
+        "text": "Kanariske ordtak og figurer til veggene dine."
+      }
+    ],
+    "note": "Hvert keramikkstykke er unikt. Når det er solgt, er det borte — <em>kom tidlig.</em>"
+  },
+  "showroom": {
+    "eyebrow": "Fra utstillingsrommet",
+    "title": "En smakebit av <em>det jeg lager.</em>",
+    "aside": "Stykker fra tidligere kolleksjoner — ikke en liste over hva som ligger på standen. Hvert stykke er unikt, så kom og se hva som ligger på bordet på lørdag.",
+    "tag": "Tidligere arbeid",
+    "note": "Fra en tidligere kolleksjon — unikt, malt for hånd i atelieret mitt i Güímar. Kom og se hva som ligger på bordet på lørdag.",
+    "viewPiece": "Forstørr {title}",
+    "pieceAlt": "{name}, {detail}",
+    "size": "Størrelse",
+    "madeIn": "Laget i",
+    "madeInValue": "Güímar, Tenerife",
+    "alt": {
+      "k10": "håndmalt med et blått skjell",
+      "t20": "en svart kaktus inni en terrakotta kant",
+      "h01": "malt inni med to svarte palmer",
+      "g01": "en svart palme mellom terrakotta bord",
+      "s19": "et svart esel inni en terrakotta bølgekant",
+      "w08": "malt med myke blå kaktuser og terrakotta prikker",
+      "v01": "en blå kaktus og en terrakotta sol",
+      "d06": "en svart hummer tegnet rundt kroppen"
+    }
+  },
+  "artist": {
+    "eyebrow": "Hola, jeg er Anna",
+    "title": "Ett par hender, <em>ett stykke om gangen.</em>",
+    "p1": "Jeg bor og jobber på Tenerife. I det lille atelieret mitt i Güímar maler jeg akvareller på papir og maler keramikkservise for hånd — aldri masseprodusert. Øyas farger, ordtak og figurer havner på nesten alt jeg lager.",
+    "p2": "Kom innom standen for å si hola, ta i en tallerken og spør meg om alt om hvordan den er laget.",
+    "instagram": "Følg på Instagram",
+    "imageAlt": "Anna Ciok i atelieret sitt med en svart katt på armen, smilende over et bord fullt av håndmalte svarte og terrakotta tallerkener",
+    "signature": "Anna"
+  },
+  "visit": {
+    "title": "¡Nos vemos <em>en la plaza!</em>",
+    "text": "Vi sees på torget på lørdag. Kom tidlig for best utvalg — hvert keramikkstykke er unikt.",
+    "when": "Når",
+    "where": "Hvor",
+    "pay": "Betaling",
+    "cantMakeIt": "Kan du ikke komme?",
+    "shop": "Handle på nett",
+    "studio": ", eller besøk atelieret mitt i Güímar etter avtale."
+  },
+  "categories": {
+    "kubki": {
+      "name": "Krus",
+      "singular": "Krus"
+    },
+    "wazony": {
+      "name": "Små vaser",
+      "singular": "Liten vase"
+    },
+    "wazony-duze": {
+      "name": "Store vaser",
+      "singular": "Stor vase"
+    },
+    "talerze-srednie": {
+      "name": "Mellomstore tallerkener",
+      "singular": "Mellomstor tallerken"
+    },
+    "duze-michy": {
+      "name": "Store boller",
+      "singular": "Stor bolle"
+    },
+    "miski-falowane": {
+      "name": "Boller med bølgekant",
+      "singular": "Bolle med bølgekant"
+    }
+  },
+  "aria": {
+    "close": "Lukk",
+    "prev": "Forrige",
+    "next": "Neste",
+    "photo": "Bilde"
+  }
+}

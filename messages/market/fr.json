@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Marché d’El Médano · {date}",
+    "description": "Céramiques peintes à la main et tirages d’art d’Anna Ciok au marché artisanal d’El Médano — samedi 10 octobre 2026, de 9 h à 14 h, place principale. Un souvenir unique de Tenerife.",
+    "ogTitle": "Ce samedi, à El Médano — Anna Ciok",
+    "ogAlt": "Tirages Fuerte Piba et assiette peinte à la main par Anna Ciok"
+  },
+  "event": {
+    "name": "Anna Ciok au marché artisanal d’El Médano",
+    "dateLabel": "samedi 10 octobre 2026",
+    "shortDateLabel": "sam. 10 oct.",
+    "timeLabel": "9 h – 14 h",
+    "place": "Place principale, El Médano",
+    "area": "Granadilla de Abona, Tenerife",
+    "payment": "Espèces, carte ou Bizum",
+    "calendarDetails": "Céramiques peintes à la main et tirages d’art d’Anna Ciok. Espèces, carte ou Bizum.",
+    "mapLabel": "Plan"
+  },
+  "hero": {
+    "eyebrow": "Marché artisanal · Mercadillo artesanal",
+    "line1": "Ce samedi,",
+    "line2": "à El Médano.",
+    "lead": "Céramiques peintes à la main et tirages d’art, tout droit sortis de mon atelier à Tenerife. Venez trouver un souvenir qui vient vraiment de l’île — ou la pièce qui manquait à votre intérieur.",
+    "when": "Quand",
+    "where": "Où",
+    "pay": "Paiement",
+    "directions": "Itinéraire",
+    "calendar": "Ajouter au calendrier",
+    "imageAlt": "Deux tirages Fuerte Piba, l’un noir et l’autre crème, avec une assiette peinte à la main entre eux sur un sol en béton ensoleillé",
+    "badgeDay": "Samedi",
+    "badgeNumber": "10",
+    "badgeMonth": "octobre",
+    "captionLabel": "Depuis l’atelier",
+    "caption": "Tirages Fuerte Piba et assiette peinte à la main."
+  },
+  "marquee": [
+    "assiettes peintes à la main",
+    "mugs et vases",
+    "tirages d’art",
+    "pièces uniques",
+    "made in Tenerife"
+  ],
+  "take": {
+    "eyebrow": "Rapportez Tenerife chez vous",
+    "title": "Un souvenir qui vient <em>vraiment d’ici.</em>",
+    "p1": "Oubliez les magnets de frigo. Chaque assiette, mug et vase sur ma table est peint à la main dans mon atelier de Güímar, avec des motifs de l’île — palmiers, soleil canarien, une sirène, des femmes à larges chapeaux.",
+    "p2": "Il n’y en a pas deux pareils : la pièce que vous choisirez samedi n’existe qu’en un seul exemplaire.",
+    "tipTitle": "Vous rentrez en avion ?",
+    "tipText": "Les tirages voyagent à plat dans une valise — et demandez-moi comment emballer la céramique en toute sécurité pour le trajet.",
+    "imageAlt": "Anna tient deux vases blancs peints à la main de palmiers bleus, aux bords rayés terracotta"
+  },
+  "apartment": {
+    "eyebrow": "Pour votre chez-vous sur l’île",
+    "title": "Quelque chose <em>pour l’appartement.</em>",
+    "p1": "Vous venez d’emménager, ou vous voulez donner une âme à un logement de vacances ? Posez deux tirages contre l’étagère, mettez un vase à palmiers près de la fenêtre, mangez dans des assiettes que personne d’autre n’a — des pièces franches et ensoleillées, faites pour la lumière canarienne et les murs blancs.",
+    "p2": "Les tirages portent des expressions canariennes et les personnages qui vont avec :",
+    "imageAlt": "Tirages encadrés bleus Agüita et Chacho, Calma posés sur une étagère en bois au-dessus de carreaux verts, dans la lumière chaude de l’après-midi"
+  },
+  "lookbook": {
+    "eyebrow": "Lookbook",
+    "title": "Sur la table, <em>sur le mur.</em>",
+    "aside": "Des pièces faites pour servir chaque jour — et tout aussi heureuses accrochées au mur à côté d’un tirage.",
+    "viewLarger": "Agrandir : {caption}"
+  },
+  "photos": {
+    "studioSet": {
+      "label": "Noir et terracotta",
+      "caption": "Une assiette au personnage à chapeau, un vase à vague et deux mugs à palmier.",
+      "alt": "Une assiette avec un personnage à large chapeau, un vase à vague noire et deux mugs à palmiers sur des socles de pierre"
+    },
+    "bluePieces": {
+      "label": "En bleu",
+      "caption": "Des râpes, des coupelles en forme de main, une tasse et une assiette.",
+      "alt": "Râpes en céramique bleues peintes à la main, deux coupelles en forme de main, une tasse à vague et une assiette à vague sur un mur en plâtre crème"
+    },
+    "platesOnPrints": {
+      "label": "Argile et papier",
+      "caption": "Sirènes, marins et Fuerte Piba — sur des assiettes et sur des tirages.",
+      "alt": "Assiettes peintes à la main avec une sirène, des marins et une femme à large chapeau, posées sur des tirages Fuerte Piba et Islas Canarias sur une table en bois"
+    },
+    "wallPlates": {
+      "label": "Au mur",
+      "caption": "Des feuilles, une vague et un palmier, accrochés en petite galerie.",
+      "alt": "Trois assiettes peintes à la main accrochées à un mur crème texturé : feuilles terracotta, vague noire avec soleil terracotta, et palmier terracotta dans un bord festonné noir"
+    },
+    "plateWall": {
+      "label": "Pas deux pareilles",
+      "caption": "Toute une table d’assiettes, chacune peinte à la main.",
+      "alt": "Des dizaines d’assiettes peintes à la main en noir et terracotta, disposées ensemble au soleil : palmiers, sirènes, mains, coquillages, feuilles et damiers"
+    }
+  },
+  "wall": {
+    "ariaLabel": "Un mur d’assiettes peintes à la main",
+    "view": "Agrandir la photo du mur d’assiettes",
+    "line1": "Pas deux pareilles.",
+    "line2": "Chaque assiette peinte à la main."
+  },
+  "table": {
+    "eyebrow": "Sur la table",
+    "title": "Ce que vous trouverez <em>samedi.</em>",
+    "items": [
+      {
+        "title": "Assiettes",
+        "text": "Des petites assiettes aux grands plats de service."
+      },
+      {
+        "title": "Mugs",
+        "text": "Pour un café con leche tranquille en terrasse."
+      },
+      {
+        "title": "Vases",
+        "text": "Petits, moyens et grands — palmiers inclus."
+      },
+      {
+        "title": "Bols",
+        "text": "De grands saladiers de service et des bols à bord ondulé."
+      },
+      {
+        "title": "Tirages d’art",
+        "text": "Des expressions et personnages canariens pour vos murs."
+      }
+    ],
+    "note": "Chaque pièce de céramique est unique. Une fois vendue, elle est partie — <em>venez tôt.</em>"
+  },
+  "showroom": {
+    "eyebrow": "Depuis le showroom",
+    "title": "Un aperçu de <em>ce que je fais.</em>",
+    "aside": "Des pièces de collections précédentes — pas la liste de ce qu’il y a sur le stand. Chaque pièce est unique : venez samedi voir ce qu’il y a sur la table.",
+    "tag": "Création passée",
+    "note": "D’une collection précédente — pièce unique, peinte à la main dans mon atelier de Güímar. Venez samedi voir ce qu’il y a sur la table.",
+    "viewPiece": "Agrandir {title}",
+    "pieceAlt": "{name}, {detail}",
+    "size": "Taille",
+    "madeIn": "Fabriqué à",
+    "madeInValue": "Güímar, Tenerife",
+    "alt": {
+      "k10": "peint à la main d’un coquillage bleu",
+      "t20": "un cactus noir dans un bord terracotta",
+      "h01": "peinte à l’intérieur de deux palmiers noirs",
+      "g01": "un palmier noir entre des bordures terracotta",
+      "s19": "un âne noir dans un bord festonné terracotta",
+      "w08": "peint de cactus bleu doux et de pois terracotta",
+      "v01": "un cactus bleu et un soleil terracotta",
+      "d06": "un homard noir dessiné autour du corps"
+    }
+  },
+  "artist": {
+    "eyebrow": "Hola, je suis Anna",
+    "title": "Une paire de mains, <em>une pièce à la fois.</em>",
+    "p1": "Je vis et travaille à Tenerife. Dans mon petit atelier de Güímar, je peins des aquarelles sur papier et je décore à la main de la vaisselle en céramique — jamais en série. Les couleurs, les expressions et les personnages de l’île se retrouvent sur presque tout ce que je fais.",
+    "p2": "Passez au stand dire hola, prenez une assiette en main et posez-moi toutes vos questions sur sa fabrication.",
+    "instagram": "Suivre sur Instagram",
+    "imageAlt": "Anna Ciok dans son atelier, un chat noir dans les bras, souriante devant une table couverte d’assiettes noires et terracotta peintes à la main",
+    "signature": "Anna"
+  },
+  "visit": {
+    "title": "¡Nos vemos <em>en la plaza!</em>",
+    "text": "À samedi sur la place. Venez tôt pour faire le meilleur choix — chaque pièce de céramique est unique.",
+    "when": "Quand",
+    "where": "Où",
+    "pay": "Paiement",
+    "cantMakeIt": "Vous ne pouvez pas venir ?",
+    "shop": "Boutique en ligne",
+    "studio": ", ou venez à mon atelier de Güímar sur rendez-vous."
+  },
+  "categories": {
+    "kubki": {
+      "name": "Mugs",
+      "singular": "Mug"
+    },
+    "wazony": {
+      "name": "Petits vases",
+      "singular": "Petit vase"
+    },
+    "wazony-duze": {
+      "name": "Grands vases",
+      "singular": "Grand vase"
+    },
+    "talerze-srednie": {
+      "name": "Assiettes moyennes",
+      "singular": "Assiette moyenne"
+    },
+    "duze-michy": {
+      "name": "Grands bols",
+      "singular": "Grand bol"
+    },
+    "miski-falowane": {
+      "name": "Bols à bord ondulé",
+      "singular": "Bol à bord ondulé"
+    }
+  },
+  "aria": {
+    "close": "Fermer",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "photo": "Photo"
+  }
+}

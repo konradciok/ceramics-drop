@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Markt in El Médano · {date}",
+    "description": "Handbeschilderde keramiek en kunstprints van Anna Ciok op de ambachtsmarkt van El Médano — zaterdag 10 oktober 2026, 9:00–14:00 uur, hoofdplein. Een uniek souvenir uit Tenerife.",
+    "ogTitle": "Deze zaterdag in El Médano — Anna Ciok",
+    "ogAlt": "Fuerte Piba-prints en een handbeschilderd bord van Anna Ciok"
+  },
+  "event": {
+    "name": "Anna Ciok op de ambachtsmarkt van El Médano",
+    "dateLabel": "zaterdag 10 oktober 2026",
+    "shortDateLabel": "za 10 okt",
+    "timeLabel": "9:00 – 14:00 uur",
+    "place": "Hoofdplein, El Médano",
+    "area": "Granadilla de Abona, Tenerife",
+    "payment": "Contant, pinpas of Bizum",
+    "calendarDetails": "Handbeschilderde keramiek en kunstprints van Anna Ciok. Contant, pinpas of Bizum.",
+    "mapLabel": "Kaart"
+  },
+  "hero": {
+    "eyebrow": "Ambachtsmarkt · Mercadillo artesanal",
+    "line1": "Deze zaterdag",
+    "line2": "in El Médano.",
+    "lead": "Handbeschilderde keramiek en kunstprints, rechtstreeks uit mijn atelier op Tenerife. Kom een souvenir zoeken dat echt van het eiland komt — of het stuk dat je woning nog miste.",
+    "when": "Wanneer",
+    "where": "Waar",
+    "pay": "Betalen",
+    "directions": "Route plannen",
+    "calendar": "Toevoegen aan agenda",
+    "imageAlt": "Twee Fuerte Piba-prints, een zwarte en een crèmekleurige, met daartussen een handbeschilderd bord op een zonnige betonvloer",
+    "badgeDay": "Zaterdag",
+    "badgeNumber": "10",
+    "badgeMonth": "oktober",
+    "captionLabel": "Uit het atelier",
+    "caption": "Fuerte Piba-prints en een handbeschilderd bord."
+  },
+  "marquee": [
+    "handbeschilderde borden",
+    "mokken & vazen",
+    "kunstprints",
+    "stuk voor stuk uniek",
+    "made in Tenerife"
+  ],
+  "take": {
+    "eyebrow": "Neem Tenerife mee naar huis",
+    "title": "Een souvenir dat <em>echt van hier is.</em>",
+    "p1": "Vergeet koelkastmagneten. Elk bord, elke mok en elke vaas op mijn tafel is met de hand geschilderd in mijn atelier in Güímar, met motieven van het eiland — palmbomen, de Canarische zon, een zeemeermin, vrouwen met brede hoeden.",
+    "p2": "Geen twee zijn hetzelfde, dus het stuk dat je zaterdag kiest bestaat maar één keer.",
+    "tipTitle": "Vlieg je naar huis?",
+    "tipText": "Prints reizen plat in een koffer — en vraag me gerust hoe je keramiek veilig inpakt voor de reis.",
+    "imageAlt": "Anna houdt twee witte vazen vast, handbeschilderd met blauwe palmbomen en terracotta gestreepte randen"
+  },
+  "apartment": {
+    "eyebrow": "Voor jouw plek op het eiland",
+    "title": "Iets <em>voor het appartement.</em>",
+    "p1": "Net hier komen wonen, of wil je een vakantiewoning wat ziel geven? Zet een paar prints tegen de plank, zet een palmvaas bij het raam, eet van borden die niemand anders heeft — gedurfde, zonnige stukken gemaakt voor Canarisch licht en witte muren.",
+    "p2": "De prints dragen Canarische gezegden, en de personages die erbij horen:",
+    "imageAlt": "Ingelijste blauwe prints Agüita en Chacho, Calma tegen een houten plank boven groene tegels, in warm middaglicht"
+  },
+  "lookbook": {
+    "eyebrow": "Lookbook",
+    "title": "Op tafel, <em>aan de muur.</em>",
+    "aside": "Stukken gemaakt voor dagelijks gebruik — en net zo blij aan de muur naast een print.",
+    "viewLarger": "Vergroten: {caption}"
+  },
+  "photos": {
+    "studioSet": {
+      "label": "Zwart & terracotta",
+      "caption": "Een bord met hoedfiguur, een golfvaas en twee palmmokken.",
+      "alt": "Een bord met een figuur met brede hoed, een vaas met een zwarte golf en twee palmmokken op stenen sokkels"
+    },
+    "bluePieces": {
+      "label": "In blauw",
+      "caption": "Rasps, handschaaltjes, een kopje en een bord.",
+      "alt": "Blauwe handbeschilderde keramische rasps, twee handvormige schaaltjes, een golfkopje en een golfbord op een crèmekleurige gepleisterde muur"
+    },
+    "platesOnPrints": {
+      "label": "Klei & papier",
+      "caption": "Zeemeerminnen, zeelieden en Fuerte Piba — op borden en op prints.",
+      "alt": "Handbeschilderde borden met een zeemeermin, zeelieden en een vrouw met brede hoed, gelegd op Fuerte Piba- en Islas Canarias-prints op een houten tafel"
+    },
+    "wallPlates": {
+      "label": "Aan de muur",
+      "caption": "Bladeren, een golf en een palm, opgehangen als een kleine galerie.",
+      "alt": "Drie handbeschilderde borden aan een gestructureerde crèmekleurige muur: terracotta bladeren, een zwarte golf met terracotta zon en een terracotta palm in een zwarte geschulpte rand"
+    },
+    "plateWall": {
+      "label": "Geen twee hetzelfde",
+      "caption": "Een hele tafel vol borden, elk met de hand geschilderd.",
+      "alt": "Tientallen handbeschilderde borden in zwart en terracotta samen uitgestald in de zon: palmen, zeemeerminnen, handen, schelpen, bladeren en ruiten"
+    }
+  },
+  "wall": {
+    "ariaLabel": "Een muur van handbeschilderde borden",
+    "view": "Foto van de bordenmuur vergroten",
+    "line1": "Geen twee hetzelfde.",
+    "line2": "Elk bord met de hand geschilderd."
+  },
+  "table": {
+    "eyebrow": "Op tafel",
+    "title": "Wat je <em>zaterdag</em> vindt.",
+    "items": [
+      {
+        "title": "Borden",
+        "text": "Van kleine borden tot grote serveerschalen."
+      },
+      {
+        "title": "Mokken",
+        "text": "Voor een rustige café con leche op het terras."
+      },
+      {
+        "title": "Vazen",
+        "text": "Klein, middelgroot en groot — palmen inbegrepen."
+      },
+      {
+        "title": "Kommen",
+        "text": "Grote serveerkommen en kommen met golvende rand."
+      },
+      {
+        "title": "Kunstprints",
+        "text": "Canarische gezegden en personages voor aan je muren."
+      }
+    ],
+    "note": "Elk keramiekstuk is uniek. Is het verkocht, dan is het weg — <em>kom vroeg.</em>"
+  },
+  "showroom": {
+    "eyebrow": "Uit de showroom",
+    "title": "Een voorproefje van <em>wat ik maak.</em>",
+    "aside": "Stukken uit eerdere collecties — geen lijst van wat er op de kraam ligt. Elk stuk is uniek, dus kom zaterdag kijken wat er op tafel ligt.",
+    "tag": "Eerder werk",
+    "note": "Uit een eerdere collectie — uniek, met de hand geschilderd in mijn atelier in Güímar. Kom zaterdag kijken wat er op tafel ligt.",
+    "viewPiece": "{title} vergroten",
+    "pieceAlt": "{name}, {detail}",
+    "size": "Maat",
+    "madeIn": "Gemaakt in",
+    "madeInValue": "Güímar, Tenerife",
+    "alt": {
+      "k10": "handbeschilderd met een blauwe schelp",
+      "t20": "een zwarte cactus in een terracotta rand",
+      "h01": "aan de binnenkant beschilderd met twee zwarte palmbomen",
+      "g01": "een zwarte palmboom tussen terracotta randen",
+      "s19": "een zwarte ezel in een terracotta geschulpte rand",
+      "w08": "beschilderd met zachte blauwe cactussen en terracotta stippen",
+      "v01": "een blauwe cactus en een terracotta zon",
+      "d06": "een zwarte kreeft rond de romp getekend"
+    }
+  },
+  "artist": {
+    "eyebrow": "Hola, ik ben Anna",
+    "title": "Eén paar handen, <em>één stuk tegelijk.</em>",
+    "p1": "Ik woon en werk op Tenerife. In mijn kleine atelier in Güímar schilder ik aquarellen op papier en beschilder ik keramisch servies met de hand — nooit in massaproductie. De kleuren, gezegden en personages van het eiland belanden op bijna alles wat ik maak.",
+    "p2": "Kom langs bij de kraam om hola te zeggen, een bord op te pakken en me alles te vragen over hoe het gemaakt is.",
+    "instagram": "Volg op Instagram",
+    "imageAlt": "Anna Ciok in haar atelier met een zwarte kat in haar armen, lachend boven een tafel vol handbeschilderde zwarte en terracotta borden",
+    "signature": "Anna"
+  },
+  "visit": {
+    "title": "¡Nos vemos <em>en la plaza!</em>",
+    "text": "Tot zaterdag op het plein. Kom vroeg voor de beste keuze — elk keramiekstuk is uniek.",
+    "when": "Wanneer",
+    "where": "Waar",
+    "pay": "Betalen",
+    "cantMakeIt": "Lukt het niet?",
+    "shop": "Shop online",
+    "studio": ", of bezoek mijn atelier in Güímar op afspraak."
+  },
+  "categories": {
+    "kubki": {
+      "name": "Mokken",
+      "singular": "Mok"
+    },
+    "wazony": {
+      "name": "Kleine vazen",
+      "singular": "Kleine vaas"
+    },
+    "wazony-duze": {
+      "name": "Grote vazen",
+      "singular": "Grote vaas"
+    },
+    "talerze-srednie": {
+      "name": "Middelgrote borden",
+      "singular": "Middelgroot bord"
+    },
+    "duze-michy": {
+      "name": "Grote kommen",
+      "singular": "Grote kom"
+    },
+    "miski-falowane": {
+      "name": "Kommen met golvende rand",
+      "singular": "Kom met golvende rand"
+    }
+  },
+  "aria": {
+    "close": "Sluiten",
+    "prev": "Vorige",
+    "next": "Volgende",
+    "photo": "Foto"
+  }
+}

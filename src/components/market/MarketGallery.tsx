@@ -11,7 +11,6 @@
      event (docs/analytics-stack.md) when clicked.
    ============================================================ */
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
 import { MARKET_ENGAGEMENT } from '@/lib/market-event';
@@ -49,11 +48,12 @@ type Props = {
   galleries: MarketGalleries;
   /** Short note shown under a showroom piece's name in the lightbox. */
   showroomNote: string;
+  /** Translated button labels for the lightbox controls. */
+  labels: { close: string; prev: string; next: string; photo: string };
   children: ReactNode;
 };
 
-export function MarketGalleryProvider({ galleries, showroomNote, children }: Props) {
-  const t = useTranslations();
+export function MarketGalleryProvider({ galleries, showroomNote, labels, children }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -206,13 +206,13 @@ export function MarketGalleryProvider({ galleries, showroomNote, children }: Pro
                 }}
                 onPointerCancel={() => { pointerStart.current = null; }}
               >
-                <button ref={closeRef} type="button" className="lb-close" onClick={close} aria-label={t('aria.close')}>
+                <button ref={closeRef} type="button" className="lb-close" onClick={close} aria-label={labels.close}>
                   <Icon name="close" />
                 </button>
-                <button type="button" className="lb-nav lb-prev" onClick={() => go(current.index - 1)} aria-label={t('aria.prev')}>
+                <button type="button" className="lb-nav lb-prev" onClick={() => go(current.index - 1)} aria-label={labels.prev}>
                   <Icon name="chevron-left" />
                 </button>
-                <button type="button" className="lb-nav lb-next" onClick={() => go(current.index + 1)} aria-label={t('aria.next')}>
+                <button type="button" className="lb-nav lb-next" onClick={() => go(current.index + 1)} aria-label={labels.next}>
                   <Icon name="chevron-right" />
                 </button>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -231,7 +231,7 @@ export function MarketGalleryProvider({ galleries, showroomNote, children }: Pro
                       type="button"
                       className={`lb-dot${i === current.index ? ' active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); go(i); }}
-                      aria-label={`${t('aria.photo')} ${i + 1}`}
+                      aria-label={`${labels.photo} ${i + 1}`}
                       aria-current={i === current.index}
                     />
                   ))}

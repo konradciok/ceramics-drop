@@ -1148,5 +1148,203 @@
     "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom in 5–10 working days.",
     "aboutMore": "Read more",
     "aboutLess": "Show less"
+  },
+  "market": {
+    "meta": {
+      "title": "El Médano market · {date}",
+      "description": "Hand-painted ceramics and fine art prints by Anna Ciok at the El Médano handicraft market — Saturday 10 October 2026, 9:00–14:00, main plaza. A one-of-a-kind souvenir from Tenerife.",
+      "ogTitle": "This Saturday, in El Médano — Anna Ciok",
+      "ogAlt": "Fuerte Piba prints and a hand-painted plate by Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok at the El Médano handicraft market",
+      "dateLabel": "Saturday 10 October 2026",
+      "shortDateLabel": "Sat 10 Oct",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Main plaza, El Médano",
+      "area": "Granadilla de Abona, Tenerife",
+      "payment": "Cash, card or Bizum",
+      "calendarDetails": "Hand-painted ceramics and fine art prints by Anna Ciok. Cash, card or Bizum.",
+      "mapLabel": "Map"
+    },
+    "hero": {
+      "eyebrow": "Handicraft market · Mercadillo artesanal",
+      "line1": "This Saturday,",
+      "line2": "in El Médano.",
+      "lead": "Hand-painted ceramics and fine art prints, straight from my studio in Tenerife. Come find a souvenir that’s actually from the island — or the piece your apartment has been missing.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "directions": "Get directions",
+      "calendar": "Add to calendar",
+      "imageAlt": "Two Fuerte Piba prints, one black and one cream, with a hand-painted plate between them on a sunlit concrete floor",
+      "badgeDay": "Saturday",
+      "badgeNumber": "10",
+      "badgeMonth": "October",
+      "captionLabel": "From the studio",
+      "caption": "Fuerte Piba prints and a hand-painted plate."
+    },
+    "marquee": [
+      "hand-painted plates",
+      "mugs & vases",
+      "fine art prints",
+      "one of a kind",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Take Tenerife home",
+      "title": "A souvenir that’s <em>actually from here.</em>",
+      "p1": "Skip the fridge magnets. Every plate, mug and vase on my table is painted by hand in my studio in Güímar, with motifs taken from the island — palm trees, the Canarian sun, a siren, women in wide-brimmed hats.",
+      "p2": "No two are alike, so the piece you choose on Saturday exists only once.",
+      "tipTitle": "Flying home?",
+      "tipText": "Prints travel flat in a suitcase — and ask me how to pack ceramics safely for the trip.",
+      "imageAlt": "Anna holding two white vases hand-painted with blue palm trees and terracotta striped rims"
+    },
+    "apartment": {
+      "eyebrow": "For your place on the island",
+      "title": "Something for <em>the apartment.</em>",
+      "p1": "Just moved here, or giving a holiday flat some soul? Lean a pair of prints on the shelf, set a palm vase by the window, eat off plates nobody else owns — bold, sunny pieces made for Canarian light and white walls.",
+      "p2": "The prints carry Canarian sayings, and the characters that go with them:",
+      "imageAlt": "Framed Agüita and Chacho, Calma prints in blue leaning on a wooden shelf above green tiles, in warm afternoon light"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "On the table, <em>on the wall.</em>",
+      "aside": "Pieces made to be used every day — and just as happy hung on a wall next to a print.",
+      "viewLarger": "View larger: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Black & terracotta",
+        "caption": "A hat-figure plate, a wave vase and two palm mugs.",
+        "alt": "A plate with a figure in a wide-brimmed hat, a vase with a black wave and two palm mugs on stone plinths"
+      },
+      "bluePieces": {
+        "label": "In blue",
+        "caption": "Graters, hand dishes, a cup and a plate.",
+        "alt": "Blue hand-painted ceramic graters, two hand-shaped dishes, a wave cup and a wave plate on a cream plaster wall"
+      },
+      "platesOnPrints": {
+        "label": "Clay & paper",
+        "caption": "Mermaids, sailors and Fuerte Piba — on plates and on prints.",
+        "alt": "Hand-painted plates with a mermaid, sailors and a woman in a wide-brimmed hat laid on Fuerte Piba and Islas Canarias prints on a wooden table"
+      },
+      "wallPlates": {
+        "label": "On the wall",
+        "caption": "Leaves, a wave and a palm, hung as a small gallery.",
+        "alt": "Three hand-painted plates hung on a textured cream wall: terracotta leaves, a black wave with a terracotta sun, and a terracotta palm inside a black scalloped rim"
+      },
+      "plateWall": {
+        "label": "No two alike",
+        "caption": "A whole table of plates, every one painted by hand.",
+        "alt": "Dozens of hand-painted plates in black and terracotta laid out together in the sun: palms, mermaids, hands, shells, leaves and checks"
+      }
+    },
+    "wall": {
+      "ariaLabel": "A wall of hand-painted plates",
+      "view": "View the plate wall photo larger",
+      "line1": "No two alike.",
+      "line2": "Every plate painted by hand."
+    },
+    "table": {
+      "eyebrow": "On the table",
+      "title": "What you’ll find <em>on Saturday.</em>",
+      "items": [
+        {
+          "title": "Plates",
+          "text": "From side plates to large serving plates."
+        },
+        {
+          "title": "Mugs",
+          "text": "For a slow café con leche on the terrace."
+        },
+        {
+          "title": "Vases",
+          "text": "Small, medium and large — palms included."
+        },
+        {
+          "title": "Bowls",
+          "text": "Large serving bowls and wavy-rimmed ones."
+        },
+        {
+          "title": "Fine art prints",
+          "text": "Canarian sayings and characters for your walls."
+        }
+      ],
+      "note": "Every ceramic piece is one of a kind. Once it’s sold, it’s gone — <em>come early.</em>"
+    },
+    "showroom": {
+      "eyebrow": "From the showroom",
+      "title": "A taste of <em>what I make.</em>",
+      "aside": "Pieces from earlier collections — not a list of what’s on the stand. Every piece is one of a kind, so come and see what’s on the table on Saturday.",
+      "tag": "Earlier work",
+      "note": "From an earlier collection — one of a kind, hand-painted in my studio in Güímar. Come see what’s on the table on Saturday.",
+      "viewPiece": "View {title} larger",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Size",
+      "madeIn": "Made in",
+      "madeInValue": "Güímar, Tenerife",
+      "alt": {
+        "k10": "hand-painted with a blue shell",
+        "t20": "a black cactus inside a terracotta rim",
+        "h01": "painted inside with two black palm trees",
+        "g01": "a black palm tree between terracotta borders",
+        "s19": "a black donkey inside a terracotta scalloped rim",
+        "w08": "painted with soft blue cacti and terracotta dots",
+        "v01": "a blue cactus and a terracotta sun",
+        "d06": "a black lobster drawn around the body"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, I’m Anna",
+      "title": "One pair of hands, <em>one piece at a time.</em>",
+      "p1": "I live and work in Tenerife. In my small studio in Güímar I paint watercolours on paper and hand-paint ceramic tableware — never mass-produced. The island’s colours, sayings and characters end up on almost everything I make.",
+      "p2": "Stop by the stand to say hola, pick up a plate, and ask me anything about how it was made.",
+      "instagram": "Follow on Instagram",
+      "imageAlt": "Anna Ciok in her studio holding a black cat, smiling over a table covered in hand-painted black and terracotta plates",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "See you at the plaza on Saturday. Come early for the best pick — every ceramic piece is one of a kind.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "cantMakeIt": "Can’t make it?",
+      "shop": "Shop online",
+      "studio": ", or visit my studio in Güímar by appointment."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Mugs",
+        "singular": "Mug"
+      },
+      "wazony": {
+        "name": "Small vases",
+        "singular": "Small vase"
+      },
+      "wazony-duze": {
+        "name": "Large vases",
+        "singular": "Large vase"
+      },
+      "talerze-srednie": {
+        "name": "Medium plates",
+        "singular": "Medium plate"
+      },
+      "duze-michy": {
+        "name": "Large bowls",
+        "singular": "Large bowl"
+      },
+      "miski-falowane": {
+        "name": "Wavy-rimmed bowls",
+        "singular": "Wavy-rimmed bowl"
+      }
+    },
+    "aria": {
+      "close": "Close",
+      "prev": "Previous",
+      "next": "Next",
+      "photo": "Photo"
+    }
   }
 }
