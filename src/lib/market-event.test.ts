@@ -6,14 +6,19 @@ import { IMG_WIDTHS } from '@/lib/images';
 import { registryProductById } from '@/lib/products';
 import {
   MARKET_ENGAGEMENT,
-  MARKET_EVENT,
   MARKET_IMAGES,
-  MARKET_SHOWROOM_ALT,
   MARKET_SHOWROOM_IDS,
   marketCalendarUrl,
   marketMapsUrl,
   showroomImageSize,
 } from './market-event';
+
+const COPY = {
+  name: 'Anna Ciok at the El Médano handicraft market',
+  place: 'Main plaza, El Médano',
+  calendarDetails: 'Hand-painted ceramics. Cash, card or Bizum.',
+  mapLabel: 'Map',
+};
 
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 
@@ -31,11 +36,11 @@ describe('market event links', () => {
   });
 
   it('builds a Google Calendar template for 9:00–14:00 Canary time on 10 Oct 2026', () => {
-    const url = new URL(marketCalendarUrl());
+    const url = new URL(marketCalendarUrl(COPY));
     expect(url.searchParams.get('action')).toBe('TEMPLATE');
     expect(url.searchParams.get('dates')).toBe('20261010T090000/20261010T140000');
     expect(url.searchParams.get('ctz')).toBe('Atlantic/Canary');
-    expect(url.searchParams.get('text')).toBe(MARKET_EVENT.name);
+    expect(url.searchParams.get('text')).toBe(COPY.name);
     expect(url.searchParams.get('details')).toContain(marketMapsUrl());
     expect(url.searchParams.get('details')).toContain('Bizum');
   });
@@ -67,7 +72,6 @@ describe('market photos', () => {
     for (const id of MARKET_SHOWROOM_IDS) {
       const product = registryProductById(id);
       expect(product, id).toBeDefined();
-      expect(MARKET_SHOWROOM_ALT[id]).toBeTruthy();
       for (const file of variantsOf(product!.image)) {
         expect(fs.existsSync(path.join(PUBLIC_DIR, file)), file).toBe(true);
       }

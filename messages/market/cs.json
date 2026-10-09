@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Trh v El Médano · {date}",
+    "description": "Ručně malovaná keramika a umělecké tisky Anny Ciok na řemeslném trhu v El Médano — sobota 10. října 2026, 9:00–14:00, hlavní náměstí. Jedinečná památka z Tenerife.",
+    "ogTitle": "Tuto sobotu v El Médano — Anna Ciok",
+    "ogAlt": "Tisky Fuerte Piba a ručně malovaný talíř od Anny Ciok"
+  },
+  "event": {
+    "name": "Anna Ciok na řemeslném trhu v El Médano",
+    "dateLabel": "sobota 10. října 2026",
+    "shortDateLabel": "so 10. 10.",
+    "timeLabel": "9:00 – 14:00",
+    "place": "Hlavní náměstí, El Médano",
+    "area": "Granadilla de Abona, Tenerife",
+    "payment": "Hotově, kartou nebo Bizum",
+    "calendarDetails": "Ručně malovaná keramika a umělecké tisky Anny Ciok. Hotově, kartou nebo Bizum.",
+    "mapLabel": "Mapa"
+  },
+  "hero": {
+    "eyebrow": "Řemeslný trh · Mercadillo artesanal",
+    "line1": "Tuto sobotu",
+    "line2": "v El Médano.",
+    "lead": "Ručně malovaná keramika a umělecké tisky přímo z mého ateliéru na Tenerife. Přijďte si pro památku, která opravdu pochází z ostrova — nebo pro kousek, který vašemu bytu chyběl.",
+    "when": "Kdy",
+    "where": "Kde",
+    "pay": "Platba",
+    "directions": "Navigovat",
+    "calendar": "Přidat do kalendáře",
+    "imageAlt": "Dva tisky Fuerte Piba, černý a krémový, mezi nimi ručně malovaný talíř na slunné betonové podlaze",
+    "badgeDay": "Sobota",
+    "badgeNumber": "10",
+    "badgeMonth": "října",
+    "captionLabel": "Z ateliéru",
+    "caption": "Tisky Fuerte Piba a ručně malovaný talíř."
+  },
+  "marquee": [
+    "ručně malované talíře",
+    "hrnky a vázy",
+    "umělecké tisky",
+    "jedinečné kusy",
+    "made in Tenerife"
+  ],
+  "take": {
+    "eyebrow": "Odvezte si Tenerife domů",
+    "title": "Památka, která je <em>opravdu odtud.</em>",
+    "p1": "Zapomeňte na magnetky na lednici. Každý talíř, hrnek a váza na mém stole je ručně malovaná v mém ateliéru v Güímaru, s motivy z ostrova — palmy, kanárské slunce, mořská panna, ženy v širokých kloboucích.",
+    "p2": "Žádné dva kusy nejsou stejné, takže to, co si v sobotu vyberete, existuje jen jednou.",
+    "tipTitle": "Letíte domů?",
+    "tipText": "Tisky cestují v kufru naplocho — a zeptejte se mě, jak bezpečně zabalit keramiku na cestu.",
+    "imageAlt": "Anna drží dvě bílé vázy ručně malované modrými palmami a terakotovými pruhovanými okraji"
+  },
+  "apartment": {
+    "eyebrow": "Do vašeho domova na ostrově",
+    "title": "Něco <em>do bytu.</em>",
+    "p1": "Právě jste se sem přestěhovali, nebo chcete dát dušinu prázdninovému bytu? Opřete pár tisků o polici, postavte k oknu vázu s palmou, jezte z talířů, které nemá nikdo jiný — odvážné, sluncem prozářené kousky stvořené pro kanárské světlo a bílé zdi.",
+    "p2": "Tisky nesou kanárská rčení a postavy, které k nim patří:",
+    "imageAlt": "Zarámované modré tisky Agüita a Chacho, Calma opřené o dřevěnou polici nad zelenými kachlíky v teplém odpoledním světle"
+  },
+  "lookbook": {
+    "eyebrow": "Lookbook",
+    "title": "Na stole, <em>na zdi.</em>",
+    "aside": "Kousky stvořené pro každodenní používání — a stejně spokojené na zdi vedle tisku.",
+    "viewLarger": "Zvětšit: {caption}"
+  },
+  "photos": {
+    "studioSet": {
+      "label": "Černá a terakota",
+      "caption": "Talíř s postavou v klobouku, váza s vlnou a dva hrnky s palmou.",
+      "alt": "Talíř s postavou v širokém klobouku, váza s černou vlnou a dva hrnky s palmami na kamenných soklech"
+    },
+    "bluePieces": {
+      "label": "V modré",
+      "caption": "Struhadla, misky ve tvaru dlaně, šálek a talíř.",
+      "alt": "Modrá ručně malovaná keramická struhadla, dvě misky ve tvaru dlaně, šálek s vlnou a talíř s vlnou na krémové omítnuté zdi"
+    },
+    "platesOnPrints": {
+      "label": "Hlína a papír",
+      "caption": "Mořské panny, námořníci a Fuerte Piba — na talířích i na tiscích.",
+      "alt": "Ručně malované talíře s mořskou pannou, námořníky a ženou v širokém klobouku položené na tiscích Fuerte Piba a Islas Canarias na dřevěném stole"
+    },
+    "wallPlates": {
+      "label": "Na zdi",
+      "caption": "Listy, vlna a palma, pověšené jako malá galerie.",
+      "alt": "Tři ručně malované talíře pověšené na strukturované krémové zdi: terakotové listy, černá vlna s terakotovým sluncem a terakotová palma uvnitř černého vlnitého okraje"
+    },
+    "plateWall": {
+      "label": "Žádné dva stejné",
+      "caption": "Celý stůl talířů, každý ručně malovaný.",
+      "alt": "Desítky ručně malovaných talířů v černé a terakotové vyložených společně na slunci: palmy, mořské panny, dlaně, mušle, listy a kostky"
+    }
+  },
+  "wall": {
+    "ariaLabel": "Zeď z ručně malovaných talířů",
+    "view": "Zvětšit fotografii zdi z talířů",
+    "line1": "Žádné dva stejné.",
+    "line2": "Každý talíř ručně malovaný."
+  },
+  "table": {
+    "eyebrow": "Na stole",
+    "title": "Co najdete <em>v sobotu.</em>",
+    "items": [
+      {
+        "title": "Talíře",
+        "text": "Od dezertních talířků po velké servírovací talíře."
+      },
+      {
+        "title": "Hrnky",
+        "text": "Na pomalou café con leche na terase."
+      },
+      {
+        "title": "Vázy",
+        "text": "Malé, střední a velké — včetně palem."
+      },
+      {
+        "title": "Misky",
+        "text": "Velké servírovací misky a misky s vlnitým okrajem."
+      },
+      {
+        "title": "Umělecké tisky",
+        "text": "Kanárská rčení a postavy na vaše zdi."
+      }
+    ],
+    "note": "Každý keramický kus je jedinečný. Když je prodaný, je pryč — <em>přijďte brzy.</em>"
+  },
+  "showroom": {
+    "eyebrow": "Ze showroomu",
+    "title": "Ochutnávka <em>toho, co dělám.</em>",
+    "aside": "Kousky z dřívějších kolekcí — ne seznam toho, co je na stánku. Každý kus je jedinečný, takže přijďte v sobotu na stůl se podívat.",
+    "tag": "Dřívější práce",
+    "note": "Z dřívější kolekce — jedinečný kus, ručně malovaný v mém ateliéru v Güímaru. Přijďte v sobotu na stůl se podívat.",
+    "viewPiece": "Zvětšit: {title}",
+    "pieceAlt": "{name}, {detail}",
+    "size": "Velikost",
+    "madeIn": "Vyrobeno v",
+    "madeInValue": "Güímar, Tenerife",
+    "alt": {
+      "k10": "ručně malovaný modrou mušlí",
+      "t20": "černý kaktus uvnitř terakotového okraje",
+      "h01": "uvnitř malovaná dvěma černými palmami",
+      "g01": "černá palma mezi terakotovými bordurami",
+      "s19": "černý osel uvnitř terakotového vlnitého okraje",
+      "w08": "malovaná jemnými modrými kaktusy a terakotovými tečkami",
+      "v01": "modrý kaktus a terakotové slunce",
+      "d06": "černý humr nakreslený kolem těla"
+    }
+  },
+  "artist": {
+    "eyebrow": "Hola, jsem Anna",
+    "title": "Jedny ruce, <em>jeden kus po druhém.</em>",
+    "p1": "Žiju a pracuju na Tenerife. V malém ateliéru v Güímaru maluji akvarely na papír a ručně maluji keramické nádobí — nikdy sériově. Barvy, rčení a postavy ostrova skončí na skoro všem, co dělám.",
+    "p2": "Zastavte se u stánku pozdravit hola, vezměte talíř do ruky a zeptejte se mě na cokoli o tom, jak vznikl.",
+    "instagram": "Sledovat na Instagramu",
+    "imageAlt": "Anna Ciok ve svém ateliéru s černou kočkou v náručí, usmívá se nad stolem plným ručně malovaných černých a terakotových talířů",
+    "signature": "Anna"
+  },
+  "visit": {
+    "title": "¡Nos vemos <em>en la plaza!</em>",
+    "text": "Uvidíme se v sobotu na náměstí. Přijďte brzy pro nejlepší výběr — každý keramický kus je jedinečný.",
+    "when": "Kdy",
+    "where": "Kde",
+    "pay": "Platba",
+    "cantMakeIt": "Nemůžete přijít?",
+    "shop": "Nakupujte online",
+    "studio": ", nebo navštivte můj ateliér v Güímaru po domluvě."
+  },
+  "categories": {
+    "kubki": {
+      "name": "Hrnky",
+      "singular": "Hrnek"
+    },
+    "wazony": {
+      "name": "Malé vázy",
+      "singular": "Malá váza"
+    },
+    "wazony-duze": {
+      "name": "Velké vázy",
+      "singular": "Velká váza"
+    },
+    "talerze-srednie": {
+      "name": "Střední talíře",
+      "singular": "Střední talíř"
+    },
+    "duze-michy": {
+      "name": "Velké mísy",
+      "singular": "Velká mísa"
+    },
+    "miski-falowane": {
+      "name": "Misky s vlnitým okrajem",
+      "singular": "Miska s vlnitým okrajem"
+    }
+  },
+  "aria": {
+    "close": "Zavřít",
+    "prev": "Předchozí",
+    "next": "Další",
+    "photo": "Fotografie"
+  }
+}

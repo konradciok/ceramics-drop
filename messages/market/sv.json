@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Marknaden i El Médano · {date}",
+    "description": "Handmålad keramik och konsttryck av Anna Ciok på hantverksmarknaden i El Médano — lördag 10 oktober 2026, kl. 9–14, stora torget. Ett unikt minne från Teneriffa.",
+    "ogTitle": "Den här lördagen, i El Médano — Anna Ciok",
+    "ogAlt": "Fuerte Piba-tryck och en handmålad tallrik av Anna Ciok"
+  },
+  "event": {
+    "name": "Anna Ciok på hantverksmarknaden i El Médano",
+    "dateLabel": "lördag 10 oktober 2026",
+    "shortDateLabel": "lör 10 okt",
+    "timeLabel": "kl. 9–14",
+    "place": "Stora torget, El Médano",
+    "area": "Granadilla de Abona, Teneriffa",
+    "payment": "Kontant, kort eller Bizum",
+    "calendarDetails": "Handmålad keramik och konsttryck av Anna Ciok. Kontant, kort eller Bizum.",
+    "mapLabel": "Karta"
+  },
+  "hero": {
+    "eyebrow": "Hantverksmarknad · Mercadillo artesanal",
+    "line1": "Den här lördagen",
+    "line2": "i El Médano.",
+    "lead": "Handmålad keramik och konsttryck, direkt från min ateljé på Teneriffa. Kom och hitta ett minne som verkligen kommer från ön — eller det som saknats i ditt hem.",
+    "when": "När",
+    "where": "Var",
+    "pay": "Betalning",
+    "directions": "Vägbeskrivning",
+    "calendar": "Lägg till i kalendern",
+    "imageAlt": "Två Fuerte Piba-tryck, ett svart och ett gräddvitt, med en handmålad tallrik mellan sig på ett solbelyst betonggolv",
+    "badgeDay": "Lördag",
+    "badgeNumber": "10",
+    "badgeMonth": "oktober",
+    "captionLabel": "Från ateljén",
+    "caption": "Fuerte Piba-tryck och en handmålad tallrik."
+  },
+  "marquee": [
+    "handmålade tallrikar",
+    "muggar och vaser",
+    "konsttryck",
+    "unika stycken",
+    "made in Tenerife"
+  ],
+  "take": {
+    "eyebrow": "Ta med Teneriffa hem",
+    "title": "Ett minne som <em>verkligen är härifrån.</em>",
+    "p1": "Glöm kylskåpsmagneter. Varje tallrik, mugg och vas på mitt bord är handmålad i min ateljé i Güímar, med motiv från ön — palmer, den kanariska solen, en sjöjungfru, kvinnor i bredbrättade hattar.",
+    "p2": "Inga två är lika, så stycket du väljer på lördag finns bara en gång.",
+    "tipTitle": "Flyger du hem?",
+    "tipText": "Tryck reser platt i resväskan — och fråga mig hur du packar keramik säkert för resan.",
+    "imageAlt": "Anna håller två vita vaser handmålade med blå palmer och terrakotta randiga kanter"
+  },
+  "apartment": {
+    "eyebrow": "Till ditt hem på ön",
+    "title": "Något <em>till lägenheten.</em>",
+    "p1": "Nyss flyttat hit, eller vill du ge en semesterbostad lite själ? Luta ett par tryck mot hyllan, ställ en palmvas vid fönstret, ät från tallrikar som ingen annan har — djärva, soliga stycken gjorda för kanariskt ljus och vita väggar.",
+    "p2": "Trycken bär kanariska ordspråk och de figurer som hör till dem:",
+    "imageAlt": "Inramade blå tryck Agüita och Chacho, Calma lutade mot en trähylla ovanför gröna kakelplattor, i varmt eftermiddagsljus"
+  },
+  "lookbook": {
+    "eyebrow": "Lookbook",
+    "title": "På bordet, <em>på väggen.</em>",
+    "aside": "Stycken gjorda för vardagligt bruk — och lika nöjda uppsatta på väggen bredvid ett tryck.",
+    "viewLarger": "Förstora: {caption}"
+  },
+  "photos": {
+    "studioSet": {
+      "label": "Svart och terrakotta",
+      "caption": "En tallrik med hattfigur, en vågvas och två palmmuggar.",
+      "alt": "En tallrik med en figur i bredbrättad hatt, en vas med svart våg och två palmmuggar på stensocklar"
+    },
+    "bluePieces": {
+      "label": "I blått",
+      "caption": "Rivjärn, handskålar, en kopp och en tallrik.",
+      "alt": "Blå handmålade keramikrivjärn, två handformade skålar, en vågkopp och en vågtallrik mot en gräddvit putsad vägg"
+    },
+    "platesOnPrints": {
+      "label": "Lera och papper",
+      "caption": "Sjöjungfrur, sjömän och Fuerte Piba — på tallrikar och på tryck.",
+      "alt": "Handmålade tallrikar med en sjöjungfru, sjömän och en kvinna i bredbrättad hatt, lagda på Fuerte Piba- och Islas Canarias-tryck på ett träbord"
+    },
+    "wallPlates": {
+      "label": "På väggen",
+      "caption": "Löv, en våg och en palm, upphängda som ett litet galleri.",
+      "alt": "Tre handmålade tallrikar upphängda på en texturerad gräddvit vägg: terrakotta löv, en svart våg med terrakotta sol och en terrakotta palm i en svart vågkant"
+    },
+    "plateWall": {
+      "label": "Inga två är lika",
+      "caption": "Ett helt bord med tallrikar, var och en handmålad.",
+      "alt": "Dussintals handmålade tallrikar i svart och terrakotta utlagda tillsammans i solen: palmer, sjöjungfrur, händer, snäckor, löv och rutor"
+    }
+  },
+  "wall": {
+    "ariaLabel": "En vägg av handmålade tallrikar",
+    "view": "Förstora bilden av tallriksväggen",
+    "line1": "Inga två är lika.",
+    "line2": "Varje tallrik handmålad."
+  },
+  "table": {
+    "eyebrow": "På bordet",
+    "title": "Det du hittar <em>på lördag.</em>",
+    "items": [
+      {
+        "title": "Tallrikar",
+        "text": "Från små assietter till stora serveringsfat."
+      },
+      {
+        "title": "Muggar",
+        "text": "För en långsam café con leche på terrassen."
+      },
+      {
+        "title": "Vaser",
+        "text": "Små, medelstora och stora — palmer ingår."
+      },
+      {
+        "title": "Skålar",
+        "text": "Stora serveringsskålar och skålar med vågig kant."
+      },
+      {
+        "title": "Konsttryck",
+        "text": "Kanariska ordspråk och figurer till dina väggar."
+      }
+    ],
+    "note": "Varje keramikstycke är unikt. När det är sålt är det borta — <em>kom tidigt.</em>"
+  },
+  "showroom": {
+    "eyebrow": "Från showrummet",
+    "title": "Ett smakprov på <em>vad jag gör.</em>",
+    "aside": "Stycken från tidigare kollektioner — inte en lista över vad som finns på båset. Varje stycke är unikt, så kom och se vad som ligger på bordet på lördag.",
+    "tag": "Tidigare verk",
+    "note": "Från en tidigare kollektion — unikt, handmålat i min ateljé i Güímar. Kom och se vad som ligger på bordet på lördag.",
+    "viewPiece": "Förstora {title}",
+    "pieceAlt": "{name}, {detail}",
+    "size": "Storlek",
+    "madeIn": "Tillverkad i",
+    "madeInValue": "Güímar, Teneriffa",
+    "alt": {
+      "k10": "handmålad med en blå snäcka",
+      "t20": "en svart kaktus i en terrakotta kant",
+      "h01": "målad på insidan med två svarta palmer",
+      "g01": "en svart palm mellan terrakotta bårder",
+      "s19": "en svart åsna i en terrakotta vågkant",
+      "w08": "målad med mjuka blå kaktusar och terrakotta prickar",
+      "v01": "en blå kaktus och en terrakotta sol",
+      "d06": "en svart hummer ritad runt kroppen"
+    }
+  },
+  "artist": {
+    "eyebrow": "Hola, jag är Anna",
+    "title": "Ett par händer, <em>ett stycke i taget.</em>",
+    "p1": "Jag bor och arbetar på Teneriffa. I min lilla ateljé i Güímar målar jag akvareller på papper och handmålar keramikservis — aldrig massproducerat. Öns färger, ordspråk och figurer hamnar på nästan allt jag gör.",
+    "p2": "Titta förbi båset för att säga hola, ta en tallrik i handen och fråga mig vad som helst om hur den gjordes.",
+    "instagram": "Följ på Instagram",
+    "imageAlt": "Anna Ciok i sin ateljé med en svart katt i famnen, leende över ett bord täckt av handmålade svarta och terrakotta tallrikar",
+    "signature": "Anna"
+  },
+  "visit": {
+    "title": "¡Nos vemos <em>en la plaza!</em>",
+    "text": "Vi ses på torget på lördag. Kom tidigt för bäst urval — varje keramikstycke är unikt.",
+    "when": "När",
+    "where": "Var",
+    "pay": "Betalning",
+    "cantMakeIt": "Kan du inte komma?",
+    "shop": "Handla online",
+    "studio": ", eller besök min ateljé i Güímar efter överenskommelse."
+  },
+  "categories": {
+    "kubki": {
+      "name": "Muggar",
+      "singular": "Mugg"
+    },
+    "wazony": {
+      "name": "Små vaser",
+      "singular": "Liten vas"
+    },
+    "wazony-duze": {
+      "name": "Stora vaser",
+      "singular": "Stor vas"
+    },
+    "talerze-srednie": {
+      "name": "Medelstora tallrikar",
+      "singular": "Medelstor tallrik"
+    },
+    "duze-michy": {
+      "name": "Stora skålar",
+      "singular": "Stor skål"
+    },
+    "miski-falowane": {
+      "name": "Skålar med vågig kant",
+      "singular": "Skål med vågig kant"
+    }
+  },
+  "aria": {
+    "close": "Stäng",
+    "prev": "Föregående",
+    "next": "Nästa",
+    "photo": "Bild"
+  }
+}

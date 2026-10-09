@@ -1148,5 +1148,203 @@
     "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii w 5–10 dni roboczych.",
     "aboutMore": "Czytaj dalej",
     "aboutLess": "Zwiń"
+  },
+  "market": {
+    "meta": {
+      "title": "Targ w El Médano · {date}",
+      "description": "Ręcznie malowana ceramika i fine art prints Anny Ciok na targu rękodzieła w El Médano — sobota 10 października 2026, 9:00–14:00, główny plac. Unikatowa pamiątka z Teneryfy.",
+      "ogTitle": "W tę sobotę w El Médano — Anna Ciok",
+      "ogAlt": "Odbitki Fuerte Piba i ręcznie malowany talerz Anny Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok na targu rękodzieła w El Médano",
+      "dateLabel": "sobota 10 października 2026",
+      "shortDateLabel": "sob. 10 paź",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Główny plac, El Médano",
+      "area": "Granadilla de Abona, Teneryfa",
+      "payment": "Gotówka, karta lub Bizum",
+      "calendarDetails": "Ręcznie malowana ceramika i fine art prints Anny Ciok. Gotówka, karta lub Bizum.",
+      "mapLabel": "Mapa"
+    },
+    "hero": {
+      "eyebrow": "Targ rękodzieła · Mercadillo artesanal",
+      "line1": "W tę sobotę",
+      "line2": "w El Médano.",
+      "lead": "Ręcznie malowana ceramika i fine art prints prosto z mojej pracowni na Teneryfie. Wpadnij po pamiątkę, która naprawdę pochodzi z wyspy — albo po rzecz, której brakowało w Twoim mieszkaniu.",
+      "when": "Kiedy",
+      "where": "Gdzie",
+      "pay": "Płatność",
+      "directions": "Wyznacz trasę",
+      "calendar": "Dodaj do kalendarza",
+      "imageAlt": "Dwie odbitki Fuerte Piba, czarna i kremowa, a między nimi ręcznie malowany talerz na nasłonecznionej betonowej posadzce",
+      "badgeDay": "sobota",
+      "badgeNumber": "10",
+      "badgeMonth": "października",
+      "captionLabel": "Z pracowni",
+      "caption": "Odbitki Fuerte Piba i ręcznie malowany talerz."
+    },
+    "marquee": [
+      "ręcznie malowane talerze",
+      "kubki i wazony",
+      "fine art prints",
+      "unikaty",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Zabierz Teneryfę do domu",
+      "title": "Pamiątka, która jest <em>naprawdę stąd.</em>",
+      "p1": "Zapomnij o magnesach na lodówkę. Każdy talerz, kubek i wazon na moim stole jest malowany ręcznie w mojej pracowni w Güímar, z motywami z wyspy — palmy, kanaryjskie słońce, syrena, kobiety w szerokich kapeluszach.",
+      "p2": "Nie ma dwóch takich samych, więc rzecz, którą wybierzesz w sobotę, istnieje tylko jedna.",
+      "tipTitle": "Lecisz do domu?",
+      "tipText": "Odbitki podróżują płasko w walizce — a jak bezpiecznie zapakować ceramikę na drogę, chętnie podpowiem.",
+      "imageAlt": "Anna trzyma dwa białe wazony ręcznie malowane w niebieskie palmy, z terakotowymi pasiastymi brzegami"
+    },
+    "apartment": {
+      "eyebrow": "Do Twojego miejsca na wyspie",
+      "title": "Coś <em>do mieszkania.</em>",
+      "p1": "Dopiero zamieszkujesz na wyspie albo chcesz dodać duszy wakacyjnemu apartamentowi? Oprzyj parę odbitek o półkę, postaw wazon z palmą przy oknie, jedz z talerzy, których nikt inny nie ma — odważne, słoneczne rzeczy stworzone dla kanaryjskiego światła i białych ścian.",
+      "p2": "Na odbitkach są kanaryjskie powiedzonka i pasujące do nich postaci:",
+      "imageAlt": "Oprawione niebieskie odbitki Agüita i Chacho, Calma oparte o drewnianą półkę nad zielonymi kafelkami w ciepłym popołudniowym świetle"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "Na stole, <em>na ścianie.</em>",
+      "aside": "Rzeczy stworzone do codziennego używania — i równie dobrze czujące się na ścianie obok odbitki.",
+      "viewLarger": "Powiększ: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Czerń i terakota",
+        "caption": "Talerz z postacią w kapeluszu, wazon z falą i dwa kubki z palmami.",
+        "alt": "Talerz z postacią w szerokim kapeluszu, wazon z czarną falą i dwa kubki z palmami na kamiennych cokołach"
+      },
+      "bluePieces": {
+        "label": "W błękitach",
+        "caption": "Tarki, miseczki-dłonie, filiżanka i talerz.",
+        "alt": "Niebieskie ręcznie malowane ceramiczne tarki, dwie miseczki w kształcie dłoni, filiżanka i talerz z falą na kremowej tynkowanej ścianie"
+      },
+      "platesOnPrints": {
+        "label": "Glina i papier",
+        "caption": "Syreny, żeglarze i Fuerte Piba — na talerzach i na odbitkach.",
+        "alt": "Ręcznie malowane talerze z syreną, żeglarzami i kobietą w szerokim kapeluszu ułożone na odbitkach Fuerte Piba i Islas Canarias na drewnianym stole"
+      },
+      "wallPlates": {
+        "label": "Na ścianie",
+        "caption": "Liście, fala i palma, powieszone jak mała galeria.",
+        "alt": "Trzy ręcznie malowane talerze powieszone na fakturowanej kremowej ścianie: terakotowe liście, czarna fala z terakotowym słońcem i terakotowa palma w czarnym falbaniastym brzegu"
+      },
+      "plateWall": {
+        "label": "Nie ma dwóch takich samych",
+        "caption": "Cały stół talerzy, każdy malowany ręcznie.",
+        "alt": "Dziesiątki ręcznie malowanych talerzy w czerni i terakocie rozłożonych razem w słońcu: palmy, syreny, dłonie, muszle, liście i kratki"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Ściana ręcznie malowanych talerzy",
+      "view": "Powiększ zdjęcie ściany z talerzami",
+      "line1": "Nie ma dwóch takich samych.",
+      "line2": "Każdy talerz malowany ręcznie."
+    },
+    "table": {
+      "eyebrow": "Na stole",
+      "title": "Co znajdziesz <em>w sobotę.</em>",
+      "items": [
+        {
+          "title": "Talerze",
+          "text": "Od talerzyków deserowych po duże talerze do serwowania."
+        },
+        {
+          "title": "Kubki",
+          "text": "Na powolną café con leche na tarasie."
+        },
+        {
+          "title": "Wazony",
+          "text": "Małe, średnie i duże — z palmami w komplecie."
+        },
+        {
+          "title": "Miski",
+          "text": "Duże misy do serwowania i miski z falowanym brzegiem."
+        },
+        {
+          "title": "Fine art prints",
+          "text": "Kanaryjskie powiedzonka i postaci na Twoje ściany."
+        }
+      ],
+      "note": "Każda ceramika to unikat. Gdy się sprzeda, znika na zawsze — <em>przyjdź wcześnie.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Z showroomu",
+      "title": "Próbka <em>tego, co tworzę.</em>",
+      "aside": "Prace z wcześniejszych kolekcji — to nie lista tego, co jest na stoisku. Każda rzecz jest unikatem, więc przyjdź w sobotę zobaczyć, co leży na stole.",
+      "tag": "Wcześniejsza praca",
+      "note": "Z wcześniejszej kolekcji — unikat, malowany ręcznie w mojej pracowni w Güímar. Przyjdź w sobotę zobaczyć, co leży na stole.",
+      "viewPiece": "Powiększ: {title}",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Rozmiar",
+      "madeIn": "Wykonano w",
+      "madeInValue": "Güímar, Teneryfa",
+      "alt": {
+        "k10": "ręcznie malowany w niebieską muszlę",
+        "t20": "czarny kaktus w terakotowym brzegu",
+        "h01": "wewnątrz malowana dwiema czarnymi palmami",
+        "g01": "czarna palma między terakotowymi bordiurami",
+        "s19": "czarny osioł w terakotowym falbaniastym brzegu",
+        "w08": "malowana miękkimi niebieskimi kaktusami i terakotowymi kropkami",
+        "v01": "niebieski kaktus i terakotowe słońce",
+        "d06": "czarny homar narysowany wokół korpusu"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, jestem Anna",
+      "title": "Jedna para rąk, <em>jedna rzecz naraz.</em>",
+      "p1": "Mieszkam i pracuję na Teneryfie. W swojej małej pracowni w Güímar maluję akwarele na papierze i ręcznie maluję ceramikę stołową — nigdy masowo. Kolory, powiedzonka i postaci wyspy trafiają na prawie wszystko, co robię.",
+      "p2": "Wpadnij na stoisko, powiedz hola, weź talerz do ręki i zapytaj o wszystko, jak powstał.",
+      "instagram": "Obserwuj na Instagramie",
+      "imageAlt": "Anna Ciok w swojej pracowni z czarnym kotem na rękach, uśmiechnięta nad stołem pełnym ręcznie malowanych czarnych i terakotowych talerzy",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Do zobaczenia na placu w sobotę. Przyjdź wcześnie po najlepszy wybór — każda ceramika to unikat.",
+      "when": "Kiedy",
+      "where": "Gdzie",
+      "pay": "Płatność",
+      "cantMakeIt": "Nie dasz rady?",
+      "shop": "Zajrzyj do sklepu online",
+      "studio": " albo odwiedź moją pracownię w Güímar po wcześniejszym umówieniu."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Kubki",
+        "singular": "Kubek"
+      },
+      "wazony": {
+        "name": "Małe wazony",
+        "singular": "Mały wazon"
+      },
+      "wazony-duze": {
+        "name": "Duże wazony",
+        "singular": "Duży wazon"
+      },
+      "talerze-srednie": {
+        "name": "Talerze średnie",
+        "singular": "Talerz średni"
+      },
+      "duze-michy": {
+        "name": "Duże misy",
+        "singular": "Duża misa"
+      },
+      "miski-falowane": {
+        "name": "Miski z falowanym brzegiem",
+        "singular": "Miska z falowanym brzegiem"
+      }
+    },
+    "aria": {
+      "close": "Zamknij",
+      "prev": "Poprzednie",
+      "next": "Następne",
+      "photo": "Zdjęcie"
+    }
   }
 }

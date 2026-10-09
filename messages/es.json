@@ -1148,5 +1148,203 @@
     "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido en 5–10 días laborables.",
     "aboutMore": "Leer más",
     "aboutLess": "Ver menos"
+  },
+  "market": {
+    "meta": {
+      "title": "Mercadillo de El Médano · {date}",
+      "description": "Cerámica pintada a mano y láminas de arte de Anna Ciok en el mercadillo artesanal de El Médano — sábado 10 de octubre de 2026, de 9:00 a 14:00, plaza principal. Un recuerdo único de Tenerife.",
+      "ogTitle": "Este sábado, en El Médano — Anna Ciok",
+      "ogAlt": "Láminas Fuerte Piba y un plato pintado a mano de Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok en el mercadillo artesanal de El Médano",
+      "dateLabel": "sábado 10 de octubre de 2026",
+      "shortDateLabel": "sáb 10 oct",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Plaza principal, El Médano",
+      "area": "Granadilla de Abona, Tenerife",
+      "payment": "Efectivo, tarjeta o Bizum",
+      "calendarDetails": "Cerámica pintada a mano y láminas de arte de Anna Ciok. Efectivo, tarjeta o Bizum.",
+      "mapLabel": "Mapa"
+    },
+    "hero": {
+      "eyebrow": "Mercadillo artesanal · Handicraft market",
+      "line1": "Este sábado,",
+      "line2": "en El Médano.",
+      "lead": "Cerámica pintada a mano y láminas de arte, directamente desde mi taller en Tenerife. Ven a buscar un recuerdo que de verdad sea de la isla — o esa pieza que le faltaba a tu casa.",
+      "when": "Cuándo",
+      "where": "Dónde",
+      "pay": "Pago",
+      "directions": "Cómo llegar",
+      "calendar": "Añadir al calendario",
+      "imageAlt": "Dos láminas Fuerte Piba, una negra y otra crema, con un plato pintado a mano entre ellas sobre un suelo de cemento bañado por el sol",
+      "badgeDay": "Sábado",
+      "badgeNumber": "10",
+      "badgeMonth": "octubre",
+      "captionLabel": "Desde el taller",
+      "caption": "Láminas Fuerte Piba y un plato pintado a mano."
+    },
+    "marquee": [
+      "platos pintados a mano",
+      "tazas y jarrones",
+      "láminas de arte",
+      "piezas únicas",
+      "hecho en Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Llévate Tenerife a casa",
+      "title": "Un recuerdo que es <em>de aquí de verdad.</em>",
+      "p1": "Olvídate de los imanes de nevera. Cada plato, taza y jarrón de mi mesa está pintado a mano en mi taller de Güímar, con motivos de la isla: palmeras, el sol canario, una sirena, mujeres con sombreros de ala ancha.",
+      "p2": "No hay dos iguales, así que la pieza que elijas el sábado existe una sola vez.",
+      "tipTitle": "¿Vuelas de regreso?",
+      "tipText": "Las láminas viajan planas en la maleta — y pregúntame cómo embalar la cerámica con seguridad para el viaje.",
+      "imageAlt": "Anna sostiene dos jarrones blancos pintados a mano con palmeras azules y bordes de rayas terracota"
+    },
+    "apartment": {
+      "eyebrow": "Para tu casa en la isla",
+      "title": "Algo <em>para el apartamento.</em>",
+      "p1": "¿Te acabas de mudar o quieres darle alma a un piso de vacaciones? Apoya un par de láminas en la estantería, pon un jarrón de palmeras junto a la ventana, come en platos que nadie más tiene: piezas atrevidas y soleadas, hechas para la luz canaria y las paredes blancas.",
+      "p2": "Las láminas llevan dichos canarios y los personajes que los acompañan:",
+      "imageAlt": "Láminas azules enmarcadas Agüita y Chacho, Calma apoyadas en una estantería de madera sobre azulejos verdes, con luz cálida de tarde"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "En la mesa, <em>en la pared.</em>",
+      "aside": "Piezas hechas para usarse a diario — y igual de felices colgadas en la pared junto a una lámina.",
+      "viewLarger": "Ampliar: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Negro y terracota",
+        "caption": "Un plato con figura de sombrero, un jarrón de ola y dos tazas de palmera.",
+        "alt": "Un plato con una figura de sombrero de ala ancha, un jarrón con una ola negra y dos tazas con palmeras sobre pedestales de piedra"
+      },
+      "bluePieces": {
+        "label": "En azul",
+        "caption": "Ralladores, platitos de mano, una taza y un plato.",
+        "alt": "Ralladores de cerámica azules pintados a mano, dos platitos con forma de mano, una taza con ola y un plato con ola sobre una pared de yeso crema"
+      },
+      "platesOnPrints": {
+        "label": "Barro y papel",
+        "caption": "Sirenas, marineros y Fuerte Piba — en platos y en láminas.",
+        "alt": "Platos pintados a mano con una sirena, marineros y una mujer con sombrero de ala ancha sobre láminas Fuerte Piba e Islas Canarias en una mesa de madera"
+      },
+      "wallPlates": {
+        "label": "En la pared",
+        "caption": "Hojas, una ola y una palmera, colgados como una pequeña galería.",
+        "alt": "Tres platos pintados a mano colgados en una pared crema texturizada: hojas terracota, una ola negra con un sol terracota y una palmera terracota dentro de un borde festoneado negro"
+      },
+      "plateWall": {
+        "label": "No hay dos iguales",
+        "caption": "Una mesa entera de platos, cada uno pintado a mano.",
+        "alt": "Decenas de platos pintados a mano en negro y terracota dispuestos juntos al sol: palmeras, sirenas, manos, conchas, hojas y cuadros"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Una pared de platos pintados a mano",
+      "view": "Ampliar la foto de la pared de platos",
+      "line1": "No hay dos iguales.",
+      "line2": "Cada plato pintado a mano."
+    },
+    "table": {
+      "eyebrow": "En la mesa",
+      "title": "Lo que encontrarás <em>el sábado.</em>",
+      "items": [
+        {
+          "title": "Platos",
+          "text": "Desde platitos hasta grandes platos para servir."
+        },
+        {
+          "title": "Tazas",
+          "text": "Para un café con leche sin prisa en la terraza."
+        },
+        {
+          "title": "Jarrones",
+          "text": "Pequeños, medianos y grandes — palmeras incluidas."
+        },
+        {
+          "title": "Cuencos",
+          "text": "Grandes cuencos para servir y otros de borde ondulado."
+        },
+        {
+          "title": "Láminas de arte",
+          "text": "Dichos y personajes canarios para tus paredes."
+        }
+      ],
+      "note": "Cada pieza de cerámica es única. Cuando se vende, se acabó — <em>ven temprano.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Desde el showroom",
+      "title": "Una muestra de <em>lo que hago.</em>",
+      "aside": "Piezas de colecciones anteriores — no es una lista de lo que hay en el puesto. Cada pieza es única, así que ven el sábado a ver qué hay sobre la mesa.",
+      "tag": "Trabajo anterior",
+      "note": "De una colección anterior — pieza única, pintada a mano en mi taller de Güímar. Ven el sábado a ver qué hay sobre la mesa.",
+      "viewPiece": "Ampliar {title}",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Tamaño",
+      "madeIn": "Hecho en",
+      "madeInValue": "Güímar, Tenerife",
+      "alt": {
+        "k10": "pintada a mano con una concha azul",
+        "t20": "un cactus negro dentro de un borde terracota",
+        "h01": "pintada por dentro con dos palmeras negras",
+        "g01": "una palmera negra entre bordes terracota",
+        "s19": "un burro negro dentro de un borde festoneado terracota",
+        "w08": "pintada con suaves cactus azules y puntos terracota",
+        "v01": "un cactus azul y un sol terracota",
+        "d06": "una langosta negra dibujada alrededor del cuerpo"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, soy Anna",
+      "title": "Un par de manos, <em>una pieza a la vez.</em>",
+      "p1": "Vivo y trabajo en Tenerife. En mi pequeño taller de Güímar pinto acuarelas sobre papel y cerámica de mesa a mano — nunca en serie. Los colores, dichos y personajes de la isla acaban en casi todo lo que hago.",
+      "p2": "Pasa por el puesto a saludar, coge un plato y pregúntame lo que quieras sobre cómo se hizo.",
+      "instagram": "Sígueme en Instagram",
+      "imageAlt": "Anna Ciok en su taller con un gato negro en brazos, sonriendo ante una mesa llena de platos negros y terracota pintados a mano",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Nos vemos en la plaza el sábado. Ven temprano para elegir mejor — cada pieza de cerámica es única.",
+      "when": "Cuándo",
+      "where": "Dónde",
+      "pay": "Pago",
+      "cantMakeIt": "¿No puedes venir?",
+      "shop": "Compra en la tienda online",
+      "studio": ", o visita mi taller de Güímar con cita previa."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Tazas",
+        "singular": "Taza"
+      },
+      "wazony": {
+        "name": "Jarrones pequeños",
+        "singular": "Jarrón pequeño"
+      },
+      "wazony-duze": {
+        "name": "Jarrones grandes",
+        "singular": "Jarrón grande"
+      },
+      "talerze-srednie": {
+        "name": "Platos medianos",
+        "singular": "Plato mediano"
+      },
+      "duze-michy": {
+        "name": "Cuencos grandes",
+        "singular": "Cuenco grande"
+      },
+      "miski-falowane": {
+        "name": "Cuencos de borde ondulado",
+        "singular": "Cuenco de borde ondulado"
+      }
+    },
+    "aria": {
+      "close": "Cerrar",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "photo": "Foto"
+    }
   }
 }

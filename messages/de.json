@@ -1148,5 +1148,203 @@
     "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und in 5–10 Werktagen an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt.",
     "aboutMore": "Weiterlesen",
     "aboutLess": "Weniger anzeigen"
+  },
+  "market": {
+    "meta": {
+      "title": "Markt in El Médano · {date}",
+      "description": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok auf dem Kunsthandwerkermarkt in El Médano — Samstag, 10. Oktober 2026, 9:00–14:00 Uhr, Hauptplatz. Ein einzigartiges Souvenir aus Teneriffa.",
+      "ogTitle": "Diesen Samstag in El Médano — Anna Ciok",
+      "ogAlt": "Fuerte-Piba-Prints und ein handbemalter Teller von Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok auf dem Kunsthandwerkermarkt in El Médano",
+      "dateLabel": "Samstag, 10. Oktober 2026",
+      "shortDateLabel": "Sa, 10. Okt.",
+      "timeLabel": "9:00 – 14:00 Uhr",
+      "place": "Hauptplatz, El Médano",
+      "area": "Granadilla de Abona, Teneriffa",
+      "payment": "Bar, Karte oder Bizum",
+      "calendarDetails": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok. Bar, Karte oder Bizum.",
+      "mapLabel": "Karte"
+    },
+    "hero": {
+      "eyebrow": "Kunsthandwerkermarkt · Mercadillo artesanal",
+      "line1": "Diesen Samstag",
+      "line2": "in El Médano.",
+      "lead": "Handbemalte Keramik und Fine-Art-Prints, direkt aus meinem Atelier auf Teneriffa. Komm vorbei und finde ein Souvenir, das wirklich von der Insel stammt — oder das Stück, das deiner Wohnung noch gefehlt hat.",
+      "when": "Wann",
+      "where": "Wo",
+      "pay": "Zahlung",
+      "directions": "Route anzeigen",
+      "calendar": "Zum Kalender hinzufügen",
+      "imageAlt": "Zwei Fuerte-Piba-Prints, einer schwarz und einer cremefarben, dazwischen ein handbemalter Teller auf einem sonnigen Betonboden",
+      "badgeDay": "Samstag",
+      "badgeNumber": "10",
+      "badgeMonth": "Oktober",
+      "captionLabel": "Aus dem Atelier",
+      "caption": "Fuerte-Piba-Prints und ein handbemalter Teller."
+    },
+    "marquee": [
+      "handbemalte Teller",
+      "Tassen & Vasen",
+      "Fine-Art-Prints",
+      "Unikate",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Nimm Teneriffa mit nach Hause",
+      "title": "Ein Souvenir, das <em>wirklich von hier ist.</em>",
+      "p1": "Vergiss Kühlschrankmagnete. Jeder Teller, jede Tasse und jede Vase auf meinem Tisch ist in meinem Atelier in Güímar von Hand bemalt, mit Motiven der Insel — Palmen, die kanarische Sonne, eine Sirene, Frauen mit breitkrempigen Hüten.",
+      "p2": "Keine zwei sind gleich, also gibt es das Stück, das du am Samstag auswählst, nur ein einziges Mal.",
+      "tipTitle": "Fliegst du nach Hause?",
+      "tipText": "Prints reisen flach im Koffer — und frag mich, wie du Keramik sicher für die Reise verpackst.",
+      "imageAlt": "Anna hält zwei weiße Vasen, handbemalt mit blauen Palmen und terrakottafarbenen gestreiften Rändern"
+    },
+    "apartment": {
+      "eyebrow": "Für dein Zuhause auf der Insel",
+      "title": "Etwas <em>für die Wohnung.</em>",
+      "p1": "Gerade hierher gezogen oder du willst einer Ferienwohnung Seele geben? Lehne ein paar Prints ins Regal, stell eine Palmenvase ans Fenster, iss von Tellern, die sonst niemand hat — kräftige, sonnige Stücke für kanarisches Licht und weiße Wände.",
+      "p2": "Die Prints tragen kanarische Redensarten und die Figuren dazu:",
+      "imageAlt": "Gerahmte blaue Prints „Agüita“ und „Chacho, Calma“ an ein Holzregal über grünen Fliesen gelehnt, im warmen Nachmittagslicht"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "Auf dem Tisch, <em>an der Wand.</em>",
+      "aside": "Stücke für den täglichen Gebrauch — und genauso gern an der Wand neben einem Print aufgehängt.",
+      "viewLarger": "Vergrößern: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Schwarz & Terrakotta",
+        "caption": "Ein Teller mit Hutfigur, eine Wellenvase und zwei Palmentassen.",
+        "alt": "Ein Teller mit einer Figur mit breitkrempigem Hut, eine Vase mit schwarzer Welle und zwei Palmentassen auf Steinsockeln"
+      },
+      "bluePieces": {
+        "label": "In Blau",
+        "caption": "Reiben, Handschalen, eine Tasse und ein Teller.",
+        "alt": "Blaue handbemalte Keramikreiben, zwei handförmige Schalen, eine Tasse mit Welle und ein Teller mit Welle vor einer cremefarbenen Putzwand"
+      },
+      "platesOnPrints": {
+        "label": "Ton & Papier",
+        "caption": "Meerjungfrauen, Seemänner und Fuerte Piba — auf Tellern und auf Prints.",
+        "alt": "Handbemalte Teller mit Meerjungfrau, Seemännern und einer Frau mit breitkrempigem Hut, gelegt auf Fuerte-Piba- und Islas-Canarias-Prints auf einem Holztisch"
+      },
+      "wallPlates": {
+        "label": "An der Wand",
+        "caption": "Blätter, eine Welle und eine Palme, als kleine Galerie aufgehängt.",
+        "alt": "Drei handbemalte Teller an einer strukturierten cremefarbenen Wand: terrakottafarbene Blätter, eine schwarze Welle mit terrakottafarbener Sonne und eine terrakottafarbene Palme in einem schwarzen Wellenrand"
+      },
+      "plateWall": {
+        "label": "Keine zwei gleich",
+        "caption": "Ein ganzer Tisch voller Teller, jeder von Hand bemalt.",
+        "alt": "Dutzende handbemalter Teller in Schwarz und Terrakotta, gemeinsam in der Sonne ausgelegt: Palmen, Meerjungfrauen, Hände, Muscheln, Blätter und Karos"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Eine Wand aus handbemalten Tellern",
+      "view": "Foto der Tellerwand vergrößern",
+      "line1": "Keine zwei gleich.",
+      "line2": "Jeder Teller von Hand bemalt."
+    },
+    "table": {
+      "eyebrow": "Auf dem Tisch",
+      "title": "Was dich <em>am Samstag erwartet.</em>",
+      "items": [
+        {
+          "title": "Teller",
+          "text": "Von kleinen Tellern bis zu großen Servierplatten."
+        },
+        {
+          "title": "Tassen",
+          "text": "Für einen gemütlichen Café con leche auf der Terrasse."
+        },
+        {
+          "title": "Vasen",
+          "text": "Klein, mittel und groß — Palmen inklusive."
+        },
+        {
+          "title": "Schalen",
+          "text": "Große Servierschalen und welche mit Wellenrand."
+        },
+        {
+          "title": "Fine-Art-Prints",
+          "text": "Kanarische Redensarten und Figuren für deine Wände."
+        }
+      ],
+      "note": "Jedes Keramikstück ist ein Unikat. Einmal verkauft, ist es weg — <em>komm früh.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Aus dem Showroom",
+      "title": "Ein Vorgeschmack auf <em>das, was ich mache.</em>",
+      "aside": "Stücke aus früheren Kollektionen — keine Liste dessen, was am Stand liegt. Jedes Stück ist ein Unikat, also komm am Samstag vorbei und sieh, was auf dem Tisch liegt.",
+      "tag": "Frühere Arbeit",
+      "note": "Aus einer früheren Kollektion — ein Unikat, von Hand in meinem Atelier in Güímar bemalt. Komm am Samstag vorbei und sieh, was auf dem Tisch liegt.",
+      "viewPiece": "{title} vergrößern",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Größe",
+      "madeIn": "Hergestellt in",
+      "madeInValue": "Güímar, Teneriffa",
+      "alt": {
+        "k10": "handbemalt mit einer blauen Muschel",
+        "t20": "ein schwarzer Kaktus in einem terrakottafarbenen Rand",
+        "h01": "innen mit zwei schwarzen Palmen bemalt",
+        "g01": "eine schwarze Palme zwischen terrakottafarbenen Borten",
+        "s19": "ein schwarzer Esel in einem terrakottafarbenen Wellenrand",
+        "w08": "bemalt mit sanften blauen Kakteen und terrakottafarbenen Punkten",
+        "v01": "ein blauer Kaktus und eine terrakottafarbene Sonne",
+        "d06": "ein schwarzer Hummer um den Korpus gezeichnet"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, ich bin Anna",
+      "title": "Ein Paar Hände, <em>ein Stück nach dem anderen.</em>",
+      "p1": "Ich lebe und arbeite auf Teneriffa. In meinem kleinen Atelier in Güímar male ich Aquarelle auf Papier und bemale Keramikgeschirr von Hand — nie in Serie. Die Farben, Redensarten und Figuren der Insel landen auf fast allem, was ich mache.",
+      "p2": "Komm am Stand vorbei, sag hola, nimm einen Teller in die Hand und frag mich alles darüber, wie er entstanden ist.",
+      "instagram": "Auf Instagram folgen",
+      "imageAlt": "Anna Ciok in ihrem Atelier mit einer schwarzen Katze auf dem Arm, lächelnd über einem Tisch voller handbemalter schwarzer und terrakottafarbener Teller",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Wir sehen uns am Samstag auf dem Platz. Komm früh für die beste Auswahl — jedes Keramikstück ist ein Unikat.",
+      "when": "Wann",
+      "where": "Wo",
+      "pay": "Zahlung",
+      "cantMakeIt": "Kannst du nicht kommen?",
+      "shop": "Online einkaufen",
+      "studio": " oder besuche mein Atelier in Güímar nach Vereinbarung."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Tassen",
+        "singular": "Tasse"
+      },
+      "wazony": {
+        "name": "Kleine Vasen",
+        "singular": "Kleine Vase"
+      },
+      "wazony-duze": {
+        "name": "Große Vasen",
+        "singular": "Große Vase"
+      },
+      "talerze-srednie": {
+        "name": "Mittlere Teller",
+        "singular": "Mittlerer Teller"
+      },
+      "duze-michy": {
+        "name": "Große Schalen",
+        "singular": "Große Schale"
+      },
+      "miski-falowane": {
+        "name": "Schalen mit Wellenrand",
+        "singular": "Schale mit Wellenrand"
+      }
+    },
+    "aria": {
+      "close": "Schließen",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "photo": "Foto"
+    }
   }
 }
