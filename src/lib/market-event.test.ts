@@ -28,11 +28,8 @@ function variantsOf(src: string): string[] {
 }
 
 describe('market event links', () => {
-  it('points directions at the studio-supplied pin', () => {
-    const url = new URL(marketMapsUrl());
-    expect(url.origin + url.pathname).toBe('https://www.google.com/maps/search/');
-    expect(url.searchParams.get('api')).toBe('1');
-    expect(url.searchParams.get('query')).toBe('28.044737720390916,-16.538546894694644');
+  it('points directions at the studio-supplied Google Maps link', () => {
+    expect(marketMapsUrl()).toBe('https://maps.app.goo.gl/U5MMXTApFgmbyVadA');
   });
 
   it('builds a Google Calendar template for 9:00–14:00 Canary time on 10 Oct 2026', () => {
