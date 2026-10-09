@@ -6,6 +6,7 @@ import type { Locale } from '@/i18n/routing';
 import { headers } from 'next/headers';
 import { isPrintCountry } from '@/lib/print-shipping';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -24,10 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params, searchParams }: Props) {
-  const [{ locale }, requestHeaders, printPricing] = await Promise.all([
+  const [{ locale }, requestHeaders, printPricing, shippingRates] = await Promise.all([
     params,
     headers(),
     getPrintPricingConfig(),
+    getShippingRatesForDisplay(),
   ]);
   setRequestLocale(locale);
   // A repeated ?sale=a&sale=b query yields string[]; collapse to a single token.
@@ -42,6 +44,7 @@ export default async function Page({ params, searchParams }: Props) {
         privateSaleToken={saleToken}
         initialPrintCountry={initialPrintCountry}
         printPricing={printPricing}
+        internationalShippingRates={shippingRates.international}
       />
     </main>
   );
