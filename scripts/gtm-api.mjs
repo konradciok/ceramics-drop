@@ -31,6 +31,7 @@ const ANALYTICS_EVENTS = [
   'begin_checkout',
   'purchase',
   'site_engagement',
+  'market_get_directions',
 ];
 
 // Top-level GA4 event params the native GA4 event tag forwards = the 15
@@ -42,7 +43,7 @@ const GA4_EVENT_PARAMS = [
   'engagement_type', 'reason', 'status', 'method', 'page', 'locale',
   'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
   'item_id', 'item_category', 'app_version', 'app_git_sha',
-  'page_path', 'page_title',
+  'page_path', 'page_title', 'placement',
 ];
 
 // Nested meta.* dataLayer keys the UI-managed Meta Pixel tags read (GTM
@@ -457,7 +458,7 @@ function metaStandardTrigger() {
         type: 'matchRegex',
         parameter: [
           templateParam('arg0', '{{_event}}'),
-          templateParam('arg1', '^(view_item|add_to_cart|begin_checkout|purchase)$'),
+          templateParam('arg1', '^(view_item|add_to_cart|begin_checkout|purchase|market_get_directions)$'),
         ],
       },
     ],

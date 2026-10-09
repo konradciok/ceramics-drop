@@ -12,6 +12,7 @@ import {
 import { srcSet } from '@/lib/images';
 import { getMarketTranslator, isMarketExtraLang, type MarketLang } from '@/lib/market-copy';
 import {
+  MARKET_DIRECTIONS_EVENT,
   MARKET_ENGAGEMENT,
   MARKET_IMAGES,
   MARKET_LOOKBOOK,
@@ -95,7 +96,7 @@ export async function MarketPage({ lang }: { lang: MarketLang }) {
       href={mapsUrl}
       target="_blank"
       rel="noopener"
-      data-market-track={MARKET_ENGAGEMENT.directions}
+      data-market-track={MARKET_DIRECTIONS_EVENT}
       data-placement={placement}
     >
       {children}

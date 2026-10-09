@@ -8,12 +8,13 @@
      lock and touch-swipe pattern as those two components.
    - Delegated click tracking: any descendant carrying
      `data-market-track="<engagement_type>"` pushes a `site_engagement`
-     event (docs/analytics-stack.md) when clicked.
+     event (docs/analytics-stack.md) when clicked; `market_get_directions`
+     is the exception — its own dataLayer event (the campaign conversion).
    ============================================================ */
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
+import { buildEngagementEvent, buildMarketDirectionsEvent, pushDataLayer } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
-import { MARKET_ENGAGEMENT } from '@/lib/market-event';
+import { MARKET_DIRECTIONS_EVENT, MARKET_ENGAGEMENT } from '@/lib/market-event';
 import { Icon } from '@/components/ui/Icon';
 
 export type MarketGalleryItem = {
@@ -155,6 +156,16 @@ export function MarketGalleryProvider({ galleries, showroomNote, labels, childre
       if (!el || !root.contains(el)) return;
       const { marketTrack, placement, method } = el.dataset;
       if (!marketTrack) return;
+      if (marketTrack === MARKET_DIRECTIONS_EVENT) {
+        pushDataLayer(
+          buildMarketDirectionsEvent({
+            placement,
+            pagePath: window.location.pathname,
+            locale: document.documentElement.lang,
+          }),
+        );
+        return;
+      }
       pushDataLayer(
         buildEngagementEvent(marketTrack, {
           placement,

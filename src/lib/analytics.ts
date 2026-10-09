@@ -19,7 +19,8 @@ export type MetaStandardEvent =
   | 'ViewContent'
   | 'AddToCart'
   | 'InitiateCheckout'
-  | 'Purchase';
+  | 'Purchase'
+  | 'FindLocation';
 
 export type AnalyticsItem = {
   item_id: string;
@@ -73,7 +74,7 @@ export type DataLayerEvent = {
 /** GTM ecommerce reset — clear persisted items before the next ecommerce event. */
 export type DataLayerEcommerceClear = { ecommerce: null };
 
-export type DataLayerEntry = DataLayerEvent | DataLayerEcommerceClear;
+export type DataLayerEntry = DataLayerEvent | MarketDirectionsEvent | DataLayerEcommerceClear;
 
 type EventOptions = {
   eventId?: string;
@@ -548,6 +549,37 @@ export function buildEngagementEvent(
   };
 }
 
+/** Dedicated conversion event: a Meta signal with no product/value payload. */
+export type MarketDirectionsEvent = {
+  event: 'market_get_directions';
+  event_id: string;
+  placement?: string;
+  page_path: string;
+  locale?: string;
+  meta: { event_name: 'FindLocation'; event_id: string };
+};
+
+/**
+ * El Médano landing page "Get directions" click — the campaign conversion.
+ * Own dataLayer event (not `site_engagement`) carrying a `meta` signal so GTM's
+ * Meta standard-events tag sends it as `FindLocation`; GA4 receives it by name.
+ */
+export function buildMarketDirectionsEvent(details: {
+  placement?: string;
+  pagePath: string;
+  locale?: string;
+}): MarketDirectionsEvent {
+  const eventId = createEventId('market_get_directions', details.placement ?? 'directions');
+  return {
+    event: 'market_get_directions',
+    event_id: eventId,
+    placement: details.placement,
+    page_path: redactSensitiveUrl(details.pagePath),
+    locale: details.locale,
+    meta: { event_name: 'FindLocation', event_id: eventId },
+  };
+}
+
 export type AuthMethod = 'google' | 'apple';
 
 /**
@@ -616,18 +648,18 @@ export function buildPageViewEvent(details: {
   };
 }
 
-export function pushDataLayer(event: DataLayerEvent): void {
+export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
   // Reset GTM's persisted ecommerce object so a prior view_item_list does not
   // merge its items into purchase / checkout / cart events in Tag Assistant or GA4.
-  if (event.ecommerce) {
+  if ('ecommerce' in event && event.ecommerce) {
     window.dataLayer.push({ ecommerce: null });
   }
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).
-  const payload: DataLayerEvent = {
+  const payload = {
     ...event,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION,
     app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,
@@ -636,7 +668,12 @@ export function pushDataLayer(event: DataLayerEvent): void {
   mirrorDebugEvent(payload);
 }
 
-function mirrorDebugEvent(event: DataLayerEvent): void {
+function mirrorDebugEvent(event: {
+  event: string;
+  engagement_type?: unknown;
+  ecommerce?: unknown;
+  meta?: unknown;
+}): void {
   if (!isDebugHost()) return;
 
   try {

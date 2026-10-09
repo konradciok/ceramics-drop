@@ -8,6 +8,7 @@ import {
   buildAddToCartEvent,
   buildBeginCheckoutEvent,
   buildEngagementEvent,
+  buildMarketDirectionsEvent,
   buildGiftCardAddToCartEvent,
   buildGiftCardViewItemEvent,
   buildLoginEvent,
@@ -648,5 +649,22 @@ describe('analyticsItemForId with a nameOverride', () => {
   it('falls back to printDisplayName when nameOverride is omitted', () => {
     const item = analyticsItemForId('print:fap005:50x70:true:false:black', 220);
     expect(item?.item_name).not.toBe('Custom Print Name');
+  });
+});
+
+describe('buildMarketDirectionsEvent', () => {
+  it('is its own dataLayer event (not site_engagement) with a Meta FindLocation signal', () => {
+    const event = buildMarketDirectionsEvent({
+      placement: 'hero_button',
+      pagePath: '/en/el-medano?utm_source=qr',
+      locale: 'en',
+    });
+
+    expect(event.event).toBe('market_get_directions');
+    expect(event).not.toHaveProperty('engagement_type');
+    expect(event.placement).toBe('hero_button');
+    expect(event.page_path).toBe('/en/el-medano?utm_source=qr');
+    expect(event.meta.event_name).toBe('FindLocation');
+    expect(event.meta.event_id).toBe(event.event_id);
   });
 });
