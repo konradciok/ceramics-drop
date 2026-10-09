@@ -667,4 +667,18 @@ describe('buildMarketDirectionsEvent', () => {
     expect(event.meta.event_name).toBe('FindLocation');
     expect(event.meta.event_id).toBe(event.event_id);
   });
+
+  it('clears the persisted meta object before pushing, so no prior product fields leak into FindLocation', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildMarketDirectionsEvent({ placement: 'hero_button', pagePath: '/el-medano' }));
+
+    const [clear, event] = window.dataLayer as unknown[];
+    expect(clear).toEqual({ meta: null });
+    expect(event).toMatchObject({ event: 'market_get_directions', meta: { event_name: 'FindLocation' } });
+  });
 });

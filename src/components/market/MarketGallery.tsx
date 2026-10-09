@@ -161,7 +161,8 @@ export function MarketGalleryProvider({ galleries, showroomNote, labels, childre
           buildMarketDirectionsEvent({
             placement,
             pagePath: window.location.pathname,
-            locale: document.documentElement.lang,
+            // Page-only languages render inside the `en` shell, so the page language lives on <main lang>.
+            locale: el.closest('main')?.lang || document.documentElement.lang,
           }),
         );
         return;

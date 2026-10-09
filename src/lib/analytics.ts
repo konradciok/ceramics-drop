@@ -74,7 +74,14 @@ export type DataLayerEvent = {
 /** GTM ecommerce reset — clear persisted items before the next ecommerce event. */
 export type DataLayerEcommerceClear = { ecommerce: null };
 
-export type DataLayerEntry = DataLayerEvent | MarketDirectionsEvent | DataLayerEcommerceClear;
+/** GTM `meta` reset — drop a prior event's persisted product fields before a payload-less Meta signal. */
+export type DataLayerMetaClear = { meta: null };
+
+export type DataLayerEntry =
+  | DataLayerEvent
+  | MarketDirectionsEvent
+  | DataLayerEcommerceClear
+  | DataLayerMetaClear;
 
 type EventOptions = {
   eventId?: string;
@@ -655,6 +662,12 @@ export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): vo
   // merge its items into purchase / checkout / cart events in Tag Assistant or GA4.
   if ('ecommerce' in event && event.ecommerce) {
     window.dataLayer.push({ ecommerce: null });
+  }
+  // GTM dataLayer variables persist until overwritten: without this, a
+  // payload-less Meta signal (FindLocation) would inherit a previous product
+  // event's meta.content_ids / contents / value in the shared Meta tag.
+  if (event.event === 'market_get_directions') {
+    window.dataLayer.push({ meta: null });
   }
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
