@@ -61,6 +61,12 @@ All custom events ride the single `site_engagement` dataLayer event, distinguish
 | `showroom_interest_submit` | buyer submits the showroom interest form (`ShowroomInterestForm.tsx`) | `item_id` |
 | `cart_clear` | buyer clears the selection bar (`SelectionBar.tsx`) | `item_ids`, `value`, `currency` |
 | `cart_cta_click` | buyer clicks the selection-bar "go to cart" CTA (`SelectionBar.tsx`) | `location` (`selection_bar`), `num_items`, `value`, `currency` |
+| `market_get_directions` | **main conversion of the El Médano market landing page** (`/en/el-medano`): "Get directions" button or the plaza address link (`MarketGallery.tsx` delegated click tracking, `src/lib/market-event.ts`) | `placement` (`hero_button` \| `hero_address` \| `visit_button` \| `visit_address`), `page_path` |
+| `market_add_to_calendar` | El Médano page "Add to calendar" (Google Calendar template link) | `placement` (`hero` \| `visit`), `page_path` |
+| `market_photo_view` | El Médano page lightbox shows a showroom piece or lookbook photo — once per item per page load, including arrow/swipe navigation | `item_id` (registry id or `photo-<key>`), `item_name`, `item_category` (`showroom` \| `photos`), `page_path` |
+| `market_outbound_click` | El Médano page Instagram / "Shop online" links | `method` (`instagram` \| `shop`), `placement`, `page_path` |
+
+The `market_*` events need **no GTM change**: they ride `site_engagement`, which the container already sends to GA4 and to Meta as the `SiteEngagement` custom event with `engagement_type` and `page_path`. To use "Get directions" as the Meta ad conversion, create a Meta **custom conversion** on `SiteEngagement` where `engagement_type` equals `market_get_directions` (category *Find location*). `placement` stays in the dataLayer only — it is not in the GA4 tag's forwarded-parameter list (`GA4_EVENT_PARAMS` in `scripts/gtm-api.mjs`) nor the Meta `SiteEngagement` property list, so add it there first if you need it in reports.
 
 **Multi-currency:** the money-carrying demand params on `showroom_product_view` / `sold_item_view` / `cart_clear` / `cart_cta_click` are currency-labelled — each sends a `currency` sibling alongside a display-currency amount, so a PLN and a EUR signal are never summed as if they were the same unit (Plan 3, N-5: `docs/superpowers/plans/2026-07-28-analytics-event-correctness.md`).
 

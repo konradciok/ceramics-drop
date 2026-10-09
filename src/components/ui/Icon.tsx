@@ -14,7 +14,9 @@ export type IconName =
   | 'chevron-right'
   | 'expand'
   | 'trash'
-  | 'user';
+  | 'user'
+  | 'pin'
+  | 'calendar';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   cart: (
@@ -35,6 +37,18 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="8" r="3.6" />
       <path d="M4.5 20.5c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.4" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="1.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
     </>
   ),
 };
