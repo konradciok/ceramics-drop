@@ -56,6 +56,52 @@ export function scrubSentryEvent(event: SentryEvent): SentryEvent {
   return event;
 }
 
+export type UserAgentClass = 'none' | 'bot' | 'browser' | 'other';
+
+// Heuristic, for triage only — crawlers, HTTP libraries and monitors.
+const BOT_UA = /bot|crawl|spider|slurp|facebookexternalhit|externalagent|headless|python|aiohttp|go-http-client|curl|wget|faraday|okhttp|java\/|axios|node-fetch|undici|scrapy|uptime|lighthouse/i;
+
+export function classifyUserAgent(ua: string | undefined): UserAgentClass {
+  if (!ua) return 'none';
+  if (BOT_UA.test(ua)) return 'bot';
+  if (/^Mozilla\/5\.0/i.test(ua)) return 'browser';
+  return 'other';
+}
+
+/**
+ * Server/edge only: move the client's User-Agent (and UA client hints) off
+ * `event.request.headers`. Sentry's inbound filters (web-crawlers,
+ * legacy-browsers) match on that header, so a server-side error triggered by
+ * a crawler request — e.g. a catalogue fallback that 404'd a live product for
+ * PetalBot — was silently dropped at ingest. Browser events keep the header:
+ * there the filters do useful work. The UA is preserved for triage as the
+ * `ua_class` tag plus a `client_user_agent` context, neither of which the
+ * filters read. Pure + exported for unit testing.
+ */
+export function stripServerUserAgent(event: SentryEvent): SentryEvent {
+  const headers = event.request?.headers;
+  if (!headers) return event;
+  let ua: string | undefined;
+  for (const key of Object.keys(headers)) {
+    const lower = key.toLowerCase();
+    if (lower === 'user-agent') {
+      ua = headers[key];
+      delete headers[key];
+    } else if (lower.startsWith('sec-ch-ua')) {
+      delete headers[key];
+    }
+  }
+  const uaClass = classifyUserAgent(ua);
+  event.tags = { ...event.tags, ua_class: uaClass };
+  if (ua) {
+    event.contexts = {
+      ...event.contexts,
+      client_user_agent: { value: ua.slice(0, MAX_EXTRA_STRING), class: uaClass },
+    };
+  }
+  return event;
+}
+
 /** Shared Sentry init options for all Next.js runtimes. */
 export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & BrowserOptions> {
   if (!dsn) {
@@ -83,6 +129,16 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
       /Error invoking postMessage/,
       /window\.webkit\.messageHandlers/,
     ],
+  };
+}
+
+/** Init options for the server (nodejs) and edge runtimes: the base options plus stripServerUserAgent. */
+export function getServerSentryOptions(): Partial<NodeOptions & EdgeOptions> {
+  const base = getBaseSentryOptions();
+  if (!base.dsn) return base;
+  return {
+    ...base,
+    beforeSend: (event) => stripServerUserAgent(scrubSentryEvent(event)),
   };
 }
 
