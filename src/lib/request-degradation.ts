@@ -36,6 +36,7 @@ interface DegradationStore {
   getStore(): RequestDegradation | undefined;
 }
 
+/** The current request's degradation state, or undefined outside a worker scope. */
 function currentDegradation(): RequestDegradation | undefined {
   const store = (globalThis as Record<symbol, unknown>)[REQUEST_DEGRADATION_KEY] as DegradationStore | undefined;
   return store?.getStore();

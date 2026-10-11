@@ -10,6 +10,7 @@ import { runWithRequestDegradation } from './request-degradation-scope';
 const COLD: RequestDegradation = { ceramicCatalogColdFailClosed: true };
 const WARM: RequestDegradation = { ceramicCatalogColdFailClosed: false };
 
+/** A storefront request for `path`. */
 function req(path: string, method = 'GET'): Request {
   return new Request(`https://anna-ciok.studio${path}`, { method });
 }

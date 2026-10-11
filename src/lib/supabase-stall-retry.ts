@@ -40,11 +40,13 @@ class StalledAttemptError extends Error {
   }
 }
 
+/** Upper-cased HTTP method, from `init` first, then a `Request` input, else GET. */
 function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
   const method = init?.method ?? (input instanceof Request ? input.method : 'GET');
   return method.toUpperCase();
 }
 
+/** URL path for the retry log line, without the query string. */
 function requestPath(input: RequestInfo | URL): string {
   try {
     const href = input instanceof Request ? input.url : String(input);
@@ -55,6 +57,11 @@ function requestPath(input: RequestInfo | URL): string {
   }
 }
 
+/**
+ * One fetch attempt on its own AbortController: aborted by the caller signal
+ * at any time, or by the attempt timer until response headers arrive. Throws
+ * StalledAttemptError when the timer (not the caller) ended it.
+ */
 async function attemptOnce(
   baseFetch: FetchFn,
   input: RequestInfo | URL,
@@ -65,8 +72,10 @@ async function attemptOnce(
   const controller = new AbortController();
   // Linked for the whole life of the request (including the body read that
   // happens after this function returns), so a caller timeout still cancels.
+  // Detached only when the attempt fails — a failed attempt has no body left.
+  const onCallerAbort = () => controller.abort(callerSignal.reason);
   if (callerSignal.aborted) controller.abort(callerSignal.reason);
-  else callerSignal.addEventListener('abort', () => controller.abort(callerSignal.reason), { once: true });
+  else callerSignal.addEventListener('abort', onCallerAbort, { once: true });
 
   let stalled = false;
   const timer = setTimeout(() => {
@@ -76,6 +85,7 @@ async function attemptOnce(
   try {
     return await baseFetch(input, { ...init, signal: controller.signal });
   } catch (err) {
+    callerSignal.removeEventListener('abort', onCallerAbort);
     if (stalled && !callerSignal.aborted) throw new StalledAttemptError(attemptTimeoutMs);
     throw err;
   } finally {

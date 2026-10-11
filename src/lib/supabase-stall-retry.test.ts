@@ -51,9 +51,12 @@ describe('createStallRetryFetch', () => {
       .mockImplementationOnce(async () => new Response('second'));
     const f = createStallRetryFetch(base, 20);
     const caller = AbortSignal.timeout(1000);
+    const removeListener = vi.spyOn(caller, 'removeEventListener');
     const res = await f(URL_, { method: 'GET', signal: caller });
     expect(await res.text()).toBe('second');
     expect(base).toHaveBeenCalledTimes(2);
+    // The stalled attempt detaches from the long-lived caller signal.
+    expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
     // The retry is bounded by the caller's own signal, not a new budget.
     expect(base.mock.calls[1][1]?.signal).toBe(caller);
     expect(console.warn).toHaveBeenCalledWith(

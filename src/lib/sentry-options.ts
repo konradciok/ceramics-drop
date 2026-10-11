@@ -61,6 +61,7 @@ export type UserAgentClass = 'none' | 'bot' | 'browser' | 'other';
 // Heuristic, for triage only — crawlers, HTTP libraries and monitors.
 const BOT_UA = /bot|crawl|spider|slurp|facebookexternalhit|externalagent|headless|python|aiohttp|go-http-client|curl|wget|faraday|okhttp|java\/|axios|node-fetch|undici|scrapy|uptime|lighthouse/i;
 
+/** Coarse client class for a User-Agent string: bot, browser, other, or none when absent. */
 export function classifyUserAgent(ua: string | undefined): UserAgentClass {
   if (!ua) return 'none';
   if (BOT_UA.test(ua)) return 'bot';

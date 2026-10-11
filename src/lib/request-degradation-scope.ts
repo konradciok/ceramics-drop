@@ -4,6 +4,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { REQUEST_DEGRADATION_KEY, type RequestDegradation } from './request-degradation';
 
+/** The isolate-wide AsyncLocalStorage, created once and shared via globalThis. */
 function degradationStorage(): AsyncLocalStorage<RequestDegradation> {
   const g = globalThis as Record<symbol, unknown>;
   const existing = g[REQUEST_DEGRADATION_KEY] as AsyncLocalStorage<RequestDegradation> | undefined;
