@@ -208,7 +208,7 @@ Four locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), Ger
 - `promo_codes` + `promo_redemptions`: promo-code definitions (percent or per-currency fixed amount, `applies_to` track, schedule window, `max_redemptions`, `newsletter_welcome` — at most one active) and their redemption ledger (`pending`→`redeemed`/`released`), claimed/settled by the `claim_promo_redemption()` / `settle_promo_redemption()` RPCs (migration `20260830120000_promo_codes.sql`). See `docs/promo-codes.md`.
 - `reserve_pieces()` RPC: atomically reserves rows; returns array of conflicting product IDs (empty = success). `reserve_private_sale_pieces()` does the same for sold pieces behind a valid token
 
-RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmin()`).
+RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmin()`). That client's custom fetch (`src/lib/supabase-stall-retry.ts`) retries a bounded read (GET/HEAD carrying a caller `.abortSignal(...)`) once when no response headers arrive within 2.5 s — production timeouts were connections that stalled before reaching Supabase. Writes/RPCs and unbounded reads are never retried.
 
 ### Pricing & Shipping
 
@@ -279,7 +279,7 @@ Cloudflare Workers via OpenNext (`open-next.config.ts`). Preview locally with `n
 
 Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`), `WORKER_SELF_REFERENCE` service binding (self-reference for cache purging), `FULFILMENT_QUEUE` (Cloudflare Queue `prodigi-fulfilment`, consumer with exponential retry/backoff plus a dead-letter queue `prodigi-fulfilment-dlq` consumed alert-only), `PRINT_ASSETS` (R2 bucket for high-res print files), and a cron trigger every 15 min.
 
-`worker.ts` wraps the OpenNext handler and adds the cron scheduled handler, the Prodigi **queue consumer**, and the Cloudflare Access gate for `/admin`. It **must** re-export `DOQueueHandler`, `DOShardedTagCache`, and `BucketCachePurge` from `.open-next/worker.js` — omitting these breaks deployment.
+`worker.ts` wraps the OpenNext handler and adds the cron scheduled handler, the Prodigi **queue consumer**, and the Cloudflare Access gate for `/admin`. Every fetch runs inside a per-request degradation scope (`src/lib/request-degradation.ts` + `request-degradation-scope.ts`): when a render was served from the cold-fail-closed ceramic catalogue, a 404 or `/sitemap.xml` is answered **503 + `Retry-After`** instead, so crawlers do not drop live pieces during a transient Supabase outage. It **must** re-export `DOQueueHandler`, `DOShardedTagCache`, and `BucketCachePurge` from `.open-next/worker.js` — omitting these breaks deployment.
 
 `src/middleware.ts` must **not** be renamed to `proxy.ts`: OpenNext only bundles edge-runtime middleware, but Next 16's `proxy.ts` is Node-runtime only and OpenNext rejects it, breaking the Cloudflare build (`next build` alone does not catch this — the failure only surfaces in the OpenNext/Workers build). A rename was attempted once and cancelled for exactly this reason.
 

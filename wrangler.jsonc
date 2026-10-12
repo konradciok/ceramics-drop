@@ -173,7 +173,12 @@
         // (src/server/cms-api/handlers/session.ts) — anything else reports "production".
         "CMS_API_ENVIRONMENT": "integration"
       },
-      "triggers": { "crons": ["*/15 * * * *"] },
+      // Cron disabled (2026-10-11): the preview's Supabase project
+      // (ceramics-cms-integration) is paused, so every */15 sweep failed with
+      // 530 / error 1016 — ~4,000 error log lines a week and no value. An
+      // empty list removes the schedule on deploy. Restore "*/15 * * * *"
+      // together with resuming that project for a cron rehearsal.
+      "triggers": { "crons": [] },
       "assets": {
         "directory": ".open-next/assets",
         "binding": "ASSETS"
