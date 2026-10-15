@@ -1152,14 +1152,14 @@
   "market": {
     "meta": {
       "title": "Mercadillo de El Médano · {date}",
-      "description": "Cerámica pintada a mano y láminas de arte de Anna Ciok en el mercadillo artesanal de El Médano — sábado 10 de octubre de 2026, de 9:00 a 14:00, plaza principal. Un recuerdo único de Tenerife.",
+      "description": "Cerámica pintada a mano y láminas de arte de Anna Ciok en el mercadillo artesanal de El Médano — sábado 17 de octubre de 2026, de 9:00 a 14:00, plaza principal. Un recuerdo único de Tenerife.",
       "ogTitle": "Este sábado, en El Médano — Anna Ciok",
       "ogAlt": "Láminas Fuerte Piba y un plato pintado a mano de Anna Ciok"
     },
     "event": {
       "name": "Anna Ciok en el mercadillo artesanal de El Médano",
-      "dateLabel": "sábado 10 de octubre de 2026",
-      "shortDateLabel": "sáb 10 oct",
+      "dateLabel": "sábado 17 de octubre de 2026",
+      "shortDateLabel": "sáb 17 oct",
       "timeLabel": "9:00 – 14:00",
       "place": "Plaza principal, El Médano",
       "area": "Granadilla de Abona, Tenerife",
@@ -1179,7 +1179,7 @@
       "calendar": "Añadir al calendario",
       "imageAlt": "Dos láminas Fuerte Piba, una negra y otra crema, con un plato pintado a mano entre ellas sobre un suelo de cemento bañado por el sol",
       "badgeDay": "Sábado",
-      "badgeNumber": "10",
+      "badgeNumber": "17",
       "badgeMonth": "octubre",
       "captionLabel": "Desde el taller",
       "caption": "Láminas Fuerte Piba y un plato pintado a mano."

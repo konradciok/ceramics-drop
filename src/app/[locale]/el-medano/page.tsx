@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /**
- * Campaign landing page for the El Médano handicraft market (Sat 10 Oct 2026)
+ * Campaign landing page for the El Médano handicraft market (Sat 17 Oct 2026)
  * in the four site locales. Six more page-only languages live at
  * `/en/el-medano/<lang>` (see `./[lang]/page.tsx`).
  */
