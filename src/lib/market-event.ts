@@ -25,8 +25,8 @@ export type MarketExtraLang = (typeof MARKET_EXTRA_LANGS)[number];
 
 export const MARKET_EVENT = {
   /** Local wall-clock times in `timeZone`, Google Calendar `dates` format. */
-  startLocal: '20261010T090000',
-  endLocal: '20261010T140000',
+  startLocal: '20261017T090000',
+  endLocal: '20261017T140000',
   timeZone: 'Atlantic/Canary',
   /** Google Maps link supplied by the studio for the market square. */
   mapsUrl: 'https://maps.app.goo.gl/U5MMXTApFgmbyVadA',

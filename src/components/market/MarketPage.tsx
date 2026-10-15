@@ -31,7 +31,7 @@ const PRINT_SAYINGS = ['Agüita', 'Chacho, calma', 'Fuerte piba'];
 
 /**
  * Campaign landing page inviting visitors to Anna's stand at the El Médano
- * handicraft market (Sat 10 Oct 2026). Rendered for the four site locales
+ * handicraft market (Sat 17 Oct 2026). Rendered for the four site locales
  * (`/el-medano`, `/en/…`, `/es/…`, `/de/…`) and, in the `en` shell, for the
  * page-only languages at `/en/el-medano/<lang>`. Main conversion: "Get
  * directions" (see MARKET_ENGAGEMENT).
