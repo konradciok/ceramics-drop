@@ -476,22 +476,31 @@ describe('buildOrderConfirmationEmail — greeting', () => {
 });
 
 describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
-  it('uses "od 10 lipca" in both p2 and p3 — no contradictory "do 10 lipca" (PL)', () => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
-    expect(html).toContain('od 10 lipca');
-    expect(html).not.toContain('do 10 lipca');
+  const locales = ['pl', 'en', 'es', 'de'] as const;
+  // Owner-confirmed term (docs/copy-source-of-truth.md §13): fulfilment within 2 business days, delivery within 5.
+  const TERM: Record<(typeof locales)[number], RegExp> = {
+    pl: /do 2 dni roboczych, dostawa do 5 dni roboczych/,
+    en: /within 2 business days, with delivery within 5 business days/,
+    es: /máximo de 2 días laborables y la entrega tarda hasta 5 días laborables/,
+    de: /innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen/,
+  };
+  const SUPERSEDED_RANGE = /\b(?:1\s?(?:[–-]|a)\s?3|2\s?(?:[–-]|a)\s?5|5\s?(?:[–-]|a)\s?10)\s?(?:dni|days|business|working|días|Tage|Werktage)/i;
+
+  it.each(locales)('states the confirmed fulfilment and delivery term (%s)', (locale) => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale });
+    expect(html).toMatch(TERM[locale]);
   });
 
-  it('uses "from 10 July" in both p2 and p3 — no contradictory "by 10 July" (EN)', () => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'en' });
-    expect(html).toContain('from 10 July');
-    expect(html).not.toContain('by 10 July');
+  it.each(locales)('is evergreen: no month-specific dates and no superseded ranges (%s)', (locale) => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale });
+    expect(html).not.toMatch(/lipc|July|julio|\bJuli\b/i);
+    expect(html).not.toMatch(SUPERSEDED_RANGE);
   });
 
-  it('uses "a partir del 10 de julio" in both p2 and p3 — no contradictory "antes del" (ES)', () => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'es' });
-    expect(html).toContain('a partir del 10 de julio');
-    expect(html).not.toContain('antes del 10 de julio');
+  it.each(locales)('print confirmations state the same term, with the region (%s)', (locale) => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale, kind: 'print' });
+    expect(html).toMatch(TERM[locale]);
+    expect(html).not.toMatch(SUPERSEDED_RANGE);
   });
 });
 
