@@ -33,10 +33,10 @@ describe('market event links', () => {
     expect(marketMapsUrl()).toBe('https://maps.app.goo.gl/U5MMXTApFgmbyVadA');
   });
 
-  it('builds a Google Calendar template for 9:00–14:00 Canary time on 17 Oct 2026', () => {
+  it('builds a Google Calendar template for 9:00–14:00 Canary time on 24 Oct 2026', () => {
     const url = new URL(marketCalendarUrl(COPY));
     expect(url.searchParams.get('action')).toBe('TEMPLATE');
-    expect(url.searchParams.get('dates')).toBe('20261017T090000/20261017T140000');
+    expect(url.searchParams.get('dates')).toBe('20261024T090000/20261024T140000');
     expect(url.searchParams.get('ctz')).toBe('Atlantic/Canary');
     expect(url.searchParams.get('text')).toBe(COPY.name);
     expect(url.searchParams.get('details')).toContain(marketMapsUrl());
