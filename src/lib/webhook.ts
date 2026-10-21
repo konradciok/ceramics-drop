@@ -78,7 +78,23 @@ function extractPiId(raw: string | { id: string } | null | undefined): string | 
   return raw.id;
 }
 
+/**
+ * Apps that share this Stripe account and settle their own payments — they
+ * tag their PaymentIntents `metadata.app`. workshops.anna-ciok.studio
+ * (konradciok/workshops) handles its Checkout payments in its own webhook;
+ * without this guard every workshop payment would reach markPaid here and
+ * report stripe_webhook_unknown_payment_intent.
+ */
+export const OTHER_STRIPE_APPS: readonly string[] = ['workshops'];
+
+function belongsToOtherApp(event: Stripe.Event): boolean {
+  if (!event.type.startsWith('payment_intent.')) return false;
+  const app = (event.data.object as Stripe.PaymentIntent).metadata?.app;
+  return typeof app === 'string' && OTHER_STRIPE_APPS.includes(app);
+}
+
 export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<void> {
+  if (belongsToOtherApp(event)) return;
   if (await deps.handleBalancePayment?.(event)) return;
   switch (event.type) {
     case 'payment_intent.succeeded': {

@@ -99,6 +99,25 @@ describe('handleStripeEvent', () => {
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
   });
 
+  it("skips PaymentIntents of the workshops app sharing the Stripe account", async () => {
+    const handleBalancePayment = vi.fn().mockResolvedValue(false);
+    const d = deps({ handleBalancePayment });
+    const workshopPi = { ...pi('pi_ws'), metadata: { app: 'workshops', booking_ref: 'ACW-AAAA-AAAA' } };
+    for (const type of ['payment_intent.succeeded', 'payment_intent.canceled', 'payment_intent.payment_failed']) {
+      await handleStripeEvent({ type, data: { object: workshopPi } } as unknown as Stripe.Event, d);
+    }
+    expect(handleBalancePayment).not.toHaveBeenCalled();
+    expect(d.markPaid).not.toHaveBeenCalled();
+    expect(d.releaseHold).not.toHaveBeenCalled();
+    expect(d.trackPurchase).not.toHaveBeenCalled();
+
+    await handleStripeEvent(
+      { type: 'payment_intent.succeeded', data: { object: { ...pi(), metadata: { app: 'shop' } } } } as unknown as Stripe.Event,
+      d,
+    );
+    expect(d.markPaid).toHaveBeenCalledWith('pi_1');
+  });
+
   it('ignores unrelated event types', async () => {
     const d = deps();
     await handleStripeEvent({ type: 'charge.updated', data: { object: {} } } as unknown as Stripe.Event, d);

@@ -3,10 +3,11 @@
    four link sections (static columns ≥861px, accordions below).
    Server component; translated via next-intl getTranslations.
    ============================================================ */
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { EMAIL } from '@/lib/email-addresses';
+import { workshopsUrl } from '@/lib/site';
 import { FooterNewsletterForm } from './FooterNewsletterForm';
 import { FooterAccordionSection } from './FooterAccordionSection';
 import { PaymentBadges } from './PaymentBadges';
@@ -15,6 +16,7 @@ const INSTAGRAM_URL = 'https://www.instagram.com/anna.ciok.art/';
 
 export async function Footer() {
   const t = await getTranslations();
+  const locale = await getLocale();
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -68,6 +70,9 @@ export async function Footer() {
               </li>
               <li>
                 <Link href="/o-studiu#proces">{t('footer.proces')}</Link>
+              </li>
+              <li>
+                <a href={workshopsUrl(locale)}>{t('nav.workshops')}</a>
               </li>
               <li>
                 <Link href="/kontakt">{t('nav.kontakt')}</Link>

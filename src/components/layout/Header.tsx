@@ -2,9 +2,10 @@
    Header — announcement bar + sticky nav (server component).
    Mobile navigation is handled by the MobileMenu client island.
    ============================================================ */
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
+import { workshopsUrl } from '@/lib/site';
 import { LangSwitch } from './LangSwitch';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import { CartCount } from './CartCount';
@@ -12,6 +13,7 @@ import { MobileMenu } from './MobileMenu';
 
 export async function Header() {
   const t = await getTranslations();
+  const locale = await getLocale();
 
   const mobileLinks = [
     { href: '/sklep', label: t('nav.sklep') },
@@ -20,6 +22,8 @@ export async function Header() {
     { href: '/showroom', label: t('nav.showroom') },
     { href: '/gallery', label: t('nav.gallery') },
     { href: '/o-studiu', label: t('nav.studio') },
+    // External subdomain — next-intl leaves absolute URLs unprefixed.
+    { href: workshopsUrl(locale), label: t('nav.workshops') },
     { href: '/kontakt', label: t('nav.kontakt') },
     { href: '/konto', label: t('nav.konto') },
   ];
