@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type Stripe from 'stripe';
-import { handleStripeEvent, HANDLED_STRIPE_EVENTS, type WebhookDeps } from './webhook';
+import { handleStripeEvent, HANDLED_STRIPE_EVENTS, otherStripeApp, type WebhookDeps } from './webhook';
 
 function deps(overrides: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
@@ -97,6 +97,13 @@ describe('handleStripeEvent', () => {
     await handleStripeEvent({ type: 'payment_intent.canceled', data: { object: pi('pi_3') } } as unknown as Stripe.Event, d);
     expect(d.releaseHold).toHaveBeenCalledWith('pi_3');
     expect(d.revalidate).toHaveBeenCalledWith('inventory');
+  });
+
+  it('otherStripeApp: recognises tagged apps only', () => {
+    expect(otherStripeApp({ metadata: { app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' } })).toEqual({ app: 'workshops', ref: 'ACW-AAAA-BBBB' });
+    expect(otherStripeApp({ metadata: { app: 'workshops' } })).toEqual({ app: 'workshops', ref: null });
+    expect(otherStripeApp({ metadata: { app: 'shop' } })).toBeNull();
+    expect(otherStripeApp({ metadata: {} })).toBeNull();
   });
 
   it("skips PaymentIntents of the workshops app sharing the Stripe account", async () => {

@@ -87,10 +87,22 @@ function extractPiId(raw: string | { id: string } | null | undefined): string | 
  */
 export const OTHER_STRIPE_APPS: readonly string[] = ['workshops'];
 
+/** A PaymentIntent of another app on the shared account (its tag + booking ref), or null for the shop's own. */
+export function otherStripeApp(pi: Pick<Stripe.PaymentIntent, 'metadata'>): { app: string; ref: string | null } | null {
+  const app = pi.metadata?.app;
+  if (typeof app !== 'string' || !OTHER_STRIPE_APPS.includes(app)) return null;
+  return { app, ref: pi.metadata.booking_ref ?? null };
+}
+
+/**
+ * Only payment_intent.* events are skipped. Disputes and failed refunds on
+ * another app's payment still reach the studio alerts — that app doesn't
+ * handle them and a dispute has a response deadline — labelled with its app
+ * and booking ref instead of an order (see the alert callbacks in route.ts).
+ */
 function belongsToOtherApp(event: Stripe.Event): boolean {
   if (!event.type.startsWith('payment_intent.')) return false;
-  const app = (event.data.object as Stripe.PaymentIntent).metadata?.app;
-  return typeof app === 'string' && OTHER_STRIPE_APPS.includes(app);
+  return otherStripeApp(event.data.object as Stripe.PaymentIntent) !== null;
 }
 
 export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<void> {
