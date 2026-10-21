@@ -37,8 +37,8 @@ function resolveDescription(override: string | undefined, rawNotes: unknown, not
  * Ceramics ship on the two InPost rates already advertised in feed.ts —
  * mirror them here (and reuse its `SHIPPING_COUNTRY`) so the Merchant feed
  * and this on-page `Offer.shippingDetails` never disagree. Handling/transit
- * time matches /dostawa-i-zwroty (shipping.s2P): parcels go out 1-3 business
- * days after payment, InPost usually delivers the next business day.
+ * time is the owner-confirmed term (docs/copy-source-of-truth.md §13, shipping.s2P):
+ * orders are fulfilled within 2 business days, delivery within 5 business days.
  */
 function shippingDetailsFor(locale: Locale) {
   const rates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
@@ -46,8 +46,8 @@ function shippingDetailsFor(locale: Locale) {
   const addressCountry = SHIPPING_COUNTRY[locale];
   const deliveryTime = {
     '@type': 'ShippingDeliveryTime' as const,
-    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 3, unitCode: 'DAY' },
-    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 1, unitCode: 'DAY' },
+    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 2, unitCode: 'DAY' },
+    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 5, unitCode: 'DAY' },
   };
   return [
     {
