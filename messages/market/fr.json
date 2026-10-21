@@ -1,14 +1,14 @@
 {
   "meta": {
     "title": "Marché d’El Médano · {date}",
-    "description": "Céramiques peintes à la main et tirages d’art d’Anna Ciok au marché artisanal d’El Médano — samedi 17 octobre 2026, de 9 h à 14 h, place principale. Un souvenir unique de Tenerife.",
+    "description": "Céramiques peintes à la main et tirages d’art d’Anna Ciok au marché artisanal d’El Médano — samedi 24 octobre 2026, de 9 h à 14 h, place principale. Un souvenir unique de Tenerife.",
     "ogTitle": "Ce samedi, à El Médano — Anna Ciok",
     "ogAlt": "Tirages Fuerte Piba et assiette peinte à la main par Anna Ciok"
   },
   "event": {
     "name": "Anna Ciok au marché artisanal d’El Médano",
-    "dateLabel": "samedi 17 octobre 2026",
-    "shortDateLabel": "sam. 17 oct.",
+    "dateLabel": "samedi 24 octobre 2026",
+    "shortDateLabel": "sam. 24 oct.",
     "timeLabel": "9 h – 14 h",
     "place": "Place principale, El Médano",
     "area": "Granadilla de Abona, Tenerife",
@@ -28,7 +28,7 @@
     "calendar": "Ajouter au calendrier",
     "imageAlt": "Deux tirages Fuerte Piba, l’un noir et l’autre crème, avec une assiette peinte à la main entre eux sur un sol en béton ensoleillé",
     "badgeDay": "Samedi",
-    "badgeNumber": "17",
+    "badgeNumber": "24",
     "badgeMonth": "octobre",
     "captionLabel": "Depuis l’atelier",
     "caption": "Tirages Fuerte Piba et assiette peinte à la main."
