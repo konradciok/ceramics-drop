@@ -5,8 +5,14 @@ import { completePaidOrder } from '@/server/complete-paid-order';
 // --- Stripe: constructEventAsync (all paths) + refunds.create (under-fulfillment) ---
 const constructEventAsync = vi.fn();
 const refundsCreate = vi.fn(async () => ({}));
+// paymentIntents.retrieve: other-app labelling of dispute / refund.failed alerts.
+const paymentIntentsRetrieve = vi.fn(async (): Promise<{ metadata: Record<string, string> }> => ({ metadata: {} }));
 vi.mock('@/lib/stripe', () => ({
-  getStripe: () => ({ webhooks: { constructEventAsync }, refunds: { create: refundsCreate } }),
+  getStripe: () => ({
+    webhooks: { constructEventAsync },
+    refunds: { create: refundsCreate },
+    paymentIntents: { retrieve: paymentIntentsRetrieve },
+  }),
 }));
 
 // --- Cloudflare env: mutable per-test so specific describe blocks can opt into
@@ -1119,12 +1125,35 @@ describe('webhook charge.dispute.created alert (L-6)', () => {
     expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledTimes(1);
     expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith({
       orderId: 'o1',
+      otherApp: null,
       disputeId: 'dp_1',
       amount: 13900,
       currency: 'pln',
       reason: 'fraudulent',
       evidenceDueBy: 1767139200,
     });
+  });
+
+  it("still alerts for another app's payment (workshops) on the shared account, labelled with its booking", async () => {
+    paymentIntentsRetrieve.mockResolvedValueOnce({ metadata: { app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' } });
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(disputeCreatedRequest());
+
+    expect(res.status).toBe(200);
+    expect(paymentIntentsRetrieve).toHaveBeenCalledWith('pi_1');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_dispute_created', expect.objectContaining({
+      extra: expect.objectContaining({ order_id: null, app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' }),
+    }));
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: null,
+      otherApp: { app: 'workshops', ref: 'ACW-AAAA-BBBB' },
+    }));
   });
 
   it('a failed alert send throws (5xx) so Stripe retries the delivery — a dispute alert must not be droppable', async () => {
