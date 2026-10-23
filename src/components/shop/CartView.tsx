@@ -36,7 +36,13 @@ import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
-import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import {
+  PRINT_COUNTRIES,
+  printShippingOf,
+  DEFAULT_INTERNATIONAL_SHIPPING,
+  type PrintCountry,
+  type InternationalShippingRates,
+} from '@/lib/print-shipping';
 import {
   attemptIdentityKey,
   cartSummaryAmounts,
@@ -146,11 +152,21 @@ export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
   printPricing,
+  internationalShippingRates = DEFAULT_INTERNATIONAL_SHIPPING,
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
   /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
   printPricing: PrintPricingConfig;
+  /**
+   * The SAME published international shipping table checkout charges from
+   * (src/lib/shipping-rates/get.ts's getShippingRatesForDisplay, resolved by
+   * the server page — client islands cannot reach the DB). Defaults to the
+   * code constants only for callers that don't pass it (e.g. tests), never
+   * during a real page render — the koszyk page always supplies this so the
+   * cart never shows a price the CMS has since changed away from.
+   */
+  internationalShippingRates?: InternationalShippingRates;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
@@ -334,9 +350,12 @@ export function CartView({
   const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
-  // ceramic carts keep the InPost price list.
+  // ceramic carts keep the InPost price list. `internationalShippingRates`
+  // is the same published table checkout resolves via
+  // getShippingRatesForCheckout, so what's shown here always matches what
+  // the buyer is charged.
   const shipCost = hasPrints
-    ? printShippingOf(country, hasFramed, printCurrency, printPricing)
+    ? printShippingOf(country, hasFramed, printCurrency, printPricing, internationalShippingRates)
     : shippingOf(ship);
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
