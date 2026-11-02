@@ -7,6 +7,7 @@ import { collectionSchema } from '@/lib/seo/structured-data';
 import { alternatesFor } from '@/lib/seo/urls';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
 import { getProductNotes } from '@/lib/cms/messages';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { CATEGORIES } from '@/lib/products';
 import { assertCategoryPublic } from '@/lib/category-guard';
 import type { Locale } from '@/i18n/routing';
@@ -37,11 +38,12 @@ export default async function Page({ params }: Props) {
   const { locale, slug } = await params;
   if (!(slug in CATEGORIES)) notFound();
   setRequestLocale(locale);
-  const [t, soldIds, showroomIds, notes] = await Promise.all([
+  const [t, soldIds, showroomIds, notes, shipping] = await Promise.all([
     getTranslations({ locale }),
     getSoldIds().catch(() => [] as string[]),
     getShowroomIds().catch(() => [] as string[]),
     getProductNotes(slug, locale as Locale).catch(() => ({}) as Record<string, string>),
+    getShippingRatesForDisplay(),
   ]);
   const schema = await collectionSchema({
     slug: slug as CategorySlug,
@@ -51,6 +53,7 @@ export default async function Page({ params }: Props) {
     soldIds,
     showroomIds,
     notes,
+    shipping,
   });
   return (
     <main>

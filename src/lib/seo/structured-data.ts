@@ -5,14 +5,15 @@ import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
-import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
+import { PRICE_EUR } from '@/lib/pricing';
+import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
 import { EU_PRINT_COUNTRIES, SHIPPING_COUNTRY } from '@/lib/feed';
-import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import { printShippingOf, type InternationalShippingRates, type PrintCountry } from '@/lib/print-shipping';
 import { RETURNS_POLICY } from '@/lib/returns-policy';
 import type { Currency } from '@/lib/currency';
 
@@ -36,12 +37,14 @@ function resolveDescription(override: string | undefined, rawNotes: unknown, not
 /**
  * Ceramics ship on the two InPost rates already advertised in feed.ts —
  * mirror them here (and reuse its `SHIPPING_COUNTRY`) so the Merchant feed
- * and this on-page `Offer.shippingDetails` never disagree. Handling/transit
+ * and this on-page `Offer.shippingDetails` never disagree. `domestic` is the
+ * CMS-published InPost table checkout charges from (never the code constants).
+ * Handling/transit
  * time is the owner-confirmed term (docs/copy-source-of-truth.md §13, shipping.s2P):
  * orders are fulfilled within 2 business days, delivery within 5 business days.
  */
-function shippingDetailsFor(locale: Locale) {
-  const rates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
+function shippingDetailsFor(locale: Locale, domestic: ShippingRatesBundle['domestic']) {
+  const rates = locale === 'pl' ? domestic.pln : domestic.eur;
   const currency = locale === 'pl' ? 'PLN' : 'EUR';
   const addressCountry = SHIPPING_COUNTRY[locale];
   const deliveryTime = {
@@ -96,23 +99,25 @@ function printMarketCountries(currency: 'pln' | 'eur' | 'gbp'): readonly PrintCo
  * rate for both the loose and framed variant (see print-shipping.ts). `rates`
  * is the admin-set FX config, threaded through so shipping converts at the
  * same rate the item price uses (see fromPriceOf/priceOfVariant call sites)
- * instead of print-shipping.ts's hardcoded fallback constants.
+ * instead of print-shipping.ts's hardcoded fallback constants. `table` is the
+ * CMS-published international table checkout charges from.
  */
 function printShippingDetailsFor(
   countries: readonly PrintCountry[],
   currency: 'pln' | 'eur' | 'gbp',
   priceCurrency: 'PLN' | 'EUR' | 'GBP',
   rates: PrintPricingConfig,
+  table: InternationalShippingRates,
 ) {
   return countries.flatMap((country) => [
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates, table), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates, table), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
   ]);
@@ -198,6 +203,8 @@ type CollectionArgs = {
   showroomIds?: readonly string[];
   /** CMS-resolved per-product notes (id → text) from `getProductNotes(slug, locale)`. */
   notes?: Record<string, string>;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
@@ -206,7 +213,7 @@ type CollectionArgs = {
  * Pieces are one-of-a-kind, so the price is the shared family price and
  * availability degrades to `SoldOut` once a piece sells.
  */
-export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], showroomIds = [], notes }: CollectionArgs): Promise<Graph> {
+export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], showroomIds = [], notes, shipping }: CollectionArgs): Promise<Graph> {
   const category = getCategory(slug);
   const products = await getProductsByCategory(slug);
   const sold = new Set(soldIds);
@@ -247,7 +254,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
               availability: availabilityFor(p.sold || sold.has(p.id), p.onlineAvailable === true && !showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
-              shippingDetails: shippingDetailsFor(locale),
+              shippingDetails: shippingDetailsFor(locale, shipping.domestic),
               hasMerchantReturnPolicy: merchantReturnPolicy(locale),
             },
           },
@@ -268,6 +275,8 @@ type PrintCollectionArgs = {
   pricing: PrintPricingConfig;
   /** CMS-resolved collection definitions (id → collection membership) — loaded once by the page. */
   definitions?: PrintCollectionDefinition[];
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
@@ -276,7 +285,7 @@ type PrintCollectionArgs = {
  * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
  * print is configurable, not a single SKU.
  */
-export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions }: PrintCollectionArgs): Promise<Graph> {
+export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions, shipping }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
@@ -298,7 +307,7 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, d
         '@type': 'ItemList',
         name: categoryName,
         numberOfItems: designs.length,
-        itemListElement: printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }),
+        itemListElement: printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions, shipping }),
       },
     ],
   };
@@ -313,10 +322,11 @@ type PrintListItemsArgs = {
   rawNotes?: unknown;
   pricing: PrintPricingConfig;
   definitions?: PrintCollectionDefinition[];
+  shipping: ShippingRatesBundle;
 };
 
 /** `ItemList` entries (Product + AggregateOffer per design) shared by the prints hub and collection pages. */
-function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }: PrintListItemsArgs) {
+function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions, shipping }: PrintListItemsArgs) {
   const { currency, priceCurrency } = printCurrencyFor(locale);
   const countries = printMarketCountries(currency);
   return designs.map((d, i) => {
@@ -339,7 +349,7 @@ function printListItems({ designs, locale, singular, categoryName, notes, rawNot
           offerCount: prices.length,
           availability: 'https://schema.org/InStock' as const,
           url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
-          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing, shipping.international),
           hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
@@ -354,6 +364,7 @@ type PrintCollectionPageSchemaArgs = {
   notes?: Record<string, string>;
   pricing: PrintPricingConfig;
   definitions?: PrintCollectionDefinition[];
+  shipping: ShippingRatesBundle;
   slug: string;
   name: string;
   description?: string;
@@ -361,11 +372,11 @@ type PrintCollectionPageSchemaArgs = {
 };
 
 /** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Collections › Collection) + `ItemList`. No ratings. */
-export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
+export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, shipping, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
   const categoryName = t('nav.fineArtPrints');
   const pageUrl = absoluteUrl(locale, `/kolekcje/${slug}`);
   const items = printListItems({
-    designs, locale, singular: t('product.print'), categoryName, notes, rawNotes: tRaw?.('notes.fine-art-prints'), pricing, definitions,
+    designs, locale, singular: t('product.print'), categoryName, notes, rawNotes: tRaw?.('notes.fine-art-prints'), pricing, definitions, shipping,
   });
   return {
     '@context': 'https://schema.org',
@@ -448,13 +459,15 @@ type PrintProductArgs = {
   /** CMS-resolved collection definitions (id → collection membership) — loaded once by the PDP. */
   definitions?: PrintCollectionDefinition[];
   displayCurrency?: Currency;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency }: PrintProductArgs): Graph {
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency, shipping }: PrintProductArgs): Graph {
   const { currency, priceCurrency } = printCurrencyFor(locale, displayCurrency);
   const countries = printMarketCountries(currency);
   const categoryName = t('nav.fineArtPrints');
@@ -504,7 +517,7 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
           url: offerUrl,
-          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing, shipping.international),
           hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
@@ -518,13 +531,15 @@ type ProductArgs = {
   t: (key: string) => string;
   tRaw: (key: string) => unknown;
   description?: string;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
  * `@graph` for an individual product page: a `BreadcrumbList` (Home → category → product)
  * plus a `Product` node with images, description, and PLN offer.
  */
-export function productSchema({ product, locale, t, tRaw, description: descriptionOverride }: ProductArgs): Graph {
+export function productSchema({ product, locale, t, tRaw, description: descriptionOverride, shipping }: ProductArgs): Graph {
   const category = getCategory(product.category);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
@@ -563,7 +578,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           // Showroom pieces are not purchasable — never advertise them InStock.
           availability: availabilityFor(product.sold, product.onlineAvailable === true && !product.showroom),
           url: productUrl,
-          shippingDetails: shippingDetailsFor(locale),
+          shippingDetails: shippingDetailsFor(locale, shipping.domestic),
           hasMerchantReturnPolicy: merchantReturnPolicy(locale),
         },
       },

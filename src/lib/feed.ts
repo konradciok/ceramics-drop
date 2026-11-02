@@ -25,6 +25,7 @@ import { loadPrintCollectionDefinitions } from './print-collections';
 import { fromPriceOf } from './print-pricing';
 import { getPrintPricingConfig } from './print-pricing-config/get';
 import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from './print-shipping';
+import { getShippingRatesForDisplay } from './shipping-rates/get';
 import { absoluteUrl } from './seo/urls';
 import { SITE_URL, SITE_NAME, PRODUCT_BRAND_NAME } from './site';
 import type { CategorySlug } from './types';
@@ -175,12 +176,13 @@ async function buildItems(locale: FeedLocale, market: Pick<GoogleFeedMarket, 'cu
   const msg = LOCALE_MESSAGES[locale];
   const { currency: chargeable, currencyCode: cur, countries } = market;
   const singular = (msg.product as Record<string, string>).print ?? 'Print';
-  // Three independent catalogue reads — under CATALOG_SOURCE=db each is a real
+  // Independent catalogue reads — under CATALOG_SOURCE=db each is a real
   // Supabase round trip, so issue them together rather than in sequence.
-  const [designs, pricing, definitions] = await Promise.all([
+  const [designs, pricing, definitions, shippingRates] = await Promise.all([
     getPrintDesigns(), // published only, CATALOG_SOURCE-aware
     getPrintPricingConfig(), // global price list, CATALOG_SOURCE-aware
     loadPrintCollectionDefinitions(),
+    getShippingRatesForDisplay(), // the CMS-published table checkout charges from
   ]);
 
   return designs.map((design) => {
@@ -200,12 +202,13 @@ async function buildItems(locale: FeedLocale, market: Pick<GoogleFeedMarket, 'cu
     const price = fromPriceOf(design, chargeable, pricing);
     // Loose (unframed) rate pairs with the unframed "from" price above. Pass
     // `pricing` through so shipping converts at the same admin-set FX rate
-    // the item price above uses, instead of print-shipping.ts's hardcoded
-    // fallback constants.
+    // the item price above uses, and the published international table so the
+    // advertised rate is the one checkout charges (a feed/landing-page
+    // shipping mismatch is a Merchant Center policy issue).
     const shipping = countries.map((country) => ({
       country,
       service: 'Prodigi',
-      price: `${printShippingOf(country, false, chargeable, pricing)}.00 ${cur}`,
+      price: `${printShippingOf(country, false, chargeable, pricing, shippingRates.international)}.00 ${cur}`,
     }));
 
     return {

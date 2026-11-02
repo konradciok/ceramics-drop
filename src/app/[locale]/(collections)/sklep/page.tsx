@@ -15,6 +15,7 @@ import { alternatesFor } from '@/lib/seo/urls';
 import { getProductNotes } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage, withRegistryMockups } from '@/lib/print-mockups';
 import { groupPrintDesigns, loadPrintCollectionDefinitions, UNASSIGNED_COLLECTION } from '@/lib/print-collections';
@@ -90,13 +91,14 @@ export async function generateMetadata(
 export default async function Page({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, notes, pricing, definitions, designs, pdpContent] = await Promise.all([
+  const [t, notes, pricing, definitions, designs, pdpContent, shipping] = await Promise.all([
     getTranslations({ locale }),
     getProductNotes(PRINTS_SLUG, locale as Locale).catch(() => ({}) as Record<string, string>),
     getPrintPricingConfig(),
     loadPrintCollectionDefinitions(),
     getPrintDesigns(),
     getPrintPdpContent(locale as Locale),
+    getShippingRatesForDisplay(),
   ]);
 
   // Group once: drives collection labels, filter options and both rank orders.
@@ -138,7 +140,7 @@ export default async function Page({ params, searchParams }: Props) {
   const collectionOptions: ShopCollectionOption[] = named.map((g) => ({ slug: g.slug, name: g.name!, count: g.designs.length }));
   const initialView = parseShopView((await searchParams) ?? {}, collectionOptions.map((c) => c.slug));
 
-  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing, definitions });
+  const schema = await printCollectionSchema({ locale: locale as Locale, t, tRaw: (key) => t.raw(key), notes, pricing, definitions, shipping });
 
   // Editorial bands, server-rendered (copy stays in the message files) and
   // dropped into the grid by the island while no filter is active.
