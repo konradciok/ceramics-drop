@@ -11,29 +11,43 @@ test.describe('@ci analytics dataLayer contract', () => {
   });
 
   test('cart funnel emits the expected event sequence', async ({ page }) => {
-    await resetCart(page);
-    // view_item_list fires on /sklep render (PrintCollectionAnalytics);
-    // add_to_cart on the configurator's print-add click.
-    await page.goto('/sklep');
-    await page.goto('/fine-art-prints/fap005');
-    await page.getByTestId('opt-size-50x70').click();
-    await page.getByTestId('print-add').click();
-    await goToCart(page); // view_cart fires on cart render
-    await expect(page.locator(sel.cartLine).first()).toBeVisible();
-
     // Read the app-event mirror (acc_analytics_debug — pushDataLayer writes it on
     // debug hosts incl. localhost, per analytics.ts) rather than raw dataLayer: it
     // holds ONLY app events, so the sequence and per-event counts are deterministic
     // (dataLayer also carries gtm.js/gtm.load/consent noise).
-    const events = await page.evaluate(() => {
-      const raw = sessionStorage.getItem('acc_analytics_debug');
-      const buf = raw ? (JSON.parse(raw) as Array<{ event?: string }>) : [];
-      return buf.map((e) => e.event ?? '').filter(Boolean);
-    });
+    const events = () =>
+      page.evaluate(() => {
+        const raw = sessionStorage.getItem('acc_analytics_debug');
+        const buf = raw ? (JSON.parse(raw) as Array<{ event?: string }>) : [];
+        return buf.map((e) => e.event ?? '').filter(Boolean);
+      });
+
+    await resetCart(page);
+    // Each funnel event fires client-side after hydration (mount effects / click
+    // handlers), so wait for it before navigating on. Without this, a cold first
+    // request (the first test of a CI run) could unload /sklep before
+    // PrintCollectionAnalytics' effect ran, dropping view_item_list.
+    await page.goto('/sklep');
+    await expect.poll(events, { message: 'view_item_list on /sklep' }).toContain('view_item_list');
+    await page.goto('/fine-art-prints/fap005');
+    // view_item (PrintViewAnalytics) proves the PDP hydrated, so the option and
+    // print-add clicks below can't land on inert server-rendered buttons.
+    await expect.poll(events, { message: 'view_item on the print PDP' }).toContain('view_item');
+    await page.getByTestId('opt-size-50x70').click();
+    await page.getByTestId('print-add').click();
+    await expect.poll(events, { message: 'add_to_cart on print-add' }).toContain('add_to_cart');
+    await goToCart(page);
+    await expect(page.locator(sel.cartLine).first()).toBeVisible();
+    // view_cart fires from CartView's effect after the lines render.
+    await expect.poll(events, { message: 'view_cart on /koszyk' }).toContain('view_cart');
+
     // Funnel must fire IN ORDER and exactly once each: /sklep → view_item_list,
-    // print-add click → add_to_cart, /koszyk → view_cart. A duplicate or a
-    // missing event makes this filtered slice differ from the exact sequence → fail.
-    const funnel = events.filter((e) => ['view_item_list', 'add_to_cart', 'view_cart'].includes(e));
+    // print-add click → add_to_cart, /koszyk → view_cart. The polls above only
+    // establish presence; a duplicate or a missing event makes this filtered
+    // slice differ from the exact sequence → fail.
+    const funnel = (await events()).filter((e) =>
+      ['view_item_list', 'add_to_cart', 'view_cart'].includes(e),
+    );
     expect(funnel).toEqual(['view_item_list', 'add_to_cart', 'view_cart']);
   });
 

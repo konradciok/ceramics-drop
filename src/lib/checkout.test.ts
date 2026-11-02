@@ -117,7 +117,7 @@ describe('validateCart', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
-    expect(result.items[0].unit_price).toBe(36500); // (215 base + 150 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
+    expect(result.items[0].unit_price).toBe(67000); // (335 base + 335 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
     expect(result.items[0].variant).toMatchObject({
       assetId: MOCK_ASSET.assetId,
       assetKey: MOCK_ASSET.r2Key,

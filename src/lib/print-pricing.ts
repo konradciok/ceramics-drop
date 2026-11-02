@@ -23,13 +23,19 @@ export interface PrintPricingConfig {
 /**
  * Code fallback + migration seed twin. Used when CATALOG_SOURCE=code
  * (local/tests) and when the DB read fails; keep in lockstep with the seed
- * row in supabase/migrations/20260807120000_print_pricing_config.sql and
- * with any permanent price change made in /admin/pricing.
+ * row (20260807120000_print_pricing_config.sql — migration-lockstep.test.ts
+ * parses it) and with any permanent price change made in /admin/pricing.
+ *
+ * Canonical customer prices (owner, 2026-11-02), no mount — EUR / PLN / GBP:
+ *   30×40   42 / 180 / 36   framed  91 / 390 /  78
+ *   50×70   79 / 335 / 68   framed 158 / 670 / 136
+ *   70×100 119 / 505 / 102  framed 218 / 925 / 187
+ * Pinned in print-pricing.test.ts ("canonical price table").
  */
 export const DEFAULT_PRINT_PRICING: PrintPricingConfig = {
-  baseEur: { '30x40': 25, '50x70': 50, '70x100': 75 },
-  frameEur: { '30x40': 35, '50x70': 35, '70x100': 35 },
-  mountEur: { '30x40': 25, '50x70': 25, '70x100': 25 },
+  baseEur: { '30x40': 42, '50x70': 79, '70x100': 119 },
+  frameEur: { '30x40': 49, '50x70': 79, '70x100': 99 },
+  mountEur: { '30x40': 40, '50x70': 40, '70x100': 40 },
   eurToPln: 4.25,
   eurToGbp: 0.86,
 };

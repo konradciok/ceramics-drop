@@ -29,7 +29,7 @@ type ReturnPolicy = {
   returnPolicyCategory: string;
   merchantReturnDays?: number;
   returnFees?: string;
-  applicableCountry?: string;
+  applicableCountry?: string | string[];
   returnPolicyCountry?: string;
 };
 type Offer = {
@@ -359,6 +359,16 @@ describe('printCollectionSchema', () => {
     });
   });
 
+  it('keeps the EUR collection return-policy countries aligned with its shipping destinations', async () => {
+    const graph = await printCollectionSchema({ locale: 'de', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
+    const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
+    items.forEach(({ item }) => {
+      const countries = [...new Set((item.offers.shippingDetails ?? []).map((detail) => detail.shippingDestination.addressCountry))];
+      expect(item.offers.priceCurrency).toBe('EUR');
+      expect(item.offers.hasMerchantReturnPolicy?.applicableCountry).toEqual(countries);
+    });
+  });
+
   it('uses the passed-in definitions to name products, not the static curation map', async () => {
     // fap001 is "Ostrea 01" under the static map (see print-curation.test.ts's
     // equivalent case) — proves this call site forwards `definitions` through
@@ -421,6 +431,18 @@ describe('printProductSchema', () => {
       expect(rate.shippingDestination.addressCountry).toBe('GB');
     });
     expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe('GB');
+  });
+
+  it('keeps the EUR PDP return-policy countries aligned with its shipping destinations', () => {
+    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, displayCurrency: 'eur' });
+    const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
+      priceCurrency: string;
+      shippingDetails: ShippingDetail[];
+      hasMerchantReturnPolicy: ReturnPolicy;
+    };
+    const countries = [...new Set(offer.shippingDetails.map((detail) => detail.shippingDestination.addressCountry))];
+    expect(offer.priceCurrency).toBe('EUR');
+    expect(offer.hasMerchantReturnPolicy.applicableCountry).toEqual(countries);
   });
 });
 

@@ -39,11 +39,11 @@ test.describe('fine-art print configurator @ci', () => {
     await expect(page.getByTestId('opt-mount-false')).not.toBeVisible();
     await expect(page.getByTestId('opt-mount-true')).not.toBeVisible();
 
-    // 470 zł = 70x100 base 320 + frame 150 (no mount surcharge), derived from
-    // DEFAULT_PRINT_PRICING (75/35 EUR × 4.25, rounded to 5 zł per component).
+    // 925 zł = 70x100 base 505 + frame 420 (no mount surcharge), derived from
+    // DEFAULT_PRINT_PRICING (119/99 EUR × 4.25, rounded to 5 zł per component).
     // Pinned literal: update here when the pricing seed/defaults change — the
     // hermetic E2E runs in CATALOG_SOURCE=code, so defaults are what renders.
-    await expect(page.getByTestId('print-price')).toHaveText('470 zł');
+    await expect(page.getByTestId('print-price')).toHaveText('925 zł');
   });
 
   test('hero mockup follows configurator selection', async ({ page }) => {

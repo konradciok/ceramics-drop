@@ -86,11 +86,11 @@ describe('buildPricingFields', () => {
 
   it('serialises the 9 EUR integers and the 2 rates as plain decimal strings', () => {
     const byKey = Object.fromEntries(buildPricingFields(DEFAULT_PRINT_PRICING).map((f) => [f.key, f.value]));
-    expect(byKey.base_30x40_eur).toBe('25');
-    expect(byKey.base_50x70_eur).toBe('50');
-    expect(byKey.base_70x100_eur).toBe('75');
-    expect(byKey.frame_30x40_eur).toBe('35');
-    expect(byKey.mount_70x100_eur).toBe('25');
+    expect(byKey.base_30x40_eur).toBe('42');
+    expect(byKey.base_50x70_eur).toBe('79');
+    expect(byKey.base_70x100_eur).toBe('119');
+    expect(byKey.frame_30x40_eur).toBe('49');
+    expect(byKey.mount_70x100_eur).toBe('40');
     expect(byKey.eur_to_pln).toBe('4.25');
     expect(byKey.eur_to_gbp).toBe('0.86');
   });

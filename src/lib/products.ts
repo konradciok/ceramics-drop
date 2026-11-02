@@ -21,6 +21,7 @@ import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
 import { recordCeramicCatalogSuccess, resolveCeramicCatalogFallback } from './catalog/last-known-good';
+import { markCeramicCatalogColdFailClosed } from './request-degradation';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -381,6 +382,9 @@ const loadCeramicCatalog = cache(async (): Promise<CeramicCatalog> => {
     // fallbackTier as a tag (not `extra`) so the two tiers are filterable in
     // Sentry, distinct from a generic Supabase hiccup.
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
+    // Lets worker.ts answer 503 instead of a fail-closed 404 / ceramic-less
+    // sitemap — see request-degradation.ts.
+    if (tier === 'cold-fail-closed') markCeramicCatalogColdFailClosed();
     return catalog;
   }
 });

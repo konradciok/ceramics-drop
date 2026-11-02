@@ -5,6 +5,7 @@ import {
   CURRENCY_COOKIE,
   CURRENCY_COOKIE_MAX_AGE,
   currencyForCountry,
+  parseCurrency,
 } from './lib/currency';
 import { LEGACY_REDIRECTS } from './lib/legacy-redirects';
 
@@ -122,6 +123,7 @@ function setCurrencyCookie(response: ReturnType<typeof handleI18n>, currency: st
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const forcedCurrency = parseCurrency(request.nextUrl.searchParams.get('currency'));
   const hasCurrencyCookie = request.cookies.has(CURRENCY_COOKIE);
 
   // The `gb` locale was collapsed into `en` (currency is now a cookie, see
@@ -160,14 +162,14 @@ export default function middleware(request: NextRequest) {
   // Cloudflare's edge geolocation (GB → GBP, everyone else → EUR). Setting it on
   // the *request* too makes the current render's `getCurrency()` see it (correct
   // first paint), and on the *response* persists it for subsequent navigations.
-  const currency = currencyForCountry(request.headers.get('CF-IPCountry'));
-  if (!hasCurrencyCookie) {
+  const currency = forcedCurrency ?? currencyForCountry(request.headers.get('CF-IPCountry'));
+  if (forcedCurrency || !hasCurrencyCookie) {
     request.cookies.set(CURRENCY_COOKIE, currency);
   }
 
   const response = handleI18n(request);
 
-  if (!hasCurrencyCookie) {
+  if (forcedCurrency || !hasCurrencyCookie) {
     setCurrencyCookie(response, currency);
   }
 
