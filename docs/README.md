@@ -34,6 +34,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`print-asset-runbook.md`](print-asset-runbook.md) | runbook | Print-asset pipeline operator procedures |
 | [`analytics-stack.md`](analytics-stack.md) | active | GA4 + Meta via GTM: event contract, consent, server conversions |
 | [`e2e-playwright-purchase-flow.md`](e2e-playwright-purchase-flow.md) | active | E2E design: tags, hermetic mode, destructive opt-in |
+| [`shipping-rates-runbook.md`](shipping-rates-runbook.md) | runbook | Publishing shipping rates: what reads them, parity check, `npm run gmc:fetch` to refresh Merchant Center |
 | [`stripe-operations.md`](stripe-operations.md) | runbook | Stripe operational procedures |
 | [`promo-codes.md`](promo-codes.md) | active | Promo codes: operator runbook (`/admin/promotions`) + technical reference (discount math, redemption lifecycle, analytics contract) |
 | [`gift-cards.md`](gift-cards.md) | active | Gift cards: backend contract (`src/lib/gift-cards.ts`), Option A promo_codes mint/revoke design, checkout/webhook wiring, and the `/karta-podarunkowa` PDP + dedicated checkout |

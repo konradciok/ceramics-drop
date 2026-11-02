@@ -22,6 +22,7 @@
     "gtm:setup": "node scripts/gtm-api.mjs setup",
     "ga4:report": "node scripts/ga4-data.mjs",
     "bq:query": "node scripts/bq-query.mjs",
+    "gmc:fetch": "node scripts/gmc-fetch.mjs",
     "optimize-images": "node scripts/optimize-images.mjs",
     "notes:generate": "node scripts/generate-product-notes.mjs",
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
