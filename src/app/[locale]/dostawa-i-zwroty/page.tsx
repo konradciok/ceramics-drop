@@ -11,6 +11,12 @@ import { shippingCopyValues } from '@/lib/shipping-copy';
 
 type Props = { params: Promise<{ locale: string }> };
 
+// The quoted InPost prices come from the CMS-published shipping table at
+// REQUEST time. Without this the route is prerendered at build (where
+// CATALOG_SOURCE is unset, so the code constants win) and a published rate
+// would never reach the page. Guarded by scripts/lib/catalog-runtime-artifact.ts.
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale });

@@ -139,3 +139,26 @@ describe('display surfaces never read the shipping constants', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/* A page that reads the published table must render at request time: a
+   prerendered route would bake in the build-time code constants (CATALOG_SOURCE
+   is unset at build) and a published rate would never show up. */
+describe('pages that read the published shipping table are request-time rendered', () => {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) return walk(p);
+      return /^page\.tsx$/.test(name) ? [p] : [];
+    });
+
+  it("each src/app page importing getShippingRatesForDisplay is force-dynamic or uses headers()", () => {
+    const root = join(__dirname, '../../..');
+    const pages = walk(join(root, 'src/app')).filter((file) => readFileSync(file, 'utf8').includes('getShippingRatesForDisplay'));
+    expect(pages.length).toBeGreaterThan(0);
+    const static_ = pages.filter((file) => {
+      const src = readFileSync(file, 'utf8');
+      return !/export const dynamic = 'force-dynamic'/.test(src) && !/\bheaders\(\)/.test(src);
+    });
+    expect(static_.map((f) => relative(root, f))).toEqual([]);
+  });
+});

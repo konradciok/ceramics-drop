@@ -20,6 +20,7 @@ const catalogAppEntries = [
   '/[locale]/(collections)/sklep/page',
   '/[locale]/(pdp)/[slug]/[id]/page',
   '/[locale]/koszyk/page',
+  '/[locale]/dostawa-i-zwroty/page',
   '/api/feed/google/route',
   '/api/feed/meta/route',
   '/sitemap.xml/route',
@@ -36,12 +37,14 @@ const catalogPrerenderTemplates = new Set([
   '/[locale]/sklep',
   '/[locale]/[slug]/[id]',
   '/[locale]/koszyk',
+  '/[locale]/dostawa-i-zwroty',
 ]);
 const catalogPrerenderPatterns = [
   new RegExp(`^/(?:${localeSegment})?$`),
   new RegExp(`^/${optionalLocalePrefix}fine-art-prints$`),
   new RegExp(`^/${optionalLocalePrefix}sklep$`),
   new RegExp(`^/${optionalLocalePrefix}koszyk$`),
+  new RegExp(`^/${optionalLocalePrefix}dostawa-i-zwroty$`),
   new RegExp(`^/${optionalLocalePrefix}${ceramicSegment}$`),
   new RegExp(`^/${optionalLocalePrefix}(?:fine-art-prints|${ceramicSegment})/[^/]+$`),
   /^\/api\/feed\/(?:google|meta)$/,
