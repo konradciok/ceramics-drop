@@ -112,10 +112,10 @@ describe('buildFeedItems — fine-art prints only', () => {
   it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
     const pl = (await buildFeedItems('pl')).find((i) => i.id === 'fap005');
     const en = (await buildFeedItems('en')).find((i) => i.id === 'fap005');
-    // fap005 cheapest size (30x40) = 105 PLN / 22 GBP (print-pricing SIZE_BASE
-    // 25 EUR, derived per DEFAULT_PRINT_PRICING.eurToGbp = 0.86).
-    expect(pl?.price).toBe('105.00 PLN');
-    expect(en?.price).toBe('22.00 GBP');
+    // fap005 cheapest size (30x40) = 180 PLN / 36 GBP (canonical base 42 EUR,
+    // derived per DEFAULT_PRINT_PRICING.eurToPln = 4.25 / eurToGbp = 0.86).
+    expect(pl?.price).toBe('180.00 PLN');
+    expect(en?.price).toBe('36.00 GBP');
     expect(pl?.availability).toBe('in stock'); // print-on-demand — never sold out
     expect(pl?.shipping.length).toBeGreaterThan(0);
   });

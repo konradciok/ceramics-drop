@@ -38,10 +38,16 @@ create table print_pricing_config (
 
 alter table print_pricing_config enable row level security;
 
--- Seed: owner-approved 2026-08-07. Derived table (component-wise):
---   base 25/50/75 EUR -> 105/215/320 PLN, 22/43/65 GBP
---   frame +35 EUR     -> +150 PLN, +30 GBP   (uniform per size for now)
---   mount +25 EUR     -> +105 PLN, +22 GBP   (uniform per size for now)
+-- Seed: canonical owner price list. Originally approved 2026-08-07 as
+-- 25/50/75 EUR base, +35 frame, +25 mount; edited in /admin/pricing on
+-- 2026-08-10 and made canonical here on 2026-11-02 so a fresh database (and the
+-- revision-1 pricing draft that 20260917140000 snapshots from this row) starts
+-- from the live prices. Production had already applied this file, so editing
+-- the literal below only affects newly created databases. Derived table
+-- (component-wise):
+--   base 42/79/119 EUR -> 180/335/505 PLN, 36/68/102 GBP
+--   frame +49/+79/+99 EUR -> +210/+335/+420 PLN, +42/+68/+85 GBP
+--   mount +40 EUR (uniform) -> +170 PLN, +34 GBP
 -- Keep in lockstep with DEFAULT_PRINT_PRICING in src/lib/print-pricing.ts.
 insert into print_pricing_config (
   base_30x40_eur, base_50x70_eur, base_70x100_eur,
@@ -49,9 +55,9 @@ insert into print_pricing_config (
   mount_30x40_eur, mount_50x70_eur, mount_70x100_eur,
   eur_to_pln, eur_to_gbp
 ) values (
-  25, 50, 75,
-  35, 35, 35,
-  25, 25, 25,
+  42, 79, 119,
+  49, 79, 99,
+  40, 40, 40,
   4.25, 0.86
 );
 

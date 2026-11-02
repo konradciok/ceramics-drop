@@ -45,7 +45,7 @@ describe('pricingPreviewItems (pure)', () => {
   it('reports EUR values as the config integers in minor units', () => {
     const items = pricingPreviewItems(DEFAULT_PRINT_PRICING);
     const base3040Eur = items.find((i) => i.label === 'Baza 30 × 40 cm' && i.currency === 'EUR');
-    expect(base3040Eur?.minorUnits).toBe(2500);
+    expect(base3040Eur?.minorUnits).toBe(4200);
   });
 
   it('uses derivePrice verbatim for PLN and GBP (5 zł / 1 £ rounding included)', () => {
@@ -107,8 +107,8 @@ describe('pricingPreviewItems (pure)', () => {
   it('reflects a changed FX rate rather than the defaults', () => {
     const doubled = { ...DEFAULT_PRINT_PRICING, eurToPln: 8.5 };
     const item = pricingPreviewItems(doubled).find((i) => i.label === 'Baza 30 × 40 cm' && i.currency === 'PLN');
-    // 25 EUR x 8.5 = 212.5 -> nearest 5 zł = 215
-    expect(item?.minorUnits).toBe(21500);
+    // 42 EUR x 8.5 = 357 -> nearest 5 zł = 355
+    expect(item?.minorUnits).toBe(35500);
   });
 });
 
