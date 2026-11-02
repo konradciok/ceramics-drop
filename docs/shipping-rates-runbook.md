@@ -68,5 +68,11 @@ to the constants. No copy in `messages/*.json` needs editing when rates change.
   service (`dostawa_flat`, 8 € to 21 countries). Item-level shipping from the feed
   takes precedence, but it should be removed once every product is confirmed to
   carry its own shipping (decision pending, see `docs/STATUS.md`).
+- **Studio pickup (`odbior`)** is editable in the `domestic` resource. The cart and
+  the ceramic PDP delivery block show the published price (free when 0), but the
+  prose on `/dostawa-i-zwroty` and the contact page says pickup is free
+  (`shipping.s1Li2`, `shipping.s4P`, `contact.*` in `messages/*.json`). Free pickup is
+  the studio's stated policy; if you ever publish a non-zero `odbior`, update that
+  copy in all four locales in the same change.
 - A publish only changes `shipping_rates`; it does not touch prices. For price
   changes the same `gmc:fetch` step applies (`docs/STATUS.md` → Print pricing).
