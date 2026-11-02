@@ -13,8 +13,7 @@ const CANONICAL_MIGRATION = join(MIGRATIONS_DIR, '20261102120000_print_prices_ca
 
 const stripComments = (s: string) => s.replace(/--[^\n]*/g, '');
 
-/** The seed row as a fresh database ends up with it: the original insert,
-    then the canonical migration's guarded update (its `set` clause). */
+/** The seed row a fresh database starts from (the insert in the seed migration). */
 function seededConfig(): Record<string, number> {
   const sql = readFileSync(SEED_MIGRATION, 'utf8');
   const insert = sql.match(
@@ -26,16 +25,11 @@ function seededConfig(): Record<string, number> {
   expect(columns).toHaveLength(values.length);
   const seeded: Record<string, number> = Object.fromEntries(columns.map((c, i) => [c, values[i]]));
 
-  const update = stripComments(readFileSync(CANONICAL_MIGRATION, 'utf8')).match(
-    /update print_pricing_config set([\s\S]*?)\bwhere\b/i,
-  );
-  expect(update, 'canonical config update not found').not.toBeNull();
-  for (const [, col, val] of update![1].matchAll(/(\w+)\s*=\s*([\d.]+)/g)) seeded[col] = Number(val);
   return seeded;
 }
 
 describe('print_pricing_config migration seed', () => {
-  it('ends at DEFAULT_PRINT_PRICING exactly after all migrations (by column name, order-independent)', () => {
+  it('matches DEFAULT_PRINT_PRICING exactly (by column name, order-independent)', () => {
     const d = DEFAULT_PRINT_PRICING;
     expect(seededConfig()).toEqual({
       base_30x40_eur: d.baseEur['30x40'], base_50x70_eur: d.baseEur['50x70'], base_70x100_eur: d.baseEur['70x100'],

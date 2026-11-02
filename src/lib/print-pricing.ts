@@ -23,9 +23,8 @@ export interface PrintPricingConfig {
 /**
  * Code fallback + migration seed twin. Used when CATALOG_SOURCE=code
  * (local/tests) and when the DB read fails; keep in lockstep with the seed
- * row (20260807120000_print_pricing_config.sql, brought to these values by
- * 20261102120000_print_prices_canonical.sql — the lockstep test reads both)
- * and with any permanent price change made in /admin/pricing.
+ * row (20260807120000_print_pricing_config.sql — migration-lockstep.test.ts
+ * parses it) and with any permanent price change made in /admin/pricing.
  *
  * Canonical customer prices (owner, 2026-11-02), no mount — EUR / PLN / GBP:
  *   30×40   42 / 180 / 36   framed  91 / 390 /  78
