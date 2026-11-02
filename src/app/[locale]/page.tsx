@@ -16,7 +16,7 @@ import { toChargeableCurrency } from '@/lib/currency';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { groupPrintDesigns, loadPrintCollectionDefinitions } from '@/lib/print-collections';
+import { groupPrintDesigns, loadPrintCollectionDefinitions, UNASSIGNED_COLLECTION } from '@/lib/print-collections';
 import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } from '@/lib/print-mockups';
 import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
@@ -76,7 +76,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 /**
  * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
  * messages fallback), print-first narrative below it: a fact marquee, the
- * artist's painting practice, the nine named print collections, a
+ * artist's painting practice, the named print collections, a
  * daily-rotated print rail, a 3-step ordering guide, editorial imagery, a
  * print-only logistics band, and contact. Ceramics keep their own routes
  * (/sklep, category pages) but are not promoted on this page.
@@ -107,7 +107,7 @@ export default async function HomePage({ params, searchParams }: Props) {
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
   const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'), definitions);
 
-  // Nine named collections (plus an "inne" fallback bucket, only if
+  // Named collections (plus an "inne" fallback bucket, only if
   // non-empty) — membership/order come from groupPrintDesigns, never
   // hardcoded here. Empty collections are already dropped upstream.
   const collectionGroups = groupPrintDesigns(printDesigns, definitions);
@@ -149,7 +149,7 @@ export default async function HomePage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── COLLECTIONS INDEX — the nine named print collections ─── */}
+      {/* ── COLLECTIONS INDEX — the named print collections ─── */}
       {collectionGroups.length > 0 && (
         <section className="section print-collections reveal">
           <div className="section-inner">
@@ -159,7 +159,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.collectionsLead')}</p>
-                  <Link className="section-link" href="/sklep">
+                  <Link className="section-link" href="/kolekcje">
                     <span>{t('home.collectionsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>
@@ -170,7 +170,7 @@ export default async function HomePage({ params, searchParams }: Props) {
                 const cover = printListingImage(g.designs[0], registryPrintById(g.designs[0].id));
                 const name = g.name ?? t('printCollections.inne');
                 return (
-                  <Link key={g.slug} className="prints-home-card" href={`/sklep#${g.slug}`}>
+                  <Link key={g.slug} className="prints-home-card" href={g.slug === UNASSIGNED_COLLECTION ? '/sklep' : `/kolekcje/${g.slug}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={cover} srcSet={srcSet(cover)} sizes="(min-width:861px) 30vw, 45vw" alt="" loading="lazy" />
                     <span className="prints-home-meta">

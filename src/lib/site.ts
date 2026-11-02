@@ -36,6 +36,7 @@ export const PRODUCT_BRAND_NAME = SITE_NAME;
 export const SITE_PATHS = [
   '/',
   '/sklep',
+  '/kolekcje',
   '/showroom',
   '/gallery',
   '/kubki',

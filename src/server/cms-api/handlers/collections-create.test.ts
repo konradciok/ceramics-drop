@@ -135,3 +135,21 @@ describe('collectionsCreateRoute', () => {
     await expect(collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc))).rejects.toBe(rpcError);
   });
 });
+
+describe('collectionsCreateRoute — post-write read-back returns null (#314)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
+    vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);
+    vi.mocked(mapping.loadCollectionResponse).mockResolvedValue(null);
+  });
+
+  it('returns 500 INTERNAL_ERROR and releases (never completes) the idempotency key', async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const res = await collectionsCreateRoute.handler(req(validBody), {} as CloudflareEnv, {}, ctxWith(rpc));
+    expect(res.status).toBe(500);
+    expect((await res.json()).code).toBe('INTERNAL_ERROR');
+    expect(idempotency.completeIdempotencyKey).not.toHaveBeenCalled();
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalledWith(expect.anything(), 'collections:create', 'key-1', 'lease-1');
+  });
+});

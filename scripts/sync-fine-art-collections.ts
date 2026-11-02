@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 /**
- * Syncs the 9 published fine-art-print collections' membership/order in
+ * Syncs the published fine-art-print collections' membership/order in
  * Supabase (`collections`/`collection_drafts`) to whatever
  * config/print-catalog-curation.json currently authors — the same
  * save_collection_draft / publish_collection_revision RPCs the CMS uses.
  *
  * Unlike scripts/backfill-fine-art-collections.ts (a one-time creation
- * script, now a no-op for these 9 names), this is an UPDATE tool: every
+ * script, now a no-op for existing names), this is an UPDATE tool: every
  * targeted collection must already exist and be published — it never
- * creates one. A collection whose desired `products` CSV already matches
+ * creates one. Collections explicitly listed in `retiredCollections` are
+ * retained for audit history but published with an empty product list, which
+ * removes them from storefront grouping and collection routes. A collection
+ * whose desired `products` CSV already matches
  * the live published payload is left untouched (no draft/publish call at
  * all), so a repeat run after a successful sync is a clean no-op.
  *
@@ -32,7 +35,7 @@ import curationSource from '../config/print-catalog-curation.json';
 import { loadLocalEnv, loadSupabaseClient } from './lib/script-env';
 
 type CurationCollection = { slug: string; name: string; prints: { productId: string }[] };
-type CurationSource = { collections: CurationCollection[] };
+type CurationSource = { collections: CurationCollection[]; retiredCollections?: Array<{ slug: string; name: string }> };
 
 type PayloadField = { key: string; label: string; type: string; value: string; locale: string; sourceLocale: string };
 type CollectionPayload = { name: string; fields: PayloadField[] };
@@ -108,26 +111,44 @@ async function latestDraftRevision(supabase: SupabaseClient, collectionId: strin
 export async function runSync(supabase: SupabaseClient, { confirm }: { confirm: boolean }): Promise<void> {
   const actorEmail = 'sync-fine-art-collections-script@ceramics-drop.internal';
   const publishedByName = await loadPublishedPrintCollectionsByName(supabase);
+  const targets = [
+    ...source.collections.map((collection) => ({
+      name: collection.name,
+      desiredIds: collection.prints.map((p) => p.productId).join(','),
+      productCount: collection.prints.length,
+      retired: false,
+    })),
+    ...(source.retiredCollections ?? []).map((collection) => ({
+      name: collection.name,
+      desiredIds: '',
+      productCount: 0,
+      retired: true,
+    })),
+  ];
 
   let changedCount = 0;
-  for (const collection of source.collections) {
-    const desiredIds = collection.prints.map((p) => p.productId).join(',');
-    const live = publishedByName.get(collection.name);
+  for (const target of targets) {
+    const { name, desiredIds, productCount, retired } = target;
+    const live = publishedByName.get(name);
     if (!live) {
+      if (retired) {
+        console.log(`no-op: retired collection "${name}" is already absent`);
+        continue;
+      }
       throw new Error(
-        `"${collection.name}" has no live published print-collection in this Supabase project — this script only ` +
+        `"${name}" has no live published print-collection in this Supabase project — this script only ` +
         'updates existing collections. Run scripts/backfill-fine-art-collections.ts first, or check the target project.',
       );
     }
 
     const liveIds = productIdsOf(live.payload);
     if (liveIds === desiredIds) {
-      console.log(`no-op: "${collection.name}" already matches (${collection.prints.length} products)`);
+      console.log(`no-op: "${name}" already matches (${productCount} products)`);
       continue;
     }
 
     changedCount += 1;
-    console.log(`\nCHANGE: "${collection.name}"`);
+    console.log(`\n${retired ? 'RETIRE' : 'CHANGE'}: "${name}"`);
     console.log(`  old: ${liveIds || '(empty)'}`);
     console.log(`  new: ${desiredIds}`);
 
@@ -144,7 +165,7 @@ export async function runSync(supabase: SupabaseClient, { confirm }: { confirm: 
         'resolve (publish or discard) that draft in the CMS before syncing this collection.',
       );
       if (confirm) {
-        throw new Error(`"${collection.name}" has a pending unpublished draft — aborting before writing it.`);
+        throw new Error(`"${name}" has a pending unpublished draft — aborting before writing it.`);
       }
       continue;
     }

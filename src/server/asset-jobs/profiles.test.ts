@@ -65,17 +65,32 @@ describe('loadActivePrintVariants', () => {
     expect(await loadActivePrintVariants(supabase, 'nope')).toEqual({ kind: 'invalid', message: expect.stringContaining('unknown product') });
   });
 
-  it('rejects a non-active product rather than staging assets for a draft', async () => {
-    const supabase = makeSupabase({ products: productsTable({ data: { status: 'draft' }, error: null }) });
-    expect(await loadActivePrintVariants(supabase, 'print-001')).toEqual({
-      kind: 'invalid',
-      message: expect.stringContaining('is not active'),
+  it('allows a draft with seeded active variants before guarded activation', async () => {
+    const table = variantsTable({
+      data: [{ variant_key: '30x40:false:false:none', print_area_width_px: 3600, print_area_height_px: 4800 }],
+      error: null,
+    });
+    const supabase = makeSupabase({
+      products: productsTable({ data: { status: 'draft' }, error: null }),
+      product_variants: table,
+    });
+    expect(await loadActivePrintVariants(supabase, 'fap042')).toEqual({
+      kind: 'ok', variants: [{ variantKey: '30x40:false:false:none', w: 3600, h: 4800 }],
+    });
+    expect(table.select().eq).toHaveBeenCalledWith('active', true);
+    expect(table.select().eq).toHaveBeenCalledWith('product_id', 'fap042');
+  });
+
+  it.each(['hidden', 'archived', 'unexpected'])('rejects a %s product', async (status) => {
+    const supabase = makeSupabase({ products: productsTable({ data: { status }, error: null }) });
+    expect(await loadActivePrintVariants(supabase, 'fap042')).toEqual({
+      kind: 'invalid', message: expect.stringContaining('is not active or draft'),
     });
   });
 
-  it('rejects a product with no active print variants', async () => {
+  it.each(['active', 'draft'])('rejects a %s product with no active print variants', async (status) => {
     const supabase = makeSupabase({
-      products: productsTable({ data: { status: 'active' }, error: null }),
+      products: productsTable({ data: { status }, error: null }),
       product_variants: variantsTable({ data: [], error: null }),
     });
     expect(await loadActivePrintVariants(supabase, 'print-001')).toMatchObject({ kind: 'invalid' });
@@ -98,9 +113,9 @@ describe('loadActivePrintVariants', () => {
     });
   });
 
-  it('fails closed on an active variant with no seeded print area — never falls back to the code registry', async () => {
+  it.each(['active', 'draft'])('fails closed on missing seeded pixels for a %s product', async (status) => {
     const supabase = makeSupabase({
-      products: productsTable({ data: { status: 'active' }, error: null }),
+      products: productsTable({ data: { status }, error: null }),
       product_variants: variantsTable({
         data: [{ variant_key: '30x40:false:false:black', print_area_width_px: null, print_area_height_px: null }],
         error: null,

@@ -1,0 +1,12 @@
+{
+  "_comment": "Obsidian 05; prepared three-ratio sources. Mount disabled; 2x3 is an intentionally absent sentinel, matching existing configs.",
+  "product": "fap053",
+  "mode": "fullBleed",
+  "format": "jpg",
+  "sources": {
+    "3x4": "design/uploads/master-images-prints/print-053/print-053__3x4.jpg",
+    "5x7": "design/uploads/master-images-prints/print-053/print-053__5x7.jpg",
+    "7x10": "design/uploads/master-images-prints/print-053/print-053__7x10.jpg",
+    "2x3": "design/uploads/master-images-prints/print-053/NO_MOUNT_SOURCE_2026-09.jpg"
+  }
+}

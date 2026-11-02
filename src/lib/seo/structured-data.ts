@@ -1,4 +1,4 @@
-import { printDisplayName } from '@/lib/print-curation';
+import { printCollectionOf, printDisplayName } from '@/lib/print-curation';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
@@ -11,9 +11,10 @@ import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
-import { SHIPPING_COUNTRY } from '@/lib/feed';
+import { EU_PRINT_COUNTRIES, SHIPPING_COUNTRY } from '@/lib/feed';
 import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
 import { RETURNS_POLICY } from '@/lib/returns-policy';
+import type { Currency } from '@/lib/currency';
 
 const PRINTS_SLUG = 'fine-art-prints';
 
@@ -36,8 +37,8 @@ function resolveDescription(override: string | undefined, rawNotes: unknown, not
  * Ceramics ship on the two InPost rates already advertised in feed.ts —
  * mirror them here (and reuse its `SHIPPING_COUNTRY`) so the Merchant feed
  * and this on-page `Offer.shippingDetails` never disagree. Handling/transit
- * time matches /dostawa-i-zwroty (shipping.s2P): parcels go out 1-3 business
- * days after payment, InPost usually delivers the next business day.
+ * time is the owner-confirmed term (docs/copy-source-of-truth.md §13, shipping.s2P):
+ * orders are fulfilled within 2 business days, delivery within 5 business days.
  */
 function shippingDetailsFor(locale: Locale) {
   const rates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
@@ -45,8 +46,8 @@ function shippingDetailsFor(locale: Locale) {
   const addressCountry = SHIPPING_COUNTRY[locale];
   const deliveryTime = {
     '@type': 'ShippingDeliveryTime' as const,
-    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 3, unitCode: 'DAY' },
-    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 1, unitCode: 'DAY' },
+    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 2, unitCode: 'DAY' },
+    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 5, unitCode: 'DAY' },
   };
   return [
     {
@@ -70,16 +71,23 @@ function shippingDetailsFor(locale: Locale) {
  * locale's shipping destination); `returnPolicyCountry` is the fixed address
  * returns are actually sent back to.
  */
-function merchantReturnPolicy(locale: Locale) {
+function standardReturnPolicy() {
   return {
     '@type': 'MerchantReturnPolicy' as const,
     returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
     merchantReturnDays: RETURN_WINDOW_DAYS,
     returnMethod: 'https://schema.org/ReturnByMail' as const,
     returnFees: 'https://schema.org/ReturnShippingFees' as const,
-    applicableCountry: SHIPPING_COUNTRY[locale],
     returnPolicyCountry: RETURN_POLICY_COUNTRY,
   };
+}
+
+function merchantReturnPolicy(locale: Locale) {
+  return { ...standardReturnPolicy(), applicableCountry: SHIPPING_COUNTRY[locale] };
+}
+
+function printMarketCountries(currency: 'pln' | 'eur' | 'gbp'): readonly PrintCountry[] {
+  return currency === 'pln' ? ['PL'] : currency === 'gbp' ? ['GB'] : EU_PRINT_COUNTRIES;
 }
 
 /**
@@ -90,10 +98,13 @@ function merchantReturnPolicy(locale: Locale) {
  * same rate the item price uses (see fromPriceOf/priceOfVariant call sites)
  * instead of print-shipping.ts's hardcoded fallback constants.
  */
-function printShippingDetailsFor(locale: Locale, rates: PrintPricingConfig) {
-  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
-  const { currency, priceCurrency } = printCurrencyFor(locale);
-  return [
+function printShippingDetailsFor(
+  countries: readonly PrintCountry[],
+  currency: 'pln' | 'eur' | 'gbp',
+  priceCurrency: 'PLN' | 'EUR' | 'GBP',
+  rates: PrintPricingConfig,
+) {
+  return countries.flatMap((country) => [
     {
       '@type': 'OfferShippingDetails' as const,
       shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates), currency: priceCurrency },
@@ -104,12 +115,15 @@ function printShippingDetailsFor(locale: Locale, rates: PrintPricingConfig) {
       shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
-  ];
+  ]);
 }
 
 /** Standard print-on-demand variants share the withdrawal policy. */
-function printReturnPolicy(locale: Locale) {
-  return merchantReturnPolicy(locale);
+function printReturnPolicy(countries: readonly PrintCountry[]) {
+  return {
+    ...standardReturnPolicy(),
+    applicableCountry: countries.length === 1 ? countries[0] : [...countries],
+  };
 }
 
 /** Prices (major units, given currency) of every sellable variant of a design. */
@@ -134,11 +148,14 @@ function sellableVariantPrices(
   return prices;
 }
 
-/** Locale → (currency code pair) for print schemas: pl→PLN, en→GBP, es/de→EUR — mirrors feed.ts's `currency()`/`chargeable`. */
-function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
+/** The PDP supplies its resolved request currency so a Merchant landing URL
+ * always has schema matching the visible offer. */
+function printCurrencyFor(locale: Locale, displayCurrency?: Currency): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
   if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
-  if (locale === 'en') return { currency: 'gbp', priceCurrency: 'GBP' };
-  return { currency: 'eur', priceCurrency: 'EUR' };
+  const currency = displayCurrency ?? (locale === 'en' ? 'gbp' : 'eur');
+  return currency === 'gbp'
+    ? { currency: 'gbp', priceCurrency: 'GBP' }
+    : { currency: 'eur', priceCurrency: 'EUR' };
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
@@ -261,7 +278,6 @@ type PrintCollectionArgs = {
  */
 export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
-  const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const homeUrl = absoluteUrl(locale, '/');
@@ -282,32 +298,140 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, d
         '@type': 'ItemList',
         name: categoryName,
         numberOfItems: designs.length,
-        itemListElement: designs.map((d, i) => {
-          const prices = sellableVariantPrices(d, currency, pricing);
-          return {
-            '@type': 'ListItem',
+        itemListElement: printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }),
+      },
+    ],
+  };
+}
+
+type PrintListItemsArgs = {
+  designs: PrintDesign[];
+  locale: Locale;
+  singular: string;
+  categoryName: string;
+  notes?: Record<string, string>;
+  rawNotes?: unknown;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+};
+
+/** `ItemList` entries (Product + AggregateOffer per design) shared by the prints hub and collection pages. */
+function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions }: PrintListItemsArgs) {
+  const { currency, priceCurrency } = printCurrencyFor(locale);
+  const countries = printMarketCountries(currency);
+  return designs.map((d, i) => {
+    const prices = sellableVariantPrices(d, currency, pricing);
+    return {
+      '@type': 'ListItem' as const,
+      position: i + 1,
+      item: {
+        '@type': 'Product' as const,
+        name: printDisplayName(d, singular, definitions),
+        description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
+        image: `${SITE_URL}${d.image}`,
+        category: categoryName,
+        brand: { '@type': 'Brand' as const, name: PRODUCT_BRAND_NAME },
+        offers: {
+          '@type': 'AggregateOffer' as const,
+          priceCurrency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability: 'https://schema.org/InStock' as const,
+          url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
+        },
+      },
+    };
+  });
+}
+
+type PrintCollectionPageSchemaArgs = {
+  locale: Locale;
+  t: (key: string) => string;
+  tRaw?: (key: string) => unknown;
+  notes?: Record<string, string>;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+  slug: string;
+  name: string;
+  description?: string;
+  designs: PrintDesign[];
+};
+
+/** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Collections › Collection) + `ItemList`. No ratings. */
+export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
+  const categoryName = t('nav.fineArtPrints');
+  const pageUrl = absoluteUrl(locale, `/kolekcje/${slug}`);
+  const items = printListItems({
+    designs, locale, singular: t('product.print'), categoryName, notes, rawNotes: tRaw?.('notes.fine-art-prints'), pricing, definitions,
+  });
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': pageUrl,
+        url: pageUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: { '@type': 'ItemList', numberOfItems: items.length, itemListElement: items },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+          { '@type': 'ListItem', position: 3, name, item: pageUrl },
+        ],
+      },
+    ],
+  };
+}
+
+export type PrintCollectionHubCard = { slug: string; name: string; image: string; count: number; description?: string };
+
+/** `@graph` for the /kolekcje hub: `CollectionPage` + `ItemList` of the collection pages + `BreadcrumbList`. */
+export function printCollectionsHubSchema({ locale, t, cards, description }: {
+  locale: Locale;
+  t: (key: string) => string;
+  cards: PrintCollectionHubCard[];
+  description?: string;
+}): Graph {
+  const hubUrl = absoluteUrl(locale, '/kolekcje');
+  const name = t('nav.kolekcje');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': hubUrl,
+        url: hubUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: cards.length,
+          itemListElement: cards.map((c, i) => ({
+            '@type': 'ListItem' as const,
             position: i + 1,
-            item: {
-              '@type': 'Product',
-              name: printDisplayName(d, singular, definitions),
-              description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
-              image: `${SITE_URL}${d.image}`,
-              category: categoryName,
-              brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
-              offers: {
-                '@type': 'AggregateOffer',
-                priceCurrency,
-                lowPrice: Math.min(...prices),
-                highPrice: Math.max(...prices),
-                offerCount: prices.length,
-                availability: 'https://schema.org/InStock',
-                url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
-                shippingDetails: printShippingDetailsFor(locale, pricing),
-                hasMerchantReturnPolicy: printReturnPolicy(locale),
-              },
-            },
-          };
-        }),
+            url: absoluteUrl(locale, `/kolekcje/${c.slug}`),
+            name: c.name,
+            image: `${SITE_URL}${c.image}`,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name, item: hubUrl },
+        ],
       },
     ],
   };
@@ -323,22 +447,32 @@ type PrintProductArgs = {
   pricing: PrintPricingConfig;
   /** CMS-resolved collection definitions (id → collection membership) — loaded once by the PDP. */
   definitions?: PrintCollectionDefinition[];
+  displayCurrency?: Currency;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions }: PrintProductArgs): Graph {
-  const { currency, priceCurrency } = printCurrencyFor(locale);
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency }: PrintProductArgs): Graph {
+  const { currency, priceCurrency } = printCurrencyFor(locale, displayCurrency);
+  const countries = printMarketCountries(currency);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const name = printDisplayName(design, singular, definitions);
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, '/sklep');
+  const collection = printCollectionOf(design.id, definitions);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
+  const offerUrl = displayCurrency ? `${productUrl}?currency=${currency}` : productUrl;
+  // Home › Collections › {Collection} › Print; designs in no collection fall back to Home › Shop › Print.
+  const trail = collection
+    ? [
+        { name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+        { name: collection.name, item: absoluteUrl(locale, `/kolekcje/${collection.slug}`) },
+      ]
+    : [{ name: categoryName, item: absoluteUrl(locale, '/sklep') }];
   const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
   const prices = sellableVariantPrices(design, currency, pricing);
 
@@ -349,8 +483,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
-          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
-          { '@type': 'ListItem', position: 3, name, item: productUrl },
+          ...trail.map((crumb, i) => ({ '@type': 'ListItem' as const, position: i + 2, ...crumb })),
+          { '@type': 'ListItem', position: trail.length + 2, name, item: productUrl },
         ],
       },
       {
@@ -369,9 +503,9 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           highPrice: Math.max(...prices),
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
-          url: productUrl,
-          shippingDetails: printShippingDetailsFor(locale, pricing),
-          hasMerchantReturnPolicy: printReturnPolicy(locale),
+          url: offerUrl,
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
     ],

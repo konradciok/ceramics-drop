@@ -107,7 +107,8 @@
     "studio": "Studio",
     "kontakt": "Contact",
     "konto": "Account",
-    "giftCard": "Gift Card"
+    "giftCard": "Gift Card",
+    "kolekcje": "Collections"
   },
   "aria": {
     "cart": "Cart",
@@ -372,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
-    "paczkomatD": "Pick up from your chosen parcel locker, usually 1–2 business days after I hand the parcel over.",
+    "paczkomatD": "Pick up from your chosen parcel locker, delivery within 5 business days.",
     "paczkomatPrice": "from {price}",
     "courierT": "InPost Courier",
-    "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
+    "courierD": "Delivery to your address within 5 business days.",
     "pickupT": "Personal pickup",
     "pickupD": "In Tenerife (San Pedro Abajo 12, Guimar), by appointment.",
     "printT": "Courier delivery",
@@ -439,7 +440,7 @@
       "Printed to order",
       "200 gsm fine art paper",
       "Frames: black, light or dark brown",
-      "Delivery across the EU & UK · 5–10 days"
+      "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
     ],
     "storyImageAlt": "Anna Ciok in her ceramics studio",
     "editorialImageAlt": "Framed Anna Ciok works in a sunlit interior",
@@ -449,7 +450,7 @@
     "storyP2": "Selected paintings enter a fine art edition: printed on archival-quality paper and shipped in the format you choose — unframed or in a wooden frame.",
     "storyCta": "Browse the print collections",
     "collectionsEyebrow": "Collections",
-    "collectionsTitle": "Nine threads, <em>one studio.</em>",
+    "collectionsTitle": "Threads of <em>one studio.</em>",
     "collectionsLead": "Each collection is its own series of paintings — pick the mood, colour and rhythm that suits your space.",
     "collectionsCount": "{count, plural, one {# piece} other {# pieces}}",
     "collectionsCta": "All collections",
@@ -460,11 +461,11 @@
     "craft2H": "You pick <em>size and frame</em>",
     "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
     "craft3H": "We print <em>and ship</em>",
-    "craft3P": "Your print is made and shipped by our print partner within 5–10 business days, to your home address anywhere in the EU or UK.",
+    "craft3P": "Your print is made and shipped by our print partner. Orders are fulfilled within 2 business days, and delivery to your home address in the EU or UK takes up to 5 business days.",
     "lgMaterialH": "Material & finish",
     "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
     "lgShippingH": "Production & shipping",
-    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
+    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
@@ -473,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Prints shipping",
-    "ctVShipPrints": "EU & UK · 5–10 business days"
+    "ctVShipPrints": "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
   },
   "printCollections": {
     "inne": "More prints"
@@ -524,11 +525,6 @@
       "eyebrow": "June drop — 10 pieces",
       "title": "Wavy-rim bowls <em>Nº 01–10</em>",
       "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Open edition",
-      "title": "Fine Art <em>Prints</em>",
-      "lead": "Reproductions of watercolour paintings on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped within 2–3 business days, anywhere in the EU or UK."
     }
   },
   "studio": {
@@ -553,9 +549,9 @@
     "fact3K": "Media",
     "fact3V": "Ceramics <em>& watercolour</em>",
     "fact3D": "Some compositions stay on paper and enter a fine art edition. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
-    "fact4K": "Ceramics shipping",
-    "fact4V": "1–3 <em>days</em>",
-    "fact4D": "I pack and ship ceramics myself within 1–3 business days across Poland. Fine art prints are made and shipped by our print partner, usually within 5–10 days, anywhere in the EU or UK.",
+    "fact4K": "Order fulfilment",
+    "fact4V": "up to 2 <em>days</em>",
+    "fact4D": "Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. I pack and ship ceramics myself; fine art prints are made and shipped by our print partner.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
@@ -598,7 +594,7 @@
     "lStudio": "Pickup",
     "vStudio": "Tenerife — pickup by appointment",
     "lShip": "Shipping",
-    "vShip": "Poland · ships in 1–3 business days",
+    "vShip": "Fulfilment within 2 business days, delivery within 5 business days",
     "lReply": "I reply",
     "vReply": "Usually the same day"
   },
@@ -613,7 +609,7 @@
     "toc4": "Pickup",
     "toc5": "Returns",
     "toc6": "Damage",
-    "updated": "Updated: June 2026",
+    "updated": "Updated: October 2026",
     "s1H": "Shipping",
     "s1P": "I ship by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
     "s1Li1": "InPost Parcel Locker, all of Poland — from 20 zł",
@@ -621,7 +617,7 @@
     "s1Li2": "Pickup in Tenerife — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
     "s2H": "Turnaround",
-    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. I send the parcel within <strong>1–3 business days</strong> of the payment clearing, and the courier usually delivers the next day.",
+    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. Orders are fulfilled within <strong>2 business days</strong> of the payment clearing, with delivery within <strong>5 business days</strong>.",
     "s2Note": "I pack everything myself, between studio work and the next firings. If you need a specific date, write to me and I’ll check what is possible.",
     "s3H": "Packing",
     "s3P": "The ceramics travel wrapped by hand — film, cardboard and plenty of padding so nothing moves. I label the box as fragile. I try to limit plastic wherever I can, without risking the piece.",
@@ -658,7 +654,7 @@
     "s3H": "§3 Prices & payment",
     "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment is handled by a secure external payment provider, Stripe.",
     "s4H": "§4 Fulfilment & shipping",
-    "s4P": "I send orders within 1–3 business days of the payment clearing. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
+    "s4P": "Orders are fulfilled within 2 business days of the payment clearing, with delivery within 5 business days across Europe. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
     "s5H": "§5 Right of withdrawal",
     "s5P": "A consumer has the right to withdraw from the purchase within 14 days of receiving the piece, without giving a reason. The statement can simply be sent by email. The returned piece should be undamaged; the buyer covers the return shipping, and the refund is made within 14 days.",
     "s6H": "§6 Complaints",
@@ -904,7 +900,24 @@
       "A broad lavender field darkens into soft-edged brown and charcoal blooms in the piece, crossed by slender vertical lines and a narrow cream striped band. A broken horizontal seam of dark pigment and gold separates the upper form from its pale, reflected counterpart below. Moody yet balanced, the composition brings atmospheric depth to a living room, dining area, or quiet study.",
       "Pale blue and blush washes spread across the piece in a spacious, stepped formation, lifted by two saturated cobalt strokes at the upper left. Rust speckles and fine vertical lines descend toward a dark horizontal band, where flowing white contours create a gentle wave-like rhythm. Expansive and quietly vivid, this print adds a sense of openness to a living room, bedroom, or long hallway.",
       "A wide grey-green loop opens the upper half of the piece, paired with a dark teal ring of finely radiating lines. A concentrated rust band crosses the centre, while a large, delicately drawn oval below carries scattered warm marks through its pale surface. Balanced, graphic, and quietly earthy, the composition makes an assured focal point for a dining room, living area, or understated workspace.",
-      "Cool grey-green washes rise along one side of the piece as warm rust and terracotta marks gather on the other, leaving a generous channel of white between them. A dark teal striped ring crowns the cooler form, while feathery blooms and a pale pink stroke animate the warmer edge. Bold but beautifully balanced, this print brings expressive contrast to a hallway, studio, or contemporary living room."
+      "Cool grey-green washes rise along one side of the piece as warm rust and terracotta marks gather on the other, leaving a generous channel of white between them. A dark teal striped ring crowns the cooler form, while feathery blooms and a pale pink stroke animate the warmer edge. Bold but beautifully balanced, this print brings expressive contrast to a hallway, studio, or contemporary living room.",
+      "Wavering bands of sage green, muted pink and blue-grey run beside dark pools edged with mustard yellow. Fine, wandering lines connect the pale areas, bringing lightness to a composition built around strong contrasts and an unhurried vertical rhythm. Aurora 01 can give a quiet room a distinctive focal point, while pale wood and neutral textiles leave space for its delicate drawing and soft colour transitions.",
+      "Rust-red loops hover above broad, translucent shapes in blue and green, setting crisp outlines against softly spreading colour. A deep navy pool and scattered flecks draw the eye inward, while the open background keeps the arrangement light and spacious. Aurora 02 brings an animated accent to a room with simple furniture, offering both an immediate graphic gesture and quieter details that emerge at closer range.",
+      "A narrow rust-coloured line travels through wavering layers of blue, grey and pale cream, giving the composition a clear vertical pulse. Beside it, a dark irregular pool with a light centre interrupts the gentle flow, balanced by small blue marks in the open ground. Aurora 04 can bring fluid movement to a quiet wall, its cool palette offering a subtle counterpoint to warm wood and soft textiles.",
+      "Two elongated forms meet in a pairing of cool blue and a vivid orange edge, with pale space opening around them. Blue rings, fine arcs and clusters of small marks add a buoyant rhythm to the larger shapes without making the composition feel crowded. Cirrus 01 offers a fresh accent for a simply furnished room, balancing a lively colour contrast with delicate, grain-like detail visible up close.",
+      "Broad sweeps of pale blue and warm ochre are interrupted by a dark horizontal band with bright openings. Above it, a small navy pool gathers fine lines and scattered speckles, adding a concentrated point of tension to the expansive composition. Cumulonimbus 03 can lend a room a quiet sense of depth, balancing diffuse colour with a stronger accent and rewarding a closer look at its intricate marks.",
+      "Horizontal layers of turquoise, blue-grey and earthy brown gather around a narrow dark divide, suggesting space through their shifting density. Transparent passages sit beside concentrated speckles and loose downward trails, giving the broad composition an uneven, absorbing rhythm. Cumulonimbus 06 can become an expansive focal point in a quiet living or working space, with its mix of warm and cool tones connecting naturally to wood, stone and neutral furnishings.",
+      "Ochre and orange rise from a soft blue-grey base, threaded with fine lines that sweep upward in loose arcs. Small mustard-coloured circles hover above the main shape, giving the composition a buoyant quality balanced by its darker left edge. Cumulus 01 brings a warm, relaxed accent to a light room, with delicate marks and generous open space that also let it sit comfortably alongside other artworks.",
+      "Three pale, irregular fields stack above one another, moving from rusty orange flecks through a broad blue band to scattered navy dots. A dark centre ringed with red and several fine vertical lines tie the layers together, creating a distinct rhythm within the open background. Cumulus 06 can enliven a cream or grey interior with a measured balance of warm accents, cool colour and small, sharply focused details.",
+      "A large pale-yellow shape with a dark, diffused edge sits beside two open ovals in beige and brown. Fine wandering lines and scattered flecks contrast with the dense radial marks of the lower ring, keeping the arrangement quiet but rich in detail. Obsidian 02 can warm a restrained interior alongside wood and natural textiles, while its darker accents give the composition definition from across the room.",
+      "Three irregular rings in sand, grey and rusty brown form a loose vertical stack, each with a different visual texture. Pale blurred spots across the darkest shape, a small patterned oval below and a black gesture at the left enliven the restrained palette. Obsidian 03 offers graphic structure without rigidity, making a distinctive accent above a sideboard or beside simple furniture through its balance of rounded shapes and energetic drawing.",
+      "An elongated olive-green ring meets a pale-grey field and a small dark form with a mottled centre. White loops cross the upper shapes, while a cluster of black strokes at the lower left anchors the otherwise softly rounded composition. Obsidian 04 combines subdued colour with a sharper linear rhythm, offering a considered accent for rooms in stone, beige and wood tones without needing bold contrasts throughout the space.",
+      "A tall rust-brown shape dotted with soft pale blooms stands beside a large cream-grey loop crossed by a black sweeping gesture. Fine wavering lines and two navy marks introduce movement while leaving plenty of open ground around the forms. Obsidian 05 can provide a strong, warm accent in a light room, with broad curves and animated drawing that remain engaging both at a distance and up close.",
+      "Two elongated shapes pair warm rusty brown with pale, speckled blue, topped by an overlapping cream ring. Soft white blooms and fine lines lighten the darker form, while two small terracotta marks keep the open background gently animated. Scopulus 02 draws its character from a simple arrangement and a clear warm-cool contrast, bringing an easy balance to interiors where wood meets grey surfaces or touches of blue.",
+      "Translucent cream and blue forms overlap around concentrated pools of cobalt, bringing depth to an otherwise airy arrangement. A large pale-blue ring and a partial arc on the right establish a soft rhythm crossed by fine, wandering lines. Unda 04 pairs generous light space with saturated colour, offering a cool focal accent for a quiet interior while allowing softer furnishings and subtle materials to remain part of the scene.",
+      "A soft, stepped form in blue and grey descends towards a dark horizontal band, with bright openings interrupting its deeper colour. Ochre flecks and fine curved lines add shifting detail, while the open background keeps the broad composition light. Unda 05 can introduce a calm, expansive rhythm to a living room or bedroom, its saturated blue accents retaining definition against pale walls and quiet, neutral textiles.",
+      "Large irregular rings in turquoise and ochre-brown overlap beside slender, wavering lines tipped with dark ovals. A small burgundy loop balances the lower arrangement, while dense flecks and fine radial strokes give each shape its own visual character. Tachylite 03 brings a loose, graphic movement to a room, pairing earthy colour with cool turquoise so it can sit naturally with wood while standing clearly against a neutral wall.",
+      "Deep navy and cobalt blooms hover above a broad field of pale blue, crossed by rust-coloured flecks and slender black lines. A vivid orange corner balances the darker lower passage, while the open white ground preserves the airy quality of the vertical composition. Cumulus 02 brings a defined yet spacious accent to a light interior, pairing naturally with pale wood, cool greys and simple forms."
     ]
   },
   "error": {
@@ -946,7 +959,7 @@
   "deliveryNotice": {
     "title": "Delivery information",
     "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
-    "p2": "Orders are dispatched within 1–3 business days of purchase.",
+    "p2": "Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "p3": "You'll receive the InPost tracking number by email once the parcel is on its way."
   },
   "consent": {
@@ -989,7 +1002,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Open edition",
     "sectionDelivery": "Delivery",
-    "deliveryNote": "Produced and shipped via our print partner, 5–10 working days",
+    "deliveryNote": "Printed and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe.",
     "sectionCare": "Care",
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
     "moreFrom": "More prints",
@@ -1006,7 +1019,8 @@
     "artistBio": "Anna Ciok is a Tenerife-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
-    "accordionShipping": "Prints are produced and shipped by our print partner within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+    "accordionShipping": "Prints are produced and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
+    "seeCollection": "See the whole {name} collection"
   },
   "giftCard": {
     "eyebrow": "Gift",
@@ -1073,5 +1087,264 @@
     "confirmationUnavailable": "We could not open your confirmation. Check your order email or contact ania@ciok.art.",
     "refund": "{cardAmount} was returned to your gift card and {cashAmount} to your original payment method.",
     "usedCardRefund": "If a gift card has been used in part or in full, email ania@ciok.art about refunding its purchase. The studio will review its payment history."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — Fine Art Print collection",
+    "metaDescriptionFallback": "The “{name}” collection — Fine Art Prints of Anna Ciok’s paintings on 200 g/m² paper, framed or unframed.",
+    "allCollections": "All collections",
+    "shopCta": "Go to the shop",
+    "eyebrow": "Collection — {count, plural, one {# print} other {# prints}}",
+    "otherCollections": "More collections"
+  },
+  "collectionsHub": {
+    "eyebrow": "Collections",
+    "title": "Collections by <em>Anna Ciok</em>",
+    "lead": "Each collection is its own series of watercolour and ink paintings. Pick the mood, colour and rhythm closest to your space — then choose the size and framing of your Fine Art Print.",
+    "metaTitle": "Anna Ciok’s painting collections",
+    "metaDescription": "{count, plural, one {# collection} other {# collections}} of Anna Ciok’s watercolour and ink paintings. Choose a series and order a Fine Art Print on 200 g/m² paper, framed or unframed.",
+    "shopCta": "Browse all prints in the shop"
+  },
+  "shop": {
+    "metaTitle": "Shop Fine Art Prints of Anna Ciok’s paintings",
+    "metaDescription": "Reproductions of Anna Ciok’s watercolour and ink paintings — Fine Art Print on 200 g/m² paper, framed or unframed. Filter by colour and collection; delivery across the EU and UK.",
+    "eyebrow": "Fine Art Print",
+    "title": "Shop <em>Fine Art Prints</em>",
+    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order. Fulfilment within 2 business days, delivery within 5 business days across Europe.",
+    "priceLadder": "{size} · from {price}",
+    "frameFrom": "Frame +{price}",
+    "priceNote": "The price depends on size and framing — not on the painting.",
+    "filtersLabel": "Shop filters",
+    "sortLabel": "Sort",
+    "sort": {
+      "featured": "Featured",
+      "new": "New arrivals",
+      "collection": "Collection"
+    },
+    "colourLabel": "Colour",
+    "colour": {
+      "blue": "Blues",
+      "green": "Greens",
+      "warm": "Ochre & terracotta",
+      "pink": "Pink & violet",
+      "earth": "Beige & brown",
+      "mono": "Black & grey"
+    },
+    "collectionLabel": "Collection",
+    "allCollections": "All collections",
+    "clear": "Clear filters",
+    "empty": "No paintings match these filters.",
+    "emptyCta": "Browse collections",
+    "badgeNew": "New",
+    "badgePick": "Artist’s pick",
+    "frameColoursLabel": "Frames: {colours}",
+    "quickAdd": "Quick choose size and frame",
+    "quickDetails": "View details",
+    "close": "Close",
+    "giftTitle": "Not sure which painting to choose?",
+    "giftLead": "A gift card covers Fine Art Print — the recipient picks the composition, size and framing themselves.",
+    "collectionsTitle": "Browse by collection",
+    "collectionsCta": "All collections",
+    "aboutTitle": "About Anna Ciok’s Fine Art Prints",
+    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
+    "aboutMore": "Read more",
+    "aboutLess": "Show less"
+  },
+  "market": {
+    "meta": {
+      "title": "El Médano market · {date}",
+      "description": "Hand-painted ceramics and fine art prints by Anna Ciok at the El Médano handicraft market — Saturday 24 October 2026, 9:00–14:00, main plaza. A one-of-a-kind souvenir from Tenerife.",
+      "ogTitle": "This Saturday, in El Médano — Anna Ciok",
+      "ogAlt": "Fuerte Piba prints and a hand-painted plate by Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok at the El Médano handicraft market",
+      "dateLabel": "Saturday 24 October 2026",
+      "shortDateLabel": "Sat 24 Oct",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Main plaza, El Médano",
+      "area": "Granadilla de Abona, Tenerife",
+      "payment": "Cash, card or Bizum",
+      "calendarDetails": "Hand-painted ceramics and fine art prints by Anna Ciok. Cash, card or Bizum.",
+      "mapLabel": "Map"
+    },
+    "hero": {
+      "eyebrow": "Handicraft market · Mercadillo artesanal",
+      "line1": "This Saturday,",
+      "line2": "in El Médano.",
+      "lead": "Hand-painted ceramics and fine art prints, straight from my studio in Tenerife. Come find a souvenir that’s actually from the island — or the piece your apartment has been missing.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "directions": "Get directions",
+      "calendar": "Add to calendar",
+      "imageAlt": "Two Fuerte Piba prints, one black and one cream, with a hand-painted plate between them on a sunlit concrete floor",
+      "badgeDay": "Saturday",
+      "badgeNumber": "24",
+      "badgeMonth": "October",
+      "captionLabel": "From the studio",
+      "caption": "Fuerte Piba prints and a hand-painted plate."
+    },
+    "marquee": [
+      "hand-painted plates",
+      "mugs & vases",
+      "fine art prints",
+      "one of a kind",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Take Tenerife home",
+      "title": "A souvenir that’s <em>actually from here.</em>",
+      "p1": "Skip the fridge magnets. Every plate, mug and vase on my table is painted by hand in my studio in Güímar, with motifs taken from the island — palm trees, the Canarian sun, a siren, women in wide-brimmed hats.",
+      "p2": "No two are alike, so the piece you choose on Saturday exists only once.",
+      "tipTitle": "Flying home?",
+      "tipText": "Prints travel flat in a suitcase — and ask me how to pack ceramics safely for the trip.",
+      "imageAlt": "Anna holding two white vases hand-painted with blue palm trees and terracotta striped rims"
+    },
+    "apartment": {
+      "eyebrow": "For your place on the island",
+      "title": "Something for <em>the apartment.</em>",
+      "p1": "Just moved here, or giving a holiday flat some soul? Lean a pair of prints on the shelf, set a palm vase by the window, eat off plates nobody else owns — bold, sunny pieces made for Canarian light and white walls.",
+      "p2": "The prints carry Canarian sayings, and the characters that go with them:",
+      "imageAlt": "Framed Agüita and Chacho, Calma prints in blue leaning on a wooden shelf above green tiles, in warm afternoon light"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "On the table, <em>on the wall.</em>",
+      "aside": "Pieces made to be used every day — and just as happy hung on a wall next to a print.",
+      "viewLarger": "View larger: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Black & terracotta",
+        "caption": "A hat-figure plate, a wave vase and two palm mugs.",
+        "alt": "A plate with a figure in a wide-brimmed hat, a vase with a black wave and two palm mugs on stone plinths"
+      },
+      "bluePieces": {
+        "label": "In blue",
+        "caption": "Graters, hand dishes, a cup and a plate.",
+        "alt": "Blue hand-painted ceramic graters, two hand-shaped dishes, a wave cup and a wave plate on a cream plaster wall"
+      },
+      "platesOnPrints": {
+        "label": "Clay & paper",
+        "caption": "Mermaids, sailors and Fuerte Piba — on plates and on prints.",
+        "alt": "Hand-painted plates with a mermaid, sailors and a woman in a wide-brimmed hat laid on Fuerte Piba and Islas Canarias prints on a wooden table"
+      },
+      "wallPlates": {
+        "label": "On the wall",
+        "caption": "Leaves, a wave and a palm, hung as a small gallery.",
+        "alt": "Three hand-painted plates hung on a textured cream wall: terracotta leaves, a black wave with a terracotta sun, and a terracotta palm inside a black scalloped rim"
+      },
+      "plateWall": {
+        "label": "No two alike",
+        "caption": "A whole table of plates, every one painted by hand.",
+        "alt": "Dozens of hand-painted plates in black and terracotta laid out together in the sun: palms, mermaids, hands, shells, leaves and checks"
+      }
+    },
+    "wall": {
+      "ariaLabel": "A wall of hand-painted plates",
+      "view": "View the plate wall photo larger",
+      "line1": "No two alike.",
+      "line2": "Every plate painted by hand."
+    },
+    "table": {
+      "eyebrow": "On the table",
+      "title": "What you’ll find <em>on Saturday.</em>",
+      "items": [
+        {
+          "title": "Plates",
+          "text": "From side plates to large serving plates."
+        },
+        {
+          "title": "Mugs",
+          "text": "For a slow café con leche on the terrace."
+        },
+        {
+          "title": "Vases",
+          "text": "Small, medium and large — palms included."
+        },
+        {
+          "title": "Bowls",
+          "text": "Large serving bowls and wavy-rimmed ones."
+        },
+        {
+          "title": "Fine art prints",
+          "text": "Canarian sayings and characters for your walls."
+        }
+      ],
+      "note": "Every ceramic piece is one of a kind. Once it’s sold, it’s gone — <em>come early.</em>"
+    },
+    "showroom": {
+      "eyebrow": "From the showroom",
+      "title": "A taste of <em>what I make.</em>",
+      "aside": "Pieces from earlier collections — not a list of what’s on the stand. Every piece is one of a kind, so come and see what’s on the table on Saturday.",
+      "tag": "Earlier work",
+      "note": "From an earlier collection — one of a kind, hand-painted in my studio in Güímar. Come see what’s on the table on Saturday.",
+      "viewPiece": "View {title} larger",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Size",
+      "madeIn": "Made in",
+      "madeInValue": "Güímar, Tenerife",
+      "alt": {
+        "k10": "hand-painted with a blue shell",
+        "t20": "a black cactus inside a terracotta rim",
+        "h01": "painted inside with two black palm trees",
+        "g01": "a black palm tree between terracotta borders",
+        "s19": "a black donkey inside a terracotta scalloped rim",
+        "w08": "painted with soft blue cacti and terracotta dots",
+        "v01": "a blue cactus and a terracotta sun",
+        "d06": "a black lobster drawn around the body"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, I’m Anna",
+      "title": "One pair of hands, <em>one piece at a time.</em>",
+      "p1": "I live and work in Tenerife. In my small studio in Güímar I paint watercolours on paper and hand-paint ceramic tableware — never mass-produced. The island’s colours, sayings and characters end up on almost everything I make.",
+      "p2": "Stop by the stand to say hola, pick up a plate, and ask me anything about how it was made.",
+      "instagram": "Follow on Instagram",
+      "imageAlt": "Anna Ciok in her studio holding a black cat, smiling over a table covered in hand-painted black and terracotta plates",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "See you at the plaza on Saturday. Come early for the best pick — every ceramic piece is one of a kind.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "cantMakeIt": "Can’t make it?",
+      "shop": "Shop online",
+      "studio": ", or visit my studio in Güímar by appointment."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Mugs",
+        "singular": "Mug"
+      },
+      "wazony": {
+        "name": "Small vases",
+        "singular": "Small vase"
+      },
+      "wazony-duze": {
+        "name": "Large vases",
+        "singular": "Large vase"
+      },
+      "talerze-srednie": {
+        "name": "Medium plates",
+        "singular": "Medium plate"
+      },
+      "duze-michy": {
+        "name": "Large bowls",
+        "singular": "Large bowl"
+      },
+      "miski-falowane": {
+        "name": "Wavy-rimmed bowls",
+        "singular": "Wavy-rimmed bowl"
+      }
+    },
+    "aria": {
+      "close": "Close",
+      "prev": "Previous",
+      "next": "Next",
+      "photo": "Photo"
+    }
   }
 }

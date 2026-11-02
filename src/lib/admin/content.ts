@@ -3,7 +3,7 @@ import { printDisplayName } from '@/lib/print-curation';
 import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { adminSupabase } from './clients';
 import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
-import { registryPrintDesigns } from '@/lib/prints';
+import { registryContentPrintDesigns } from '@/lib/prints';
 import { fallbackProductNotes } from '@/lib/cms/messages';
 import { fallbackPrintPdpPayload } from '@/lib/cms/print-pdp';
 import { fallbackHomePayload } from '@/lib/cms/home';
@@ -96,7 +96,7 @@ export function contentItems(slug: string, definitions?: PrintCollectionDefiniti
   if (slug === PRINT_PDP_SLUG) return [];
   if (slug === HOME_PAGE_SLUG) return [];
   if (slug === 'fine-art-prints') {
-    return registryPrintDesigns().map((design) => ({
+    return registryContentPrintDesigns().map((design) => ({
       id: design.id,
       label: printDisplayName(design, 'Druk', definitions),
       image: design.image,

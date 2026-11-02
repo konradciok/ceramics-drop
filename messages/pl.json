@@ -107,7 +107,8 @@
     "studio": "O studiu",
     "kontakt": "Kontakt",
     "konto": "Konto",
-    "giftCard": "Karta podarunkowa"
+    "giftCard": "Karta podarunkowa",
+    "kolekcje": "Kolekcje"
   },
   "aria": {
     "cart": "Koszyk",
@@ -372,10 +373,10 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Odbiór w wybranym paczkomacie, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "paczkomatD": "Odbiór w wybranym paczkomacie, dostawa do 5 dni roboczych.",
     "paczkomatPrice": "od {price}",
     "courierT": "Kurier InPost",
-    "courierD": "Dostawa pod adres, zwykle 1–2 dni robocze po nadaniu pracy.",
+    "courierD": "Dostawa pod adres, do 5 dni roboczych.",
     "pickupT": "Odbiór osobisty",
     "pickupD": "Na Teneryfie (San Pedro Abajo 12, Guimar), po wcześniejszym umówieniu terminu.",
     "printT": "Dostawa kurierem",
@@ -439,7 +440,7 @@
       "Druk na zamówienie",
       "Papier fine art 200 g/m²",
       "Rama: czarna, jasny lub ciemny brąz",
-      "Dostawa w UE i Wielkiej Brytanii · 5–10 dni"
+      "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
     ],
     "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
     "editorialImageAlt": "Oprawnione prace Anny Ciok w słonecznym wnętrzu",
@@ -449,7 +450,7 @@
     "storyP2": "Wybrane prace trafiają do edycji fine art: drukujemy je na papierze o archiwalnej jakości i wysyłamy w formacie, który wybierzesz — bez oprawy albo w drewnianej ramie.",
     "storyCta": "Zobacz kolekcje odbitek",
     "collectionsEyebrow": "Kolekcje",
-    "collectionsTitle": "Dziewięć wątków <em>jednej pracowni.</em>",
+    "collectionsTitle": "Wątki <em>jednej pracowni.</em>",
     "collectionsLead": "Każda kolekcja to osobna seria obrazów — wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni.",
     "collectionsCount": "{count, plural, one {# praca} few {# prace} other {# prac}}",
     "collectionsCta": "Wszystkie kolekcje",
@@ -460,11 +461,11 @@
     "craft2H": "Dobierasz <em>rozmiar i ramę</em>",
     "craft2P": "Do wyboru trzy rozmiary oraz oprawa: bez ramy albo w drewnianej ramie — czarnej, jasnobrązowej lub ciemnobrązowej.",
     "craft3H": "Drukujemy <em>i wysyłamy</em>",
-    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku w 5–10 dni roboczych, na adres domowy w Unii Europejskiej i Wielkiej Brytanii.",
+    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, a dostawa na adres domowy w Unii Europejskiej i Wielkiej Brytanii trwa do 5 dni roboczych.",
     "lgMaterialH": "Materiał i wykonanie",
     "lgMaterialP": "Druk na papierze fine art o gramaturze 200 g/m², w jakości archiwalnej. Każda odbitka dostępna jest bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
     "lgShippingH": "Realizacja i wysyłka",
-    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii — zwykle w 5–10 dni roboczych.",
+    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
     "ctP": "Chcesz zobaczyć pracę na żywo, zapytać o odbitkę w innym rozmiarze albo o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
@@ -473,7 +474,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Wysyłka odbitek",
-    "ctVShipPrints": "UE i Wielka Brytania · 5–10 dni roboczych"
+    "ctVShipPrints": "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
   },
   "printCollections": {
     "inne": "Pozostałe"
@@ -524,11 +525,6 @@
       "eyebrow": "Czerwcowy drop — 10 prac",
       "title": "Miski z falowanym brzegiem <em>Nº 01–10</em>",
       "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Edycja otwarta",
-      "title": "Odbitki <em>Fine Art</em>",
-      "lead": "Reprodukcje obrazów akwarelą na papierze Fine Art 200 g/m². Wybierz rozmiar i oprawę — drukujemy i wysyłamy w ciągu 2–3 dni roboczych w całej Unii Europejskiej i Wielkiej Brytanii."
     }
   },
   "studio": {
@@ -553,9 +549,9 @@
     "fact3K": "Techniki",
     "fact3V": "Ceramika <em>i akwarela</em>",
     "fact3D": "Jedne kompozycje zostają na papierze i wchodzą do edycji fine art. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
-    "fact4K": "Wysyłka ceramiki",
-    "fact4V": "1–3 <em>dni</em>",
-    "fact4D": "Ceramikę pakuję i nadaję sama, w 1–3 dni robocze na terenie Polski. Odbitki fine art drukuje i wysyła nasz partner druku, zwykle w 5–10 dni, w całej Unii Europejskiej i Wielkiej Brytanii.",
+    "fact4K": "Realizacja zamówienia",
+    "fact4V": "do 2 <em>dni</em>",
+    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Ceramikę pakuję i nadaję sama, a odbitki fine art drukuje i wysyła nasz partner druku.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
@@ -598,7 +594,7 @@
     "lStudio": "Odbiór",
     "vStudio": "Teneryfa · odbiór po umówieniu",
     "lShip": "Wysyłka",
-    "vShip": "Polska · nadanie w 1–3 dni roboczych",
+    "vShip": "Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych",
     "lReply": "Odpowiadam",
     "vReply": "Zwykle tego samego dnia"
   },
@@ -613,7 +609,7 @@
     "toc4": "Odbiór osobisty",
     "toc5": "Zwroty",
     "toc6": "Uszkodzenia",
-    "updated": "Aktualizacja: czerwiec 2026",
+    "updated": "Aktualizacja: październik 2026",
     "s1H": "Wysyłka",
     "s1P": "Prace wysyłam <strong>Paczkomatem InPost (od 20 zł)</strong> albo <strong>kurierem InPost (30 zł)</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
     "s1Li1": "Paczkomat InPost, cała Polska — od 20 zł",
@@ -621,7 +617,7 @@
     "s1Li2": "Odbiór osobisty na Teneryfie — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, wycenię ją indywidualnie",
     "s2H": "Czas realizacji",
-    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Paczkę nadaję w ciągu <strong>1–3 dni roboczych</strong> od zaksięgowania płatności, a InPost dostarcza ją zwykle następnego dnia roboczego po nadaniu.",
+    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Zamówienie jest realizowane do <strong>2 dni roboczych</strong> od zaksięgowania płatności, a dostawa trwa do <strong>5 dni roboczych</strong>.",
     "s2Note": "Pakuję wszystko sama, między pracą w studiu a kolejnymi wypałami. Jeśli zależy Ci na konkretnym terminie, napisz — sprawdzę, co da się zrobić.",
     "s3H": "Pakowanie",
     "s3P": "Ceramikę owijam ręcznie: folia, tektura i dużo wypełnienia, żeby nic nie przesuwało się w pudełku. Opakowanie oznaczam jako kruche i ograniczam plastik tam, gdzie mogę to zrobić bez ryzyka dla pracy.",
@@ -658,7 +654,7 @@
     "s3H": "§3 Ceny i płatność",
     "s3P": "Wszystkie ceny są podane w złotych polskich (PLN) i są cenami brutto. Koszt wysyłki zobaczysz w koszyku przed potwierdzeniem zakupu. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
     "s4H": "§4 Realizacja i wysyłka",
-    "s4P": "Zamówienia nadaję w ciągu 1–3 dni roboczych od zaksięgowania płatności. Szczegóły kosztów, terminów i odbioru osobistego znajdziesz na stronie <link>Dostawa i zwroty</link>.",
+    "s4P": "Zamówienie jest realizowane do 2 dni roboczych od zaksięgowania płatności, dostawa do 5 dni roboczych na terenie Europy. Szczegóły kosztów, terminów i odbioru osobistego znajdziesz na stronie <link>Dostawa i zwroty</link>.",
     "s5H": "§5 Odstąpienie od umowy",
     "s5P": "Konsument ma prawo odstąpić od umowy w ciągu 14 dni od otrzymania pracy, bez podawania przyczyny. Oświadczenie wystarczy przesłać mailem. Zwracana praca powinna być nieuszkodzona; koszt odesłania ponosi kupujący, a zwrot środków następuje w ciągu 14 dni od otrzymania pracy z powrotem.",
     "s6H": "§6 Reklamacje",
@@ -904,7 +900,24 @@
       "Szerokie lawendowe pole obrazu ciemnieje w miękkie brązowe i grafitowe plamy, przecinane smukłymi pionowymi liniami i wąską kremową wstęgą w prążki. Przerwana pozioma granica ciemnego pigmentu i złota oddziela górną formę od jej jasnego, odbitego odpowiednika niżej. Nastrojowa, lecz wyważona kompozycja wnosi głębię do salonu, jadalni lub spokojnego gabinetu.",
       "Jasne błękitne i pudroworóżowe plamy rozlewają się przez to dzieło w przestronnym, schodkowym układzie, podniesionym dwoma nasyconymi kobaltowymi śladami u góry. Rdzawe drobiny i cienkie pionowe linie opadają ku ciemnemu poziomemu pasowi, gdzie białe kontury tworzą łagodny falujący rytm. Rozległy, cicho żywy print otwiera optycznie salon, sypialnię lub długi hol.",
       "Szeroka szarozielona pętla otwiera górną połowę obrazu obok ciemnoturkusowego pierścienia z drobno promieniujących linii. Skupiony rdzawy pas przecina środek, a duży lekko rysowany owal poniżej niesie ciepłe drobiny na jasnej powierzchni. Wyważona, graficzna i spokojnie ziemista kompozycja staje się pewnym punktem jadalni, salonu lub oszczędnego miejsca pracy.",
-      "Chłodne szarozielone plamy wznoszą się po jednej stronie obrazu, a ciepłe rdzawe i terakotowe znaki skupiają po drugiej, pozostawiając między nimi szeroki pas bieli. Ciemnoturkusowy prążkowany pierścień wieńczy chłodną formę, a pierzaste rozkwity i jasnoróżowy ślad ożywiają cieplejszą krawędź. Odważny, pięknie wyważony print wnosi ekspresyjny kontrast do holu, pracowni lub współczesnego salonu."
+      "Chłodne szarozielone plamy wznoszą się po jednej stronie obrazu, a ciepłe rdzawe i terakotowe znaki skupiają po drugiej, pozostawiając między nimi szeroki pas bieli. Ciemnoturkusowy prążkowany pierścień wieńczy chłodną formę, a pierzaste rozkwity i jasnoróżowy ślad ożywiają cieplejszą krawędź. Odważny, pięknie wyważony print wnosi ekspresyjny kontrast do holu, pracowni lub współczesnego salonu.",
+      "Falujące pasma szałwiowej zieleni, przygaszonego różu i błękitnej szarości biegną obok ciemnych plam otoczonych musztardową poświatą. Cienkie, swobodne linie łączą jasne partie kompozycji, nadając jej lekkość mimo mocnych kontrastów. Aurora 01 może wprowadzić do spokojnego wnętrza wyraźny pionowy rytm, a zestawiona z jasnym drewnem i neutralnymi tkaninami pozwala wybrzmieć subtelnym przejściom koloru oraz delikatnemu rysunkowi.",
+      "Rdzawoczerwone pętle unoszą się nad szerokimi, półprzezroczystymi formami w odcieniach błękitu i zieleni. Głęboka granatowa plama oraz rozsiane drobiny koloru skupiają wzrok, podczas gdy cienkie obrysy i otwarte tło dodają całości swobody. Aurora 02 łączy miękkość rozlanych barw z energią wyrazistej linii, tworząc ciekawy akcent do wnętrza z prostymi meblami, w którym pojedyncza praca może nadać ścianie charakter.",
+      "Wąska rdzawa linia prowadzi przez falujące warstwy błękitu, szarości i jasnego kremu. Obok niej ciemna, nieregularna plama z jasnym środkiem przerywa spokojny rytm, a drobne niebieskie ślady pozostawiają wokół kompozycji oddech. Aurora 04 nadaje ścianie smukły, płynny akcent; chłodna paleta dobrze odnajdzie się przy naturalnym drewnie i ciepłych tkaninach, gdzie pojedyncza czerwonawa linia może subtelnie ożywić otoczenie.",
+      "Dwie wydłużone formy spotykają się w zestawieniu chłodnego błękitu z intensywnym pomarańczowym brzegiem. Niebieskie pierścienie, cienkie łuki i skupiska drobnych plam tworzą lekki ruch wokół większych płaszczyzn, pozostawiając dużo jasnego tła. Cirrus 01 wnosi świeży, pogodny akcent do wnętrza, a jego asymetryczna kompozycja może ożywić prostą aranżację bez dominowania nad nią; z bliska uwagę przyciąga ziarnisty rysunek koloru.",
+      "Rozległe smugi jasnego błękitu i ciepłej ochry przecina ciemne poziome pasmo z jasnymi przerwami. Wyżej niewielka granatowa plama skupia wokół siebie cienkie linie i rozsiane drobiny, wprowadzając delikatne napięcie do szerokiej kompozycji. Cumulonimbus 03 może nadać wnętrzu spokojną głębię, łącząc rozmyte przejścia barw z mocniejszym akcentem; dobrze prezentuje się tam, gdzie obraz ma zachęcać do uważniejszego spojrzenia.",
+      "Poziome warstwy turkusu, błękitnej szarości i ziemistych brązów układają się wokół wąskiego, ciemnego przecięcia. Przejrzyste partie koloru sąsiadują z gęstymi skupiskami drobin i swobodnie opadającymi śladami, nadając kompozycji zmienny rytm. Cumulonimbus 06 tworzy rozległy wizualnie akcent do spokojnego salonu lub miejsca pracy, a zestawienie chłodnych i ciepłych tonów ułatwia połączenie go zarówno z jasnymi, jak i ciemniejszymi elementami wnętrza.",
+      "Z miękkiej, błękitnoszarej podstawy wyrastają smugi ochry i pomarańczu, otoczone cienkimi, łukowatymi liniami. Małe musztardowe kręgi zawieszone nad główną plamą nadają kompozycji lekkość, a ciemniejszy lewy brzeg równoważy ten ruch. Cumulus 01 wnosi ciepły, swobodny akcent do jasnego wnętrza; jego drobne ślady koloru i duże partie pustego tła pozwalają połączyć go z innymi pracami bez wrażenia nadmiaru.",
+      "Trzy jasne, nieregularne pola układają się jedno nad drugim, przechodząc od rdzawopomarańczowych drobin do szerokiego błękitnego pasma i rozsianych granatowych punktów. Ciemny środek otoczony czerwienią oraz cienkie pionowe linie spinają tę warstwową kompozycję. Cumulus 06 daje ścianie czytelny rytm i wyrazisty detal, a jego połączenie ciepłych akcentów z chłodnym błękitem może ożywić wnętrze utrzymane w kremowych i szarych odcieniach.",
+      "Duża, jasnożółta forma z ciemnym, rozmytym brzegiem sąsiaduje z dwoma otwartymi owalami w odcieniach beżu i brązu. Delikatne linie oraz rozsiane drobiny kontrastują z gęstym, promienistym rysunkiem dolnego pierścienia, tworząc kompozycję spokojną, lecz pełną szczegółów. Obsidian 02 może ocieplić oszczędną aranżację, szczególnie w towarzystwie drewna i naturalnych tkanin, a ciemniejsze akcenty nadają mu wyrazistość widoczną także z większej odległości.",
+      "Trzy nieregularne pierścienie w odcieniach piasku, szarości i rdzawego brązu tworzą swobodny pionowy układ. Jasne, rozmyte punkty na najciemniejszej formie, drobny wzór poniżej i czarny gest po lewej różnicują spokojną paletę. Obsidian 03 wprowadza do wnętrza graficzny porządek bez sztywności; może stać się wyrazistym akcentem nad komodą lub obok prostych mebli, łącząc zaokrąglone kształty z bardziej energicznym rysunkiem.",
+      "Wydłużony oliwkowy pierścień spotyka się z jasnoszarą płaszczyzną i niewielką, ciemną formą o nakrapianym środku. Białe pętle oplatają górną część kompozycji, a układ czarnych kresek po lewej nadaje jej wyraźny punkt równowagi. Obsidian 04 łączy łagodny kolor z ostrzejszym rytmem linii, dzięki czemu może ożywić spokojną aranżację w odcieniach kamienia, beżu i drewna bez potrzeby mocnych kontrastów w całym wnętrzu.",
+      "Wysoka rdzawobrązowa forma z jasnymi, miękkimi punktami stoi obok dużej kremowoszarej pętli przeciętej czarnym gestem. Cienkie falujące linie i dwa granatowe znaki dodają tej oszczędnej kompozycji ruchu, zachowując dużo wolnego tła. Obsidian 05 może stać się mocnym, ciepłym akcentem w jasnym pokoju, a zestawienie szerokich zaokrągleń z dynamicznym rysunkiem nadaje pracy charakter widoczny zarówno z bliska, jak i z daleka.",
+      "Dwie wydłużone formy zestawiają ciepły rdzawy brąz z jasnym, nakrapianym błękitem. Kremowy pierścień zachodzi na ich górną część, a białe miękkie plamy i cienkie linie rozświetlają ciemniejszą płaszczyznę. Scopulus 02 opiera swój charakter na prostym układzie i wyraźnej różnicy temperatur barw; może dodać wnętrzu pogodnej równowagi, szczególnie tam, gdzie ciepłe drewno spotyka się z chłodnymi szarościami lub niebieskimi akcentami.",
+      "Przejrzyste kremowe i błękitne formy nakładają się na siebie, otaczając intensywne plamy kobaltu. Duży jasnoniebieski pierścień i częściowy łuk po prawej nadają kompozycji miękki rytm, przez który przebiegają cienkie, swobodne linie. Unda 04 łączy przestronność jasnego tła z siłą nasyconego koloru; dobrze sprawdzi się jako chłodny akcent w spokojnym wnętrzu, wnosząc głębię bez przytłaczania delikatniejszych elementów aranżacji.",
+      "Miękka, stopniowana forma w odcieniach błękitu i szarości opada ku ciemnemu poziomemu pasmu. Jasne przerwy, ochrowe drobiny i cienkie zakrzywione linie nadają tej spokojnej kompozycji zmienną głębię, a otwarte tło wzmacnia wrażenie lekkości. Unda 05 może wprowadzić do salonu lub sypialni szeroki, kojący rytm; nasycone niebieskie akcenty pozwalają jej zachować wyrazistość również w otoczeniu jasnych ścian i neutralnych tkanin.",
+      "Duże nieregularne pierścienie w turkusie i ochrowym brązie nakładają się obok smukłych, falujących linii zakończonych ciemnymi owalami. Mała bordowa pętla równoważy dolną część układu, a gęste drobiny i promieniste kreski różnicują jego powierzchnie. Tachylite 03 wnosi do wnętrza swobodny, graficzny ruch; połączenie ziemistych tonów z chłodnym turkusem pozwala mu współgrać z drewnem, a jednocześnie wyraźnie odcinać się od neutralnej ściany.",
+      "Głębokie granatowe i kobaltowe plamy unoszą się nad rozległym polem bladego błękitu, które przecinają rdzawe rozpryski i cienkie czarne linie. Intensywny pomarańczowy narożnik równoważy ciemniejszy dolny fragment, a otwarte białe tło podkreśla lekkość pionowej kompozycji. Cumulus 02 wnosi do jasnego wnętrza wyrazisty, lecz przestronny akcent, dobrze współgrający z naturalnym drewnem, chłodnymi szarościami i prostymi formami."
     ]
   },
   "error": {
@@ -946,7 +959,7 @@
   "deliveryNotice": {
     "title": "Informacja o dostawie",
     "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
-    "p2": "Zamówienia wysyłamy w ciągu 1–3 dni roboczych od złożenia zamówienia.",
+    "p2": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
     "p3": "Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki."
   },
   "consent": {
@@ -989,7 +1002,7 @@
     "sectionEdition": "Edycja",
     "editionOpen": "Edycja otwarta",
     "sectionDelivery": "Dostawa",
-    "deliveryNote": "Produkcja i wysyłka przez naszego partnera druku, 5–10 dni roboczych",
+    "deliveryNote": "Druk i wysyłka przez naszego partnera druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
     "sectionCare": "Przechowywanie",
     "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
     "moreFrom": "Więcej odbitek",
@@ -1006,7 +1019,8 @@
     "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
     "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
     "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Druk i wysyłkę realizuje nasz partner druku w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty."
+    "accordionShipping": "Odbitki drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
+    "seeCollection": "Cała kolekcja {name}"
   },
   "giftCard": {
     "eyebrow": "Prezent",
@@ -1073,5 +1087,264 @@
     "confirmationUnavailable": "Nie udało się otworzyć potwierdzenia. Sprawdź e-mail z zamówieniem lub napisz na ania@ciok.art.",
     "refund": "Zwrócono {cardAmount} na kartę podarunkową i {cashAmount} pierwotną metodą płatności.",
     "usedCardRefund": "Jeśli karta została już częściowo lub w całości wykorzystana, napisz na ania@ciok.art w sprawie zwrotu jej zakupu. Studio sprawdzi historię rozliczeń."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — kolekcja Fine Art Print",
+    "metaDescriptionFallback": "Kolekcja „{name}” — Fine Art Print według obrazów Anny Ciok. Druk na papierze 200 g/m², w ramie lub bez.",
+    "allCollections": "Wszystkie kolekcje",
+    "shopCta": "Przejdź do sklepu",
+    "eyebrow": "Kolekcja — {count, plural, one {# print} few {# printy} other {# printów}}",
+    "otherCollections": "Pozostałe kolekcje"
+  },
+  "collectionsHub": {
+    "eyebrow": "Kolekcje",
+    "title": "Kolekcje <em>Anny Ciok</em>",
+    "lead": "Każda kolekcja to osobna seria obrazów akwarelą i tuszem. Wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni — potem rozmiar i oprawę Fine Art Print.",
+    "metaTitle": "Kolekcje obrazów Anny Ciok",
+    "metaDescription": "{count, plural, one {# kolekcja} few {# kolekcje} other {# kolekcji}} obrazów akwarelą i tuszem Anny Ciok. Wybierz serię i zamów Fine Art Print na papierze 200 g/m², w ramie lub bez.",
+    "shopCta": "Zobacz wszystkie prace w sklepie"
+  },
+  "shop": {
+    "metaTitle": "Sklep: Fine Art Print według obrazów Anny Ciok",
+    "metaDescription": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem — Fine Art Print na papierze 200 g/m², w ramie lub bez. Filtruj według koloru i kolekcji; dostawa w UE i Wielkiej Brytanii.",
+    "eyebrow": "Fine Art Print",
+    "title": "Sklep <em>Fine Art Print</em>",
+    "lead": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę — odbitka jest drukowana na zamówienie. Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
+    "priceLadder": "{size} · od {price}",
+    "frameFrom": "Rama +{price}",
+    "priceNote": "Cena zależy od rozmiaru i oprawy — nie od obrazu.",
+    "filtersLabel": "Filtry sklepu",
+    "sortLabel": "Sortuj",
+    "sort": {
+      "featured": "Polecane",
+      "new": "Nowości",
+      "collection": "Kolekcja"
+    },
+    "colourLabel": "Kolor",
+    "colour": {
+      "blue": "Błękity",
+      "green": "Zielenie",
+      "warm": "Ochra i terakota",
+      "pink": "Róż i fiolet",
+      "earth": "Beże i brązy",
+      "mono": "Czerń i szarość"
+    },
+    "collectionLabel": "Kolekcja",
+    "allCollections": "Wszystkie kolekcje",
+    "clear": "Wyczyść filtry",
+    "empty": "Brak prac dla wybranych filtrów.",
+    "emptyCta": "Przeglądaj kolekcje",
+    "badgeNew": "Nowość",
+    "badgePick": "Wybór artystki",
+    "frameColoursLabel": "Ramy: {colours}",
+    "quickAdd": "Szybki wybór rozmiaru i ramy",
+    "quickDetails": "Zobacz szczegóły",
+    "close": "Zamknij",
+    "giftTitle": "Nie wiesz, który obraz wybrać?",
+    "giftLead": "Karta podarunkowa obejmuje Fine Art Print — obdarowana osoba sama wybierze kompozycję, rozmiar i oprawę.",
+    "collectionsTitle": "Przeglądaj według kolekcji",
+    "collectionsCta": "Wszystkie kolekcje",
+    "aboutTitle": "O Fine Art Print Anny Ciok",
+    "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
+    "aboutMore": "Czytaj dalej",
+    "aboutLess": "Zwiń"
+  },
+  "market": {
+    "meta": {
+      "title": "Targ w El Médano · {date}",
+      "description": "Ręcznie malowana ceramika i fine art prints Anny Ciok na targu rękodzieła w El Médano — sobota 24 października 2026, 9:00–14:00, główny plac. Unikatowa pamiątka z Teneryfy.",
+      "ogTitle": "W tę sobotę w El Médano — Anna Ciok",
+      "ogAlt": "Odbitki Fuerte Piba i ręcznie malowany talerz Anny Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok na targu rękodzieła w El Médano",
+      "dateLabel": "sobota 24 października 2026",
+      "shortDateLabel": "sob. 24 paź",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Główny plac, El Médano",
+      "area": "Granadilla de Abona, Teneryfa",
+      "payment": "Gotówka, karta lub Bizum",
+      "calendarDetails": "Ręcznie malowana ceramika i fine art prints Anny Ciok. Gotówka, karta lub Bizum.",
+      "mapLabel": "Mapa"
+    },
+    "hero": {
+      "eyebrow": "Targ rękodzieła · Mercadillo artesanal",
+      "line1": "W tę sobotę",
+      "line2": "w El Médano.",
+      "lead": "Ręcznie malowana ceramika i fine art prints prosto z mojej pracowni na Teneryfie. Wpadnij po pamiątkę, która naprawdę pochodzi z wyspy — albo po rzecz, której brakowało w Twoim mieszkaniu.",
+      "when": "Kiedy",
+      "where": "Gdzie",
+      "pay": "Płatność",
+      "directions": "Wyznacz trasę",
+      "calendar": "Dodaj do kalendarza",
+      "imageAlt": "Dwie odbitki Fuerte Piba, czarna i kremowa, a między nimi ręcznie malowany talerz na nasłonecznionej betonowej posadzce",
+      "badgeDay": "sobota",
+      "badgeNumber": "24",
+      "badgeMonth": "października",
+      "captionLabel": "Z pracowni",
+      "caption": "Odbitki Fuerte Piba i ręcznie malowany talerz."
+    },
+    "marquee": [
+      "ręcznie malowane talerze",
+      "kubki i wazony",
+      "fine art prints",
+      "unikaty",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Zabierz Teneryfę do domu",
+      "title": "Pamiątka, która jest <em>naprawdę stąd.</em>",
+      "p1": "Zapomnij o magnesach na lodówkę. Każdy talerz, kubek i wazon na moim stole jest malowany ręcznie w mojej pracowni w Güímar, z motywami z wyspy — palmy, kanaryjskie słońce, syrena, kobiety w szerokich kapeluszach.",
+      "p2": "Nie ma dwóch takich samych, więc rzecz, którą wybierzesz w sobotę, istnieje tylko jedna.",
+      "tipTitle": "Lecisz do domu?",
+      "tipText": "Odbitki podróżują płasko w walizce — a jak bezpiecznie zapakować ceramikę na drogę, chętnie podpowiem.",
+      "imageAlt": "Anna trzyma dwa białe wazony ręcznie malowane w niebieskie palmy, z terakotowymi pasiastymi brzegami"
+    },
+    "apartment": {
+      "eyebrow": "Do Twojego miejsca na wyspie",
+      "title": "Coś <em>do mieszkania.</em>",
+      "p1": "Dopiero zamieszkujesz na wyspie albo chcesz dodać duszy wakacyjnemu apartamentowi? Oprzyj parę odbitek o półkę, postaw wazon z palmą przy oknie, jedz z talerzy, których nikt inny nie ma — odważne, słoneczne rzeczy stworzone dla kanaryjskiego światła i białych ścian.",
+      "p2": "Na odbitkach są kanaryjskie powiedzonka i pasujące do nich postaci:",
+      "imageAlt": "Oprawione niebieskie odbitki Agüita i Chacho, Calma oparte o drewnianą półkę nad zielonymi kafelkami w ciepłym popołudniowym świetle"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "Na stole, <em>na ścianie.</em>",
+      "aside": "Rzeczy stworzone do codziennego używania — i równie dobrze czujące się na ścianie obok odbitki.",
+      "viewLarger": "Powiększ: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Czerń i terakota",
+        "caption": "Talerz z postacią w kapeluszu, wazon z falą i dwa kubki z palmami.",
+        "alt": "Talerz z postacią w szerokim kapeluszu, wazon z czarną falą i dwa kubki z palmami na kamiennych cokołach"
+      },
+      "bluePieces": {
+        "label": "W błękitach",
+        "caption": "Tarki, miseczki-dłonie, filiżanka i talerz.",
+        "alt": "Niebieskie ręcznie malowane ceramiczne tarki, dwie miseczki w kształcie dłoni, filiżanka i talerz z falą na kremowej tynkowanej ścianie"
+      },
+      "platesOnPrints": {
+        "label": "Glina i papier",
+        "caption": "Syreny, żeglarze i Fuerte Piba — na talerzach i na odbitkach.",
+        "alt": "Ręcznie malowane talerze z syreną, żeglarzami i kobietą w szerokim kapeluszu ułożone na odbitkach Fuerte Piba i Islas Canarias na drewnianym stole"
+      },
+      "wallPlates": {
+        "label": "Na ścianie",
+        "caption": "Liście, fala i palma, powieszone jak mała galeria.",
+        "alt": "Trzy ręcznie malowane talerze powieszone na fakturowanej kremowej ścianie: terakotowe liście, czarna fala z terakotowym słońcem i terakotowa palma w czarnym falbaniastym brzegu"
+      },
+      "plateWall": {
+        "label": "Nie ma dwóch takich samych",
+        "caption": "Cały stół talerzy, każdy malowany ręcznie.",
+        "alt": "Dziesiątki ręcznie malowanych talerzy w czerni i terakocie rozłożonych razem w słońcu: palmy, syreny, dłonie, muszle, liście i kratki"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Ściana ręcznie malowanych talerzy",
+      "view": "Powiększ zdjęcie ściany z talerzami",
+      "line1": "Nie ma dwóch takich samych.",
+      "line2": "Każdy talerz malowany ręcznie."
+    },
+    "table": {
+      "eyebrow": "Na stole",
+      "title": "Co znajdziesz <em>w sobotę.</em>",
+      "items": [
+        {
+          "title": "Talerze",
+          "text": "Od talerzyków deserowych po duże talerze do serwowania."
+        },
+        {
+          "title": "Kubki",
+          "text": "Na powolną café con leche na tarasie."
+        },
+        {
+          "title": "Wazony",
+          "text": "Małe, średnie i duże — z palmami w komplecie."
+        },
+        {
+          "title": "Miski",
+          "text": "Duże misy do serwowania i miski z falowanym brzegiem."
+        },
+        {
+          "title": "Fine art prints",
+          "text": "Kanaryjskie powiedzonka i postaci na Twoje ściany."
+        }
+      ],
+      "note": "Każda ceramika to unikat. Gdy się sprzeda, znika na zawsze — <em>przyjdź wcześnie.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Z showroomu",
+      "title": "Próbka <em>tego, co tworzę.</em>",
+      "aside": "Prace z wcześniejszych kolekcji — to nie lista tego, co jest na stoisku. Każda rzecz jest unikatem, więc przyjdź w sobotę zobaczyć, co leży na stole.",
+      "tag": "Wcześniejsza praca",
+      "note": "Z wcześniejszej kolekcji — unikat, malowany ręcznie w mojej pracowni w Güímar. Przyjdź w sobotę zobaczyć, co leży na stole.",
+      "viewPiece": "Powiększ: {title}",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Rozmiar",
+      "madeIn": "Wykonano w",
+      "madeInValue": "Güímar, Teneryfa",
+      "alt": {
+        "k10": "ręcznie malowany w niebieską muszlę",
+        "t20": "czarny kaktus w terakotowym brzegu",
+        "h01": "wewnątrz malowana dwiema czarnymi palmami",
+        "g01": "czarna palma między terakotowymi bordiurami",
+        "s19": "czarny osioł w terakotowym falbaniastym brzegu",
+        "w08": "malowana miękkimi niebieskimi kaktusami i terakotowymi kropkami",
+        "v01": "niebieski kaktus i terakotowe słońce",
+        "d06": "czarny homar narysowany wokół korpusu"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, jestem Anna",
+      "title": "Jedna para rąk, <em>jedna rzecz naraz.</em>",
+      "p1": "Mieszkam i pracuję na Teneryfie. W swojej małej pracowni w Güímar maluję akwarele na papierze i ręcznie maluję ceramikę stołową — nigdy masowo. Kolory, powiedzonka i postaci wyspy trafiają na prawie wszystko, co robię.",
+      "p2": "Wpadnij na stoisko, powiedz hola, weź talerz do ręki i zapytaj o wszystko, jak powstał.",
+      "instagram": "Obserwuj na Instagramie",
+      "imageAlt": "Anna Ciok w swojej pracowni z czarnym kotem na rękach, uśmiechnięta nad stołem pełnym ręcznie malowanych czarnych i terakotowych talerzy",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Do zobaczenia na placu w sobotę. Przyjdź wcześnie po najlepszy wybór — każda ceramika to unikat.",
+      "when": "Kiedy",
+      "where": "Gdzie",
+      "pay": "Płatność",
+      "cantMakeIt": "Nie dasz rady?",
+      "shop": "Zajrzyj do sklepu online",
+      "studio": " albo odwiedź moją pracownię w Güímar po wcześniejszym umówieniu."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Kubki",
+        "singular": "Kubek"
+      },
+      "wazony": {
+        "name": "Małe wazony",
+        "singular": "Mały wazon"
+      },
+      "wazony-duze": {
+        "name": "Duże wazony",
+        "singular": "Duży wazon"
+      },
+      "talerze-srednie": {
+        "name": "Talerze średnie",
+        "singular": "Talerz średni"
+      },
+      "duze-michy": {
+        "name": "Duże misy",
+        "singular": "Duża misa"
+      },
+      "miski-falowane": {
+        "name": "Miski z falowanym brzegiem",
+        "singular": "Miska z falowanym brzegiem"
+      }
+    },
+    "aria": {
+      "close": "Zamknij",
+      "prev": "Poprzednie",
+      "next": "Następne",
+      "photo": "Zdjęcie"
+    }
   }
 }

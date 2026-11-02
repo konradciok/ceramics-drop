@@ -29,6 +29,8 @@ import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOut
 import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
 import { recoverBalanceOrders } from './src/server/recover-balance-orders';
 import { isProbePath } from './src/lib/probe-paths';
+import { applyCatalogDegradation } from './src/lib/request-degradation';
+import { runWithRequestDegradation } from './src/lib/request-degradation-scope';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
 // Shared with the queue consumer (process-job outcome alerts) — throws on
@@ -59,7 +61,12 @@ export default {
       if (result.email) headers.set('X-Admin-Actor-Email', result.email);
       request = new Request(request, { headers });
     }
-    return handler.fetch(request, env, ctx);
+    // Per-request scope so a render served from the cold-fail-closed ceramic
+    // catalogue can be answered with 503 + Retry-After instead of a 404 or a
+    // ceramic-less sitemap (src/lib/request-degradation.ts).
+    return runWithRequestDegradation(async (degradation) =>
+      applyCatalogDegradation(request, await handler.fetch(request, env, ctx), degradation),
+    );
   },
 
   async queue(

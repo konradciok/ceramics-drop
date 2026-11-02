@@ -17,6 +17,8 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`../AGENTS.md`](../AGENTS.md) | active | Canonical agent/project context (architecture, commands, conventions) |
 | [`copy-source-of-truth.md`](copy-source-of-truth.md) | active | Owner-approved brand and terminology decisions; draft PL copy, verified fulfillment facts, and implementation gaps (2026-09-09) |
 | [`copy/2026-09-09/README.md`](copy/2026-09-09/README.md) | active | PL approval package: preview, full key register, proposed CMS changes and draft documents; not published |
+| [`copy/2026-09-30-opisy-kolekcji/README.md`](copy/2026-09-30-opisy-kolekcji/README.md) | active | Owner-approved (2026-09-30) descriptions of the then 17 print collections in PL/EN/ES/DE, with the visual notes they rest on, validation results and the import runbook (`npm run collections:import-descriptions`); imported into the CMS on 2026-09-30, with Cirrus, Horizons and Portals superseded by the update below |
+| [`copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.md`](copy/2026-09-30-opisy-kolekcji/aktualizacja-ukladu-kolekcji.md) | active | Owner-approved (2026-10-01) update of the collection copy after the 2026-09-30 regrouping (Cirrus rewritten, Horizons and Portals corrected); imported into the CMS on 2026-10-01 |
 | [`plans/2026-09-09-studio-copy-sales-model.md`](plans/2026-09-09-studio-copy-sales-model.md) | active | Owner's complete copy and sales-model implementation plan; PL approval gate first |
 
 ## Guides & runbooks
@@ -54,7 +56,7 @@ Trust chain for cleanup work: **`cleaning-instructions.md` is authoritative**;
 | [`cleaning-instructions.md`](cleaning-instructions.md) | active | Actionable cleanup tasks + agent rules (read before cleanup work) |
 | [`pony-audit.md`](pony-audit.md) | reference | Over-engineering audit feeding the above |
 | [`github-actions-audit.md`](github-actions-audit.md) | reference | 2026-07-23 CI audit + operator checklist |
-| [`audits/`](audits/) | reference | Domain audits (analytics, event system, …) — incl. `backend-audit-2026-08-12.md` (the Aug-2026 backend audit) + its `-verification.md` live-gate log, and `2026-09-11-production-launch-audit.md` (pre-launch audit: 7 fixes shipped, 3 operator launch checks open) |
+| [`audits/`](audits/) | reference | Domain audits (analytics, event system, …) — incl. `backend-audit-2026-08-12.md` (the Aug-2026 backend audit) + its `-verification.md` live-gate log, `2026-09-11-production-launch-audit.md` (pre-launch audit: 7 fixes shipped, 3 operator launch checks open), and `2026-09-27-codebase-audit.md` (whole-repo + live-service audit: 3 HIGH / 6 MEDIUM findings, recommended order) |
 | [`audit-ceramics-prints-separation.md`](audit-ceramics-prints-separation.md) | reference | Ceramics/prints separation audit |
 | [`superpowers/plans/2026-08-12-remediation-00-master-index.md`](superpowers/plans/2026-08-12-remediation-00-master-index.md) | active | Backend-audit remediation master index (14 plans, execution order, live-gate status — the entry point for the Aug-2026 audit follow-up work) |
 

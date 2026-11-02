@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-09-30T13:47:51.485Z",
+  "status": "passed_and_cancelled",
+  "productId": "fap058",
+  "runId": "2026-09-30-cirrus05",
+  "revision": "2026-09-30-r1",
+  "profiles": [
+    {
+      "profile": "3600x4800",
+      "variant": "30x40:false:false:none",
+      "orderId": "ord_1175490",
+      "downloadAssets": "Complete",
+      "finalStatus": "Cancelled"
+    },
+    {
+      "profile": "6000x8400",
+      "variant": "50x70:false:false:none",
+      "orderId": "ord_1175491",
+      "downloadAssets": "Complete",
+      "finalStatus": "Cancelled"
+    },
+    {
+      "profile": "8400x12000",
+      "variant": "70x100:false:false:none",
+      "orderId": "ord_1175492",
+      "downloadAssets": "Complete",
+      "finalStatus": "Cancelled"
+    }
+  ]
+}
