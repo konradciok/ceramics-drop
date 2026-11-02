@@ -35,11 +35,10 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
 import {
   PRINT_COUNTRIES,
   printShippingOf,
-  DEFAULT_INTERNATIONAL_SHIPPING,
   type PrintCountry,
   type InternationalShippingRates,
 } from '@/lib/print-shipping';
@@ -152,21 +151,23 @@ export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
   printPricing,
-  internationalShippingRates = DEFAULT_INTERNATIONAL_SHIPPING,
+  internationalShippingRates,
+  domesticShippingRates,
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
   /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
   printPricing: PrintPricingConfig;
   /**
-   * The SAME published international shipping table checkout charges from
+   * The SAME published shipping tables checkout charges from
    * (src/lib/shipping-rates/get.ts's getShippingRatesForDisplay, resolved by
-   * the server page — client islands cannot reach the DB). Defaults to the
-   * code constants only for callers that don't pass it (e.g. tests), never
-   * during a real page render — the koszyk page always supplies this so the
-   * cart never shows a price the CMS has since changed away from.
+   * the server page — client islands cannot reach the DB). Required, with no
+   * code-constant default: a caller that forgot them would silently show a
+   * price the CMS has since changed away from.
    */
-  internationalShippingRates?: InternationalShippingRates;
+  internationalShippingRates: InternationalShippingRates;
+  /** Ceramic (InPost) track of the same published table. */
+  domesticShippingRates: DomesticShippingRates;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
@@ -347,11 +348,11 @@ export function CartView({
     l.kind === 'print'
       ? priceOfVariant(l.sel, printCurrency, printPricing)
       : priceOfCurrency(l.product, currency);
-  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
+  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method, domesticShippingRates);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
-  // ceramic carts keep the InPost price list. `internationalShippingRates`
-  // is the same published table checkout resolves via
+  // ceramic carts use the InPost price list. `internationalShippingRates` and
+  // `domesticShippingRates` are the same published tables checkout resolves via
   // getShippingRatesForCheckout, so what's shown here always matches what
   // the buyer is charged.
   const shipCost = hasPrints

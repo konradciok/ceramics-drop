@@ -1,16 +1,25 @@
 import { getTranslations } from 'next-intl/server';
 import { currencyFormatter } from '@/lib/format';
-import { priceOfCurrency, shippingOfCurrency } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, type DomesticShippingRates } from '@/lib/pricing';
 import type { Currency } from '@/lib/currency';
 import type { Product } from '@/lib/types';
 
 /** Server-rendered all-in cost transparency for a ceramic PDP. */
-export async function PdpDelivery({ product, currency }: { product: Product; currency: Currency }) {
+export async function PdpDelivery({
+  product,
+  currency,
+  domesticShippingRates,
+}: {
+  product: Product;
+  currency: Currency;
+  /** The CMS-published InPost table checkout charges from (getShippingRatesForDisplay). */
+  domesticShippingRates: DomesticShippingRates;
+}) {
   const t = await getTranslations();
   const { fmt } = currencyFormatter(currency);
   const item = priceOfCurrency(product, currency);
-  const locker = shippingOfCurrency(currency, 'paczkomat');
-  const courier = shippingOfCurrency(currency, 'kurier');
+  const locker = shippingOfCurrency(currency, 'paczkomat', domesticShippingRates);
+  const courier = shippingOfCurrency(currency, 'kurier', domesticShippingRates);
 
   return (
     <div className="pdp-delivery" data-testid="pdp-delivery">

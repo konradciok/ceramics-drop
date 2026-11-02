@@ -10,6 +10,7 @@ import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { PRICE_EUR } from '@/lib/pricing';
 import { printShippingOf } from '@/lib/print-shipping';
 import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
+import { CODE_SHIPPING_RATES } from '@/lib/shipping-rates/last-known-good';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
 
@@ -77,7 +78,7 @@ describe('organizationSchema', () => {
 describe('collectionSchema', () => {
   let nodes: Node[];
   beforeAll(async () => {
-    const graph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw });
+    const graph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw, shipping: CODE_SHIPPING_RATES });
     nodes = graph['@graph'] as unknown as Node[];
   });
 
@@ -120,6 +121,7 @@ describe('collectionSchema', () => {
       t,
       tRaw,
       notes: { [firstId]: 'cms note' },
+      shipping: CODE_SHIPPING_RATES,
     });
     const cmsNodes = cmsGraph['@graph'] as unknown as Node[];
     const items = cmsNodes[1].itemListElement ?? [];
@@ -136,6 +138,7 @@ describe('collectionSchema', () => {
       t,
       tRaw,
       notes: { [firstId]: '' },
+      shipping: CODE_SHIPPING_RATES,
     });
     const items = (emptyNoteGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
     expect(items[0].item.description).toBe('stub note');
@@ -161,7 +164,7 @@ describe('collectionSchema', () => {
   });
 
   it('en locale emits EUR currency and PRICE_EUR price in collection offers (ceramics stay EUR-priced even though the market country is GB)', async () => {
-    const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t, tRaw });
+    const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t, tRaw, shipping: CODE_SHIPPING_RATES });
     const enNodes = enGraph['@graph'] as unknown as Node[];
     (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('EUR');
@@ -174,7 +177,7 @@ describe('collectionSchema', () => {
   it.each(['en', 'es', 'de'] as const)(
     '%s locale keeps applicableCountry on its own market, while returnPolicyCountry stays ES',
     async (locale) => {
-      const graph = await collectionSchema({ slug: 'kubki', locale, t, tRaw });
+      const graph = await collectionSchema({ slug: 'kubki', locale, t, tRaw, shipping: CODE_SHIPPING_RATES });
       const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
       items.forEach(({ item }) => {
         expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe(MARKET_COUNTRY[locale]);
@@ -187,7 +190,7 @@ describe('collectionSchema', () => {
   it('maps live soldIds to SoldOut, leaving the rest at their catalog state', async () => {
     const products = registryProductsByCategory('kubki');
     const soldId = products[0].id; // first piece, e.g. "k01"
-    const soldGraph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw, soldIds: [soldId] });
+    const soldGraph = await collectionSchema({ slug: 'kubki', locale: 'pl', t, tRaw, soldIds: [soldId], shipping: CODE_SHIPPING_RATES });
     const items = (soldGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
 
     items.forEach(({ item }, i) => {
@@ -208,7 +211,7 @@ describe('productSchema', () => {
     if (key.startsWith('notes.')) return ['test note'];
     return key;
   };
-  const graph = productSchema({ product, locale: 'pl', t, tRaw });
+  const graph = productSchema({ product, locale: 'pl', t, tRaw, shipping: CODE_SHIPPING_RATES });
   const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
 
   it('contains a BreadcrumbList and a Product node', () => {
@@ -259,7 +262,7 @@ describe('productSchema', () => {
   it.each(['en', 'es', 'de'] as const)(
     '%s locale sets applicableCountry to its own market while returnPolicyCountry stays ES',
     (locale) => {
-      const graph = productSchema({ product, locale, t, tRaw });
+      const graph = productSchema({ product, locale, t, tRaw, shipping: CODE_SHIPPING_RATES });
       const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
         shippingDetails: ShippingDetail[];
         hasMerchantReturnPolicy: ReturnPolicy;
@@ -274,20 +277,20 @@ describe('productSchema', () => {
     const availableOffer = (nodes[1]['offers'] as { availability: string });
     expect(availableOffer.availability).toBe('https://schema.org/InStock');
 
-    const soldGraph = productSchema({ product: { ...product, sold: true }, locale: 'pl', t, tRaw });
+    const soldGraph = productSchema({ product: { ...product, sold: true }, locale: 'pl', t, tRaw, shipping: CODE_SHIPPING_RATES });
     const soldOffer = (soldGraph['@graph'][1] as unknown as Record<string, { availability: string }>)['offers'];
     expect(soldOffer.availability).toBe('https://schema.org/SoldOut');
   });
 
   it('en locale uses /en/ prefix in URLs', () => {
-    const enGraph = productSchema({ product, locale: 'en', t, tRaw });
+    const enGraph = productSchema({ product, locale: 'en', t, tRaw, shipping: CODE_SHIPPING_RATES });
     const enNodes = enGraph['@graph'] as unknown as Record<string, unknown>[];
     const enOffer = enNodes[1]['offers'] as { url: string };
     expect(enOffer.url).toBe(`${SITE_URL}/en/kubki/${product.id}`);
   });
 
   it('en locale emits EUR currency and PRICE_EUR price in product offer', () => {
-    const enGraph = productSchema({ product, locale: 'en', t, tRaw });
+    const enGraph = productSchema({ product, locale: 'en', t, tRaw, shipping: CODE_SHIPPING_RATES });
     const enNodes = enGraph['@graph'] as unknown as Record<string, unknown>[];
     const enOffer = enNodes[1]['offers'] as { priceCurrency: string; price: number };
     expect(enOffer.priceCurrency).toBe('EUR');
@@ -295,13 +298,13 @@ describe('productSchema', () => {
   });
 
   it('uses an explicit description override when CMS content is resolved', () => {
-    const cmsGraph = productSchema({ product, locale: 'pl', t, tRaw, description: 'CMS opis' });
+    const cmsGraph = productSchema({ product, locale: 'pl', t, tRaw, description: 'CMS opis', shipping: CODE_SHIPPING_RATES });
     const cmsNodes = cmsGraph['@graph'] as unknown as Record<string, unknown>[];
     expect(cmsNodes[1]['description']).toBe('CMS opis');
   });
 
   it('falls through to the tRaw fallback when the description override is an empty string', () => {
-    const emptyGraph = productSchema({ product, locale: 'pl', t, tRaw, description: '' });
+    const emptyGraph = productSchema({ product, locale: 'pl', t, tRaw, description: '', shipping: CODE_SHIPPING_RATES });
     const emptyNodes = emptyGraph['@graph'] as unknown as Record<string, unknown>[];
     expect(emptyNodes[1]['description']).toBe('test note');
   });
@@ -310,7 +313,7 @@ describe('productSchema', () => {
 describe('printCollectionSchema', () => {
   let nodes: Node[];
   beforeAll(async () => {
-    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
+    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     nodes = graph['@graph'] as unknown as Node[];
   });
 
@@ -346,7 +349,7 @@ describe('printCollectionSchema', () => {
   });
 
   it('en locale ships in GBP on the GB Prodigi rate, agreeing with the merchant feed', async () => {
-    const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
+    const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     const items = (enGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
     items.forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('GBP');
@@ -360,7 +363,7 @@ describe('printCollectionSchema', () => {
   });
 
   it('keeps the EUR collection return-policy countries aligned with its shipping destinations', async () => {
-    const graph = await printCollectionSchema({ locale: 'de', t, tRaw, pricing: DEFAULT_PRINT_PRICING });
+    const graph = await printCollectionSchema({ locale: 'de', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
     items.forEach(({ item }) => {
       const countries = [...new Set((item.offers.shippingDetails ?? []).map((detail) => detail.shippingDestination.addressCountry))];
@@ -378,7 +381,7 @@ describe('printCollectionSchema', () => {
     const customDefinitions: PrintCollectionDefinition[] = [
       { slug: 'custom', name: 'Custom Collection', designIds: [firstDesign.id], prints: [] },
     ];
-    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions });
+    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions, shipping: CODE_SHIPPING_RATES });
     const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
     const match = items.find(({ item }) => item.name === 'Custom Collection 01');
     expect(match).toBeDefined();
@@ -393,7 +396,7 @@ describe('printProductSchema', () => {
   const tRawStub = (key: string) => (key.startsWith('notes.') ? notesStub : key);
 
   it('attaches Prodigi shippingDetails and a MerchantReturnFiniteReturnWindow policy', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING });
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
       shippingDetails: ShippingDetail[];
       hasMerchantReturnPolicy: ReturnPolicy;
@@ -404,7 +407,7 @@ describe('printProductSchema', () => {
   });
 
   it('falls through to the tRaw fallback when the description override is an empty string', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '', pricing: DEFAULT_PRINT_PRICING });
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '', pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     expect(nodes[1]['description']).toBe('test note');
   });
@@ -413,13 +416,13 @@ describe('printProductSchema', () => {
     const customDefinitions: PrintCollectionDefinition[] = [
       { slug: 'custom', name: 'Custom Collection', designIds: [design.id], prints: [] },
     ];
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions });
+    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions, shipping: CODE_SHIPPING_RATES });
     const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
     expect(nodes[1]['name']).toBe('Custom Collection 01');
   });
 
   it('en locale prices and ships the PDP offer in GBP/GB, matching the merchant feed', () => {
-    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING });
+    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
     const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
       priceCurrency: string;
       shippingDetails: ShippingDetail[];
@@ -434,7 +437,7 @@ describe('printProductSchema', () => {
   });
 
   it('keeps the EUR PDP return-policy countries aligned with its shipping destinations', () => {
-    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, displayCurrency: 'eur' });
+    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, displayCurrency: 'eur', shipping: CODE_SHIPPING_RATES });
     const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
       priceCurrency: string;
       shippingDetails: ShippingDetail[];
@@ -456,7 +459,7 @@ describe('print breadcrumbs run through the collection hub', () => {
 
   it('PDP: Home › Collections › {collection} › print when the design belongs to a collection', () => {
     const definitions: PrintCollectionDefinition[] = [{ slug: 'linea', name: 'Linea', designIds: [design.id], prints: [] }];
-    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions }));
+    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions, shipping: CODE_SHIPPING_RATES }));
     expect(crumbs.map((c) => c.position)).toEqual([1, 2, 3, 4]);
     expect(crumbs.map((c) => c.item)).toEqual([
       `${SITE_URL}/en`,
@@ -469,7 +472,7 @@ describe('print breadcrumbs run through the collection hub', () => {
   });
 
   it('PDP: falls back to Home › Shop › print for a design in no collection', () => {
-    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: [] }));
+    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: [], shipping: CODE_SHIPPING_RATES }));
     expect(crumbs.map((c) => c.item)).toEqual([`${SITE_URL}/en`, `${SITE_URL}/en/sklep`, `${SITE_URL}/en/fine-art-prints/${design.id}`]);
   });
 
@@ -477,6 +480,7 @@ describe('print breadcrumbs run through the collection hub', () => {
     const designs = registryPrintDesigns().slice(0, 3);
     const graph = printCollectionPageSchema({
       locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', description: 'Opis kolekcji', designs,
+      shipping: CODE_SHIPPING_RATES,
     });
     const page = graph['@graph'][0] as unknown as { '@type': string; url: string; description: string; mainEntity: { numberOfItems: number } };
     expect(page['@type']).toBe('CollectionPage');
@@ -489,6 +493,7 @@ describe('print breadcrumbs run through the collection hub', () => {
   it('collection page: omits description when there is none', () => {
     const graph = printCollectionPageSchema({
       locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', designs: registryPrintDesigns().slice(0, 1),
+      shipping: CODE_SHIPPING_RATES,
     });
     expect(graph['@graph'][0]).not.toHaveProperty('description');
   });

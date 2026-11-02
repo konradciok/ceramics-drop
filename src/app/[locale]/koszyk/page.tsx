@@ -45,6 +45,7 @@ export default async function Page({ params, searchParams }: Props) {
         initialPrintCountry={initialPrintCountry}
         printPricing={printPricing}
         internationalShippingRates={shippingRates.international}
+        domesticShippingRates={shippingRates.domestic}
       />
     </main>
   );
