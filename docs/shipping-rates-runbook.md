@@ -34,15 +34,16 @@ to the constants. No copy in `messages/*.json` needs editing when rates change.
 
 ## After you publish new rates
 
-1. **Check parity** (a few minutes after publishing; pages are `force-dynamic`):
-   ```bash
-   # published table
+1. **Check parity** (a few minutes after publishing; pages are `force-dynamic`).
+   The published table (SQL, e.g. in the Supabase SQL editor):
+   ```sql
    select r.id, r.published_revision, d.payload
    from shipping_rates r
    join shipping_rate_drafts d on d.rate_id = r.id and d.revision = r.published_revision;
-
-   # what Google will read, and what the page says
-   curl -s "https://anna-ciok.studio/api/feed/google?market=pl" | grep -m3 "<g:price>\|<g:shipping>" 
+   ```
+   What Google will read, and what the page says (shell):
+   ```bash
+   curl -s "https://anna-ciok.studio/api/feed/google?market=pl" | grep -m3 "<g:price>\|<g:shipping>"
    curl -sL "https://anna-ciok.studio/fine-art-prints/fap001" | grep -o '"shippingRate":{[^}]*}' | head -4
    ```
    The feed's `g:shipping` price and the JSON-LD loose rate for the same country

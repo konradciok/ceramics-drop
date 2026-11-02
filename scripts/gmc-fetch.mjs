@@ -70,6 +70,53 @@ export function selectFetchSources(dataSources, only = null) {
   });
 }
 
+/**
+ * Every data source of the account. `dataSources.list` is paginated, so follow
+ * `nextPageToken` — otherwise a confirmed run would silently skip sources that
+ * fall on later pages.
+ * @param {(req: { url: string }) => Promise<{ data: any }>} request
+ * @param {string} account
+ */
+export async function listAllDataSources(request, account) {
+  const MAX_PAGES = 50;
+  const all = [];
+  const seen = new Set();
+  let pageToken;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const url = new URL(`${API}/datasources/v1/accounts/${account}/dataSources`);
+    url.searchParams.set('pageSize', '100');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+    const res = await request({ url: url.toString() });
+    all.push(...(res.data?.dataSources ?? []));
+    pageToken = res.data?.nextPageToken || undefined;
+    if (!pageToken) return all;
+    if (seen.has(pageToken)) throw new Error('dataSources.list returned a repeated nextPageToken');
+    seen.add(pageToken);
+  }
+  throw new Error(`dataSources.list still paginating after ${MAX_PAGES} pages`);
+}
+
+/**
+ * Trigger the fetch of every source, one by one. A rejected request (network
+ * error, auth failure mid-run) is recorded as a failure for THAT source and the
+ * loop continues, so one bad request never leaves the remaining feeds stale.
+ * @param {(req: Record<string, any>) => Promise<{ status: number; data: any }>} request
+ * @param {Array<Record<string, any>>} sources
+ */
+export async function triggerFetches(request, sources) {
+  const results = [];
+  for (const ds of sources) {
+    try {
+      const res = await request({ url: `${API}/datasources/v1/${ds.name}:fetch`, method: 'POST', data: {}, validateStatus: () => true });
+      const ok = res.status >= 200 && res.status < 300;
+      results.push({ id: ds.dataSourceId, ok, status: res.status, message: ok ? '' : JSON.stringify(res.data?.error?.message ?? res.data) });
+    } catch (err) {
+      results.push({ id: ds.dataSourceId, ok: false, status: null, message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return results;
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
@@ -88,8 +135,8 @@ async function main() {
   const auth = new google.auth.GoogleAuth({ keyFile: resolvedKey, scopes: ['https://www.googleapis.com/auth/content'] });
   const client = await auth.getClient();
 
-  const listed = await client.request({ url: `${API}/datasources/v1/accounts/${account}/dataSources` });
-  const sources = selectFetchSources(listed.data.dataSources ?? [], opts.only);
+  const request = (req) => client.request(req);
+  const sources = selectFetchSources(await listAllDataSources(request, account), opts.only);
   if (sources.length === 0) {
     console.error('No scheduled-fetch data sources matched.');
     process.exitCode = 1;
@@ -106,13 +153,11 @@ async function main() {
     return;
   }
 
-  let failed = 0;
-  for (const ds of sources) {
-    const res = await client.request({ url: `${API}/datasources/v1/${ds.name}:fetch`, method: 'POST', data: {}, validateStatus: () => true });
-    const ok = res.status >= 200 && res.status < 300;
-    if (!ok) failed += 1;
-    console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${ds.dataSourceId} (HTTP ${res.status})${ok ? '' : ` ${JSON.stringify(res.data?.error?.message ?? res.data)}`}`);
+  const results = await triggerFetches(request, sources);
+  for (const r of results) {
+    console.log(`  ${r.ok ? 'OK  ' : 'FAIL'} ${r.id} (${r.status === null ? 'no response' : `HTTP ${r.status}`})${r.ok ? '' : ` ${r.message}`}`);
   }
+  const failed = results.filter((r) => !r.ok).length;
   if (failed > 0) {
     console.error(`\n${failed} fetch(es) failed.`);
     process.exitCode = 1;
