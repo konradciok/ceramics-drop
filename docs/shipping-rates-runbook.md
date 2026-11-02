@@ -64,10 +64,12 @@ to the constants. No copy in `messages/*.json` needs editing when rates change.
 
 - The feed advertises the **loose** (unframed) rate next to the "from" price; the
   JSON-LD lists both loose and framed per country. That is intentional.
-- The Merchant Center account still carries a legacy account-level flat shipping
-  service (`dostawa_flat`, 8 € to 21 countries). Item-level shipping from the feed
-  takes precedence, but it should be removed once every product is confirmed to
-  carry its own shipping (decision pending, see `docs/STATUS.md`).
+- The Merchant Center account no longer has an account-level shipping service: the
+  legacy `dostawa_flat` (8 € flat, 21 countries) was removed on 2026-11-02 after
+  every product was confirmed to carry item-level shipping for each target country.
+  Shipping lives only in the feed (`g:shipping`), so the feed is the single place
+  Google learns it. If a new feed source or country is ever added, make sure its
+  products carry item-level shipping for that country.
 - **Studio pickup (`odbior`)** is editable in the `domestic` resource. The cart and
   the ceramic PDP delivery block show the published price (free when 0), but the
   prose on `/dostawa-i-zwroty` and the contact page says pickup is free
