@@ -14,6 +14,10 @@ const GENERATED_AND_EXTERNAL_PATHS = [
   '.claude/**',
   '.worktrees/**',
   'pr-review/**',
+  // Claude Design sync: shims/previews for a non-Next runtime + generated bundle.
+  '.design-sync/**',
+  '.ds-sync/**',
+  'ds-bundle/**',
 ];
 
 const eslintConfig = [
