@@ -91,3 +91,11 @@ pr-review/
 /prompt.md
 docs/workers-logs-14.08.2026.json
 docs/archive/image.png
+
+# design-sync (Claude Design) — staged scripts, build output, machine state
+/.ds-sync/
+/ds-bundle/
+/.design-sync/.cache/
+/.design-sync/learnings/
+/.design-sync/node_modules
+/.design-sync/
