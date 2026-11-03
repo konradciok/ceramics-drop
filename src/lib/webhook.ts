@@ -78,7 +78,35 @@ function extractPiId(raw: string | { id: string } | null | undefined): string | 
   return raw.id;
 }
 
+/**
+ * Apps that share this Stripe account and settle their own payments — they
+ * tag their PaymentIntents `metadata.app`. workshops.anna-ciok.studio
+ * (konradciok/workshops) handles its Checkout payments in its own webhook;
+ * without this guard every workshop payment would reach markPaid here and
+ * report stripe_webhook_unknown_payment_intent.
+ */
+export const OTHER_STRIPE_APPS: readonly string[] = ['workshops'];
+
+/** A PaymentIntent of another app on the shared account (its tag + booking ref), or null for the shop's own. */
+export function otherStripeApp(pi: Pick<Stripe.PaymentIntent, 'metadata'>): { app: string; ref: string | null } | null {
+  const app = pi.metadata?.app;
+  if (typeof app !== 'string' || !OTHER_STRIPE_APPS.includes(app)) return null;
+  return { app, ref: pi.metadata.booking_ref ?? null };
+}
+
+/**
+ * Only payment_intent.* events are skipped. Disputes and failed refunds on
+ * another app's payment still reach the studio alerts — that app doesn't
+ * handle them and a dispute has a response deadline — labelled with its app
+ * and booking ref instead of an order (see the alert callbacks in route.ts).
+ */
+function belongsToOtherApp(event: Stripe.Event): boolean {
+  if (!event.type.startsWith('payment_intent.')) return false;
+  return otherStripeApp(event.data.object as Stripe.PaymentIntent) !== null;
+}
+
 export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<void> {
+  if (belongsToOtherApp(event)) return;
   if (await deps.handleBalancePayment?.(event)) return;
   switch (event.type) {
     case 'payment_intent.succeeded': {

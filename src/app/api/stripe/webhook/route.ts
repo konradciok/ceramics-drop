@@ -5,7 +5,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getInPost } from '@/lib/inpost';
-import { handleStripeEvent } from '@/lib/webhook';
+import { handleStripeEvent, otherStripeApp } from '@/lib/webhook';
 import { handleBalancePaymentEvent } from '@/server/balance-payment-events';
 import { completePaidOrder } from '@/server/complete-paid-order';
 import { createOrderInvoice } from '@/lib/invoice';
@@ -413,6 +413,20 @@ export async function POST(req: Request) {
       .eq('provider_event_id', event.id)
       .eq('processing_started_at', claimedAt)
       .then(undefined, (e) => console.error('webhook_events lease release failed', event.id, e));
+
+  // A dispute or failed refund whose PaymentIntent matched no order may belong
+  // to another app on this Stripe account (OTHER_STRIPE_APPS). The studio is
+  // still alerted — that app doesn't handle these — but labelled with the app
+  // and booking ref. Best-effort: a lookup failure alerts without the label.
+  const otherAppPayment = async (piId: string | null) => {
+    if (!piId) return null;
+    try {
+      return otherStripeApp(await stripe.paymentIntents.retrieve(piId));
+    } catch (err) {
+      console.error('other-app lookup failed for payment_intent', piId, err);
+      return null;
+    }
+  };
 
   await handleStripeEvent(event, {
     handleBalancePayment: (balanceEvent) => handleBalancePaymentEvent(balanceEvent, { supabase, stripe, env, ctx }),
@@ -1051,6 +1065,7 @@ export async function POST(req: Request) {
           .maybeSingle();
         orderId = (data as { id: string } | null)?.id ?? null;
       }
+      const otherApp = orderId ? null : await otherAppPayment(piId);
       Sentry.captureMessage('stripe_refund_failed', {
         level: 'error',
         extra: {
@@ -1058,12 +1073,15 @@ export async function POST(req: Request) {
           refund_id: refund.id,
           failure_reason: refund.failure_reason ?? null,
           order_id: orderId,
+          app: otherApp?.app ?? null,
+          booking_ref: otherApp?.ref ?? null,
         },
       });
       // Deliberately allowed to throw: a failed send 5xxes the route, the
       // ledger lease is released, and Stripe's retry re-attempts the alert.
       await emailRefundFailedAlertToStudio({
         orderId,
+        otherApp,
         refundId: refund.id,
         failureReason: refund.failure_reason ?? null,
       });
@@ -1082,6 +1100,7 @@ export async function POST(req: Request) {
         orderId = (data as { id: string } | null)?.id ?? null;
       }
       const evidenceDueBy = dispute.evidence_details?.due_by ?? null;
+      const otherApp = orderId ? null : await otherAppPayment(piId);
       Sentry.captureMessage('stripe_dispute_created', {
         level: 'error',
         extra: {
@@ -1092,12 +1111,15 @@ export async function POST(req: Request) {
           currency: dispute.currency,
           evidence_due_by: evidenceDueBy,
           order_id: orderId,
+          app: otherApp?.app ?? null,
+          booking_ref: otherApp?.ref ?? null,
         },
       });
       // Deliberately allowed to throw: a failed send 5xxes the route, the
       // ledger lease is released, and Stripe's retry re-attempts the alert.
       await emailDisputeCreatedAlertToStudio({
         orderId,
+        otherApp,
         disputeId: dispute.id,
         amount: dispute.amount,
         currency: dispute.currency,

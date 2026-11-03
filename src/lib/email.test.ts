@@ -221,6 +221,29 @@ describe('buildRefundFailedAlertEmail', () => {
   });
 });
 
+describe('studio alerts for another app on the shared Stripe account', () => {
+  it('names the workshop booking instead of a missing order', () => {
+    const otherApp = { app: 'workshops', ref: 'ACW-AAAA-BBBB' };
+    const refund = buildRefundFailedAlertEmail({ orderId: null, otherApp, refundId: 're_9', failureReason: null });
+    expect(refund.subject).toBe('[Zwrot] Zwrot nie dotarł do klienta — ACW-AAAA-BBBB');
+    expect(refund.mainContent).toContain('Rezerwacja');
+    expect(refund.mainContent).toContain('Warsztaty (workshops.anna-ciok.studio) — ACW-AAAA-BBBB');
+    expect(refund.mainContent).not.toContain('(nie znaleziono)');
+
+    const dispute = buildDisputeCreatedAlertEmail({
+      orderId: null,
+      otherApp,
+      disputeId: 'dp_9',
+      amount: 6500,
+      currency: 'eur',
+      reason: null,
+      evidenceDueBy: null,
+    });
+    expect(dispute.subject).toBe('[Spór] Nowy spór Stripe — odpowiedz do (brak) — ACW-AAAA-BBBB');
+    expect(dispute.mainContent).toContain('Warsztaty (workshops.anna-ciok.studio) — ACW-AAAA-BBBB');
+  });
+});
+
 describe('buildDisputeCreatedAlertEmail', () => {
   it('is deadline-bearing: surfaces evidence_details.due_by in the subject and body (L-6)', () => {
     const { subject, mainContent } = buildDisputeCreatedAlertEmail({

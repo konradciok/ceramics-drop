@@ -1,6 +1,14 @@
 /** Canonical production origin (apex). Prefer www redirect in Cloudflare if apex DNS is still propagating. */
 export const SITE_URL = 'https://anna-ciok.studio';
 
+/** Workshop booking site — a separate app (konradciok/workshops) on its own subdomain. */
+export const WORKSHOPS_URL = 'https://workshops.anna-ciok.studio';
+
+/** The workshops site in the same language: it uses the shop's locale scheme (PL unprefixed). */
+export function workshopsUrl(locale: string): string {
+  return locale === 'pl' ? WORKSHOPS_URL : `${WORKSHOPS_URL}/${locale}`;
+}
+
 /** Brand name — a proper noun, identical across locales. Single source for metadata + JSON-LD. */
 export const SITE_NAME = 'Anna Ciok Studio';
 export const ARTIST_NAME = 'Anna Ciok';

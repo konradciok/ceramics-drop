@@ -424,9 +424,23 @@ export async function emailPrintRefundAlertToStudio(params: PrintRefundAlert): P
 
 // ── Studio refund-failed alert ───────────────────────────────────────────────
 
+/** Another app's payment on the shared Stripe account (see OTHER_STRIPE_APPS in webhook.ts). */
+export type OtherAppPayment = { app: string; ref: string | null };
+
+const OTHER_APP_LABELS: Record<string, string> = { workshops: 'Warsztaty (workshops.anna-ciok.studio)' };
+
+/** "Zamówienie" row, or — for another app's payment — which app and booking it belongs to. */
+function paymentOwnerRow(orderId: string | null, otherApp: OtherAppPayment | null | undefined): { label: string; value: string } {
+  if (orderId || !otherApp) return { label: 'Zamówienie', value: escapeHtml(orderId ?? '(nie znaleziono)') };
+  const app = OTHER_APP_LABELS[otherApp.app] ?? otherApp.app;
+  return { label: 'Rezerwacja', value: escapeHtml(otherApp.ref ? `${app} — ${otherApp.ref}` : app) };
+}
+
 export type RefundFailedAlert = {
   /** Correlated order id, or null when the payment_intent matched no order. No other customer data belongs here. */
   orderId: string | null;
+  /** Set when no order matched because the payment belongs to another app (e.g. a workshop booking). */
+  otherApp?: OtherAppPayment | null;
   refundId: string;
   failureReason: string | null;
 };
@@ -438,7 +452,7 @@ export function buildRefundFailedAlertEmail(params: RefundFailedAlert): {
   mainContent: string;
 } {
   const rows: Array<{ label: string; value: string }> = [
-    { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
+    paymentOwnerRow(params.orderId, params.otherApp),
     { label: 'Zwrot Stripe', value: escapeHtml(params.refundId) },
     { label: 'Powód', value: escapeHtml(params.failureReason ?? '(brak)') },
   ];
@@ -454,7 +468,7 @@ export function buildRefundFailedAlertEmail(params: RefundFailedAlert): {
   ].join('');
 
   return {
-    subject: `[Zwrot] Zwrot nie dotarł do klienta — ${params.orderId ?? params.refundId}`,
+    subject: `[Zwrot] Zwrot nie dotarł do klienta — ${params.orderId ?? params.otherApp?.ref ?? params.refundId}`,
     html: mainContent,
     mainContent,
   };
@@ -521,6 +535,8 @@ export async function emailInvoiceFailedAlertToStudio(params: InvoiceFailedAlert
 export type DisputeCreatedAlert = {
   /** Correlated order id, or null when the payment_intent matched no order. */
   orderId: string | null;
+  /** Set when no order matched because the payment belongs to another app (e.g. a workshop booking). */
+  otherApp?: OtherAppPayment | null;
   disputeId: string;
   /** Amount in minor units, with its currency, straight off the Stripe dispute. */
   amount: number;
@@ -540,7 +556,7 @@ export function buildDisputeCreatedAlertEmail(params: DisputeCreatedAlert): {
     ? new Date(params.evidenceDueBy * 1000).toISOString().slice(0, 10)
     : '(brak)';
   const rows: Array<{ label: string; value: string }> = [
-    { label: 'Zamówienie', value: escapeHtml(params.orderId ?? '(nie znaleziono)') },
+    paymentOwnerRow(params.orderId, params.otherApp),
     { label: 'Spór Stripe', value: escapeHtml(params.disputeId) },
     { label: 'Kwota', value: escapeHtml(formatGrosze(params.amount, params.currency)) },
     { label: 'Powód', value: escapeHtml(params.reason ?? '(brak)') },
@@ -558,7 +574,7 @@ export function buildDisputeCreatedAlertEmail(params: DisputeCreatedAlert): {
   ].join('');
 
   return {
-    subject: `[Spór] Nowy spór Stripe — odpowiedz do ${dueBy} — ${params.orderId ?? params.disputeId}`,
+    subject: `[Spór] Nowy spór Stripe — odpowiedz do ${dueBy} — ${params.orderId ?? params.otherApp?.ref ?? params.disputeId}`,
     html: mainContent,
     mainContent,
   };

@@ -5,8 +5,14 @@ import { completePaidOrder } from '@/server/complete-paid-order';
 // --- Stripe: constructEventAsync (all paths) + refunds.create (under-fulfillment) ---
 const constructEventAsync = vi.fn();
 const refundsCreate = vi.fn(async () => ({}));
+// paymentIntents.retrieve: other-app labelling of dispute / refund.failed alerts.
+const paymentIntentsRetrieve = vi.fn(async (): Promise<{ metadata: Record<string, string> }> => ({ metadata: {} }));
 vi.mock('@/lib/stripe', () => ({
-  getStripe: () => ({ webhooks: { constructEventAsync }, refunds: { create: refundsCreate } }),
+  getStripe: () => ({
+    webhooks: { constructEventAsync },
+    refunds: { create: refundsCreate },
+    paymentIntents: { retrieve: paymentIntentsRetrieve },
+  }),
 }));
 
 // --- Cloudflare env: mutable per-test so specific describe blocks can opt into
@@ -65,7 +71,7 @@ import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailRefundFailedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -1119,12 +1125,35 @@ describe('webhook charge.dispute.created alert (L-6)', () => {
     expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledTimes(1);
     expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith({
       orderId: 'o1',
+      otherApp: null,
       disputeId: 'dp_1',
       amount: 13900,
       currency: 'pln',
       reason: 'fraudulent',
       evidenceDueBy: 1767139200,
     });
+  });
+
+  it("still alerts for another app's payment (workshops) on the shared account, labelled with its booking", async () => {
+    paymentIntentsRetrieve.mockResolvedValueOnce({ metadata: { app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' } });
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(disputeCreatedRequest());
+
+    expect(res.status).toBe(200);
+    expect(paymentIntentsRetrieve).toHaveBeenCalledWith('pi_1');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_dispute_created', expect.objectContaining({
+      extra: expect.objectContaining({ order_id: null, app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' }),
+    }));
+    expect(emailDisputeCreatedAlertToStudio).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: null,
+      otherApp: { app: 'workshops', ref: 'ACW-AAAA-BBBB' },
+    }));
   });
 
   it('a failed alert send throws (5xx) so Stripe retries the delivery — a dispute alert must not be droppable', async () => {
@@ -1137,6 +1166,45 @@ describe('webhook charge.dispute.created alert (L-6)', () => {
     supabaseImpl = supabase;
 
     await expect(POST(disputeCreatedRequest())).rejects.toThrow(/resend down/);
+  });
+});
+
+describe('webhook refund.failed alert', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    vi.mocked(emailRefundFailedAlertToStudio).mockClear();
+  });
+
+  it("labels a workshops payment with its booking in Sentry and the studio alert", async () => {
+    constructEventAsync.mockResolvedValue({
+      type: 'refund.failed',
+      data: { object: { id: 're_1', payment_intent: 'pi_1', failure_reason: 'expired_card' } },
+    });
+    paymentIntentsRetrieve.mockResolvedValueOnce({ metadata: { app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' } });
+    const { supabase } = makeSupabase({
+      ordersUpdate: { data: [], error: null },
+      ordersSelect: { data: null, error: null },
+      pieceUpdate: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(new Request('http://localhost/api/stripe/webhook', {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig_test' },
+      body: '{}',
+    }));
+
+    expect(res.status).toBe(200);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_refund_failed', expect.objectContaining({
+      extra: expect.objectContaining({ order_id: null, app: 'workshops', booking_ref: 'ACW-AAAA-BBBB' }),
+    }));
+    expect(emailRefundFailedAlertToStudio).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: null,
+      otherApp: { app: 'workshops', ref: 'ACW-AAAA-BBBB' },
+      refundId: 're_1',
+      failureReason: 'expired_card',
+    }));
   });
 });
 
