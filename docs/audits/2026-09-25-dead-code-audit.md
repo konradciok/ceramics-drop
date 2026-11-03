@@ -27,8 +27,8 @@ single agent's opinion.
   legacy `Product[]`-based analytics events, a superseded print-derivative
   compositor) + 1 medium (pre-CMS print-PDP section copy) + 1 low-confidence
   ("Phase 0" print-asset manifest code).
-- **Dead API endpoints:** **0** of 41. `/api/returns` looks dead by traffic
-  (no caller) but is a deliberate `410 Gone` stub — the orphaned code is
+- **Dead API endpoints:** **0** of 41. `/api/returns` looks dead (its only
+  in-repo caller was removed in #295) but is a deliberate `410 Gone` stub — the orphaned code is
   *behind* it, not the route itself.
 - **Removable dependencies:** **0**. Every one of the 32 npm packages has a
   live call site or `npm run` script invocation.
@@ -337,7 +337,10 @@ actually traced, not assumed:
 
 Not code-removal findings, but they materially affect trust in this repo's
 own architecture doc and directly caused (and were caught by) false-positive
-checks during this audit, so they're recorded here for whoever owns `AGENTS.md`:
+checks during this audit, so they're recorded here for whoever owns `AGENTS.md`.
+Items 5 and 6 (the `/api/returns` description and the `priceOf` convention)
+were **resolved in the PR that executed this audit** (#331); the rest are
+historical findings as of 2026-09-25 unless noted:
 
 1. **`AGENTS.md`'s CMS API section** claims S2–S4-scoped operations
    (content/pricing/shipping-rates/assets/uploads/jobs) return
@@ -354,9 +357,10 @@ checks during this audit, so they're recorded here for whoever owns `AGENTS.md`:
    (`src/server/asset-jobs/**`, `PrintAssetProcessor` DO).
 5. **`AGENTS.md`** still describes `/api/returns` as creating a return
    shipment; it's a `410` stub (Cluster 1). Same stale claim in
-   `docs/cloudflare-deployment.md`.
+   `docs/cloudflare-deployment.md`. **Resolved in #331.**
 6. **`AGENTS.md`'s Key Conventions** tells agents to use `priceOf(product,
    locale)`; the live convention is `priceOfCurrency()` (item 11).
+   **Resolved in #331.**
 7. **`AGENTS.md`** describes `/sklep` as rendering "every piece grouped by
    category in a single `GroupedGallery` with a sticky category jump-nav."
    `GroupedGallery`/`AllPiecesScreen` don't exist in the current codebase —
@@ -396,7 +400,7 @@ Organized by technical dependency/risk, not by feature importance.
    critical path. Delete files + their tests + their i18n keys + their env
    vars together per cluster; run `npm run lint && npm run typecheck &&
    npm run test` after.
-2. **Documentation fixes alongside step 1.** Update `AGENTS.md`'s `/api/returns`
+2. **Documentation fixes alongside step 1.** *(Done in #331.)* Update `AGENTS.md`'s `/api/returns`
    description and Key Conventions' `priceOf` mention, and
    `docs/cloudflare-deployment.md`'s `STUDIO_RETURN_*` claim, in the same PR
    that removes Cluster 1 — otherwise the docs go stale the moment the code
@@ -423,5 +427,6 @@ Organized by technical dependency/risk, not by feature importance.
 
 No item in this report sits on the payment, webhook, fulfilment-queue, or
 cron-sweep critical path — the returns-flow cluster is the largest single
-piece of removable code, and it stopped receiving traffic 2+ weeks before
-this audit ran.
+piece of removable code. Its only in-repo caller was removed in PR #295
+(2026-09-09), 2+ weeks before this audit ran; this audit did not measure
+requests still reaching the retained `POST /api/returns` route.
