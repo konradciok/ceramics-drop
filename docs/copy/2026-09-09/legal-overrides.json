@@ -1,0 +1,46 @@
+{
+  "shipping": {
+    "lead":"Dostawa Fine Art Print, ceramika podczas aktywnego dropu oraz zasady zwrotów i reklamacji.",
+    "toc1":"Dostawa Fine Art Print", "toc2":"Czas realizacji", "toc3":"Przesyłki", "toc4":"Wizyta w pracowni", "toc5":"Odstąpienie od umowy", "toc6":"Reklamacje", "updated":"Projekt do zatwierdzenia — 9 września 2026",
+    "s1H":"Dostawa Fine Art Print",
+    "s1P":"Fine Art Print zamawiasz z dostawą na podany adres. Dostępny kierunek i koszt sprawdzisz w koszyku przed płatnością. Opłata zależy od kraju oraz tego, czy zamówienie zawiera produkt z ramą.",
+    "s1Li1":"Fine Art Print — dostawa na adres", "s1Li1b":"Fine Art Print nie jest dostarczany do paczkomatu", "s1Li2":"Karta podarunkowa — kod wysyłany e-mailem", "s1Li3":"Ceramika online — wyłącznie podczas aktywnego dropu, zgodnie z ofertą dostawy w koszyku",
+    "s2P":"Fine Art Print powstaje po złożeniu zamówienia. Czas doręczenia obejmuje przygotowanie wydruku, ewentualną oprawę i transport.",
+    "s2Note":"Jeśli potrzebujesz pracy na konkretny dzień, napisz na ania@ciok.art przed zakupem.",
+    "s3H":"Przesyłki", "s3P":"Zamówienie może dotrzeć w kilku przesyłkach. Dostępność śledzenia zależy od usługi transportowej. Jeśli odnośnik do śledzenia jest dostępny, otrzymasz go po nadaniu.",
+    "s4H":"Wizyta w pracowni", "s4P":"Ceramikę możesz obejrzeć i kupić podczas umówionej wizyty w Güímar na Teneryfie. Adres: San Pedro Abajo 12, 38500 Guimar, Tenerife, Hiszpania — Wyspy Kanaryjskie. Napisz na ania@ciok.art, aby ustalić termin. Galeria wcześniejszych prac nie jest wykazem aktualnie dostępnej ceramiki.",
+    "s5H":"Odstąpienie od umowy", "s5P":"Przy zakupie konsumenckim online możesz zgłosić odstąpienie w ciągu 14 dni od otrzymania towaru. Standardowe Fine Art Print podlega tym zasadom także wtedy, gdy wydruk powstaje po zamówieniu. Instrukcję znajdziesz na <zlink>stronie zwrotów</zlink>. Napisz na <link>ania@ciok.art</link> lub prześlij jednoznaczne oświadczenie inną drogą.",
+    "s5Li1":"Odeślij towar do pracowni w ciągu 14 dni od zgłoszenia odstąpienia. Zabezpiecz go na czas transportu; oryginalne opakowanie nie jest wymagane.",
+    "s5Li2":"Koszt zwykłego odesłania ponosi kupujący. Reklamacje rozpatrujemy osobno.",
+    "s5Li3":"Zwrot płatności następuje w ciągu 14 dni od zgłoszenia odstąpienia. Może zostać wstrzymany do otrzymania towaru albo dowodu odesłania — zależnie od tego, co nastąpi wcześniej.",
+    "s6H":"Reklamacje", "s6P":"Jeśli towar jest uszkodzony lub niezgodny z zamówieniem, napisz na ania@ciok.art i opisz problem. Zdjęcia produktu i opakowania pomogą ustalić, co się stało. Brak zdjęć lub zgłoszenie później niż w dniu doręczenia nie odbiera ustawowych praw. Sposób rozwiązania reklamacji ustalimy zgodnie z właściwymi przepisami."
+  },
+  "terms": {
+    "lead":"Zasady zakupów w Anna Ciok Studio: produkty, płatności, dostawa i kontakt w sprawie zamówienia.",
+    "updated":"Projekt do zatwierdzenia — 9 września 2026",
+    "s1P1":"Sprzedawca: Anna Ciok Studio, numer podatkowy Y9608071L. Adres rejestracyjny, pracowni i zwrotów: San Pedro Abajo 12, 38500 Guimar, Tenerife, Hiszpania — Wyspy Kanaryjskie. Kontakt: <link>ania@ciok.art</link>.",
+    "s1P2":"Sklep oferuje standardowe Fine Art Print — reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem — oraz karty podarunkowe. Sprzedaż ceramiki online odbywa się podczas aktywnego dropu. Obrazy i rozmiary na zamówienie wymagają osobnego uzgodnienia e-mailem.",
+    "s2P":"Wybierz produkt i wariant, dodaj go do koszyka oraz podaj wymagane dane. Przed złożeniem zamówienia sprawdź produkty, adres, dostawę i łączną cenę. Przycisk „Zamawiam i płacę” oznacza obowiązek zapłaty. Potwierdzenie opłaconego zamówienia otrzymasz e-mailem.",
+    "s2Li1":"Fine Art Print i ceramikę zamawiasz osobno. Każdy ceramiczny przedmiot jest pojedynczym egzemplarzem.",
+    "s2Li2":"Przed płatnością sklep sprawdza dostępność. Jeśli realizacja opłaconego zamówienia okaże się niemożliwa, studio skontaktuje się z Tobą i rozliczy należny zwrot.",
+    "s3P":"Zamówienia rozliczamy w PLN, EUR albo GBP. Waluta i ostateczna kwota wraz z dostawą są widoczne przed płatnością. Dostępne metody dopłaty obsługuje Stripe. Karta podarunkowa działa tylko w walucie jej zakupu i może pokryć produkty oraz dostawę; niewykorzystane środki pozostają na karcie. Nie łączy się z kodem rabatowym.",
+    "s4P":"Fine Art Print powstaje po zamówieniu. Koszt dostawy zależy od kraju i wariantów produktów. Informacje dotyczące realizacji oraz zwrotów znajdziesz na stronie <link>Dostawa i zwroty</link>. Ceramika dostępna poza dropem wymaga wizyty w pracowni po wcześniejszym umówieniu.",
+    "s5P":"Przy konsumenckim zakupie online przysługuje prawo odstąpienia na zasadach opisanych na stronie Dostawa i zwroty. Sam druk po zamówieniu nie wyłącza zwrotu standardowego Fine Art Print. Warunki ewentualnej personalizacji uzgadniamy przed złożeniem osobnego zamówienia.",
+    "s6P":"Sprzedawca odpowiada za zgodność towaru z umową na zasadach właściwych przepisów konsumenckich. Zgłoszenie kieruj na ania@ciok.art; podaj dane pozwalające rozpoznać zakup i opisz problem. Zakup w pracowni również podlega prawom dotyczącym wad i niezgodności towaru.",
+    "s7P":"Sprzedawca ma siedzibę w Hiszpanii. Regulamin nie ogranicza bezwzględnie obowiązujących praw konsumenta w kraju jego zwykłego pobytu. Zmiany warunków nie zmieniają treści wcześniej zawartych umów. W sprawie sporu skontaktuj się ze studiem; zachowujesz prawo do właściwej drogi reklamacyjnej i sądowej."
+  },
+  "privacy": {
+    "lead":"Informacje o danych używanych przy zakupach, kontakcie ze studiem, korzystaniu z konta i newslettera.",
+    "updated":"Projekt do zatwierdzenia — 9 września 2026",
+    "s1P":"Administratorem danych jest Anna Ciok Studio, numer podatkowy Y9608071L, San Pedro Abajo 12, 38500 Guimar, Tenerife, Hiszpania — Wyspy Kanaryjskie. Kontakt w sprawach danych: <link>ania@ciok.art</link>.",
+    "s2Li1":"Dane zamówienia: imię i nazwisko, adres, e-mail, telefon, wybrane produkty i informacje o rozliczeniu",
+    "s2Li2":"Korespondencja, zapytania o wizytę, zapis do newslettera i dane konta powiązanego ze zweryfikowanym adresem e-mail",
+    "s2Li3":"Dane techniczne potrzebne do działania strony, bezpieczeństwa i zapisania wyborów w przeglądarce; za zgodą także dane analityczne i marketingowe",
+    "s2Li4":"Dane płatności przetwarzane przez <link>Stripe</link>; studio otrzymuje informacje potrzebne do rozliczenia zamówienia, bez pełnego numeru karty płatniczej",
+    "s2P":"Dane otrzymują podmioty, których usługi są potrzebne do obsługi sklepu: płatności, druku i dostawy, poczty, hostingu oraz bazy danych. Narzędzia analityczne i marketingowe działają zgodnie z wyborem zgód.",
+    "s3P":"Zamówienia i konto obsługujemy w celu wykonania umowy, dokumentację rozliczeń na podstawie obowiązków prawnych, a bezpieczeństwo i ochronę roszczeń na podstawie uzasadnionego interesu. Newsletter oraz dobrowolne narzędzia analityczne i marketingowe wymagają zgody, którą można wycofać.",
+    "s4P":"Dane zamówień i rozliczeń przechowujemy przez okres wymagany prawem i potrzebny do obsługi roszczeń. Dane konta — przez czas jego działania, z zachowaniem obowiązkowej dokumentacji. Korespondencję — przez czas obsługi sprawy i związanych z nią roszczeń. Zapis newslettera obowiązuje do wycofania zgody; zachowujemy niezbędny dowód jej udzielenia i wycofania.",
+    "s5P":"Niezbędne cookies i pamięć przeglądarki umożliwiają działanie koszyka, konta, wyboru waluty i płatności. Dobrowolna analityka i marketing zależą od zgody. Jej odmowa nie blokuje zakupów. Operator <link>Stripe</link> przetwarza dane również w celu ochrony płatności przed nadużyciami.",
+    "s6P":"Możesz żądać dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania lub przeniesienia oraz zgłosić sprzeciw, gdy właściwa podstawa prawna na to pozwala. Zgodę można wycofać. Napisz na ania@ciok.art. Możesz też złożyć skargę do hiszpańskiej AEPD lub właściwego organu nadzorczego w swoim kraju."
+  }
+}

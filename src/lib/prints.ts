@@ -1,9 +1,10 @@
+import { cache } from 'react';
 import type { PrintDesign, PrintVariantSelection } from './types';
 import { variantKey } from './print-cart';
 import { catalogSource } from './catalog/source';
 import { readWithFallback } from './supabase-timeout';
 import { MOUNT_TEMPORARILY_DISABLED } from './print-availability';
-import { ACTIVE_PRINT_CURATION, RETIRED_PRINT_CURATION, curationForProduct } from './print-curation';
+import { ACTIVE_PRINT_CURATION, DRAFT_PRINT_CURATION, RETIRED_PRINT_CURATION, validatePrintRegistry, catalogStatusForPrint } from './print-curation';
 
 // Fine-art-print registry reset 2026-08-17: the prior fap01–fap04 / fap005–
 // fap047 registry (47 ids) is fully retired — old sources were corrupted,
@@ -475,6 +476,193 @@ const SOURCE_PRINT_DESIGNS: PrintSourceDesign[] = [
     mountAvailable: false,
     mockups: true,
   },
+  {
+    id: 'fap042',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-042.webp',
+    editorialGallery: ['/uploads/fap-042-life-01.webp', '/uploads/fap-042-life-02.webp', '/uploads/fap-042-life-03.webp'],
+    noteIndex: 41,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap043',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-043.webp',
+    editorialGallery: ['/uploads/fap-043-life-01.webp', '/uploads/fap-043-life-02.webp', '/uploads/fap-043-life-03.webp'],
+    noteIndex: 42,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap044',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-044.webp',
+    editorialGallery: ['/uploads/fap-044-life-01.webp', '/uploads/fap-044-life-02.webp', '/uploads/fap-044-life-03.webp'],
+    noteIndex: 43,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap045',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-045.webp',
+    editorialGallery: ['/uploads/fap-045-life-01.webp', '/uploads/fap-045-life-02.webp', '/uploads/fap-045-life-03.webp'],
+    noteIndex: 44,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap046',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-046.webp',
+    editorialGallery: ['/uploads/fap-046-life-01.webp', '/uploads/fap-046-life-02.webp', '/uploads/fap-046-life-03.webp'],
+    noteIndex: 45,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap047',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-047.webp',
+    editorialGallery: ['/uploads/fap-047-life-01.webp', '/uploads/fap-047-life-02.webp', '/uploads/fap-047-life-03.webp'],
+    noteIndex: 46,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap048',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-048.webp',
+    editorialGallery: ['/uploads/fap-048-life-01.webp', '/uploads/fap-048-life-02.webp', '/uploads/fap-048-life-03.webp'],
+    noteIndex: 47,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap049',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-049.webp',
+    editorialGallery: ['/uploads/fap-049-life-01.webp', '/uploads/fap-049-life-02.webp', '/uploads/fap-049-life-03.webp'],
+    noteIndex: 48,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap050',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-050.webp',
+    editorialGallery: ['/uploads/fap-050-life-01.webp', '/uploads/fap-050-life-02.webp', '/uploads/fap-050-life-03.webp'],
+    noteIndex: 49,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap051',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-051.webp',
+    editorialGallery: ['/uploads/fap-051-life-01.webp', '/uploads/fap-051-life-02.webp', '/uploads/fap-051-life-03.webp'],
+    noteIndex: 50,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap052',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-052.webp',
+    editorialGallery: ['/uploads/fap-052-life-01.webp', '/uploads/fap-052-life-02.webp', '/uploads/fap-052-life-03.webp'],
+    noteIndex: 51,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap053',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-053.webp',
+    editorialGallery: ['/uploads/fap-053-life-01.webp', '/uploads/fap-053-life-02.webp', '/uploads/fap-053-life-03.webp'],
+    noteIndex: 52,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap054',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-054.webp',
+    editorialGallery: ['/uploads/fap-054-life-01.webp', '/uploads/fap-054-life-02.webp', '/uploads/fap-054-life-03.webp'],
+    noteIndex: 53,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap055',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-055.webp',
+    editorialGallery: ['/uploads/fap-055-life-01.webp', '/uploads/fap-055-life-02.webp', '/uploads/fap-055-life-03.webp'],
+    noteIndex: 54,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap056',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-056.webp',
+    editorialGallery: ['/uploads/fap-056-life-01.webp', '/uploads/fap-056-life-02.webp', '/uploads/fap-056-life-03.webp'],
+    noteIndex: 55,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap057',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-057.webp',
+    editorialGallery: ['/uploads/fap-057-life-01.webp', '/uploads/fap-057-life-02.webp', '/uploads/fap-057-life-03.webp'],
+    noteIndex: 56,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
+  {
+    id: 'fap058',
+    category: 'fine-art-prints',
+    image: '/uploads/fap-058.webp',
+    editorialGallery: ['/uploads/fap-058-life-01.webp', '/uploads/fap-058-life-02.webp', '/uploads/fap-058-life-03.webp'],
+    noteIndex: 57,
+    sizes: ['30x40', '50x70', '70x100'],
+    frameColours: ['black', 'natural', 'brown'],
+    mountAvailable: false,
+    mockups: true,
+  },
 ];
 
 /**
@@ -483,14 +671,11 @@ const SOURCE_PRINT_DESIGNS: PrintSourceDesign[] = [
  * valid variant row so a run during the mount-disabled window reproduces the
  * existing DB exactly. Storefront/checkout readers use `PRINT_DESIGNS`.
  */
-const CURATED_PRINTS = [...ACTIVE_PRINT_CURATION, ...RETIRED_PRINT_CURATION];
-const CURATED_IDS = new Set(CURATED_PRINTS.map(({ productId }) => productId));
-const SOURCE_IDS = new Set(SOURCE_PRINT_DESIGNS.map(({ id }) => id));
-
-if (CURATED_IDS.size !== 41 || SOURCE_PRINT_DESIGNS.length !== 41 || SOURCE_IDS.size !== 41 || CURATED_IDS.size !== SOURCE_IDS.size
-  || [...CURATED_IDS].some((id) => !SOURCE_IDS.has(id))) {
-  throw new Error('Print curation and source registry must cover the same 41 IDs');
-}
+const CURATED_PRINTS = [...ACTIVE_PRINT_CURATION, ...DRAFT_PRINT_CURATION, ...RETIRED_PRINT_CURATION];
+validatePrintRegistry(
+  SOURCE_PRINT_DESIGNS.map(({ id }) => id),
+  CURATED_PRINTS.map(({ productId }) => productId),
+);
 
 const SOURCE_BY_ID = new Map(SOURCE_PRINT_DESIGNS.map((design) => [design.id, design]));
 
@@ -501,7 +686,7 @@ export const PRINT_DESIGNS_RAW: PrintDesign[] = CURATED_PRINTS.map((curation) =>
   return {
     ...source,
     num: curation.number ?? curation.sourceNumber,
-    published: curationForProduct(curation.productId) !== undefined,
+    published: catalogStatusForPrint(curation.productId) === 'active',
   };
 });
 
@@ -527,6 +712,11 @@ export function registryPrintDesigns(): PrintDesign[] {
   return PRINT_DESIGNS.filter((d) => d.published);
 }
 
+/** Content preparation includes drafts, without making them sellable. */
+export function registryContentPrintDesigns(): PrintDesign[] {
+  return PRINT_DESIGNS.filter((d) => catalogStatusForPrint(d.id) !== 'archived');
+}
+
 export function registryPrintById(id: string): PrintDesign | undefined {
   return BY_ID.get(id);
 }
@@ -537,7 +727,9 @@ export function registryPrintById(id: string): PrintDesign | undefined {
  * the DB path keeps Cloudflare-only code out of the default 'code' flag and
  * breaks the load → repository → seed → prints import cycle.
  */
-async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<string, PrintDesign> }> {
+// Share successes and fallbacks across metadata and components in one render.
+// React clears this cache between requests; route handlers still read directly.
+const loadPrintCatalog = cache(async (): Promise<{ designs: PrintDesign[]; byId: Map<string, PrintDesign> }> => {
   if (catalogSource() === 'code') {
     return { designs: PRINT_DESIGNS, byId: BY_ID };
   }
@@ -549,7 +741,7 @@ async function loadPrintCatalog(): Promise<{ designs: PrintDesign[]; byId: Map<s
     const designs = await loadPrintDesignsFromDb();
     return { designs, byId: new Map(designs.map((d) => [d.id, d])) };
   }, { designs: PRINT_DESIGNS, byId: BY_ID });
-}
+});
 
 /** Published designs in registry order. */
 export async function getPrintDesigns(): Promise<PrintDesign[]> {

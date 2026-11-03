@@ -1,0 +1,31 @@
+-- Task 5 (CMS Reliability & Completeness, Priority 5) — /v1/content's audit
+-- trail. Unlike catalog_audit_log (which already carries a `revision`
+-- column for products/collections), cms_audit_log has never recorded which
+-- document_version a row corresponds to. The generic CmsApi Audit shape
+-- (contracts/cms-v1.json) requires a nullable `revision` per item — the
+-- generic /v1/audit handler (handlers/audit.ts) will read this column when
+-- branching to cms_audit_log for a content-shaped resourceId.
+--
+-- Nullable, additive, no backfill: this item's brief keeps
+-- src/lib/admin/content.ts completely unmodified, and that file's
+-- saveDraft/publishVersion/revertVersion are the only code that inserts
+-- cms_audit_log rows — so this column is never populated on write by this
+-- change. Every content audit row (legacy and newly-created alike) reports
+-- `revision: null` via GET /v1/audit until a later task extends
+-- content.ts's audit inserts to populate it. That is an accepted, explicit
+-- v1 scope limit, not an oversight: the Audit contract already allows a
+-- null `revision` (see handlers/audit.ts's existing product rows, e.g. the
+-- print_asset_publish action), and adding the column now means the read
+-- side (the audit handler's `select`) and the schema are ready the moment a
+-- future change teaches content.ts to populate it — no second migration
+-- needed then.
+--
+-- Same additive "alter column" shape as
+-- 20260917120000_fulfilment_jobs_livemode.sql / 20260813150100_fulfilment_jobs_prodigi_env.sql.
+alter table cms_audit_log
+  add column if not exists version integer;
+
+-- ============================================================
+-- Rollback (manual):
+--   alter table cms_audit_log drop column if exists version;
+-- ============================================================

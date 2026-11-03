@@ -1,7 +1,8 @@
 import { cache } from 'react';
 import { getSupabaseAdmin } from './supabase';
 import { supabaseTimeout } from './supabase-timeout';
-import { resolveKnownProducts, CATEGORY_ORDER } from './products';
+import { getPublicProducts, CATEGORY_ORDER } from './products';
+import { getCeramicSaleState } from './ceramic-sale-state';
 import type { Product } from './types';
 
 export type PieceRow = {
@@ -54,33 +55,21 @@ export async function getShowroomIds(): Promise<string[]> {
   return rows.filter((r) => r.showroom).map((r) => r.product_id);
 }
 
-/** A showroom piece resolved for display: the product (sold + showroom merged) plus its drop label. */
+/** A public ceramic piece with verified sale state and its drop label. */
 export type ShowroomEntry = { product: Product; dropLabel: string | null };
 
 /**
- * Every showroom piece across all categories, in CATEGORY_ORDER, each carrying
- * live sold state and its drop's display label (from the `drops` table). Used
- * by the /showroom gallery. Not cached — /showroom is force-dynamic — but a
- * Supabase outage degrades to an empty gallery rather than throwing.
+ * All public ceramics, independent of the historical showroom flag. An
+ * availability outage keeps the catalogue visible and disables online sales.
  */
 export async function getShowroomProducts(): Promise<ShowroomEntry[]> {
-  const supabase = getSupabaseAdmin();
-  const [{ data: pieces, error: pieceErr }, { data: drops, error: dropErr }] = await Promise.all([
-    supabase.from('piece_state').select('product_id, status').eq('showroom', true).abortSignal(supabaseTimeout()),
-    supabase.from('drops').select('id, label').abortSignal(supabaseTimeout()),
-  ]);
-  if (pieceErr) throw pieceErr;
-  if (dropErr) throw dropErr;
-
-  const soldSet = new Set(
-    (pieces ?? []).filter((p) => p.status === 'sold').map((p) => p.product_id as string),
-  );
-  const dropLabel = new Map((drops ?? []).map((d) => [d.id as string, d.label as string]));
+  const [products, { drops }] = await Promise.all([getPublicProducts(), getCeramicSaleState()]);
+  const dropLabel = new Map(drops.map((d) => [d.id, d.label]));
   const order = new Map(CATEGORY_ORDER.map((slug, i) => [slug, i]));
 
-  return (await resolveKnownProducts((pieces ?? []).map((p) => p.product_id as string)))
+  return products
     .map((product) => ({
-      product: { ...product, showroom: true, sold: soldSet.has(product.id) },
+      product,
       dropLabel: dropLabel.get(product.dropId) ?? null,
     }))
     .sort((a, b) => {

@@ -1,8 +1,11 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
+import { paymentBreakdownRows } from '@/lib/payment-breakdown';
 import { notFound } from 'next/navigation';
 import { getOrder } from '@/lib/admin/data';
-import { adminStripe } from '@/lib/admin/clients';
+import { adminStripe, adminSupabase } from '@/lib/admin/clients';
 import { productRef } from '@/lib/admin/products';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatMoney } from '@/lib/admin/money';
 import { PackingPanel } from '../../packing-ui';
 import { formatDateTime, StatusPill, deliveryLabel, shortId, PhoneLink } from '../../ui';
@@ -54,8 +57,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const order = await getOrder(id);
   if (!order) notFound();
 
+  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
   const payment = await loadPayment(order.payment_intent_id);
-  const fullyRefunded = payment.ok ? payment.info.refundedMinor >= order.total : order.status === 'refunded';
+  const fullyRefunded = order.status === 'refunded' || (!(order.gift_card_amount ?? 0) && payment.ok && payment.info.refundedMinor >= order.total);
   const addressLabel = formatShippingAddress(order.shipping_address);
 
   const timeline: { label: string; at: string | null }[] = [
@@ -81,7 +85,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="adm-panel">
             <h3>Pozycje</h3>
             {order.items.map((it) => {
-              const ref = productRef(it.product_id);
+              const ref = productRef(it.product_id, undefined, definitions);
               const variant = it.variant as {
                 assetSha256?: string;
                 assetId?: string;
@@ -108,7 +112,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
 
           {/* Packages */}
-          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
+          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} definitions={definitions} />
 
           {/* Timeline */}
           <div className="adm-panel">
@@ -145,17 +149,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 {payment.ok ? (
                   payment.info.status
                 ) : payment.reason === 'no_pi' ? (
-                  <span className="adm-muted">Brak PaymentIntent — zamówienie nieopłacone</span>
+                  <span className="adm-muted">{order.status === 'paid' && order.gift_card_amount === order.total ? 'Opłacone kartą podarunkową' : `DB: ${order.status}`}</span>
                 ) : (
                   <span className="adm-muted">Stripe niedostępny · DB: {order.status}</span>
                 )}
               </dd>
               <dt>Kwota</dt><dd>{formatMoney(order.total, order.currency)}</dd>
+              {(order.gift_card_amount ?? 0) > 0 && paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount ?? 0 }, 'pl').slice(1).map(row =>
+                <Fragment key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></Fragment>)}
               {payment.ok && payment.info.cardLast4 ? (
                 <><dt>Karta</dt><dd>{payment.info.cardBrand} ···· {payment.info.cardLast4}</dd></>
               ) : null}
               {payment.ok && payment.info.refundedMinor > 0 ? (
-                <><dt>Zwrócono</dt><dd>{formatMoney(payment.info.refundedMinor, order.currency)}{fullyRefunded ? ' (pełny)' : ''}</dd></>
+                <><dt>Zwrócono przez Stripe</dt><dd>{formatMoney(payment.info.refundedMinor, order.currency)}</dd></>
               ) : null}
               <dt>PaymentIntent</dt><dd className="adm-mono">{order.payment_intent_id ?? '—'}</dd>
               <dt>Faktura</dt><dd className="adm-mono">{order.invoice_id ?? '—'}</dd>

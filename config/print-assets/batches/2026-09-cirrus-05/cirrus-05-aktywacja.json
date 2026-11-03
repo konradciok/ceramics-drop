@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-09-30T10:22:15.208Z",
+  "status": "active_verified",
+  "productId": "fap058",
+  "revision": "2026-09-30-r1",
+  "storefrontFiles": 28,
+  "signedAssetProbes": 3,
+  "variants": 12,
+  "descriptions": 4,
+  "collection": "Cirrus",
+  "before": "draft",
+  "after": "active",
+  "completedAt": "2026-09-30T10:22:15.483Z"
+}

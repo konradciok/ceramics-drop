@@ -1,0 +1,169 @@
+{
+  "announce": "Anna Ciok Studio — Fine Art Print, malarstwo i ceramika",
+  "title": {"home":"Anna Ciok Studio — Fine Art Print", "sklep":"Fine Art Print", "showroom":"Ceramika", "fineArtPrints":"Fine Art Print"},
+  "nav": {"showroom":"Ceramika", "fineArtPrints":"Fine Art Print"},
+  "footer": {"hShop":"Sklep", "hArt":"Fine Art Print", "copy":"© 2026 Anna Ciok Studio"},
+  "product": {"print":"Fine Art Print"},
+  "filter": {"available":"Dostępne online", "emptyAvailable":"Obecnie nie ma tu prac dostępnych online.", "emptySold":"Nie ma tu prac oznaczonych jako sprzedane."},
+  "lightbox": {"drop":"Ceramika"},
+  "ceramic": {"mixedCart":"Ceramikę i Fine Art Print zamawiasz osobno. Dokończ lub opróżnij koszyk z Fine Art Print."},
+  "ship": {"pickupD":"Pracownia w Güímar na Teneryfie — po wcześniejszym umówieniu", "paczkomatD":"Odbiór w paczkomacie wybranym w zamówieniu.", "courierD":"Dostawa na adres podany w zamówieniu.", "printT":"Dostawa na adres", "printD":"Fine Art Print z dostawą na adres podany w zamówieniu."},
+  "pdp": {"trust":"Cenę produktu, koszt dostawy i łączną kwotę zamówienia zobaczysz przed płatnością.", "trustGbp":"Łączna kwota zamówienia jest widoczna przed płatnością. Sprawdź też informacje o dostawie do Wielkiej Brytanii."},
+  "returns": {
+    "heading":"Zwroty i reklamacje",
+    "intro":"Chcesz odstąpić od umowy lub zgłosić problem z zakupem? Napisz na ania@ciok.art. Nie musisz zakładać konta. Poniżej znajdziesz instrukcję odesłania do pracowni.",
+    "button":"Napisz w sprawie zwrotu",
+    "success":"Wiadomość przygotowana w programie pocztowym. Sprawdź jej treść i wyślij ją, aby zgłosić zwrot.",
+    "unavailable":"W sprawie zwrotu napisz na ania@ciok.art."
+  },
+  "account": {
+    "unavailableH":"Konto jest chwilowo niedostępne",
+    "unavailableP":"Spróbuj ponownie później. W sprawie zamówienia napisz na ania@ciok.art.",
+    "signInP":"Zobacz historię i szczegóły zamówień. Konto utworzy się przy pierwszym logowaniu.",
+    "emptyCta":"Przejdź do sklepu",
+    "noTracking":"Nie ma dostępnych danych śledzenia tej przesyłki. W sprawie dostawy napisz na ania@ciok.art."
+  },
+  "showroom": {
+    "eyebrow":"Ceramika",
+    "title":"Ceramika <em>Anny Ciok.</em>",
+    "lead":"Poznaj przedmioty z moich wcześniejszych kolekcji. Ceramikę możesz obejrzeć i kupić podczas umówionej wizyty w pracowni w Güímar na Teneryfie. Galeria nie pokazuje aktualnego stanu pracowni.",
+    "empty":"Galeria ceramiki jest chwilowo niedostępna. W sprawie wizyty napisz na ania@ciok.art.",
+    "pdpCopy":"Przedmiot z wcześniejszej kolekcji ceramiki. W sprawie wizyty w pracowni i dostępnych na miejscu prac napisz na ania@ciok.art.",
+    "interestCta":"Umów wizytę",
+    "interestThanks":"Dziękuję za wiadomość w sprawie wizyty.",
+    "consentLabel":"Chcę otrzymać odpowiedź w sprawie wizyty w pracowni.",
+    "privacyNote":"Dane posłużą do odpowiedzi na Twoją wiadomość. Zobacz <link>politykę prywatności</link>.",
+    "submit":"Napisz e-mail"
+  },
+  "galleryPage": {
+    "eyebrow":"Galeria",
+    "title":"Z pracowni <em>Anny Ciok.</em>",
+    "lead":"Portrety, pracownia i ręcznie malowane naczynia. Zobacz ceramikę w dłoniach, we wnętrzu i w naturalnym świetle.",
+    "ctaShop":"Zobacz Fine Art Print",
+    "items": {
+      "photo01":{"caption":"Ręcznie malowane talerze na plecionym dywanie."},
+      "photo02":{"caption":"Miski i kubki zestawione razem: linie, wzory i odcienie brązu."},
+      "photo03":{"caption":"Ceramika na półce przy oknie pracowni."},
+      "photo04":{"caption":"Anna Ciok z ręcznie malowaną miską."},
+      "photo05":{"caption":"Talerz pokazany na tarasie, na tle nieba."},
+      "photo06":{"caption":"Wazon trzymany w dłoniach pozwala zobaczyć jego skalę."},
+      "photo07":{"caption":"Czarny motyw oka na ręcznie malowanym talerzu."},
+      "photo08":{"caption":"Palmy, ptaki i liście na talerzach i kubkach."},
+      "photo09":{"caption":"Anna Ciok wśród naczyń z wcześniejszej kolekcji."},
+      "photo10":{"caption":"Stół i krzesło w jasnej pracowni."},
+      "photo11":{"caption":"Talerz z motywem palmy w naturalnym świetle."},
+      "photo12":{"caption":"Portret z miską na tarasie."},
+      "photo13":{"caption":"Kształt i wzór miski widoczne w świetle okna."},
+      "photo14":{"caption":"Anna Ciok z ręcznie malowaną miską w pracowni."},
+      "photo15":{"caption":"Ręcznie malowany wazon w plenerze."}
+    }
+  },
+  "home": {
+    "heroLine1":"Fine Art Print",
+    "heroLine2":"z moich obrazów.",
+    "heroTagline":"Reprodukcje obrazów malowanych akwarelą i tuszem. Wybierz rozmiar oraz wersję z ramą lub bez.",
+    "heroCta":"Zobacz kolekcję",
+    "marquee":["Fine Art Print", "Edycja otwarta", "Matowy papier artystyczny 200 g/m²", "Z ramą lub bez"],
+    "printsEyebrow":"Fine Art Print",
+    "printsTitle":"Akwarela i tusz <em>na Twojej ścianie.</em>",
+    "printsLead":"{count, plural, one {# reprodukcja} few {# reprodukcje} other {# reprodukcji}} moich obrazów. Wybierz wzór, rozmiar i oprawę.",
+    "printsCta":"Zobacz wszystkie Fine Art Print",
+    "printsFacts":["Edycja otwarta", "Matowy papier artystyczny 200 g/m²", "Z ramą lub bez", "Druk po złożeniu zamówienia"],
+    "storyP1":"Jestem Anna. Maluję akwarelą i tuszem w mojej pracowni w Güímar na Teneryfie.",
+    "storyP2":"Wybrane obrazy są dostępne jako Fine Art Print — reprodukcje na matowym papierze artystycznym, w kilku rozmiarach, z ramą lub bez.",
+    "storyCta":"Zobacz kolekcje Fine Art Print",
+    "craftTitle":"Wybierz pracę <em>do swojego wnętrza.</em>",
+    "craft1P":"Poznaj kolekcje i wybierz Fine Art Print na podstawie obrazu, który Cię zainteresuje.",
+    "craft2P":"Wybierz dostępny format wydruku oraz wersję z ramą lub bez. Konfigurator pokazuje warianty dla wybranego wzoru.",
+    "craft3H":"Zamawiasz <em>z dostawą</em>",
+    "craft3P":"Fine Art Print powstaje po złożeniu zamówienia. Podaj adres dostawy i sprawdź koszt przed płatnością.",
+    "lgMaterialP":"Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem. Druk giclée na matowym papierze artystycznym 200 g/m². Edycja otwarta.",
+    "lgShippingP":"Fine Art Print powstaje po złożeniu zamówienia. Koszt dostawy na podany adres zobaczysz przed płatnością. Informacje o realizacji i zwrotach znajdziesz na stronie Dostawa i zwroty.",
+    "ctH":"Napisz do mnie <em>w sprawie swojej pracy.</em>",
+    "ctP":"Szukasz obrazu na zamówienie, innego rozmiaru Fine Art Print albo prac do projektu wnętrza? Napisz na ania@ciok.art. Możesz też umówić wizytę w pracowni.",
+    "ctBtn":"Napisz e-mail",
+    "ctLShipPrints":"Dostawa Fine Art Print",
+    "ctVShipPrints":"Na adres podany w zamówieniu"
+  },
+  "collection": {
+    "hint":"Kliknij zdjęcie lub nazwę, aby zobaczyć szczegóły pracy. Dostępność zakupu online jest podana przy produkcie.",
+    "fine-art-prints":{"eyebrow":"Fine Art Print", "title":"Fine Art Print", "lead":"Reprodukcje moich obrazów wykonanych akwarelą i tuszem. Poznaj kolekcje i wybierz rozmiar oraz wersję z ramą lub bez."},
+    "sklep":{"eyebrow":"Fine Art Print", "title":"Fine Art Print", "lead":"Reprodukcje moich obrazów wykonanych akwarelą i tuszem. Poznaj kolekcje i wybierz rozmiar oraz wersję z ramą lub bez."}
+  },
+  "studio": {
+    "h1":"Anna Ciok Studio <em>na Teneryfie.</em>",
+    "lead":"Maluję akwarelą i tuszem oraz tworzę ceramikę. Moja pracownia znajduje się w Güímar na Teneryfie.",
+    "storyP1":"Jestem Anna. Maluję na papierze i na ceramicznych naczyniach. Pracuję z kolorem, linią i układem plam.",
+    "storyP2":"W pracowni łączę malarstwo z ceramiką. Na papierze powstają obrazy, a na naczyniach ręcznie malowane wzory.",
+    "storyP3":"Wybrane obrazy udostępniam jako Fine Art Print. To reprodukcje prac wykonanych akwarelą i tuszem, dostępne w kilku rozmiarach, z ramą lub bez.",
+    "fact1D":"Güímar, Teneryfa — wizyty po wcześniejszym umówieniu.",
+    "fact2K":"Fine Art Print", "fact2V":"Edycja <em>otwarta</em>", "fact2D":"Reprodukcje obrazów wykonanych akwarelą i tuszem. Numer w nazwie identyfikuje wzór w kolekcji.",
+    "fact3V":"Akwarela <em>i tusz</em>", "fact3D":"Technika oryginalnych obrazów dostępnych jako Fine Art Print.",
+    "fact4K":"Wizyta w pracowni", "fact4V":"Po <em>umówieniu</em>", "fact4D":"Chcesz zobaczyć i kupić ceramikę w pracowni? Napisz na ania@ciok.art, aby umówić wizytę.",
+    "p1P":"Na papierze pracuję akwarelą i tuszem, budując kompozycję z plam i linii.",
+    "p2P":"Wybrane obrazy stają się podstawą Fine Art Print. Osobną częścią mojej pracy jest ręcznie malowana ceramika.",
+    "p3H":"Fine Art Print <em>i ceramika</em>", "p3P":"Fine Art Print powstaje po zamówieniu. Ceramikę możesz obejrzeć w galerii wcześniejszych prac i podczas umówionej wizyty w pracowni.",
+    "ctaH":"Wybierz Fine Art Print <em>lub poznaj ceramikę.</em>", "ctaP":"Poznaj kolekcje reprodukcji moich obrazów albo zobacz przedmioty z wcześniejszych kolekcji ceramiki.", "ctaB2":"Zobacz Fine Art Print"
+  },
+  "contact": {
+    "h1":"Napisz do mnie <em>lub umów wizytę.</em>",
+    "lead":"W sprawie zamówienia, innego rozmiaru Fine Art Print, obrazu na zamówienie lub współpracy przy projekcie wnętrza napisz na ania@ciok.art.",
+    "topic1":"Pytanie o Fine Art Print", "topic2":"Wizyta w pracowni na Teneryfie", "topic3":"Obraz lub rozmiar na zamówienie", "topic4":"Współpraca z architektami",
+    "submit":"Otwórz wiadomość e-mail", "sentH":"Wiadomość <em>gotowa do wysłania.</em>",
+    "sentP":"Powinien otworzyć się Twój program pocztowy. Sprawdź wiadomość i wyślij ją. Jeśli program się nie otworzył, napisz bezpośrednio na <link>ania@ciok.art</link>.",
+    "mailtoSubject":"[Anna Ciok Studio] {topic}", "sideH":"Kontakt do studia", "lStudio":"Pracownia", "vStudio":"Güímar, Teneryfa · wizyty po umówieniu", "lShip":"Dostawa Fine Art Print", "vShip":"Na adres podany w zamówieniu", "lReply":"Kontakt e-mail", "vReply":"ania@ciok.art"
+  },
+  "cart": {
+    "emptyP":"Poznaj kolekcje Fine Art Print. Wybierz wzór i skonfiguruj rozmiar oraz oprawę na stronie produktu.",
+    "pay":"Zamawiam i płacę", "soldOut":"Część produktów jest już niedostępna i została usunięta z koszyka.",
+    "notForSale":"Tego produktu nie można teraz kupić online.",
+    "payError":"Nie udało się potwierdzić płatności. Sprawdź jej status, zanim spróbujesz ponownie.",
+    "fineprint":"Dostępne metody płatności pokażą się po przejściu do płatności.",
+    "mixedNotice":"Ceramikę i Fine Art Print zamawiasz osobno. Usuń jeden rodzaj produktów z koszyka, aby kontynuować.",
+    "privateSalePrintsNotice":"Link sprzedaży prywatnej dotyczy ceramiki podczas aktywnego dropu. Fine Art Print zamów osobno.",
+    "printAssetUnavailable":"Ten wariant Fine Art Print jest chwilowo niedostępny. Zmień wariant lub usuń produkt z koszyka.",
+    "promo":{"wrongTrackCeramics":"Ten kod obejmuje tylko Fine Art Print."}
+  },
+  "return": {
+    "okH":"Dziękuję — <em>zamówienie opłacone.</em>",
+    "okP":"Potwierdzenie zamówienia otrzymasz na podany adres e-mail.",
+    "processingP":"Płatność czeka na potwierdzenie. Sprawdź wiadomości dotyczące zamówienia. W razie pytań napisz na ania@ciok.art.",
+    "failH":"Płatność nie została potwierdzona",
+    "failP":"Sprawdź status płatności przed kolejną próbą. Jeśli środki zostały pobrane, napisz na ania@ciok.art i podaj numer zamówienia.",
+    "back":"Wróć do sklepu", "account":"Zobacz zamówienie na koncie"
+  },
+  "print": {
+    "size":{"label":"Format wydruku", "30x40":"30 × 40 cm", "50x70":"50 × 70 cm", "70x100":"70 × 100 cm"},
+    "sizeHint":{"30x40":"", "50x70":"", "70x100":""},
+    "framed":"Z ramą", "paperNote":"Matowy papier artystyczny 200 g/m²", "technique":"Druk giclée na matowym papierze artystycznym 200 g/m²",
+    "deliveryNote":"Fine Art Print powstaje po zamówieniu. Koszt dostawy zobaczysz przed płatnością.", "moreFrom":"Więcej Fine Art Print", "mixedCart":"Fine Art Print i ceramikę zamawiasz osobno. Dokończ lub opróżnij koszyk z ceramiką."
+  },
+  "printPdp": {
+    "artistBio":"Anna Ciok maluje akwarelą i tuszem oraz tworzy ceramikę w Güímar na Teneryfie. Fine Art Print z tej kolekcji to reprodukcje jej oryginalnych obrazów.",
+    "accordionProductDetails":"Fine Art Print na podstawie oryginalnego obrazu Anny Ciok wykonanego akwarelą i tuszem. Druk giclée na matowym papierze artystycznym 200 g/m². Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca. Ramę przecieraj suchą ściereczką.",
+    "accordionFraming":"Wybierz wersję bez ramy lub z ramą w jednym z dostępnych kolorów. Konfigurator pokazuje warianty dla danego wzoru.\n\nFormat wydruku, pole obrazu i zewnętrzne wymiary oprawy to różne wymiary. Szczegóły odnoszą się do wybranego wariantu.",
+    "accordionShipping":"Fine Art Print powstaje po zamówieniu i jest dostarczany na podany adres. Koszt dostawy zobaczysz przed płatnością. Dostawa Fine Art Print do paczkomatu nie jest dostępna.\n\nInformacje o realizacji, odstąpieniu od umowy i reklamacjach znajdziesz na stronie Dostawa i zwroty. W sprawie zwrotu napisz na ania@ciok.art — nie musisz zakładać konta."
+  },
+  "giftCard": {
+    "lead":"Podaruj wybór Fine Art Print lub ceramiki dostępnej online podczas aktywnego dropu. Kod otrzymasz e-mailem, a niewykorzystana część salda zostanie na kolejne zakupy.",
+    "contactNote":"Kod otrzymasz na ten adres e-mail po potwierdzeniu płatności.",
+    "accordionHowBody":"Wybierz jeden z czterech nominałów i zapłać online. Kod otrzymasz e-mailem. Możesz przekazać go wybranej osobie.\n\nPrzy zakupach wpisz kod w polu „Mam kartę podarunkową”. Saldo pokrywa produkty i dostawę. Jeśli nie wystarczy na całe zamówienie, pozostałą kwotę dopłacisz. Niewykorzystane środki pozostają na karcie.",
+    "accordionTermsBody":"Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym. Fine Art Print i ceramikę zamawiasz osobno.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
+  },
+  "deliveryNotice": {"title":"Informacje o dostawie", "p1":"Sposób i koszt dostawy zależą od produktów oraz adresu zamówienia.", "p2":"Fine Art Print powstaje po złożeniu zamówienia. Czas realizacji obejmuje produkcję i transport.", "p3":"Jeśli wybrana usługa obejmuje śledzenie, dane przesyłki otrzymasz po nadaniu."},
+  "newsletter": {"blurb":"Wiadomości o nowych pracach i kolekcjach.", "confirmedBody":"Dziękuję za zapis. Będę dawać znać o nowych pracach i kolekcjach."},
+  "error": {"heading":"Nie udało się wczytać strony", "body":"Spróbuj ponownie. Jeśli problem się powtarza, napisz na ania@ciok.art."},
+  "notFound": {"body":"Nie znaleziono tej strony. Przejdź do sklepu, aby zobaczyć kolekcje Fine Art Print."},
+  "meta": {
+    "description":"Fine Art Print Anny Ciok — reprodukcje obrazów wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę. Poznaj też ceramikę i pracownię na Teneryfie.",
+    "gallery":"Anna Ciok, pracownia i ręcznie malowana ceramika. Portrety i fotografie przedmiotów z wcześniejszych kolekcji.",
+    "ogImageAlt":"Anna Ciok Studio — ręcznie malowana ceramika",
+    "kontakt":"Kontakt do Anna Ciok Studio: ania@ciok.art. Zapytaj o Fine Art Print, obraz na zamówienie, współpracę z architektami lub wizytę w pracowni.",
+    "studio":"Anna Ciok maluje akwarelą i tuszem oraz tworzy ceramikę w Güímar na Teneryfie. Poznaj artystkę i jej pracownię.",
+    "regulamin":"Zasady zakupów w Anna Ciok Studio: Fine Art Print, ceramika podczas aktywnego dropu i karty podarunkowe. Płatności, dostawa i prawa konsumenta.",
+    "polityka":"Jak Anna Ciok Studio przetwarza dane przy zakupach, kontakcie, korzystaniu z konta i newslettera. Twoje prawa i ustawienia cookies.",
+    "dostawa":"Informacje o dostawie, odstąpieniu od umowy i reklamacjach w Anna Ciok Studio. Kontakt: ania@ciok.art.",
+    "collections":{"sklep":"Fine Art Print Anny Ciok — reprodukcje obrazów wykonanych akwarelą i tuszem. Poznaj kolekcje i wybierz rozmiar oraz oprawę.", "fineArtPrints":"Fine Art Print Anny Ciok — reprodukcje obrazów wykonanych akwarelą i tuszem, z ramą lub bez.", "showroom":"Ceramika Anny Ciok: galeria wcześniejszych prac i wizyty w pracowni w Güímar na Teneryfie. Sprzedaż online podczas aktywnego dropu."},
+    "giftCard":"Karta podarunkowa Anna Ciok Studio z zachowaniem salda. Na standardowe Fine Art Print online i ceramikę podczas aktywnego dropu. Kod e-mailem."
+  }
+}

@@ -6,6 +6,7 @@ import { authEnabled, getSessionUser } from '@/lib/auth/session';
 import { listAccountOrders } from '@/lib/account/orders';
 import { customerOrderStatus } from '@/lib/account/status';
 import { accountItemLabel, formatOrderAmount, formatOrderDate } from '@/lib/account/items';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { SignInPanel } from '@/components/account/SignInPanel';
 import { SignOutButton } from '@/components/account/SignOutButton';
 
@@ -75,6 +76,7 @@ export default async function KontoPage({ params, searchParams }: Props) {
   }
 
   const { orders, jobStatusByOrder } = await listAccountOrders(user.id);
+  const definitions = await loadPrintCollectionDefinitions();
 
   return (
     <main>
@@ -115,7 +117,7 @@ export default async function KontoPage({ params, searchParams }: Props) {
                   prodigiTracking: null,
                 });
                 const names = order.items
-                  .map((item) => accountItemLabel(item, t, locale).name)
+                  .map((item) => accountItemLabel(item, t, locale, definitions).name)
                   .join(', ');
                 return (
                   <li key={order.id} className="account-order-row" data-testid="konto-order-row">

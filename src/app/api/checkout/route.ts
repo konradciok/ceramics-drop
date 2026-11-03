@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
@@ -10,7 +10,7 @@ import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
 import { validatePrintDelivery, type PrintShippingAddress } from '@/lib/print-delivery';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
-import { shippingGrosze, shippingEuroCents, shippingGBPPence, toMinor } from '@/lib/pricing';
+import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
   normalizePromoCode,
   fetchPromoByCode,
@@ -19,7 +19,10 @@ import {
   type PromoCode,
 } from '@/lib/promo';
 import { printShippingOf } from '@/lib/print-shipping';
+import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForCheckout } from '@/lib/shipping-rates/get';
 import { validateGiftCardContact } from '@/lib/gift-cards';
+import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
 import { createCheckoutRateLimiter } from '@/lib/checkout-rate-limit';
 import { readConsent } from '@/components/consent/consent-mode';
@@ -32,6 +35,7 @@ import type { AuthCookie } from '@/lib/auth/supabase-server';
 import { SITE_URL } from '@/lib/site';
 import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
+import type { CheckoutAmounts } from '@/lib/checkout-client';
 import type { MarketingContext } from '@/lib/marketing/context';
 import { resolveGaClientId } from '@/lib/marketing/context';
 
@@ -115,6 +119,7 @@ export async function POST(req: Request) {
     const status =
       valid.reason === 'print_asset_unavailable' ? 409 :
       valid.reason === 'print_asset_error' ? 503 :
+      valid.reason === 'print_pricing_unavailable' ? 503 :
       400;
     return respond({ error: valid.reason }, { status });
   }
@@ -201,13 +206,65 @@ export async function POST(req: Request) {
   // Shipping is explicit in both branches — the discount applies to the
   // merchandise subtotal only, so shipping can no longer be derived later as
   // `amount − subtotal`.
+  //
+  // ONE-DEPLOY CUTOVER (plan Priority 7): BOTH shipping tracks are priced from
+  // the CMS-published rates, read here exactly once. A single accessor
+  // returning both tables is what makes the cutover atomic by construction —
+  // there is no arrangement of this code in which domestic reads the DB while
+  // international reads the constants, or vice versa, and a fallback (see
+  // src/lib/shipping-rates/last-known-good.ts) moves both together.
+  //
+  // It never throws: unlike the print pricing config below, shipping has a safe
+  // value to charge in every outage tier — ultimately the very constants both
+  // tracks were served from before this cutover existed — so a Supabase hiccup
+  // degrades the rate rather than blocking the purchase.
+  //
+  // The EUR→PLN/GBP conversion used by the international branch still comes
+  // from the print pricing config (`printPricing` below), NOT from these
+  // tables: one currency pair, one source, so an order's items and its shipping
+  // can never be converted at two different rates.
+  const shippingRates = await getShippingRatesForCheckout();
   let shipMinor: number;
-  if (hasPrints && printAddress) {
+  if (hasGiftCards) {
+    // Gift cards have no physical delivery at all — the buyer always receives
+    // the code themselves. `method` is the 'odbior' sentinel here (see the
+    // fulfilmentType block above), not a delivery choice the buyer made, so its
+    // price must never be charged. That used to be safe implicitly, because
+    // SHIPPING_*.odbior were hardcoded zeros; as of the /v1/shipping-rates
+    // cutover odbior_pln/eur/gbp are operator-editable, and a non-zero
+    // studio-pickup price would otherwise silently start charging gift-card
+    // orders shipping. Zero here is a property of the fulfilment type, not a
+    // value read from any price list.
+    shipMinor = 0;
+  } else if (hasPrints && printAddress) {
     // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
     // the InPost price list.
     const hasFramed = valid.items.some((i) => i.variant?.framed);
     const framedCount = valid.items.filter((i) => i.variant?.framed).length;
-    const shipMajor = printShippingOf(printAddress.country_code, hasFramed, chargeCurrency);
+    // Same admin-editable conversion rates the item prices were derived with —
+    // shipping must not silently keep stale rates after an FX edit at /admin/pricing.
+    // Reuse validateCart's own resolved config rather than an independent
+    // second read: two reads could straddle a pricing edit or a last-known-
+    // good swap mid-request and price items and shipping from different
+    // config generations. validateCart always resolves one for any cart
+    // with a print item (hasPrints is true here), so this is a defensive
+    // fallback only — never expected to fire in production.
+    let printPricing = valid.printPricing;
+    if (!printPricing) {
+      try {
+        printPricing = await getPrintPricingConfigForCheckout();
+      } catch (err) {
+        if (!(err instanceof PrintPricingUnavailableError)) throw err;
+        return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
+      }
+    }
+    const shipMajor = printShippingOf(
+      printAddress.country_code,
+      hasFramed,
+      chargeCurrency,
+      printPricing,
+      shippingRates.international,
+    );
     shipMinor = toMinor(shipMajor);
     if (framedCount > 1) {
       // ponytail: flat print shipping under-charges multi-frame orders — this
@@ -224,15 +281,39 @@ export async function POST(req: Request) {
       }));
     }
   } else {
-    shipMinor =
-      chargeCurrency === 'eur' ? shippingEuroCents(method) :
-      chargeCurrency === 'gbp' ? shippingGBPPence(method) :
-      shippingGrosze(method);
+    // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
+    // per-currency price lists are independently maintained, exactly as the
+    // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
+    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, shippingRates.domestic));
   }
   const discountMinor = promo
     ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)
     : 0;
   const amount = subtotalMinor - discountMinor + shipMinor;
+
+  // The figures the charge is actually built from, handed back on every
+  // success response so the cart can stop showing its own estimate the moment
+  // a PaymentIntent exists.
+  //
+  // The cart computes its summary from the CODE-default rate tables; the
+  // amounts above come from the CMS-published bundle read at the top of this
+  // handler. A publish between page load and pay moves one and not the other,
+  // and the buyer would otherwise look at one total while Stripe charged
+  // another — the same desync the promo row is already frozen against
+  // (CartView.tsx, the `clientSecret` guard on promo removal).
+  //
+  // These are minor units in `chargeCurrency`, which travels with them: the
+  // header currency switcher stays live behind the mounted Stripe form, so a
+  // number without its currency could be re-rendered under the wrong symbol.
+  // Nested under one key on purpose — it is a single atomic snapshot, and it
+  // keeps the legacy top-level `discount` field-presence rule below intact.
+  const amounts: CheckoutAmounts = {
+    currency: chargeCurrency,
+    subtotal: subtotalMinor,
+    shipping: shipMinor,
+    discount: discountMinor,
+    total: amount,
+  };
 
   // A stable client-supplied attemptId lets a retried/duplicated POST (network
   // retry, second tab) re-enter its own reservation and PaymentIntent instead
@@ -241,6 +322,9 @@ export async function POST(req: Request) {
   // needed before trusting it as the order id.
   const rawAttemptId = typeof body.attemptId === 'string' ? body.attemptId : null;
   const orderId = isUuid(rawAttemptId) ? rawAttemptId : crypto.randomUUID();
+  const mode = await supabase.rpc('claim_checkout_payment_mode', { p_order_id: orderId, p_mode: body.gift_card_code != null ? 'balance' : 'cash' });
+  if (mode.error) return respond({ error: 'checkout_in_progress' }, { status: 409 });
+  if (mode.data !== true) return respond({ error: 'gift_card_attempt_conflict' }, { status: 409 });
 
   // A private-sale token unlocks buying specific already-`sold` pieces via a secret
   // link, without relisting them in the shop. It uses a dedicated atomic RPC that
@@ -258,6 +342,85 @@ export async function POST(req: Request) {
   if (privateSaleToken && hasPrints) {
     return respond({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
+
+  const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
+  const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
+  const str2 = (v: unknown, max = 256) => {
+    if (typeof v !== 'string') return null;
+    const s = v.trim();
+    if (!s || s.length > max) return null;
+    return s;
+  };
+  const origin = req.headers.get('origin') ?? '';
+  const localePrefix = locale !== 'pl' ? `/${locale}` : '';
+  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
+  // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
+  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
+  // declined tracking, so they're dropped rather than merely flagged.
+  const marketing: MarketingContext =
+    consent === 'granted'
+      ? {
+          consent,
+          fbp: str2(mc.fbp),
+          fbc: str2(mc.fbc),
+          ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
+          ga_session_id: str2(mc.ga_session_id),
+          ip: clientIp,
+          user_agent: req.headers.get('user-agent'),
+          event_source_url: eventSourceUrl,
+          captured_at: new Date().toISOString(),
+        }
+      : {
+          consent,
+          fbp: null,
+          fbc: null,
+          ga_client_id: null,
+          ga_session_id: null,
+          ip: null,
+          user_agent: null,
+          event_source_url: null,
+          captured_at: new Date().toISOString(),
+        };
+
+  if (body.gift_card_code != null) {
+    const { checkoutWithGiftCard } = await import('@/server/gift-card-checkout');
+    const code = normalizeGiftCardCode(body.gift_card_code);
+    if (!code) return respond({ error: 'gift_card_invalid' }, { status: 400 });
+    if (hasGiftCards || promo) return respond({ error: 'gift_card_excluded' }, { status: 400 });
+    if (!isUuid(rawAttemptId)) return respond({ error: 'attempt_id_required' }, { status: 400 });
+    try {
+      if (privateSaleToken) {
+        const sale = await loadActivePrivateSale(supabase, privateSaleToken);
+        if (!sale) return respond({ error: 'invalid_token' }, { status: 410 });
+        privateSaleId = sale.id;
+      }
+      const { env, ctx } = getCloudflareContext();
+      const result = await checkoutWithGiftCard({
+        code, privateToken: privateSaleToken,
+        deps: { supabase, stripe: getStripe(), env, ctx },
+        order: {
+          id: orderId, currency: chargeCurrency, subtotal: subtotalMinor, shipping: shipMinor, total: amount,
+          shipping_method: method, delivery_method: method, fulfilment_type: fulfilmentType,
+          email: contact.email, receiver_first_name: contact.first_name, receiver_last_name: contact.last_name,
+          receiver_phone: contact.phone || null, inpost_target_point: target_point ?? null,
+          shipping_address: address ?? null, locale, private_sale_id: privateSaleId, user_id: sessionUserId,
+          marketing,
+        },
+        items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: i.variant ? { kind: 'print', ...i.variant } : null })),
+      });
+      // Same summary renders behind a gift-card-funded checkout, so it gets
+      // the same authoritative figures. `total` here is still the full order
+      // total; the gift-card/cash split rides `result` as it always did.
+      return respond({ ...result, amounts }, { headers: { 'Cache-Control': 'no-store' } });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : '';
+      const publicErrors = ['gift_card_invalid','gift_card_empty','gift_card_currency','gift_card_excluded','gift_card_attempt_conflict','order_attempt_conflict','ceramic_unavailable'];
+      if (publicErrors.includes(reason)) return respond({ error: reason }, { status: 409 });
+      console.error('[gift-card-checkout] Retry required', { orderId });
+      return respond({ error: 'gift_card_unavailable' }, { status: 503 });
+    }
+  }
+
 
   // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
   // is status-scoped (only rows still `reserved` for this order id), so rows a
@@ -407,45 +570,6 @@ export async function POST(req: Request) {
     return respond({ error: 'stripe_failed' }, { status: 502 });
   }
 
-  const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
-  const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
-  const str2 = (v: unknown, max = 256) => {
-    if (typeof v !== 'string') return null;
-    const s = v.trim();
-    if (!s || s.length > max) return null;
-    return s;
-  };
-  const origin = req.headers.get('origin') ?? '';
-  const localePrefix = locale !== 'pl' ? `/${locale}` : '';
-  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
-  // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
-  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
-  // declined tracking, so they're dropped rather than merely flagged.
-  const marketing: MarketingContext =
-    consent === 'granted'
-      ? {
-          consent,
-          fbp: str2(mc.fbp),
-          fbc: str2(mc.fbc),
-          ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
-          ga_session_id: str2(mc.ga_session_id),
-          ip: clientIp,
-          user_agent: req.headers.get('user-agent'),
-          event_source_url: eventSourceUrl,
-          captured_at: new Date().toISOString(),
-        }
-      : {
-          consent,
-          fbp: null,
-          fbc: null,
-          ga_client_id: null,
-          ga_session_id: null,
-          ip: null,
-          user_agent: null,
-          event_source_url: null,
-          captured_at: new Date().toISOString(),
-        };
-
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId,
     payment_intent_id: paymentIntent.id,
@@ -517,20 +641,51 @@ export async function POST(req: Request) {
     }
   }
   let itemsErr = null;
-  if (!orderErr) {
-    const r = await supabase.from('order_items').insert(
-      valid.items.map((i) => ({
-        order_id: orderId,
-        product_id: i.product_id,
-        unit_price: i.unit_price,
-        variant: i.variant
-          ? { kind: 'print' as const, ...i.variant }
-          : i.giftCardTierId
-            ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
-            : null,
-      })),
-    );
-    itemsErr = r.error;
+  if (!orderErr || replay) {
+    // Fresh insert writes the items; a REPLAY backfills them if the first
+    // attempt died between the orders insert and this one (Worker isolate
+    // kill / eviction). Without the backfill the buyer can pay for an order
+    // whose order_items never landed: fulfilment sees an empty cart and the
+    // under-fulfilment guard counts expected = 0.
+    let shouldInsert = !orderErr;
+    if (replay) {
+      const { count: existingItems, error: countErr } = await supabase
+        .from('order_items')
+        .select('order_id', { count: 'exact', head: true })
+        .eq('order_id', orderId);
+      if (countErr || existingItems == null) {
+        // Can't verify the order's items — never hand out the client_secret
+        // on that basis. 409 keeps the client's attemptId so it retries.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
+      // The multi-row insert is a single atomic statement, so a healthy prior
+      // attempt persisted EXACTLY valid.items.length rows (the attemptId is
+      // cart-bound client-side). Zero means the first attempt died before the
+      // insert → backfill. Any other count is an anomaly (e.g. duplicated
+      // rows from a racing replay) — never hand out the client_secret on it;
+      // 409 makes the client reset its attemptId onto a fresh order.
+      if (existingItems !== 0 && existingItems !== valid.items.length) {
+        return respond({ error: 'order_conflict' }, { status: 409 });
+      }
+      shouldInsert = existingItems === 0;
+    }
+    if (shouldInsert) {
+      const r = await supabase.from('order_items').insert(
+        valid.items.map((i) => ({
+          order_id: orderId,
+          product_id: i.product_id,
+          unit_price: i.unit_price,
+          variant: i.variant
+            ? { kind: 'print' as const, ...i.variant }
+            : i.giftCardTierId
+              ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
+              : null,
+        })),
+      );
+      // A concurrent replay of the same attemptId may have backfilled first —
+      // that unique violation is success, not a persistence failure.
+      itemsErr = r.error?.code === PG_UNIQUE_VIOLATION ? null : r.error;
+    }
   }
   if ((orderErr && !replay) || itemsErr) {
     // Persisting the order failed — undo so we never collect money without a record.
@@ -618,10 +773,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // Field-presence rule: a no-promo response stays byte-identical to the
-  // legacy shape — `discount` appears only when a promo is applied.
+  // Field-presence rule: `discount` at the top level still appears only when a
+  // promo is applied (the client reads it to re-sync its promo preview).
+  // `amounts` is unconditional — it is the charge itself, and a summary that
+  // only sometimes tracked the charge would be the bug all over again.
   return respond({
     client_secret: paymentIntent.client_secret,
     ...(promo ? { discount: discountMinor } : {}),
+    amounts,
   });
 }

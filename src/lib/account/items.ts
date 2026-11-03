@@ -4,6 +4,7 @@
    unknown ids (retired pieces on old orders) degrade to the raw id.
    ============================================================ */
 import { printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { CATEGORIES, registryProductById } from '@/lib/products';
 import { registryPrintById } from '@/lib/prints';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES as CANONICAL_PRINT_SIZES, variantLabel } from '@/lib/print-cart';
@@ -47,12 +48,17 @@ function printDetail(variant: unknown, locale: string): string | null {
 }
 
 /** Localised display name for one order line (ceramic piece or print variant). */
-export function accountItemLabel(item: AccountOrderItem, t: Translate, locale: string): AccountItemLabel {
+export function accountItemLabel(
+  item: AccountOrderItem,
+  t: Translate,
+  locale: string,
+  definitions?: PrintCollectionDefinition[],
+): AccountItemLabel {
   if (item.variant != null) {
     const design = registryPrintById(item.product_id);
     return {
       key: `${item.product_id}-${JSON.stringify(item.variant)}`,
-      name: design ? printDisplayName(design, t('product.print')) : item.product_id,
+      name: design ? printDisplayName(design, t('product.print'), definitions) : item.product_id,
       detail: printDetail(item.variant, locale),
     };
   }

@@ -1,0 +1,39 @@
+[
+  {
+    "route": "/fine-art-prints",
+    "status": 308,
+    "location": "/sklep?campaign=qa"
+  },
+  {
+    "route": "/pl/fine-art-prints",
+    "status": 308,
+    "location": "/pl/sklep?campaign=qa"
+  },
+  {
+    "route": "/en/fine-art-prints",
+    "status": 308,
+    "location": "/en/sklep?campaign=qa"
+  },
+  {
+    "route": "/es/fine-art-prints",
+    "status": 308,
+    "location": "/es/sklep?campaign=qa"
+  },
+  {
+    "route": "/de/fine-art-prints",
+    "status": 308,
+    "location": "/de/sklep?campaign=qa"
+  },
+  {
+    "browser": "mobile",
+    "url": "http://localhost:3100/en/sklep?campaign=qa#ciala",
+    "width": {
+      "body": 390,
+      "viewport": 390
+    }
+  },
+  {
+    "browser": "ceramics",
+    "title": "Ceramics"
+  }
+]

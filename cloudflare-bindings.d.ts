@@ -39,6 +39,14 @@ interface R2GetOptions {
 
 interface R2PutOptions {
   httpMetadata?: R2HTTPMetadata;
+  /** Server-side integrity check: R2 hashes the bytes it receives and rejects the
+   *  write on a mismatch. Used by the print-asset container pipeline to close its
+   *  content-addressing loop (src/server/asset-jobs/container-render.ts). */
+  sha256?: ArrayBuffer | ArrayBufferView | string;
+  /** Conditional write — the binding-level `If-None-Match: *`. Declared for
+   *  accuracy (the full R2Conditional shape lives in @cloudflare/workers-types);
+   *  nothing in this repo uses it through a binding yet. */
+  onlyIf?: { etagMatches?: string; etagDoesNotMatch?: string };
 }
 
 interface R2Bucket {

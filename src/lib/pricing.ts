@@ -17,12 +17,21 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'fine-art-prints': 0, // ponytail: prints use print-pricing.ts, not this map
 };
 
-/** Delivery methods — InPost is the sole carrier; `odbior` is free Warsaw pickup. */
+/** Delivery methods — InPost is the sole carrier; `odbior` is free Tenerife studio pickup. */
 export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 
 /**
  * Customer-facing delivery price (zloty) per method. Placeholder figures —
  * confirm against the studio's InPost rates before launch.
+ *
+ * NEVER DELETE. As of the CmsApi /v1/shipping-rates cutover
+ * (supabase/migrations/20260917150000_cms_api_shipping_rates.sql) this map and
+ * its EUR/GBP siblings below are ALSO the seed of the `domestic` resource's
+ * published revision 1 — src/server/cms-api/shipping-rates-mapping.test.ts
+ * parses that migration and fails CI if the two ever disagree — and, collected
+ * into DEFAULT_DOMESTIC_SHIPPING below, they remain the outage/code-mode
+ * fallback src/lib/shipping-rates/last-known-good.ts degrades to. Same role
+ * DEFAULT_PRINT_PRICING plays for print pricing.
  */
 export const SHIPPING_PLN: Record<DeliveryMethod, number> = {
   paczkomat: 20,
@@ -116,35 +125,64 @@ export function priceOf(product: { category: CategorySlug; price: number }, loca
   return PRICE_EUR[product.category];
 }
 
-/** Display price for a product in an explicit currency. */
+/**
+ * Display price for a product in an explicit currency. PLN is always the
+ * product's own `price` (products.price_pln has always been the live DB
+ * source of truth in db mode). EUR/GBP prefer the product's own DB-backed
+ * `priceEur`/`priceGbp` when set — the per-category PRICE_EUR/PRICE_GBP code
+ * constant is now only a fallback for `code` mode or a registry row that
+ * genuinely has no override yet, not the sole source it used to be.
+ */
 export function priceOfCurrency(
-  product: { category: CategorySlug; price: number },
+  product: { category: CategorySlug; price: number; priceEur?: number; priceGbp?: number },
   currency: Currency,
 ): number {
   switch (currency) {
     case 'pln':
       return product.price;
     case 'gbp':
-      return PRICE_GBP[product.category];
+      return product.priceGbp ?? PRICE_GBP[product.category];
     case 'eur':
     default:
-      return PRICE_EUR[product.category];
+      return product.priceEur ?? PRICE_EUR[product.category];
   }
 }
 
 /**
+ * The three per-currency domestic price lists as one value — the shape
+ * src/lib/shipping-rates/ reads from the DB and falls back to in code mode.
+ * Each currency stays independently maintained (never FX-derived), exactly as
+ * the three constants above always have been.
+ */
+export type DomesticShippingRates = Record<Currency, Record<DeliveryMethod, number>>;
+
+export const DEFAULT_DOMESTIC_SHIPPING: DomesticShippingRates = {
+  pln: SHIPPING_PLN,
+  eur: SHIPPING_EUR,
+  gbp: SHIPPING_GBP,
+};
+
+/**
  * Display shipping price (major units) for a delivery method in a display
  * currency. Unknown currencies hit the EUR default.
+ *
+ * `rates` overrides the code constants with the CMS-published table — checkout
+ * passes src/lib/shipping-rates/get.ts's DB-backed one; every display surface
+ * (PDP, cart) keeps the default.
  */
-export function shippingOfCurrency(currency: Currency, method: DeliveryMethod): number {
+export function shippingOfCurrency(
+  currency: Currency,
+  method: DeliveryMethod,
+  rates: DomesticShippingRates = DEFAULT_DOMESTIC_SHIPPING,
+): number {
   switch (currency) {
     case 'pln':
-      return SHIPPING_PLN[method];
+      return rates.pln[method];
     case 'gbp':
-      return SHIPPING_GBP[method];
+      return rates.gbp[method];
     case 'eur':
     default:
-      return SHIPPING_EUR[method];
+      return rates.eur[method];
   }
 }
 

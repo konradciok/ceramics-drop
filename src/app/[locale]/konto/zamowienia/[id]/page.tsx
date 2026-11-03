@@ -1,4 +1,5 @@
 import '@/styles/account.css';
+import { paymentBreakdownRows } from '@/lib/payment-breakdown';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -7,6 +8,7 @@ import { authEnabled, getSessionUser } from '@/lib/auth/session';
 import { getAccountOrder } from '@/lib/account/orders';
 import { customerOrderStatus } from '@/lib/account/status';
 import { accountItemLabel, formatOrderAmount, formatOrderDate } from '@/lib/account/items';
+import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatShippingAddress } from '@/lib/shipping-address';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +49,7 @@ export default async function KontoOrderPage({ params }: Props) {
   const { order, fulfilment } = result;
 
   const t = await getTranslations({ locale });
+  const definitions = await loadPrintCollectionDefinitions();
   const { status, tracking } = customerOrderStatus({
     status: order.status,
     fulfilmentType: order.fulfilment_type,
@@ -83,7 +86,7 @@ export default async function KontoOrderPage({ params }: Props) {
           <h2>{t('account.itemsH')}</h2>
           <ul className="account-items">
             {order.items.map((item, index) => {
-              const label = accountItemLabel(item, t, locale);
+              const label = accountItemLabel(item, t, locale, definitions);
               return (
                 // Index-suffixed: two identical print line items in one order
                 // would otherwise collide on the variant-derived key.
@@ -112,6 +115,8 @@ export default async function KontoOrderPage({ params }: Props) {
               <span>{t('account.total')}</span>
               <span>{formatOrderAmount(order.total, order.currency, locale)}</span>
             </div>
+            {(order.gift_card_amount ?? 0) > 0 && paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount ?? 0 }, locale).slice(1).map(row =>
+              <div className="line" key={row.label}><span>{row.label}</span><span>{row.value}</span></div>)}
           </div>
         </div>
 
@@ -174,7 +179,7 @@ export default async function KontoOrderPage({ params }: Props) {
           )}
         </div>
 
-        {isCeramicOrder && order.status === 'paid' && (
+        {(isCeramicOrder || order.fulfilment_type === 'prodigi') && order.status === 'paid' && (
           <div className="account-actions">
             {/* Reuse the existing returns flow rather than rebuilding it here. */}
             <Link

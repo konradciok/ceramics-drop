@@ -1,21 +1,27 @@
 import { NextResponse } from 'next/server';
-import { getSoldIds, getShowroomIds } from '@/lib/inventory';
+import { getPublicProducts } from '@/lib/products';
+import { getCeramicSaleState } from '@/lib/ceramic-sale-state';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [sold, showroom] = await Promise.all([getSoldIds(), getShowroomIds()]);
+    const [products, state] = await Promise.all([getPublicProducts(), getCeramicSaleState()]);
+    if (state.failed) throw new Error('availability_unavailable');
     return NextResponse.json(
-      { sold, showroom },
-      { headers: { 'Cache-Control': 'public, max-age=30' } },
+      {
+        sold: products.filter((p) => p.sold).map((p) => p.id),
+        showroom: products.filter((p) => p.showroom).map((p) => p.id),
+        available: products.filter((p) => p.onlineAvailable === true).map((p) => p.id),
+        activeDrops: state.drops.filter((d) => d.status === 'active').map((d) => d.id),
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch {
-    // Best-effort cart pruning: on a Supabase outage return empty lists
-    // (don't cache the failure) rather than 500-ing the cart's prune fetch.
+    // Never turn an outage into a claim that every piece is available.
     return NextResponse.json(
-      { sold: [], showroom: [] },
-      { headers: { 'Cache-Control': 'no-store' } },
+      { error: 'availability_unavailable' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 }

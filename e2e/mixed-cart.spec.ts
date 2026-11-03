@@ -8,9 +8,11 @@ import { resetCart, appendToCart, goToCart, fillContact, sel } from './helpers/c
  *  2. a mixed cart (seeded directly — tiles now block add while a print is
  *     present) shows the notice and disables checkout,
  *  3. removing the print restores the ceramic path.
- * @ci-safe — cart state only; /api/checkout is never called.
+ * Needs a real backend: onlineAvailable (active-drop gate) fails closed
+ * without one, so no ceramic tile is ever purchasable to seed this with —
+ * run only via `npm run test:e2e:edge` against a live/preview deploy.
  */
-test.describe('mixed cart @ci', () => {
+test.describe('mixed cart @checkout-edge', () => {
   test('print in cart blocks ceramic PDP add; mixed cart blocks checkout; removing the print unblocks', async ({ page }) => {
     await resetCart(page);
 

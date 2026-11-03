@@ -250,9 +250,10 @@ export async function sendCheckoutStartedEvent(params: {
 export async function sendPurchasedEvent(params: {
   orderId: string;
   email: string | null;
+  env?: CloudflareEnv;
 }): Promise<void> {
   if (!params.email) return;
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   if (!env.RESEND_API_KEY) {
     throw new Error('Resend not configured: RESEND_API_KEY missing');
   }

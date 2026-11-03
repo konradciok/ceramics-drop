@@ -408,7 +408,7 @@ describe('createShipmentForOrder', () => {
     const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
     expect(result).toEqual({ status: 200, body: { message: 'Przesyłka utworzona.' } });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(
-      'pi_1',
+      ORDER_ID,
       expect.objectContaining({ inpost }),
       undefined,
     );
@@ -452,7 +452,7 @@ describe('createShipmentForOrder', () => {
       delivery_status: null,
       inpost_label_emailed_at: null,
     });
-    expect(mocks.createOrderShipment).toHaveBeenCalledWith('pi_1', expect.any(Object), { adoptExisting: false });
+    expect(mocks.createOrderShipment).toHaveBeenCalledWith(ORDER_ID, expect.any(Object), { adoptExisting: false });
   });
 
   it('returns 409 when recreate is requested without an existing shipment', async () => {

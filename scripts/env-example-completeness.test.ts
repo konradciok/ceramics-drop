@@ -91,7 +91,7 @@ function collectEnvReads(files: string[]): Set<string> {
  * not env vars/secrets — their names live in wrangler.jsonc, not env files, so
  * they legitimately have no `.env.example` line at all (not even commented).
  */
-const BINDING_ALLOWLIST = new Set(['ASSETS', 'WORKER_SELF_REFERENCE', 'FULFILMENT_QUEUE', 'PRINT_ASSETS']);
+const BINDING_ALLOWLIST = new Set(['ASSETS', 'WORKER_SELF_REFERENCE', 'FULFILMENT_QUEUE', 'PRINT_ASSETS', 'ASSET_JOBS_QUEUE']);
 
 /**
  * Names read via `env.NAME` / `process.env.NAME` in source that are NOT (and

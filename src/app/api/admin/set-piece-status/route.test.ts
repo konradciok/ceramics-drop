@@ -8,9 +8,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
 vi.mock('next/cache', () => ({ revalidateTag: mocks.revalidateTag }));
-vi.mock('@/lib/products', () => ({
-  registryProductById: (id: string) => (['k01', 'k02', 'k03'].includes(id) ? { id } : undefined),
-}));
 
 function req(body: unknown) {
   return new Request('http://localhost/api/admin/set-piece-status', {
@@ -20,14 +17,24 @@ function req(body: unknown) {
   }) as Parameters<typeof POST>[0];
 }
 
-function supabaseUpdating(returnedRows: Array<{ product_id: string }>) {
+// existingIds: what the `products` table existence check should report as found.
+function supabaseUpdating(
+  returnedRows: Array<{ product_id: string }>,
+  existingIds: string[] = ['k01', 'k02', 'k03'],
+) {
   const select = vi.fn().mockResolvedValue({ data: returnedRows, error: null });
   const is = vi.fn(() => ({ select }));
   const eq = vi.fn(() => ({ select, is }));
   const inFn = vi.fn(() => ({ eq }));
   const update = vi.fn(() => ({ in: inFn }));
-  const from = vi.fn(() => ({ update }));
-  return { from, update, inFn, eq, is, select };
+
+  const productsSelectIn = vi
+    .fn()
+    .mockResolvedValue({ data: existingIds.map((id) => ({ id })), error: null });
+  const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
+
+  const from = vi.fn((table: string) => (table === 'products' ? { select: productsSelect } : { update }));
+  return { from, update, inFn, eq, is, select, productsSelectIn };
 }
 
 describe('POST /api/admin/set-piece-status', () => {
@@ -49,6 +56,21 @@ describe('POST /api/admin/set-piece-status', () => {
     expect(supabase.inFn).toHaveBeenCalledWith('product_id', ['k01', 'k02']);
     expect(supabase.eq).toHaveBeenCalledWith('status', 'available');
     expect(mocks.revalidateTag).toHaveBeenCalledWith('inventory', 'max');
+  });
+
+  it('accepts a DB-only product id absent from the static registry', async () => {
+    // 'prd_abc123' exists in `products` (real DB catalog) but was never in
+    // the static code registry — confirms the existence check no longer
+    // depends on registryProductById.
+    const supabase = supabaseUpdating([{ product_id: 'prd_abc123' }], ['prd_abc123']);
+    mocks.adminSupabase.mockReturnValue(supabase);
+
+    const res = await POST(req({ productIds: ['prd_abc123'], sold: true }));
+    const body = (await res.json()) as { count: number };
+
+    expect(res.status).toBe(200);
+    expect(body.count).toBe(1);
+    expect(supabase.productsSelectIn).toHaveBeenCalledWith('id', ['prd_abc123']);
   });
 
   it('reports a partial match when some requested pieces are not eligible', async () => {
@@ -78,14 +100,13 @@ describe('POST /api/admin/set-piece-status', () => {
   });
 
   it('rejects unknown product ids', async () => {
-    mocks.adminSupabase.mockReturnValue(supabaseUpdating([]));
+    mocks.adminSupabase.mockReturnValue(supabaseUpdating([], []));
 
     const res = await POST(req({ productIds: ['nope'], sold: true }));
     const body = (await res.json()) as { error: string };
 
     expect(res.status).toBe(400);
     expect(body.error).toContain('nope');
-    expect(mocks.adminSupabase).not.toHaveBeenCalled();
   });
 
   it('requires a non-empty productIds array', async () => {
@@ -102,17 +123,33 @@ describe('POST /api/admin/set-piece-status', () => {
     expect(mocks.adminSupabase).not.toHaveBeenCalled();
   });
 
-  it('returns a Supabase error as a 500', async () => {
-    const select = vi.fn().mockResolvedValue({ data: null, error: { message: 'db down' } });
-    const eq = vi.fn(() => ({ select, is: vi.fn(() => ({ select })) }));
-    const inFn = vi.fn(() => ({ eq }));
-    const update = vi.fn(() => ({ in: inFn }));
-    mocks.adminSupabase.mockReturnValue({ from: vi.fn(() => ({ update })) });
+  it('returns a Supabase error as a 500 when the existence check fails', async () => {
+    const productsSelectIn = vi.fn().mockResolvedValue({ data: null, error: { message: 'db down' } });
+    const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
+    mocks.adminSupabase.mockReturnValue({ from: vi.fn(() => ({ select: productsSelect })) });
 
     const res = await POST(req({ productIds: ['k01'], sold: true }));
     const body = (await res.json()) as { error: string };
 
     expect(res.status).toBe(500);
     expect(body.error).toBe('db down');
+  });
+
+  it('returns a Supabase error as a 500 when the update fails', async () => {
+    const select = vi.fn().mockResolvedValue({ data: null, error: { message: 'update failed' } });
+    const eq = vi.fn(() => ({ select, is: vi.fn(() => ({ select })) }));
+    const inFn = vi.fn(() => ({ eq }));
+    const update = vi.fn(() => ({ in: inFn }));
+    const productsSelectIn = vi.fn().mockResolvedValue({ data: [{ id: 'k01' }], error: null });
+    const productsSelect = vi.fn(() => ({ in: productsSelectIn }));
+    mocks.adminSupabase.mockReturnValue({
+      from: vi.fn((table: string) => (table === 'products' ? { select: productsSelect } : { update })),
+    });
+
+    const res = await POST(req({ productIds: ['k01'], sold: true }));
+    const body = (await res.json()) as { error: string };
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe('update failed');
   });
 });

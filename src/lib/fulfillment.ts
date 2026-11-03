@@ -25,7 +25,15 @@ export function countCeramicOrderItems(
     .is('variant', null);
 }
 
-/** True when fewer ceramics ended up sold than expected. */
+/**
+ * True when the sold-piece count disagrees with the order's ceramic line items.
+ * Two cases, both auto-refund:
+ * - fulfilled < expected: some expected pieces never made it to `sold`.
+ * - expected === 0 && fulfilled > 0: pieces were sold for this order but it has
+ *   no ceramic line items (the order_items insert was lost — see the checkout
+ *   replay backfill). Such an order cannot be fulfilled, emailed, or reconciled;
+ *   treating it as healthy would silently strand a paid buyer.
+ */
 export function isUnderfulfilled(fulfilledCount: number, expectedCount: number): boolean {
-  return fulfilledCount < expectedCount;
+  return fulfilledCount < expectedCount || (expectedCount === 0 && fulfilledCount > 0);
 }

@@ -4,6 +4,8 @@ import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
 import { registryPrintById } from './prints';
+import { loadPrintCollectionDefinitions } from './print-collections';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { variantKey, variantLabel } from './print-cart';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import type { PrintVariantSelection } from './types';
@@ -56,16 +58,35 @@ const GIFT_CARD_LABELS: Record<string, string> = {
  *   before deciding which steps still need to run.
  */
 export async function createOrderInvoice(paymentIntentId: string): Promise<void> {
-  const stripe = getStripe();
-  const supabase = getSupabaseAdmin();
+  return createInvoiceForOrder({ paymentIntentId });
+}
 
-  const { data: order } = await supabase
-    .from('orders').select('*').eq('payment_intent_id', paymentIntentId).single();
+export async function createInvoiceForOrder(
+  reference: { orderId: string } | { paymentIntentId: string },
+  deps?: { stripe: Stripe; supabase: ReturnType<typeof getSupabaseAdmin> },
+): Promise<void> {
+  const stripe = deps?.stripe ?? getStripe();
+  const supabase = deps?.supabase ?? getSupabaseAdmin();
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders').select('*')
+    .eq('orderId' in reference ? 'id' : 'payment_intent_id', 'orderId' in reference ? reference.orderId : reference.paymentIntentId).single();
+  if (orderError) throw new Error(`Invoice order lookup failed: ${orderError.message}`);
   if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return;
 
-  const { data: items } = await supabase
+  const { data: items, error: itemsError } = await supabase
     .from('order_items').select('*').eq('order_id', order.id);
-  if (!items || items.length === 0) return;
+  if (itemsError) throw new Error(`Invoice items lookup failed: ${itemsError.message}`);
+  if (!items || items.length === 0) throw new Error('Invoice order has no items');
+
+  // Loaded lazily below, only the first time a non-gift-card print item's
+  // line label actually needs a resolved design name (see the items loop
+  // further down). Reached only past the invoiced_at idempotency guard
+  // above — Stripe webhook retries and duplicate events routinely hit that
+  // early return — and even past it, a retry that finds the invoice already
+  // finalized/paid never enters the items loop at all, so this DB read
+  // (with its own timeout) would otherwise be wasted work in both cases.
+  let definitions: PrintCollectionDefinition[] | undefined;
 
   const addr = normalizeShippingAddress(order.shipping_address);
   const customerShipping =
@@ -112,14 +133,29 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
 
   // "2" prefixes: the v1 flow left idempotency entries with different params
   // (pending-item style); reusing those keys would be rejected by Stripe.
-  let invoice = await stripe.invoices.create({
+  // The DB id is persisted before later side effects. Search also recovers a
+  // create that succeeded before that write, beyond Stripe's 24h key window.
+  const found = order.invoice_id ? null : await stripe.invoices.search({ query: `metadata['order_id']:'${order.id}'`, limit: 2 });
+  if (found && (found.data.length > 1 || found.has_more)) throw new Error('Multiple invoices require review');
+  const existingInvoiceId = order.invoice_id ?? found?.data[0]?.id;
+  let invoice = existingInvoiceId ? await stripe.invoices.retrieve(existingInvoiceId) : await stripe.invoices.create({
     customer: customer.id,
     collection_method: 'send_invoice',
     days_until_due: 30,
     currency: orderCurrency,
     auto_advance: false,
-    metadata: { payment_intent_id: paymentIntentId, order_id: order.id },
+    metadata: { ...(order.payment_intent_id ? { payment_intent_id: order.payment_intent_id } : {}), order_id: order.id },
+    ...((order.gift_card_amount ?? 0) > 0 ? {
+      custom_fields: [
+        { name: GIFT_CARD_LABELS[invoiceLocale], value: `${(order.gift_card_amount / 100).toFixed(2)} ${orderCurrency.toUpperCase()}` },
+        { name: { pl: 'Dopłata', en: 'Cash payment', es: 'Pago adicional', de: 'Zuzahlung' }[invoiceLocale], value: `${((order.total - order.gift_card_amount) / 100).toFixed(2)} ${orderCurrency.toUpperCase()}` },
+      ],
+    } : {}),
   }, { idempotencyKey: `inv2_${order.id}` });
+  if (!order.invoice_id) {
+    const saved = await supabase.from('orders').update({ invoice_id: invoice.id }).eq('id', order.id);
+    if (saved.error) throw new Error(`Invoice id persistence failed: ${saved.error.message}`);
+  }
 
   // Re-read live state: an idempotent replay returns the at-creation (draft)
   // snapshot even when the invoice has since been finalized or paid.
@@ -156,8 +192,9 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
         const design = registryPrintById(it.product_id);
         const printName = productNames['print'] ?? 'Fine-art print';
+        if (design && !definitions) definitions = await loadPrintCollectionDefinitions();
         const suffix = ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
-        label = (design ? printDisplayName(design, printName) : printName)
+        label = (design ? printDisplayName(design, printName, definitions) : printName)
           + suffix;
         legacyPrintLabel = `${printName} Nº ${design?.num ?? ''}`.trim() + suffix;
         printIdentity = { product_id: it.product_id, variant_key: variantKey(variant) };
@@ -186,7 +223,7 @@ export async function createOrderInvoice(paymentIntentId: string): Promise<void>
         currency: orderCurrency,
         description: label,
         ...(printIdentity ? { metadata: printIdentity } : {}),
-      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}` });
+      }, { idempotencyKey: `ii2_${order.id}_${it.product_id}${idempotencySuffix}_${it.id}` });
     }
     if (order.shipping > 0) {
       const labels = SHIPPING_LABELS[invoiceLocale] ?? SHIPPING_LABELS.pl;

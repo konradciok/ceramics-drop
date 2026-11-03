@@ -1,0 +1,31 @@
+{
+  "importedAt": "2026-09-29T13:42:39.555Z",
+  "host": "wnlysejenowymjdxlnaq.supabase.co",
+  "status": "verified_drafts_with_active_variants",
+  "productIds": [
+    "fap042",
+    "fap043",
+    "fap044",
+    "fap045",
+    "fap046",
+    "fap047",
+    "fap048",
+    "fap049",
+    "fap050",
+    "fap051",
+    "fap052",
+    "fap053",
+    "fap054",
+    "fap055",
+    "fap056",
+    "fap057"
+  ],
+  "products": 16,
+  "variants": 192,
+  "media": 0,
+  "payloadSha256": "79b7bb442ac5b9562497d5f9bbcfb3af40c27e39101549e738f9683a5bc7dca5",
+  "rpcResult": {
+    "skipped_cms_owned_ids": []
+  },
+  "existingRowsUnchanged": true
+}

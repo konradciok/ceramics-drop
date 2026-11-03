@@ -1,6 +1,9 @@
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
+import { registryPrintById } from './prints';
 import { toAnalyticsItem } from './analytics';
+import { printDisplayName } from './print-curation';
 import {
   forgetRememberedCheckout,
   hasFiredPurchaseOnce,
@@ -89,11 +92,11 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('confirmed payment by ids can be guarded to fire only once per payment intent', () => {
+  it('confirmed payment by ids can be guarded to fire only once per payment intent', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
 
-    const first = pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
+    const first = await pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
       orderNo: 'ACC-3000',
       shippingCost: 18,
       shippingMethod: 'kurier',
@@ -104,7 +107,7 @@ describe('checkout analytics semantics', () => {
       },
     });
 
-    const second = pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
+    const second = await pushConfirmedPurchaseByIdsOnce('pi_123', ['k01', 'k04'], {
       orderNo: 'ACC-3000',
       shippingCost: 18,
       shippingMethod: 'kurier',
@@ -125,7 +128,7 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('can remember checkout state and later emit purchase from that snapshot once payment succeeds', () => {
+  it('can remember checkout state and later emit purchase from that snapshot once payment succeeds', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
     const session = {
@@ -140,7 +143,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
       push,
       storage: session,
     });
@@ -168,7 +171,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
     expect(
-      pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
+      await pushConfirmedPurchaseFromRememberedCheckout('pi_456', 'ACC-456', {
         push,
         storage: session,
       }),
@@ -176,7 +179,7 @@ describe('checkout analytics semantics', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it('round-trips coupon + discountMinor through the snapshot into the purchase event', () => {
+  it('round-trips coupon + discountMinor through the snapshot into the purchase event', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (k: string) => storage.get(k) ?? null,
@@ -193,7 +196,7 @@ describe('checkout analytics semantics', () => {
     });
 
     const push = vi.fn();
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_promo', 'ACC-promo', { push, storage: session });
 
     expect(fired).toBe(true);
     expect(push).toHaveBeenCalledWith(
@@ -203,7 +206,7 @@ describe('checkout analytics semantics', () => {
     );
   });
 
-  it('rejects a fractional, negative, or non-finite discountMinor in a tampered snapshot (falls back to no discount)', () => {
+  it('rejects a fractional, negative, or non-finite discountMinor in a tampered snapshot (falls back to no discount)', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (k: string) => storage.get(k) ?? null,
@@ -217,7 +220,7 @@ describe('checkout analytics semantics', () => {
       const push = vi.fn();
       // Distinct payment_intent per iteration — the per-PI dedupe guard would
       // otherwise suppress the 2nd/3rd fires under a reused id.
-      const fired = pushConfirmedPurchaseFromRememberedCheckout(`pi_tamper_${i}`, 'ACC-tamper', { push, storage: session });
+      const fired = await pushConfirmedPurchaseFromRememberedCheckout(`pi_tamper_${i}`, 'ACC-tamper', { push, storage: session });
       expect(fired).toBe(true);
       // coupon still rides through (it's validated independently) but the
       // rejected discountMinor must not be applied — value stays undiscounted.
@@ -279,11 +282,11 @@ describe('checkout analytics semantics', () => {
     expect(event.meta).toMatchObject({ currency: 'EUR' });
   });
 
-  it('does not emit purchase from remembered checkout when no snapshot exists', () => {
+  it('does not emit purchase from remembered checkout when no snapshot exists', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_missing', 'ACC-404', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_missing', 'ACC-404', {
       push,
       storage: {
         getItem: (key: string) => storage.get(key) ?? null,
@@ -296,7 +299,7 @@ describe('checkout analytics semantics', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('uses payment_intent id as transaction id fallback on the return page', () => {
+  it('uses payment_intent id as transaction id fallback on the return page', async () => {
     const push = vi.fn();
     const storage = new Map<string, string>();
     const session = {
@@ -311,7 +314,7 @@ describe('checkout analytics semantics', () => {
       storage: session,
     });
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_789', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_789', {
       push,
       storage: session,
     });
@@ -483,7 +486,7 @@ describe('checkout analytics semantics', () => {
     expect(hasFiredPurchaseOnce('pi_x', throwing)).toBe(false);
   });
 
-  it('can explicitly forget a remembered checkout snapshot', () => {
+  it('can explicitly forget a remembered checkout snapshot', async () => {
     const storage = new Map<string, string>();
     const session = {
       getItem: (key: string) => storage.get(key) ?? null,
@@ -500,7 +503,7 @@ describe('checkout analytics semantics', () => {
 
     const push = vi.fn();
     expect(
-      pushConfirmedPurchaseFromRememberedCheckout('pi_forgotten', 'ACC-789', {
+      await pushConfirmedPurchaseFromRememberedCheckout('pi_forgotten', 'ACC-789', {
         push,
         storage: session,
       }),
@@ -555,7 +558,7 @@ describe('cookie-hardened snapshot and user_data on purchase event', () => {
     expect(Object.prototype.hasOwnProperty.call(event, 'user_data')).toBe(false);
   });
 
-  it('purchase still fires when storage is empty but snapshot was written (simulates sessionStorage eviction)', () => {
+  it('purchase still fires when storage is empty but snapshot was written (simulates sessionStorage eviction)', async () => {
     // In the browser, the cookie path fills this gap; in tests the cookie API is
     // absent so this correctly returns false.
     const push = vi.fn();
@@ -565,13 +568,56 @@ describe('cookie-hardened snapshot and user_data on purchase event', () => {
       removeItem: () => {},
     };
 
-    const fired = pushConfirmedPurchaseFromRememberedCheckout('pi_evicted', {
+    const fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_evicted', {
       push,
       storage: emptyStorage,
     });
 
     expect(fired).toBe(false);
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('print naming stays on the STATIC fallback (browser-side by construction)', () => {
+  /**
+   * This module is only ever imported by `'use client'` components, so it can
+   * never reach the CMS: loadPrintCollectionDefinitions() →
+   * getSupabaseAdmin() → getCloudflareContext() throws outside a Workers
+   * request context, and its fallback is PRINT_COLLECTION_DEFINITIONS — the
+   * same static list printDisplayName already defaults to. These tests pin the
+   * deliberate choice so a future "let's enrich the names from the CMS here"
+   * change has to confront the boundary rather than reintroduce a silent no-op
+   * (and re-drag @supabase/supabase-js into three client bundles).
+   */
+  it('names a print token from the static print-curation definitions', async () => {
+    const push = vi.fn();
+    const storage = new Map<string, string>();
+    const design = registryPrintById('fap005');
+    if (!design) throw new Error('Missing print fixture: fap005');
+
+    const fired = await pushConfirmedPurchaseByIdsOnce('pi_static_print', ['print:fap005:50x70:true:false:black'], {
+      orderNo: 'ACC-STATIC',
+      shippingCost: 18,
+      shippingMethod: 'kurier',
+      itemPrices: [35000],
+      push,
+      storage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    });
+
+    expect(fired).toBe(true);
+    const event = push.mock.calls[0][0] as import('./analytics').DataLayerEvent;
+    const items = (event.ecommerce as { items: { item_name: string }[] }).items;
+    expect(items[0].item_name).toBe(printDisplayName(design));
+  });
+
+  it('does not import the Supabase-backed CMS collection loader at all', async () => {
+    // A module-level assertion rather than a behavioural one: the point is the
+    // import EDGE, which is what pulls server-only code into a client bundle.
+    const source = await readFile(new URL('./checkout-analytics.ts', import.meta.url), 'utf8');
+    expect(source).not.toContain('print-collections');
   });
 });
 
@@ -610,19 +656,21 @@ describe('checkout analytics never breaks the storefront when storage throws', (
     expect(push).toHaveBeenCalledTimes(1);
   });
 
-  it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', () => {
+  it('pushConfirmedPurchaseByIdsOnce still emits purchase when storage throws', async () => {
     const push = vi.fn();
 
     let fired = false;
-    expect(() => {
-      fired = pushConfirmedPurchaseByIdsOnce('pi_throw', ['k01', 'k04'], {
+    try {
+      fired = await pushConfirmedPurchaseByIdsOnce('pi_throw', ['k01', 'k04'], {
         orderNo: 'ACC-THROW',
         shippingCost: 18,
         shippingMethod: 'kurier',
         push,
         storage: throwingStorage,
       });
-    }).not.toThrow();
+    } catch {
+      // Should not throw
+    }
 
     expect(fired).toBe(true);
     expect(push).toHaveBeenCalledTimes(1);
@@ -653,16 +701,18 @@ describe('checkout analytics never breaks the storefront when storage throws', (
     );
   });
 
-  it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', () => {
+  it('pushConfirmedPurchaseFromRememberedCheckout does not throw when storage throws', async () => {
     const push = vi.fn();
 
     let fired = true;
-    expect(() => {
-      fired = pushConfirmedPurchaseFromRememberedCheckout('pi_throw_return', 'ACC-X', {
+    try {
+      fired = await pushConfirmedPurchaseFromRememberedCheckout('pi_throw_return', 'ACC-X', {
         push,
         storage: throwingStorage,
       });
-    }).not.toThrow();
+    } catch {
+      // Should not throw
+    }
 
     // Snapshot read fails safely → treated as no snapshot, so nothing is emitted.
     expect(fired).toBe(false);

@@ -10,10 +10,12 @@ import {
   type CeramicCatalog,
 } from '../products';
 import { getPrintById, getPrintDesigns, registryPrintDesigns } from '../prints';
+import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { buildCatalogSeed } from './seed';
 import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
 import { recordCeramicCatalogSuccess, resetLastKnownGoodForTests } from './last-known-good';
+import { runWithRequestDegradation } from '../request-degradation-scope';
 
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
@@ -33,7 +35,12 @@ describe('catalog read path ↔ registry parity', () => {
       return byCat !== 0 ? byCat : a.num.localeCompare(b.num, undefined, { numeric: true });
     });
     expect(dbOrder[0]?.id).not.toBe(registryProducts()[0]?.id);
-    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(registryProducts());
+    // Modulo priceEur/priceGbp — see catalog-parity.test.ts's round-trip test
+    // for why the DB-backed catalogue always carries them and the bare
+    // registry never does.
+    expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(
+      registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
+    );
   });
 });
 
@@ -96,8 +103,11 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     process.env.CATALOG_SOURCE = 'db';
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(dbCeramics);
 
-    expect(await getProducts()).toEqual(registryProducts());
-    expect(await getProductById('k01')).toEqual(registryProducts().find((p) => p.id === 'k01'));
+    // Modulo priceEur/priceGbp — see catalog-parity.test.ts's round-trip test.
+    expect(await getProducts()).toEqual(
+      registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
+    );
+    expect(await getProductById('k01')).toMatchObject(registryProducts().find((p) => p.id === 'k01')!);
     expect(await getProductById('nope')).toBeUndefined();
     expect((await getProductsByCategory('kubki')).map((p) => p.id)).toEqual(
       registryProducts().filter((p) => p.category === 'kubki').map((p) => p.id),
@@ -190,6 +200,27 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
         expect.any(Error),
         expect.objectContaining({ tags: expect.objectContaining({ fallbackTier: 'last-known-good' }) }),
       );
+    });
+
+    it('flags the request for a 503 only when the cold-fail-closed tier is served', async () => {
+      process.env.CATALOG_SOURCE = 'db';
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
+      const cold = await runWithRequestDegradation(async (state) => {
+        await getProductById('k01'); // cold isolate → cold-fail-closed
+        return state;
+      });
+      expect(cold.ceramicCatalogColdFailClosed).toBe(true);
+
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValueOnce(dbCeramics);
+      await getProducts(); // warms the isolate
+      vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down again'));
+      const warm = await runWithRequestDegradation(async (state) => {
+        await getProductById('k01'); // warm isolate → last-known-good, real data
+        return state;
+      });
+      expect(warm.ceramicCatalogColdFailClosed).toBe(false);
     });
 
     it('a failing read observes a fresher last-known-good recorded WHILE it was in flight, not the state from when it started', async () => {

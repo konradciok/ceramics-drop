@@ -5,10 +5,12 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 import { default as handler } from './.open-next/worker.js';
-import { captureWorkerAlert, type WorkerAlertLevel } from './src/lib/worker-sentry';
+import { captureWorkerAlert, serializeError, type WorkerAlertLevel } from './src/lib/worker-sentry';
 import { processJob } from './src/server/fulfilment/process-job';
 import { decideMessageDisposition } from './src/server/fulfilment/queue-disposition';
 import { buildDlqAlert, buildDlqBatchAlertEmail, isDlqQueue } from './src/server/fulfilment/dlq';
+import { processAssetJob, isAssetJobsQueue } from './src/server/asset-jobs/process-job';
+import type { AssetJobMessage } from './src/server/asset-jobs/enqueue';
 import {
   buildFailedActionAlert,
   type FailedActionJobInput,
@@ -18,13 +20,17 @@ import {
   STRANDED_STATUSES,
   type StrandedJobInput,
 } from './src/server/fulfilment/stranded-job-alert';
+import { sweepStrandedAssetJobs } from './src/server/asset-jobs/stranded-job-alert';
 import { sweepStaleProdigiOrders } from './src/server/fulfilment/reconcile-orders';
 import type { FulfilmentJobMessage } from './src/server/prodigi/types';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
 import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
+import { recoverBalanceOrders } from './src/server/recover-balance-orders';
 import { isProbePath } from './src/lib/probe-paths';
+import { applyCatalogDegradation } from './src/lib/request-degradation';
+import { runWithRequestDegradation } from './src/lib/request-degradation-scope';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
 // Shared with the queue consumer (process-job outcome alerts) — throws on
@@ -55,23 +61,70 @@ export default {
       if (result.email) headers.set('X-Admin-Actor-Email', result.email);
       request = new Request(request, { headers });
     }
-    return handler.fetch(request, env, ctx);
+    // Per-request scope so a render served from the cold-fail-closed ceramic
+    // catalogue can be answered with 503 + Retry-After instead of a 404 or a
+    // ceramic-less sitemap (src/lib/request-degradation.ts).
+    return runWithRequestDegradation(async (degradation) =>
+      applyCatalogDegradation(request, await handler.fetch(request, env, ctx), degradation),
+    );
   },
 
   async queue(
-    batch: MessageBatch<FulfilmentJobMessage>,
+    batch: MessageBatch<FulfilmentJobMessage | AssetJobMessage>,
     env: CloudflareEnv,
     ctx: ExecutionContext,
   ) {
-    // Route on the queue name. The DLQ consumer is alert-only: it logs + fires
-    // Sentry + emails the studio, then acks every message — it NEVER retries,
-    // so a poison message cannot loop back through the system.
+    // Route on the queue name — first by pipeline (fulfilment vs. Priority 8's
+    // asset-jobs pipeline, Task 10), then, within each, on DLQ vs. primary.
+    // isAssetJobsQueue matches BOTH print-asset-jobs and its
+    // -dlq/-preview counterparts (mirrors isDlqQueue's own suffix-based
+    // matching), so it must be checked before the generic isDlqQueue branch —
+    // otherwise an asset-jobs DLQ message would fall into the fulfilment DLQ
+    // handler below, which assumes a FulfilmentJobMessage body shape.
+    if (isAssetJobsQueue(batch.queue)) {
+      const assetBatch = batch as MessageBatch<AssetJobMessage>;
+      if (isDlqQueue(assetBatch.queue)) {
+        await handleAssetJobsDlqBatch(assetBatch, env);
+        return;
+      }
+      for (const msg of assetBatch.messages) {
+        await processAssetJob(msg.body, env, ctx)
+          .then(() => msg.ack())
+          .catch((err) => {
+            const disposition = decideMessageDisposition(err);
+            // Same coarse retry/ack log signal as the fulfilment branch below
+            // (L-21) — full per-item detail is persisted to
+            // print_asset_jobs.last_error by processAssetJob itself.
+            const e = err as { name?: string; code?: string | number; status?: string | number };
+            console.error(
+              JSON.stringify({
+                event: 'asset_job_queue_error',
+                jobId: msg.body?.jobId,
+                uploadId: msg.body?.uploadId,
+                attempt: msg.attempts,
+                disposition,
+                errorName: err instanceof Error ? err.name : typeof err,
+                ...(e?.code !== undefined ? { errorCode: e.code } : {}),
+                ...(e?.status !== undefined ? { errorStatus: e.status } : {}),
+              }),
+            );
+            if (disposition === 'ack') msg.ack();
+            // Same exponential backoff schedule as the fulfilment branch (M-23).
+            else msg.retry({ delaySeconds: Math.min(2 ** msg.attempts * 30, 3600) });
+          });
+      }
+      return;
+    }
+
+    // The DLQ consumer is alert-only: it logs + fires Sentry + emails the
+    // studio, then acks every message — it NEVER retries, so a poison message
+    // cannot loop back through the system.
     if (isDlqQueue(batch.queue)) {
-      await handleDlqBatch(batch, env, ctx);
+      await handleDlqBatch(batch as MessageBatch<FulfilmentJobMessage>, env, ctx);
       return;
     }
     for (const msg of batch.messages) {
-      await processJob(msg.body, env, ctx)
+      await processJob(msg.body as FulfilmentJobMessage, env, ctx)
         .then(() => msg.ack())
         .catch((err) => {
           const disposition = decideMessageDisposition(err);
@@ -85,7 +138,7 @@ export default {
           console.error(
             JSON.stringify({
               event: 'fulfilment_queue_error',
-              orderId: msg.body?.orderId,
+              orderId: (msg.body as FulfilmentJobMessage)?.orderId,
               attempt: msg.attempts,
               disposition,
               errorName: err instanceof Error ? err.name : typeof err,
@@ -102,17 +155,21 @@ export default {
   },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {
+    ctx.waitUntil(recoverBalanceOrders({ supabase: supabaseFromEnv(env), stripe: stripeFromEnv(env), env, ctx })
+      .catch(async (error) => {
+        await captureWorkerAlert(env, { message: 'balance_recovery_sweep_failed', level: 'error', extra: { error: serializeError(error) } });
+      }));
     // waitUntil discards rejections silently, so catch + log here — otherwise a
     // Supabase/Stripe failure mid-sweep would vanish with no signal that the cron ran.
     ctx.waitUntil(
       sweepAbandoned(env).catch(async (err) => {
         // M-15: a dead sweep must alert, not just log — Cron Past Events shows the
         // invocation green regardless, so a silent throw here goes unnoticed.
-        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'abandoned_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'abandoned_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -121,11 +178,11 @@ export default {
     // no new failed jobs (or a transient email failure) sends/marks nothing.
     ctx.waitUntil(
       sweepFailedActionJobs(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'failed_action_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'failed_action_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -135,11 +192,27 @@ export default {
     // delivered the message). Idempotent via its own `stranded_alerted_at`.
     ctx.waitUntil(
       sweepStrandedJobs(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'stranded_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'stranded_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'stranded_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
+        });
+      }),
+    );
+    // The print_asset_jobs counterpart of the M-10 sweep above (CodeRabbit,
+    // PR #318): enqueueAssetJob writes the job row BEFORE awaiting the queue
+    // send, so a send failure leaves a `queued` row with no message in flight
+    // and nothing watching it. Same posture as sweepStrandedJobs — alert once
+    // (own `stranded_alerted_at` column), let the operator re-dispatch via the
+    // existing POST /v1/jobs (idempotent per upload) or POST /v1/jobs/{id}/retry.
+    ctx.waitUntil(
+      sweepStrandedAssetJobs(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'asset_job_stranded_sweep_error', error: serializeError(err) }));
+        await captureWorkerAlert(env, {
+          message: 'asset_job_stranded_sweep_error',
+          level: 'error',
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -149,11 +222,11 @@ export default {
     // deliberately ignores fulfilment_submitted/in_production).
     ctx.waitUntil(
       sweepStaleProdigiOrders(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'prodigi_reconcile_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'prodigi_reconcile_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'prodigi_reconcile_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
@@ -164,16 +237,16 @@ export default {
     // redeemed AND alert.
     ctx.waitUntil(
       sweepPromoRedemptions(env).catch(async (err) => {
-        console.error(JSON.stringify({ event: 'promo_reconcile_sweep_error', error: String(err) }));
+        console.error(JSON.stringify({ event: 'promo_reconcile_sweep_error', error: serializeError(err) }));
         await captureWorkerAlert(env, {
           message: 'promo_reconcile_sweep_error',
           level: 'error',
-          extra: { error: String(err) },
+          extra: { error: serializeError(err) },
         });
       }),
     );
   },
-} satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage>;
+} satisfies ExportedHandler<CloudflareEnv, FulfilmentJobMessage | AssetJobMessage>;
 
 /**
  * Alert-only consumer for `prodigi-fulfilment-dlq`. For each message: build the
@@ -263,6 +336,41 @@ async function sendDlqAlertEmail(env: CloudflareEnv, sections: string[]): Promis
 }
 
 /**
+ * Alert-only consumer for the asset-jobs DLQ (print-asset-jobs-dlq /
+ * print-asset-jobs-preview-dlq) — Priority 8 / Phase 2 (Task 10). Mirrors
+ * handleDlqBatch's ack-only/no-loop shape above, deliberately kept lighter:
+ * this stub phase proves the queue/DLQ machinery itself, not a full studio
+ * email pipeline for it (unlike fulfilment, this pipeline has no admin UI or
+ * on-call rotation depending on it yet) — a structured log line + Sentry
+ * capture is enough for an operator to notice and dig into
+ * print_asset_jobs.last_error. A full HTML batch email (buildDlqBatchAlertEmail's
+ * equivalent) can be added later exactly the same way if this queue proves it
+ * needs one; nothing here forecloses that.
+ */
+async function handleAssetJobsDlqBatch(batch: MessageBatch<AssetJobMessage>, env: CloudflareEnv): Promise<void> {
+  for (const msg of batch.messages) {
+    const jobId = typeof msg.body?.jobId === 'string' ? msg.body.jobId : null;
+    const uploadId = typeof msg.body?.uploadId === 'string' ? msg.body.uploadId : null;
+    console.error(
+      JSON.stringify({
+        event: 'asset_job_dlq_message',
+        queue: batch.queue,
+        messageId: msg.id,
+        jobId,
+        uploadId,
+        attempts: msg.attempts,
+      }),
+    );
+    await captureWorkerAlert(env, {
+      message: 'asset_job_dlq_poison_message',
+      level: 'error',
+      extra: { queue: batch.queue, messageId: msg.id, jobId, uploadId, attempts: msg.attempts },
+    });
+    msg.ack(); // alert-only — ack every message, never retry/requeue
+  }
+}
+
+/**
  * Fifth cron sweep: converge stale pending promo redemptions (Phase 2 Task 2
  * Step 4). The sweep logic lives in src/lib/promo-reconcile.ts; this wrapper
  * supplies the client and turns a paid-order reconcile (markPaid's miss) into
@@ -305,6 +413,7 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
         .from('orders')
         .select('id, payment_intent_id, private_sale_id, refund_pending_at, promo_code')
         .eq('status', 'pending')
+        .is('gift_card_id', null)
         .lt('created_at', cutoff)
         .limit(BATCH_LIMIT);
       if (error) throw new Error(`loadAbandoned failed: ${error.message}`);
@@ -548,3 +657,9 @@ async function sweepStrandedJobs(env: CloudflareEnv): Promise<void> {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- @ts-expect-error would fail post-build, when the import resolves
 // @ts-ignore `.open-next/worker.js` is generated at build time
 export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from './.open-next/worker.js';
+export { CmsApi } from './src/server/cms-api/entrypoint';
+// Priority 8 / Phase 3 — the Durable Object that owns the Node/Sharp
+// Cloudflare Container. wrangler.jsonc's `containers[].class_name` and its
+// `durable_objects.bindings[].class_name` both name this class, so this export
+// is what makes the binding resolvable at deploy time.
+export { PrintAssetProcessor } from './src/server/asset-jobs/container';

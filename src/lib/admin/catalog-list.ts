@@ -11,6 +11,7 @@
 import { adminSupabase } from '@/lib/admin/clients';
 import { listInventory, type Piece } from '@/lib/admin/data';
 import { CATEGORY_LABEL, productRef } from '@/lib/admin/products';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { listCatalogRows, readProductRow, type CatalogRows } from '@/lib/catalog/repository';
 import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplayStatus } from '@/lib/catalog/status';
@@ -66,7 +67,11 @@ function categoryRank(slug: CategorySlug): number {
  * category then display number. Ceramics carry their 1/1 piece_state; prints are
  * POD (no piece row, always in stock per variant).
  */
-export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string, Piece>): ProductListRow[] {
+export function assembleProductRows(
+  catalog: CatalogRows,
+  pieceById: Map<string, Piece>,
+  definitions?: PrintCollectionDefinition[],
+): ProductListRow[] {
   const variantsByProduct = new Map<string, CatalogRows['variants']>();
   for (const v of catalog.variants) {
     const list = variantsByProduct.get(v.product_id) ?? [];
@@ -77,7 +82,7 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
   const rows: ProductListRow[] = catalog.products.map((p) => {
     const variants = variantsByProduct.get(p.id) ?? [];
     const piece = pieceById.get(p.id) ?? null;
-    const ref = productRef(p.id);
+    const ref = productRef(p.id, undefined, definitions);
 
     // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
     // A product with NO variants is unknown-stock (e.g. a partial backfill) → not
@@ -151,7 +156,7 @@ export function assembleProductRows(catalog: CatalogRows, pieceById: Map<string,
  * are empty (backfill not run yet) it falls back to the code registry — which is
  * byte-for-byte the seed the backfill would insert, so the list is identical.
  */
-export async function listProducts(): Promise<ProductListResult> {
+export async function listProducts(definitions?: PrintCollectionDefinition[]): Promise<ProductListResult> {
   const supabase = adminSupabase();
   // A transient DB failure on the catalogue read must not take down the page —
   // fall back to the registry (same path as an un-backfilled DB).
@@ -176,7 +181,7 @@ export async function listProducts(): Promise<ProductListResult> {
 
   const pieceById = new Map(pieces.map((p) => [p.product_id, p]));
   return {
-    rows: assembleProductRows(catalog, pieceById),
+    rows: assembleProductRows(catalog, pieceById, definitions),
     source,
     dbCount: dbRows.products.length,
     expectedCount: registry.products.length,
@@ -215,7 +220,10 @@ export interface ProductEditorState {
  * falls back to the registry seed row (so the page still renders before the
  * backfill, though saving will 404 until the row exists in the DB).
  */
-export async function getProductEditorState(id: string): Promise<ProductEditorState | null> {
+export async function getProductEditorState(
+  id: string,
+  definitions?: PrintCollectionDefinition[],
+): Promise<ProductEditorState | null> {
   const supabase = adminSupabase();
   const dbRow = await readProductRow(supabase, id).catch((err) => {
     console.error('[admin/products] readProductRow failed, falling back to registry seed', err);
@@ -229,7 +237,7 @@ export async function getProductEditorState(id: string): Promise<ProductEditorSt
   }
   if (!row) return null;
 
-  const ref = productRef(id);
+  const ref = productRef(id, undefined, definitions);
   let printAssets: ProductPrintAssetsState = { status: 'na' };
   if (row.type === 'print' && source === 'db') {
     try {

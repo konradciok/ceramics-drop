@@ -11,6 +11,7 @@ import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
 import { withRegistryMockups } from '../print-mockups';
 import { assetPxFor, PRODIGI_SKU_MAP } from '../print-cart';
 import { DEFAULT_PRINT_PRICING, priceOfVariant } from '../print-pricing';
+import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { buildCatalogSeed, enumeratePrintVariants } from './seed';
 import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 
@@ -24,9 +25,21 @@ import { mapCeramicProducts, mapPrintDesigns } from './mappers';
 describe('catalog seed ↔ registry parity', () => {
   const seed = buildCatalogSeed();
 
-  it('round-trips ceramics back to registryProducts() exactly', () => {
+  it('round-trips ceramics back to registryProducts() exactly (modulo priceEur/priceGbp)', () => {
+    // seed.ts backfills price_eur/price_gbp for every ceramic row from these
+    // same PRICE_EUR/PRICE_GBP constants; mapCeramicProducts now surfaces them
+    // (S2b — priceOfCurrency prefers the DB value). The bare registry carries
+    // no such fields (they're synthesized at seed time), so the round-trip is
+    // exact modulo those two — same convention the print round-trip below
+    // uses for mockups/editorialGallery.
     const rebuilt = mapCeramicProducts(seed.products, seed.media);
-    expect(rebuilt).toEqual(registryProducts());
+    expect(rebuilt).toEqual(
+      registryProducts().map((p) => ({
+        ...p,
+        priceEur: PRICE_EUR[p.category],
+        priceGbp: PRICE_GBP[p.category],
+      })),
+    );
   });
 
   it('round-trips print designs back to PRINT_DESIGNS exactly (incl. drafts)', () => {
@@ -82,17 +95,18 @@ describe('catalog seed ↔ registry parity', () => {
     expect(ceramics).toHaveLength(registryProducts().length);
   });
 
-  it('projects all 41 stable print rows into the approved active and archived catalogue state', () => {
+  it('projects 58 stable print rows with the approved active and retired states', () => {
     const printRows = seed.products.filter((p) => p.type === 'print');
     const printRowsById = new Map(printRows.map((row) => [row.id, row]));
     const activeRows = printRows
       .filter((row) => row.status === 'active')
       .sort((a, b) => a.num.localeCompare(b.num));
 
-    expect(printRows).toHaveLength(41);
-    expect(activeRows).toHaveLength(39);
+    expect(printRows).toHaveLength(58);
+    expect(printRows.filter(row => row.status === 'draft')).toHaveLength(0);
+    expect(activeRows).toHaveLength(56);
     expect(activeRows.map((row) => row.num)).toEqual(
-      Array.from({ length: 39 }, (_, index) => String(index + 1).padStart(2, '0')),
+      Array.from({ length: 56 }, (_, index) => String(index + 1).padStart(2, '0')),
     );
     expect(printRowsById.get('fap029')).toMatchObject({ num: '029', status: 'archived' });
     expect(printRowsById.get('fap037')).toMatchObject({ num: '037', status: 'archived' });

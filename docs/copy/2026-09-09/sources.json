@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-09-09T10:03:33.367Z",
+  "local": {
+    "messages/pl.json": "564382c2b70ebdad39f9c4adc216897dc9c903f43ab66e7744e6297c4c826058"
+  },
+  "cms": {
+    "status": "read",
+    "documentCount": 7,
+    "sha256": "fd1351d12996e40c82a36edd4c957740bfc0c355bac1fad47e8d29711e9fa22d",
+    "projectHost": "wnlysejenowymjdxlnaq.supabase.co"
+  },
+  "notion": {
+    "pageId": "3d61bd1a6c8f8195a89cf4e86da6180d",
+    "lastEditedAt": "2026-09-09T09:39:12.301Z",
+    "comparison": "No substantive differences from local dictionary before this work"
+  }
+}

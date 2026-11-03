@@ -9,7 +9,7 @@ import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { isPrintToken } from '@/lib/print-cart';
-import { CATEGORIES } from '@/lib/products';
+import { CATEGORIES, productDisplayName } from '@/lib/products';
 import {
   buildAddToCartEvent,
   buildRemoveFromCartEvent,
@@ -46,6 +46,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
 
   const cat = product ? CATEGORIES[product.category] : undefined;
   const name = cat ? t(`product.${cat.singularKey}`) : '';
+  const displayName = product ? productDisplayName(product, name) : '';
   const rawNotes = product ? (t.raw(`notes.${product.category}`) as unknown) : undefined;
   const note = product && Array.isArray(rawNotes) ? (rawNotes[product.noteIndex] as string) ?? '' : '';
 
@@ -144,7 +145,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
         className={`lb${open ? ' open' : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         {...(open
-          ? { role: 'dialog', 'aria-modal': 'true', 'aria-label': product ? `${name} Nº ${product.num}` : '' }
+          ? { role: 'dialog', 'aria-modal': 'true', 'aria-label': displayName }
           : { 'aria-hidden': 'true' }
         )}
       >
@@ -194,7 +195,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                 src={currentImage}
                 srcSet={srcSet(currentImage)}
                 sizes="(min-width:861px) min(50vw, 460px), 100vw"
-                alt={`${name} Nº ${product.num}`}
+                alt={displayName}
                 draggable={false}
                 onLoad={(e) => {
                   const el = e.currentTarget;
@@ -219,7 +220,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
               <div className="eyebrow lb-eyebrow">
                 {cat ? `${t(cat.nameKey)} — ${t('lightbox.drop')}` : ''}
               </div>
-              <h3>{name} <em>Nº {product.num}</em></h3>
+              <h3>{product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}</h3>
               <div className="lb-price">{fmt(priceOfCurrency(product, currency))}</div>
               <p className="lb-note">{note}</p>
               <div className="lb-specs">

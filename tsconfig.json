@@ -40,6 +40,8 @@
     "node_modules",
     "design",
     "worker.ts",
-    "worker-configuration.d.ts"
+    "worker-configuration.d.ts",
+    "src/server/cms-api/entrypoint.ts",
+    "src/server/asset-jobs/container.ts"
   ]
 }

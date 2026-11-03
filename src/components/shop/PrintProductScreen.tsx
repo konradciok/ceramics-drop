@@ -4,7 +4,8 @@
    island (variant must be chosen) and the spec block covers print details,
    edition, delivery lead time and care.
    ============================================================ */
-import { printDisplayName } from '@/lib/print-curation';
+import { printCollectionOf, printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
@@ -32,6 +33,7 @@ export async function PrintProductScreen({
   usableVariantKeys,
   pricing,
   content,
+  definitions,
 }: {
   design: PrintDesign;
   noteOverride?: string;
@@ -40,6 +42,8 @@ export async function PrintProductScreen({
   pricing: PrintPricingConfig;
   /** Print-PDP section content (accordions + artist), loaded once by the PDP page (getPrintPdpContent). */
   content: PrintPdpPayload;
+  /** CMS-managed print collection definitions, loaded once by the PDP page (loadPrintCollectionDefinitions). */
+  definitions: PrintCollectionDefinition[];
 }) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
@@ -48,7 +52,7 @@ export async function PrintProductScreen({
 
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const displayName = printDisplayName(design, singular);
+  const displayName = printDisplayName(design, singular, definitions);
   const rawNotes = t.raw(`notes.${SLUG}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[design.noteIndex] as string) ?? '') : '';
   const note = noteOverride ?? fallbackNote;
@@ -64,19 +68,33 @@ export async function PrintProductScreen({
   // Size dimensions the design offers, e.g. "A4 · 21 × 29,7 cm".
   const sizeLines = design.sizes.map((s) => `${t(`print.size.${s}`)} · ${t(`print.sizeHint.${s}`)}`).join(' / ');
 
-  const siblings = (await getPrintDesigns())
-    .filter((d) => d.id !== design.id)
-    .slice(0, 4);
+  // "More prints" strip: the design's own collection first, topped up from the rest.
+  const collection = printCollectionOf(design.id, definitions);
+  const allDesigns = await getPrintDesigns();
+  const byId = new Map(allDesigns.map((d) => [d.id, d]));
+  const fromCollection = (collection?.designIds ?? []).filter((id) => id !== design.id).flatMap((id) => byId.get(id) ?? []);
+  const siblings = [
+    ...fromCollection,
+    ...allDesigns.filter((d) => d.id !== design.id && !fromCollection.includes(d)),
+  ].slice(0, 4);
 
   return (
     <>
-    <PrintViewAnalytics design={design} pricing={pricing} />
+    <PrintViewAnalytics design={design} pricing={pricing} definitions={definitions} />
     <article className="pdp">
       <div className="pdp-inner">
         <nav className="pdp-breadcrumb" aria-label="breadcrumb">
           <Link href="/">{SITE_NAME}</Link>
           <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
-          <Link href={`/${SLUG}`}>{categoryName}</Link>
+          {collection ? (
+            <>
+              <Link href="/kolekcje">{t('nav.kolekcje')}</Link>
+              <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
+              <Link href={`/kolekcje/${collection.slug}`}>{collection.name}</Link>
+            </>
+          ) : (
+            <Link href="/sklep">{categoryName}</Link>
+          )}
           <span className="pdp-breadcrumb-sep" aria-hidden="true">/</span>
           <span aria-current="page">{displayName}</span>
         </nav>
@@ -88,6 +106,7 @@ export async function PrintProductScreen({
             alt={displayName}
             usableVariantKeys={usableVariantKeys}
             pricing={pricing}
+            definitions={definitions}
             header={
               <>
                 <div className="eyebrow">{categoryName}</div>
@@ -138,7 +157,7 @@ export async function PrintProductScreen({
             <div className="gallery" data-count={siblings.length}>
               {siblings.map((d) => {
                 const from = fmt(fromPriceOf(d, printCurrency, pricing));
-                const name = printDisplayName(d, singular);
+                const name = printDisplayName(d, singular, definitions);
                 const image = printListingImage(d, registryPrintById(d.id));
                 return (
                   <Link key={d.id} href={`/${SLUG}/${d.id}`} className="tile tile-print" aria-label={name}>
@@ -159,7 +178,12 @@ export async function PrintProductScreen({
               })}
             </div>
             <div className="pdp-more-cta">
-              <Link href={`/${SLUG}`} className="btn btn-ghost">
+              {collection && (
+                <Link href={`/kolekcje/${collection.slug}`} className="btn btn-ghost">
+                  {t('printPdp.seeCollection', { name: collection.name })}
+                </Link>
+              )}
+              <Link href="/sklep" className="btn btn-ghost">
                 {t('product.seeAll')} — {categoryName}
               </Link>
             </div>

@@ -30,6 +30,18 @@ describe('middleware security headers', () => {
   });
 });
 
+describe('merchant-feed currency landing URLs', () => {
+  it('overrides an existing visitor preference with the explicit feed currency', async () => {
+    const res = await middleware(
+      new NextRequest('https://anna-ciok.studio/en/fine-art-prints/fap001?currency=gbp', {
+        headers: { cookie: 'currency_pref=eur' },
+      }),
+    );
+    expect(res.headers.getSetCookie()).toContainEqual(expect.stringContaining('currency_pref=gbp'));
+    expect(res.headers.get('Vary')).toContain('Cookie');
+  });
+});
+
 describe('isKontoPath (customer-account matcher)', () => {
   it.each([
     '/konto',

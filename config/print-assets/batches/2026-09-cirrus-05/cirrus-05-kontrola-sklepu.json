@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-09-30T13:47:00.000Z",
+  "status": "passed",
+  "productId": "fap058",
+  "storefrontUrl": "https://anna-ciok.studio/fine-art-prints/fap058",
+  "locales": ["pl", "en", "es", "de"],
+  "productPages": 4,
+  "shopListings": 4,
+  "googleFeeds": 4,
+  "metaFeeds": 4,
+  "gallerySlides": 4,
+  "frameMockupsChecked": ["natural", "black"],
+  "sizeChecked": "70x100",
+  "cart": "add_remove_passed",
+  "paidOrderCreated": false
+}

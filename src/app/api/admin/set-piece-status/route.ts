@@ -9,7 +9,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { adminSupabase } from '@/lib/admin/clients';
-import { registryProductById } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,12 +31,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'sold must be a boolean' }, { status: 400 });
   }
   const sold = body.sold;
-  const unknown = productIds.filter((id) => !registryProductById(id));
+  const supabase = adminSupabase();
+
+  // Existence check against the real catalog (not the static registry) so a
+  // CMS-created product (S2) is a valid target here too.
+  const { data: found, error: findErr } = await supabase.from('products').select('id').in('id', productIds);
+  if (findErr) return NextResponse.json({ error: findErr.message }, { status: 500 });
+  const foundIds = new Set((found ?? []).map((r) => r.id));
+  const unknown = productIds.filter((id) => !foundIds.has(id));
   if (unknown.length > 0) {
     return NextResponse.json({ error: `Unknown product id(s): ${unknown.join(', ')}` }, { status: 400 });
   }
 
-  const supabase = adminSupabase();
   const query = supabase
     .from('piece_state')
     .update({ status: sold ? 'sold' : 'available' })

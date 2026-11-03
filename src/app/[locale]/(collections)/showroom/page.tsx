@@ -46,8 +46,7 @@ export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Showroom overlay is best-effort: a Supabase outage degrades to an empty
-  // gallery rather than 500-ing the page.
+  // Availability failures retain the archive and disable purchase actions.
   const entries = await getShowroomProducts().catch(() => []);
 
   return (

@@ -21,7 +21,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { organizationSchema } from '@/lib/seo/structured-data';
 import { CurrencyProvider } from '@/components/currency/CurrencyProvider';
 import { getCurrency } from '@/lib/currency.server';
-import { SITE_URL } from '@/lib/site';
+import { SITE_NAME, SITE_URL } from '@/lib/site';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -41,14 +41,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     metadataBase: new URL(SITE_URL),
     // This template owns the brand suffix, so per-page `title.*` translations
-    // must be page-only (e.g. "Mugs", not "Mugs — Anna Ciok Ceramics") or the
+    // must be page-only (e.g. "Mugs", not "Mugs — Anna Ciok Studio") or the
     // brand renders twice. `title.home` is the exception — it opts out via
     // `title: { absolute }` in page.tsx. Guarded by title-branding.test.ts.
-    title: { default: 'Anna Ciok Ceramics', template: '%s — Anna Ciok Ceramics' },
+    title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
     description: t('meta.description'),
     openGraph: {
       type: 'website',
-      siteName: 'Anna Ciok Ceramics',
+      siteName: SITE_NAME,
       images: [{ url: '/uploads/kubek-1.webp', width: 1200, height: 800, alt: t('meta.ogImageAlt') }],
     },
     twitter: { card: 'summary_large_image' },

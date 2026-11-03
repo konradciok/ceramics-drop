@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createOrderInvoice } from './invoice';
+import { createOrderInvoice, createInvoiceForOrder } from './invoice';
 import { variantKey, variantLabel } from './print-cart';
+import { registryPrintById } from './prints';
 
 /**
  * Covers the regression where invoices were created EMPTY (pending invoice items
@@ -24,12 +25,13 @@ const ORDER = {
   total: 10500,
 };
 
-const ITEMS = [{ order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
+const ITEMS = [{ id: 'oi-1', order_id: 'ord-1', product_id: 'k01', unit_price: 9000 }];
 
 const stripeMock = {
   customers: { create: vi.fn(), list: vi.fn(), update: vi.fn() },
   invoiceItems: { create: vi.fn() },
   invoices: {
+    search: vi.fn(),
     create: vi.fn(),
     retrieve: vi.fn(),
     finalizeInvoice: vi.fn(),
@@ -58,6 +60,25 @@ let itemRows: Array<Record<string, unknown>> | null = ITEMS;
 vi.mock('./stripe', () => ({ getStripe: () => stripeMock }));
 vi.mock('./supabase', () => ({ getSupabaseAdmin: () => supabaseMock }));
 
+// Deterministic CMS-collection name resolution for print line items — only
+// the DB-facing loadPrintCollectionDefinitions call is mocked (same pattern
+// as cart-lines-server.test.ts), so createInvoiceForOrder never makes a real
+// Supabase call to resolve print collection names.
+vi.mock('./print-collections', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./print-collections')>();
+  return {
+    ...actual,
+    // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
+    // default also names fap001's collection 'Ostrea', so asserting on that
+    // name wouldn't prove this mocked `definitions` value was actually used
+    // versus the static fallback silently winning (see the print-line-naming
+    // assertion below, which pins on 'CmsOnly 01').
+    loadPrintCollectionDefinitions: vi.fn(async () => [
+      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
+    ]),
+  };
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   fromMode = 'select';
@@ -68,6 +89,7 @@ beforeEach(() => {
   stripeMock.customers.create.mockResolvedValue({ id: 'cus_1' });
   stripeMock.customers.update.mockResolvedValue({ id: 'cus_updated' });
   stripeMock.invoices.create.mockResolvedValue({ id: 'in_1', status: 'draft', total: 0 });
+  stripeMock.invoices.search.mockResolvedValue({ data: [], has_more: false });
   stripeMock.invoiceItems.create.mockResolvedValue({ id: 'ii_1' });
   // First retrieve: live status after create; second: total check after items.
   stripeMock.invoices.retrieve
@@ -83,12 +105,12 @@ describe('createOrderInvoice', () => {
   const printSuffix = ` — ${variantLabel(printVariant, 'en')} (${printVariant.prodigiSku})`;
 
   it.each([
-    { description: `Print Nº 14${printSuffix}`, metadata: {} },
-    { description: `Horizons 01${printSuffix}`, metadata: {} },
-    { description: 'A previous title', metadata: { product_id: 'fap005', variant_key: variantKey(printVariant) } },
+    { description: `Print Nº ${registryPrintById('fap001')?.num}${printSuffix}`, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, metadata: {} },
+    { description: 'A previous title', metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } },
   ])('reuses an existing print invoice line: $description', async (line) => {
     orderRow = { ...ORDER, locale: 'en', shipping: 0, total: 50500 };
-    itemRows = [{ product_id: 'fap005', unit_price: 50500, variant: printVariant }];
+    itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
     stripeMock.invoices.retrieve.mockReset();
     stripeMock.invoices.retrieve.mockResolvedValue({ id: 'in_1', status: 'draft', total: 50500, lines: { data: [{ ...line, amount: 50500 }] } });
 
@@ -100,13 +122,13 @@ describe('createOrderInvoice', () => {
   });
 
   it.each([
-    { description: `Print Nº 15${printSuffix}`, amount: 50500, metadata: {} },
-    { description: `Print Nº 14${printSuffix}`, amount: 50499, metadata: {} },
-    { description: `Horizons 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap008', variant_key: variantKey(printVariant) } },
-    { description: `Horizons 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap005', variant_key: 'another-variant' } },
+    { description: `Print Nº 999${printSuffix}`, amount: 50500, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50499, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap002', variant_key: variantKey(printVariant) } },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap001', variant_key: 'another-variant' } },
   ])('does not reuse a different print, variant or amount (%#)', async (line) => {
     orderRow = { ...ORDER, locale: 'en', shipping: 0 };
-    itemRows = [{ product_id: 'fap005', unit_price: 50500, variant: printVariant }];
+    itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
     stripeMock.invoices.retrieve.mockReset();
     stripeMock.invoices.retrieve
       .mockResolvedValueOnce({ id: 'in_1', status: 'draft', lines: { data: [line] } })
@@ -115,9 +137,31 @@ describe('createOrderInvoice', () => {
     await createOrderInvoice('pi_1');
 
     expect(stripeMock.invoiceItems.create).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ metadata: { product_id: 'fap005', variant_key: variantKey(printVariant) } }),
+      expect.objectContaining({ metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } }),
       expect.anything(),
     );
+  });
+
+  it('invoices the full value of a balance payment without inventing a PaymentIntent or a discount', async () => {
+    orderRow = { ...ORDER, payment_intent_id: null, currency: 'eur', gift_card_amount: 10500 };
+    await createInvoiceForOrder({ orderId: 'ord-1' });
+    const parameters = stripeMock.invoices.create.mock.calls[0][0];
+    expect(parameters.metadata).toEqual({ order_id: 'ord-1' });
+    expect(parameters.custom_fields).toEqual([
+      { name: 'Karta podarunkowa', value: '105.00 EUR' },
+      { name: 'Dopłata', value: '0.00 EUR' },
+    ]);
+    expect(stripeMock.invoiceItems.create.mock.calls.every(call => call[0].amount >= 0)).toBe(true);
+    expect(stripeMock.invoices.pay).toHaveBeenCalledWith('in_1', { paid_out_of_band: true }, expect.anything());
+  });
+
+  it('recovers a previously created invoice even after the create idempotency key expires', async () => {
+    stripeMock.invoices.search.mockResolvedValue({ data: [{ id: 'in_existing' }], has_more: false });
+    stripeMock.invoices.retrieve.mockReset().mockResolvedValue({ id: 'in_existing', status: 'paid', total: 10500 });
+    await createOrderInvoice('pi_1');
+    expect(stripeMock.invoices.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoiceItems.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoices.sendInvoice).toHaveBeenCalledWith('in_existing', {}, expect.anything());
   });
 
   it('attaches items directly to a send_invoice PLN draft, pays out-of-band, then sends', async () => {
@@ -204,7 +248,7 @@ describe('createOrderInvoice', () => {
 
     await expect(createOrderInvoice('pi_1')).rejects.toThrow(/total 9999 != order ord-1 total 10500/);
     expect(stripeMock.invoices.finalizeInvoice).not.toHaveBeenCalled();
-    expect(updateEq).not.toHaveBeenCalled();
+    expect(updateEq).toHaveBeenCalledOnce(); // draft id saved for recovery; invoiced_at remains unset
   });
 
   it('resumes idempotently when a webhook retry finds the invoice already paid', async () => {
@@ -331,8 +375,8 @@ describe('createOrderInvoice', () => {
     // the draft invoice was stuck with one line.
     const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
-      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
     ];
     await createOrderInvoice('pi_1');
     const keys = stripeMock.invoiceItems.create.mock.calls
@@ -342,11 +386,31 @@ describe('createOrderInvoice', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
+  it('gives two frame colours of the same framed design/size distinct idempotency keys even though they share a SKU', async () => {
+    // frameColour never affects price (AGENTS.md) or SKU (PRODIGI_SKU_MAP
+    // collapses frameColour per framed size), so two colourways of the SAME
+    // design+size+framed combo share product_id AND prodigiSku. Only the
+    // per-order_item id keeps the two invoiceItems.create calls from colliding.
+    const black = { size: '30x40', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-12X16' };
+    const natural = { size: '30x40', framed: true, mount: false, frameColour: 'natural', prodigiSku: 'GLOBAL-CFP-12X16' };
+    itemRows = [
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: black },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: natural },
+    ];
+    await createOrderInvoice('pi_1');
+    const keys = stripeMock.invoiceItems.create.mock.calls
+      .map((c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey)
+      .filter((k: string) => k !== 'ii2_ord-1_shipping');
+    expect(keys).toEqual(['ii2_ord-1_fap016_GLOBAL-CFP-12X16_oi-1', 'ii2_ord-1_fap016_GLOBAL-CFP-12X16_oi-2']);
+  });
+
   it('labels a gift-card line item with the tier amount, not a print/ceramic description', async () => {
-    itemRows = [{ order_id: 'ord-1', product_id: 'gc-500', unit_price: 50000, variant: { kind: 'giftcard', tierId: 'gc-500' } }];
+    itemRows = [
+      { id: 'oi-gc-1', order_id: 'ord-1', product_id: 'gc-500', unit_price: 50000, variant: { kind: 'giftcard', tierId: 'gc-500' } },
+    ];
     await createOrderInvoice('pi_1');
     const call = stripeMock.invoiceItems.create.mock.calls.find(
-      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_gc-500_gc-500',
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_gc-500_gc-500_oi-gc-1',
     );
     expect(call).toBeDefined();
     expect((call![0] as { description: string }).description).toContain('500 zł');
@@ -359,8 +423,8 @@ describe('createOrderInvoice', () => {
     // add only the missing ones, and still pass the total guard.
     const variant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
-      { order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap008', unit_price: 50500, variant },
     ];
     // First pass on a clean draft: learn the exact label the code emits for fap016.
     await createOrderInvoice('pi_1');
@@ -395,8 +459,8 @@ describe('createOrderInvoice', () => {
   it('keeps two variants of the same design on distinct idempotency keys', async () => {
     const base = { size: '70x100', framed: false, mount: false, frameColour: 'none' };
     itemRows = [
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: { ...base, prodigiSku: 'GLOBAL-FAP-28X40' } },
-      { order_id: 'ord-1', product_id: 'fap016', unit_price: 30000, variant: { ...base, size: '50x70', prodigiSku: 'GLOBAL-FAP-20X28' } },
+      { id: 'oi-1', order_id: 'ord-1', product_id: 'fap016', unit_price: 50500, variant: { ...base, prodigiSku: 'GLOBAL-FAP-28X40' } },
+      { id: 'oi-2', order_id: 'ord-1', product_id: 'fap016', unit_price: 30000, variant: { ...base, size: '50x70', prodigiSku: 'GLOBAL-FAP-20X28' } },
     ];
     await createOrderInvoice('pi_1');
     const keys = stripeMock.invoiceItems.create.mock.calls
@@ -404,6 +468,24 @@ describe('createOrderInvoice', () => {
       .filter((k: string) => k !== 'ii2_ord-1_shipping');
     expect(keys).toHaveLength(2);
     expect(new Set(keys).size).toBe(2);
+  });
+
+  it('labels a fine-art print line item with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
+    itemRows = [
+      {
+        id: 'oi-1',
+        order_id: 'ord-1',
+        product_id: 'fap001',
+        unit_price: 35000,
+        variant: { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' },
+      },
+    ];
+    await createOrderInvoice('pi_1');
+    const call = stripeMock.invoiceItems.create.mock.calls.find(
+      (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_fap001_GLOBAL-FAP-28X40_oi-1',
+    );
+    expect(call).toBeDefined();
+    expect((call![0] as { description: string }).description).toContain('CmsOnly 01');
   });
 
   it('uses English product labels and shipping description for en locale', async () => {

@@ -43,7 +43,10 @@ export async function Footer() {
           <FooterAccordionSection id="fart" heading={t('footer.hArt')}>
             <ul>
               <li>
-                <Link href="/fine-art-prints">{t('nav.fineArtPrints')}</Link>
+                <Link href="/sklep">{t('nav.fineArtPrints')}</Link>
+              </li>
+              <li>
+                <Link href="/kolekcje">{t('nav.kolekcje')}</Link>
               </li>
               <li>
                 <Link href="/gallery">{t('nav.gallery')}</Link>
@@ -86,6 +89,9 @@ export async function Footer() {
               </li>
               <li>
                 <Link href="/polityka-prywatnosci">{t('footer.polityka')}</Link>
+              </li>
+              <li>
+                <Link href="/refund-policy">{t('footer.refundPolicy')}</Link>
               </li>
             </ul>
           </FooterAccordionSection>

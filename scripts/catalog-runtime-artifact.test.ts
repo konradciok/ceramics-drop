@@ -17,6 +17,7 @@ const requiredAppPaths = [
   '/[locale]/(collections)/sklep/page',
   '/[locale]/(pdp)/[slug]/[id]/page',
   '/[locale]/koszyk/page',
+  '/[locale]/dostawa-i-zwroty/page',
   '/api/feed/google/route',
   '/api/feed/meta/route',
   '/sitemap.xml/route',
@@ -29,6 +30,7 @@ const catalogDynamicRouteTemplates = [
   '/[locale]/sklep',
   '/[locale]/[slug]/[id]',
   '/[locale]/koszyk',
+  '/[locale]/dostawa-i-zwroty',
 ];
 
 const roots: string[] = [];
@@ -190,6 +192,7 @@ describe('catalog runtime artifact verifier', () => {
     '/fine-art-prints',
     '/sklep',
     '/koszyk',
+    '/dostawa-i-zwroty',
     '/kubki',
     '/fine-art-prints/fap01',
     '/kubki/k01',

@@ -18,6 +18,7 @@ import {
   resendTemplateHtml,
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
+import { paymentBreakdownRows, type OrderPaymentBreakdown } from './payment-breakdown';
 import { SITE_URL } from '@/lib/site';
 import { inpostTrackingUrl } from '@/lib/tracking';
 
@@ -214,6 +215,8 @@ export async function emailLabelToStudio(params: {
 // ── Studio new-order notification ────────────────────────────────────────────
 
 export type NewOrderEmailOrder = {
+  gift_card_amount?: number;
+  gift_card_balance_after?: number | null;
   id: string;
   email: string | null;
   total: number;          // minor units, post-discount (the charged amount)
@@ -266,6 +269,9 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
     });
   }
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
+  if ((order.gift_card_amount ?? 0) > 0) {
+    rows.push(...paymentBreakdownRows({ ...order, gift_card_amount: order.gift_card_amount! },'pl').slice(1));
+  }
 
   const itemLines = order.items
     .map((it) => {
@@ -300,10 +306,11 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
 /** Email the studio about a new paid order. Throws if Resend isn't configured (caller must catch). */
 export async function emailNewOrderToStudio(params: {
   order: NewOrderEmailOrder;
+  env?: CloudflareEnv;
   /** M-27: pass `studio-new-order/<orderId>` from the claim-based webhook sender. */
   idempotencyKey?: string;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
     throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
@@ -969,6 +976,7 @@ export type OrderConfirmationOrder = {
   id: string;
   email: string | null;
   receiver_first_name: string | null;
+  payment?: OrderPaymentBreakdown;
 };
 
 // Intentionally duplicates deliveryNotice.* from messages/*.json — the Workers
@@ -988,54 +996,56 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
-    deliveryTitle: 'Informacja o dostawie w lipcu',
+    deliveryTitle: 'Informacja o dostawie',
     deliveryP1: 'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
-    deliveryP2: 'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane od 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
-    deliveryP3: 'Wysyłki będą realizowane od 10 lipca.',
+    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.',
+    deliveryP3: 'Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
   en: {
     subject: 'Order confirmed — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
     thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
-    deliveryTitle: 'July delivery information',
+    deliveryTitle: 'Delivery information',
     deliveryP1: 'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
-    deliveryP2: 'We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.',
-    deliveryP3: 'Shipping will take place in July, from 10 July.',
+    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 5 business days.',
+    deliveryP3: 'You\'ll receive the InPost tracking number by email once the parcel is on its way.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
   es: {
     subject: 'Pedido confirmado — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
-    deliveryTitle: 'Información sobre entregas en julio',
+    deliveryTitle: 'Información sobre la entrega',
     deliveryP1: 'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
-    deliveryP2: 'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
-    deliveryP3: 'Los envíos se realizarán en julio, a partir del 10 de julio.',
+    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.',
+    deliveryP3: 'Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
   },
   de: {
     subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
     thankYou: 'Danke für deine Bestellung! Ich habe sie bestätigt und werde bald mit dem Einpacken beginnen.',
-    deliveryTitle: 'Lieferinformationen für Juli',
+    deliveryTitle: 'Lieferinformationen',
     deliveryP1: 'Alle Bestellungen in Polen werden über InPost — per Kurier oder an Paczkomat-Paketfächer — versandt.',
-    deliveryP2: 'Wir kommen am 5. Juli nach Polen. Alle früher aufgegebenen Bestellungen werden ab dem 10. Juli versandt. Später aufgegebene Bestellungen werden innerhalb von 1–3 Tagen nach Bestelleingang versandt.',
-    deliveryP3: 'Der Versand erfolgt im Juli, ab dem 10. Juli.',
+    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.',
+    deliveryP3: 'Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist.',
     signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
 
-// Print orders: Prodigi produces on demand and couriers across EU/UK — no
-// InPost / Poland / locker language. Same manual-sync rule as the map above.
+// Print orders: produced on demand and couriered across EU/UK — no
+// InPost / Poland / locker language. The copy deliberately does NOT name
+// the fulfilment partner (trade secret — guarded by the email tests).
+// Same manual-sync rule as the map above.
 const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
   pl: {
     subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
     deliveryTitle: 'Informacja o realizacji',
-    deliveryP1: 'Druki fine-art powstają na zamówienie u naszego partnera drukarskiego Prodigi.',
-    deliveryP2: 'Produkcja trwa zwykle 2–5 dni roboczych. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
+    deliveryP1: 'Druki fine-art powstają na zamówienie.',
+    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
     deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
@@ -1044,8 +1054,8 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
     thankYou: 'Thank you for your order! It\'s confirmed — your print is on its way to production.',
     deliveryTitle: 'Fulfilment information',
-    deliveryP1: 'Fine-art prints are produced on demand by our print partner Prodigi.',
-    deliveryP2: 'Production usually takes 2–5 business days. Once your order ships, you\'ll receive an email with a tracking number.',
+    deliveryP1: 'Fine-art prints are produced on demand.',
+    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. Once your order ships, you\'ll receive an email with a tracking number.',
     deliveryP3: 'Courier delivery across the EU and the UK.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
@@ -1054,8 +1064,8 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
     deliveryTitle: 'Información sobre la producción',
-    deliveryP1: 'Las láminas fine-art se producen bajo demanda con nuestro socio de impresión Prodigi.',
-    deliveryP2: 'La producción suele tardar de 2 a 5 días laborables. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
+    deliveryP1: 'Las láminas fine-art se producen bajo demanda.',
+    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
     deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
   },
@@ -1064,8 +1074,8 @@ const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
     greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
     thankYou: 'Danke für deine Bestellung! Sie ist bestätigt — dein Druck geht jetzt in die Produktion.',
     deliveryTitle: 'Informationen zur Herstellung',
-    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung bei unserem Druckpartner Prodigi gefertigt.',
-    deliveryP2: 'Die Produktion dauert in der Regel 2–5 Werktage. Sobald deine Bestellung versandt wurde, erhältst du eine E-Mail mit der Sendungsnummer.',
+    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung gefertigt.',
+    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Sobald deine Bestellung versandt wurde, erhältst du eine E-Mail mit der Sendungsnummer.',
     deliveryP3: 'Kurierlieferung innerhalb der EU und nach Großbritannien.',
     signOff: 'Bis bald! Anna Ciok Studio',
   },
@@ -1091,6 +1101,7 @@ export function buildOrderConfirmationEmail(params: {
   const mainContent = [
     emailParagraph(`${greeting},`),
     emailParagraph(t.thankYou),
+    order.payment ? emailDetailTable(paymentBreakdownRows(order.payment,loc)) : '',
     emailParagraph(`<strong>${escapeHtml(t.deliveryTitle)}</strong>`),
     emailParagraph(t.deliveryP1),
     emailParagraph(t.deliveryP2),
@@ -1203,8 +1214,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Karta podarunkowa',
     codeLabel: 'Kod',
     terms:
-      'Kod jest jednorazowy — możesz go wykorzystać przy jednym przyszłym zamówieniu (ceramika lub druki fine-art). ' +
-      'Kwota przewyższająca wartość zamówienia nie jest zwracana ani przenoszona na kolejne zakupy.',
+      'Kartą zapłacisz za standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu, także za dostawę. Niewykorzystane saldo pozostaje na kolejne zakupy w walucie karty. Jedna karta na zamówienie, bez łączenia z kodem rabatowym. Karta nie obejmuje innych kart, zamówień indywidualnych ani zakupów podczas wizyty w pracowni.',
     printHint: 'Możesz wydrukować tę wiadomość lub zapisać ją jako PDF, aby wręczyć kartę w formie fizycznej.',
     signOff: 'Dziękujemy! Anna Ciok Studio',
   },
@@ -1215,8 +1225,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Gift card',
     codeLabel: 'Code',
     terms:
-      'The code is single-use — redeemable on one future order (ceramics or fine-art prints). ' +
-      'Any amount exceeding that order’s value is not refunded or carried forward.',
+      'Use your card for standard Fine Art Print orders online and ceramics during an active drop, including delivery. Unused balance stays on the card for future purchases in its currency. One card per order, without a discount code. Other gift cards, custom orders and purchases during a studio visit are excluded.',
     printHint: 'You can print this email or save it as a PDF to give the card as a physical gift.',
     signOff: 'Thank you! Anna Ciok Studio',
   },
@@ -1227,8 +1236,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Tarjeta regalo',
     codeLabel: 'Código',
     terms:
-      'El código es de un solo uso — canjeable en un futuro pedido (cerámica o láminas fine-art). ' +
-      'El importe que supere el valor de ese pedido no se reembolsa ni se traslada.',
+      'La tarjeta sirve para Fine Art Print estándar online y cerámica durante un drop activo, incluido el envío. El saldo restante se conserva para futuras compras en la moneda de la tarjeta. Una tarjeta por pedido, sin código de descuento. No incluye otras tarjetas, encargos personalizados ni compras durante una visita al estudio.',
     printHint: 'Puedes imprimir este correo o guardarlo como PDF para regalar la tarjeta en formato físico.',
     signOff: '¡Gracias! Anna Ciok Studio',
   },
@@ -1239,8 +1247,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Geschenkkarte',
     codeLabel: 'Code',
     terms:
-      'Der Code ist einmalig einlösbar — für eine zukünftige Bestellung (Keramik oder Fine-Art-Drucke). ' +
-      'Ein Betrag, der den Bestellwert übersteigt, wird nicht erstattet oder übertragen.',
+      'Die Karte gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops, einschließlich Versand. Restguthaben bleibt für weitere Einkäufe in der Kartenwährung erhalten. Eine Karte pro Bestellung, ohne Rabattcode. Weitere Geschenkkarten, Sonderanfertigungen und Einkäufe bei einem Atelierbesuch sind ausgeschlossen.',
     printHint: 'Du kannst diese E-Mail ausdrucken oder als PDF speichern, um die Karte physisch zu verschenken.',
     signOff: 'Danke! Anna Ciok Studio',
   },
@@ -1297,6 +1304,7 @@ export async function emailGiftCardToCustomer(params: {
   order: GiftCardDeliveryOrder;
   tier: GiftCardTier;
   currency: 'pln' | 'eur' | 'gbp';
+  amountMinor?: number;
   code: string;
   locale: string;
   env?: CloudflareEnv;
@@ -1313,7 +1321,8 @@ export async function emailGiftCardToCustomer(params: {
     throw new Error(`Cannot send gift-card email: order ${order.id} has no email`);
   }
 
-  const amountLabel = formatGiftCardAmount(params.tier, params.currency);
+  const amountLabel = params.amountMinor === undefined ? formatGiftCardAmount(params.tier, params.currency)
+    : new Intl.NumberFormat(params.locale, { style: 'currency', currency: params.currency }).format(params.amountMinor / 100);
   const { subject, html } = buildGiftCardDeliveryEmail({ order, amountLabel, code: params.code, locale: params.locale });
 
   return sendResendHtml({

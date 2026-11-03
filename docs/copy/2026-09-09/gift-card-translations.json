@@ -1,0 +1,20 @@
+{
+  "en": {
+    "lead": "Give someone a choice of Fine Art Print or ceramics available online during an active drop. The code arrives by email, and unused balance stays on the card for future purchases.",
+    "contactNote": "Your code will be sent to this email address once payment is confirmed.",
+    "accordionHowBody": "Choose one of four amounts and pay online. Your code arrives by email, ready to give to someone.\n\nEnter it in the “I have a gift card” field at checkout. The balance covers products and delivery. Pay any remaining amount using another payment method. Unused funds stay on the card.",
+    "accordionTermsBody": "The card uses its purchase currency: PLN, EUR or GBP, without currency conversion. It has no expiry date.\n\nIt covers standard Fine Art Print orders online and ceramics during an active drop. Studio visits, custom orders and other gift cards are excluded.\n\nUse one gift card per order, without a discount code. Fine Art Print and ceramics require separate orders.\n\nTo request a refund of the card purchase, email ania@ciok.art. If the card has been used, the studio will review its payment history."
+  },
+  "es": {
+    "lead": "Regala la elección de Fine Art Print o cerámica disponible online durante un drop activo. El código llega por correo y el saldo no utilizado se conserva para futuras compras.",
+    "contactNote": "Recibirás el código en esta dirección de correo cuando se confirme el pago.",
+    "accordionHowBody": "Elige uno de los cuatro importes y paga online. Recibirás un código por correo que puedes regalar a otra persona.\n\nAl comprar, introdúcelo en el campo «Tengo una tarjeta regalo». El saldo cubre los productos y el envío. Si no cubre todo el pedido, podrás abonar la diferencia. El saldo restante se conserva.",
+    "accordionTermsBody": "La tarjeta funciona en la moneda de compra: PLN, EUR o GBP, sin conversión. No tiene fecha de caducidad.\n\nIncluye Fine Art Print estándar online y cerámica durante un drop activo. No incluye visitas al estudio, encargos personalizados ni otras tarjetas regalo.\n\nUna tarjeta por pedido, sin combinarla con códigos de descuento. Fine Art Print y cerámica se compran en pedidos separados.\n\nPara solicitar la devolución de la compra de una tarjeta, escribe a ania@ciok.art. Si ya se ha utilizado, el estudio revisará el historial de pagos."
+  },
+  "de": {
+    "lead": "Verschenke die Wahl zwischen Fine Art Print und Keramik, die während eines aktiven Drops online erhältlich ist. Der Code kommt per E-Mail. Nicht verwendetes Guthaben bleibt für spätere Einkäufe erhalten.",
+    "contactNote": "Nach Zahlungsbestätigung senden wir den Code an diese E-Mail-Adresse.",
+    "accordionHowBody": "Wähle einen von vier Beträgen und bezahle online. Du erhältst einen Code per E-Mail und kannst ihn verschenken.\n\nGib ihn beim Einkauf im Feld „Ich habe eine Geschenkkarte“ ein. Das Guthaben deckt Produkte und Versand. Einen Restbetrag kannst du mit einer weiteren Zahlungsmethode begleichen. Nicht verwendetes Guthaben bleibt auf der Karte.",
+    "accordionTermsBody": "Die Karte gilt in der Kaufwährung: PLN, EUR oder GBP, ohne Währungsumrechnung. Sie hat kein Ablaufdatum.\n\nSie gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops. Atelierbesuche, Sonderanfertigungen und weitere Geschenkkarten sind ausgeschlossen.\n\nEine Geschenkkarte pro Bestellung, ohne Rabattcode. Fine Art Print und Keramik werden getrennt bestellt.\n\nWegen einer Erstattung des Kartenkaufs schreibe an ania@ciok.art. Wurde die Karte bereits verwendet, prüft das Studio den Zahlungsverlauf."
+  }
+}

@@ -22,6 +22,7 @@ import { loadCeramicProductsFromDb } from './catalog/load';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
 import { loadPrintPricingConfigFromDb } from './print-pricing-config/load';
 import { DEFAULT_PRINT_PRICING } from './print-pricing';
+import { resetLastKnownGoodForTests } from './print-pricing-config/last-known-good';
 
 const MOCK_ASSET = {
   assetId: 'asset-uuid-1',
@@ -97,13 +98,26 @@ describe('validateCart', () => {
     expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
   });
 
+  it('prices EUR/GBP from the product DB-backed priceEur/priceGbp in db mode, not the code constant (S2b)', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    try {
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([{ ...k01(), priceEur: 30, priceGbp: 26 }]);
+      const eur = await validateCart(['k01'], 'eur');
+      expect(eur).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 3000 }] });
+      const gbp = await validateCart(['k01'], 'gbp');
+      expect(gbp).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2600 }] });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('accepts a valid print token and snapshots the resolved asset', async () => {
     const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     const result = await validateCart([token], 'pln');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
-    expect(result.items[0].unit_price).toBe(36500); // (215 base + 150 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
+    expect(result.items[0].unit_price).toBe(67000); // (335 base + 335 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
     expect(result.items[0].variant).toMatchObject({
       assetId: MOCK_ASSET.assetId,
       assetKey: MOCK_ASSET.r2Key,
@@ -134,6 +148,7 @@ describe('validateCart', () => {
     } finally {
       vi.unstubAllEnvs();
       errSpy.mockRestore();
+      resetLastKnownGoodForTests();
     }
   });
 
@@ -147,6 +162,21 @@ describe('validateCart', () => {
     vi.mocked(resolvePrintAsset).mockRejectedValueOnce(new Error('connection reset'));
     const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_error' });
+  });
+
+  it('returns print_pricing_unavailable (never the hardcoded default) on a cold-isolate DB pricing failure', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    resetLastKnownGoodForTests();
+    vi.mocked(loadPrintPricingConfigFromDb).mockRejectedValueOnce(new Error('supabase down'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
+      expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_pricing_unavailable' });
+    } finally {
+      vi.unstubAllEnvs();
+      errSpy.mockRestore();
+      resetLastKnownGoodForTests();
+    }
   });
 
   it('rejects a mixed ceramics + prints cart', async () => {

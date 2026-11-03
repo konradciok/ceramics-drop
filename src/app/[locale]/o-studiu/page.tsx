@@ -134,7 +134,7 @@ export default async function StudioPage({ params }: Props) {
             <Link className="btn btn-primary" href="/sklep">
               <span>{t('studio.ctaB1')}</span> <Icon name="arrow" className="btn-arrow" />
             </Link>
-            <Link className="btn btn-ghost" href="/fine-art-prints">
+            <Link className="btn btn-ghost" href="/sklep">
               {t('studio.ctaB2')}
             </Link>
           </div>

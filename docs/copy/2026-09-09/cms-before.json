@@ -1,0 +1,691 @@
+[
+  {
+    "kind": "product_notes",
+    "slug": "wazony",
+    "status": "published",
+    "updated_at": "2026-07-08T12:48:22.830544+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "de",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d10": "Schwarze Blumen mit gepunkteten Mittelpunkten, runde Beeren und Blätter mit weißen Streifen. Das Motiv klettert vertikal an der hellen, runden Form hinauf.",
+            "v01": "Blauer Saguaro und eine Terrakotta-Sonne auf einer hellen, runden Vase. Am Rand trägt eine Terrakotta-Welle mit weißen Punkten einen Wüstenrhythmus um die Form.",
+            "v02": "Blaue Palme mit Terrakotta-Früchten und vertikalen Streifen am Rand. Das Motiv breitet sich weit auf der runden Form in einem ruhigen, urlaubsähnlichen Rhythmus aus.",
+            "v03": "Braune Bänder und dünne blaue Linien verlaufen vertikal an der hellen Vase hinunter. Der Rhythmus verengt sich am Hals und weitet sich an den geschwungenen Seiten.",
+            "v04": "Blaue Blätter der Feigenkaktus mit hellen Linien auf einer cremefarbenen Vase. Ein sanfter Rhythmus ovaler Segmente klettert die runde Form hinauf.",
+            "v05": "Blaue Palme mit Terrakotta-Früchten und Streifen am Rand. Die Blätter breiten sich weit über die runde Form aus.",
+            "v06": "Braune Schlaufen mit einem breiten Pinsel auf eine helle, runde Vase gemalt. Das Motiv verläuft in einem sanften, wellenförmigen Rhythmus.",
+            "v07": "Schwarze Palme mit weißen Linien und Terrakotta-Früchten. Die Blätter breiten sich weit über die runde Form aus, während der Rand einen Terrakotta-Rhythmus aufgreift.",
+            "v09": "Ein schwarzes gewundenes Band mit dünnen hellen Linien auf einer cremefarbenen Vase. Das Motiv umkreist die bauchige Form wie eine sanfte Welle."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d10": "Black flowers with dotted centers, round berries, and leaves in white stripes. The motif climbs vertically on the light, rounded form.",
+            "v01": "Blue saguaro and terracotta sun on a light, rounded vase. At the rim, a terracotta wave with white dots carries a desert rhythm around.",
+            "v02": "Blue palm with terracotta fruits and vertical stripes at the edge. The motif spreads broadly on the rounded form in a calm, holiday rhythm.",
+            "v03": "Brown stripes and thin blue lines run vertically on a light vase. The rhythm narrows at the neck and spreads out on the convex sides.",
+            "v04": "Blue pads of prickly pear with light lines on a cream vase, with terracotta interior visible at the opening. The soft rhythm of oval segments climbs diagonally up the rounded form.",
+            "v05": "Blue palm with terracotta fruits and bands at the rim. Leaves spread widely across the rounded form.",
+            "v06": "Brown loops painted with a wide brush on a light, rounded vase. The motif forms horizontal bands and runs around the shape in a soft, undulating rhythm.",
+            "v07": "Black palm with white veining and terracotta fruits on a light, rounded vase. The leaves spread broadly over the form, with terracotta vertical lines and small dots repeating at the rim.",
+            "v09": "Black winding ribbon with thin light lines on a cream vase. The motif circles the plump form like a calm wave."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "es",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d10": "Flores negras con centro punteado, bayas redondas y hojas con rayas blancas. El motivo sube verticalmente por la forma clara y redondeada.",
+            "v01": "Saguaro azul celeste y sol terracota sobre un jarrón claro y redondeado. En el borde, una ola de terracota con puntos blancos marca un ritmo desértico alrededor.",
+            "v02": "Palma azul con frutos terracota y rayas verticales en el borde. El motivo se extiende ampliamente sobre la forma curva en un ritmo sereno y veraniego.",
+            "v03": "Franjas marrones y finas líneas azules corren en vertical por el jarrón claro. El ritmo se estrecha en el cuello y se expande por los lados convexos.",
+            "v04": "Parches azulados de opuntia con líneas claras sobre el jarrón crema, con interior terracota visible en la abertura. Un ritmo suave de segmentos ovalados sube en diagonal por la forma redondeada.",
+            "v05": "Palma azul con frutos terracota y franjas en el borde. Las hojas se abren ampliamente sobre la forma redondeada.",
+            "v06": "Lazos marrones pintados con brocha ancha sobre el jarrón claro y redondeado. El motivo se dispone en bandas horizontales y rodea la forma con un ritmo suave y ondulado.",
+            "v07": "Palma negra con nervaduras blancas y frutos terracota sobre el jarrón claro y redondeado. Las hojas se abren ampliamente sobre la forma y, en el borde, se repiten rayas verticales de terracota y pequeños puntos.",
+            "v09": "Cinta negra ondulante con finas líneas claras sobre el jarrón crema. El motivo rodea la forma abultada como una ola tranquila."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d10": "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie.",
+            "v01": "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła.",
+            "v02": "Błękitna palma z terakotowymi owocami i pionowe paski przy brzegu. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+            "v03": "Brązowe pasy i cienkie błękitne linie biegną pionowo po jasnym wazonie. Rytm zwęża się przy szyjce i rozchodzi na wypukłych bokach.",
+            "v04": "Błękitne płaty opuncji z jasnymi liniami na kremowym wazonie, z terakotowym wnętrzem widocznym przy otworze. Miękki rytm owalnych segmentów wspina się ukośnie po zaokrąglonej formie.",
+            "v05": "Błękitna palma z terakotowymi owocami i pasami na rancie. Liście rozchodzą się szeroko po zaokrąglonej formie.",
+            "v06": "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw układa się w poziome pasy i biegnie dookoła formy miękkim, falującym rytmem.",
+            "v07": "Czarna palma z białym żyłkowaniem i terakotowymi owocami na jasnym, zaokrąglonym wazonie. Liście rozchodzą się szeroko po formie, a przy rancie powtarzają się terakotowe pionowe kreski i drobne kropki.",
+            "v09": "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala."
+          }
+        },
+        "version": 1
+      }
+    ]
+  },
+  {
+    "kind": "product_notes",
+    "slug": "kubki",
+    "status": "published",
+    "updated_at": "2026-07-08T12:48:45.694614+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "de",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "c01": "Schwarzer Stier mit einer hellen Girlande an der Seite und Terrakotta-Strichen am Rand. Das Motiv steht ruhig auf der hellen Form, und ein kleiner Rhythmus an der Oberseite schließt die Tasse ab.",
+            "c02": "Schwarzes Auge mit hellem Zentrum und vierzackigem Stern auf einer cremefarbenen Tasse. Ein Blattrand mit blauen Punkten führt das Motiv um die Form.",
+            "c03": "Schwarze Blumen mit hellen, ausstrahlenden Linien auf einer cremefarbenen Tasse. Das Motiv breitet sich frei an den Wandungen aus, manchmal am Rand abgeschnitten.",
+            "c04": "Schwarze Palme mit weißen Einschnitten und Terrakotta-Früchten. Blätter fächern sich unter kleinen Linien am Rand auf.",
+            "k01": "Blaue Blume mit rundem Kopf und Fischgrätblättern. Das einfache Motiv läuft vertikal durch die helle Tasse.",
+            "k02": "Blaue Palme mit braunen Früchten und gestreiften Blättern. Das Motiv breitet sich weit über die helle Tasse aus, akzentuiert durch kleine braune Details am Rand.",
+            "k03": "Blaue Blume auf braunem Stiel, mit Fischgrätblättern und Punkten am Rand. Das Motiv ist symmetrisch auf der hellen Wandung der Tasse angeordnet.",
+            "k04": "Blauer Fächer mit hellen, vertikalen Linien an der Seite der Tasse. Das Motiv öffnet sich vom oberen Rand wie eine ruhige Welle.",
+            "k05": "Blaue Zitrone mit weißen Einschnitten auf einer hellen Tasse. Schwarze Linien am Rand und am Boden bilden einen einfachen, grafischen Rhythmus.",
+            "k06": "Breite braune Streifen und dünne blaue Linien auf einer hellen Form. Der vertikale Rhythmus verläuft vom Boden bis zum leicht ungleichmäßigen Rand.",
+            "k07": "Braune Blätter mit hellen Adern und blauen Punkten am Rand. Das Motiv bewegt sich diagonal über die helle Form, wie ein ruhiger Zweig.",
+            "k08": "Blauer Saguaro mit hellen, geritzten Linien auf einer cremefarbenen Tasse. Das Motiv verläuft diagonal auf der Wandung, mit einem kleinen Terrakotta-Punkt daneben.",
+            "k09": "Blaue Blätter mit hellen Adern auf einer cremefarbenen Tasse und kleine Terrakotta-Einschnitte am Rand. Das Motiv klettert diagonal an der Seite entlang und schafft einen ruhigen, botanischen Rhythmus.",
+            "k10": "Blaue Muschel mit weißen Rillen und Terrakotta-Akzenten nahe dem Rand. Linien bilden eine Fächerform, wie ein ruhiger Meeresrhythmus.",
+            "k11": "Blaue Zitrone mit weißen Linien und Terrakotta-Rechtecken an den Tassenkanten. Das Motiv hält die Mitte, während rostige Markierungen einen ruhigen Rhythmus darum herum bilden.",
+            "k12": "Blaue Fische umkreisen einen hellen Seestern, mit Terrakotta-Punkten am Rand. Das Motiv fließt wellenartig an der Tassenwandung entlang.",
+            "k13": "Blaues Halbkreis mit hellen Strahlen hängt unter dem Rand der Tasse. Das Motiv breitet sich wie ein Fächer über die weiße, schlichte Form aus.",
+            "k14": "Terrakotta-Zitrone mit hellen Einschnitten und blauen Rechtecken nahe den Kanten. Ein gleichmäßiger Rhythmus blauer Punkte umkreist die Tasse von oben und unten.",
+            "k17": "Terrakotta-Palme mit weißen Linien und schwarzen Früchten unter einem gepunkteten Rand. Blätter breiten sich weit an der Tassenseite aus in einem ruhigen, urlaubsähnlichen Rhythmus.",
+            "k18": "Terrakotta-Blume auf langem Stiel und Fischgrätblättern. Das Motiv verläuft vertikal durch die Tasse, gekreuzt von einem ruhigen horizontalen Rhythmus.",
+            "k19": "Terrakotta-Zitrone mit weißen Linien auf einer hellen Tasse. Schwarze Rechtecke am Rand und am Boden halten das Motiv in einem ruhigen Rhythmus.",
+            "k20": "Braune Schlaufen mit einem breiten, transparenten Pinselstrich auf eine helle Tasse gemalt. Das Motiv verläuft in horizontalen Bändern, wie ein weiches Band, das die Form umwickelt.",
+            "k21": "Terrakotta-Kakteen mit hellen, vertikalen Rillen auf einer cremefarbenen Tasse. Schwarze Halbkreise am Rand leiten einen ruhigen Rhythmus um die Form.",
+            "k22": "Terrakotta-Saguaro mit weißen, geritzten Linien auf einer hellen Tasse. Das Wüstenmotiv klettert vertikal an der runden Form hinauf.",
+            "k23": "Schwarze Blume mit runden Köpfen und gestreiften Blättern auf einer hellen Tasse. Das Motiv wächst vertikal, und die Blätter breiten sich weit um die Form aus.",
+            "k24": "Schwarze Blume mit einem grauen Blütenblatt und Punkten über der Krone. Fischgrätblätter führen das Motiv vertikal an der hellen Tasse entlang.",
+            "k25": "Schwarze Blume mit einem Auge und einem hellen Stern in der Mitte. Blütenblätter strahlen über die gerundete Tassenwandung.",
+            "k26": "Schwarze Blume mit rundem Kopf, hellem Punkt und Fischgrätblättern. Ein vertikaler Stiel führt das Motiv ruhig durch die helle Tasse.",
+            "k27": "Eine schwarze Blume mit welligem Zentrum, umringt von kleinen gepunkteten Blütenblättern auf einer hellen Tasse. Ein vertikaler Stiel und zwei Blätter mit hell geritzter Äderung betonen einen ruhigen, grafischen Rhythmus."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "c01": "A black bull with a light garland on the side and terracotta dashes at the rim. The motif stands calmly on the light form, and a small rhythm at the top closes the mug.",
+            "c02": "A black eye with a light center and a four-pointed star on a cream mug. A leafy border with blue dots leads the motif around the form.",
+            "c03": "Black flowers with light, radiant lines on a cream mug. The motif spreads freely across the sides, cut off at points near the rim.",
+            "c04": "A black palm with white incisions and terracotta fruits. The leaves fan out beneath small dashes at the rim.",
+            "k01": "A blue flower with a round head and herringbone leaves. A simple motif runs vertically through the light mug.",
+            "k02": "A blue palm with brown fruits and striped leaves. The motif spreads widely across the light mug, accented by small brown touches at the rim.",
+            "k03": "A blue flower on a brown stem, with herringbone leaves and dots at the rim. The motif spreads symmetrically on the light side of the mug.",
+            "k04": "A blue fan with light, radiant lines on the side of the mug. The motif descends from beneath the upper edge in a wide, calm arc.",
+            "k05": "A blue lemon with white incisions on a light mug. Black lines at the rim and bottom create a simple, graphic rhythm.",
+            "k06": "Wide brown stripes and thin blue lines on a light form. A vertical rhythm runs from the bottom to the slightly uneven edge.",
+            "k07": "Brown leaves with light veins and blue dashes at the rim. The motif runs diagonally across the light form like a calm branch.",
+            "k08": "A blue prickly pear cactus with light engraved lines on a cream mug. The motif runs diagonally along the side, with a small terracotta dot and accents at the rim.",
+            "k09": "Blue leaves with light veins on a cream mug and small terracotta incisions at the rim. The motif climbs diagonally along the side, creating a calm, plant-like rhythm.",
+            "k10": "A blue shell with white grooves and terracotta accents at the rim. The lines fan out like a calm sea rhythm.",
+            "k11": "A blue lemon with white dashes and terracotta rectangles at the edges of the mug. The motif holds the center, and the rusty marks form a calm rhythm around it.",
+            "k12": "Blue fish arranged around a light starfish, with terracotta dots at the rim. The motif flows along the side of the mug in a wavering, marine rhythm.",
+            "k13": "A blue semicircle with light rays descends from the mug’s rim. The motif fans out over the white, simple form.",
+            "k14": "A terracotta lemon with light incisions and blue rectangles at the edges. An even rhythm of blue spots circles the mug at the top and bottom.",
+            "k17": "A terracotta palm with white lines and black fruits under a dotted rim. The leaves spread widely along the side of the mug in a calm, holiday rhythm.",
+            "k18": "A terracotta flower on a long stem and herringbone leaves. The motif runs vertically through the mug, interrupted by a calm horizontal rhythm.",
+            "k19": "A terracotta lemon with white dashes on a light mug. Black rectangles at the rim and bottom keep the motif in a calm rhythm.",
+            "k20": "Brown loops painted with a broad, transparent gesture on a light mug. The motif runs in horizontal bands, like a soft ribbon wrapping the form.",
+            "k21": "Terracotta cacti with light, vertical grooves on a cream mug. Black semicircles on the rim lead a calm rhythm around the form.",
+            "k22": "Terracotta saguaro with white, scratched lines on a light mug. The desert motif climbs vertically along the rounded form.",
+            "k23": "A black flower with round heads and striped leaves on a light mug. The motif grows vertically, and the leaves spread widely around the form.",
+            "k24": "A black flower with one grey petal and dots above the crown. Herringbone leaves lead the motif vertically along the light mug.",
+            "k25": "A black flower with an eye and a light star in the center. The petals radiate across the rounded side of the mug.",
+            "k26": "A black flower with a round head, light spot, and herringbone leaves. The vertical stem leads the motif calmly through the light mug.",
+            "k27": "A black flower with a wavy centre ringed by small dotted petals on a light mug. A vertical stem and two leaves with light etched veining emphasise a calm, graphic rhythm."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "es",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "c01": "Toro negro con guirnalda clara en el costado y líneas de terracota en el borde. El motivo está quieto sobre la forma clara, y un pequeño ritmo arriba cierra la taza.",
+            "c02": "Ojo negro con centro claro y estrella de cuatro puntas sobre taza crema. Un marco de hojas con puntos azules recorre el motivo alrededor de la forma.",
+            "c03": "Flores negras con líneas radiantes claras sobre taza crema. El motivo se distribuye libremente por las paredes, cortado por lugares en el borde.",
+            "c04": "Palma negra con incisiones blancas y frutos de terracota. Las hojas se abren en abanico bajo pequeñas líneas en el borde.",
+            "k01": "Flor azul con cabeza redonda y hojas en espiga. El motivo corre verticalmente por la taza clara.",
+            "k02": "Palma azul con frutos marrones y hojas rayadas. El motivo se extiende ampliamente sobre la taza clara, resaltado con pequeños toques marrones cerca del borde.",
+            "k03": "Flor azul sobre tallo marrón, con hojas en espiga y puntos cerca del borde. El motivo se dispone simétricamente en la pared clara de la taza.",
+            "k04": "Abanico azul con líneas radiantes claras en el lateral de la taza. El motivo cae desde el borde superior en un arco amplio y tranquilo.",
+            "k05": "Limón azul con incisiones blancas sobre taza clara. Las líneas negras cerca del borde y en la parte inferior forman un ritmo gráfico sencillo.",
+            "k06": "Franjas marrones anchas y líneas finas azules sobre la forma clara. El ritmo vertical va desde abajo hacia el borde ligeramente irregular.",
+            "k07": "Hojas marrones con nervaduras claras y líneas azules cerca del borde. El motivo recorre en diagonal la forma clara, como una rama tranquila.",
+            "k08": "Cactus opuntia azul con líneas claras grabadas sobre taza crema. El motivo cruza en diagonal la pared, con un pequeño punto terracota y detalles cerca del borde.",
+            "k09": "Hojas azules con nervaduras claras sobre taza crema y pequeñas incisiones terracota en el borde. El motivo asciende en diagonal por el lateral, creando un ritmo vegetal tranquilo.",
+            "k10": "Concha azul con acanaladuras blancas y detalles en terracota cerca del borde. Las líneas se disponen en forma de abanico, como un ritmo marino tranquilo.",
+            "k11": "Limón azul con líneas blancas y rectángulos de terracota en los bordes de la taza. El motivo se mantiene centrado, y las marcas oxidadas forman un ritmo tranquilo alrededor.",
+            "k12": "Peces azules rodean una estrella de mar clara, con puntos de terracota en el borde. El motivo fluye por la pared de la taza en un ritmo marino ondulante.",
+            "k13": "Semicírculo azul con rayos claros desciende desde el borde de la taza. El motivo se expande en abanico sobre la forma blanca y sencilla.",
+            "k14": "Limón terracota con incisiones claras y rectángulos azules en los bordes. Un ritmo parejo de manchas azules recorre la taza de arriba a abajo.",
+            "k17": "Palma terracota con líneas blancas y frutos negros bajo el borde punteado. Las hojas se extienden ampliamente por el costado de la taza en un ritmo tranquilo y veraniego.",
+            "k18": "Flor terracota sobre tallo largo y hojas en espiga. El motivo corre verticalmente por la taza, atravesado por un ritmo horizontal tranquilo.",
+            "k19": "Limón terracota con líneas blancas sobre taza clara. Los rectángulos negros en el borde y la base mantienen el motivo en un ritmo sereno.",
+            "k20": "Lazos marrones pintados con gesto amplio y translúcido sobre taza clara. El motivo avanza en bandas horizontales, como una cinta suave envolviendo la forma.",
+            "k21": "Cactus terracota con acanaladuras claras y verticales sobre taza crema. Semicírculos negros en el borde conducen un ritmo tranquilo alrededor de la pieza.",
+            "k22": "Saguaro terracota con líneas grabadas blancas sobre taza clara. El motivo desértico asciende verticalmente por la forma redondeada.",
+            "k23": "Flor negra con cabezas redondas y hojas a rayas sobre taza clara. El motivo crece verticalmente, con las hojas extendiéndose ampliamente alrededor de la forma.",
+            "k24": "Flor negra con un pétalo gris y puntos sobre la corona. Hojas en espiga conducen el motivo verticalmente por la taza clara.",
+            "k25": "Flor negra con un ojo y estrella clara en el centro. Los pétalos se distribuyen radialmente sobre la pared redondeada de la taza.",
+            "k26": "Flor negra con cabeza redonda, punto claro y hojas en espiga. El tallo vertical lleva el motivo tranquilamente por la taza clara.",
+            "k27": "Flor negra con centro ondulado rodeado de pequeños pétalos punteados en la taza clara. Un tallo vertical y dos hojas con venas claras grabadas subrayan un ritmo gráfico y sereno."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "c01": "Czarny byk z jasną girlandą na boku i terakotowymi kreskami przy rancie. Motyw stoi spokojnie na jasnej formie, a drobny rytm u góry domyka kubek.",
+            "c02": "Czarne oko z jasnym środkiem i czteroramienną gwiazdą na kremowym kubku. Liściasty otok z błękitnymi kropkami prowadzi motyw dookoła formy.",
+            "c03": "Czarne kwiaty z jasnymi, promienistymi liniami na kremowym kubku. Motyw rozchodzi się swobodnie po ściankach, miejscami ucięty przy brzegu.",
+            "c04": "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie.",
+            "k01": "Błękitny kwiat z okrągłą główką i liśćmi w jodełkę. Prosty motyw prowadzi pionowo przez jasny kubek.",
+            "k02": "Błękitna palma z brązowymi owocami i kreskowanymi liśćmi. Motyw rozkłada się szeroko na jasnym kubku, podkreślony drobnymi brązowymi akcentami przy brzegu.",
+            "k03": "Błękitny kwiat na brązowej łodydze, z liśćmi w jodełkę i kropkami przy rancie. Motyw rozkłada się symetrycznie na jasnej ścianie kubka.",
+            "k04": "Błękitny wachlarz z jasnymi, promienistymi liniami na boku kubka. Motyw opada spod górnej krawędzi szerokim, spokojnym łukiem.",
+            "k05": "Błękitna cytryna z białymi nacięciami na jasnym kubku. Czarne kreski przy rancie i u dołu układają się w prosty, graficzny rytm.",
+            "k06": "Szerokie brązowe pasy i cienkie błękitne linie na jasnej formie. Pionowy rytm biegnie od dołu ku lekko nierównemu brzegowi.",
+            "k07": "Brązowe liście z jasnymi żyłkami i błękitne kreski przy rancie. Motyw biegnie ukośnie po jasnej formie, jak spokojna gałązka.",
+            "k08": "Błękitny kaktus opuncji z jasnymi wydrapanymi liniami na kremowym kubku. Motyw biegnie ukośnie po ściance, z drobną terakotową kropką i akcentami przy rancie.",
+            "k09": "Błękitne liście z jasnymi żyłkami na kremowym kubku i drobne terakotowe nacięcia przy rancie. Motyw wspina się skośnie po boku, tworząc spokojny, roślinny rytm.",
+            "k10": "Błękitna muszla z białymi żłobieniami i terakotowymi akcentami przy rancie. Linie układają się wachlarzowo, jak spokojny morski rytm.",
+            "k11": "Błękitna cytryna z białymi kreskami i terakotowe prostokąty przy brzegach kubka. Motyw trzyma środek, a rdzawe znaki układają się w spokojny rytm dookoła.",
+            "k12": "Błękitne ryby układają się wokół jasnej rozgwiazdy, z terakotowymi kropkami przy rancie. Motyw płynie po ściance kubka falującym, morskim rytmem.",
+            "k13": "Błękitny półokrąg z jasnymi promieniami schodzi spod rantu kubka. Motyw rozkłada się wachlarzem po białej, prostej formie.",
+            "k14": "Terakotowa cytryna z jasnymi nacięciami i błękitne prostokąty przy brzegach. Równy rytm niebieskich plam obiega kubek od góry i od dołu.",
+            "k17": "Terakotowa palma z białymi liniami i czarnymi owocami pod kropkowanym rantem. Liście rozchodzą się szeroko po boku kubka w spokojnym, wakacyjnym rytmie.",
+            "k18": "Terakotowy kwiat na długiej łodydze i liście w jodełkę. Motyw biegnie pionowo przez kubek, przecięty spokojnym poziomym rytmem.",
+            "k19": "Terakotowa cytryna z białymi kreskami na jasnym kubku. Czarne prostokąty przy rancie i dole trzymają motyw w spokojnym rytmie.",
+            "k20": "Brązowe pętle malowane szerokim, przejrzystym gestem na jasnym kubku. Motyw biegnie poziomymi pasami, jak miękka wstążka oplatająca formę.",
+            "k21": "Terakotowe kaktusy z jasnymi, pionowymi żłobieniami na kremowym kubku. Czarne półkola na rancie prowadzą spokojny rytm dookoła formy.",
+            "k22": "Terakotowe saguaro z białymi, wydrapanymi liniami na jasnym kubku. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+            "k23": "Czarny kwiat z okrągłymi główkami i pasiastymi liśćmi na jasnym kubku. Motyw wyrasta pionowo, a liście rozkładają się szeroko wokół formy.",
+            "k24": "Czarny kwiat z jednym szarym płatkiem i kropkami nad koroną. Liście w jodełkę prowadzą motyw pionowo po jasnym kubku.",
+            "k25": "Czarny kwiat z okiem i jasną gwiazdą w środku. Płatki rozchodzą się promieniście po zaokrąglonej ścianie kubka.",
+            "k26": "Czarny kwiat z okrągłą główką, jasnym punktem i liśćmi w jodełkę. Pionowa łodyga prowadzi motyw spokojnie przez jasny kubek.",
+            "k27": "Czarny kwiat z falistym środkiem otoczonym pierścieniem drobnych płatków na jasnym kubku. Pionowa łodyga i dwa liście z jasnym rysunkiem żyłek podkreślają spokojny, graficzny rytm."
+          }
+        },
+        "version": 1
+      }
+    ]
+  },
+  {
+    "kind": "product_notes",
+    "slug": "wazony-duze",
+    "status": "published",
+    "updated_at": "2026-07-21T11:33:04.033009+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d06": "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
+            "d07": "Czarny półksiężyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
+            "d09": "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+            "g01": "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi."
+          }
+        },
+        "version": 1
+      }
+    ]
+  },
+  {
+    "kind": "product_notes",
+    "slug": "wazony-srednie",
+    "status": "published",
+    "updated_at": "2026-07-21T11:33:44.557383+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d01": "Black saguaro and terracotta suns on a light, rounded belly. Desert rhythm climbs vertically under the terracotta rim with white dots.",
+            "d02": "A black flower on a terracotta stem, with chevroned leaves and dots above the petals. Vertical lines by the rim repeat the rhythm of the veins on the leaves.",
+            "d03": "A black shell with light vertical lines and a blue rim. A spiral motif climbs the rounded side in a calm rhythm.",
+            "d05": "Large black cacti with light notches and a terracotta pattern under the edge. The desert motif climbs vertically along the rounded form.",
+            "u01": "A black shell with light vertical lines on a cream vase and a blue rim. Grooved rhythm climbs the rounded form like a calm wave."
+          }
+        },
+        "version": 1
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "d01": "Czarne saguaro i terakotowe słońca na jasnym, zaokrąglonym brzuścu. Pustynny rytm wspina się pionowo pod terakotowym rantem z białymi kropkami.",
+            "d02": "Czarny kwiat na terakotowej łodydze, z liśćmi w jodełkę i kropkami nad płatkami. Pionowe kreski przy rancie powtarzają rytm żyłek na liściach.",
+            "d03": "Czarna muszla z jasnymi, pionowymi liniami i błękitnym rantem. Spiralny motyw wspina się po zaokrąglonym boku w spokojnym rytmie.",
+            "d05": "Duże czarne kaktusy z jasnymi nacięciami i terakotowy wzór pod brzegiem. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+            "u01": "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala."
+          }
+        },
+        "version": 1
+      }
+    ]
+  },
+  {
+    "kind": "page",
+    "slug": "home",
+    "status": "published",
+    "updated_at": "2026-08-28T18:03:06.636264+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "de",
+        "status": "published",
+        "payload": {
+          "media": {
+            "mobile": {
+              "key": "d469d7dbe184d871c359f8aa28f6c7fda2f74e2f10533f1541154830b88d6b8a.png",
+              "kind": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            "desktop": {
+              "key": "bb97de899724da3b789e6ae43fc2bb9263fa42eabfb3711d2fd97e55bbbcfd03.png",
+              "kind": "image",
+              "width": 2800,
+              "height": 1600
+            }
+          },
+          "heroAlt": "Handbemalte Keramikstücke auf einem Holztisch im Atelier von Anna Ciok",
+          "ctaLabel": "Shop entdecken",
+          "heroLine1": "Handbemalt,",
+          "heroLine2": "Stück für Stück einzigartig.",
+          "heroTagline": "ATELIER ANNA CIOK — KERAMIK & KUNSTDRUCKE"
+        },
+        "version": 6
+      },
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "media": {
+            "mobile": {
+              "key": "d469d7dbe184d871c359f8aa28f6c7fda2f74e2f10533f1541154830b88d6b8a.png",
+              "kind": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            "desktop": {
+              "key": "bb97de899724da3b789e6ae43fc2bb9263fa42eabfb3711d2fd97e55bbbcfd03.png",
+              "kind": "image",
+              "width": 2800,
+              "height": 1600
+            }
+          },
+          "heroAlt": "Hand-painted ceramic pieces on a wooden table in Anna Ciok's studio",
+          "ctaLabel": "Browse the shop",
+          "heroLine1": "Hand-painted,",
+          "heroLine2": "one piece at a time.",
+          "heroTagline": "ANNA CIOK STUDIO — CERAMICS & FINE ART PRINTS"
+        },
+        "version": 6
+      },
+      {
+        "locale": "es",
+        "status": "published",
+        "payload": {
+          "media": {
+            "mobile": {
+              "key": "d469d7dbe184d871c359f8aa28f6c7fda2f74e2f10533f1541154830b88d6b8a.png",
+              "kind": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            "desktop": {
+              "key": "bb97de899724da3b789e6ae43fc2bb9263fa42eabfb3711d2fd97e55bbbcfd03.png",
+              "kind": "image",
+              "width": 2800,
+              "height": 1600
+            }
+          },
+          "heroAlt": "Piezas de cerámica pintadas a mano sobre una mesa de madera en el estudio de Anna Ciok",
+          "ctaLabel": "Ver la tienda",
+          "heroLine1": "Pintado a mano,",
+          "heroLine2": "una pieza a la vez.",
+          "heroTagline": "ESTUDIO ANNA CIOK — CERÁMICA Y ARTE"
+        },
+        "version": 6
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "media": {
+            "mobile": {
+              "key": "d469d7dbe184d871c359f8aa28f6c7fda2f74e2f10533f1541154830b88d6b8a.png",
+              "kind": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            "desktop": {
+              "key": "bb97de899724da3b789e6ae43fc2bb9263fa42eabfb3711d2fd97e55bbbcfd03.png",
+              "kind": "image",
+              "width": 2800,
+              "height": 1600
+            }
+          },
+          "heroAlt": "Ręcznie malowane naczynia ceramiczne na drewnianym stole w pracowni Anny Ciok",
+          "ctaLabel": "Przeglądaj sklep",
+          "heroLine1": "Ręcznie malowane,",
+          "heroLine2": "jedna sztuka naraz.",
+          "heroTagline": "PRACOWNIA ANNY CIOK — CERAMIKA I FINE ART"
+        },
+        "version": 7
+      }
+    ]
+  },
+  {
+    "kind": "page",
+    "slug": "print-pdp",
+    "status": "published",
+    "updated_at": "2026-08-17T13:16:50.947299+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "de",
+        "status": "published",
+        "payload": {
+          "artist": {
+            "bio": "Anna Ciok ist eine in Warschau lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
+            "name": "Anna Ciok"
+          },
+          "accordions": {
+            "framing": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
+            "shipping": "Unser Partner Prodigi produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe.",
+            "productDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "artist": {
+            "bio": "Anna Ciok is a Warsaw-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
+            "name": "Anna Ciok"
+          },
+          "accordions": {
+            "framing": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
+            "shipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
+            "productDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "es",
+        "status": "published",
+        "payload": {
+          "artist": {
+            "bio": "Anna Ciok es una artista afincada en Varsovia que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
+            "name": "Anna Ciok"
+          },
+          "accordions": {
+            "framing": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
+            "shipping": "Nuestro socio Prodigi produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
+            "productDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "artist": {
+            "bio": "Anna Ciok tworzy w Warszawie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
+            "name": "Anna Ciok"
+          },
+          "accordions": {
+            "framing": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
+            "shipping": "Druk i wysyłkę realizuje nasz partner Prodigi w ciągu 5–10 dni roboczych. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
+            "productDetails": "Fine Art print na papierze matowym o jakości archiwalnej EMA 200 g/m² — edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką."
+          }
+        },
+        "version": 3
+      }
+    ]
+  },
+  {
+    "kind": "product_notes",
+    "slug": "fine-art-prints",
+    "status": "published",
+    "updated_at": "2026-08-19T12:39:29.707945+00:00",
+    "cms_document_versions": [
+      {
+        "locale": "de",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "fap001": "Tiefes Marineblau fließt in 001 in transparente blaugrüne Flächen, während eine schmale, fein gestreifte Kurve den Blick durch die Komposition führt. Eine kleine goldene Scheibe und warme rostfarbene Spuren unterbrechen das kühle Feld und halten fließende Bewegung und präzise Details im Gleichgewicht. Luftig und dennoch geerdet bringt das Werk ruhige Tiefe in Wohnzimmer, Schlafzimmer oder Arbeitsbereich.",
+            "fap002": "Ein breites Terrakottaband zieht sich durch 002 und trennt helle Pfirsich- und Blaugrüntöne von einem konzentrierten Feld in Nachtblau. Feine Konturen, kupferfarbene Spuren und ein goldener Kreis verstärken den Kontrast zwischen Weichheit und Struktur. Die warm-kühle Palette belebt ein neutrales Wohnzimmer oder den Flur und bleibt zugleich fein genug für Schlafzimmer oder Arbeitszimmer.",
+            "fap003": "Zwei schwebende Felder in Rauchblau, Apricot und hellem Grün verleihen 003 eine offene, beinahe schwerelose Wirkung. Ein dunkles Band aus feinen Linien führt über beide Formen, begleitet von rostfarbenen Spuren, welligen Konturen und einem kleinen goldenen Akzent in großzügigem Weißraum. Dynamisch und doch klar wird die Arbeit zum besonderen Blickfang neben hellem Holz und weichen neutralen Textilien.",
+            "fap004": "Sanfte blaue Flächen treffen in 004 auf olivgrüne radiale Formen, feine Linien und lebhafte grünblaue Sprenkel vor großzügigem Weiß. Das Zusammenspiel aus transparenter Farbe, gespannten Kurven und fächerartiger Geometrie erzeugt einen frischen skulpturalen Rhythmus zwischen Ruhe und Energie. Leuchtend, aber nicht laut, setzt der Print im Wohnzimmer oder Studio einen eleganten Akzent zu Holz, Stein und gedeckten Stoffen.",
+            "fap005": "Schichten aus nebligem Blau, Moosgrün und leuchtendem Gelb bestimmen die markante grafische Struktur von 005. Fein strahlende Schlaufen halten Ober- und Unterkante, während lockere schwarze und weiße Kurven die Komposition in einem bewegten Rhythmus durchqueren. Das Gleichgewicht aus großen Farbflächen und filigranen Linien bringt selbstbewusste Wärme in Wohnzimmer, Essbereich oder kreativen Arbeitsplatz, ohne den Raum zu überladen.",
+            "fap006": "Konzentrische Flächen aus Rauchgrau, sanftem Pfirsich und tiefem Marineblau fügen sich in 006 zu einer runden, steinartigen Form. Feine bordeauxrote Streifen folgen einer Kante, während eine kleine goldene Scheibe die Mitte erhellt und breite Farbe mit präzisem Detail verbindet. Still und umhüllend verleiht die Komposition Schlafzimmer, Leseecke oder ruhigem Wohnraum Tiefe, ohne die Leichtigkeit des weißen Grundes zu verlieren.",
+            "fap007": "Warme Pfirsich- und neblige Grautöne legen sich in 007 um ein nachtblaues Zentrum und bilden eine weich geschichtete, muschelartige Silhouette. Eine bordeauxrote gestreifte Kontur zieht sich durch die Komposition, ergänzt von einem goldenen Kreis und freien schwarzen Gesten zwischen Präzision und Spontaneität. Die zentrierte Balance und das sanfte Leuchten schaffen einen eleganten Blickfang für Schlafzimmer, Arbeitszimmer oder Wohnzimmer mit warmem Holz.",
+            "fap008": "Eine breite Terrakottaform trifft in 008 auf ein übergroßes taupefarbenes Oval und setzt satte Farbe gegen fein strahlende Linien. Helle Ranken, weiche Punkte, marineblaue Elemente und schnelle schwarze Spuren beleben die Oberfläche, ohne ihre grafische Ordnung zu überladen. Verspielt und dennoch gefasst gibt der Print Essbereich, Flur oder kreativem Arbeitsplatz vor einem klaren neutralen Hintergrund Charakter.",
+            "fap009": "Helle Grau- und Sandtöne geben 009 seine gemessene Geometrie, die durch Kohleflächen und rostfarbene Sprenkel weicher wird. Zwei wellige vertikale Bänder — eines fein blau gestreift, das andere tiefschwarz — führen den Blick nach unten, während eine zarte Linie das Feld durchzieht. Ruhig und eigenständig passt die Komposition in Arbeitszimmer, Flur oder ein zurückhaltendes Wohnzimmer.",
+            "fap010": "Eine weite marineblaue Schlaufe schneidet durch 010 und führt den Blick von einem kupferfarbenen Oval in eine große blaugraue Fläche. Feine schwarze Linien, verstreute Rostspuren und frei verlaufendes Pigment verstärken den Gegensatz zwischen kontrolliertem Detail und spontaner Bewegung. Energisch, aber nicht unruhig bringt der Print Schwung in Wohnzimmer, Studio oder Arbeitsplatz und passt zu schlichtem zeitgenössischem Mobiliar.",
+            "fap011": "Ein hoher gestreifter Bogen in Bordeaux und Marineblau rahmt die vertikalen Formen von 011, in denen kühle Blaugrautöne auf Kupfer und Rost treffen. Lange feine Kurven kreuzen die Komposition, während sich rechts eine farbig gesprenkelte Wolke sammelt und einen skulpturalen Aufwärtsrhythmus erzeugt. Die sicheren Proportionen machen das Werk zu einem starken Akzent im Eingangsbereich, Esszimmer oder an einer hohen Wand.",
+            "fap012": "Ein transparenter Kupferbogen schwingt über 012 und trifft auf eine dunkle, fein gestreifte Schlaufe, die sich von unten zu einem großzügigen Oval windet. Ein marineblauer Block, zarte konvergierende Linien und warme Sprenkel geben Gewicht, während viel Weiß die zentrale Bewegung umgibt. Kühn und zugleich luftig bringt die Komposition Wärme und Schwung in Wohnzimmer, Essbereich oder kreatives Studio.",
+            "fap013": "Breite Flächen in Stein, Beige und sanftem Grau verleihen 013 architektonische Ruhe, unterbrochen von zwei schlanken bordeauxrot gestreiften Säulen. Ein tiefblauer Block, ein heller Kreis, feine Bögen und verstreute Rostspuren schaffen Tiefe in der zurückhaltenden Anordnung. Der klare vertikale Takt und die gedämpfte Palette bilden einen kultivierten Blickfang für Flur, Arbeitszimmer oder modernes Wohnzimmer.",
+            "fap014": "Rostfarbene und kühle blaue Flächen steigen durch die offene Komposition von 014, gekreuzt von hellen gestreiften Schlaufen, die sich im Weißraum winden und kreisen. Feine schwarze Bögen und dicht gesprenkelte Passagen fügen den breiten malerischen Formen einen zweiten, filigranen Rhythmus hinzu. Lebhaft und doch ausgewogen bringt der Print expressive Bewegung in Studio, Wohnzimmer oder Flur, ohne dem Raum Leichtigkeit zu nehmen.",
+            "fap015": "Ein einziges unregelmäßiges Oval bündelt die starken Kontraste von 015 und wechselt von tiefem Rost und Kohle zu eisigem, strukturiertem Blau. Ein elektrisch kobaltblauer Ring schwebt über einer dunklen Pigmentexplosion, feine Filamente und scharfe weiße Öffnungen erzeugen Spannung und Auftrieb. Markant und dennoch konzentriert wird das Werk zum einprägsamen Mittelpunkt in Wohnzimmer, Essbereich oder minimalistischem Arbeitsplatz.",
+            "fap016": "Zwei aufrechte Felder aus Rost, Pfirsich und hellem Blau stehen in 016 getrennt und werden durch ein Band fein gezeichneter grauer Linien verbunden. Ein leuchtender Kobaltstrich und zarte schwarze Bögen schärfen die Komposition, während die offene Mitte ihre Bewegung leicht hält. Ausdrucksstark, ohne zu dominieren, passt der Print in einen hellen Flur, kreativen Arbeitsbereich oder modernen Wohnraum.",
+            "fap017": "Leuchtendes Gelbgrün trifft in 017 auf rauchige Kohle- und Olivtöne und bildet ein weiches Feld um einen großen hellen Ring. Feine weiße Ranken sinken durch die dunkleren Farben zu einer Gruppe verschwommener Kreise, die den Blick aus der Nähe belohnen. Strahlend und zugleich geerdet bringt die Komposition sanfte Vitalität in Schlafzimmer, Leseecke oder ein in Naturtönen eingerichtetes Wohnzimmer.",
+            "fap018": "Zwei helle Säulen in Graugrün und Puderblau geben 018 seine luftige vertikale Struktur, getrennt durch einen klaren weißen Kanal. Ein gebogenes marineblaues Band stabilisiert die linke Seite, während sich rechts blaue und rostfarbene Körnungen sammeln und feine schwarze Filamente aus einer Kohleblüte aufsteigen. Zart und texturreich verleiht der Print Schlafzimmer, Flur oder konzentriertem Arbeitsplatz ruhige Höhe.",
+            "fap019": "Ein gedämpftes Feld aus Beige und Grau schafft in 019 eine stille Bühne für den bordeauxrot-marineblau gestreiften Ring. Zwei weiche Kohleblüten scheinen neben feinen hängenden Linien zu schweben, während dunkles Pigment und Rostsprenkel den unteren Rand beschweren. Minimalistisch, aber nie leer, bringt die Komposition eine ruhige, geheimnisvolle Präsenz in Schlafzimmer, Arbeitszimmer oder weich eingerichtetes Wohnzimmer.",
+            "fap020": "Eine transparente graugrüne Fläche breitet sich durch 020 aus, geöffnet von hohen weißen Schnitten und einer federartigen Rostexplosion links. Überlagerte Ocker- und Bordeauxringe halten die Gegenseite, während hellblaue Punkte und schwarze Filamente leise Komplexität hinzufügen. Die Verbindung aus erdiger Farbe und grafischer Form bringt sichere Wärme in Esszimmer, Flur oder modernen Wohnbereich.",
+            "fap021": "Sanfte Creme- und Grautöne umgeben in 021 einen fein gestreiften marineblauen Ring, der nahe der Unterkante eine warme Ockerfläche einschließt. Verschwommene blau-schwarze Kreise, zarte nachlaufende Linien und eine rostfarbene Wolke bewegen das großzügige offene Feld. Zurückhaltend und atmosphärisch passt das Werk in Leseecke, Schlafzimmer oder ruhiges Wohnzimmer, wo seine Details aus der Nähe wirken können.",
+            "fap022": "Vertikale Bänder in Lavendel, Hellgelb, Puderrosa und Rauchblau verleihen 022 einen hohen, lyrischen Takt. Rechts steigt ein leuchtend kobaltblau gestreiftes Band auf, während fließende schwarze Konturen, dunkle Rostgesten und ein kleiner Goldakzent den Blick in der Mitte bündeln. Anmutig und farbsicher bringt der Print elegante Höhe in Eingangsbereich, Esszimmer oder zeitgenössisches Schlafzimmer.",
+            "fap023": "Schichten aus Blaugrau, Bernstein, Oliv und Kohle ziehen sich horizontal durch 023 und erzeugen einen weiten, horizontähnlichen Rhythmus. Rostfarbene Gruppen und dunkelgrüne Akzente beleben das obere Feld, während weiße Fäden und ein fein gestreiftes Band durch die unteren Schichten wandern. Ruhig und weit öffnet die Komposition Wohnzimmer, Essbereich oder Flur optisch und wärmt zurückhaltende Interieurs.",
+            "fap024": "Zwei leuchtende Formen in Violettblau und tiefem Kobalt stehen in 024 nebeneinander, gezeichnet von dichten Strahlenlinien und geschwungenen Bändern. Zwischen ihnen sammelt sich tiefblaues Pigment, während weiße Öffnungen, feine schwarze Konturen und zwei Goldakzente die Komposition hell und präzise halten. Kühl, skulptural und elegant wird der Print zum besonderen Mittelpunkt in Wohnzimmer, Schlafzimmer oder gepflegtem Arbeitsbereich.",
+            "fap025": "Drei gestapelte Formen geben 025 seine spielerische Struktur: ein hellgelbes Feld mit blauen Bändern, ein reich gesprenkelter Terrakottaring und ein breites blaugrünes Oval. Feine schwarze Linien, ein kleiner roter Strahlenakzent und großzügige weiße Öffnungen halten die kräftigen Farben leicht. Das Gleichgewicht aus Wärme, Kühle und grafischer Form bringt fröhliche Raffinesse in Essbereich, kreativen Arbeitsplatz oder modernes Wohnzimmer.",
+            "fap026": "Wässrige Blautöne und weiche Bänder aus Sand und Pfirsich entfalten sich in 026 in geschichtetem horizontalem Rhythmus. Fein gezeichnete Wellen durchziehen den offenen oberen Bereich, während rostfarbene und hellblaue Streifenbänder durch dunklere Pigmentfelder wandern, begleitet von einem schmalen Goldakzent. Weit und atmosphärisch bringt die Komposition gemessene Bewegung in Wohnzimmer, Flur oder Essbereich, ohne ruhige Räume zu überfordern.",
+            "fap027": "Lavendel und tiefes Blau steigen durch 027 vor einem hellen inneren Leuchten und klaren Kobaltspuren auf. Feine Linien folgen den hohen Formen, während ein braun gestreifter Halbring und eine kleine goldene Markierung an gegenüberliegenden Rändern Wärme und Präzision einführen. Leuchtend und gefasst verleiht der Print Schlafzimmer, Eingangsbereich oder Wohnzimmer mit kühlen Neutraltönen und natürlichen Materialien elegante Höhe.",
+            "fap028": "Ein breiter blaugrauer Bogen trifft in 028 auf eine reich strukturierte orangefarbene Schlaufe und setzt kühle Offenheit gegen konzentrierte Wärme. Rostfarbene Flächen, zwei fein strahlende Ringe, cremefarbene Bänder und ein dunkler Spritzer am Fuß bilden eine energische skulpturale Anordnung. Selbstbewusst und bewegt wird der Print zum lebendigen Blickfang in Esszimmer, Studio oder zeitgenössischem Wohnraum.",
+            "fap029": "Hohe Flächen in Blaugrau und warmem Beige bilden die ruhige Grundlage von 029, durchzogen von zwei dunklen, fein gestreiften Schlaufen. Wiederholte haarfeine Bögen wandern durch rostfarbene und blaue Sprenkel, während Marineblau und Braun die Außenkanten gewichten. Elegant und sanft belebt bringt die Komposition fließende vertikale Bewegung in Flur, Schlafzimmer oder kultivierten Wohnbereich.",
+            "fap030": "Eine helle violettblaue Schlaufe dominiert 030, ihre transparente Oberfläche wird durch einen leuchtend kobaltblauen Bogen aus dicht gesetzten Linien geschärft. Daneben trägt eine schmale Form aus Kohle und Rost dunkle Gesten, feine Filamente und ein kleines goldenes Detail am unteren Rand. Der Kontrast wirkt zugleich gefasst und expressiv und schafft einen anspruchsvollen Mittelpunkt für Wohnzimmer, Arbeitszimmer oder modernen Eingangsbereich.",
+            "fap031": "Ein weites Lavendelfeld schwebt in 031 über hellem Gelb, geteilt von einer dunklen horizontalen Fläche und einer kobaltblauen Linie, die rechts hinabführt. Weiße Öffnungen, feine schwarze Kurven, subtile Rostsprenkel und kleine Goldakzente bereichern die klare grafische Struktur. Ruhig und unverkennbar modern bringt die Komposition selbstbewusste Farbe in Schlafzimmer, Arbeitsplatz oder lichtes Wohnzimmer.",
+            "fap032": "Helle violettblaue und neblige Grautöne rahmen das tiefe Indigoblau von 032, aus dem Pigment in reichen federartigen Texturen aufblüht. Ein vertikaler Goldakzent zieht zwischen Rostsprenkeln und aufsteigenden Linien den Blick an, während ein sanft gestreiftes Oval die obere Ecke ausbalanciert. Atmosphärisch und leuchtend bringt der Print stille Dramatik in Schlafzimmer, Leseplatz oder modernes Wohnzimmer.",
+            "fap033": "Eine puderrosa Fläche und leuchtend blaue Sprenkel bilden den sanften Hintergrund von 033, ausbalanciert durch zwei fein strahlende Ringe in Rost und Violettblau. Cremefarbene Kurven überlagern die oberen Formen, während ein roter Strahlenkranz selbstbewusst aus der unteren Ecke wächst. Grafisch und heiter bringt die Komposition Wärme und Charakter in Essbereich, kreativen Arbeitsplatz oder einladendes Wohnzimmer.",
+            "fap034": "Eine große hell graugrüne Fläche füllt 034, verdichtet sich an einer Kante zu Kohle und öffnet sich in ruhige weiße Bereiche. Feine schwarze Kurven sinken durch das Feld, begleitet von Rostsprenkeln und einem reich gestreiften Oval, das darüber schwebt. Zurückhaltend und doch voller subtiler Bewegung bietet der Print einen gefassten Mittelpunkt für Schlafzimmer, Arbeitszimmer oder ruhigen modernen Wohnraum.",
+            "fap035": "Eine sanfte graugrüne Fläche gibt 035 eine offene, ausgewogene Grundlage, unterbrochen von Kohlepigment und lebhaften Rostspuren. Oben schwebt ein kompakter blaugrüner Ring, während ein breites Terrakottaoval den unteren Bereich mit dichten Strahlenlinien und heller Mitte verankert. Erdverbunden und grafisch zugleich bringt der Print ruhige Wärme in Esszimmer, Flur oder modernen Wohnbereich.",
+            "fap036": "Eine helle blaugraue Fläche steigt links in 036 auf, strukturiert durch dunkles Pigment und eine zarte Explosion aus Blau und Rost. Eine terrakottafarbene Streifenlinie schwingt über die Komposition, rollt sich in der Mitte eng ein und sinkt neben einem expressiven Kohlespritzer in eine große Schlaufe. Fließend und energisch bringt das Werk markante Bewegung in Wohnzimmer, Studio oder eine hohe Flurwand.",
+            "fap037": "Getrennte Felder aus Rost, Puderrosa und hellem Blau schaffen die offene Architektur von 037, akzentuiert von einem leuchtenden Kobaltstrich am oberen Rand. Eine breite grau gestreifte Schlaufe windet sich über beide Formen, während feine schwarze Linien ihre Bewegung im Weißraum aufnehmen. Dynamisch und doch luftig bringt der Print expressive Größe in Wohnzimmer, kreativen Arbeitsplatz oder geräumigen Eingangsbereich.",
+            "fap038": "Ein breites Lavendelfeld verdunkelt sich in 038 zu weich auslaufenden braunen und schwarzen Blüten, gekreuzt von schlanken vertikalen Linien und einem schmalen cremefarbenen Streifenband. Eine gebrochene horizontale Naht aus dunklem Pigment und Gold trennt die obere Form von ihrem hellen Gegenstück darunter. Stimmungsvoll und ausgewogen bringt die Komposition atmosphärische Tiefe in Wohnzimmer, Essbereich oder ruhiges Arbeitszimmer.",
+            "fap039": "Helle blaue und rosige Flächen breiten sich in 039 in einer weiten, gestuften Form aus, angehoben von zwei satten Kobaltstrichen oben links. Rostsprenkel und feine vertikale Linien sinken zu einem dunklen horizontalen Band, in dem weiße Konturen einen sanften Wellenrhythmus bilden. Weit und leise lebendig verleiht der Print Wohnzimmer, Schlafzimmer oder langem Flur ein Gefühl von Offenheit.",
+            "fap040": "Eine weite graugrüne Schlaufe öffnet die obere Hälfte von 040, begleitet von einem dunkel blaugrünen Ring aus fein strahlenden Linien. Ein konzentriertes Rostband kreuzt die Mitte, während ein großes zart gezeichnetes Oval darunter warme Spuren auf seiner hellen Fläche trägt. Ausgewogen, grafisch und ruhig erdig bildet die Komposition einen sicheren Mittelpunkt für Esszimmer, Wohnbereich oder zurückhaltenden Arbeitsplatz.",
+            "fap041": "Kühle graugrüne Flächen steigen an einer Seite von 041 auf, während sich auf der anderen warme Rost- und Terrakottaspuren sammeln und dazwischen viel Weiß bleibt. Ein dunkel blaugrün gestreifter Ring krönt die kühle Form, federartige Blüten und ein blassrosa Strich beleben den warmen Rand. Kühn und schön ausbalanciert bringt der Print expressiven Kontrast in Flur, Studio oder zeitgenössisches Wohnzimmer."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "en",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "fap001": "Deep navy pools into translucent blue-green washes in 001, where a slender, finely striped curve draws the eye through the composition. A small golden disc and warm rust-coloured marks interrupt the cooler field, giving the work a poised balance between fluid movement and precise detail. Airy yet grounded, it brings quiet visual depth to a living room, bedroom, or focused workspace, whether displayed alone or alongside similarly restrained pieces.",
+            "fap002": "A sweeping terracotta ribbon runs through 002, separating pale peach and teal washes from a concentrated pool of midnight blue. Fine contour lines, scattered coppery marks, and a single gold circle sharpen the contrast between softness and structure, creating an assured sense of motion. Its warm-cool palette can enliven a neutral living room or hallway while retaining enough delicacy for a quieter bedroom or study.",
+            "fap003": "Two suspended fields of smoky blue, apricot, and pale green give 003 its open, almost weightless composition. A dark finely lined band sweeps across both forms, while rust-coloured traces, rippling contours, and a compact gold accent reward a closer look without disturbing the generous white space. The result is dynamic but uncluttered—a distinctive focal point for contemporary interiors that also pairs naturally with light woods and soft neutral textiles.",
+            "fap004": "Soft blue washes meet olive radial forms in 004, setting delicate line work and lively green-blue speckles against generous white space. The contrast between translucent colour, taut curves, and fan-like geometry gives the composition a fresh, sculptural rhythm that shifts between calm and energy. Bright without feeling loud, this print makes an elegant focal point in a living room or studio and sits beautifully beside natural wood, stone, and muted textiles.",
+            "fap005": "Layered bands of misty blue, moss green, and luminous yellow establish the bold graphic structure of 005. Finely radiating loops anchor the upper and lower edges, while loose black-and-white curves travel across the composition with an easy, animated rhythm. Its balance of broad colour and intricate line work brings confident warmth to a living room, dining area, or creative workspace, standing strongly on its own without overwhelming the space.",
+            "fap006": "Concentric washes of smoky grey, soft peach, and deep navy gather into the rounded, stone-like form of 006. Fine burgundy stripes trace one edge while a small golden disc glows near the centre, balancing broad translucent colour with intricate detail. Quiet and enveloping, the composition brings a sense of depth to a bedroom, reading corner, or calm living space without losing the lightness of its generous white ground.",
+            "fap007": "Warm peach and misty grey washes fold around a midnight-blue centre in 007, forming a softly layered, shell-like silhouette. A burgundy striped contour loops through the composition, joined by a golden circle and loose black gestures that lend precision and spontaneity in equal measure. Its centred balance and subtle glow make an elegant focal point for a bedroom, study, or living room shaped by warm woods and natural textures.",
+            "fap008": "A broad terracotta form meets an oversized taupe oval in 008, creating a bold dialogue between saturated colour and finely radiating line work. Pale tendrils, soft dotted details, navy tabs, and quick black marks animate the surface without crowding its graphic structure. Playful yet composed, this print adds character to a dining area, hallway, or creative workspace and stands especially well against clean, neutral surroundings.",
+            "fap009": "Pale grey and sand-coloured washes establish the measured geometry of 009, while charcoal pools and rust-toned speckles soften its rectangular structure. Two wavering vertical bands—one finely striped in blue, the other deep black—draw the eye downward as a delicate line arcs across the field. Calm but distinctive, the composition suits a study, hallway, or understated living room where its restrained rhythm can unfold gradually.",
+            "fap010": "A sweeping navy loop cuts across 010, carrying the eye from a copper-toned oval into a broad field of blue-grey wash. Fine black lines, scattered rust marks, and freely dripped pigment heighten the contrast between controlled detail and spontaneous movement. Energetic without becoming busy, this print brings confident motion to a living room, studio, or workspace and pairs naturally with simple contemporary furnishings.",
+            "fap011": "A tall striped arch in burgundy and navy frames the layered vertical forms of 011, where cool blue-grey washes meet touches of copper and rust. Long, fine curves cross the composition and a concentrated cloud of speckled colour gathers at the right, giving the work a sculptural upward rhythm. Its assured proportions make a striking addition to an entryway, dining area, or room with generous wall height.",
+            "fap012": "A translucent copper arch sweeps over 012, meeting a dark, finely striped loop that curls from the lower edge into a generous oval. A navy block, delicate converging lines, and scattered warm speckles add weight and detail while leaving ample white space around the central movement. Bold yet airy, the composition introduces warmth and momentum to a living room, dining space, or creative studio.",
+            "fap013": "Broad washes of stone, beige, and soft grey give 013 an architectural calm, punctuated by two slender burgundy striped columns. A deep blue block, pale circular pool, fine arcing lines, and scattered rust marks create depth within the otherwise restrained arrangement. Its strong vertical cadence and muted palette make it a refined focal point for a hallway, study, or contemporary living room.",
+            "fap014": "Rust and cool blue washes rise through the open composition of 014, crossed by pale striped loops that curl, dip, and circle through the white space. Fine black arcs and densely speckled passages add a second, more intricate rhythm to the broad painterly forms. Lively but finely balanced, this print brings expressive movement to a studio, living room, or hallway while keeping the surrounding space feeling light.",
+            "fap015": "A single irregular oval holds the dramatic contrasts of 015, shifting from deep rust and charcoal into an icy, textured blue. An electric cobalt ring hovers above a dark burst of pigment, with fine filaments and sharp white openings adding tension and lift. Striking yet contained, the work creates a memorable focal point in a living room, dining area, or minimal workspace.",
+            "fap016": "Two upright fields of rust, peach, and pale blue stand apart in 016, connected by a looping band of finely drawn grey lines. A vivid cobalt stroke and delicate black arcs sharpen the composition, while the open centre keeps its movement light and spacious. Expressive without overwhelming a room, this print suits a bright hallway, creative workspace, or contemporary living area.",
+            "fap017": "Luminous yellow-green washes meet smoky charcoal and olive in 017, creating a soft field of colour around a large pale radial ring. Fine white tendrils descend through the darker tones, ending among a cluster of hazy circular marks that reward a closer view. Glowing yet grounded, the composition brings gentle vitality to a bedroom, reading nook, or living room furnished in natural neutrals.",
+            "fap018": "Two pale columns of grey-green and powder blue give 018 its airy vertical structure, separated by a clean channel of white. A curved navy band steadies the left side, while blue and rust granulation gathers along the right and fine black filaments rise from a charcoal bloom below. Delicate yet full of texture, this print lends quiet height to a bedroom, hallway, or contemplative workspace.",
+            "fap019": "A muted field of beige and grey provides a hushed setting for the burgundy and navy striped ring in 019. Two soft charcoal blooms appear to float beside fine dangling lines, while dark pooled pigment and rust speckles add weight near the lower edge. Minimal but never empty, the composition offers a calm, intriguing presence for a bedroom, study, or softly furnished living room.",
+            "fap020": "Translucent green-grey wash spreads across 020, opened by tall white slashes and a feathery burst of rust at the left. Overlapping ochre and burgundy rings anchor the opposite side, with pale blue dots and fine black filaments adding quiet complexity. The balance of earthy colour and graphic form gives this print an assured warmth suited to a dining room, hallway, or modern living space.",
+            "fap021": "Soft cream and grey washes surround the finely striped navy ring of 021, which encloses a warm ochre pool near the lower edge. Hazy blue-charcoal circles, delicate trailing lines, and a rust-coloured cloud bring movement to the generous open field. Restrained and atmospheric, the work makes a thoughtful addition to a reading corner, bedroom, or calm living room where subtle details can be appreciated up close.",
+            "fap022": "Vertical ribbons of lavender, pale yellow, blush, and smoky blue give 022 a tall, lyrical cadence. A vivid cobalt striped band rises along the right, while flowing black contours, dark rust gestures, and a small golden accent concentrate the eye near the centre. Graceful but confidently coloured, this print brings elegant height to an entryway, dining area, or contemporary bedroom.",
+            "fap023": "Layered washes of blue-grey, amber, olive, and charcoal stretch horizontally across 023, creating a broad, horizon-like rhythm. Rust-toned clusters and dark green accents punctuate the upper field, while white threads and a finely striped band travel through the lower layers. Calm and expansive, the composition can visually open a living room, dining area, or hallway while adding warmth to a restrained interior.",
+            "fap024": "Two luminous forms in periwinkle and deep cobalt stand side by side in 024, each shaped by dense radiating lines and curved bands. A dark blue pool gathers between them, while white openings, fine black contours, and two small golden accents keep the composition bright and precise. Cool, sculptural, and elegant, this print makes a distinctive focal point for a living room, bedroom, or polished workspace.",
+            "fap025": "Three stacked forms give 025 its playful structure: a pale yellow field threaded with blue ribbons, a richly speckled terracotta ring, and a broad teal oval below. Fine black lines, a small red radial accent, and generous white openings keep the strong colour feeling light. Its balance of warmth, coolness, and graphic shape brings cheerful sophistication to a dining area, creative workspace, or contemporary living room.",
+            "fap026": "Watery blue washes and soft bands of sand and peach unfold across 026 in a layered horizontal rhythm. Finely drawn waves cross the open upper field, while rust and pale blue striped ribbons travel through darker pools of pigment, joined by a slender golden accent. Expansive and atmospheric, the composition brings measured movement to a living room, hallway, or dining space without overpowering quieter surroundings.",
+            "fap027": "Lavender and deep blue washes rise through 027, set against a pale inner glow and crisp flashes of cobalt. Fine lines arc along the tall forms, while a brown striped half-ring and a small golden mark introduce warmth and precision at opposite edges. Luminous and composed, this print adds elegant height to a bedroom, entryway, or living room with cool neutrals and natural materials.",
+            "fap028": "A broad blue-grey arch meets a richly textured orange loop in 028, creating a bold interplay of cool openness and concentrated warmth. Rust-toned washes, two finely radiating rings, cream ribbons, and a dark splatter at the base build an energetic, sculptural arrangement. Confident and full of movement, this print makes a vivid focal point in a dining room, studio, or contemporary living space.",
+            "fap029": "Tall washes of blue-grey and warm tan form the quiet foundation of 029, threaded by a pair of dark, finely striped loops. Repeated hairline arcs sweep through rust and blue speckles, while deeper navy and brown accents lend weight to the outer edges. Elegant and gently animated, the composition brings graceful vertical movement to a hallway, bedroom, or refined living area.",
+            "fap030": "A pale periwinkle loop dominates 030, its soft translucent surface sharpened by a vivid cobalt arc of finely spaced lines. Beside it, a narrow charcoal and rust form carries dark gestures, delicate filaments, and a small golden detail near the lower edge. The contrast feels both poised and expressive, making this print a sophisticated focal point for a living room, study, or contemporary entryway.",
+            "fap031": "A broad field of lavender floats above pale yellow in 031, divided by a dark horizontal wash and a vivid cobalt line that travels down the right. White openings, fine black curves, subtle rust speckles, and small golden accents bring intricate detail to the clear graphic structure. Serene yet unmistakably modern, the composition adds confident colour to a bedroom, workspace, or light-filled living room.",
+            "fap032": "Pale periwinkle and misty grey washes frame the deep indigo centre of 032, where pigment blooms outward in rich, feathery textures. A vertical golden accent catches the eye among rust speckles and fine rising lines, while a softly striped oval steadies the upper corner. Atmospheric and luminous, this print brings quiet drama to a bedroom, reading space, or contemporary living room.",
+            "fap033": "A blush-toned wash and bright blue speckles form the soft backdrop of 033, balanced by two finely radiating rings in rust and periwinkle. Cream curves overlap the upper forms, while a red sunburst expands from the lower corner with playful confidence. Graphic yet light-hearted, the composition brings warmth and character to a dining area, creative workspace, or welcoming living room.",
+            "fap034": "A large wash of pale grey-green fills 034, deepening into charcoal along one edge and opening into quiet areas of white. Fine black curves descend through the field, accompanied by rust-toned speckles and a richly striped oval suspended above. Understated but full of subtle movement, this print offers a composed focal point for a bedroom, study, or calm contemporary living space.",
+            "fap035": "Soft green-grey wash gives 035 an open, balanced foundation, interrupted by charcoal pooling and lively rust-coloured traces. A compact teal ring hovers at the upper edge, while a broad terracotta oval anchors the base with dense radiating lines and a luminous centre. Earthy and graphic in equal measure, the print brings grounded warmth to a dining room, hallway, or modern living area.",
+            "fap036": "A pale blue-grey wash rises along the left of 036, textured with dark pooling and a delicate burst of blue and rust. A terracotta striped line sweeps overhead, curls tightly at the centre, then descends into a generous loop beside an expressive charcoal splash. Fluid and energetic, the composition lends striking movement to a living room, studio, or tall hallway wall.",
+            "fap037": "Separated fields of rust, blush, and pale blue create the open architecture of 037, punctuated by a vivid cobalt stroke near the upper edge. A wide grey striped loop winds across both forms as fine black lines echo its movement through the surrounding white space. Dynamic yet airy, this print adds expressive scale to a living room, creative workspace, or spacious entryway.",
+            "fap038": "A broad lavender field darkens into soft-edged brown and charcoal blooms in 038, crossed by slender vertical lines and a narrow cream striped band. A broken horizontal seam of dark pigment and gold separates the upper form from its pale, reflected counterpart below. Moody yet balanced, the composition brings atmospheric depth to a living room, dining area, or quiet study.",
+            "fap039": "Pale blue and blush washes spread across 039 in a spacious, stepped formation, lifted by two saturated cobalt strokes at the upper left. Rust speckles and fine vertical lines descend toward a dark horizontal band, where flowing white contours create a gentle wave-like rhythm. Expansive and quietly vivid, this print adds a sense of openness to a living room, bedroom, or long hallway.",
+            "fap040": "A wide grey-green loop opens the upper half of 040, paired with a dark teal ring of finely radiating lines. A concentrated rust band crosses the centre, while a large, delicately drawn oval below carries scattered warm marks through its pale surface. Balanced, graphic, and quietly earthy, the composition makes an assured focal point for a dining room, living area, or understated workspace.",
+            "fap041": "Cool grey-green washes rise along one side of 041 as warm rust and terracotta marks gather on the other, leaving a generous channel of white between them. A dark teal striped ring crowns the cooler form, while feathery blooms and a pale pink stroke animate the warmer edge. Bold but beautifully balanced, this print brings expressive contrast to a hallway, studio, or contemporary living room."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "es",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "fap001": "El azul marino se funde con veladuras translúcidas verde azuladas en 001, mientras una curva fina y rayada guía la mirada. Un pequeño disco dorado y cálidas marcas de óxido interrumpen el campo frío y equilibran movimiento fluido con detalle preciso. Ligera pero serena, la composición aporta profundidad a un salón, dormitorio o espacio de trabajo, sola o junto a piezas igualmente contenidas.",
+            "fap002": "Una amplia cinta de terracota recorre 002 y separa veladuras melocotón y verde azulado de una intensa poza azul noche. Contornos finos, marcas cobrizas y un círculo dorado acentúan el contraste entre suavidad y estructura, creando un movimiento seguro. Su paleta cálida y fría anima un salón neutro o un recibidor sin perder la delicadeza adecuada para un dormitorio o estudio.",
+            "fap003": "Dos campos suspendidos de azul ahumado, albaricoque y verde pálido dan a 003 una composición abierta, casi ingrávida. Una banda oscura de líneas finas cruza ambas formas, acompañada de rastros oxidados, contornos ondulantes y un pequeño acento dorado entre abundante blanco. Dinámica pero despejada, funciona como foco contemporáneo y combina con maderas claras y textiles neutros.",
+            "fap004": "Suaves veladuras azules se encuentran con formas radiales verde oliva en 004, sobre un fondo blanco generoso salpicado de verdes y azules. El contraste entre color translúcido, curvas tensas y geometría en abanico crea un ritmo escultórico entre calma y energía. Luminosa sin resultar estridente, la lámina destaca en un salón o estudio junto a madera natural, piedra y tejidos apagados.",
+            "fap005": "Capas de azul brumoso, verde musgo y amarillo luminoso construyen la rotunda estructura gráfica de 005. Bucles de líneas radiantes anclan los extremos, mientras curvas negras y blancas atraviesan la composición con un ritmo suelto y animado. El equilibrio entre grandes campos de color y dibujo minucioso aporta calidez a un salón, comedor o espacio creativo sin dominar la estancia.",
+            "fap006": "Veladuras concéntricas de gris humo, melocotón suave y azul marino forman en 006 una silueta redondeada, casi pétrea. Finas rayas burdeos recorren un borde y un pequeño disco dorado ilumina el centro, equilibrando color amplio y detalle delicado. Serena y envolvente, la composición aporta profundidad a un dormitorio, rincón de lectura o salón tranquilo sin perder la ligereza del fondo blanco.",
+            "fap007": "Veladuras cálidas de melocotón y gris niebla rodean el centro azul noche de 007, creando una silueta suave y estratificada. Un contorno burdeos rayado se curva por la composición junto a un círculo dorado y gestos negros libres, uniendo precisión y espontaneidad. Su equilibrio centrado y brillo sutil crean un foco elegante para un dormitorio, estudio o salón con maderas cálidas y texturas naturales.",
+            "fap008": "Una amplia forma de terracota se encuentra con un enorme óvalo topo en 008, enfrentando color saturado y líneas radiantes muy finas. Zarcillos pálidos, puntos suaves, elementos azul marino y rápidos trazos negros animan la superficie sin recargar su estructura gráfica. Lúdica pero equilibrada, la lámina añade carácter a un comedor, recibidor o espacio creativo sobre fondos limpios y neutros.",
+            "fap009": "Veladuras gris claro y arena establecen la geometría medida de 009, suavizada por pozas de carbón y motas de óxido. Dos bandas verticales ondulantes —una azul de rayas finas y otra negra— llevan la mirada hacia abajo mientras una línea delicada cruza el campo. Tranquila pero singular, la composición encaja en un estudio, recibidor o salón sobrio donde su ritmo pueda descubrirse poco a poco.",
+            "fap010": "Un amplio bucle azul marino atraviesa 010 y conduce la mirada desde un óvalo cobrizo hasta una extensa veladura gris azulada. Líneas negras, marcas de óxido y pigmento goteado libremente intensifican el contraste entre detalle controlado y movimiento espontáneo. Enérgica sin resultar agitada, la lámina aporta impulso a un salón, estudio o zona de trabajo y combina con mobiliario contemporáneo sencillo.",
+            "fap011": "Un alto arco rayado en burdeos y azul marino enmarca las formas verticales de 011, donde veladuras frías se mezclan con cobre y óxido. Curvas largas y finas cruzan la composición, mientras una nube de color moteado se concentra a la derecha y crea un ritmo escultórico ascendente. Sus proporciones firmes destacan en un recibidor, comedor o pared de gran altura.",
+            "fap012": "Un arco cobrizo translúcido barre 012 y se encuentra con un bucle oscuro de rayas finas que nace abajo y forma un óvalo amplio. Un bloque azul marino, líneas convergentes y cálidas motas añaden peso y detalle dejando mucho blanco alrededor del movimiento. Audaz pero ligera, la composición aporta calidez e impulso a un salón, comedor o estudio creativo.",
+            "fap013": "Amplias veladuras de piedra, beige y gris suave dan a 013 una calma arquitectónica, marcada por dos esbeltas columnas burdeos rayadas. Un bloque azul profundo, un círculo pálido, líneas curvas y marcas de óxido crean profundidad en el conjunto contenido. Su fuerte cadencia vertical y paleta apagada ofrecen un foco refinado para un recibidor, estudio o salón contemporáneo.",
+            "fap014": "Veladuras de óxido y azul frío ascienden por la composición abierta de 014, cruzadas por bucles pálidos que se curvan y giran en el espacio blanco. Arcos negros y pasajes densamente moteados añaden un segundo ritmo más minucioso a las grandes formas pictóricas. Viva pero equilibrada, la lámina lleva movimiento expresivo a un estudio, salón o recibidor sin restar ligereza al entorno.",
+            "fap015": "Un único óvalo irregular reúne los contrastes de 015 y pasa del óxido y carbón profundos a un azul helado lleno de textura. Un anillo de cobalto eléctrico flota sobre una explosión oscura de pigmento, acompañado de filamentos finos y aperturas blancas. Rotunda pero contenida, la obra crea un foco memorable en un salón, comedor o espacio de trabajo minimalista.",
+            "fap016": "Dos campos verticales de óxido, melocotón y azul pálido quedan separados en 016, unidos por una banda de finas líneas grises. Un trazo de cobalto vivo y delicados arcos negros afinan la composición, mientras el centro abierto mantiene el movimiento ligero. Expresiva sin abrumar, la lámina encaja en un recibidor luminoso, espacio creativo o salón contemporáneo.",
+            "fap017": "Veladuras amarillo verdosas luminosas se encuentran con carbón ahumado y oliva en 017, formando un campo suave alrededor de un gran anillo pálido. Finos zarcillos blancos descienden por los tonos oscuros hasta un grupo de círculos difusos que invita a mirar de cerca. Radiante pero serena, la composición aporta vitalidad a un dormitorio, rincón de lectura o salón en tonos naturales.",
+            "fap018": "Dos columnas pálidas en verde grisáceo y azul empolvado dan a 018 su estructura vertical y aérea, separadas por una franja blanca. Una banda curva azul marino afirma el lado izquierdo, mientras gránulos azules y oxidados se reúnen a la derecha y finos filamentos nacen de una mancha de carbón. Delicada pero rica en textura, añade altura serena a un dormitorio, recibidor o estudio.",
+            "fap019": "Un campo apagado de beige y gris crea un entorno silencioso para el anillo rayado burdeos y azul marino de 019. Dos manchas suaves de carbón parecen flotar junto a líneas colgantes, mientras pigmento oscuro y motas de óxido dan peso a la parte inferior. Minimalista pero nunca vacía, la composición aporta una presencia tranquila a un dormitorio, estudio o salón de texturas suaves.",
+            "fap020": "Una veladura verde grisácea translúcida se extiende por 020, abierta por cortes blancos y una explosión plumosa de óxido a la izquierda. Anillos superpuestos de ocre y burdeos anclan el lado opuesto, con puntos azul pálido y filamentos negros que añaden complejidad. El equilibrio entre color terroso y forma gráfica aporta calidez a un comedor, recibidor o salón moderno.",
+            "fap021": "Veladuras crema y gris rodean el anillo azul marino de finas rayas de 021, que contiene una cálida poza ocre cerca del borde inferior. Círculos difusos azul carbón, líneas colgantes y una nube oxidada animan el amplio campo abierto. Contenida y atmosférica, la obra encaja en un rincón de lectura, dormitorio o salón tranquilo donde apreciar sus detalles de cerca.",
+            "fap022": "Cintas verticales de lavanda, amarillo pálido, rosa empolvado y azul humo dan a 022 una cadencia alta y lírica. Una banda de cobalto rayado asciende a la derecha, mientras contornos negros, gestos de óxido y un pequeño acento dorado concentran la mirada en el centro. Elegante y segura en el color, la lámina aporta altura a un recibidor, comedor o dormitorio contemporáneo.",
+            "fap023": "Capas de gris azulado, ámbar, oliva y carbón se extienden horizontalmente por 023 y crean un ritmo amplio, cercano a un horizonte. Grupos de óxido y acentos verde oscuro puntúan la parte superior, mientras hilos blancos y una banda rayada recorren las capas bajas. Tranquila y expansiva, la composición abre visualmente un salón, comedor o pasillo y añade calidez a interiores sobrios.",
+            "fap024": "Dos formas luminosas de azul bígaro y cobalto profundo se alzan juntas en 024, modeladas por densas líneas radiantes y bandas curvas. Una poza azul oscura se reúne entre ambas, mientras aperturas blancas, contornos finos y dos acentos dorados mantienen la precisión. Fría, escultórica y elegante, la lámina crea un foco distintivo en un salón, dormitorio o espacio de trabajo cuidado.",
+            "fap025": "Tres formas apiladas dan a 025 su estructura lúdica: un campo amarillo pálido con cintas azules, un anillo de terracota moteado y un amplio óvalo verde azulado. Líneas negras, un pequeño acento rojo radial y generosas aperturas blancas aligeran el color intenso. Su equilibrio gráfico aporta una sofisticación alegre a un comedor, espacio creativo o salón contemporáneo.",
+            "fap026": "Veladuras acuosas azules y suaves bandas de arena y melocotón se despliegan por 026 con un ritmo horizontal en capas. Ondas dibujadas con precisión cruzan la zona superior, mientras cintas rayadas de óxido y azul pálido atraviesan pozas oscuras junto a un fino acento dorado. Expansiva y atmosférica, la composición lleva movimiento medido a un salón, recibidor o comedor sin imponerse.",
+            "fap027": "Veladuras lavanda y azul profundo ascienden por 027, recortadas contra un resplandor pálido y golpes nítidos de cobalto. Líneas finas siguen el arco de las formas, mientras un medio anillo marrón rayado y una pequeña marca dorada aportan calidez en bordes opuestos. Luminosa y equilibrada, la lámina añade altura a un dormitorio, recibidor o salón de tonos fríos y materiales naturales.",
+            "fap028": "Un amplio arco gris azulado se encuentra con un bucle naranja de rica textura en 028, enfrentando apertura fría y calidez concentrada. Veladuras de óxido, dos anillos radiantes, cintas crema y una salpicadura oscura en la base forman un conjunto escultórico y enérgico. Segura y llena de movimiento, la lámina crea un foco vivo en un comedor, estudio o salón contemporáneo.",
+            "fap029": "Altas veladuras gris azuladas y beige cálido forman la base tranquila de 029, recorrida por dos bucles oscuros de rayas finas. Arcos casi capilares atraviesan motas de óxido y azul, mientras acentos marinos y marrones dan peso a los bordes. Elegante y suavemente animada, la composición aporta movimiento vertical a un recibidor, dormitorio o salón refinado.",
+            "fap030": "Un bucle pálido de azul bígaro domina 030, con su superficie translúcida afinada por un arco de cobalto trazado con líneas muy juntas. A su lado, una forma estrecha de carbón y óxido reúne gestos oscuros, filamentos delicados y un pequeño detalle dorado. El contraste resulta sereno y expresivo, creando un foco sofisticado para un salón, estudio o recibidor contemporáneo.",
+            "fap031": "Un amplio campo lavanda flota sobre amarillo pálido en 031, dividido por una veladura horizontal oscura y una línea de cobalto que baja por la derecha. Aperturas blancas, curvas negras, motas de óxido y pequeños acentos dorados enriquecen la estructura gráfica. Serena y decididamente moderna, la composición lleva color seguro a un dormitorio, espacio de trabajo o salón luminoso.",
+            "fap032": "Veladuras de azul bígaro y gris niebla enmarcan el centro índigo de 032, donde el pigmento florece en ricas texturas plumosas. Un acento dorado vertical atrae la mirada entre motas de óxido y líneas ascendentes, mientras un óvalo rayado equilibra la esquina superior. Atmosférica y luminosa, la lámina aporta un drama sereno a un dormitorio, rincón de lectura o salón contemporáneo.",
+            "fap033": "Una veladura rosa empolvado y motas azul vivo forman el fondo suave de 033, equilibrado por dos anillos radiantes de óxido y azul bígaro. Curvas crema se superponen arriba, mientras un estallido rojo se abre desde la esquina inferior con alegre seguridad. Gráfica y ligera, la composición aporta calidez y carácter a un comedor, espacio creativo o salón acogedor.",
+            "fap034": "Una gran veladura verde grisácea llena 034, se oscurece hasta el carbón en un borde y se abre en zonas blancas y tranquilas. Curvas negras descienden por el campo junto a motas de óxido y un óvalo intensamente rayado suspendido arriba. Sutil pero llena de movimiento, esta lámina ofrece un foco sereno para un dormitorio, estudio o salón contemporáneo.",
+            "fap035": "Una suave veladura verde grisácea da a 035 una base abierta y equilibrada, interrumpida por pozas de carbón y vivas marcas de óxido. Un pequeño anillo verde azulado flota arriba, mientras un amplio óvalo de terracota ancla la base con líneas radiantes y centro luminoso. Terrosa y gráfica a la vez, la lámina aporta calidez a un comedor, recibidor o salón moderno.",
+            "fap036": "Una veladura azul grisácea asciende por la izquierda de 036, enriquecida con pigmento oscuro y una delicada explosión azul y oxidada. Una línea rayada de terracota barre la parte superior, se enrosca en el centro y desciende en un amplio bucle junto a una mancha de carbón. Fluida y enérgica, la composición lleva movimiento a un salón, estudio o pared alta de recibidor.",
+            "fap037": "Campos separados de óxido, rosa empolvado y azul pálido crean la arquitectura abierta de 037, marcada por un trazo de cobalto en la parte superior. Un amplio bucle gris rayado recorre ambas formas y finas líneas negras repiten su movimiento en el blanco. Dinámica pero ligera, la lámina aporta escala expresiva a un salón, espacio creativo o recibidor amplio.",
+            "fap038": "Un amplio campo lavanda se oscurece en 038 hasta formar manchas suaves de marrón y carbón, cruzadas por líneas verticales y una estrecha banda crema rayada. Una costura horizontal rota de pigmento oscuro y oro separa la forma superior de su reflejo pálido. Profunda pero equilibrada, la composición lleva una atmósfera envolvente a un salón, comedor o estudio tranquilo.",
+            "fap039": "Veladuras azul pálido y rosa se extienden por 039 en una formación amplia y escalonada, elevada por dos trazos de cobalto en la esquina superior izquierda. Motas de óxido y líneas verticales descienden hacia una banda oscura donde contornos blancos crean un ritmo ondulante. Expansiva y discretamente viva, la lámina aporta sensación de apertura a un salón, dormitorio o pasillo largo.",
+            "fap040": "Un amplio bucle verde grisáceo abre la mitad superior de 040, acompañado por un anillo verde azulado de líneas radiantes. Una franja concentrada de óxido cruza el centro, mientras un gran óvalo finamente dibujado recoge marcas cálidas sobre su superficie pálida. Equilibrada, gráfica y terrosa, la composición crea un foco seguro en un comedor, salón o espacio de trabajo sobrio.",
+            "fap041": "Veladuras frías verde grisáceas ascienden por un lado de 041, mientras marcas cálidas de óxido y terracota se reúnen al otro dejando un amplio canal blanco. Un anillo rayado verde azulado corona la forma fría, y floraciones plumosas con un trazo rosa pálido animan el borde cálido. Audaz y bien equilibrada, la lámina aporta contraste expresivo a un recibidor, estudio o salón contemporáneo."
+          }
+        },
+        "version": 2
+      },
+      {
+        "locale": "pl",
+        "status": "published",
+        "payload": {
+          "notes": {
+            "fap001": "Głęboki granat rozpływa się w półprzejrzystych błękitno-zielonych plamach 001, a smukła, drobno prążkowana linia prowadzi wzrok przez kompozycję. Mały złoty krąg i ciepłe, rdzawe akcenty przełamują chłodne tło, równoważąc płynny ruch z precyzyjnym detalem. Lekka, a zarazem osadzona praca wnosi spokojną głębię do salonu, sypialni lub miejsca do pracy.",
+            "fap002": "Szeroka terakotowa wstęga biegnie przez 002, oddzielając jasne brzoskwiniowe i turkusowe plamy od skupionej tafli nocnego granatu. Cienkie kontury, miedziane ślady i pojedynczy złoty krąg podkreślają napięcie między miękkością a strukturą. Ciepło-chłodna paleta ożywi neutralny salon lub hol, zachowując subtelność odpowiednią także do sypialni czy gabinetu.",
+            "fap003": "Dwa zawieszone pola przydymionego błękitu, moreli i jasnej zieleni nadają 003 otwartą, niemal nieważką formę. Ciemna, drobno kreskowana wstęga przecina oba kształty, a rdzawe ślady, falujące kontury i złoty akcent zachęcają do bliższego spojrzenia, nie zakłócając białej przestrzeni. Dynamiczna, lecz uporządkowana kompozycja dobrze współgra z jasnym drewnem i miękkimi, neutralnymi tkaninami.",
+            "fap004": "Miękkie błękitne plamy spotykają się w 004 z oliwkowymi, promieniście rysowanymi formami na tle szerokiej bieli. Zestawienie półprzejrzystego koloru, napiętych łuków i wachlarzowej geometrii tworzy świeży, rzeźbiarski rytm pomiędzy spokojem a energią. Jasny, ale nienachalny print stanie się eleganckim punktem salonu lub pracowni, zwłaszcza obok drewna, kamienia i stonowanych tkanin.",
+            "fap005": "Warstwy mglistego błękitu, mszystej zieleni i świetlistej żółci budują wyrazistą strukturę 005. Drobno promieniujące pętle spinają górę i dół, a swobodne czarno-białe linie przemierzają kompozycję lekkim, ożywionym rytmem. Równowaga szerokich pól koloru i misternego rysunku wnosi pewne ciepło do salonu, jadalni lub twórczego miejsca pracy, nie przytłaczając wnętrza.",
+            "fap006": "Koncentryczne warstwy dymnej szarości, miękkiej brzoskwini i głębokiego granatu układają się w 006 w zaokrągloną formę przypominającą kamień. Drobne bordowe prążki podążają wzdłuż krawędzi, a mały złoty krąg rozświetla środek, łącząc szerokie plamy z precyzyjnym detalem. Cicha, otulająca kompozycja doda głębi sypialni, kącikowi do czytania lub spokojnemu salonowi.",
+            "fap007": "Ciepłe brzoskwiniowe i mgliste szare plamy otaczają w 007 granatowy środek, tworząc miękko warstwową, muszlową sylwetkę. Bordowy prążkowany kontur zawija się przez kompozycję wraz ze złotym kręgiem i swobodnymi czarnymi gestami, łącząc precyzję ze spontanicznością. Wyważona forma i subtelny blask czynią z niej elegancki akcent do sypialni, gabinetu lub salonu z ciepłym drewnem.",
+            "fap008": "Szeroka terakotowa forma spotyka się w 008 z ogromnym szarobeżowym owalem, zestawiając nasycony kolor z drobno promieniującym rysunkiem. Jasne pędy, miękkie kropki, granatowe elementy i szybkie czarne ślady ożywiają powierzchnię, nie przeciążając jej graficznej konstrukcji. Zabawny, lecz uporządkowany print doda charakteru jadalni, holowi lub twórczej pracowni, szczególnie na czystym, neutralnym tle.",
+            "fap009": "Jasnoszare i piaskowe plamy wyznaczają spokojną geometrię 009, którą zmiękczają grafitowe rozlewiska i rdzawe drobiny. Dwie falujące pionowe wstęgi — błękitna w cienkie prążki i głęboko czarna — prowadzą wzrok w dół, podczas gdy delikatna linia przecina całe pole. Oszczędna, lecz wyrazista kompozycja pasuje do gabinetu, holu lub stonowanego salonu.",
+            "fap010": "Szeroka granatowa pętla przecina 010, prowadząc wzrok od miedzianego owalu ku rozległej błękitnoszarej plamie. Cienkie czarne linie, rozproszone rdzawe znaki i swobodnie spływający pigment wzmacniają kontrast między kontrolowanym detalem a spontanicznym ruchem. Energetyczny, ale nieprzeładowany print wniesie pewny rytm do salonu, pracowni lub miejsca pracy i dobrze zagra z prostymi meblami.",
+            "fap011": "Wysoki prążkowany łuk w bordo i granacie obejmuje pionowe warstwy 011, gdzie chłodne błękitnoszare plamy spotykają miedź i rdzę. Długie cienkie krzywe przecinają kompozycję, a po prawej skupia się chmura barwnych drobin, nadając całości rzeźbiarski, wznoszący rytm. Pewne proporcje sprawiają, że praca mocno wybrzmi w holu, jadalni lub na wysokiej ścianie.",
+            "fap012": "Półprzejrzysty miedziany łuk przetacza się nad 012 i spotyka ciemną, drobno prążkowaną pętlę zawijającą się od dołu w szeroki owal. Granatowy blok, zbiegające się delikatne linie i ciepłe drobiny dodają ciężaru, pozostawiając wokół ruchu dużo bieli. Odważna, a zarazem lekka kompozycja wnosi ciepło i impet do salonu, jadalni lub twórczej pracowni.",
+            "fap013": "Szerokie pola kamiennego beżu i miękkiej szarości nadają 013 architektoniczny spokój, przełamany dwiema smukłymi bordowymi kolumnami w prążki. Głęboki niebieski blok, jasny okrąg, cienkie łuki i rozproszone rdzawe znaki budują głębię w oszczędnym układzie. Mocny pionowy rytm i stonowana paleta tworzą wyrafinowany punkt dla holu, gabinetu lub współczesnego salonu.",
+            "fap014": "Rdzawe i chłodne błękitne plamy wznoszą się przez otwartą kompozycję 014, przecinane jasnymi prążkowanymi pętlami, które skręcają i krążą w bieli. Cienkie czarne łuki oraz gęsto nakrapiane fragmenty dodają szerokim malarskim formom bardziej misterny rytm. Żywy, lecz precyzyjnie wyważony print wnosi ekspresyjny ruch do pracowni, salonu lub holu, pozostawiając wnętrze lekkim.",
+            "fap015": "Nieregularny owal skupia dramatyczne kontrasty 015, przechodząc od głębokiej rdzy i grafitu ku lodowemu, fakturowemu błękitowi. Elektryzujący kobaltowy pierścień unosi się nad ciemnym rozbryzgiem, a cienkie włókna i ostre białe prześwity dodają napięcia i lekkości. Wyrazista, lecz zwarta praca stanie się pamiętnym punktem salonu, jadalni lub minimalistycznego miejsca pracy.",
+            "fap016": "Dwa pionowe pola rdzy, brzoskwini i jasnego błękitu stoją osobno w 016, połączone zapętlonym pasem drobno rysowanych szarych linii. Intensywny kobaltowy ślad i delikatne czarne łuki wyostrzają układ, a otwarty środek zachowuje jego przestronność. Ekspresyjny, lecz nienachalny print pasuje do jasnego holu, twórczej pracowni lub współczesnego salonu.",
+            "fap017": "Świetliste żółtozielone plamy spotykają w 017 dymny grafit i oliwkę, tworząc miękkie pole wokół dużego jasnego pierścienia. Cienkie białe pędy opadają przez ciemniejsze tony ku skupisku zamglonych okrągłych śladów, które przyciągają przy bliższym spojrzeniu. Promienna, a jednocześnie osadzona kompozycja wnosi łagodną energię do sypialni, kącika czytelniczego lub salonu w naturalnych barwach.",
+            "fap018": "Dwie jasne kolumny szarozieleni i pudrowego błękitu budują przewiewną pionową konstrukcję 018, rozdzieloną czystym pasem bieli. Zakrzywiona granatowa wstęga stabilizuje lewą stronę, po prawej gromadzą się niebiesko-rdzawe drobiny, a z grafitowej plamy wyrastają cienkie czarne włókna. Delikatny, pełen faktury print doda wysokości sypialni, holowi lub skupionemu miejscu pracy.",
+            "fap019": "Stonowane pole beżu i szarości tworzy ciche tło dla bordowo-granatowego prążkowanego pierścienia w 019. Dwie miękkie grafitowe plamy zdają się unosić przy cienkich zwisających liniach, a ciemny pigment i rdzawe drobiny dociążają dolną krawędź. Minimalna, lecz nie pusta kompozycja wnosi spokojną intrygę do sypialni, gabinetu lub miękko urządzonego salonu.",
+            "fap020": "Półprzejrzysta szarozielona plama rozpościera się przez 020, otwarta wysokimi białymi cięciami i pierzastym rdzawym rozbłyskiem po lewej. Nachodzące na siebie ochrowe i bordowe pierścienie kotwiczą drugą stronę, a jasnoniebieskie kropki i cienkie czarne włókna dodają subtelnej złożoności. Ziemista paleta i graficzna forma wnoszą pewne ciepło do jadalni, holu lub nowoczesnego salonu.",
+            "fap021": "Miękkie kremowe i szare plamy otaczają w 021 drobno prążkowany granatowy pierścień z ciepłym ochrowym wnętrzem. Zamglone błękitno-grafitowe kręgi, delikatne opadające linie i rdzawa chmura wprawiają w ruch szerokie, otwarte pole. Powściągliwa i nastrojowa praca pasuje do kącika czytelniczego, sypialni lub spokojnego salonu, gdzie jej detale można oglądać z bliska.",
+            "fap022": "Pionowe wstęgi lawendy, jasnej żółci, pudrowego różu i dymnego błękitu nadają 022 wysoki, liryczny rytm. Intensywnie kobaltowy prążkowany pas wznosi się po prawej, a płynne czarne kontury, ciemne rdzawe gesty i mały złoty akcent skupiają wzrok w centrum. Pełen wdzięku i pewnego koloru print wniesie elegancki pionowy akcent do holu, jadalni lub współczesnej sypialni.",
+            "fap023": "Warstwy błękitnoszarych, bursztynowych, oliwkowych i grafitowych plam rozciągają się poziomo przez 023, tworząc szeroki rytm przypominający linię horyzontu. Rdzawe skupiska i ciemnozielone akcenty znaczą górne pole, a białe nici i prążkowana wstęga płyną przez dolne warstwy. Spokojna, rozległa kompozycja optycznie otworzy salon, jadalnię lub hol, dodając wnętrzu ciepła.",
+            "fap024": "Dwie świetliste formy w barwach barwinka i głębokiego kobaltu stoją obok siebie w 024, każda kształtowana gęstymi promieniami i zakrzywionymi pasami. Pomiędzy nimi zbiera się ciemnoniebieska plama, a białe prześwity, czarne kontury i dwa złote akcenty zachowują jasność układu. Chłodny, rzeźbiarski print tworzy elegancki punkt salonu, sypialni lub dopracowanego miejsca pracy.",
+            "fap025": "Trzy spiętrzone formy budują zabawną konstrukcję 025: jasnożółte pole z niebieskimi wstęgami, bogato nakrapiany terakotowy pierścień i szeroki turkusowy owal. Cienkie czarne linie, mały czerwony promienisty znak i duże białe prześwity nadają mocnym kolorom lekkości. Połączenie ciepła, chłodu i graficznego kształtu wnosi pogodną elegancję do jadalni, pracowni lub współczesnego salonu.",
+            "fap026": "Wodne błękity oraz miękkie pasy piasku i brzoskwini rozwijają się w 026 warstwowym poziomym rytmem. Drobno rysowane fale przecinają otwartą górę, a rdzawe i jasnoniebieskie prążkowane wstęgi płyną przez ciemne rozlewiska obok smukłego złotego akcentu. Rozległa, nastrojowa kompozycja wnosi miarowy ruch do salonu, holu lub jadalni, nie przytłaczając spokojnego otoczenia.",
+            "fap027": "Lawendowe i głębokoniebieskie plamy wznoszą się przez 027 na tle jasnego wewnętrznego blasku i wyrazistych kobaltowych uderzeń. Cienkie linie biegną łukiem wzdłuż wysokich form, a brązowy prążkowany półpierścień i mały złoty znak wprowadzają ciepło na przeciwległych krawędziach. Świetlista, uporządkowana praca wniesie elegancki pionowy akcent do sypialni, holu lub salonu w chłodnych neutralnych barwach.",
+            "fap028": "Szeroki błękitnoszary łuk spotyka w 028 bogato fakturowaną pomarańczową pętlę, zestawiając chłodną otwartość ze skupionym ciepłem. Rdzawe plamy, dwa promieniście rysowane pierścienie, kremowe wstęgi i ciemny rozbryzg u podstawy budują energetyczny, rzeźbiarski układ. Pewny i pełen ruchu print stanie się żywym punktem jadalni, pracowni lub współczesnego salonu.",
+            "fap029": "Wysokie plamy błękitnoszarości i ciepłego beżu tworzą spokojną podstawę 029, przeplecioną parą ciemnych, drobno prążkowanych pętli. Powtarzające się włosowate łuki przesuwają się przez rdzawe i niebieskie drobiny, a granatowe i brązowe akcenty dociążają krawędzie. Elegancka, łagodnie ożywiona kompozycja wnosi płynny pionowy ruch do holu, sypialni lub wyrafinowanego salonu.",
+            "fap030": "Jasna pętla w kolorze barwinka dominuje w 030, a jej półprzejrzystą powierzchnię wyostrza kobaltowy łuk z drobno rozstawionych linii. Obok smukła grafitowo-rdzawa forma niesie ciemne gesty, delikatne włókna i mały złoty detal przy dolnej krawędzi. Kontrast pozostaje zarazem opanowany i ekspresyjny, tworząc wyrafinowany punkt salonu, gabinetu lub współczesnego holu.",
+            "fap031": "Szerokie lawendowe pole unosi się w 031 nad jasną żółcią, przecięte ciemną poziomą plamą i kobaltową linią biegnącą w dół po prawej. Białe prześwity, cienkie czarne krzywe, rdzawe drobiny i złote akcenty wzbogacają klarowną graficzną strukturę. Spokojna, a wyraźnie nowoczesna kompozycja wnosi pewny kolor do sypialni, miejsca pracy lub jasnego salonu.",
+            "fap032": "Jasne barwinkowe i mgliste szare plamy obejmują w 032 głęboki indygo środek, z którego pigment rozkwita pierzastą fakturą. Pionowy złoty akcent przyciąga wzrok pośród rdzawych drobin i wznoszących się linii, a miękko prążkowany owal stabilizuje górny narożnik. Nastrojowy, świetlisty print wnosi cichy dramat do sypialni, miejsca do czytania lub współczesnego salonu.",
+            "fap033": "Pudroworóżowa plama i jasnoniebieskie drobiny tworzą miękkie tło 033, równoważone przez dwa promieniste pierścienie w rdzy i barwinku. Kremowe krzywe zachodzą na górne formy, a czerwony rozbłysk rozchodzi się z dolnego narożnika z lekką pewnością. Graficzna, pogodna kompozycja wnosi ciepło i charakter do jadalni, twórczej pracowni lub gościnnego salonu.",
+            "fap034": "Duża jasna szarozielona plama wypełnia 034, ciemniejąc ku grafitowi na jednej krawędzi i otwierając się na spokojne pola bieli. Cienkie czarne krzywe opadają przez kolor obok rdzawych drobin i bogato prążkowanego owalu zawieszonego u góry. Powściągliwy, lecz pełen subtelnego ruchu print tworzy spokojny punkt sypialni, gabinetu lub współczesnego salonu.",
+            "fap035": "Miękka szarozielona plama daje 035 otwartą, wyważoną podstawę, przełamaną grafitowym rozlewiskiem i żywymi rdzawymi śladami. Mały turkusowy pierścień unosi się u góry, a szeroki terakotowy owal kotwiczy dół gęstymi promieniami i jasnym środkiem. Ziemista i graficzna praca wnosi osadzone ciepło do jadalni, holu lub nowoczesnego salonu.",
+            "fap036": "Jasna błękitnoszara plama wznosi się po lewej stronie 036, urozmaicona ciemnym rozlewiskiem i delikatnym niebiesko-rdzawym rozbłyskiem. Terakotowa prążkowana linia zatacza łuk nad całością, ciasno skręca w centrum i opada w szeroką pętlę obok ekspresyjnej grafitowej plamy. Płynna, energetyczna kompozycja wnosi mocny ruch do salonu, pracowni lub wysokiej ściany w holu.",
+            "fap037": "Rozdzielone pola rdzy, pudrowego różu i jasnego błękitu tworzą otwartą architekturę 037, podkreśloną kobaltowym pociągnięciem przy górnej krawędzi. Szeroka szara prążkowana pętla wije się przez obie formy, a cienkie czarne linie powtarzają jej ruch w otaczającej bieli. Dynamiczny, lecz lekki print wnosi ekspresyjną skalę do salonu, pracowni lub przestronnego holu.",
+            "fap038": "Szerokie lawendowe pole 038 ciemnieje w miękkie brązowe i grafitowe plamy, przecinane smukłymi pionowymi liniami i wąską kremową wstęgą w prążki. Przerwana pozioma granica ciemnego pigmentu i złota oddziela górną formę od jej jasnego, odbitego odpowiednika niżej. Nastrojowa, lecz wyważona kompozycja wnosi głębię do salonu, jadalni lub spokojnego gabinetu.",
+            "fap039": "Jasne błękitne i pudroworóżowe plamy rozlewają się przez 039 w przestronnym, schodkowym układzie, podniesionym dwoma nasyconymi kobaltowymi śladami u góry. Rdzawe drobiny i cienkie pionowe linie opadają ku ciemnemu poziomemu pasowi, gdzie białe kontury tworzą łagodny falujący rytm. Rozległy, cicho żywy print otwiera optycznie salon, sypialnię lub długi hol.",
+            "fap040": "Szeroka szarozielona pętla otwiera górną połowę 040 obok ciemnoturkusowego pierścienia z drobno promieniujących linii. Skupiony rdzawy pas przecina środek, a duży lekko rysowany owal poniżej niesie ciepłe drobiny na jasnej powierzchni. Wyważona, graficzna i spokojnie ziemista kompozycja staje się pewnym punktem jadalni, salonu lub oszczędnego miejsca pracy.",
+            "fap041": "Chłodne szarozielone plamy wznoszą się po jednej stronie 041, a ciepłe rdzawe i terakotowe znaki skupiają po drugiej, pozostawiając między nimi szeroki pas bieli. Ciemnoturkusowy prążkowany pierścień wieńczy chłodną formę, a pierzaste rozkwity i jasnoróżowy ślad ożywiają cieplejszą krawędź. Odważny, pięknie wyważony print wnosi ekspresyjny kontrast do holu, pracowni lub współczesnego salonu."
+          }
+        },
+        "version": 4
+      }
+    ]
+  }
+]

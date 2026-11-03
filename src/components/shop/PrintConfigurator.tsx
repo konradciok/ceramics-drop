@@ -15,6 +15,7 @@ import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { isVariantAvailable } from '@/lib/prints';
 import { encodePrintToken, isPrintToken, printVariantButtonState, variantLabel } from '@/lib/print-cart';
 import { buildPrintAddToCartEvent, buildPrintRemoveFromCartEvent, pushDataLayer } from '@/lib/analytics';
+import { printDisplayName, type PrintCollectionDefinition } from '@/lib/print-curation';
 import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '@/lib/types';
 
 export function PrintConfigurator({
@@ -23,6 +24,7 @@ export function PrintConfigurator({
   pricing,
   sel,
   onSelChange,
+  definitions,
 }: {
   design: PrintDesign;
   usableVariantKeys?: string[];
@@ -30,6 +32,7 @@ export function PrintConfigurator({
   pricing: PrintPricingConfig;
   sel: PrintVariantSelection;
   onSelChange: (sel: PrintVariantSelection) => void;
+  definitions?: PrintCollectionDefinition[];
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -191,7 +194,13 @@ export function PrintConfigurator({
               remove(token);
               pushDataLayer(
                 buildPrintRemoveFromCartEvent(
-                  { id: design.id, num: design.num, variantLabel: variantLabel(sel, locale), price },
+                  {
+                    id: design.id,
+                    num: design.num,
+                    variantLabel: variantLabel(sel, locale),
+                    price,
+                    itemName: printDisplayName(design, undefined, definitions),
+                  },
                   { currency: analyticsCurrency },
                 ),
               );
@@ -201,7 +210,13 @@ export function PrintConfigurator({
               if (!was && now) {
                 pushDataLayer(
                   buildPrintAddToCartEvent(
-                    { id: design.id, num: design.num, variantLabel: variantLabel(sel, locale), price },
+                    {
+                      id: design.id,
+                      num: design.num,
+                      variantLabel: variantLabel(sel, locale),
+                      price,
+                      itemName: printDisplayName(design, undefined, definitions),
+                    },
                     { currency: analyticsCurrency },
                   ),
                 );

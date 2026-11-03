@@ -45,13 +45,13 @@ test.describe('SEO metadata contract @ci', () => {
 
         expect(await collectAlternates(page)).toEqual(languageAlternates('/'));
 
-        await expect(page).toHaveTitle(/Anna Ciok Ceramics/);
+        await expect(page).toHaveTitle(/Anna Ciok Studio/);
         await expect(page.locator('head meta[name="description"]')).toHaveAttribute('content', /.+/);
         // No ?preview= param — page must be indexable.
         await expect(page.locator('head meta[name="robots"]')).toHaveCount(0);
         await expect(page.locator('head meta[property="og:site_name"]')).toHaveAttribute(
           'content',
-          'Anna Ciok Ceramics',
+          'Anna Ciok Studio',
         );
         await expect(page.locator('head meta[name="twitter:card"]')).toHaveAttribute(
           'content',

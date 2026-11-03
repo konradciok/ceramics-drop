@@ -6,8 +6,9 @@
  * check — `product_variants.active` (see
  * `src/server/print-assets/repository.ts`) — not the code registry. A
  * variant an operator deactivates in the DB but that is still declared in
- * `src/lib/prints.ts` must not get a derivative prepared for it, and a draft
- * product must not be prepared at all.
+ * `src/lib/prints.ts` must not get a derivative prepared for it. Drafts can
+ * prepare assets before guarded activation; hidden and archived products
+ * remain blocked.
  *
  * Falls back to `PRODIGI_SKU_MAP[variantKey].printAreaPx` only when the DB
  * row's `print_area_*_px` is null (not yet seeded) — the DB value is
@@ -24,7 +25,7 @@ type ProductStatus = 'draft' | 'active' | 'hidden' | 'archived';
 /**
  * Enumerate a print product's active DB variants with their print-area
  * pixels. Throws on any condition that would silently under- or
- * over-produce derivatives: unknown product, non-active product status, zero
+ * over-produce derivatives: unknown product, hidden/archived product status, zero
  * active variants, or an active variant with neither seeded DB dimensions
  * nor a `PRODIGI_SKU_MAP` fallback.
  */
@@ -44,10 +45,10 @@ export async function activeVariantDimensions(
     throw new Error(`Unknown print product id: "${productId}" — no row in products.`);
   }
   const status = product.data.status as ProductStatus;
-  if (status !== 'active') {
+  if (status !== 'active' && status !== 'draft') {
     throw new Error(
-      `Product "${productId}" is not active (status="${status}") — refusing to prepare derivatives for a ` +
-        'draft/hidden/archived product. Publish it first, or confirm this is intentional before overriding.',
+      `Product "${productId}" is not active or draft (status="${status}") — refusing to prepare derivatives for a ` +
+        'hidden/archived product.',
     );
   }
 

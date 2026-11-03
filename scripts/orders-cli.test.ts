@@ -429,6 +429,254 @@ describe('runCli — webhook-config-check', () => {
   });
 });
 
+describe('runCli — prodigi-env-check', () => {
+  type PecCall = { table: string; method: string; args: unknown[] };
+  type PecPlan = {
+    jobs?: unknown[];
+    jobsError?: { message: string } | null;
+    orders?: unknown[];
+    ordersError?: { message: string } | null;
+  };
+
+  /** Minimal chainable Supabase fake tailored to prodigiEnvCheck's two queries. Pages a single response — enough for fixtures under FULFILMENT_JOBS_PAGE_SIZE (1000). */
+  function fakeProdigiEnvDb(plan: PecPlan) {
+    const calls: PecCall[] = [];
+    const track = (table: string, method: string, args: unknown[]) => calls.push({ table, method, args });
+    const jobsBuilder = () => {
+      const b: Record<string, unknown> = {
+        select: (...a: unknown[]) => { track('fulfilment_jobs', 'select', a); return b; },
+        order: (...a: unknown[]) => { track('fulfilment_jobs', 'order', a); return b; },
+        gte: (...a: unknown[]) => { track('fulfilment_jobs', 'gte', a); return b; },
+        range: (...a: unknown[]) => {
+          track('fulfilment_jobs', 'range', a);
+          const [from, to] = a as [number, number];
+          const page = (plan.jobs ?? []).slice(from, to + 1);
+          return { then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => Promise.resolve({ data: page, error: plan.jobsError ?? null }).then(res, rej) };
+        },
+      };
+      return b;
+    };
+    const ordersBuilder = () => {
+      const b: Record<string, unknown> = {
+        select: (...a: unknown[]) => { track('orders', 'select', a); return b; },
+        in: (...a: unknown[]) => { track('orders', 'in', a); return b; },
+        then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>
+          Promise.resolve({ data: plan.orders ?? [], error: plan.ordersError ?? null }).then(res, rej),
+      };
+      return b;
+    };
+    return {
+      from: (table: string) => {
+        if (table === 'fulfilment_jobs') return jobsBuilder();
+        if (table === 'orders') return ordersBuilder();
+        throw new Error(`unexpected table: ${table}`);
+      },
+      calls,
+    };
+  }
+
+  function pecHarness(options: {
+    jobs?: unknown[];
+    jobsError?: { message: string } | null;
+    orders?: unknown[];
+    ordersError?: { message: string } | null;
+    /** payment_intent id → { livemode } fixture, or 'throw' to simulate a failed Stripe lookup. */
+    piById?: Record<string, { livemode: boolean } | 'throw'>;
+  }) {
+    const h = harness({ env: { SUPABASE_URL: PROD_URL, SUPABASE_SERVICE_ROLE_KEY: 'k', STRIPE_SECRET_KEY: 'sk' } });
+    const db = fakeProdigiEnvDb(options);
+    h.deps.supabaseFactory = () => db as never;
+    const retrieve = vi.fn(async (id: string) => {
+      const entry = (options.piById ?? {})[id];
+      if (entry === 'throw') throw new Error('stripe down');
+      if (!entry) throw new Error(`no PI fixture for ${id}`);
+      return entry;
+    });
+    h.deps.stripeFactory = () => ({ paymentIntents: { retrieve } }) as never;
+    return { ...h, db, retrieve };
+  }
+
+  const job = (overrides: Record<string, unknown> = {}) => ({
+    id: 'job-1',
+    order_id: ORDER_ID,
+    status: 'shipped',
+    prodigi_env: 'sandbox',
+    livemode: null,
+    created_at: '2026-09-02T03:00:02Z',
+    ...overrides,
+  });
+
+  beforeEach(() => vi.clearAllMocks());
+
+  // ── primary path: persisted livemode, no Stripe call needed ──────────────
+
+  it('flags a live payment enqueued under a non-live PRODIGI_ENV using the persisted livemode column (regression: order 63445e00 pattern) — no Stripe call needed', async () => {
+    const h = pecHarness({ jobs: [job({ livemode: true })] });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(4);
+    const err = lastJson(h.stderr).error;
+    expect(err?.code).toBe('prodigi_env_mismatch');
+    const anomalies = (err?.details as { anomalies: Array<{ orderId: string; problem: string }> }).anomalies;
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]).toMatchObject({ orderId: ORDER_ID, problem: 'live_payment_nonlive_env' });
+    expect(h.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('flags a test-mode payment enqueued under PRODIGI_ENV=live using the persisted livemode column', async () => {
+    const h = pecHarness({ jobs: [job({ prodigi_env: 'live', livemode: false })] });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(4);
+    const anomalies = (lastJson(h.stderr).error?.details as { anomalies: Array<{ problem: string }> }).anomalies;
+    expect(anomalies[0].problem).toBe('test_payment_live_env');
+  });
+
+  it('no anomaly when the persisted livemode matches prodigi_env', async () => {
+    const h = pecHarness({ jobs: [job({ prodigi_env: 'live', livemode: true })] });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(0);
+    const data = lastJson(h.stdout).data as { scanned: number; anomalies: unknown[] };
+    expect(data.scanned).toBe(1);
+    expect(data.anomalies).toEqual([]);
+    expect(h.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('a job with prodigi_env null is flagged as missing_prodigi_env regardless of livemode', async () => {
+    const h = pecHarness({ jobs: [job({ prodigi_env: null, livemode: true })] });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(4);
+    const anomalies = (lastJson(h.stderr).error?.details as { anomalies: Array<{ problem: string }> }).anomalies;
+    expect(anomalies[0].problem).toBe('missing_prodigi_env');
+  });
+
+  // ── legacy fallback: livemode not persisted, falls back to Stripe ────────
+
+  it('legacy row (livemode not persisted): Stripe lookup succeeds and confirms a mismatch', async () => {
+    const h = pecHarness({
+      jobs: [job()], // livemode: null
+      orders: [{ id: ORDER_ID, payment_intent_id: 'pi_live_1' }],
+      piById: { pi_live_1: { livemode: true } },
+    });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(4);
+    const anomalies = (lastJson(h.stderr).error?.details as { anomalies: Array<{ problem: string }> }).anomalies;
+    expect(anomalies[0].problem).toBe('live_payment_nonlive_env');
+  });
+
+  it('legacy row: Stripe lookup succeeds and confirms no mismatch', async () => {
+    const h = pecHarness({
+      jobs: [job({ prodigi_env: 'live' })],
+      orders: [{ id: ORDER_ID, payment_intent_id: 'pi_1' }],
+      piById: { pi_1: { livemode: true } },
+    });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(0);
+    const data = lastJson(h.stdout).data as { anomalies: unknown[] };
+    expect(data.anomalies).toEqual([]);
+  });
+
+  it('legacy row whose order has no payment_intent_id is reported as modeless, never as an anomaly (e.g. gift-card/balance-only print)', async () => {
+    const h = pecHarness({
+      jobs: [job({ prodigi_env: 'live' })],
+      orders: [{ id: ORDER_ID, payment_intent_id: null }],
+    });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(0);
+    const data = lastJson(h.stdout).data as { anomalies: unknown[]; modeless: Array<{ orderId: string }> };
+    expect(data.anomalies).toEqual([]);
+    expect(data.modeless).toEqual([{ orderId: ORDER_ID, jobId: 'job-1', jobStatus: 'shipped', prodigiEnv: 'live' }]);
+  });
+
+  it('a per-row Stripe lookup failure on a legacy row is reported as unverifiable, not a false anomaly and not a silent pass (a single Stripe key cannot retrieve a PaymentIntent from the opposite mode)', async () => {
+    const h = pecHarness({
+      jobs: [job({ prodigi_env: 'live' })],
+      orders: [{ id: ORDER_ID, payment_intent_id: 'pi_broken' }],
+      piById: { pi_broken: 'throw' },
+    });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(0); // unverifiable never blocks the command — an unconfirmed row is not a confirmed anomaly
+    const data = lastJson(h.stdout).data as {
+      anomalies: unknown[];
+      unverifiable: Array<{ orderId: string; reason: string; paymentIntentId: string }>;
+    };
+    expect(data.anomalies).toEqual([]);
+    expect(data.unverifiable).toEqual([
+      { orderId: ORDER_ID, jobId: 'job-1', jobStatus: 'shipped', prodigiEnv: 'live', paymentIntentId: 'pi_broken', reason: 'stripe_lookup_failed' },
+    ]);
+  });
+
+  // ── pagination, --since, validation ───────────────────────────────────────
+
+  it('pages past the 1000-row Supabase default so a large fulfilment_jobs table is never silently truncated', async () => {
+    const jobs = Array.from({ length: 1001 }, (_, i) =>
+      job({ id: `job-${i}`, order_id: `order-${i}`, livemode: true, prodigi_env: 'live', created_at: `2026-01-01T00:00:${String(i % 60).padStart(2, '0')}Z` }),
+    );
+    const h = pecHarness({ jobs });
+
+    const code = await runCli(['prodigi-env-check'], h.deps);
+
+    expect(code).toBe(0);
+    const data = lastJson(h.stdout).data as { scanned: number };
+    expect(data.scanned).toBe(1001); // every row included, not truncated at the first 1000-row page
+    const rangeCalls = h.db.calls.filter((c) => c.table === 'fulfilment_jobs' && c.method === 'range');
+    expect(rangeCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('--since is threaded through to the fulfilment_jobs query as a gte filter', async () => {
+    const h = pecHarness({ jobs: [] });
+
+    const code = await runCli(['prodigi-env-check', '--since', '2026-09-01T00:00:00Z'], h.deps);
+
+    expect(code).toBe(0);
+    expect(
+      h.db.calls.some(
+        (c) => c.table === 'fulfilment_jobs' && c.method === 'gte' && c.args[1] === '2026-09-01T00:00:00Z',
+      ),
+    ).toBe(true);
+  });
+
+  it('invalid --since (not a date at all) exits 2 invalid_arguments', async () => {
+    const h = pecHarness({});
+
+    const code = await runCli(['prodigi-env-check', '--since', 'not-a-date'], h.deps);
+
+    expect(code).toBe(2);
+    expect(lastJson(h.stderr).error?.code).toBe('invalid_arguments');
+  });
+
+  it('invalid --since (calendar overflow, e.g. February 30th) exits 2 invalid_arguments instead of silently normalizing to a different date', async () => {
+    const h = pecHarness({});
+
+    const code = await runCli(['prodigi-env-check', '--since', '2026-02-30'], h.deps);
+
+    expect(code).toBe(2);
+    expect(lastJson(h.stderr).error?.code).toBe('invalid_arguments');
+  });
+
+  it('a well-formed ISO date (with time and offset) is accepted', async () => {
+    const h = pecHarness({ jobs: [] });
+
+    const code = await runCli(['prodigi-env-check', '--since', '2026-09-01T12:30:00+02:00'], h.deps);
+
+    expect(code).toBe(0);
+  });
+});
+
 describe('runCli — reconcile-refunds', () => {
   type DbCall = {
     table: string;

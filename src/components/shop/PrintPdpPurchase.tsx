@@ -17,6 +17,7 @@ import { srcSet } from '@/lib/images';
 import { variantLabel } from '@/lib/print-cart';
 import type { PrintPricingConfig } from '@/lib/print-pricing';
 import type { PrintDesign, PrintVariantSelection } from '@/lib/types';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 
 export function PrintPdpPurchase({
   design,
@@ -26,6 +27,7 @@ export function PrintPdpPurchase({
   pricing,
   header,
   footer,
+  definitions,
 }: {
   design: PrintDesign;
   images: string[];
@@ -34,6 +36,7 @@ export function PrintPdpPurchase({
   pricing: PrintPricingConfig;
   header: ReactNode;
   footer: ReactNode;
+  definitions?: PrintCollectionDefinition[];
 }) {
   const locale = useLocale();
   const [sel, setSel] = useState<PrintVariantSelection>({
@@ -79,6 +82,7 @@ export function PrintPdpPurchase({
           pricing={pricing}
           sel={sel}
           onSelChange={setSel}
+          definitions={definitions}
         />
         {footer}
       </div>

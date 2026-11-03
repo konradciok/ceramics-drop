@@ -5,15 +5,21 @@ vi.mock('./server', () => ({ getPublishedContent: mockPublished, getPreviewConte
 
 import { fallbackProductNotes, getProductNotes } from './messages';
 import { registryPrintDesigns } from '@/lib/prints';
+import pl from '../../../messages/pl.json';
 
 describe('fallbackProductNotes', () => {
   it('keeps curated print IDs bound to their stable source note indexes', () => {
     const notes = fallbackProductNotes('fine-art-prints', 'pl');
+    const rawNotes = pl.notes['fine-art-prints'];
+    const designs = registryPrintDesigns();
+    const fap010 = designs.find((d) => d.id === 'fap010')!;
+    const fap005 = designs.find((d) => d.id === 'fap005')!;
 
-    expect(notes.fap010).toContain('010');
-    expect(notes.fap005).toContain('005');
-    expect(notes.fap010).not.toContain('005');
-    expect(notes.fap005).not.toContain('010');
+    // Verifies the id -> noteIndex -> array-slot wiring directly (not via a
+    // magic substring in the copy) — a shuffled noteIndex would surface here.
+    expect(notes.fap010).toBe(rawNotes[fap010.noteIndex]);
+    expect(notes.fap005).toBe(rawNotes[fap005.noteIndex]);
+    expect(notes.fap010).not.toBe(notes.fap005);
     expect(notes).not.toHaveProperty('fap029');
     expect(notes).not.toHaveProperty('fap037');
   });

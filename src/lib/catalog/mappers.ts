@@ -81,6 +81,16 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       // SEO overrides only when set (registry has none → parity preserved).
       ...(row.seo_title ? { seoTitle: row.seo_title } : {}),
       ...(row.seo_description ? { seoDescription: row.seo_description } : {}),
+      // CMS-authored copy only when set (registry has none → parity preserved).
+      ...(row.title ? { title: row.title } : {}),
+      ...(row.description ? { description: row.description } : {}),
+      // DB-backed EUR/GBP only when set (registry has none → parity preserved,
+      // priceOfCurrency() falls back to the code constant). Unlike price_pln,
+      // these are not runtime-guaranteed non-null, so `!= null` (not a bare
+      // price_pln!-style assertion) — a registry-seeded row that predates the
+      // first backfill run after this column existed could still be null.
+      ...(row.price_eur != null ? { priceEur: row.price_eur } : {}),
+      ...(row.price_gbp != null ? { priceGbp: row.price_gbp } : {}),
     });
   }
 

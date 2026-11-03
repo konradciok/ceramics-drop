@@ -63,10 +63,12 @@ describeLocal('fresh local catalog backfill publication gate', () => {
       .eq('type', 'print')
       .order('id');
     assertQuery('read backfilled prints', backfilled);
-    expect(backfilled.data).toHaveLength(41);
+    const expectedPrints = seed.products
+      .filter(({ type }) => type === 'print')
+      .map(({ id, status }) => ({ id, status: status === 'active' ? 'draft' : status }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    expect(backfilled.data).toEqual(expectedPrints);
     expect(backfilled.data?.filter(({ status }) => status === 'active')).toEqual([]);
-    expect(backfilled.data?.filter(({ status }) => status === 'draft')).toHaveLength(39);
-    expect(backfilled.data?.filter(({ status }) => status === 'archived')).toHaveLength(2);
 
     const productId = 'fap001';
     const variants = await supabase
@@ -120,7 +122,10 @@ describeLocal('fresh local catalog backfill publication gate', () => {
     assertQuery('read activated prints', activated);
     expect(activated.data).toEqual([{ id: productId, status: 'active' }]);
 
-    await expect(backfillCatalog(supabase)).resolves.toBeUndefined();
+    // Rerunning the backfill against a fresh (non-CMS-edited) catalog skips
+    // nothing — the ownership guard only excludes ids with product_drafts
+    // history (20260914140000_backfill_cms_ownership_guard.sql).
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
 
     const rerunProduct = await supabase
       .from('products')

@@ -1,0 +1,210 @@
+[
+  {
+    "kind": "product_notes",
+    "slug": "wazony",
+    "locale": "pl",
+    "baseVersion": 1,
+    "baseUpdatedAt": "2026-07-08T12:48:22.830544+00:00",
+    "basePayloadSha256": "84c669762e67e446798804e49abf91b3066946684d4eeaf301d93131faae8797",
+    "approval": "pending",
+    "changed": false,
+    "payload": {
+      "notes": {
+        "d10": "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie.",
+        "v01": "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła.",
+        "v02": "Błękitna palma z terakotowymi owocami i pionowe paski przy brzegu. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+        "v03": "Brązowe pasy i cienkie błękitne linie biegną pionowo po jasnym wazonie. Rytm zwęża się przy szyjce i rozchodzi na wypukłych bokach.",
+        "v04": "Błękitne płaty opuncji z jasnymi liniami na kremowym wazonie, z terakotowym wnętrzem widocznym przy otworze. Miękki rytm owalnych segmentów wspina się ukośnie po zaokrąglonej formie.",
+        "v05": "Błękitna palma z terakotowymi owocami i pasami na rancie. Liście rozchodzą się szeroko po zaokrąglonej formie.",
+        "v06": "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw układa się w poziome pasy i biegnie dookoła formy miękkim, falującym rytmem.",
+        "v07": "Czarna palma z białym żyłkowaniem i terakotowymi owocami na jasnym, zaokrąglonym wazonie. Liście rozchodzą się szeroko po formie, a przy rancie powtarzają się terakotowe pionowe kreski i drobne kropki.",
+        "v09": "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala."
+      }
+    }
+  },
+  {
+    "kind": "product_notes",
+    "slug": "kubki",
+    "locale": "pl",
+    "baseVersion": 1,
+    "baseUpdatedAt": "2026-07-08T12:48:45.694614+00:00",
+    "basePayloadSha256": "cb7b4dea3a776eafa634b6b7b273eb612a49411ab0fc84bf2609844169986de7",
+    "approval": "pending",
+    "changed": false,
+    "payload": {
+      "notes": {
+        "c01": "Czarny byk z jasną girlandą na boku i terakotowymi kreskami przy rancie. Motyw stoi spokojnie na jasnej formie, a drobny rytm u góry domyka kubek.",
+        "c02": "Czarne oko z jasnym środkiem i czteroramienną gwiazdą na kremowym kubku. Liściasty otok z błękitnymi kropkami prowadzi motyw dookoła formy.",
+        "c03": "Czarne kwiaty z jasnymi, promienistymi liniami na kremowym kubku. Motyw rozchodzi się swobodnie po ściankach, miejscami ucięty przy brzegu.",
+        "c04": "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie.",
+        "k01": "Błękitny kwiat z okrągłą główką i liśćmi w jodełkę. Prosty motyw prowadzi pionowo przez jasny kubek.",
+        "k02": "Błękitna palma z brązowymi owocami i kreskowanymi liśćmi. Motyw rozkłada się szeroko na jasnym kubku, podkreślony drobnymi brązowymi akcentami przy brzegu.",
+        "k03": "Błękitny kwiat na brązowej łodydze, z liśćmi w jodełkę i kropkami przy rancie. Motyw rozkłada się symetrycznie na jasnej ścianie kubka.",
+        "k04": "Błękitny wachlarz z jasnymi, promienistymi liniami na boku kubka. Motyw opada spod górnej krawędzi szerokim, spokojnym łukiem.",
+        "k05": "Błękitna cytryna z białymi nacięciami na jasnym kubku. Czarne kreski przy rancie i u dołu układają się w prosty, graficzny rytm.",
+        "k06": "Szerokie brązowe pasy i cienkie błękitne linie na jasnej formie. Pionowy rytm biegnie od dołu ku lekko nierównemu brzegowi.",
+        "k07": "Brązowe liście z jasnymi żyłkami i błękitne kreski przy rancie. Motyw biegnie ukośnie po jasnej formie, jak spokojna gałązka.",
+        "k08": "Błękitny kaktus opuncji z jasnymi wydrapanymi liniami na kremowym kubku. Motyw biegnie ukośnie po ściance, z drobną terakotową kropką i akcentami przy rancie.",
+        "k09": "Błękitne liście z jasnymi żyłkami na kremowym kubku i drobne terakotowe nacięcia przy rancie. Motyw wspina się skośnie po boku, tworząc spokojny, roślinny rytm.",
+        "k10": "Błękitna muszla z białymi żłobieniami i terakotowymi akcentami przy rancie. Linie układają się wachlarzowo, jak spokojny morski rytm.",
+        "k11": "Błękitna cytryna z białymi kreskami i terakotowe prostokąty przy brzegach kubka. Motyw trzyma środek, a rdzawe znaki układają się w spokojny rytm dookoła.",
+        "k12": "Błękitne ryby układają się wokół jasnej rozgwiazdy, z terakotowymi kropkami przy rancie. Motyw płynie po ściance kubka falującym, morskim rytmem.",
+        "k13": "Błękitny półokrąg z jasnymi promieniami schodzi spod rantu kubka. Motyw rozkłada się wachlarzem po białej, prostej formie.",
+        "k14": "Terakotowa cytryna z jasnymi nacięciami i błękitne prostokąty przy brzegach. Równy rytm niebieskich plam obiega kubek od góry i od dołu.",
+        "k17": "Terakotowa palma z białymi liniami i czarnymi owocami pod kropkowanym rantem. Liście rozchodzą się szeroko po boku kubka w spokojnym, wakacyjnym rytmie.",
+        "k18": "Terakotowy kwiat na długiej łodydze i liście w jodełkę. Motyw biegnie pionowo przez kubek, przecięty spokojnym poziomym rytmem.",
+        "k19": "Terakotowa cytryna z białymi kreskami na jasnym kubku. Czarne prostokąty przy rancie i dole trzymają motyw w spokojnym rytmie.",
+        "k20": "Brązowe pętle malowane szerokim, przejrzystym gestem na jasnym kubku. Motyw biegnie poziomymi pasami, jak miękka wstążka oplatająca formę.",
+        "k21": "Terakotowe kaktusy z jasnymi, pionowymi żłobieniami na kremowym kubku. Czarne półkola na rancie prowadzą spokojny rytm dookoła formy.",
+        "k22": "Terakotowe saguaro z białymi, wydrapanymi liniami na jasnym kubku. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+        "k23": "Czarny kwiat z okrągłymi główkami i pasiastymi liśćmi na jasnym kubku. Motyw wyrasta pionowo, a liście rozkładają się szeroko wokół formy.",
+        "k24": "Czarny kwiat z jednym szarym płatkiem i kropkami nad koroną. Liście w jodełkę prowadzą motyw pionowo po jasnym kubku.",
+        "k25": "Czarny kwiat z okiem i jasną gwiazdą w środku. Płatki rozchodzą się promieniście po zaokrąglonej ścianie kubka.",
+        "k26": "Czarny kwiat z okrągłą główką, jasnym punktem i liśćmi w jodełkę. Pionowa łodyga prowadzi motyw spokojnie przez jasny kubek.",
+        "k27": "Czarny kwiat z falistym środkiem otoczonym pierścieniem drobnych płatków na jasnym kubku. Pionowa łodyga i dwa liście z jasnym rysunkiem żyłek podkreślają spokojny, graficzny rytm."
+      }
+    }
+  },
+  {
+    "kind": "product_notes",
+    "slug": "wazony-duze",
+    "locale": "pl",
+    "baseVersion": 1,
+    "baseUpdatedAt": "2026-07-21T11:33:04.033009+00:00",
+    "basePayloadSha256": "fbba5b3c878c4e92e5b814fc5457ea87f596dc27731bac6fc5bd0f946f1da3aa",
+    "approval": "pending",
+    "changed": false,
+    "payload": {
+      "notes": {
+        "d06": "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
+        "d07": "Czarny półksiężyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
+        "d09": "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
+        "g01": "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi."
+      }
+    }
+  },
+  {
+    "kind": "product_notes",
+    "slug": "wazony-srednie",
+    "locale": "pl",
+    "baseVersion": 1,
+    "baseUpdatedAt": "2026-07-21T11:33:44.557383+00:00",
+    "basePayloadSha256": "33a8b7470ff5ebd57b3972ff63a70c8f0a2e229302586c0549d79b9e537e127c",
+    "approval": "pending",
+    "changed": false,
+    "payload": {
+      "notes": {
+        "d01": "Czarne saguaro i terakotowe słońca na jasnym, zaokrąglonym brzuścu. Pustynny rytm wspina się pionowo pod terakotowym rantem z białymi kropkami.",
+        "d02": "Czarny kwiat na terakotowej łodydze, z liśćmi w jodełkę i kropkami nad płatkami. Pionowe kreski przy rancie powtarzają rytm żyłek na liściach.",
+        "d03": "Czarna muszla z jasnymi, pionowymi liniami i błękitnym rantem. Spiralny motyw wspina się po zaokrąglonym boku w spokojnym rytmie.",
+        "d05": "Duże czarne kaktusy z jasnymi nacięciami i terakotowy wzór pod brzegiem. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
+        "u01": "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala."
+      }
+    }
+  },
+  {
+    "kind": "page",
+    "slug": "home",
+    "locale": "pl",
+    "baseVersion": 7,
+    "baseUpdatedAt": "2026-08-28T18:03:06.636264+00:00",
+    "basePayloadSha256": "2d31b10869d1586fcd08fb343f38cfb7b7fcd036a4c9306b25bc9b47afc66917",
+    "approval": "pending",
+    "changed": true,
+    "payload": {
+      "media": {
+        "mobile": {
+          "key": "d469d7dbe184d871c359f8aa28f6c7fda2f74e2f10533f1541154830b88d6b8a.png",
+          "kind": "image",
+          "width": 1080,
+          "height": 1350
+        },
+        "desktop": {
+          "key": "bb97de899724da3b789e6ae43fc2bb9263fa42eabfb3711d2fd97e55bbbcfd03.png",
+          "kind": "image",
+          "width": 2800,
+          "height": 1600
+        }
+      },
+      "heroAlt": "Ręcznie malowane naczynia ceramiczne na drewnianym stole w pracowni Anny Ciok",
+      "ctaLabel": "Zobacz kolekcję",
+      "heroLine1": "Fine Art Print",
+      "heroLine2": "z moich obrazów.",
+      "heroTagline": "Reprodukcje obrazów malowanych akwarelą i tuszem. Wybierz rozmiar oraz wersję z ramą lub bez."
+    }
+  },
+  {
+    "kind": "page",
+    "slug": "print-pdp",
+    "locale": "pl",
+    "baseVersion": 3,
+    "baseUpdatedAt": "2026-08-17T13:16:50.947299+00:00",
+    "basePayloadSha256": "f655c35ad2a1b43328e66efe54b03464eb81c480cebfd57c4cecb45789c0d7cd",
+    "approval": "pending",
+    "changed": true,
+    "payload": {
+      "artist": {
+        "name": "Anna Ciok",
+        "bio": "Anna Ciok maluje akwarelą i tuszem oraz tworzy ceramikę w Güímar na Teneryfie. Fine Art Print z tej kolekcji to reprodukcje jej oryginalnych obrazów."
+      },
+      "accordions": {
+        "productDetails": "Fine Art Print na podstawie oryginalnego obrazu Anny Ciok wykonanego akwarelą i tuszem. Druk giclée na matowym papierze artystycznym 200 g/m². Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca. Ramę przecieraj suchą ściereczką.",
+        "framing": "Wybierz wersję bez ramy lub z ramą w jednym z dostępnych kolorów. Konfigurator pokazuje warianty dla danego wzoru.\n\nFormat wydruku, pole obrazu i zewnętrzne wymiary oprawy to różne wymiary. Szczegóły odnoszą się do wybranego wariantu.",
+        "shipping": "Fine Art Print powstaje po zamówieniu i jest dostarczany na podany adres. Koszt dostawy zobaczysz przed płatnością. Dostawa Fine Art Print do paczkomatu nie jest dostępna.\n\nInformacje o realizacji, odstąpieniu od umowy i reklamacjach znajdziesz na stronie Dostawa i zwroty. W sprawie zwrotu napisz na ania@ciok.art — nie musisz zakładać konta."
+      }
+    }
+  },
+  {
+    "kind": "product_notes",
+    "slug": "fine-art-prints",
+    "locale": "pl",
+    "baseVersion": 4,
+    "baseUpdatedAt": "2026-08-19T12:39:29.707945+00:00",
+    "basePayloadSha256": "580534282e2904286fbef44e14935edde18459c43439b40f39de2bd0ca5a3189",
+    "approval": "pending",
+    "changed": true,
+    "payload": {
+      "notes": {
+        "fap001": "Granatowe i błękitno-zielone plamy przecina smukła, prążkowana linia. Mały złoty krąg i rdzawe akcenty uzupełniają chłodną paletę.",
+        "fap002": "Terakotowa wstęga oddziela brzoskwiniowe i turkusowe plamy od granatowego pola. Cienkie kontury i złoty krąg tworzą drobne akcenty w kompozycji.",
+        "fap003": "Dwa pola błękitu, moreli i jasnej zieleni przecina ciemna, prążkowana wstęga. Wokół zaokrąglonych kształtów pozostaje biała przestrzeń.",
+        "fap006": "Warstwy szarości, brzoskwini i granatu tworzą zaokrągloną formę. Bordowe prążki biegną wzdłuż jej krawędzi, a złoty krąg zaznacza środek.",
+        "fap007": "Brzoskwiniowe i szare plamy otaczają granatowy środek. Bordowy kontur i złoty krąg podkreślają warstwowy, muszlowy kształt.",
+        "fap010": "Granatowa pętla łączy miedziany owal z błękitnoszarą plamą. Czarne linie i rdzawe ślady przecinają szerokie pola pigmentu.",
+        "fap012": "Miedziany łuk spotyka ciemną pętlę zawiniętą w szeroki owal. Granatowe pole i ciepłe drobiny kontrastują z bielą papieru.",
+        "fap014": "Rdzawe i błękitne plamy przecinają jasne, prążkowane pętle. Czarne łuki i nakrapiane fragmenty sąsiadują z białą przestrzenią.",
+        "fap016": "Dwa pionowe pola rdzy, brzoskwini i jasnego błękitu łączy zapętlony pas szarych linii. Między barwnymi formami pozostaje biel.",
+        "fap011": "Prążkowany łuk w bordo i granacie obejmuje pionowe warstwy błękitu i rdzy. Cienkie krzywe i barwne drobiny dopełniają kompozycję.",
+        "fap018": "Dwie jasne kolumny szarozieleni i błękitu rozdziela pas bieli. Kompozycja opiera się na pionowych, półprzejrzystych warstwach.",
+        "fap036": "Jasna błękitnoszara plama zajmuje lewą stronę kompozycji. Ciemne rozlewisko i niebiesko-rdzawy akcent urozmaicają jej powierzchnię.",
+        "fap041": "Szarozielone plamy po jednej stronie i rdzawe oraz terakotowe ślady po drugiej. Szeroki pas bieli rozdziela chłodne i ciepłe pola.",
+        "fap005": "Warstwy błękitu, zieleni i żółci łączą się z drobno rysowanymi pętlami. Czarne i białe linie przechodzą przez szerokie pola koloru.",
+        "fap023": "Błękitnoszare, bursztynowe, oliwkowe i grafitowe plamy tworzą poziome warstwy. Układ przypomina rozległą linię horyzontu.",
+        "fap026": "Błękity przechodzą w piaskowe i brzoskwiniowe pasy. Kompozycja ma poziomy układ i miękkie granice między warstwami.",
+        "fap038": "Lawendowe pole przechodzi w brąz i grafit. Smukłe pionowe linie oraz kremowa, prążkowana wstęga przecinają rozmyte plamy.",
+        "fap039": "Błękitne i różowe plamy układają się schodkowo na białym tle. Dwa kobaltowe ślady zaznaczają górę kompozycji.",
+        "fap024": "Dwie formy w odcieniach barwinka i kobaltu stoją obok siebie. Gęste promieniste linie i zakrzywione pasy podkreślają ich kształty.",
+        "fap027": "Lawendowe i ciemnoniebieskie plamy otaczają jasne pole. Mocne kobaltowe ślady zaznaczają pionowy układ kompozycji.",
+        "fap030": "Jasna, półprzejrzysta pętla w kolorze barwinka. Kobaltowy łuk z drobnych linii podkreśla jej krawędź.",
+        "fap031": "Lawendowe pole zestawiono z jasną żółcią. Ciemna pozioma plama i kobaltowa linia po prawej przecinają miękkie warstwy koloru.",
+        "fap032": "Barwinkowe i szare plamy obejmują środek w kolorze indygo. Rozmyte krawędzie pigmentu tworzą zróżnicowaną fakturę.",
+        "fap004": "Błękitne plamy sąsiadują z oliwkowymi, promieniście rysowanymi formami. Półprzejrzysty kolor i wachlarzowe linie układają się na białym tle.",
+        "fap008": "Terakotowa forma zestawiona z szarobeżowym owalem. Promienisty rysunek, jasne pędy i czarne ślady uzupełniają szerokie pola koloru.",
+        "fap025": "Żółte pole z niebieskimi wstęgami, nakrapiany terakotowy pierścień i turkusowy owal. Trzy formy układają się jedna nad drugą.",
+        "fap033": "Różowa plama i jasnoniebieskie drobiny tworzą tło dla dwóch pierścieni. Rdzawe i barwinkowe promieniste linie kontrastują z miękkim kolorem.",
+        "fap019": "Bordowo-granatowy, prążkowany pierścień na tle beżu i szarości. Drobny rysunek kontrastuje z rozległym polem koloru.",
+        "fap020": "Szarozieloną plamę przecinają wysokie białe pasy. Po lewej stronie pojawia się rdzawy akcent o rozmytych krawędziach.",
+        "fap021": "Kremowe i szare plamy otaczają granatowy pierścień. Ochrowy środek i drobne prążki wyróżniają się na miękkim tle.",
+        "fap034": "Jasna szarozielona plama ciemnieje ku grafitowej krawędzi. Szerokie białe pola rozdzielają obszary pigmentu.",
+        "fap015": "Nieregularny owal łączy rdzę i grafit z jasnym błękitem. Zróżnicowana faktura podkreśla kontrast chłodnych i ciepłych barw.",
+        "fap028": "Błękitnoszary łuk zestawiono z pomarańczową pętlą o wyraźnej fakturze. Chłodne i ciepłe pola częściowo się przenikają.",
+        "fap035": "Szarozieloną plamę przecina grafitowe rozlewisko. Rdzawe ślady wprowadzają ciepły akcent do stonowanej palety.",
+        "fap040": "Szarozielona pętla zajmuje górną część kompozycji. Obok znajduje się ciemnoturkusowy pierścień z drobno rozchodzących się linii.",
+        "fap009": "Szare i piaskowe plamy zestawiono z grafitem i rdzawymi drobinami. Przez kompozycję biegną dwie pionowe wstęgi: błękitna i czarna.",
+        "fap013": "Beżowe i szare pola przecinają dwie smukłe, bordowe kolumny. Niebieski blok, jasny okrąg i cienkie łuki uzupełniają pionowy układ.",
+        "fap017": "Żółtozielone plamy zestawiono z grafitem i oliwką. Miękkie pola koloru otaczają duży, jasny pierścień.",
+        "fap022": "Pionowe wstęgi lawendy, żółci, różu i przydymionego błękitu. Jasne barwy układają się w wydłużoną kompozycję."
+      }
+    }
+  }
+]

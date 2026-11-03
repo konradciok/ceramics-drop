@@ -1,31 +1,30 @@
-import { printDisplayName } from '@/lib/print-curation';
+import { printCollectionOf, printDisplayName } from '@/lib/print-curation';
+import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import type { Graph, Organization, WithContext } from 'schema-dts';
 import type { Locale } from '@/i18n/routing';
 import type { CategorySlug, PrintDesign, Product } from '@/lib/types';
-import { getCategory, getProductsByCategory } from '@/lib/products';
+import { getCategory, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { getPrintDesigns, isVariantAvailable } from '@/lib/prints';
-import { PRICE_EUR, SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
+import { PRICE_EUR } from '@/lib/pricing';
+import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { PRINT_FRAME_COLOURS, PRINT_SIZES } from '@/lib/print-cart';
-import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME } from '@/lib/site';
+import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
-import { SHIPPING_COUNTRY } from '@/lib/feed';
-import { printShippingOf, type PrintCountry } from '@/lib/print-shipping';
+import { EU_PRINT_COUNTRIES, SHIPPING_COUNTRY } from '@/lib/feed';
+import { printShippingOf, type InternationalShippingRates, type PrintCountry } from '@/lib/print-shipping';
+import { RETURNS_POLICY } from '@/lib/returns-policy';
+import type { Currency } from '@/lib/currency';
 
 const PRINTS_SLUG = 'fine-art-prints';
 
 /** Matches the copy on /dostawa-i-zwroty (shipping.s5P / s5Li2 / s5Li3): 14-day
  *  right of withdrawal, buyer pays return shipping, refund within 14 days. */
-const RETURN_WINDOW_DAYS = 14;
+const RETURN_WINDOW_DAYS = RETURNS_POLICY.withdrawalDays;
 
-/**
- * Studio fulfilment is Poland-based regardless of the buyer's market (see
- * /dostawa-i-zwroty and o-studiu — the June drop travelled to Poland for the
- * summer), so returns are always sent back to PL even though the offer's
- * `applicableCountry` (the market the policy covers) tracks the locale.
- */
-const RETURN_POLICY_COUNTRY = 'PL';
+/** Returns go to the studio in Tenerife; the covered market follows locale. */
+const RETURN_POLICY_COUNTRY = RETURNS_POLICY.address.addressCountry;
 
 /** Resolves a Product description: an explicit CMS override, falling through
  *  to the static `notes.<slug>` array on an empty override too — `??` alone
@@ -38,18 +37,20 @@ function resolveDescription(override: string | undefined, rawNotes: unknown, not
 /**
  * Ceramics ship on the two InPost rates already advertised in feed.ts —
  * mirror them here (and reuse its `SHIPPING_COUNTRY`) so the Merchant feed
- * and this on-page `Offer.shippingDetails` never disagree. Handling/transit
- * time matches /dostawa-i-zwroty (shipping.s2P): parcels go out 1-3 business
- * days after payment, InPost usually delivers the next business day.
+ * and this on-page `Offer.shippingDetails` never disagree. `domestic` is the
+ * CMS-published InPost table checkout charges from (never the code constants).
+ * Handling/transit
+ * time is the owner-confirmed term (docs/copy-source-of-truth.md §13, shipping.s2P):
+ * orders are fulfilled within 2 business days, delivery within 5 business days.
  */
-function shippingDetailsFor(locale: Locale) {
-  const rates = locale === 'pl' ? SHIPPING_PLN : SHIPPING_EUR;
+function shippingDetailsFor(locale: Locale, domestic: ShippingRatesBundle['domestic']) {
+  const rates = locale === 'pl' ? domestic.pln : domestic.eur;
   const currency = locale === 'pl' ? 'PLN' : 'EUR';
   const addressCountry = SHIPPING_COUNTRY[locale];
   const deliveryTime = {
     '@type': 'ShippingDeliveryTime' as const,
-    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 3, unitCode: 'DAY' },
-    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 1, unitCode: 'DAY' },
+    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 2, unitCode: 'DAY' },
+    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 5, unitCode: 'DAY' },
   };
   return [
     {
@@ -68,52 +69,65 @@ function shippingDetailsFor(locale: Locale) {
 }
 
 /**
- * Ceramics-only 14-day right-of-withdrawal return policy (see /dostawa-i-zwroty).
+ * Standard ceramics and prints: 14-day withdrawal policy.
  * `applicableCountry` is the market the offer/policy covers (tracks the
  * locale's shipping destination); `returnPolicyCountry` is the fixed address
  * returns are actually sent back to.
  */
-function merchantReturnPolicy(locale: Locale) {
+function standardReturnPolicy() {
   return {
     '@type': 'MerchantReturnPolicy' as const,
     returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
     merchantReturnDays: RETURN_WINDOW_DAYS,
     returnMethod: 'https://schema.org/ReturnByMail' as const,
     returnFees: 'https://schema.org/ReturnShippingFees' as const,
-    applicableCountry: SHIPPING_COUNTRY[locale],
     returnPolicyCountry: RETURN_POLICY_COUNTRY,
   };
+}
+
+function merchantReturnPolicy(locale: Locale) {
+  return { ...standardReturnPolicy(), applicableCountry: SHIPPING_COUNTRY[locale] };
+}
+
+function printMarketCountries(currency: 'pln' | 'eur' | 'gbp'): readonly PrintCountry[] {
+  return currency === 'pln' ? ['PL'] : currency === 'gbp' ? ['GB'] : EU_PRINT_COUNTRIES;
 }
 
 /**
  * Prints ship by Prodigi courier — no InPost rates apply. Uses the locale's
  * representative market (`SHIPPING_COUNTRY`) with Prodigi's real per-country
- * rate for both the loose and framed variant (see print-shipping.ts).
+ * rate for both the loose and framed variant (see print-shipping.ts). `rates`
+ * is the admin-set FX config, threaded through so shipping converts at the
+ * same rate the item price uses (see fromPriceOf/priceOfVariant call sites)
+ * instead of print-shipping.ts's hardcoded fallback constants. `table` is the
+ * CMS-published international table checkout charges from.
  */
-function printShippingDetailsFor(locale: Locale) {
-  const country = SHIPPING_COUNTRY[locale] as PrintCountry;
-  const currency = locale === 'pl' ? 'pln' : 'eur';
-  const priceCurrency = locale === 'pl' ? 'PLN' : 'EUR';
-  return [
+function printShippingDetailsFor(
+  countries: readonly PrintCountry[],
+  currency: 'pln' | 'eur' | 'gbp',
+  priceCurrency: 'PLN' | 'EUR' | 'GBP',
+  rates: PrintPricingConfig,
+  table: InternationalShippingRates,
+) {
+  return countries.flatMap((country) => [
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, false, currency, rates, table), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
     {
       '@type': 'OfferShippingDetails' as const,
-      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency), currency: priceCurrency },
+      shippingRate: { '@type': 'MonetaryAmount' as const, value: printShippingOf(country, true, currency, rates, table), currency: priceCurrency },
       shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
     },
-  ];
+  ]);
 }
 
-/** Prints are made-to-order and not returnable (see buildPrintShippingConfirmation
- *  in email.ts) — a distinct policy from ceramics' 14-day window, not an omission. */
-function printReturnPolicy() {
+/** Standard print-on-demand variants share the withdrawal policy. */
+function printReturnPolicy(countries: readonly PrintCountry[]) {
   return {
-    '@type': 'MerchantReturnPolicy' as const,
-    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted' as const,
+    ...standardReturnPolicy(),
+    applicableCountry: countries.length === 1 ? countries[0] : [...countries],
   };
 }
 
@@ -139,15 +153,19 @@ function sellableVariantPrices(
   return prices;
 }
 
-/** Locale → (currency code pair) for print schemas — locale default (pl→PLN, else EUR). */
-function printCurrencyFor(locale: Locale): { currency: 'pln' | 'eur'; priceCurrency: 'PLN' | 'EUR' } {
+/** The PDP supplies its resolved request currency so a Merchant landing URL
+ * always has schema matching the visible offer. */
+function printCurrencyFor(locale: Locale, displayCurrency?: Currency): { currency: 'pln' | 'eur' | 'gbp'; priceCurrency: 'PLN' | 'EUR' | 'GBP' } {
   if (locale === 'pl') return { currency: 'pln', priceCurrency: 'PLN' };
-  return { currency: 'eur', priceCurrency: 'EUR' };
+  const currency = displayCurrency ?? (locale === 'en' ? 'gbp' : 'eur');
+  return currency === 'gbp'
+    ? { currency: 'gbp', priceCurrency: 'GBP' }
+    : { currency: 'eur', priceCurrency: 'EUR' };
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
-function availabilityFor(sold: boolean) {
-  return sold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock';
+function availabilityFor(sold: boolean, available: boolean) {
+  return sold ? 'https://schema.org/SoldOut' : available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 }
 
 /**
@@ -162,6 +180,9 @@ export function organizationSchema(): WithContext<Organization> {
     url: SITE_URL,
     logo: `${SITE_URL}/logotype.png`,
     email: EMAIL.contact,
+    taxID: STUDIO.taxId,
+    address: { '@type': 'PostalAddress', ...STUDIO.address },
+    sameAs: [STUDIO.instagram, STUDIO.facebook],
   };
 }
 
@@ -182,6 +203,8 @@ type CollectionArgs = {
   showroomIds?: readonly string[];
   /** CMS-resolved per-product notes (id → text) from `getProductNotes(slug, locale)`. */
   notes?: Record<string, string>;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
@@ -190,7 +213,7 @@ type CollectionArgs = {
  * Pieces are one-of-a-kind, so the price is the shared family price and
  * availability degrades to `SoldOut` once a piece sells.
  */
-export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], showroomIds = [], notes }: CollectionArgs): Promise<Graph> {
+export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], showroomIds = [], notes, shipping }: CollectionArgs): Promise<Graph> {
   const category = getCategory(slug);
   const products = await getProductsByCategory(slug);
   const sold = new Set(soldIds);
@@ -220,7 +243,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
           position: i + 1,
           item: {
             '@type': 'Product',
-            name: `${singular} Nº ${p.num}`,
+            name: productDisplayName(p, singular),
             description: resolveDescription(notes?.[p.id], rawNotes, p.noteIndex),
             image: `${SITE_URL}${p.image}`,
             category: categoryName,
@@ -229,9 +252,9 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               '@type': 'Offer',
               price: locale === 'pl' ? category.price : PRICE_EUR[slug],
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
-              availability: availabilityFor(p.sold || sold.has(p.id) || showroom.has(p.id)),
+              availability: availabilityFor(p.sold || sold.has(p.id), p.onlineAvailable === true && !showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
-              shippingDetails: shippingDetailsFor(locale),
+              shippingDetails: shippingDetailsFor(locale, shipping.domestic),
               hasMerchantReturnPolicy: merchantReturnPolicy(locale),
             },
           },
@@ -250,6 +273,10 @@ type PrintCollectionArgs = {
   notes?: Record<string, string>;
   /** Global print price list — loaded once by the page and shared with the screen. */
   pricing: PrintPricingConfig;
+  /** CMS-resolved collection definitions (id → collection membership) — loaded once by the page. */
+  definitions?: PrintCollectionDefinition[];
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
@@ -258,13 +285,12 @@ type PrintCollectionArgs = {
  * `AggregateOffer` (lowPrice/highPrice across its sellable variants) since a
  * print is configurable, not a single SKU.
  */
-export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }: PrintCollectionArgs): Promise<Graph> {
+export async function printCollectionSchema({ locale, t, tRaw, notes, pricing, definitions, shipping }: PrintCollectionArgs): Promise<Graph> {
   const designs = await getPrintDesigns();
-  const { currency, priceCurrency } = printCurrencyFor(locale);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+  const collectionUrl = absoluteUrl(locale, '/sklep');
   const rawNotes = tRaw?.(`notes.${PRINTS_SLUG}`);
 
   return {
@@ -281,32 +307,142 @@ export async function printCollectionSchema({ locale, t, tRaw, notes, pricing }:
         '@type': 'ItemList',
         name: categoryName,
         numberOfItems: designs.length,
-        itemListElement: designs.map((d, i) => {
-          const prices = sellableVariantPrices(d, currency, pricing);
-          return {
-            '@type': 'ListItem',
+        itemListElement: printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions, shipping }),
+      },
+    ],
+  };
+}
+
+type PrintListItemsArgs = {
+  designs: PrintDesign[];
+  locale: Locale;
+  singular: string;
+  categoryName: string;
+  notes?: Record<string, string>;
+  rawNotes?: unknown;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+  shipping: ShippingRatesBundle;
+};
+
+/** `ItemList` entries (Product + AggregateOffer per design) shared by the prints hub and collection pages. */
+function printListItems({ designs, locale, singular, categoryName, notes, rawNotes, pricing, definitions, shipping }: PrintListItemsArgs) {
+  const { currency, priceCurrency } = printCurrencyFor(locale);
+  const countries = printMarketCountries(currency);
+  return designs.map((d, i) => {
+    const prices = sellableVariantPrices(d, currency, pricing);
+    return {
+      '@type': 'ListItem' as const,
+      position: i + 1,
+      item: {
+        '@type': 'Product' as const,
+        name: printDisplayName(d, singular, definitions),
+        description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
+        image: `${SITE_URL}${d.image}`,
+        category: categoryName,
+        brand: { '@type': 'Brand' as const, name: PRODUCT_BRAND_NAME },
+        offers: {
+          '@type': 'AggregateOffer' as const,
+          priceCurrency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability: 'https://schema.org/InStock' as const,
+          url: absoluteUrl(locale, `/fine-art-prints/${d.id}`),
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing, shipping.international),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
+        },
+      },
+    };
+  });
+}
+
+type PrintCollectionPageSchemaArgs = {
+  locale: Locale;
+  t: (key: string) => string;
+  tRaw?: (key: string) => unknown;
+  notes?: Record<string, string>;
+  pricing: PrintPricingConfig;
+  definitions?: PrintCollectionDefinition[];
+  shipping: ShippingRatesBundle;
+  slug: string;
+  name: string;
+  description?: string;
+  designs: PrintDesign[];
+};
+
+/** `@graph` for a single print-collection page: `CollectionPage` + `BreadcrumbList` (Home › Collections › Collection) + `ItemList`. No ratings. */
+export function printCollectionPageSchema({ locale, t, tRaw, notes, pricing, definitions, shipping, slug, name, description, designs }: PrintCollectionPageSchemaArgs): Graph {
+  const categoryName = t('nav.fineArtPrints');
+  const pageUrl = absoluteUrl(locale, `/kolekcje/${slug}`);
+  const items = printListItems({
+    designs, locale, singular: t('product.print'), categoryName, notes, rawNotes: tRaw?.('notes.fine-art-prints'), pricing, definitions, shipping,
+  });
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': pageUrl,
+        url: pageUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: { '@type': 'ItemList', numberOfItems: items.length, itemListElement: items },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+          { '@type': 'ListItem', position: 3, name, item: pageUrl },
+        ],
+      },
+    ],
+  };
+}
+
+export type PrintCollectionHubCard = { slug: string; name: string; image: string; count: number; description?: string };
+
+/** `@graph` for the /kolekcje hub: `CollectionPage` + `ItemList` of the collection pages + `BreadcrumbList`. */
+export function printCollectionsHubSchema({ locale, t, cards, description }: {
+  locale: Locale;
+  t: (key: string) => string;
+  cards: PrintCollectionHubCard[];
+  description?: string;
+}): Graph {
+  const hubUrl = absoluteUrl(locale, '/kolekcje');
+  const name = t('nav.kolekcje');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': hubUrl,
+        url: hubUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: cards.length,
+          itemListElement: cards.map((c, i) => ({
+            '@type': 'ListItem' as const,
             position: i + 1,
-            item: {
-              '@type': 'Product',
-              name: printDisplayName(d, singular),
-              description: resolveDescription(notes?.[d.id], rawNotes, d.noteIndex),
-              image: `${SITE_URL}${d.image}`,
-              category: categoryName,
-              brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
-              offers: {
-                '@type': 'AggregateOffer',
-                priceCurrency,
-                lowPrice: Math.min(...prices),
-                highPrice: Math.max(...prices),
-                offerCount: prices.length,
-                availability: 'https://schema.org/InStock',
-                url: absoluteUrl(locale, `/${PRINTS_SLUG}/${d.id}`),
-                shippingDetails: printShippingDetailsFor(locale),
-                hasMerchantReturnPolicy: printReturnPolicy(),
-              },
-            },
-          };
-        }),
+            url: absoluteUrl(locale, `/kolekcje/${c.slug}`),
+            name: c.name,
+            image: `${SITE_URL}${c.image}`,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name, item: hubUrl },
+        ],
       },
     ],
   };
@@ -320,22 +456,36 @@ type PrintProductArgs = {
   description?: string;
   /** Global print price list — loaded once by the PDP and shared with the screen. */
   pricing: PrintPricingConfig;
+  /** CMS-resolved collection definitions (id → collection membership) — loaded once by the PDP. */
+  definitions?: PrintCollectionDefinition[];
+  displayCurrency?: Currency;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
  * `@graph` for a print PDP: `BreadcrumbList` + a `Product` node whose offer is an
  * `AggregateOffer` spanning the cheapest→priciest sellable variant.
  */
-export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing }: PrintProductArgs): Graph {
-  const { currency, priceCurrency } = printCurrencyFor(locale);
+export function printProductSchema({ design, locale, t, tRaw, description: descriptionOverride, pricing, definitions, displayCurrency, shipping }: PrintProductArgs): Graph {
+  const { currency, priceCurrency } = printCurrencyFor(locale, displayCurrency);
+  const countries = printMarketCountries(currency);
   const categoryName = t('nav.fineArtPrints');
   const singular = t('product.print');
-  const name = printDisplayName(design, singular);
+  const name = printDisplayName(design, singular, definitions);
   const rawNotes = tRaw(`notes.${PRINTS_SLUG}`);
   const description = resolveDescription(descriptionOverride, rawNotes, design.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
-  const collectionUrl = absoluteUrl(locale, `/${PRINTS_SLUG}`);
+  const collection = printCollectionOf(design.id, definitions);
   const productUrl = absoluteUrl(locale, `/${PRINTS_SLUG}/${design.id}`);
+  const offerUrl = displayCurrency ? `${productUrl}?currency=${currency}` : productUrl;
+  // Home › Collections › {Collection} › Print; designs in no collection fall back to Home › Shop › Print.
+  const trail = collection
+    ? [
+        { name: t('nav.kolekcje'), item: absoluteUrl(locale, '/kolekcje') },
+        { name: collection.name, item: absoluteUrl(locale, `/kolekcje/${collection.slug}`) },
+      ]
+    : [{ name: categoryName, item: absoluteUrl(locale, '/sklep') }];
   const images = [design.image, ...(design.gallery ?? [])].map((img) => `${SITE_URL}${img}`);
   const prices = sellableVariantPrices(design, currency, pricing);
 
@@ -346,8 +496,8 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: SITE_NAME, item: homeUrl },
-          { '@type': 'ListItem', position: 2, name: categoryName, item: collectionUrl },
-          { '@type': 'ListItem', position: 3, name, item: productUrl },
+          ...trail.map((crumb, i) => ({ '@type': 'ListItem' as const, position: i + 2, ...crumb })),
+          { '@type': 'ListItem', position: trail.length + 2, name, item: productUrl },
         ],
       },
       {
@@ -366,9 +516,9 @@ export function printProductSchema({ design, locale, t, tRaw, description: descr
           highPrice: Math.max(...prices),
           offerCount: prices.length,
           availability: 'https://schema.org/InStock',
-          url: productUrl,
-          shippingDetails: printShippingDetailsFor(locale),
-          hasMerchantReturnPolicy: printReturnPolicy(),
+          url: offerUrl,
+          shippingDetails: printShippingDetailsFor(countries, currency, priceCurrency, pricing, shipping.international),
+          hasMerchantReturnPolicy: printReturnPolicy(countries),
         },
       },
     ],
@@ -381,17 +531,19 @@ type ProductArgs = {
   t: (key: string) => string;
   tRaw: (key: string) => unknown;
   description?: string;
+  /** The CMS-published shipping table checkout charges from (see getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
 };
 
 /**
  * `@graph` for an individual product page: a `BreadcrumbList` (Home → category → product)
  * plus a `Product` node with images, description, and PLN offer.
  */
-export function productSchema({ product, locale, t, tRaw, description: descriptionOverride }: ProductArgs): Graph {
+export function productSchema({ product, locale, t, tRaw, description: descriptionOverride, shipping }: ProductArgs): Graph {
   const category = getCategory(product.category);
   const singular = t(`product.${category.singularKey}`);
   const categoryName = t(category.nameKey);
-  const name = `${singular} Nº ${product.num}`;
+  const name = productDisplayName(product, singular);
   const rawNotes = tRaw(`notes.${product.category}`);
   const description = resolveDescription(descriptionOverride, rawNotes, product.noteIndex);
   const homeUrl = absoluteUrl(locale, '/');
@@ -424,9 +576,9 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           price: locale === 'pl' ? product.price : PRICE_EUR[product.category],
           priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
           // Showroom pieces are not purchasable — never advertise them InStock.
-          availability: availabilityFor(product.sold || product.showroom === true),
+          availability: availabilityFor(product.sold, product.onlineAvailable === true && !product.showroom),
           url: productUrl,
-          shippingDetails: shippingDetailsFor(locale),
+          shippingDetails: shippingDetailsFor(locale, shipping.domestic),
           hasMerchantReturnPolicy: merchantReturnPolicy(locale),
         },
       },

@@ -4,22 +4,20 @@
    "request a similar piece" form, and a link to the normal PDP.
    Server component; the interest form + view analytics are client islands.
    ============================================================ */
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { CATEGORIES } from '@/lib/products';
-import { getCurrency } from '@/lib/currency.server';
-import { currencyFormatter } from '@/lib/format';
-import { priceOfCurrency } from '@/lib/pricing';
+import { CATEGORIES, productDisplayName } from '@/lib/products';
 import { srcSet } from '@/lib/images';
 import { richTags } from '@/components/ui/richTags';
 import type { ShowroomEntry } from '@/lib/inventory';
-import { ShowroomInterestForm } from './ShowroomInterestForm';
+import { Gallery } from './Gallery';
+import { EMAIL } from '@/lib/email-addresses';
 import { ShowroomViewAnalytics } from './ShowroomViewAnalytics';
 
 export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) {
-  const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
-  const currency = await getCurrency(locale);
-  const { fmt } = currencyFormatter(currency);
+  const t = await getTranslations();
+  const online = entries.filter(({ product }) => product.onlineAvailable === true);
+  const archive = entries.filter(({ product }) => product.onlineAvailable !== true);
 
   return (
     <>
@@ -30,18 +28,27 @@ export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) 
             <div className="eyebrow">{t('showroom.eyebrow')}</div>
             <h1>{t.rich('showroom.title', richTags)}</h1>
             <p className="lead">{t('showroom.lead')}</p>
+            <p>{t('ceramics.visit')}</p>
+            <a className="btn btn-primary" href={`mailto:${EMAIL.contact}`}>{t('ceramics.visitCta')}</a>
           </div>
         </div>
       </section>
 
+      {online.length > 0 ? (
+        <section aria-labelledby="ceramics-online-title">
+          <div className="shop-head"><h2 id="ceramics-online-title">{t('ceramics.dropTitle')}</h2><p>{t('ceramics.dropLead')}</p></div>
+          <Gallery products={online.map(({ product }) => product)} />
+        </section>
+      ) : <p className="shop-hint">{t(entries.some(({ product }) => product.saleState === 'unknown') ? 'ceramics.availabilityError' : 'ceramics.noDrop')}</p>}
+      <div className="shop-head"><h2>{t('ceramics.archiveTitle')}</h2><p>{t('ceramics.archiveLead')}</p></div>
       {entries.length === 0 ? (
         <p className="shop-empty">{t('showroom.empty')}</p>
       ) : (
         <div className="showroom-grid">
-          {entries.map(({ product, dropLabel }) => {
+          {archive.map(({ product, dropLabel }) => {
             const cat = CATEGORIES[product.category];
             const name = t(`product.${cat.singularKey}`);
-            const displayName = `${name} Nº ${product.num}`;
+            const displayName = productDisplayName(product, name);
             return (
               <div className="showroom-card" data-testid="showroom-card" data-product-id={product.id} key={product.id}>
                 <Link href={`/${product.category}/${product.id}`} className="showroom-card-media" aria-label={displayName}>
@@ -53,18 +60,13 @@ export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) 
                     alt={displayName}
                     loading="lazy"
                   />
-                  <span className="showroom-tag">{t('gallery.showroom')}</span>
+                  <span className="showroom-tag">{t('ceramics.archived')}</span>
                 </Link>
                 <div className="showroom-card-body">
                   <div className="eyebrow">{dropLabel ?? t(cat.nameKey)}</div>
                   <h3>
                     <Link href={`/${product.category}/${product.id}`}>{displayName}</Link>
                   </h3>
-                  <div className="showroom-card-price">
-                    {fmt(priceOfCurrency(product, currency))}
-                    {product.sold && <span className="showroom-card-sold"> · {t('gallery.sold')}</span>}
-                  </div>
-                  <ShowroomInterestForm productId={product.id} />
                 </div>
               </div>
             );

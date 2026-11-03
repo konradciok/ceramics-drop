@@ -93,8 +93,11 @@ describe('updateProductStatus guarded RPC', () => {
   });
 });
 
-function supabaseForBackfill(error: { message: string } | null = null) {
-  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+function supabaseForBackfill(
+  error: { message: string } | null = null,
+  data: unknown = { skipped_cms_owned_ids: [] },
+) {
+  const rpc = vi.fn().mockResolvedValue({ data, error });
   return { supabase: { rpc } as unknown as SupabaseClient, rpc };
 }
 
@@ -129,6 +132,21 @@ describe('backfillCatalog print publication safety', () => {
       'atomic catalog backfill: duplicate key',
     );
   });
+
+  it('returns an empty skippedCmsOwnedIds on an ordinary run', async () => {
+    const { supabase } = supabaseForBackfill();
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
+  });
+
+  it('surfaces skippedCmsOwnedIds from the RPC response', async () => {
+    const { supabase } = supabaseForBackfill(null, { skipped_cms_owned_ids: ['k01', 'fap001'] });
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: ['k01', 'fap001'] });
+  });
+
+  it('defaults to an empty list if the RPC response is missing the field entirely', async () => {
+    const { supabase } = supabaseForBackfill(null, null);
+    await expect(backfillCatalog(supabase)).resolves.toEqual({ skippedCmsOwnedIds: [] });
+  });
 });
 
 /* ============================================================
@@ -160,6 +178,8 @@ function ceramicRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
     status: 'active',
     seo_title: null,
     seo_description: null,
+    title: null,
+    description: null,
     drop_id: 'drop-1',
     note_index: 1,
     ...over,
@@ -309,5 +329,32 @@ describe('fail-closed read guard — per-reader behavior', () => {
     expect(result.id).toBe('k02');
     expect(result.price_pln).toBe(0); // write result surfaced as-is, not withheld
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('catalog load timeout budget', () => {
+  it.each(['ceramic', 'print'] as const)('%s shares one deadline across all query stages', async (type) => {
+    const signals: AbortSignal[] = [];
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const from = vi.fn((table: string) => {
+      const data = table === 'products'
+        ? [type === 'ceramic' ? ceramicRow({ id: 'k01', price_pln: 120 }) : PRINT_DRAFT]
+        : [];
+      const chain = makeChain({ data, error: null });
+      chain.abortSignal = vi.fn((signal: AbortSignal) => {
+        signals.push(signal);
+        return chain;
+      });
+      return chain;
+    });
+    try {
+      const client = { from } as unknown as SupabaseClient;
+      await (type === 'ceramic' ? readCeramicProducts(client) : readPrintDesigns(client));
+      expect(signals).toHaveLength(type === 'ceramic' ? 2 : 3);
+      expect(new Set(signals).size).toBe(1);
+      expect(timeout).toHaveBeenCalledExactlyOnceWith(5000);
+    } finally {
+      timeout.mockRestore();
+    }
   });
 });

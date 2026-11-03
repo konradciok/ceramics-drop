@@ -11,4 +11,7 @@ describe('isUnderfulfilled', () => {
   it('returns true when under-fulfilled', () => {
     expect(isUnderfulfilled(1, 2)).toBe(true);
   });
+  it('returns true when pieces were sold but the order has no ceramic items (lost order_items insert)', () => {
+    expect(isUnderfulfilled(2, 0)).toBe(true);
+  });
 });

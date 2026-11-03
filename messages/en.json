@@ -1,22 +1,27 @@
 {
   "returns": {
     "eyebrow": "Returns",
-    "heading": "Start a return",
-    "intro": "Enter your order number (it's in your shipping-confirmation email) and I'll prepare a return label. You have 14 days from delivery.",
+    "heading": "Returns and complaints",
+    "intro": "To withdraw from a purchase or report a problem, email ania@ciok.art. Return the item to the studio address:",
     "label": "Order number",
-    "button": "Start a return",
+    "button": "Email about a return",
     "success": "Return request received. I'll email your label once InPost confirms the shipment.",
-    "ineligible": "No return-eligible order found. Check the number or write to hej@ciok.art.",
-    "unavailable": "Returns are temporarily unavailable. Try again later or write to hej@ciok.art.",
+    "ineligible": "No return-eligible order found. Check the number or write to ania@ciok.art.",
+    "unavailable": "Returns are temporarily unavailable. Try again later or write to ania@ciok.art.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "error": "Something went wrong. Please try again shortly.",
-    "moreInfo": "More about shipping & returns"
+    "moreInfo": "More about shipping & returns",
+    "instructions": "To withdraw from a purchase or report a problem, email ania@ciok.art. Return the item to the studio address:",
+    "returnRegion": "Tenerife, Spain — Canary Islands",
+    "returnCost": "The customer pays ordinary return shipping. For damage or a product that does not match the order, contact the studio before sending it back.",
+    "optionalOrder": "Order number (optional)",
+    "noAccount": "No account is required. You can give notice of withdrawal by email; prior approval from the studio is not required."
   },
   "account": {
     "eyebrow": "Account",
     "heading": "Your account",
     "unavailableH": "Customer accounts aren't available yet",
-    "unavailableP": "Sign-in hasn't been switched on in this shop yet. Check back soon or write to hej@ciok.art.",
+    "unavailableP": "Sign-in hasn't been switched on in this shop yet. Check back soon or write to ania@ciok.art.",
     "signInH": "Sign in",
     "signInP": "See your order history and track shipments. An account is created automatically the first time you sign in.",
     "continueGoogle": "Continue with Google",
@@ -59,9 +64,9 @@
       "cancelled": "Cancelled"
     }
   },
-  "announce": "One studio — June-drop ceramics and paintings as fine art prints",
+  "announce": "One studio — ceramics and paintings as fine art prints",
   "title": {
-    "home": "Anna Ciok Ceramics — Paintings & Fine Art Prints",
+    "home": "Anna Ciok Studio — Paintings & Fine Art Prints",
     "kubki": "Mugs",
     "wazony": "Small vases",
     "wazonySrednie": "Medium vases",
@@ -78,15 +83,16 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
-    "sklep": "All pieces",
-    "showroom": "Showroom",
+    "refundPolicy": "Refund policy",
+    "sklep": "Fine Art Print",
+    "showroom": "Ceramics",
     "gallery": "Gallery",
-    "fineArtPrints": "Fine Art Prints",
+    "fineArtPrints": "Fine Art Print",
     "giftCard": "Gift Card"
   },
   "nav": {
     "sklep": "Shop",
-    "showroom": "Showroom",
+    "showroom": "Ceramics",
     "gallery": "Gallery",
     "kubki": "Mugs",
     "wazony": "Small vases",
@@ -97,11 +103,12 @@
     "talerzeDuze": "Large plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
-    "fineArtPrints": "Fine Art Prints",
+    "fineArtPrints": "Fine Art Print",
     "studio": "Studio",
     "kontakt": "Contact",
     "konto": "Account",
-    "giftCard": "Gift Card"
+    "giftCard": "Gift Card",
+    "kolekcje": "Collections"
   },
   "aria": {
     "cart": "Cart",
@@ -129,6 +136,7 @@
     "dostawa": "Shipping & returns",
     "regulamin": "Terms",
     "polityka": "Privacy policy",
+    "refundPolicy": "Refund policy",
     "copy": "© 2026 Anna Ciok — ceramics and painting, every piece by one maker",
     "giftCard": "Gift Card"
   },
@@ -151,11 +159,11 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Retrospective",
-    "title": "Showroom — pieces <em>from previous drops.</em>",
-    "lead": "These pieces are no longer for sale. Browse them and let us know if you'd like a similar piece in a future drop.",
-    "empty": "The showroom is empty for now.",
-    "pdpCopy": "This piece was part of a previous ceramic drop and is no longer available. You can save it as inspiration and let us know if you'd like to see similar pieces in a future drop.",
+    "eyebrow": "Ceramics",
+    "title": "Ceramics",
+    "lead": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
+    "empty": "Availability could not be checked. Please try again shortly.",
+    "pdpCopy": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
     "interestCta": "Request a similar piece",
     "interestThanks": "Thank you — we'll be in touch when something similar appears.",
     "interestError": "Something went wrong. Please try again.",
@@ -334,6 +342,8 @@
     "pay": "Pay now",
     "payProcessing": "Processing…",
     "soldOut": "Some pieces were just sold and have been removed from your cart.",
+    "unavailableRemoved": "Some pieces are no longer available and have been removed from your cart.",
+    "loadError": "Couldn’t load your cart. Please check your connection and try again.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "checkoutError": "Couldn’t start payment. Please try again shortly.",
     "notForSale": "This piece has been withdrawn from sale and can no longer be purchased.",
@@ -344,6 +354,7 @@
     "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue.",
     "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later.",
     "printAssetError": "Something went wrong for a moment. Please try again.",
+    "printPricingUnavailable": "We couldn't fetch the current print price. Please try again shortly.",
     "promo": {
       "label": "Promo code",
       "have": "I have a promo code",
@@ -362,12 +373,12 @@
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
-    "paczkomatD": "Pick up from your chosen parcel locker, usually 1–2 business days after I hand the parcel over.",
+    "paczkomatD": "Pick up from your chosen parcel locker, delivery within 5 business days.",
     "paczkomatPrice": "from {price}",
     "courierT": "InPost Courier",
-    "courierD": "Delivery to your address, usually 1–2 business days after I hand the parcel over.",
+    "courierD": "Delivery to your address within 5 business days.",
     "pickupT": "Personal pickup",
-    "pickupD": "In Warsaw, by appointment.",
+    "pickupD": "In Tenerife (San Pedro Abajo 12, Guimar), by appointment.",
     "printT": "Courier delivery",
     "printD": "Shipped by our fine-art print partner to your address in the EU and UK."
   },
@@ -429,17 +440,17 @@
       "Printed to order",
       "200 gsm fine art paper",
       "Frames: black, light or dark brown",
-      "Delivery across the EU & UK · 5–10 days"
+      "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
     ],
     "storyImageAlt": "Anna Ciok in her ceramics studio",
-    "editorialImageAlt": "Hand-painted Anna Ciok ceramics in sunlight",
+    "editorialImageAlt": "Framed Anna Ciok works in a sunlit interior",
     "storyEyebrow": "About the artist",
     "storyTitle": "Every piece begins <em>as a painting.</em>",
     "storyP1": "I’m Anna. I paint in ink and watercolour on paper — each composition starts as a single, hand-made piece in my studio.",
     "storyP2": "Selected paintings enter a fine art edition: printed on archival-quality paper and shipped in the format you choose — unframed or in a wooden frame.",
     "storyCta": "Browse the print collections",
     "collectionsEyebrow": "Collections",
-    "collectionsTitle": "Nine threads, <em>one studio.</em>",
+    "collectionsTitle": "Threads of <em>one studio.</em>",
     "collectionsLead": "Each collection is its own series of paintings — pick the mood, colour and rhythm that suits your space.",
     "collectionsCount": "{count, plural, one {# piece} other {# pieces}}",
     "collectionsCta": "All collections",
@@ -450,20 +461,20 @@
     "craft2H": "You pick <em>size and frame</em>",
     "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
     "craft3H": "We print <em>and ship</em>",
-    "craft3P": "Your print is made and shipped by our partner Prodigi within 5–10 business days, to your home address anywhere in the EU or UK.",
+    "craft3P": "Your print is made and shipped by our print partner. Orders are fulfilled within 2 business days, and delivery to your home address in the EU or UK takes up to 5 business days.",
     "lgMaterialH": "Material & finish",
     "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
     "lgShippingH": "Production & shipping",
-    "lgShippingP": "Every print is made to order by our partner Prodigi and shipped to your home address anywhere in the EU or UK — usually within 5–10 business days.",
+    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
     "ctBtn": "Write a message",
     "ctLEmail": "Email",
     "ctLIg": "Instagram",
-    "ctVIg": "@ania.ciok.art",
+    "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Prints shipping",
-    "ctVShipPrints": "EU & UK · 5–10 business days"
+    "ctVShipPrints": "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
   },
   "printCollections": {
     "inne": "More prints"
@@ -514,16 +525,6 @@
       "eyebrow": "June drop — 10 pieces",
       "title": "Wavy-rim bowls <em>Nº 01–10</em>",
       "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
-    },
-    "sklep": {
-      "eyebrow": "June drop — 125 pieces",
-      "title": "All <em>pieces</em>",
-      "lead": "The whole collection in one place — mugs, vases, plates and bowls. Every item is one of a kind. Browse by category and mark your favourites."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Open edition",
-      "title": "Fine Art <em>Prints</em>",
-      "lead": "Ceramic motifs printed on 200 g/m² Fine Art paper. Choose your size and framing — printed and shipped via Prodigi."
     }
   },
   "studio": {
@@ -548,9 +549,9 @@
     "fact3K": "Media",
     "fact3V": "Ceramics <em>& watercolour</em>",
     "fact3D": "Some compositions stay on paper and enter a fine art edition. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
-    "fact4K": "Ceramics shipping",
-    "fact4V": "1–3 <em>days</em>",
-    "fact4D": "I pack and ship ceramics myself within 1–3 business days across Poland. Fine art prints are made and shipped by our partner Prodigi, usually within 5–10 days, anywhere in the EU or UK.",
+    "fact4K": "Order fulfilment",
+    "fact4V": "up to 2 <em>days</em>",
+    "fact4D": "Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. I pack and ship ceramics myself; fine art prints are made and shipped by our print partner.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
@@ -558,7 +559,7 @@
     "p2H": "Two <em>paths</em>",
     "p2P": "Some compositions stay on paper and enter a fine art edition as prints. The rest I carry onto tableware: I apply glaze and paint the motif by hand, straight onto the ceramic.",
     "p3H": "I fire <em>or print</em>",
-    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base. Fine art prints are printed on paper and shipped by our partner Prodigi.",
+    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base. Fine art prints are printed on paper and shipped by our print partner.",
     "ctaH": "One studio, <em>two ways to live with art.</em>",
     "ctaP": "Ceramics exist only once — when a piece finds its home, it leaves the shop for good. Fine art prints are made to order, so the composition you love can always hang in yours.",
     "ctaB1": "See the ceramics",
@@ -574,26 +575,26 @@
     "fEmailPh": "you@example.com",
     "fTopic": "What’s it about",
     "topic1": "Question about a drop piece",
-    "topic2": "Pickup in Warsaw",
+    "topic2": "Pickup in Tenerife",
     "topic3": "Order for a special occasion",
     "topic4": "Collaboration / wholesale",
     "topic5": "Something else",
     "fMsg": "Your message",
     "fMsgPh": "Tell me how I can help…",
     "submit": "Send message",
-    "note": "The fastest way to reach me is straight to my inbox — <strong>hej@ciok.art</strong> — or on Instagram.",
+    "note": "The fastest way to reach me is straight to my inbox — <strong>ania@ciok.art</strong> — or on Instagram.",
     "sentH": "Almost there — <em>check your email app.</em>",
-    "sentP": "Your email should have opened with the message ready to send. If nothing popped up, write to me directly at <link>hej@ciok.art</link> or on Instagram — I usually answer the same day.",
-    "mailtoSubject": "[Anna Ciok Ceramics] {topic}",
+    "sentP": "Your email should have opened with the message ready to send. If nothing popped up, write to me directly at <link>ania@ciok.art</link> or on Instagram — I usually answer the same day.",
+    "mailtoSubject": "[Anna Ciok Studio] {topic}",
     "mailtoTruncated": "Message truncated — please paste the rest before sending",
     "sideH": "Fastest ways to reach me",
     "lEmail": "Email",
     "lIg": "Instagram",
-    "vIg": "@ania.ciok.art",
+    "vIg": "@anna.ciok.art",
     "lStudio": "Pickup",
-    "vStudio": "Warsaw — pickup by appointment",
+    "vStudio": "Tenerife — pickup by appointment",
     "lShip": "Shipping",
-    "vShip": "Poland · ships in 1–3 business days",
+    "vShip": "Fulfilment within 2 business days, delivery within 5 business days",
     "lReply": "I reply",
     "vReply": "Usually the same day"
   },
@@ -605,25 +606,25 @@
     "toc1": "Shipping",
     "toc2": "Turnaround",
     "toc3": "Packing",
-    "toc4": "Pickup in Warsaw",
+    "toc4": "Pickup",
     "toc5": "Returns",
     "toc6": "Damage",
-    "updated": "Updated: June 2026",
+    "updated": "Updated: October 2026",
     "s1H": "Shipping",
-    "s1P": "I ship by <strong>InPost Parcel Locker (from 20 zł)</strong> or <strong>courier (30 zł)</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
-    "s1Li1": "InPost Parcel Locker, all of Poland — from 20 zł",
-    "s1Li1b": "InPost courier, all of Poland — 30 zł",
-    "s1Li2": "Pickup in Warsaw — free",
+    "s1P": "I ship by <strong>InPost Parcel Locker (from {locker})</strong> or <strong>courier ({courier})</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1Li1": "InPost Parcel Locker, all of Poland — from {locker}",
+    "s1Li1b": "InPost courier, all of Poland — {courier}",
+    "s1Li2": "Pickup in Tenerife — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
     "s2H": "Turnaround",
-    "s2P": "The June-drop pieces are finished and already waiting in Poland, so there’s no production time. I send the parcel within <strong>1–3 business days</strong> of the payment clearing, and the courier usually delivers the next day.",
+    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. Orders are fulfilled within <strong>2 business days</strong> of the payment clearing, with delivery within <strong>5 business days</strong>.",
     "s2Note": "I pack everything myself, between studio work and the next firings. If you need a specific date, write to me and I’ll check what is possible.",
     "s3H": "Packing",
     "s3P": "The ceramics travel wrapped by hand — film, cardboard and plenty of padding so nothing moves. I label the box as fragile. I try to limit plastic wherever I can, without risking the piece.",
-    "s4H": "Pickup in Warsaw",
-    "s4P": "Live in Warsaw or passing through? You can collect your order in person — then shipping is free. We arrange the pickup by email for a specific day and time; this is not a fixed-hours pickup point.",
+    "s4H": "Pickup",
+    "s4P": "Live in Tenerife or passing through? You can collect your order in person — then shipping is free. We arrange the pickup by email for a specific day and time; this is not a fixed-hours pickup point.",
     "s5H": "Returns",
-    "s5P": "As a consumer you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the parcel, with no reason needed. You can start your return on the <zlink>returns page</zlink> — just your order number. You can also write to <link>hej@ciok.art</link>.",
+    "s5P": "As a consumer you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the parcel, with no reason needed. You can start your return on the <zlink>returns page</zlink> — just your order number. You can also write to <link>ania@ciok.art</link>.",
     "s5Li1": "The piece should come back undamaged, ideally in its original packaging",
     "s5Li2": "The cost of return shipping is on the buyer",
     "s5Li3": "I refund within 14 days of receiving the piece back",
@@ -633,7 +634,7 @@
   "terms": {
     "eyebrow": "Documents",
     "h1": "Shop <em>terms.</em>",
-    "lead": "The rules for buying at Anna Ciok Ceramics. Written plainly, without the legal fog — so you can actually read them.",
+    "lead": "The rules for buying at Anna Ciok Studio. Written plainly, without the legal fog — so you can actually read them.",
     "toc": "Contents",
     "toc1": "§1 General provisions",
     "toc2": "§2 Orders",
@@ -644,7 +645,7 @@
     "toc7": "§7 Final provisions",
     "updated": "Version: June 2026",
     "s1H": "§1 General provisions",
-    "s1P1": "The Anna Ciok Ceramics online shop is run by the ceramics studio of Anna Ciok, based in Warsaw. You can contact the seller at <link>hej@ciok.art</link>.",
+    "s1P1": "The Anna Ciok Studio online shop is run by Anna Ciok's studio, based at San Pedro Abajo 12, 38500 Guimar, Tenerife, Spain — Canary Islands. You can contact the seller at <link>ania@ciok.art</link>.",
     "s1P2": "The items for sale are hand-painted ceramic pieces. Each piece is the only copy — once sold it disappears from the offer and is not remade.",
     "s2H": "§2 Orders",
     "s2P": "You place an order by adding selected pieces to the cart and confirming the purchase. The sale contract is concluded the moment the order is confirmed and the payment clears.",
@@ -653,13 +654,13 @@
     "s3H": "§3 Prices & payment",
     "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment is handled by a secure external payment provider, Stripe.",
     "s4H": "§4 Fulfilment & shipping",
-    "s4P": "I send orders within 1–3 business days of the payment clearing. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
+    "s4P": "Orders are fulfilled within 2 business days of the payment clearing, with delivery within 5 business days across Europe. Details of costs, timing and pickup are described on the <link>Shipping & returns</link> page.",
     "s5H": "§5 Right of withdrawal",
     "s5P": "A consumer has the right to withdraw from the purchase within 14 days of receiving the piece, without giving a reason. The statement can simply be sent by email. The returned piece should be undamaged; the buyer covers the return shipping, and the refund is made within 14 days.",
     "s6H": "§6 Complaints",
     "s6P": "If a piece arrives damaged or not as described, you can file a complaint by email, attaching photos. I review it within 14 days and — depending on your choice — replace the piece or refund the full amount including shipping.",
     "s7H": "§7 Final provisions",
-    "s7P": "Matters not covered by these terms are governed by Polish law, including the Consumer Rights Act and the Civil Code. Any changes to the terms do not affect orders placed before they take effect."
+    "s7P": "Matters not covered by these terms are governed by Spanish law, including Spain's General Law for the Protection of Consumers and Users and the Spanish Civil Code. Any changes to the terms do not affect orders placed before they take effect."
   },
   "privacy": {
     "eyebrow": "Documents",
@@ -674,7 +675,7 @@
     "toc6": "Your rights",
     "updated": "Updated: June 2026",
     "s1H": "Data controller",
-    "s1P": "The controller of your data is the ceramics studio of Anna Ciok, based in Warsaw. For matters relating to personal data, write to <link>hej@ciok.art</link>.",
+    "s1P": "The controller of your data is Anna Ciok's studio, based at San Pedro Abajo 12, 38500 Guimar, Tenerife, Spain — Canary Islands. For matters relating to personal data, write to <link>ania@ciok.art</link>.",
     "s2H": "What data I collect",
     "s2Li1": "Data needed to fulfil an order — name, shipping address, email and phone number",
     "s2Li2": "The content of any message you send me by email",
@@ -689,6 +690,30 @@
     "s5P": "The site uses essential cookies and browser storage to remember the contents of your cart. If you consent, analytics and marketing tools may also run. During checkout, <link>Stripe</link> sets its own cookies needed to process payment securely and prevent fraud.",
     "s6H": "Your rights",
     "s6P": "You have the right to access your data, correct it, delete it and restrict its processing. Just write to me — I’ll reply as fast as I can."
+  },
+  "refund": {
+    "eyebrow": "Documents",
+    "h1": "Refund <em>policy.</em>",
+    "lead": "How returns and the right of withdrawal work at Anna Ciok Studio — consistent with the Terms and the Shipping & returns page.",
+    "toc": "Contents",
+    "toc1": "§1 Right of withdrawal",
+    "toc2": "§2 How to request a return",
+    "toc3": "§3 Return conditions",
+    "toc4": "§4 Refunds",
+    "toc5": "§5 Complaints",
+    "updated": "Version: September 2026",
+    "s1H": "§1 Right of withdrawal",
+    "s1P": "As a consumer, you have the right to withdraw from the purchase within <strong>14 days</strong> of receiving the item, without giving a reason. The general rules of purchase are described in the <termsLink>Terms</termsLink>, and shipping costs and timing on the <shippingLink>Shipping & returns</shippingLink> page.",
+    "s2H": "§2 How to request a return",
+    "s2P": "Write to <mailLink>ania@ciok.art</mailLink> to let me know you're withdrawing from the purchase. Include your order number if you have it, and tell me which items the return covers. No shop account is needed.",
+    "s3H": "§3 Return conditions",
+    "s3P": "The returned item should be undamaged, ideally in its original packaging.",
+    "s3Li1": "The buyer covers the cost of return shipping",
+    "s3Li2": "Send the item back to: Anna Ciok Studio, San Pedro Abajo 12, 38500 Guimar, Tenerife, Spain — Canary Islands",
+    "s4H": "§4 Refunds",
+    "s4P": "The refund is made within <strong>14 days</strong> of you telling me you're withdrawing from the purchase, using the same payment method used for the purchase. It may be withheld until the item is received back, or proof of postage is provided — whichever happens first.",
+    "s5H": "§5 Complaints",
+    "s5P": "If an item arrives damaged or not as described, file a complaint by email, attaching photos. I review it within 14 days and — depending on your choice — replace the item or refund the full amount including shipping."
   },
   "notes": {
     "kubki": [
@@ -835,47 +860,64 @@
       "Black branches with round berries and chevron leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm."
     ],
     "fine-art-prints": [
-      "Deep navy pools into translucent blue-green washes in 001, where a slender, finely striped curve draws the eye through the composition. A small golden disc and warm rust-coloured marks interrupt the cooler field, giving the work a poised balance between fluid movement and precise detail. Airy yet grounded, it brings quiet visual depth to a living room, bedroom, or focused workspace, whether displayed alone or alongside similarly restrained pieces.",
-      "A sweeping terracotta ribbon runs through 002, separating pale peach and teal washes from a concentrated pool of midnight blue. Fine contour lines, scattered coppery marks, and a single gold circle sharpen the contrast between softness and structure, creating an assured sense of motion. Its warm-cool palette can enliven a neutral living room or hallway while retaining enough delicacy for a quieter bedroom or study.",
-      "Two suspended fields of smoky blue, apricot, and pale green give 003 its open, almost weightless composition. A dark finely lined band sweeps across both forms, while rust-coloured traces, rippling contours, and a compact gold accent reward a closer look without disturbing the generous white space. The result is dynamic but uncluttered—a distinctive focal point for contemporary interiors that also pairs naturally with light woods and soft neutral textiles.",
-      "Soft blue washes meet olive radial forms in 004, setting delicate line work and lively green-blue speckles against generous white space. The contrast between translucent colour, taut curves, and fan-like geometry gives the composition a fresh, sculptural rhythm that shifts between calm and energy. Bright without feeling loud, this print makes an elegant focal point in a living room or studio and sits beautifully beside natural wood, stone, and muted textiles.",
-      "Layered bands of misty blue, moss green, and luminous yellow establish the bold graphic structure of 005. Finely radiating loops anchor the upper and lower edges, while loose black-and-white curves travel across the composition with an easy, animated rhythm. Its balance of broad colour and intricate line work brings confident warmth to a living room, dining area, or creative workspace, standing strongly on its own without overwhelming the space.",
-      "Concentric washes of smoky grey, soft peach, and deep navy gather into the rounded, stone-like form of 006. Fine burgundy stripes trace one edge while a small golden disc glows near the centre, balancing broad translucent colour with intricate detail. Quiet and enveloping, the composition brings a sense of depth to a bedroom, reading corner, or calm living space without losing the lightness of its generous white ground.",
-      "Warm peach and misty grey washes fold around a midnight-blue centre in 007, forming a softly layered, shell-like silhouette. A burgundy striped contour loops through the composition, joined by a golden circle and loose black gestures that lend precision and spontaneity in equal measure. Its centred balance and subtle glow make an elegant focal point for a bedroom, study, or living room shaped by warm woods and natural textures.",
-      "A broad terracotta form meets an oversized taupe oval in 008, creating a bold dialogue between saturated colour and finely radiating line work. Pale tendrils, soft dotted details, navy tabs, and quick black marks animate the surface without crowding its graphic structure. Playful yet composed, this print adds character to a dining area, hallway, or creative workspace and stands especially well against clean, neutral surroundings.",
-      "Pale grey and sand-coloured washes establish the measured geometry of 009, while charcoal pools and rust-toned speckles soften its rectangular structure. Two wavering vertical bands—one finely striped in blue, the other deep black—draw the eye downward as a delicate line arcs across the field. Calm but distinctive, the composition suits a study, hallway, or understated living room where its restrained rhythm can unfold gradually.",
-      "A sweeping navy loop cuts across 010, carrying the eye from a copper-toned oval into a broad field of blue-grey wash. Fine black lines, scattered rust marks, and freely dripped pigment heighten the contrast between controlled detail and spontaneous movement. Energetic without becoming busy, this print brings confident motion to a living room, studio, or workspace and pairs naturally with simple contemporary furnishings.",
-      "A tall striped arch in burgundy and navy frames the layered vertical forms of 011, where cool blue-grey washes meet touches of copper and rust. Long, fine curves cross the composition and a concentrated cloud of speckled colour gathers at the right, giving the work a sculptural upward rhythm. Its assured proportions make a striking addition to an entryway, dining area, or room with generous wall height.",
-      "A translucent copper arch sweeps over 012, meeting a dark, finely striped loop that curls from the lower edge into a generous oval. A navy block, delicate converging lines, and scattered warm speckles add weight and detail while leaving ample white space around the central movement. Bold yet airy, the composition introduces warmth and momentum to a living room, dining space, or creative studio.",
-      "Broad washes of stone, beige, and soft grey give 013 an architectural calm, punctuated by two slender burgundy striped columns. A deep blue block, pale circular pool, fine arcing lines, and scattered rust marks create depth within the otherwise restrained arrangement. Its strong vertical cadence and muted palette make it a refined focal point for a hallway, study, or contemporary living room.",
-      "Rust and cool blue washes rise through the open composition of 014, crossed by pale striped loops that curl, dip, and circle through the white space. Fine black arcs and densely speckled passages add a second, more intricate rhythm to the broad painterly forms. Lively but finely balanced, this print brings expressive movement to a studio, living room, or hallway while keeping the surrounding space feeling light.",
-      "A single irregular oval holds the dramatic contrasts of 015, shifting from deep rust and charcoal into an icy, textured blue. An electric cobalt ring hovers above a dark burst of pigment, with fine filaments and sharp white openings adding tension and lift. Striking yet contained, the work creates a memorable focal point in a living room, dining area, or minimal workspace.",
-      "Two upright fields of rust, peach, and pale blue stand apart in 016, connected by a looping band of finely drawn grey lines. A vivid cobalt stroke and delicate black arcs sharpen the composition, while the open centre keeps its movement light and spacious. Expressive without overwhelming a room, this print suits a bright hallway, creative workspace, or contemporary living area.",
-      "Luminous yellow-green washes meet smoky charcoal and olive in 017, creating a soft field of colour around a large pale radial ring. Fine white tendrils descend through the darker tones, ending among a cluster of hazy circular marks that reward a closer view. Glowing yet grounded, the composition brings gentle vitality to a bedroom, reading nook, or living room furnished in natural neutrals.",
-      "Two pale columns of grey-green and powder blue give 018 its airy vertical structure, separated by a clean channel of white. A curved navy band steadies the left side, while blue and rust granulation gathers along the right and fine black filaments rise from a charcoal bloom below. Delicate yet full of texture, this print lends quiet height to a bedroom, hallway, or contemplative workspace.",
-      "A muted field of beige and grey provides a hushed setting for the burgundy and navy striped ring in 019. Two soft charcoal blooms appear to float beside fine dangling lines, while dark pooled pigment and rust speckles add weight near the lower edge. Minimal but never empty, the composition offers a calm, intriguing presence for a bedroom, study, or softly furnished living room.",
-      "Translucent green-grey wash spreads across 020, opened by tall white slashes and a feathery burst of rust at the left. Overlapping ochre and burgundy rings anchor the opposite side, with pale blue dots and fine black filaments adding quiet complexity. The balance of earthy colour and graphic form gives this print an assured warmth suited to a dining room, hallway, or modern living space.",
-      "Soft cream and grey washes surround the finely striped navy ring of 021, which encloses a warm ochre pool near the lower edge. Hazy blue-charcoal circles, delicate trailing lines, and a rust-coloured cloud bring movement to the generous open field. Restrained and atmospheric, the work makes a thoughtful addition to a reading corner, bedroom, or calm living room where subtle details can be appreciated up close.",
-      "Vertical ribbons of lavender, pale yellow, blush, and smoky blue give 022 a tall, lyrical cadence. A vivid cobalt striped band rises along the right, while flowing black contours, dark rust gestures, and a small golden accent concentrate the eye near the centre. Graceful but confidently coloured, this print brings elegant height to an entryway, dining area, or contemporary bedroom.",
-      "Layered washes of blue-grey, amber, olive, and charcoal stretch horizontally across 023, creating a broad, horizon-like rhythm. Rust-toned clusters and dark green accents punctuate the upper field, while white threads and a finely striped band travel through the lower layers. Calm and expansive, the composition can visually open a living room, dining area, or hallway while adding warmth to a restrained interior.",
-      "Two luminous forms in periwinkle and deep cobalt stand side by side in 024, each shaped by dense radiating lines and curved bands. A dark blue pool gathers between them, while white openings, fine black contours, and two small golden accents keep the composition bright and precise. Cool, sculptural, and elegant, this print makes a distinctive focal point for a living room, bedroom, or polished workspace.",
-      "Three stacked forms give 025 its playful structure: a pale yellow field threaded with blue ribbons, a richly speckled terracotta ring, and a broad teal oval below. Fine black lines, a small red radial accent, and generous white openings keep the strong colour feeling light. Its balance of warmth, coolness, and graphic shape brings cheerful sophistication to a dining area, creative workspace, or contemporary living room.",
-      "Watery blue washes and soft bands of sand and peach unfold across 026 in a layered horizontal rhythm. Finely drawn waves cross the open upper field, while rust and pale blue striped ribbons travel through darker pools of pigment, joined by a slender golden accent. Expansive and atmospheric, the composition brings measured movement to a living room, hallway, or dining space without overpowering quieter surroundings.",
-      "Lavender and deep blue washes rise through 027, set against a pale inner glow and crisp flashes of cobalt. Fine lines arc along the tall forms, while a brown striped half-ring and a small golden mark introduce warmth and precision at opposite edges. Luminous and composed, this print adds elegant height to a bedroom, entryway, or living room with cool neutrals and natural materials.",
-      "A broad blue-grey arch meets a richly textured orange loop in 028, creating a bold interplay of cool openness and concentrated warmth. Rust-toned washes, two finely radiating rings, cream ribbons, and a dark splatter at the base build an energetic, sculptural arrangement. Confident and full of movement, this print makes a vivid focal point in a dining room, studio, or contemporary living space.",
-      "Tall washes of blue-grey and warm tan form the quiet foundation of 029, threaded by a pair of dark, finely striped loops. Repeated hairline arcs sweep through rust and blue speckles, while deeper navy and brown accents lend weight to the outer edges. Elegant and gently animated, the composition brings graceful vertical movement to a hallway, bedroom, or refined living area.",
-      "A pale periwinkle loop dominates 030, its soft translucent surface sharpened by a vivid cobalt arc of finely spaced lines. Beside it, a narrow charcoal and rust form carries dark gestures, delicate filaments, and a small golden detail near the lower edge. The contrast feels both poised and expressive, making this print a sophisticated focal point for a living room, study, or contemporary entryway.",
-      "A broad field of lavender floats above pale yellow in 031, divided by a dark horizontal wash and a vivid cobalt line that travels down the right. White openings, fine black curves, subtle rust speckles, and small golden accents bring intricate detail to the clear graphic structure. Serene yet unmistakably modern, the composition adds confident colour to a bedroom, workspace, or light-filled living room.",
-      "Pale periwinkle and misty grey washes frame the deep indigo centre of 032, where pigment blooms outward in rich, feathery textures. A vertical golden accent catches the eye among rust speckles and fine rising lines, while a softly striped oval steadies the upper corner. Atmospheric and luminous, this print brings quiet drama to a bedroom, reading space, or contemporary living room.",
-      "A blush-toned wash and bright blue speckles form the soft backdrop of 033, balanced by two finely radiating rings in rust and periwinkle. Cream curves overlap the upper forms, while a red sunburst expands from the lower corner with playful confidence. Graphic yet light-hearted, the composition brings warmth and character to a dining area, creative workspace, or welcoming living room.",
-      "A large wash of pale grey-green fills 034, deepening into charcoal along one edge and opening into quiet areas of white. Fine black curves descend through the field, accompanied by rust-toned speckles and a richly striped oval suspended above. Understated but full of subtle movement, this print offers a composed focal point for a bedroom, study, or calm contemporary living space.",
-      "Soft green-grey wash gives 035 an open, balanced foundation, interrupted by charcoal pooling and lively rust-coloured traces. A compact teal ring hovers at the upper edge, while a broad terracotta oval anchors the base with dense radiating lines and a luminous centre. Earthy and graphic in equal measure, the print brings grounded warmth to a dining room, hallway, or modern living area.",
-      "A pale blue-grey wash rises along the left of 036, textured with dark pooling and a delicate burst of blue and rust. A terracotta striped line sweeps overhead, curls tightly at the centre, then descends into a generous loop beside an expressive charcoal splash. Fluid and energetic, the composition lends striking movement to a living room, studio, or tall hallway wall.",
-      "Separated fields of rust, blush, and pale blue create the open architecture of 037, punctuated by a vivid cobalt stroke near the upper edge. A wide grey striped loop winds across both forms as fine black lines echo its movement through the surrounding white space. Dynamic yet airy, this print adds expressive scale to a living room, creative workspace, or spacious entryway.",
-      "A broad lavender field darkens into soft-edged brown and charcoal blooms in 038, crossed by slender vertical lines and a narrow cream striped band. A broken horizontal seam of dark pigment and gold separates the upper form from its pale, reflected counterpart below. Moody yet balanced, the composition brings atmospheric depth to a living room, dining area, or quiet study.",
-      "Pale blue and blush washes spread across 039 in a spacious, stepped formation, lifted by two saturated cobalt strokes at the upper left. Rust speckles and fine vertical lines descend toward a dark horizontal band, where flowing white contours create a gentle wave-like rhythm. Expansive and quietly vivid, this print adds a sense of openness to a living room, bedroom, or long hallway.",
-      "A wide grey-green loop opens the upper half of 040, paired with a dark teal ring of finely radiating lines. A concentrated rust band crosses the centre, while a large, delicately drawn oval below carries scattered warm marks through its pale surface. Balanced, graphic, and quietly earthy, the composition makes an assured focal point for a dining room, living area, or understated workspace.",
-      "Cool grey-green washes rise along one side of 041 as warm rust and terracotta marks gather on the other, leaving a generous channel of white between them. A dark teal striped ring crowns the cooler form, while feathery blooms and a pale pink stroke animate the warmer edge. Bold but beautifully balanced, this print brings expressive contrast to a hallway, studio, or contemporary living room."
+      "Deep navy pools into translucent blue-green washes in the piece, where a slender, finely striped curve draws the eye through the composition. A small golden disc and warm rust-coloured marks interrupt the cooler field, giving the work a poised balance between fluid movement and precise detail. Airy yet grounded, it brings quiet visual depth to a living room, bedroom, or focused workspace, whether displayed alone or alongside similarly restrained pieces.",
+      "A sweeping terracotta ribbon runs through the piece, separating pale peach and teal washes from a concentrated pool of midnight blue. Fine contour lines, scattered coppery marks, and a single gold circle sharpen the contrast between softness and structure, creating an assured sense of motion. Its warm-cool palette can enliven a neutral living room or hallway while retaining enough delicacy for a quieter bedroom or study.",
+      "Two suspended fields of smoky blue, apricot, and pale green give the piece its open, almost weightless composition. A dark finely lined band sweeps across both forms, while rust-coloured traces, rippling contours, and a compact gold accent reward a closer look without disturbing the generous white space. The result is dynamic but uncluttered—a distinctive focal point for contemporary interiors that also pairs naturally with light woods and soft neutral textiles.",
+      "Soft blue washes meet olive radial forms in the piece, setting delicate line work and lively green-blue speckles against generous white space. The contrast between translucent colour, taut curves, and fan-like geometry gives the composition a fresh, sculptural rhythm that shifts between calm and energy. Bright without feeling loud, this print makes an elegant focal point in a living room or studio and sits beautifully beside natural wood, stone, and muted textiles.",
+      "Layered bands of misty blue, moss green, and luminous yellow establish the bold graphic structure of the piece. Finely radiating loops anchor the upper and lower edges, while loose black-and-white curves travel across the composition with an easy, animated rhythm. Its balance of broad colour and intricate line work brings confident warmth to a living room, dining area, or creative workspace, standing strongly on its own without overwhelming the space.",
+      "Concentric washes of smoky grey, soft peach, and deep navy gather into the rounded, stone-like form of the piece. Fine burgundy stripes trace one edge while a small golden disc glows near the centre, balancing broad translucent colour with intricate detail. Quiet and enveloping, the composition brings a sense of depth to a bedroom, reading corner, or calm living space without losing the lightness of its generous white ground.",
+      "Warm peach and misty grey washes fold around a midnight-blue centre in the piece, forming a softly layered, shell-like silhouette. A burgundy striped contour loops through the composition, joined by a golden circle and loose black gestures that lend precision and spontaneity in equal measure. Its centred balance and subtle glow make an elegant focal point for a bedroom, study, or living room shaped by warm woods and natural textures.",
+      "A broad terracotta form meets an oversized taupe oval in the piece, creating a bold dialogue between saturated colour and finely radiating line work. Pale tendrils, soft dotted details, navy tabs, and quick black marks animate the surface without crowding its graphic structure. Playful yet composed, this print adds character to a dining area, hallway, or creative workspace and stands especially well against clean, neutral surroundings.",
+      "Pale grey and sand-coloured washes establish the measured geometry of the piece, while charcoal pools and rust-toned speckles soften its rectangular structure. Two wavering vertical bands—one finely striped in blue, the other deep black—draw the eye downward as a delicate line arcs across the field. Calm but distinctive, the composition suits a study, hallway, or understated living room where its restrained rhythm can unfold gradually.",
+      "A sweeping navy loop cuts across the piece, carrying the eye from a copper-toned oval into a broad field of blue-grey wash. Fine black lines, scattered rust marks, and freely dripped pigment heighten the contrast between controlled detail and spontaneous movement. Energetic without becoming busy, this print brings confident motion to a living room, studio, or workspace and pairs naturally with simple contemporary furnishings.",
+      "A tall striped arch in burgundy and navy frames the layered vertical forms of the piece, where cool blue-grey washes meet touches of copper and rust. Long, fine curves cross the composition and a concentrated cloud of speckled colour gathers at the right, giving the work a sculptural upward rhythm. Its assured proportions make a striking addition to an entryway, dining area, or room with generous wall height.",
+      "A translucent copper arch sweeps over the piece, meeting a dark, finely striped loop that curls from the lower edge into a generous oval. A navy block, delicate converging lines, and scattered warm speckles add weight and detail while leaving ample white space around the central movement. Bold yet airy, the composition introduces warmth and momentum to a living room, dining space, or creative studio.",
+      "Broad washes of stone, beige, and soft grey give the piece an architectural calm, punctuated by two slender burgundy striped columns. A deep blue block, pale circular pool, fine arcing lines, and scattered rust marks create depth within the otherwise restrained arrangement. Its strong vertical cadence and muted palette make it a refined focal point for a hallway, study, or contemporary living room.",
+      "Rust and cool blue washes rise through the open composition of the piece, crossed by pale striped loops that curl, dip, and circle through the white space. Fine black arcs and densely speckled passages add a second, more intricate rhythm to the broad painterly forms. Lively but finely balanced, this print brings expressive movement to a studio, living room, or hallway while keeping the surrounding space feeling light.",
+      "A single irregular oval holds the dramatic contrasts of the piece, shifting from deep rust and charcoal into an icy, textured blue. An electric cobalt ring hovers above a dark burst of pigment, with fine filaments and sharp white openings adding tension and lift. Striking yet contained, the work creates a memorable focal point in a living room, dining area, or minimal workspace.",
+      "Two upright fields of rust, peach, and pale blue stand apart in the piece, connected by a looping band of finely drawn grey lines. A vivid cobalt stroke and delicate black arcs sharpen the composition, while the open centre keeps its movement light and spacious. Expressive without overwhelming a room, this print suits a bright hallway, creative workspace, or contemporary living area.",
+      "Luminous yellow-green washes meet smoky charcoal and olive in the piece, creating a soft field of colour around a large pale radial ring. Fine white tendrils descend through the darker tones, ending among a cluster of hazy circular marks that reward a closer view. Glowing yet grounded, the composition brings gentle vitality to a bedroom, reading nook, or living room furnished in natural neutrals.",
+      "Two pale columns of grey-green and powder blue give the piece its airy vertical structure, separated by a clean channel of white. A curved navy band steadies the left side, while blue and rust granulation gathers along the right and fine black filaments rise from a charcoal bloom below. Delicate yet full of texture, this print lends quiet height to a bedroom, hallway, or contemplative workspace.",
+      "A muted field of beige and grey provides a hushed setting for the burgundy and navy striped ring in the piece. Two soft charcoal blooms appear to float beside fine dangling lines, while dark pooled pigment and rust speckles add weight near the lower edge. Minimal but never empty, the composition offers a calm, intriguing presence for a bedroom, study, or softly furnished living room.",
+      "Translucent green-grey wash spreads across the piece, opened by tall white slashes and a feathery burst of rust at the left. Overlapping ochre and burgundy rings anchor the opposite side, with pale blue dots and fine black filaments adding quiet complexity. The balance of earthy colour and graphic form gives this print an assured warmth suited to a dining room, hallway, or modern living space.",
+      "Soft cream and grey washes surround the finely striped navy ring of the piece, which encloses a warm ochre pool near the lower edge. Hazy blue-charcoal circles, delicate trailing lines, and a rust-coloured cloud bring movement to the generous open field. Restrained and atmospheric, the work makes a thoughtful addition to a reading corner, bedroom, or calm living room where subtle details can be appreciated up close.",
+      "Vertical ribbons of lavender, pale yellow, blush, and smoky blue give the piece a tall, lyrical cadence. A vivid cobalt striped band rises along the right, while flowing black contours, dark rust gestures, and a small golden accent concentrate the eye near the centre. Graceful but confidently coloured, this print brings elegant height to an entryway, dining area, or contemporary bedroom.",
+      "Layered washes of blue-grey, amber, olive, and charcoal stretch horizontally across the piece, creating a broad, horizon-like rhythm. Rust-toned clusters and dark green accents punctuate the upper field, while white threads and a finely striped band travel through the lower layers. Calm and expansive, the composition can visually open a living room, dining area, or hallway while adding warmth to a restrained interior.",
+      "Two luminous forms in periwinkle and deep cobalt stand side by side in the piece, each shaped by dense radiating lines and curved bands. A dark blue pool gathers between them, while white openings, fine black contours, and two small golden accents keep the composition bright and precise. Cool, sculptural, and elegant, this print makes a distinctive focal point for a living room, bedroom, or polished workspace.",
+      "Three stacked forms give the piece its playful structure: a pale yellow field threaded with blue ribbons, a richly speckled terracotta ring, and a broad teal oval below. Fine black lines, a small red radial accent, and generous white openings keep the strong colour feeling light. Its balance of warmth, coolness, and graphic shape brings cheerful sophistication to a dining area, creative workspace, or contemporary living room.",
+      "Watery blue washes and soft bands of sand and peach unfold across the piece in a layered horizontal rhythm. Finely drawn waves cross the open upper field, while rust and pale blue striped ribbons travel through darker pools of pigment, joined by a slender golden accent. Expansive and atmospheric, the composition brings measured movement to a living room, hallway, or dining space without overpowering quieter surroundings.",
+      "Lavender and deep blue washes rise through the piece, set against a pale inner glow and crisp flashes of cobalt. Fine lines arc along the tall forms, while a brown striped half-ring and a small golden mark introduce warmth and precision at opposite edges. Luminous and composed, this print adds elegant height to a bedroom, entryway, or living room with cool neutrals and natural materials.",
+      "A broad blue-grey arch meets a richly textured orange loop in the piece, creating a bold interplay of cool openness and concentrated warmth. Rust-toned washes, two finely radiating rings, cream ribbons, and a dark splatter at the base build an energetic, sculptural arrangement. Confident and full of movement, this print makes a vivid focal point in a dining room, studio, or contemporary living space.",
+      "Tall washes of blue-grey and warm tan form the quiet foundation of the piece, threaded by a pair of dark, finely striped loops. Repeated hairline arcs sweep through rust and blue speckles, while deeper navy and brown accents lend weight to the outer edges. Elegant and gently animated, the composition brings graceful vertical movement to a hallway, bedroom, or refined living area.",
+      "A pale periwinkle loop dominates the piece, its soft translucent surface sharpened by a vivid cobalt arc of finely spaced lines. Beside it, a narrow charcoal and rust form carries dark gestures, delicate filaments, and a small golden detail near the lower edge. The contrast feels both poised and expressive, making this print a sophisticated focal point for a living room, study, or contemporary entryway.",
+      "A broad field of lavender floats above pale yellow in the piece, divided by a dark horizontal wash and a vivid cobalt line that travels down the right. White openings, fine black curves, subtle rust speckles, and small golden accents bring intricate detail to the clear graphic structure. Serene yet unmistakably modern, the composition adds confident colour to a bedroom, workspace, or light-filled living room.",
+      "Pale periwinkle and misty grey washes frame the deep indigo centre of the piece, where pigment blooms outward in rich, feathery textures. A vertical golden accent catches the eye among rust speckles and fine rising lines, while a softly striped oval steadies the upper corner. Atmospheric and luminous, this print brings quiet drama to a bedroom, reading space, or contemporary living room.",
+      "A blush-toned wash and bright blue speckles form the soft backdrop of the piece, balanced by two finely radiating rings in rust and periwinkle. Cream curves overlap the upper forms, while a red sunburst expands from the lower corner with playful confidence. Graphic yet light-hearted, the composition brings warmth and character to a dining area, creative workspace, or welcoming living room.",
+      "A large wash of pale grey-green fills the piece, deepening into charcoal along one edge and opening into quiet areas of white. Fine black curves descend through the field, accompanied by rust-toned speckles and a richly striped oval suspended above. Understated but full of subtle movement, this print offers a composed focal point for a bedroom, study, or calm contemporary living space.",
+      "Soft green-grey wash gives the piece an open, balanced foundation, interrupted by charcoal pooling and lively rust-coloured traces. A compact teal ring hovers at the upper edge, while a broad terracotta oval anchors the base with dense radiating lines and a luminous centre. Earthy and graphic in equal measure, the print brings grounded warmth to a dining room, hallway, or modern living area.",
+      "A pale blue-grey wash rises along the left of the piece, textured with dark pooling and a delicate burst of blue and rust. A terracotta striped line sweeps overhead, curls tightly at the centre, then descends into a generous loop beside an expressive charcoal splash. Fluid and energetic, the composition lends striking movement to a living room, studio, or tall hallway wall.",
+      "Separated fields of rust, blush, and pale blue create the open architecture of the piece, punctuated by a vivid cobalt stroke near the upper edge. A wide grey striped loop winds across both forms as fine black lines echo its movement through the surrounding white space. Dynamic yet airy, this print adds expressive scale to a living room, creative workspace, or spacious entryway.",
+      "A broad lavender field darkens into soft-edged brown and charcoal blooms in the piece, crossed by slender vertical lines and a narrow cream striped band. A broken horizontal seam of dark pigment and gold separates the upper form from its pale, reflected counterpart below. Moody yet balanced, the composition brings atmospheric depth to a living room, dining area, or quiet study.",
+      "Pale blue and blush washes spread across the piece in a spacious, stepped formation, lifted by two saturated cobalt strokes at the upper left. Rust speckles and fine vertical lines descend toward a dark horizontal band, where flowing white contours create a gentle wave-like rhythm. Expansive and quietly vivid, this print adds a sense of openness to a living room, bedroom, or long hallway.",
+      "A wide grey-green loop opens the upper half of the piece, paired with a dark teal ring of finely radiating lines. A concentrated rust band crosses the centre, while a large, delicately drawn oval below carries scattered warm marks through its pale surface. Balanced, graphic, and quietly earthy, the composition makes an assured focal point for a dining room, living area, or understated workspace.",
+      "Cool grey-green washes rise along one side of the piece as warm rust and terracotta marks gather on the other, leaving a generous channel of white between them. A dark teal striped ring crowns the cooler form, while feathery blooms and a pale pink stroke animate the warmer edge. Bold but beautifully balanced, this print brings expressive contrast to a hallway, studio, or contemporary living room.",
+      "Wavering bands of sage green, muted pink and blue-grey run beside dark pools edged with mustard yellow. Fine, wandering lines connect the pale areas, bringing lightness to a composition built around strong contrasts and an unhurried vertical rhythm. Aurora 01 can give a quiet room a distinctive focal point, while pale wood and neutral textiles leave space for its delicate drawing and soft colour transitions.",
+      "Rust-red loops hover above broad, translucent shapes in blue and green, setting crisp outlines against softly spreading colour. A deep navy pool and scattered flecks draw the eye inward, while the open background keeps the arrangement light and spacious. Aurora 02 brings an animated accent to a room with simple furniture, offering both an immediate graphic gesture and quieter details that emerge at closer range.",
+      "A narrow rust-coloured line travels through wavering layers of blue, grey and pale cream, giving the composition a clear vertical pulse. Beside it, a dark irregular pool with a light centre interrupts the gentle flow, balanced by small blue marks in the open ground. Aurora 04 can bring fluid movement to a quiet wall, its cool palette offering a subtle counterpoint to warm wood and soft textiles.",
+      "Two elongated forms meet in a pairing of cool blue and a vivid orange edge, with pale space opening around them. Blue rings, fine arcs and clusters of small marks add a buoyant rhythm to the larger shapes without making the composition feel crowded. Cirrus 01 offers a fresh accent for a simply furnished room, balancing a lively colour contrast with delicate, grain-like detail visible up close.",
+      "Broad sweeps of pale blue and warm ochre are interrupted by a dark horizontal band with bright openings. Above it, a small navy pool gathers fine lines and scattered speckles, adding a concentrated point of tension to the expansive composition. Cumulonimbus 03 can lend a room a quiet sense of depth, balancing diffuse colour with a stronger accent and rewarding a closer look at its intricate marks.",
+      "Horizontal layers of turquoise, blue-grey and earthy brown gather around a narrow dark divide, suggesting space through their shifting density. Transparent passages sit beside concentrated speckles and loose downward trails, giving the broad composition an uneven, absorbing rhythm. Cumulonimbus 06 can become an expansive focal point in a quiet living or working space, with its mix of warm and cool tones connecting naturally to wood, stone and neutral furnishings.",
+      "Ochre and orange rise from a soft blue-grey base, threaded with fine lines that sweep upward in loose arcs. Small mustard-coloured circles hover above the main shape, giving the composition a buoyant quality balanced by its darker left edge. Cumulus 01 brings a warm, relaxed accent to a light room, with delicate marks and generous open space that also let it sit comfortably alongside other artworks.",
+      "Three pale, irregular fields stack above one another, moving from rusty orange flecks through a broad blue band to scattered navy dots. A dark centre ringed with red and several fine vertical lines tie the layers together, creating a distinct rhythm within the open background. Cumulus 06 can enliven a cream or grey interior with a measured balance of warm accents, cool colour and small, sharply focused details.",
+      "A large pale-yellow shape with a dark, diffused edge sits beside two open ovals in beige and brown. Fine wandering lines and scattered flecks contrast with the dense radial marks of the lower ring, keeping the arrangement quiet but rich in detail. Obsidian 02 can warm a restrained interior alongside wood and natural textiles, while its darker accents give the composition definition from across the room.",
+      "Three irregular rings in sand, grey and rusty brown form a loose vertical stack, each with a different visual texture. Pale blurred spots across the darkest shape, a small patterned oval below and a black gesture at the left enliven the restrained palette. Obsidian 03 offers graphic structure without rigidity, making a distinctive accent above a sideboard or beside simple furniture through its balance of rounded shapes and energetic drawing.",
+      "An elongated olive-green ring meets a pale-grey field and a small dark form with a mottled centre. White loops cross the upper shapes, while a cluster of black strokes at the lower left anchors the otherwise softly rounded composition. Obsidian 04 combines subdued colour with a sharper linear rhythm, offering a considered accent for rooms in stone, beige and wood tones without needing bold contrasts throughout the space.",
+      "A tall rust-brown shape dotted with soft pale blooms stands beside a large cream-grey loop crossed by a black sweeping gesture. Fine wavering lines and two navy marks introduce movement while leaving plenty of open ground around the forms. Obsidian 05 can provide a strong, warm accent in a light room, with broad curves and animated drawing that remain engaging both at a distance and up close.",
+      "Two elongated shapes pair warm rusty brown with pale, speckled blue, topped by an overlapping cream ring. Soft white blooms and fine lines lighten the darker form, while two small terracotta marks keep the open background gently animated. Scopulus 02 draws its character from a simple arrangement and a clear warm-cool contrast, bringing an easy balance to interiors where wood meets grey surfaces or touches of blue.",
+      "Translucent cream and blue forms overlap around concentrated pools of cobalt, bringing depth to an otherwise airy arrangement. A large pale-blue ring and a partial arc on the right establish a soft rhythm crossed by fine, wandering lines. Unda 04 pairs generous light space with saturated colour, offering a cool focal accent for a quiet interior while allowing softer furnishings and subtle materials to remain part of the scene.",
+      "A soft, stepped form in blue and grey descends towards a dark horizontal band, with bright openings interrupting its deeper colour. Ochre flecks and fine curved lines add shifting detail, while the open background keeps the broad composition light. Unda 05 can introduce a calm, expansive rhythm to a living room or bedroom, its saturated blue accents retaining definition against pale walls and quiet, neutral textiles.",
+      "Large irregular rings in turquoise and ochre-brown overlap beside slender, wavering lines tipped with dark ovals. A small burgundy loop balances the lower arrangement, while dense flecks and fine radial strokes give each shape its own visual character. Tachylite 03 brings a loose, graphic movement to a room, pairing earthy colour with cool turquoise so it can sit naturally with wood while standing clearly against a neutral wall.",
+      "Deep navy and cobalt blooms hover above a broad field of pale blue, crossed by rust-coloured flecks and slender black lines. A vivid orange corner balances the darker lower passage, while the open white ground preserves the airy quality of the vertical composition. Cumulus 02 brings a defined yet spacious accent to a light interior, pairing naturally with pale wood, cool greys and simple forms."
     ]
   },
   "error": {
@@ -892,12 +934,13 @@
   "meta": {
     "description": "Hand-painted functional ceramics by Anna Ciok: mugs, vases, bowls and plates. June 2026 drop, 125 one-of-a-kind pieces.",
     "gallery": "A new editorial photo series from Anna Ciok: portraits, terrace light, studio corners and hand-painted ceramics from the June 2026 drop.",
-    "ogImageAlt": "Anna Ciok Ceramics — hand-painted ceramic mug",
-    "kontakt": "Contact Anna Ciok Ceramics — ask about an available piece, a custom order, or shipping. I reply myself, usually the same day.",
+    "ogImageAlt": "Anna Ciok Studio — hand-painted ceramic mug",
+    "kontakt": "Contact Anna Ciok Studio — ask about an available piece, a custom order, or shipping. I reply myself, usually the same day.",
     "studio": "Anna Ciok's studio in Tenerife: watercolour and ink on paper, hand-painted ceramics — one pair of hands, never mass-produced.",
-    "regulamin": "Shop terms for Anna Ciok Ceramics — ordering, payment, shipping and returns for hand-painted ceramics, in plain language.",
-    "polityka": "Privacy policy for Anna Ciok Ceramics: what data we collect at checkout, what it's used for, and how long we keep it.",
-    "dostawa": "Shipping for Anna Ciok Ceramics: cost, delivery time, protective packing, and the 14-day return policy explained.",
+    "regulamin": "Shop terms for Anna Ciok Studio — ordering, payment, shipping and returns for hand-painted ceramics, in plain language.",
+    "polityka": "Privacy policy for Anna Ciok Studio: what data we collect at checkout, what it's used for, and how long we keep it.",
+    "dostawa": "Shipping for Anna Ciok Studio: cost, delivery time, protective packing, and the 14-day return policy explained.",
+    "refundPolicy": "Refund policy for Anna Ciok Studio: the 14-day right of withdrawal, how to request a return, and refund timing.",
     "collections": {
       "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 29 unique pieces from Anna Ciok's June 2026 drop.",
       "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
@@ -908,16 +951,15 @@
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
-      "sklep": "Anna Ciok's full collection: 125 one-of-a-kind ceramic pieces — mugs, vases, plates and bowls. Hand-painted, every piece unique.",
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop.",
       "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
     },
-    "giftCard": "Anna Ciok Ceramics gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics or fine-art prints."
+    "giftCard": "Anna Ciok Studio gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics or fine-art prints."
   },
   "deliveryNotice": {
     "title": "Delivery information",
     "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
-    "p2": "Orders are dispatched within 1–3 business days of purchase.",
+    "p2": "Orders are fulfilled within 2 business days, with delivery within 5 business days.",
     "p3": "You'll receive the InPost tracking number by email once the parcel is on its way."
   },
   "consent": {
@@ -960,7 +1002,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Open edition",
     "sectionDelivery": "Delivery",
-    "deliveryNote": "Produced and shipped via Prodigi, 5–10 working days",
+    "deliveryNote": "Printed and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe.",
     "sectionCare": "Care",
     "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
     "moreFrom": "More prints",
@@ -974,25 +1016,335 @@
     "accordionFramingTitle": "Framing",
     "accordionShippingTitle": "Shipping & returns",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok is a Warsaw-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
+    "artistBio": "Anna Ciok is a Tenerife-based artist who paints and makes ceramics; her work pairs bold colour with a handmade gesture. The prints in this collection reproduce her original paintings and are printed in an open edition on archival paper.",
     "accordionProductDetails": "Fine Art print on EMA 200 g/m² paper — a matte, archival-quality stock. Open edition.\n\nKeep away from moisture and direct sunlight; wipe the frame with a dry cloth.",
     "accordionFraming": "Every print is available unframed or in a wooden frame: black, light brown or dark brown.",
-    "accordionShipping": "Prints are produced and shipped by our partner Prodigi within 5–10 working days. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details."
+    "accordionShipping": "Prints are produced and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. We ship to home addresses in the European Union and the United Kingdom — parcel-locker delivery is not available. See the Delivery & returns page for return details.",
+    "seeCollection": "See the whole {name} collection"
   },
   "giftCard": {
     "eyebrow": "Gift",
     "h1": "Gift Card",
-    "lead": "Choose an amount and pay online — the code lands in your inbox right after payment. Redeem it for ceramics or fine-art prints on one future order.",
+    "lead": "Give someone a choice of Fine Art Print or ceramics available online during an active drop. The code arrives by email, and unused balance stays on the card for future purchases.",
     "tierLabel": "Card amount",
     "buy": "Buy gift card",
     "continueToPayment": "Continue to payment",
     "back": "Change amount",
     "contactTitle": "Your details",
-    "contactNote": "We'll email the code to this address as soon as payment is confirmed.",
+    "contactNote": "Your code will be sent to this email address once payment is confirmed.",
     "invalidContact": "Please check your details and try again.",
     "accordionHowTitle": "How it works",
-    "accordionHowBody": "Pick one of the four amounts and pay online.\n\nRight after payment we email you a unique code — ready to print or forward as a message.\n\nEnter the code in the \"I have a promo code\" field in the cart, on any ceramics or fine-art-print order.",
+    "accordionHowBody": "Choose one of four amounts and pay online. Your code arrives by email, ready to give to someone.\n\nEnter it in the “I have a gift card” field at checkout. The balance covers products and delivery. Pay any remaining amount using another payment method. Unused funds stay on the card.",
     "accordionTermsTitle": "Terms",
-    "accordionTermsBody": "The code is single-use, for one future order. If your cart total is lower than the card's value, the remainder is forfeited — it is not refunded or carried forward to a later purchase.\n\nThe card never expires and can be used for either ceramics or fine-art prints.\n\nGift cards cannot be combined with other promo codes, and a gift card itself cannot be bought together with ceramics or prints in the same order."
+    "accordionTermsBody": "The card uses its purchase currency: PLN, EUR or GBP, without currency conversion. It has no expiry date.\n\nIt covers standard Fine Art Print orders online and ceramics during an active drop. Studio visits, custom orders and other gift cards are excluded.\n\nUse one gift card per order, without a discount code. Fine Art Print and ceramics require separate orders.\n\nTo request a refund of the card purchase, email ania@ciok.art. If the card has been used, the studio will review its payment history."
+  },
+  "ceramics": {
+    "archiveTitle": "Earlier work",
+    "archiveLead": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
+    "visit": "You can see and buy ceramics during an arranged visit to my studio in Güímar, Tenerife.",
+    "visitCta": "Arrange a visit",
+    "dropTitle": "Ceramics available online",
+    "dropLead": "These one-of-a-kind pieces can be ordered during the active drop.",
+    "noDrop": "Online ceramic sales are currently closed.",
+    "ended": "This drop has ended. You can still explore the pieces in the gallery of earlier work.",
+    "archived": "Earlier work",
+    "sold": "Sold",
+    "reserved": "Reserved",
+    "available": "Available online",
+    "unavailable": "Unavailable online",
+    "availabilityError": "Availability could not be checked. Please try again shortly.",
+    "cartBlocked": "The ceramics in your basket are currently unavailable online. Remove them to continue shopping.",
+    "privateSaleBlocked": "A new order through this link is only possible during an active drop.",
+    "paymentInProgress": "A payment already started remains subject to its order reservation."
+  },
+  "balanceConfirmation": {
+    "title": "Order paid",
+    "body": "Thank you for your order. You will receive confirmation by email.",
+    "order": "Order number"
+  },
+  "giftBalance": {
+    "have": "I have a gift card",
+    "label": "Gift card code",
+    "placeholder": "Enter your gift card code",
+    "apply": "Use gift card",
+    "remove": "Remove gift card",
+    "balance": "Available balance: {amount}",
+    "used": "Paid with gift card: {amount}",
+    "remaining": "Balance after payment: {amount}",
+    "cashDue": "Amount to pay: {amount}",
+    "total": "Order value",
+    "placeOrder": "Place order and pay with gift card",
+    "covered": "Your gift card covers the entire order, including delivery.",
+    "confirmed": "Your order has been paid with your gift card. You will receive confirmation by email.",
+    "invalid": "This card cannot be used. Check the code or email ania@ciok.art.",
+    "wrongCurrency": "This card uses {currency}. Change the order currency to use it.",
+    "empty": "This card has no available balance.",
+    "reserved": "Some funds are reserved for another payment. Try again once it has finished.",
+    "excluded": "Gift cards cover standard Fine Art Print orders online and ceramics during an active drop. They cannot pay for another gift card.",
+    "promoConflict": "Use one gift card or one discount code per order.",
+    "minimumPayment": "To allow the remaining payment, we will use {used} from your card. You will keep {remaining} for another purchase.",
+    "unavailable": "Gift card payments are temporarily unavailable. Your balance is preserved.",
+    "confirmationUnavailable": "We could not open your confirmation. Check your order email or contact ania@ciok.art.",
+    "refund": "{cardAmount} was returned to your gift card and {cashAmount} to your original payment method.",
+    "usedCardRefund": "If a gift card has been used in part or in full, email ania@ciok.art about refunding its purchase. The studio will review its payment history."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — Fine Art Print collection",
+    "metaDescriptionFallback": "The “{name}” collection — Fine Art Prints of Anna Ciok’s paintings on 200 g/m² paper, framed or unframed.",
+    "allCollections": "All collections",
+    "shopCta": "Go to the shop",
+    "eyebrow": "Collection — {count, plural, one {# print} other {# prints}}",
+    "otherCollections": "More collections"
+  },
+  "collectionsHub": {
+    "eyebrow": "Collections",
+    "title": "Collections by <em>Anna Ciok</em>",
+    "lead": "Each collection is its own series of watercolour and ink paintings. Pick the mood, colour and rhythm closest to your space — then choose the size and framing of your Fine Art Print.",
+    "metaTitle": "Anna Ciok’s painting collections",
+    "metaDescription": "{count, plural, one {# collection} other {# collections}} of Anna Ciok’s watercolour and ink paintings. Choose a series and order a Fine Art Print on 200 g/m² paper, framed or unframed.",
+    "shopCta": "Browse all prints in the shop"
+  },
+  "shop": {
+    "metaTitle": "Shop Fine Art Prints of Anna Ciok’s paintings",
+    "metaDescription": "Reproductions of Anna Ciok’s watercolour and ink paintings — Fine Art Print on 200 g/m² paper, framed or unframed. Filter by colour and collection; delivery across the EU and UK.",
+    "eyebrow": "Fine Art Print",
+    "title": "Shop <em>Fine Art Prints</em>",
+    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order. Fulfilment within 2 business days, delivery within 5 business days across Europe.",
+    "priceLadder": "{size} · from {price}",
+    "frameFrom": "Frame +{price}",
+    "priceNote": "The price depends on size and framing — not on the painting.",
+    "filtersLabel": "Shop filters",
+    "sortLabel": "Sort",
+    "sort": {
+      "featured": "Featured",
+      "new": "New arrivals",
+      "collection": "Collection"
+    },
+    "colourLabel": "Colour",
+    "colour": {
+      "blue": "Blues",
+      "green": "Greens",
+      "warm": "Ochre & terracotta",
+      "pink": "Pink & violet",
+      "earth": "Beige & brown",
+      "mono": "Black & grey"
+    },
+    "collectionLabel": "Collection",
+    "allCollections": "All collections",
+    "clear": "Clear filters",
+    "empty": "No paintings match these filters.",
+    "emptyCta": "Browse collections",
+    "badgeNew": "New",
+    "badgePick": "Artist’s pick",
+    "frameColoursLabel": "Frames: {colours}",
+    "quickAdd": "Quick choose size and frame",
+    "quickDetails": "View details",
+    "close": "Close",
+    "giftTitle": "Not sure which painting to choose?",
+    "giftLead": "A gift card covers Fine Art Print — the recipient picks the composition, size and framing themselves.",
+    "collectionsTitle": "Browse by collection",
+    "collectionsCta": "All collections",
+    "aboutTitle": "About Anna Ciok’s Fine Art Prints",
+    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
+    "aboutMore": "Read more",
+    "aboutLess": "Show less"
+  },
+  "market": {
+    "meta": {
+      "title": "El Médano market · {date}",
+      "description": "Hand-painted ceramics and fine art prints by Anna Ciok at the El Médano handicraft market — Saturday 24 October 2026, 9:00–14:00, main plaza. A one-of-a-kind souvenir from Tenerife.",
+      "ogTitle": "This Saturday, in El Médano — Anna Ciok",
+      "ogAlt": "Fuerte Piba prints and a hand-painted plate by Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok at the El Médano handicraft market",
+      "dateLabel": "Saturday 24 October 2026",
+      "shortDateLabel": "Sat 24 Oct",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Main plaza, El Médano",
+      "area": "Granadilla de Abona, Tenerife",
+      "payment": "Cash, card or Bizum",
+      "calendarDetails": "Hand-painted ceramics and fine art prints by Anna Ciok. Cash, card or Bizum.",
+      "mapLabel": "Map"
+    },
+    "hero": {
+      "eyebrow": "Handicraft market · Mercadillo artesanal",
+      "line1": "This Saturday,",
+      "line2": "in El Médano.",
+      "lead": "Hand-painted ceramics and fine art prints, straight from my studio in Tenerife. Come find a souvenir that’s actually from the island — or the piece your apartment has been missing.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "directions": "Get directions",
+      "calendar": "Add to calendar",
+      "imageAlt": "Two Fuerte Piba prints, one black and one cream, with a hand-painted plate between them on a sunlit concrete floor",
+      "badgeDay": "Saturday",
+      "badgeNumber": "24",
+      "badgeMonth": "October",
+      "captionLabel": "From the studio",
+      "caption": "Fuerte Piba prints and a hand-painted plate."
+    },
+    "marquee": [
+      "hand-painted plates",
+      "mugs & vases",
+      "fine art prints",
+      "one of a kind",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Take Tenerife home",
+      "title": "A souvenir that’s <em>actually from here.</em>",
+      "p1": "Skip the fridge magnets. Every plate, mug and vase on my table is painted by hand in my studio in Güímar, with motifs taken from the island — palm trees, the Canarian sun, a siren, women in wide-brimmed hats.",
+      "p2": "No two are alike, so the piece you choose on Saturday exists only once.",
+      "tipTitle": "Flying home?",
+      "tipText": "Prints travel flat in a suitcase — and ask me how to pack ceramics safely for the trip.",
+      "imageAlt": "Anna holding two white vases hand-painted with blue palm trees and terracotta striped rims"
+    },
+    "apartment": {
+      "eyebrow": "For your place on the island",
+      "title": "Something for <em>the apartment.</em>",
+      "p1": "Just moved here, or giving a holiday flat some soul? Lean a pair of prints on the shelf, set a palm vase by the window, eat off plates nobody else owns — bold, sunny pieces made for Canarian light and white walls.",
+      "p2": "The prints carry Canarian sayings, and the characters that go with them:",
+      "imageAlt": "Framed Agüita and Chacho, Calma prints in blue leaning on a wooden shelf above green tiles, in warm afternoon light"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "On the table, <em>on the wall.</em>",
+      "aside": "Pieces made to be used every day — and just as happy hung on a wall next to a print.",
+      "viewLarger": "View larger: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Black & terracotta",
+        "caption": "A hat-figure plate, a wave vase and two palm mugs.",
+        "alt": "A plate with a figure in a wide-brimmed hat, a vase with a black wave and two palm mugs on stone plinths"
+      },
+      "bluePieces": {
+        "label": "In blue",
+        "caption": "Graters, hand dishes, a cup and a plate.",
+        "alt": "Blue hand-painted ceramic graters, two hand-shaped dishes, a wave cup and a wave plate on a cream plaster wall"
+      },
+      "platesOnPrints": {
+        "label": "Clay & paper",
+        "caption": "Mermaids, sailors and Fuerte Piba — on plates and on prints.",
+        "alt": "Hand-painted plates with a mermaid, sailors and a woman in a wide-brimmed hat laid on Fuerte Piba and Islas Canarias prints on a wooden table"
+      },
+      "wallPlates": {
+        "label": "On the wall",
+        "caption": "Leaves, a wave and a palm, hung as a small gallery.",
+        "alt": "Three hand-painted plates hung on a textured cream wall: terracotta leaves, a black wave with a terracotta sun, and a terracotta palm inside a black scalloped rim"
+      },
+      "plateWall": {
+        "label": "No two alike",
+        "caption": "A whole table of plates, every one painted by hand.",
+        "alt": "Dozens of hand-painted plates in black and terracotta laid out together in the sun: palms, mermaids, hands, shells, leaves and checks"
+      }
+    },
+    "wall": {
+      "ariaLabel": "A wall of hand-painted plates",
+      "view": "View the plate wall photo larger",
+      "line1": "No two alike.",
+      "line2": "Every plate painted by hand."
+    },
+    "table": {
+      "eyebrow": "On the table",
+      "title": "What you’ll find <em>on Saturday.</em>",
+      "items": [
+        {
+          "title": "Plates",
+          "text": "From side plates to large serving plates."
+        },
+        {
+          "title": "Mugs",
+          "text": "For a slow café con leche on the terrace."
+        },
+        {
+          "title": "Vases",
+          "text": "Small, medium and large — palms included."
+        },
+        {
+          "title": "Bowls",
+          "text": "Large serving bowls and wavy-rimmed ones."
+        },
+        {
+          "title": "Fine art prints",
+          "text": "Canarian sayings and characters for your walls."
+        }
+      ],
+      "note": "Every ceramic piece is one of a kind. Once it’s sold, it’s gone — <em>come early.</em>"
+    },
+    "showroom": {
+      "eyebrow": "From the showroom",
+      "title": "A taste of <em>what I make.</em>",
+      "aside": "Pieces from earlier collections — not a list of what’s on the stand. Every piece is one of a kind, so come and see what’s on the table on Saturday.",
+      "tag": "Earlier work",
+      "note": "From an earlier collection — one of a kind, hand-painted in my studio in Güímar. Come see what’s on the table on Saturday.",
+      "viewPiece": "View {title} larger",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Size",
+      "madeIn": "Made in",
+      "madeInValue": "Güímar, Tenerife",
+      "alt": {
+        "k10": "hand-painted with a blue shell",
+        "t20": "a black cactus inside a terracotta rim",
+        "h01": "painted inside with two black palm trees",
+        "g01": "a black palm tree between terracotta borders",
+        "s19": "a black donkey inside a terracotta scalloped rim",
+        "w08": "painted with soft blue cacti and terracotta dots",
+        "v01": "a blue cactus and a terracotta sun",
+        "d06": "a black lobster drawn around the body"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, I’m Anna",
+      "title": "One pair of hands, <em>one piece at a time.</em>",
+      "p1": "I live and work in Tenerife. In my small studio in Güímar I paint watercolours on paper and hand-paint ceramic tableware — never mass-produced. The island’s colours, sayings and characters end up on almost everything I make.",
+      "p2": "Stop by the stand to say hola, pick up a plate, and ask me anything about how it was made.",
+      "instagram": "Follow on Instagram",
+      "imageAlt": "Anna Ciok in her studio holding a black cat, smiling over a table covered in hand-painted black and terracotta plates",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "See you at the plaza on Saturday. Come early for the best pick — every ceramic piece is one of a kind.",
+      "when": "When",
+      "where": "Where",
+      "pay": "Pay",
+      "cantMakeIt": "Can’t make it?",
+      "shop": "Shop online",
+      "studio": ", or visit my studio in Güímar by appointment."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Mugs",
+        "singular": "Mug"
+      },
+      "wazony": {
+        "name": "Small vases",
+        "singular": "Small vase"
+      },
+      "wazony-duze": {
+        "name": "Large vases",
+        "singular": "Large vase"
+      },
+      "talerze-srednie": {
+        "name": "Medium plates",
+        "singular": "Medium plate"
+      },
+      "duze-michy": {
+        "name": "Large bowls",
+        "singular": "Large bowl"
+      },
+      "miski-falowane": {
+        "name": "Wavy-rimmed bowls",
+        "singular": "Wavy-rimmed bowl"
+      }
+    },
+    "aria": {
+      "close": "Close",
+      "prev": "Previous",
+      "next": "Next",
+      "photo": "Photo"
+    }
   }
 }

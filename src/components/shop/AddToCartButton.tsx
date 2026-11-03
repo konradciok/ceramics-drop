@@ -13,6 +13,7 @@ import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { isPrintToken } from '@/lib/print-cart';
 import type { Product } from '@/lib/types';
+import { isProductPurchasable } from '@/lib/products';
 
 type Props = { product: Product };
 
@@ -30,10 +31,10 @@ export function AddToCartButton({ product }: Props) {
   // and server validateCart enforce it too; this just surfaces it earlier).
   const cartHasPrints = ids.some(isPrintToken);
 
-  if (product.sold) {
+  if (!isProductPurchasable(product)) {
     return (
       <button className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
-        {t('gallery.sold')}
+        {t(product.sold ? 'gallery.sold' : 'ceramics.unavailable')}
       </button>
     );
   }

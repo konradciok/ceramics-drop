@@ -19,7 +19,8 @@ export type MetaStandardEvent =
   | 'ViewContent'
   | 'AddToCart'
   | 'InitiateCheckout'
-  | 'Purchase';
+  | 'Purchase'
+  | 'FindLocation';
 
 export type AnalyticsItem = {
   item_id: string;
@@ -73,7 +74,14 @@ export type DataLayerEvent = {
 /** GTM ecommerce reset — clear persisted items before the next ecommerce event. */
 export type DataLayerEcommerceClear = { ecommerce: null };
 
-export type DataLayerEntry = DataLayerEvent | DataLayerEcommerceClear;
+/** GTM `meta` reset — drop a prior event's persisted product fields before a payload-less Meta signal. */
+export type DataLayerMetaClear = { meta: null };
+
+export type DataLayerEntry =
+  | DataLayerEvent
+  | MarketDirectionsEvent
+  | DataLayerEcommerceClear
+  | DataLayerMetaClear;
 
 type EventOptions = {
   eventId?: string;
@@ -129,7 +137,7 @@ export function toAnalyticsItem(
  * (`print:fap01:a3:satin:oak`) — to an AnalyticsItem, or null if unresolvable.
  * Lets the cart/checkout/purchase events itemise prints alongside ceramics.
  */
-export function analyticsItemForId(id: string, priceOverride?: number): AnalyticsItem | null {
+export function analyticsItemForId(id: string, priceOverride?: number, nameOverride?: string): AnalyticsItem | null {
   if (isGiftCardToken(id)) {
     const dec = decodeGiftCardToken(id);
     if (!dec) return null;
@@ -154,7 +162,7 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
     if (priceOverride === undefined) return null;
     return {
       item_id: design.id,
-      item_name: printDisplayName(design),
+      item_name: nameOverride ?? printDisplayName(design),
       item_brand: BRAND,
       item_category: 'fine-art-prints',
       item_variant: variantLabel(dec.sel, 'en'),
@@ -168,9 +176,13 @@ export function analyticsItemForId(id: string, priceOverride?: number): Analytic
 }
 
 /** Resolve a positional ids + prices pair to AnalyticsItems, dropping unresolvable ids. */
-export function analyticsItemsForIds(ids: string[], itemPrices?: number[]): AnalyticsItem[] {
+export function analyticsItemsForIds(
+  ids: string[],
+  itemPrices?: number[],
+  nameOverrides?: (string | undefined)[],
+): AnalyticsItem[] {
   return ids
-    .map((id, i) => analyticsItemForId(id, itemPrices?.[i]))
+    .map((id, i) => analyticsItemForId(id, itemPrices?.[i], nameOverrides?.[i]))
     .filter((it): it is AnalyticsItem => it !== null);
 }
 
@@ -192,14 +204,14 @@ export function buildAddToCartEvent(
   );
 }
 
-type PrintItemInput = { id: string; num: string; variantLabel: string; price: number };
+type PrintItemInput = { id: string; num: string; variantLabel: string; price: number; itemName?: string };
 
 /** One canonical AnalyticsItem shape for a print variant (item_id = design id,
  *  so Meta content_ids / GA4 item_id match the fap0x merchant-feed rows). */
 function printAnalyticsItem(print: PrintItemInput): AnalyticsItem {
   return {
     item_id: print.id,
-    item_name: printDisplayName(print),
+    item_name: print.itemName ?? printDisplayName(print),
     item_brand: BRAND,
     item_category: 'fine-art-prints',
     item_variant: print.variantLabel,
@@ -544,6 +556,37 @@ export function buildEngagementEvent(
   };
 }
 
+/** Dedicated conversion event: a Meta signal with no product/value payload. */
+export type MarketDirectionsEvent = {
+  event: 'market_get_directions';
+  event_id: string;
+  placement?: string;
+  page_path: string;
+  locale?: string;
+  meta: { event_name: 'FindLocation'; event_id: string };
+};
+
+/**
+ * El Médano landing page "Get directions" click — the campaign conversion.
+ * Own dataLayer event (not `site_engagement`) carrying a `meta` signal so GTM's
+ * Meta standard-events tag sends it as `FindLocation`; GA4 receives it by name.
+ */
+export function buildMarketDirectionsEvent(details: {
+  placement?: string;
+  pagePath: string;
+  locale?: string;
+}): MarketDirectionsEvent {
+  const eventId = createEventId('market_get_directions', details.placement ?? 'directions');
+  return {
+    event: 'market_get_directions',
+    event_id: eventId,
+    placement: details.placement,
+    page_path: redactSensitiveUrl(details.pagePath),
+    locale: details.locale,
+    meta: { event_name: 'FindLocation', event_id: eventId },
+  };
+}
+
 export type AuthMethod = 'google' | 'apple';
 
 /**
@@ -612,18 +655,24 @@ export function buildPageViewEvent(details: {
   };
 }
 
-export function pushDataLayer(event: DataLayerEvent): void {
+export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
   // Reset GTM's persisted ecommerce object so a prior view_item_list does not
   // merge its items into purchase / checkout / cart events in Tag Assistant or GA4.
-  if (event.ecommerce) {
+  if ('ecommerce' in event && event.ecommerce) {
     window.dataLayer.push({ ecommerce: null });
+  }
+  // GTM dataLayer variables persist until overwritten: without this, a
+  // payload-less Meta signal (FindLocation) would inherit a previous product
+  // event's meta.content_ids / contents / value in the shared Meta tag.
+  if (event.event === 'market_get_directions') {
+    window.dataLayer.push({ meta: null });
   }
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).
-  const payload: DataLayerEvent = {
+  const payload = {
     ...event,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION,
     app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,
@@ -632,7 +681,12 @@ export function pushDataLayer(event: DataLayerEvent): void {
   mirrorDebugEvent(payload);
 }
 
-function mirrorDebugEvent(event: DataLayerEvent): void {
+function mirrorDebugEvent(event: {
+  event: string;
+  engagement_type?: unknown;
+  ecommerce?: unknown;
+  meta?: unknown;
+}): void {
   if (!isDebugHost()) return;
 
   try {

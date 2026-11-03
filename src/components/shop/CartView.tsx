@@ -1,21 +1,23 @@
 'use client';
 
-import { printDisplayName } from '@/lib/print-curation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
-import { CATEGORIES, registryProductById, isCategoryHidden } from '@/lib/products';
-import { resolveCartLines, type CartLine } from '@/lib/cart-lines';
+import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
+import type { CartLine } from '@/lib/cart-lines-server';
+import { useCartLines } from '@/lib/use-cart-lines';
 import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
 import { variantLabel } from '@/lib/print-cart';
+import { isGiftCardToken } from '@/lib/gift-cards';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
@@ -33,11 +35,25 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod } from '@/lib/pricing';
-import { PRINT_COUNTRIES, printShippingOf, type PrintCountry } from '@/lib/print-shipping';
-import { attemptIdentityKey, checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
+import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
+import {
+  PRINT_COUNTRIES,
+  printShippingOf,
+  type PrintCountry,
+  type InternationalShippingRates,
+} from '@/lib/print-shipping';
+import {
+  attemptIdentityKey,
+  cartSummaryAmounts,
+  checkoutPreBodyError,
+  resolveConfirmedAmounts,
+  shouldKeepAttemptIdOnCatch,
+  type CheckoutAmounts,
+} from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
+import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
+import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
 import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
@@ -54,7 +70,7 @@ type ShipId = DeliveryMethod;
 const SHIP_IDS: ShipId[] = ['paczkomat', 'kurier', 'odbior'];
 
 // Maps each delivery method to its funnel event so we can see which option
-// creates friction vs. advantage (InPost locker vs. courier vs. Warsaw pickup).
+// creates friction vs. advantage (InPost locker vs. courier vs. studio pickup).
 const SHIP_EVENT: Record<ShipId, string> = {
   paczkomat: 'parcel_locker_select',
   kurier: 'courier_select',
@@ -135,18 +151,31 @@ export function CartView({
   privateSaleToken: propSaleToken,
   initialPrintCountry = 'PL',
   printPricing,
+  internationalShippingRates,
+  domesticShippingRates,
 }: {
   privateSaleToken?: string | null;
   initialPrintCountry?: PrintCountry;
   /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
   printPricing: PrintPricingConfig;
+  /**
+   * The SAME published shipping tables checkout charges from
+   * (src/lib/shipping-rates/get.ts's getShippingRatesForDisplay, resolved by
+   * the server page — client islands cannot reach the DB). Required, with no
+   * code-constant default: a caller that forgot them would silently show a
+   * price the CMS has since changed away from.
+   */
+  internationalShippingRates: InternationalShippingRates;
+  /** Ceramic (InPost) track of the same published table. */
+  domesticShippingRates: DomesticShippingRates;
 }) {
   const t = useTranslations();
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const mounted = useMounted();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
   const replace = useCart((s) => s.replace);
+  const { lines: allLines, status: linesStatus } = useCartLines(ids, locale);
 
   // Private-sale mode: driven solely by the `?sale=<TOKEN>` URL param (passed in from
   // the server component). The cart is a locked bundle of (already-`sold`) pieces:
@@ -185,7 +214,15 @@ export function CartView({
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // What /api/checkout actually priced the PaymentIntent from (minor units).
+  // Everything below re-computes continuously from the code-default rate
+  // tables; these do not. Once `clientSecret` exists the summary renders THESE
+  // — a CMS rate republish (or a currency flip) mid-payment can no longer
+  // leave the buyer reading a number Stripe will not charge.
+  const [confirmedAmounts, setConfirmedAmounts] = useState<CheckoutAmounts | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [inventoryReady, setInventoryReady] = useState(false);
+  const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
 
@@ -203,6 +240,8 @@ export function CartView({
   const [promoBusy, setPromoBusy] = useState(false);
   // A PromoIneligibleReason from the server, or 'network' for transport failures.
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [giftCard, setGiftCard] = useState<AppliedGiftCard | null>(null);
+  const [balancePayment, setBalancePayment] = useState<{ giftCard: number; cash: number } | null>(null);
 
   // Persist the buyer's own choice (not the print-forced kurier override).
   useEffect(() => {
@@ -227,30 +266,65 @@ export function CartView({
         .finally(() => setPrivateSaleLoading(false));
       return;
     }
-    // Drop any stored id that can never resolve to a buyable line — malformed or
-    // withdrawn print tokens, unknown ceramics — so the persisted cart can't drift
-    // from what's rendered (server validateCart stays the hard gate regardless).
-    const current = useCart.getState().ids;
-    const valid = new Set(resolveCartLines(current).map((l) => l.id));
-    current.forEach((id) => { if (!valid.has(id)) remove(id); });
-
+    // Fetch availability only — the prune-against-it effect below applies it
+    // once the cart-lines DTO has resolved which ids are real ceramic lines
+    // in the first place (see that effect's own comment for why).
     fetch('/api/inventory')
-      .then((r) => r.json())
-      .then(({ sold, showroom = [] }: { sold: string[]; showroom?: string[] }) =>
-        // Prune anything no longer purchasable — sold pieces and showroom-retired
-        // pieces alike — exactly as the server reserve_pieces guard would reject.
-        [...sold, ...showroom].forEach((id) => { if (useCart.getState().ids.includes(id)) remove(id); }))
-      .catch(() => {});
+      .then((r) => { if (!r.ok) throw new Error('availability_unavailable'); return r.json(); })
+      .then(({ available }: { available: string[] }) => {
+        if (!Array.isArray(available)) throw new Error('availability_unavailable');
+        setAvailableIds(new Set(available));
+        setInventoryReady(true);
+      })
+      .catch(() => setInventoryReady(false));
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sold-piece pruning: silent (no buyer-visible notice — "someone else just
+  // bought it" needs no explanation the way "this was never purchasable"
+  // does). Gated on BOTH the inventory fetch above and the cart-lines DTO
+  // being 'ready', and scoped to already-resolved `kind: 'ceramic'` lines —
+  // NOT raw ids. A bare id that /api/inventory doesn't list could just as
+  // easily be unknown/withdrawn/malformed, not merely sold; pruning by raw
+  // id here would silently drop it before the unavailable-line effect below
+  // ever saw it in `allLines`, losing the buyer-visible notice that effect
+  // exists to show.
+  useEffect(() => {
+    if (!availableIds || linesStatus !== 'ready') return;
+    allLines.forEach((l) => {
+      if (l.kind === 'ceramic' && !availableIds.has(l.id)) remove(l.id);
+    });
+  }, [availableIds, allLines, linesStatus, remove]);
+
+  // Auto-remove any cart id the server-side resolver could not resolve
+  // (unknown, withdrawn, malformed token) with a one-time visible notice —
+  // replaces the old resolver's silent-drop behavior. Fires whenever the
+  // cart-lines DTO resolves/re-resolves, not just on mount, so an id that
+  // becomes unavailable later (e.g. withdrawn while sitting in the cart) is
+  // still caught. `handledUnavailableIds` guards against reprocessing the
+  // same id on a subsequent re-render/re-fetch.
+  const handledUnavailableIds = useRef(new Set<string>());
+  const [showUnavailableNotice, setShowUnavailableNotice] = useState(false);
+  useEffect(() => {
+    if (linesStatus !== 'ready') return;
+    const newlyUnavailable = allLines.filter(
+      (l) => l.kind === 'unavailable' && !handledUnavailableIds.current.has(l.id),
+    );
+    if (newlyUnavailable.length === 0) return;
+    newlyUnavailable.forEach((l) => {
+      handledUnavailableIds.current.add(l.id);
+      remove(l.id);
+    });
+    setShowUnavailableNotice(true);
+  }, [allLines, linesStatus, remove]);
 
   // This is the ceramics/prints merchandise cart — gift cards are their own
   // exclusive checkout track (no shipping, no mixing) with a dedicated flow,
   // so any gift-card token that ends up in the shared cart store is dropped
   // here rather than half-rendered through ceramic/print-shaped UI.
-  const lines = resolveCartLines(ids).filter(
-    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind !== 'giftcard',
+  const lines = allLines.filter(
+    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind === 'ceramic' || l.kind === 'print',
   );
   const n = lines.length;
   // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
@@ -274,14 +348,41 @@ export function CartView({
     l.kind === 'print'
       ? priceOfVariant(l.sel, printCurrency, printPricing)
       : priceOfCurrency(l.product, currency);
-  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method);
+  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method, domesticShippingRates);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
   // Print carts charge Prodigi's shipping cost by destination country;
-  // ceramic carts keep the InPost price list.
-  const shipCost = hasPrints ? printShippingOf(country, hasFramed, printCurrency) : shippingOf(ship);
+  // ceramic carts use the InPost price list. `internationalShippingRates` and
+  // `domesticShippingRates` are the same published tables checkout resolves via
+  // getShippingRatesForCheckout, so what's shown here always matches what
+  // the buyer is charged.
+  const shipCost = hasPrints
+    ? printShippingOf(country, hasFramed, printCurrency, printPricing, internationalShippingRates)
+    : shippingOf(ship);
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
   const total = subtotal + shipCost - promoDiscount;
+  const cardSplit = giftCard?.currency === printCurrency && total > 0
+    ? splitGiftCardPayment(Math.round(total * 100), giftCard.available, STRIPE_MINIMUM_MINOR[printCurrency]) : null;
+  // The figures the order summary renders. Before the PaymentIntent exists
+  // this is the live estimate above — a legitimate pre-payment quote that must
+  // keep tracking the buyer's delivery/promo/currency choices. After it
+  // exists, the server's confirmed amounts win outright: the charge is locked,
+  // so the display has to be too (same reasoning as the frozen promo row
+  // below). A missing/malformed `amounts` payload parses to null and simply
+  // leaves the estimate in place — never a blank or garbled price.
+  const summary = cartSummaryAmounts(
+    { currency, subtotal, shipping: shipCost, discount: promoDiscount, total },
+    clientSecret ? confirmedAmounts : null,
+  );
+  const { fmt: sumFmt } = currencyFormatter(summary.currency);
+  // GiftCardPayment formats server-confirmed minor amounts — including the
+  // cash remainder Stripe will actually take. Once those exist it has to use
+  // the CHARGED currency, not the live switcher's: the header switcher stays
+  // usable behind the mounted payment form, and relabelling the cash-due
+  // figure is the same desync the summary rows above are protected against.
+  // Before confirmation there is nothing charged yet, so the live currency is
+  // correct (and is what `giftCard.currency` is matched against).
+  const giftCardCurrency = summary.confirmed ? summary.currency : printCurrency;
   // Localized country names for the print destination selector, sorted A→Z.
   const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
   const countryOptions = PRINT_COUNTRIES
@@ -295,7 +396,7 @@ export function CartView({
   // promo-bound, so both are part of the attempt identity (hard Phase 3 gate,
   // see attemptIdentityKey). Regenerate so a stale attemptId is never reused.
   // Skips the initial mount (same attempt).
-  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null);
+  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null) + (giftCard ? `\ncard:${giftCard.code}:${printCurrency}:${ship}:${country}` : '');
   const attemptCartKey = useRef(attemptKey);
   useEffect(() => {
     if (attemptCartKey.current === attemptKey) return;
@@ -315,7 +416,9 @@ export function CartView({
     if (promoSyncRef.current === promoSyncKey) return;
     promoSyncRef.current = promoSyncKey;
     if (!promo) return;
-    const current = resolveCartLines(useCart.getState().ids);
+    // /api/promo/validate resolves ids itself server-side — no need to
+    // re-resolve cart lines here, just forward the raw (non-gift-card) ids.
+    const current = useCart.getState().ids.filter((id) => !isGiftCardToken(id));
     // An emptied cart renders no promo UI at all; the next cart change lands
     // back here and re-validates, so no synchronous state write is needed.
     if (current.length === 0) return;
@@ -323,7 +426,7 @@ export function CartView({
     fetch('/api/promo/validate', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: promo.code, ids: current.map((l) => l.id), locale }),
+      body: JSON.stringify({ code: promo.code, ids: current, locale }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { ok: boolean; code?: string; discount?: number; reason?: string } | null) => {
@@ -408,7 +511,11 @@ export function CartView({
   useEffect(() => {
     if (lines.length === 0 || viewedCartKeys.current.has(cartKey)) return;
     viewedCartKeys.current.add(cartKey);
-    const items = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    const items = analyticsItemsForIds(
+      lines.map((l) => l.id),
+      lines.map(priceOfLine),
+      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
+    );
     pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartKey, lines]);
@@ -466,6 +573,14 @@ export function CartView({
   }
 
   async function handleCheckout(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
+    if (giftCard && giftCard.currency !== printCurrency) {
+      setCheckoutError(t('giftBalance.wrongCurrency', { currency: giftCard.currency.toUpperCase() }));
+      return;
+    }
+    if (!privateSale && lines.some((line) => line.kind === 'ceramic') && !inventoryReady) {
+      setCheckoutError(t('ceramics.availabilityError'));
+      return;
+    }
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
@@ -477,7 +592,11 @@ export function CartView({
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     // begin_checkout itemises the whole cart (ceramics + prints); print items are
     // resolved from their tokens with server-equal prices.
-    const checkoutItems = analyticsItemsForIds(lines.map((l) => l.id), lines.map(priceOfLine));
+    const checkoutItems = analyticsItemsForIds(
+      lines.map((l) => l.id),
+      lines.map(priceOfLine),
+      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
+    );
     pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
@@ -502,13 +621,17 @@ export function CartView({
         headers: { 'content-type': 'application/json' },
         // Send EVERY line id — bare ceramic ids and print tokens alike; the server
         // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
       resStatus = res.status;
       if (res.status === 409) {
         const conflict = (await res.json()) as { error?: string; sold?: string[] };
+        if (conflict.error?.startsWith('gift_card_') || conflict.error === 'order_attempt_conflict' || conflict.error === 'ceramic_unavailable') {
+          setCheckoutError(t(conflict.error === 'ceramic_unavailable' ? 'ceramics.cartBlocked' : 'giftBalance.invalid'));
+          return;
+        }
         if (conflict.error === 'order_conflict') {
           // The attemptId was already consumed by a non-pending order (paid,
           // expired, ...). Start a fresh attempt for the next click and keep
@@ -568,6 +691,7 @@ export function CartView({
         }
       }
       if (!res.ok) {
+        if (giftCard) { setCheckoutError(t('giftBalance.unavailable')); return; }
         // Abandon the attemptId: Stripe may have cached this failure under its
         // idempotency key, and the server already released any hold it took —
         // a fresh attempt is the only path that can succeed.
@@ -597,7 +721,27 @@ export function CartView({
         setCheckoutError(errorMessage);
         return;
       }
-      const { client_secret, discount } = (await res.json()) as { client_secret: string; discount?: number };
+      const response = (await res.json()) as { status?: string; confirmation_url?: string; client_secret?: string; discount?: number; gift_card_amount?: number; cash_amount?: number; amounts?: unknown };
+      if (response.status === 'paid' && response.confirmation_url) {
+        const confirmation = new URL(response.confirmation_url, window.location.origin);
+        if (confirmation.origin !== window.location.origin) throw new Error('Invalid confirmation URL');
+        lines.forEach(line => remove(line.id));
+        resetAttemptId();
+        window.location.assign(confirmation.href);
+        return;
+      }
+      const { client_secret, discount } = response;
+      if (!client_secret) throw new Error('Missing payment response');
+      // Reject a present-but-unparseable `amounts` the same way a missing
+      // client_secret is rejected above — before anything below mounts the
+      // payment form on pricing data that can't be trusted. An entirely
+      // absent `amounts` (older deployment) is not an error; see
+      // resolveConfirmedAmounts.
+      const resolvedAmounts = resolveConfirmedAmounts(response.amounts);
+      if (!resolvedAmounts.ok) throw new Error('Malformed payment amounts');
+      if (typeof response.gift_card_amount === 'number' && typeof response.cash_amount === 'number') {
+        setBalancePayment({ giftCard: response.gift_card_amount, cash: response.cash_amount });
+      }
       // Re-sync the preview with the authoritative figure (shipping-aware
       // Stripe-minimum clamp can grant slightly more than the preview showed).
       if (promo && typeof discount === 'number') {
@@ -606,6 +750,11 @@ export function CartView({
       // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
       // event for print-only and mixed carts (and never false-alarms a "purchase gap").
       rememberCheckoutForReturn(lines.map((l) => l.id), {
+        // Deliberately the client-side estimate, not the server's confirmed
+        // shipping: GA4 needs PER-ITEM prices, which only exist client-side,
+        // so an event mixing server shipping with client item prices would not
+        // reconcile. The snapshot stays internally consistent; the display
+        // (which has no such constraint) uses the confirmed figures.
         shippingCost: shipCost,
         shippingMethod: ship,
         currency: analyticsCurrency,
@@ -617,7 +766,12 @@ export function CartView({
         discountMinor: typeof discount === 'number' ? discount : promo?.discount,
       });
       // A later, separate purchase must never reuse this attemptId.
-      resetAttemptId();
+      if (!giftCard) resetAttemptId();
+      // Kept adjacent to (and ahead of) setClientSecret: `clientSecret` is what
+      // switches the summary over to these figures, and the two must land in
+      // the same render. React batches both here; the ordering keeps that true
+      // if this ever moves out of an event handler.
+      setConfirmedAmounts(resolvedAmounts.amounts);
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -628,7 +782,7 @@ export function CartView({
       // checkout_in_progress/unavailable (keep-required), and a kept id
       // converges on retry while a wrong reset wipes the cart against the
       // buyer's own live hold. A pure network error also keeps it — see above.
-      if (gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
+      if (!giftCard && gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
       // Received-but-unprocessable responses are not network errors — report
       // the real status so analytics can tell a parse failure from an outage.
       pushDataLayer(buildEngagementEvent(
@@ -673,10 +827,29 @@ export function CartView({
     );
   }
 
+  // ── Cart-lines DTO still resolving ─────────────────────────────────────────
+  // Only reachable when `ids` is non-empty (useCartLines resolves synchronously
+  // to 'ready' for an empty cart), so this never masks a genuinely empty cart.
+  if (linesStatus === 'loading') {
+    return <div className="cart-empty" aria-busy="true" />;
+  }
+
+  // ── Cart-lines DTO fetch failed ──────────────────────────────────────────
+  // Distinct from the empty state so a transient network failure never reads
+  // to the buyer as "your cart was cleared".
+  if (linesStatus === 'error') {
+    return (
+      <div className="cart-empty">
+        <h2>{t('cart.loadError')}</h2>
+      </div>
+    );
+  }
+
   // ── Empty state ──────────────────────────────────────────────────────────
   if (n === 0) {
     return (
       <div className="cart-empty">
+        {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -717,11 +890,12 @@ export function CartView({
             {t('cart.label')} <em>—</em> {n} {t('cart.word', { count: n })}
           </h1>
         </div>
+        {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
         <div className="cart-list">
           {lines.map((l) => {
             if (l.kind === 'print') {
               const d = l.design;
-              const name = printDisplayName(d, t('product.print'));
+              const name = l.name;
               return (
                 <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
                   <Link href={`/fine-art-prints/${d.id}`} className="thumb" aria-label={name}>
@@ -740,7 +914,7 @@ export function CartView({
                         remove(l.id);
                         pushDataLayer(
                           buildPrintRemoveFromCartEvent(
-                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l) },
+                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l), itemName: name },
                             { currency: analyticsCurrency },
                           ),
                         );
@@ -755,14 +929,15 @@ export function CartView({
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
+            const lineDisplayName = productDisplayName(p, name);
             return (
               <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={p.id}>
-                <Link href={`/${p.category}/${p.id}`} className="thumb" aria-label={`${name} Nº ${p.num}`}>
+                <Link href={`/${p.category}/${p.id}`} className="thumb" aria-label={lineDisplayName}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
                 </Link>
                 <div>
-                  <h4>{name} Nº {p.num}</h4>
+                  <h4>{lineDisplayName}</h4>
                   <div className="meta">{name} {t('cart.oneoff')}</div>
                 </div>
                 <div className="right">
@@ -774,7 +949,7 @@ export function CartView({
                       pushDataLayer(
                         buildRemoveFromCartEvent(p, {
                           currency: analyticsCurrency,
-                          itemPrices: [priceOfCurrency(p, currency)],
+                          itemPrices: [priceOfLine(l)],
                         }),
                       );
                     }}
@@ -835,7 +1010,7 @@ export function CartView({
               />
             ) : (
             <div className="delivery-fields">
-              {/* All ceramic delivery methods are Poland-only (InPost / Warsaw pickup). */}
+              {/* Shipping (InPost locker/courier) is Poland-only; the free pickup option is at the Tenerife studio. */}
               <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
               <div className="field-row">
                 <label className="field">
@@ -964,7 +1139,10 @@ export function CartView({
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
-              <span className="v">{fmt(total)}</span>
+              {/* !clientSecret here, so `summary` is the estimate by
+                  definition — routed through it anyway so every rendered
+                  total in this component has exactly one source. */}
+              <span className="v">{sumFmt(summary.total)}</span>
             </div>
           )}
           {clientSecret ? (
@@ -981,7 +1159,7 @@ export function CartView({
               onClick={hasPrints ? undefined : () => void handleCheckout()}
               disabled={submitting || !deliveryReady || mixedCart || privateSalePrints}
             >
-              {t('cart.checkout')} <Icon name="arrow" />
+              {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>
           )}
           {checkoutError && <p className="pay-error">{checkoutError}</p>}
@@ -1000,12 +1178,12 @@ export function CartView({
               const d = l.design;
               return (
                 <li key={l.id} className="sum-item">
-                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={printDisplayName(d, t('product.print'))}>
+                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={l.name}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
                   </Link>
                   <div className="sum-item-info">
-                    <span className="sum-item-name">{printDisplayName(d, t('product.print'))} · {variantLabel(l.sel, locale)}</span>
+                    <span className="sum-item-name">{l.name} · {variantLabel(l.sel, locale)}</span>
                     <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                   </div>
                 </li>
@@ -1014,27 +1192,32 @@ export function CartView({
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
+            const lineDisplayName = productDisplayName(p, name);
             return (
               <li key={l.id} className="sum-item">
-                <Link href={`/${p.category}/${p.id}`} className="sum-item-thumb" aria-label={`${name} Nº ${p.num}`}>
+                <Link href={`/${p.category}/${p.id}`} className="sum-item-thumb" aria-label={lineDisplayName}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.image} srcSet={srcSet(p.image)} sizes="56px" alt="" />
                 </Link>
                 <div className="sum-item-info">
-                  <span className="sum-item-name">{name} Nº {p.num}</span>
+                  <span className="sum-item-name">{lineDisplayName}</span>
                   <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
                 </div>
               </li>
             );
           })}
         </ul>
+        {/* All four summary figures come from one snapshot (`summary`) so the
+            rows always add up: swapping only shipping/total for the server's
+            numbers while items stayed client-priced would show a subtotal that
+            no longer reconciles with the total below it. */}
         <div className="sum-row">
           <span className="k">{t('cart.pieces')} ({n})</span>
-          <span className="v">{fmt(subtotal)}</span>
+          <span className="v" data-testid="summary-subtotal">{sumFmt(summary.subtotal)}</span>
         </div>
         <div className="sum-row">
           <span className="k">{t('cart.delivery')}</span>
-          <span className="v">{shipCost > 0 ? fmt(shipCost) : t('cart.free')}</span>
+          <span className="v" data-testid="summary-shipping">{summary.shipping > 0 ? sumFmt(summary.shipping) : t('cart.free')}</span>
         </div>
         {promo ? (
           <div className="sum-row promo-row" data-testid="promo-discount-row">
@@ -1054,9 +1237,9 @@ export function CartView({
                 </button>
               )}
             </span>
-            <span className="v">-{fmt(promoDiscount)}</span>
+            <span className="v" data-testid="summary-discount">-{sumFmt(summary.discount)}</span>
           </div>
-        ) : clientSecret ? null : (
+        ) : clientSecret || giftCard ? null : (
           <div className="promo-entry">
             {promoOpen ? (
               <div className="promo-form">
@@ -1107,8 +1290,10 @@ export function CartView({
         )}
         <div className="sum-total">
           <span className="k">{t('cart.total')}</span>
-          <span className="v">{fmt(total)}</span>
+          <span className="v" data-testid="summary-total">{sumFmt(summary.total)}</span>
         </div>
+        {!promo && <GiftCardPayment key={giftCardCurrency} card={giftCard} onChange={setGiftCard}
+          total={Math.round(total * 100)} currency={giftCardCurrency} locked={submitting || !!clientSecret} confirmed={balancePayment} />}
         <div className="cart-delivery-notice">
           <strong>{t('deliveryNotice.title')}</strong>
           <p>{t('deliveryNotice.p1')}</p>

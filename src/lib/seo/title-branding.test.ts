@@ -7,14 +7,14 @@ import { routing } from '@/i18n/routing';
  * Guard for the title-template contract.
  *
  * The root layout (`src/app/[locale]/layout.tsx`) owns the brand suffix via
- * `title.template = '%s — Anna Ciok Ceramics'`, so per-page `title.*` strings
+ * `title.template = '%s — Anna Ciok Studio'`, so per-page `title.*` strings
  * must be page-only — otherwise the brand renders twice
- * (e.g. "Mugs — Anna Ciok Ceramics — Anna Ciok Ceramics").
+ * (e.g. "Mugs — Anna Ciok Studio — Anna Ciok Studio").
  *
  * `title.home` is the documented exception: it leads with the brand and the
  * home page opts out of the template via `title: { absolute: ... }`.
  */
-const BRAND = 'Anna Ciok Ceramics';
+const BRAND = 'Anna Ciok Studio';
 
 function loadTitles(locale: string): Record<string, string> {
   const path = fileURLToPath(new URL(`../../../messages/${locale}.json`, import.meta.url));

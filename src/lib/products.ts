@@ -15,11 +15,13 @@
         noteIndex per category. Stable ids survive; only num/category
         change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
+import { cache } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
 import { recordCeramicCatalogSuccess, resolveCeramicCatalogFallback } from './catalog/last-known-good';
+import { markCeramicCatalogColdFailClosed } from './request-degradation';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -81,9 +83,20 @@ export function isProductPublic(product: Product): boolean {
   return (product.status ?? 'active') === 'active' && !isCategoryHidden(product.category);
 }
 
+/**
+ * Display name for a ceramic piece: the CMS-authored `title` (db mode, when
+ * set — e.g. a product created via cms-ceramics) takes the complete name
+ * as-is (no "Nº {num}" suffix forced onto real copy); the code registry
+ * carries no title, so every registry-seeded piece keeps its synthesized
+ * "{singularName} Nº {num}" name exactly as before.
+ */
+export function productDisplayName(product: Product, singularName: string): string {
+  return product.title ?? `${singularName} Nº ${product.num}`;
+}
+
 /** Whether a piece may be bought — publicly visible AND not sold / not in the showroom. */
 export function isProductPurchasable(product: Product): boolean {
-  return !product.sold && !product.showroom && isProductPublic(product);
+  return product.onlineAvailable === true && !product.sold && !product.showroom && isProductPublic(product);
 }
 
 /** CATEGORY_ORDER minus hidden families — nav / footer / switcher / jump-nav. */
@@ -287,16 +300,16 @@ export function registryProductsByCategory(slug: CategorySlug): Product[] {
   return PRODUCTS_BY_CATEGORY[slug];
 }
 
-/** Registry-only resolve (no DB) — used by client/code-derived cart surfaces. */
-export function registryResolveKnownProducts(ids: string[]): Product[] {
+/**
+ * Registry-only resolve (no DB) — used by code-derived surfaces (marketing
+ * conversions). `knownProducts` (id → Product) is an optional fallback for
+ * ids absent from the code registry — a DB-only product the caller already
+ * resolved DB-aware.
+ */
+export function registryResolveKnownProducts(ids: string[], knownProducts?: Record<string, Product>): Product[] {
   return ids
-    .map((id) => PRODUCT_BY_ID.get(id))
+    .map((id) => PRODUCT_BY_ID.get(id) ?? knownProducts?.[id])
     .filter((p): p is Product => p !== undefined);
-}
-
-/** Registry-only cart resolve (no DB) — mirrors resolveCartProducts on the client. */
-export function registryResolveCartProducts(ids: string[]): Product[] {
-  return registryResolveKnownProducts(ids).filter(isProductPurchasable);
 }
 
 /* ------------------------------------------------------------------
@@ -330,7 +343,9 @@ const REGISTRY_CATALOG: CeramicCatalog = {
   byCategory: PRODUCTS_BY_CATEGORY,
 };
 
-async function loadCeramicCatalog(): Promise<CeramicCatalog> {
+// Share successes and fallbacks across metadata and components in one render.
+// React clears this cache between requests; route handlers still read directly.
+const loadCeramicCatalog = cache(async (): Promise<CeramicCatalog> => {
   if (catalogSource() === 'code') return REGISTRY_CATALOG;
   // Resilience default: a DB read failure (including a bounded Supabase
   // timeout — see supabase-timeout.ts) degrades first to this isolate's
@@ -367,9 +382,12 @@ async function loadCeramicCatalog(): Promise<CeramicCatalog> {
     // fallbackTier as a tag (not `extra`) so the two tiers are filterable in
     // Sentry, distinct from a generic Supabase hiccup.
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
+    // Lets worker.ts answer 503 instead of a fail-closed 404 / ceramic-less
+    // sitemap — see request-degradation.ts.
+    if (tier === 'cold-fail-closed') markCeramicCatalogColdFailClosed();
     return catalog;
   }
-}
+});
 
 /**
  * Returns every product across the nine categories, each with image
@@ -379,23 +397,29 @@ export async function getProducts(): Promise<Product[]> {
   return (await loadCeramicCatalog()).products;
 }
 
+async function withCeramicSaleState(products: Product[]): Promise<Product[]> {
+  const { withCeramicSaleState: merge } = await import('./ceramic-sale-state');
+  return merge(products);
+}
+
 /**
  * Products shown on public browsing surfaces (shop, sitemap, merchant feeds) —
  * the full catalogue minus the hidden families. Sold pieces are kept (the sold
  * overlay is applied at render time; feeds mark them out-of-stock).
  */
 export async function getPublicProducts(): Promise<Product[]> {
-  return (await loadCeramicCatalog()).products.filter(isProductPublic);
+  return withCeramicSaleState((await loadCeramicCatalog()).products.filter(isProductPublic));
 }
 
 export async function getProductsByCategory(slug: CategorySlug): Promise<Product[]> {
   // Public grid + PDP siblings + collection JSON-LD read this — withdraw any
   // non-active product (db mode only; `code` has no status ⇒ all active).
-  return ((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic);
+  return withCeramicSaleState(((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic));
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
-  return (await loadCeramicCatalog()).byId.get(id);
+  const product = (await loadCeramicCatalog()).byId.get(id);
+  return product ? (await withCeramicSaleState([product]))[0] : undefined;
 }
 
 /** Resolve known products by id without filtering sold pieces. */
@@ -413,5 +437,5 @@ export async function resolveKnownProducts(ids: string[]): Promise<Product[]> {
  * localStorage can never reintroduce sold or withdrawn inventory.
  */
 export async function resolveCartProducts(ids: string[]): Promise<Product[]> {
-  return (await resolveKnownProducts(ids)).filter(isProductPurchasable);
+  return (await withCeramicSaleState(await resolveKnownProducts(ids))).filter(isProductPurchasable);
 }

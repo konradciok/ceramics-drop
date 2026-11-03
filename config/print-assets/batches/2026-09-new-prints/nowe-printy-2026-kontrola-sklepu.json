@@ -1,0 +1,444 @@
+{
+  "checkedAt": "2026-09-30T07:24:17.514Z",
+  "pages": [
+    {
+      "locale": "pl",
+      "id": "fap045",
+      "status": 200,
+      "name": "Cirrus 01"
+    },
+    {
+      "locale": "pl",
+      "id": "fap043",
+      "status": 200,
+      "name": "Aurora 02"
+    },
+    {
+      "locale": "pl",
+      "id": "fap044",
+      "status": 200,
+      "name": "Aurora 04"
+    },
+    {
+      "locale": "pl",
+      "id": "fap042",
+      "status": 200,
+      "name": "Aurora 01"
+    },
+    {
+      "locale": "pl",
+      "id": "fap046",
+      "status": 200,
+      "name": "Cumulonimbus 03"
+    },
+    {
+      "locale": "pl",
+      "id": "fap048",
+      "status": 200,
+      "name": "Cumulus 01"
+    },
+    {
+      "locale": "pl",
+      "id": "fap047",
+      "status": 200,
+      "name": "Cumulonimbus 06"
+    },
+    {
+      "locale": "pl",
+      "id": "fap049",
+      "status": 200,
+      "name": "Cumulus 06"
+    },
+    {
+      "locale": "pl",
+      "id": "fap050",
+      "status": 200,
+      "name": "Obsidian 02"
+    },
+    {
+      "locale": "pl",
+      "id": "fap051",
+      "status": 200,
+      "name": "Obsidian 03"
+    },
+    {
+      "locale": "pl",
+      "id": "fap053",
+      "status": 200,
+      "name": "Obsidian 05"
+    },
+    {
+      "locale": "pl",
+      "id": "fap052",
+      "status": 200,
+      "name": "Obsidian 04"
+    },
+    {
+      "locale": "pl",
+      "id": "fap054",
+      "status": 200,
+      "name": "Scopulus 02"
+    },
+    {
+      "locale": "pl",
+      "id": "fap056",
+      "status": 200,
+      "name": "Unda 05"
+    },
+    {
+      "locale": "pl",
+      "id": "fap057",
+      "status": 200,
+      "name": "Tachylite 03"
+    },
+    {
+      "locale": "pl",
+      "id": "fap055",
+      "status": 200,
+      "name": "Unda 04"
+    },
+    {
+      "locale": "en",
+      "id": "fap042",
+      "status": 200,
+      "name": "Aurora 01"
+    },
+    {
+      "locale": "en",
+      "id": "fap043",
+      "status": 200,
+      "name": "Aurora 02"
+    },
+    {
+      "locale": "en",
+      "id": "fap044",
+      "status": 200,
+      "name": "Aurora 04"
+    },
+    {
+      "locale": "en",
+      "id": "fap045",
+      "status": 200,
+      "name": "Cirrus 01"
+    },
+    {
+      "locale": "en",
+      "id": "fap046",
+      "status": 200,
+      "name": "Cumulonimbus 03"
+    },
+    {
+      "locale": "en",
+      "id": "fap048",
+      "status": 200,
+      "name": "Cumulus 01"
+    },
+    {
+      "locale": "en",
+      "id": "fap047",
+      "status": 200,
+      "name": "Cumulonimbus 06"
+    },
+    {
+      "locale": "en",
+      "id": "fap049",
+      "status": 200,
+      "name": "Cumulus 06"
+    },
+    {
+      "locale": "en",
+      "id": "fap051",
+      "status": 200,
+      "name": "Obsidian 03"
+    },
+    {
+      "locale": "en",
+      "id": "fap053",
+      "status": 200,
+      "name": "Obsidian 05"
+    },
+    {
+      "locale": "en",
+      "id": "fap050",
+      "status": 200,
+      "name": "Obsidian 02"
+    },
+    {
+      "locale": "en",
+      "id": "fap052",
+      "status": 200,
+      "name": "Obsidian 04"
+    },
+    {
+      "locale": "en",
+      "id": "fap054",
+      "status": 200,
+      "name": "Scopulus 02"
+    },
+    {
+      "locale": "en",
+      "id": "fap055",
+      "status": 200,
+      "name": "Unda 04"
+    },
+    {
+      "locale": "en",
+      "id": "fap057",
+      "status": 200,
+      "name": "Tachylite 03"
+    },
+    {
+      "locale": "en",
+      "id": "fap056",
+      "status": 200,
+      "name": "Unda 05"
+    },
+    {
+      "locale": "es",
+      "id": "fap044",
+      "status": 200,
+      "name": "Aurora 04"
+    },
+    {
+      "locale": "es",
+      "id": "fap042",
+      "status": 200,
+      "name": "Aurora 01"
+    },
+    {
+      "locale": "es",
+      "id": "fap045",
+      "status": 200,
+      "name": "Cirrus 01"
+    },
+    {
+      "locale": "es",
+      "id": "fap043",
+      "status": 200,
+      "name": "Aurora 02"
+    },
+    {
+      "locale": "es",
+      "id": "fap047",
+      "status": 200,
+      "name": "Cumulonimbus 06"
+    },
+    {
+      "locale": "es",
+      "id": "fap046",
+      "status": 200,
+      "name": "Cumulonimbus 03"
+    },
+    {
+      "locale": "es",
+      "id": "fap048",
+      "status": 200,
+      "name": "Cumulus 01"
+    },
+    {
+      "locale": "es",
+      "id": "fap049",
+      "status": 200,
+      "name": "Cumulus 06"
+    },
+    {
+      "locale": "es",
+      "id": "fap051",
+      "status": 200,
+      "name": "Obsidian 03"
+    },
+    {
+      "locale": "es",
+      "id": "fap050",
+      "status": 200,
+      "name": "Obsidian 02"
+    },
+    {
+      "locale": "es",
+      "id": "fap053",
+      "status": 200,
+      "name": "Obsidian 05"
+    },
+    {
+      "locale": "es",
+      "id": "fap052",
+      "status": 200,
+      "name": "Obsidian 04"
+    },
+    {
+      "locale": "es",
+      "id": "fap055",
+      "status": 200,
+      "name": "Unda 04"
+    },
+    {
+      "locale": "es",
+      "id": "fap057",
+      "status": 200,
+      "name": "Tachylite 03"
+    },
+    {
+      "locale": "es",
+      "id": "fap054",
+      "status": 200,
+      "name": "Scopulus 02"
+    },
+    {
+      "locale": "es",
+      "id": "fap056",
+      "status": 200,
+      "name": "Unda 05"
+    },
+    {
+      "locale": "de",
+      "id": "fap042",
+      "status": 200,
+      "name": "Aurora 01"
+    },
+    {
+      "locale": "de",
+      "id": "fap043",
+      "status": 200,
+      "name": "Aurora 02"
+    },
+    {
+      "locale": "de",
+      "id": "fap044",
+      "status": 200,
+      "name": "Aurora 04"
+    },
+    {
+      "locale": "de",
+      "id": "fap045",
+      "status": 200,
+      "name": "Cirrus 01"
+    },
+    {
+      "locale": "de",
+      "id": "fap047",
+      "status": 200,
+      "name": "Cumulonimbus 06"
+    },
+    {
+      "locale": "de",
+      "id": "fap049",
+      "status": 200,
+      "name": "Cumulus 06"
+    },
+    {
+      "locale": "de",
+      "id": "fap048",
+      "status": 200,
+      "name": "Cumulus 01"
+    },
+    {
+      "locale": "de",
+      "id": "fap046",
+      "status": 200,
+      "name": "Cumulonimbus 03"
+    },
+    {
+      "locale": "de",
+      "id": "fap050",
+      "status": 200,
+      "name": "Obsidian 02"
+    },
+    {
+      "locale": "de",
+      "id": "fap051",
+      "status": 200,
+      "name": "Obsidian 03"
+    },
+    {
+      "locale": "de",
+      "id": "fap052",
+      "status": 200,
+      "name": "Obsidian 04"
+    },
+    {
+      "locale": "de",
+      "id": "fap053",
+      "status": 200,
+      "name": "Obsidian 05"
+    },
+    {
+      "locale": "de",
+      "id": "fap054",
+      "status": 200,
+      "name": "Scopulus 02"
+    },
+    {
+      "locale": "de",
+      "id": "fap055",
+      "status": 200,
+      "name": "Unda 04"
+    },
+    {
+      "locale": "de",
+      "id": "fap057",
+      "status": 200,
+      "name": "Tachylite 03"
+    },
+    {
+      "locale": "de",
+      "id": "fap056",
+      "status": 200,
+      "name": "Unda 05"
+    }
+  ],
+  "listingLocales": 4,
+  "feeds": [
+    {
+      "type": "google",
+      "locale": "pl",
+      "status": 200
+    },
+    {
+      "type": "google",
+      "locale": "en",
+      "status": 200
+    },
+    {
+      "type": "google",
+      "locale": "es",
+      "status": 200
+    },
+    {
+      "type": "google",
+      "locale": "de",
+      "status": 200
+    },
+    {
+      "type": "meta",
+      "locale": "pl",
+      "status": 200
+    },
+    {
+      "type": "meta",
+      "locale": "en",
+      "status": 200
+    },
+    {
+      "type": "meta",
+      "locale": "es",
+      "status": 200
+    },
+    {
+      "type": "meta",
+      "locale": "de",
+      "status": 200
+    }
+  ],
+  "cartCheck": {
+    "productId": "fap057",
+    "size": "70x100",
+    "frame": "black",
+    "currency": "EUR",
+    "productPrice": 218,
+    "shippingToSpain": 26,
+    "total": 244,
+    "addedSuccessfully": true,
+    "testItemRemoved": true,
+    "paidOrderCreated": false
+  }
+}

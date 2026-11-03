@@ -45,6 +45,15 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
   };
 }
 
+export interface BackfillCatalogResult {
+  /** Product ids the backfill left untouched because the CMS has ever
+   *  written a product_drafts row for them (draft saved and/or published) —
+   *  see 20260914140000_backfill_cms_ownership_guard.sql. Empty on every
+   *  ordinary run; non-empty means an operator has CMS-edited a
+   *  registry-seeded product, which is expected and safe, just worth logging. */
+  skippedCmsOwnedIds: string[];
+}
+
 /**
  * Idempotently mirror the code registry into the catalog tables.
  *
@@ -60,17 +69,23 @@ export async function listCatalogRows(supabase: SupabaseClient): Promise<Catalog
  * does NOT touch piece_state or orders — stock and sale state stay in their
  * dedicated tables.
  *
+ * A registry-seeded id the CMS has ever drafted/published (product_drafts
+ * history) is skipped entirely — see the migration referenced on
+ * BackfillCatalogResult — so this can never revert a CMS edit.
+ *
  * Requires migration 20260828120000 (atomic RPC/publication guard) plus
  * 20260709130000 (the `drop-1` row referenced by ceramic product rows).
  */
-export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
+export async function backfillCatalog(supabase: SupabaseClient): Promise<BackfillCatalogResult> {
   const seed = buildCatalogSeed();
-  const { error } = await supabase.rpc('backfill_catalog', {
+  const { data, error } = await supabase.rpc('backfill_catalog', {
     p_products: seed.products,
     p_variants: seed.variants,
     p_media: seed.media,
   });
   if (error) throw new Error(`atomic catalog backfill: ${error.message}`);
+  const skippedCmsOwnedIds = (data as { skipped_cms_owned_ids?: string[] } | null)?.skipped_cms_owned_ids ?? [];
+  return { skippedCmsOwnedIds };
 }
 
 /**
@@ -79,11 +94,13 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<void> {
  * loadCeramicProductsFromDb via the ceramic accessors.
  */
 export async function readCeramicProducts(supabase: SupabaseClient): Promise<Product[]> {
+  // One budget for the complete load, not a fresh five seconds per stage.
+  const signal = supabaseTimeout();
   const productsRes = await supabase
     .from('products')
     .select('*')
     .eq('type', 'ceramic')
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (productsRes.error) throw new Error(`read products: ${productsRes.error.message}`);
 
   // Customer-facing reader: SKIP an invalid ceramic row (never render/sell at
@@ -96,7 +113,7 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
     .from('product_media')
     .select('*')
     .in('product_id', ids)
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
   return mapCeramicProducts(rows, (mediaRes.data ?? []) as MediaSeedRow[]);
@@ -110,12 +127,14 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
  * reconstruction is stable.
  */
 export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintDesign[]> {
+  // One budget for the complete load, not a fresh five seconds per stage.
+  const signal = supabaseTimeout();
   const productsRes = await supabase
     .from('products')
     .select('*')
     .eq('type', 'print')
     .order('num', { ascending: true })
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
 
   const rawProducts = productsRes.data ?? [];
@@ -128,13 +147,13 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
       .select('*')
       .in('product_id', ids)
       .order('position', { ascending: true })
-      .abortSignal(supabaseTimeout()),
+      .abortSignal(signal),
     supabase
       .from('product_media')
       .select('*')
       .in('product_id', ids)
       .order('position', { ascending: true })
-      .abortSignal(supabaseTimeout()),
+      .abortSignal(signal),
   ]);
   if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
   if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);

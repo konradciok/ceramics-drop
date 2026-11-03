@@ -17,12 +17,16 @@ describe('fine-art print descriptions', () => {
       const notes = messages.notes['fine-art-prints'];
 
       expect(notes).toHaveLength(designs.length);
+      const seen = new Set<string>();
       for (const design of designs) {
         const note = notes[design.noteIndex];
         expect(note, design.id).toBeTypeOf('string');
         expect(note.trim(), design.id).not.toBe('');
         expect(note, design.id).not.toMatch(placeholderPattern);
-        expect(note, design.id).toContain(design.id.slice(3));
+        // Catches an accidental note reused across two designs (e.g. a
+        // shuffled noteIndex), without requiring the id embedded in the copy.
+        expect(seen.has(note), design.id).toBe(false);
+        seen.add(note);
       }
     },
   );

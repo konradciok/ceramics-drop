@@ -110,15 +110,34 @@ export function pushConfirmedPurchase(
   );
 }
 
-export function pushConfirmedPurchaseByIdsOnce(
+export async function pushConfirmedPurchaseByIdsOnce(
   paymentIntentId: string,
   ids: string[],
   options: ConfirmedPurchaseOptions & { storage?: SimpleStorage },
-): boolean {
+): Promise<boolean> {
   const storage = options.storage ?? getDefaultStorage();
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
   if (safeGetItem(storage, key) === '1') return false;
 
+  // NO CMS-derived print names here, deliberately. This module is structurally
+  // BROWSER code: every caller is a `'use client'` component (the /koszyk/return
+  // page's useEffect, CartView, GiftCardConfigurator). Reaching the CMS for
+  // collection names means loadPrintCollectionDefinitions() →
+  // getSupabaseAdmin() → getCloudflareContext(), which throws outside a
+  // Cloudflare Workers request context — i.e. always, in a browser. The throw is
+  // swallowed by readWithFallback and the result is PRINT_COLLECTIONS, which is
+  // exactly the static default printDisplayName already uses on its own. So the
+  // lookup could only ever compute the string it was meant to replace, while
+  // dragging @supabase/supabase-js and @opennextjs/cloudflare into three client
+  // bundles. Item names therefore stay on printDisplayName's static fallback ON
+  // PURPOSE, not by accident.
+  //
+  // The server-side conversion path (src/lib/marketing/conversions.ts — Meta
+  // CAPI / GA4 Measurement Protocol) DOES use CMS names, correctly, because it
+  // genuinely runs server-side. Giving this browser dataLayer push the same
+  // names would need new server-side plumbing (e.g. names resolved server-side
+  // and handed to the client), which is out of scope here.
+  //
   // Resolve both ceramic ids and print tokens; a print-only order would otherwise
   // produce zero items here, skipping the browser purchase event (and tripping a
   // false reportPurchaseGapOnce 'unresolvable_ids' alert).
@@ -231,13 +250,13 @@ export function forgetRememberedCheckout(storage = getDefaultStorage()): void {
   clearCookieSnapshot();
 }
 
-export function pushConfirmedPurchaseFromRememberedCheckout(
+export async function pushConfirmedPurchaseFromRememberedCheckout(
   paymentIntentId: string,
   orderNoOrOptions:
     | string
     | { orderNo?: string; push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
   maybeOptions?: { push?: (event: DataLayerEvent) => void; storage?: SimpleStorage },
-): boolean {
+): Promise<boolean> {
   const options =
     typeof orderNoOrOptions === 'string'
       ? maybeOptions ?? {}
@@ -250,7 +269,7 @@ export function pushConfirmedPurchaseFromRememberedCheckout(
   const snapshot = readCheckoutSnapshot(storage);
   if (!snapshot) return false;
 
-  const fired = pushConfirmedPurchaseByIdsOnce(paymentIntentId, snapshot.ids, {
+  const fired = await pushConfirmedPurchaseByIdsOnce(paymentIntentId, snapshot.ids, {
     orderNo,
     shippingCost: snapshot.shippingCost,
     shippingMethod: snapshot.shippingMethod,

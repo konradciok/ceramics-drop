@@ -22,6 +22,7 @@ test.describe('SEO routing contract @ci', () => {
       { label: 'nonexistent ceramic id', path: '/kubki/nonexistent-id-999' },
       { label: 'removed ceramic id (k15, in the REMOVED set)', path: '/kubki/k15' },
       { label: 'nonexistent print id', path: '/fine-art-prints/fap999' },
+      { label: 'nonexistent print collection', path: '/kolekcje/nonexistent-collection' },
       { label: 'unmapped legacy-shaped URL stays a real 404, never bulk-redirects', path: '/products/some-fake-handle' },
     ];
 

@@ -40,6 +40,9 @@ export interface Product {
    * (not in showroom); overlaid at render time exactly like `sold`.
    */
   showroom?: boolean;
+  /** Verified at request time; absent/false never authorizes a storefront purchase. */
+  onlineAvailable?: boolean;
+  saleState?: 'available' | 'reserved' | 'sold' | 'archive' | 'unavailable' | 'unknown';
   /** Which sales-event drop this piece was released in. References `drops.id`. */
   dropId: string;
   /** 0-based index into the category's `notes` array (description lookup). */
@@ -62,6 +65,28 @@ export interface Product {
    */
   seoTitle?: string;
   seoDescription?: string;
+  /**
+   * CMS-authored copy (`products.title` / `description`), surfaced only in db
+   * mode when set (undefined in the code registry — every registry-seeded
+   * piece keeps its synthesized "{name} Nº {num}" display name). Unlike
+   * `seoTitle`/`seoDescription` these feed the visible product name in
+   * category grids and the PDP (see `productDisplayName` in products.ts), not
+   * just `<meta>` tags. `description` additionally falls back into the PDP
+   * `<meta description>` when no `seoDescription` override is set.
+   */
+  title?: string;
+  description?: string;
+  /**
+   * DB-backed EUR/GBP prices (`products.price_eur` / `price_gbp`), surfaced
+   * only in db mode when set. In `code` mode, or for a registry-seeded row
+   * that was never backfilled, these are undefined — priceOfCurrency() then
+   * falls back to the per-category PRICE_EUR/PRICE_GBP code constant, same
+   * as it always has. Unlike `price` (PLN — always DB-sourced in db mode),
+   * these were previously 100% code constants regardless of CATALOG_SOURCE;
+   * see products.ts's history for why.
+   */
+  priceEur?: number;
+  priceGbp?: number;
 }
 
 /** Structural metadata for a product family / collection page. */

@@ -1,0 +1,28 @@
+-- Dedup column for the "stranded print-asset job" watchdog — the direct mirror
+-- of fulfilment_jobs.stranded_alerted_at (supabase/migrations/
+-- 20260813120100_fulfilment_jobs_stranded_alerted_at.sql), now for the
+-- ASSET_JOBS_QUEUE pipeline.
+--
+-- Why it is needed: src/server/asset-jobs/enqueue.ts's enqueueAssetJob writes
+-- the print_asset_jobs row (status 'queued') BEFORE awaiting
+-- sendAssetJobMessage. If that send throws, the row stays 'queued' with no
+-- message in flight and nothing watching it — the job is stranded forever.
+-- src/server/asset-jobs/stranded-job-alert.ts's sweepStrandedAssetJobs (wired
+-- into worker.ts's scheduled handler) is the recovery path: it alerts the
+-- studio once per stranded job so an operator can re-dispatch it.
+--
+-- Deliberately its OWN column rather than a shared `alerted_at`: unlike
+-- fulfilment_jobs, print_asset_jobs has no `alerted_at` at all (asset jobs
+-- alert on `failed_action_required` synchronously, inside
+-- src/server/asset-jobs/process-job.ts's failJob, not via a cron sweep). Adding
+-- the same NAME as the fulfilment column keeps the two watchdogs' schemas
+-- legible side by side.
+--
+-- Additive + backward-compatible: nullable, no default, no backfill. Old code
+-- ignores it; only the new stranded sweep writes it. Auto-applies on merge.
+--
+-- ============================================================
+-- Rollback (manual):
+--   alter table print_asset_jobs drop column stranded_alerted_at;
+-- ============================================================
+alter table print_asset_jobs add column if not exists stranded_alerted_at timestamptz;

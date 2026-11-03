@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 function firstPublishedPrintPath(locale: CmsLocale): string {
   const design = registryPrintDesigns().find((d) => d.published);
-  return localizedPath(locale, design ? `/fine-art-prints/${design.id}` : '/fine-art-prints');
+  return localizedPath(locale, design ? `/fine-art-prints/${design.id}` : '/sklep');
 }
 
 function previewPath(kind: string, slug: string, locale: CmsLocale): string {

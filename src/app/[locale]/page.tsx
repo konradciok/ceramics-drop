@@ -16,7 +16,7 @@ import { toChargeableCurrency } from '@/lib/currency';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
 import { fromPriceOf } from '@/lib/print-pricing';
-import { groupPrintDesigns } from '@/lib/print-collections';
+import { groupPrintDesigns, loadPrintCollectionDefinitions, UNASSIGNED_COLLECTION } from '@/lib/print-collections';
 import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } from '@/lib/print-mockups';
 import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
@@ -25,7 +25,12 @@ import { previewRobots } from '@/lib/seo/robots';
 import type { Locale } from '@/i18n/routing';
 import { requireLocale } from '@/i18n/locale-guard';
 import { EMAIL } from '@/lib/email-addresses';
-import { HOME_EDITORIAL_IMAGE, HOME_STORY_IMAGE, EDITORIAL_IMAGES } from '@/lib/editorial-images';
+import {
+  HOME_EDITORIAL_DESKTOP_IMAGE,
+  HOME_EDITORIAL_MOBILE_IMAGE,
+  HOME_STORY_IMAGE,
+  EDITORIAL_IMAGES,
+} from '@/lib/editorial-images';
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
 
@@ -60,7 +65,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const previewParam = (await searchParams)?.preview;
   const t = await getTranslations({ locale });
   // Home title already leads with the brand, so opt out of the layout's
-  // "%s — Anna Ciok Ceramics" template to avoid doubling it.
+  // "%s — Anna Ciok Studio" template to avoid doubling it.
   return {
     title: { absolute: t('title.home') },
     alternates: alternatesFor(locale as Locale, '/'),
@@ -71,7 +76,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 /**
  * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
  * messages fallback), print-first narrative below it: a fact marquee, the
- * artist's painting practice, the nine named print collections, a
+ * artist's painting practice, the named print collections, a
  * daily-rotated print rail, a 3-step ordering guide, editorial imagery, a
  * print-only logistics band, and contact. Ceramics keep their own routes
  * (/sklep, category pages) but are not promoted on this page.
@@ -85,25 +90,27 @@ export default async function HomePage({ params, searchParams }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale });
-  const editorialImage = HOME_EDITORIAL_IMAGE;
+  const editorialImage = HOME_EDITORIAL_MOBILE_IMAGE;
+  const editorialDesktopImage = HOME_EDITORIAL_DESKTOP_IMAGE;
   const storyImage = HOME_STORY_IMAGE;
 
   const currency = await getCurrency(locale);
-  const [printDesigns, printPricing, heroContent] = await Promise.all([
+  const [printDesigns, printPricing, heroContent, definitions] = await Promise.all([
     getPrintDesigns(),
     getPrintPricingConfig(),
     getHomeContent(locale as CmsLocale, previewToken),
+    loadPrintCollectionDefinitions(),
   ]);
 
   // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.
   const printCurrency = toChargeableCurrency(currency);
   const { fmt: fmtPrint } = currencyFormatter(printCurrency);
-  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'));
+  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'), definitions);
 
-  // Nine named collections (plus an "inne" fallback bucket, only if
+  // Named collections (plus an "inne" fallback bucket, only if
   // non-empty) — membership/order come from groupPrintDesigns, never
   // hardcoded here. Empty collections are already dropped upstream.
-  const collectionGroups = groupPrintDesigns(printDesigns);
+  const collectionGroups = groupPrintDesigns(printDesigns, definitions);
 
   // Daily-rotated print rail — the same seeded-shuffle mechanism the
   // homepage has always used, now the page's single scrolling rail.
@@ -133,7 +140,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               <p>{t('home.storyP1')}</p>
               <p>{t('home.storyP2')}</p>
               <div className="story-actions">
-                <Link className="btn btn-primary" href="/fine-art-prints">
+                <Link className="btn btn-primary" href="/sklep">
                   <span>{t('home.storyCta')}</span> <Icon name="arrow" className="btn-arrow" />
                 </Link>
               </div>
@@ -142,7 +149,7 @@ export default async function HomePage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── COLLECTIONS INDEX — the nine named print collections ─── */}
+      {/* ── COLLECTIONS INDEX — the named print collections ─── */}
       {collectionGroups.length > 0 && (
         <section className="section print-collections reveal">
           <div className="section-inner">
@@ -152,7 +159,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.collectionsLead')}</p>
-                  <Link className="section-link" href="/fine-art-prints">
+                  <Link className="section-link" href="/kolekcje">
                     <span>{t('home.collectionsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>
@@ -163,7 +170,7 @@ export default async function HomePage({ params, searchParams }: Props) {
                 const cover = printListingImage(g.designs[0], registryPrintById(g.designs[0].id));
                 const name = g.name ?? t('printCollections.inne');
                 return (
-                  <Link key={g.slug} className="prints-home-card" href={`/fine-art-prints#${g.slug}`}>
+                  <Link key={g.slug} className="prints-home-card" href={g.slug === UNASSIGNED_COLLECTION ? '/sklep' : `/kolekcje/${g.slug}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={cover} srcSet={srcSet(cover)} sizes="(min-width:861px) 30vw, 45vw" alt="" loading="lazy" />
                     <span className="prints-home-meta">
@@ -188,7 +195,7 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.printsLead', { count: printDesigns.length })}</p>
-                  <Link className="section-link" href="/fine-art-prints">
+                  <Link className="section-link" href="/sklep">
                     <span>{t('home.printsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>
@@ -246,8 +253,23 @@ export default async function HomePage({ params, searchParams }: Props) {
       <section className="section editorial reveal">
         <div className="section-inner">
           <div className="editorial-shot">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={editorialImage.src} srcSet={srcSet(editorialImage.src)} sizes="(min-width:861px) 720px, 100vw" alt={t('home.editorialImageAlt')} width={editorialImage.width} height={editorialImage.height} />
+            {/* Art direction: horizontal interior shot on desktop, vertical on
+                mobile — same `<picture>` pattern as the HomeHero. */}
+            <picture>
+              <source
+                media="(min-width:861px)"
+                srcSet={srcSet(editorialDesktopImage.src)}
+                sizes="(min-width:861px) 720px"
+              />
+              <img
+                src={editorialImage.src}
+                srcSet={srcSet(editorialImage.src)}
+                sizes="100vw"
+                alt={t('home.editorialImageAlt')}
+                width={editorialImage.width}
+                height={editorialImage.height}
+              />
+            </picture>
           </div>
         </div>
       </section>

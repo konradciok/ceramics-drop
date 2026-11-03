@@ -11,8 +11,14 @@
    unknown to that map (for example a DB-created design) remains safely in
    the localized fallback bucket.
    ============================================================ */
+import { cache } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { PRINT_COLLECTION_DEFINITIONS } from './print-curation';
+import type { PrintCollectionDefinition } from './print-curation';
 import type { PrintDesign } from './types';
+import { routing, type Locale } from '@/i18n/routing';
+import { getSupabaseAdmin } from './supabase';
+import { readWithFallback, supabaseTimeout } from './supabase-timeout';
 
 export type PrintCollectionSlug = string;
 
@@ -23,29 +29,320 @@ export const UNASSIGNED_COLLECTION: PrintCollectionSlug = 'inne';
 /** Ordered collections; designIds sets the display order within each. */
 export const PRINT_COLLECTIONS = PRINT_COLLECTION_DEFINITIONS;
 
-const COLLECTION_BY_ID: ReadonlyMap<string, PrintCollectionSlug> = new Map(
-  PRINT_COLLECTIONS.flatMap((c) => c.designIds.map((id) => [id, c.slug] as const)),
-);
-
-/** Collection slug for a design id, or undefined when unassigned. */
-export function collectionOf(id: string): PrintCollectionSlug | undefined {
-  return COLLECTION_BY_ID.get(id);
-}
-
 /** Group designs (as returned by getPrintDesigns()) into display order:
     collection order, designIds order within, then the 'inne' fallback
     bucket (in input order) for anything unassigned. Empty groups are
     dropped — an unpublished member simply doesn't render. */
 export function groupPrintDesigns(
   designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[] = PRINT_COLLECTIONS,
 ): { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] {
   const byId = new Map(designs.map((d) => [d.id, d]));
-  const groups: { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] = PRINT_COLLECTIONS.map(({ slug, name, designIds }) => ({
+  const collectionById = new Map<string, PrintCollectionSlug>(
+    definitions.flatMap((c) => c.designIds.map((id) => [id, c.slug] as const)),
+  );
+  const groups: { slug: PrintCollectionSlug; name?: string; designs: PrintDesign[] }[] = definitions.map(({ slug, name, designIds }) => ({
     slug,
     name,
     designs: designIds.flatMap((id) => byId.get(id) ?? []),
   }));
-  const rest = designs.filter((d) => !COLLECTION_BY_ID.has(d.id));
+  const rest = designs.filter((d) => !collectionById.has(d.id));
   groups.push({ slug: UNASSIGNED_COLLECTION, name: undefined, designs: rest });
   return groups.filter((g) => g.designs.length > 0);
 }
+
+type CollectionField = {
+  key: string;
+  value: string;
+  locale?: string;
+};
+
+/** Minimum length for a description to count as real editorial copy. The
+ *  backfill seeds pl with just "<name>." — that must not make a page indexable. */
+export const MIN_COLLECTION_DESCRIPTION_LENGTH = 80;
+
+/** Below this many published prints a collection page is thin: noindex + no sitemap entry. */
+export const MIN_INDEXABLE_COLLECTION_DESIGNS = 3;
+
+export type PrintCollectionPageData = {
+  slug: string;
+  name: string;
+  designs: PrintDesign[];
+  description?: string;
+  indexable: boolean;
+};
+
+/** The locale's real editorial description for a collection, or undefined when
+ *  it is missing / only the seeded "<name>." placeholder. */
+export function collectionDescription(def: PrintCollectionDefinition, locale: string): string | undefined {
+  const raw = def.descriptions?.[locale]?.trim();
+  return raw && raw.length >= MIN_COLLECTION_DESCRIPTION_LENGTH ? raw : undefined;
+}
+
+/**
+ * Split a description into its first sentence (the page lead, also the hub
+ * card teaser) and the remainder; `rest` is undefined for a one-sentence text.
+ * The first sentence may run across a line break (the CMS field is free text):
+ * `s` lets `.` match newlines, and the lead's whitespace is collapsed to single
+ * spaces so it reads as one line.
+ */
+export function splitCollectionDescription(description: string): { lead: string; rest?: string } {
+  const text = description.trim();
+  const sentence = text.match(/^.+?[.!?…](?=\s|$)/s)?.[0] ?? text;
+  const lead = sentence.replace(/\s+/g, ' ');
+  const rest = text.slice(sentence.length).trim();
+  return rest ? { lead, rest } : { lead };
+}
+
+/** One-to-two-sentence card teaser: the first sentence of a description,
+ *  capped at `max` characters on a word boundary. */
+export function collectionTeaser(description: string | undefined, max = 140): string | undefined {
+  if (!description) return undefined;
+  const { lead } = splitCollectionDescription(description);
+  if (lead.length <= max) return lead;
+  const cut = lead.slice(0, max).replace(/\s+\S*$/, '');
+  return `${cut}…`;
+}
+
+/**
+ * `<meta name="description">` text: as many whole sentences as fit in `max`
+ * characters, so a search snippet never breaks mid-sentence. When even the
+ * first sentence is longer, it is cut on a word boundary with an ellipsis.
+ * Line breaks in the source collapse to spaces (they would count against `max`).
+ */
+export function collectionMetaDescription(description: string, max = 155): string {
+  const sentences = description.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+/);
+  let out = '';
+  for (const sentence of sentences) {
+    const next = out ? `${out} ${sentence}` : sentence;
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+  const cut = sentences[0].slice(0, max - 1).replace(/\s+\S*$/, '');
+  return `${cut}…`;
+}
+
+/** Resolve one collection page: definition + its published designs + the
+ *  locale's real description. Undefined when the slug is unknown or nothing
+ *  in it is published (→ 404). The 'inne' fallback bucket has no page. */
+export function resolvePrintCollectionPage(
+  slug: string,
+  locale: string,
+  designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[],
+): PrintCollectionPageData | undefined {
+  const def = definitions.find((d) => d.slug === slug);
+  if (!def) return undefined;
+  // By slug, never [0]: with nothing published in this collection its group is
+  // dropped, and the first remaining group would be the 'inne' bucket holding
+  // every OTHER print — a page that must 404 instead.
+  const group = groupPrintDesigns(designs, [def]).find((g) => g.slug === slug);
+  if (!group) return undefined;
+  const description = collectionDescription(def, locale);
+  return {
+    slug,
+    name: def.name,
+    designs: group.designs,
+    description,
+    indexable: !!description && group.designs.length >= MIN_INDEXABLE_COLLECTION_DESIGNS,
+  };
+}
+
+/**
+ * Locales in which a collection page is indexable (real copy in that locale AND
+ * enough published prints). The single source for the page's hreflang cluster
+ * and its sitemap entries, so metadata and sitemap can never disagree.
+ */
+export function indexableCollectionLocales(
+  slug: string,
+  designs: PrintDesign[],
+  definitions: PrintCollectionDefinition[],
+): Locale[] {
+  return routing.locales.filter((l) => resolvePrintCollectionPage(slug, l, designs, definitions)?.indexable);
+}
+
+/** Payload field convention (see scripts/backfill-fine-art-collections.ts's
+ *  buildFields): only a collection explicitly tagged with this scopes into
+ *  the fine-art-print storefront sections. A collection created via the
+ *  CMS's generic "+ Nowa kolekcja" button has no `kind` field and is safely
+ *  excluded by default. */
+const PRINT_COLLECTION_KIND = 'print-collection';
+
+/**
+ * Raw DB read behind `loadPrintCollectionDefinitions` below — published
+ * collections only, never a draft, scoped to `kind === 'print-collection'`.
+ * Exported separately (rather than only via the cached/fallback wrapper) so
+ * tests can exercise the query shape and parsing logic directly against a
+ * fake Supabase client. App code should call `loadPrintCollectionDefinitions()`
+ * instead — this one throws on any Supabase error, same as every other
+ * low-level repository reader in this codebase.
+ *
+ * `prints` is always returned empty: nothing in this codebase reads it
+ * (only `.designIds` and `.name`/`.slug` are used by any current or Plan-1
+ * caller — see print-curation.ts's own PRINT_COLLECTION_DEFINITIONS
+ * construction, where `prints` mirrors curation-map metadata that has no DB
+ * equivalent and no consumer).
+ */
+export async function loadPrintCollectionDefinitionsFromDb(
+  supabase: SupabaseClient,
+): Promise<PrintCollectionDefinition[]> {
+  // Collections and their published drafts share one total read budget.
+  const signal = supabaseTimeout();
+  const { data: collections, error: collectionsError } = await supabase
+    .from('collections')
+    .select('id, published_revision, created_at')
+    .not('published_revision', 'is', null)
+    .abortSignal(signal);
+  if (collectionsError) throw collectionsError;
+
+  const rows = (collections ?? []) as { id: string; published_revision: number; created_at: string }[];
+  if (rows.length === 0) return [];
+
+  const publishedRevisionById = new Map(rows.map((r) => [r.id, r.published_revision]));
+  // The collection's own created_at — set once, at creation, and never
+  // touched again by save_collection_draft/publish_collection_revision.
+  // Used as the ordering key below instead of the published draft's own
+  // created_at (see the ordering comment further down for why).
+  const collectionCreatedAtById = new Map(rows.map((r) => [r.id, r.created_at]));
+  const ids = rows.map((r) => r.id);
+
+  // One batched fetch instead of one query per collection (N+1): a single
+  // collection can have many saved draft revisions, so this pulls every
+  // revision for every published collection and the loop below picks out
+  // just the one matching each collection's published_revision — a single
+  // `.eq('revision', X)` can't work here since different collections have
+  // different published_revision values.
+  const { data: drafts, error: draftsError } = await supabase
+    .from('collection_drafts')
+    .select('collection_id, revision, payload, created_at')
+    .in('collection_id', ids)
+    .abortSignal(signal);
+  if (draftsError) throw draftsError;
+
+  type DraftRow = { collection_id: string; revision: number; payload: unknown; created_at: string };
+  const draftRows = (drafts ?? []) as DraftRow[];
+
+  // Exactly the published draft per collection. Curated collection slugs use
+  // the explicit order in print-catalog-curation.json; any CMS-only collection
+  // follows afterwards in stable creation order. Postgres without ORDER BY
+  // returns heap order, which can silently change on the next UPDATE
+  // (publish_collection_revision UPDATEs collections.published_revision).
+  //
+  // Deliberately keyed on the *collection's* created_at, not the draft's:
+  // save_collection_draft stamps every new revision with a fresh created_at,
+  // so sorting by the draft's timestamp would move a collection's section
+  // the moment someone edits and republishes it (its published draft row
+  // would then be the newest one). collections.created_at is set once at
+  // creation and is untouched by edits/republishes, so it's stable across
+  // the collection's whole lifetime. The collection id is a deterministic
+  // tie-breaker for the (currently impossible, but not DB-enforced) case of
+  // two collections sharing an identical created_at.
+  const curatedOrder = new Map(PRINT_COLLECTIONS.map((collection, index) => [collection.slug, index]));
+  const slugOf = (draft: DraftRow): string | undefined => {
+    const payload = draft.payload as { fields?: CollectionField[] };
+    return payload.fields?.find((field) => field.key === 'slug')?.value;
+  };
+  const publishedDrafts = draftRows
+    .filter((d) => d.revision === publishedRevisionById.get(d.collection_id))
+    .sort((a, b) => {
+      const aOrder = curatedOrder.get(slugOf(a) ?? '');
+      const bOrder = curatedOrder.get(slugOf(b) ?? '');
+      if (aOrder !== undefined || bOrder !== undefined) {
+        if (aOrder === undefined) return 1;
+        if (bOrder === undefined) return -1;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+      }
+      const aCreatedAt = collectionCreatedAtById.get(a.collection_id) ?? '';
+      const bCreatedAt = collectionCreatedAtById.get(b.collection_id) ?? '';
+      return aCreatedAt.localeCompare(bCreatedAt) || a.collection_id.localeCompare(b.collection_id);
+    });
+
+  const definitions: PrintCollectionDefinition[] = [];
+  const seenDesignIds = new Set<string>();
+  const seenSlugCounts = new Map<string, number>();
+
+  for (const draft of publishedDrafts) {
+    const payload = draft.payload as { name?: unknown; fields?: CollectionField[] };
+    // Guard against a missing/malformed name rather than producing `name:
+    // undefined` — treat it like a missing draft and skip the collection.
+    if (typeof payload?.name !== 'string') continue;
+
+    const fields = payload.fields ?? [];
+    const kindField = fields.find((f) => f.key === 'kind');
+    if (kindField?.value !== PRINT_COLLECTION_KIND) continue;
+
+    const slugField = fields.find((f) => f.key === 'slug');
+    const productsField = fields.find((f) => f.key === 'products');
+    const rawDesignIds = productsField?.value
+      ? productsField.value.split(',').map((id) => id.trim()).filter((id) => id.length > 0)
+      : [];
+
+    // De-dupe product ids across collections, first-collection-wins — matches
+    // printDisplayName's own "first match in array order wins" resolution.
+    const designIds = rawDesignIds.filter((id) => {
+      if (seenDesignIds.has(id)) return false;
+      seenDesignIds.add(id);
+      return true;
+    });
+
+    // De-dupe colliding slugs (two collections manually set the same slug)
+    // by appending a numeric suffix, logging a warning.
+    const baseSlug = slugField?.value || draft.collection_id;
+    const priorCount = seenSlugCounts.get(baseSlug) ?? 0;
+    seenSlugCounts.set(baseSlug, priorCount + 1);
+    const slug = priorCount === 0 ? baseSlug : `${baseSlug}-${priorCount + 1}`;
+    if (priorCount > 0) {
+      console.warn(`[print-collections] duplicate slug "${baseSlug}" — renamed to "${slug}"`);
+    }
+
+    const descriptions: Partial<Record<string, string>> = {};
+    for (const f of fields) {
+      if (f.key === 'description' && f.locale && f.value?.trim()) descriptions[f.locale] = f.value.trim();
+    }
+
+    definitions.push({ slug, name: payload.name, designIds, prints: [], ...(Object.keys(descriptions).length > 0 && { descriptions }) });
+  }
+
+  return definitions;
+}
+
+/**
+ * Loads the real, CMS-managed fine-art-print collections for the storefront.
+ * Request-scoped memoized via React's `cache()` (same pattern as
+ * getCeramicSaleState/fetchPieceState) since every render path that needs
+ * this — /sklep's generateMetadata + Page, the print PDP's generateMetadata
+ * + Page, and the homepage — calls it independently; wrapping the DB read
+ * itself (not a value depending on caller-supplied arguments) is what lets
+ * cache() actually dedupe across all of them within one request.
+ *
+ * Never throws and never hangs past the Supabase timeout: any failure
+ * degrades to the static `PRINT_COLLECTIONS` array (same shape
+ * `printDisplayName` already defaults to), preserving pre-migration
+ * rendering exactly — this migration's stated goal.
+ *
+ * Admin (injected-client) calls — e.g. `loadPrintCollectionDefinitions(adminSupabase())`
+ * from the various /admin pages — do NOT benefit from this memoization the
+ * way the zero-argument storefront calls do: `adminSupabase()` (see
+ * src/lib/admin/clients.ts) constructs a brand-new client object on every
+ * call, and `cache()` memoizes by argument identity, so every admin call is
+ * a cache miss and always performs its own fresh DB round-trips. Harmless
+ * today since each admin page calls this exactly once per render, but keep
+ * it in mind before adding a second call within one admin render.
+ */
+export const loadPrintCollectionDefinitions = cache(
+  async (supabase?: SupabaseClient): Promise<PrintCollectionDefinition[]> =>
+    readWithFallback(
+      'printCollectionDefinitions',
+      // getSupabaseAdmin() is resolved here, inside readWithFallback's own
+      // try/catch, not as a default-parameter expression — a default param
+      // (`supabase: SupabaseClient = getSupabaseAdmin()`) evaluates before
+      // this function body runs, so a throwing getSupabaseAdmin() (e.g. a
+      // missing env var) would escape readWithFallback entirely and violate
+      // this function's documented never-throws guarantee. Confirmed by
+      // print-collections.test.ts's "falls back ... when getSupabaseAdmin()
+      // throws" case.
+      () => loadPrintCollectionDefinitionsFromDb(supabase ?? getSupabaseAdmin()),
+      PRINT_COLLECTIONS,
+    ),
+);

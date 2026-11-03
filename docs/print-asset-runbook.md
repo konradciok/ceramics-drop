@@ -24,7 +24,7 @@ are separate identities. They no longer have to contain the same number.
 
 All asset and fulfilment commands continue to accept the stable product ID,
 for example `--product fap041`, even when the storefront shows that design as
-`Nº 13`. When translating a storefront number back to a source folder or
+`Nº 16`. When translating a storefront number back to a source folder or
 product ID, consult the curation mapping first; do not infer either identity
 from the display number.
 
@@ -247,7 +247,7 @@ where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
 Compare variant/media/assignment/asset counts to Step 3. Then verify:
 
 - storefront: nine sections in the configured order, identical fixed names in
-  two locales, numbers `01`–`39`, `fap041` as Nº 13 in Linea, and no public
+  two locales, numbers `01`–`39`, `fap041` as Nº 16 in Linea, and no public
   PDP/tile for `fap029` or `fap037`;
 - admin: both archived stable IDs remain inspectable with their retained media,
   variants, assignments, and assets;
@@ -400,12 +400,54 @@ The script never edits `src/lib/prints.ts` itself — it writes ready-to-paste
 hand, then run `npm run catalog:backfill` before the per-design pipeline below.
 
 **Not done by this script (separate manual/content steps):** the `noteIndex`
-description text in `messages/{pl,en,es,de}.json` for each design, and
+description text in `messages/{pl,en,es,de}.json` for each design, the shop
+colour data (`npm run print-assets:facets`, see § Shop colour filters — CI fails
+until every published design has a colour), and
 flipping `published: true` / running the per-design `prepare → upload →
 verify → publish → gallery [→ mockups]` sequence — those stay exactly as
 documented below, once per design.
 
+## Shop colour filters (`print-assets:facets`)
+
+The `/sklep` colour filter reads `config/print-shop.json` (`designs[id].colours`).
+Every published design needs at least one family — a CI test
+(`src/lib/print-shop-config.test.ts`) fails until it has one, so run this after
+onboarding new designs and before merging:
+
+```bash
+npm run print-assets:facets -- --dry-run   # print id → suggested families + per-family shares, write nothing
+npm run print-assets:facets                # write suggestions for new / unreviewed designs
+npm run print-assets:facets -- --force     # also re-suggest reviewed designs
+```
+
+The script downsamples each design's `public/uploads/fap-NNN-400w.webp`, drops
+the white paper and classifies the remaining pixels (`src/lib/print-colour.ts`)
+into six families — `blue`, `green`, `warm` (ochre/terracotta), `pink`
+(pink/violet), `earth` (beige/brown), `mono` (black/grey) — keeping the
+strongest one or two. It is a **suggestion**: open `config/print-shop.json`,
+fix any design where the eye disagrees and set `"reviewed": true` so a later
+run never overwrites it. `featured` (hand-picked "Artist's pick" ids, pinned
+first in the default order) and `newCount` (how many highest-numbered designs
+carry the "New" badge) are hand-maintained and untouched by the script.
+
 ## New artwork (first publication)
+
+Asset preparation accepts products in `draft` or `active` status with at least
+one active variant. This applies to the local CLI and the CMS asset-job planner:
+a new print can acquire verified assets while it is still invisible in the
+storefront. `hidden` and `archived` products remain blocked. Preparing, staging,
+or promoting assets never activates the product; the existing guarded status
+RPC still requires complete ready assignments before activation. The CMS
+per-upload/multi-ratio revision limitation still applies.
+
+The curation validator supports additional designs and collections without a
+fixed batch size. It continues to require unique collection names/slugs,
+unique product IDs matching source numbers, consecutive global display numbers,
+valid retirement references, and an exact match between curated and source IDs.
+Historical catalog membership is covered by snapshot tests. Adding a batch still
+requires explicit curation/source entries and their content; this change does
+not automatically import any files from `config/print-assets/batches/`.
+
 
 Place the approved, artwork-only master and, when the product config includes a
 `signature`, its SVG at the canonical gitignored paths:

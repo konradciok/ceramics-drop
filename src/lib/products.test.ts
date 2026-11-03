@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+vi.mock('./ceramic-sale-state', () => ({
+  withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
+}));
 import {
   getProducts,
   getPublicProducts,
@@ -81,9 +84,10 @@ describe('getProducts', () => {
     expect(await getProductsByCategory('kubki')).toEqual(await getProductsByCategory('kubki'));
   });
 
-  it('returns the registry instance from lookups', async () => {
+  it('adds live availability without mutating the registry instance', async () => {
     const all = await getProducts();
-    expect(await getProductById('k01')).toBe(all.find((p) => p.id === 'k01'));
+    expect(await getProductById('k01')).toMatchObject({ ...all.find((p) => p.id === 'k01'), onlineAvailable: true });
+    expect(all.find((p) => p.id === 'k01')?.onlineAvailable).toBeUndefined();
   });
 });
 

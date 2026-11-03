@@ -81,14 +81,28 @@ describe('activeVariantDimensions', () => {
     await expect(activeVariantDimensions(supabase, 'nope')).rejects.toThrow(/unknown print product/i);
   });
 
-  it('throws for a draft product', async () => {
-    const supabase = makeSupabase({ productStatus: { status: 'draft' }, variants: [] });
-    await expect(activeVariantDimensions(supabase, 'fap04')).rejects.toThrow(/not active/i);
+  it('prepares a draft from its active variants without changing product status', async () => {
+    const supabase = makeSupabase({ productStatus: { status: 'draft' }, variants: [
+      { variant_key: '30x40:false:false:none', print_area_width_px: 3600, print_area_height_px: 4800 },
+    ] });
+    expect(await activeVariantDimensions(supabase, 'fap042')).toEqual([
+      { variantKey: '30x40:false:false:none', w: 3600, h: 4800 },
+    ]);
+    const variantQuery = vi.mocked(supabase.from).mock.results[1].value;
+    expect(variantQuery.eq).toHaveBeenCalledWith('active', true);
+    expect(variantQuery.eq).toHaveBeenCalledWith('product_id', 'fap042');
+    expect(supabase.from).toHaveBeenCalledTimes(2);
   });
 
-  it('throws for a hidden product', async () => {
-    const supabase = makeSupabase({ productStatus: { status: 'hidden' }, variants: [] });
-    await expect(activeVariantDimensions(supabase, 'fap01')).rejects.toThrow(/not active/i);
+  it.each(['hidden', 'archived', 'unexpected'])('rejects a %s product', async (status) => {
+    const supabase = makeSupabase({ productStatus: { status }, variants: [] });
+    await expect(activeVariantDimensions(supabase, 'fap042')).rejects.toThrow(/not active or draft/i);
+    expect(supabase.from).toHaveBeenCalledTimes(1);
+  });
+
+  it('still rejects a draft with no active variants', async () => {
+    const supabase = makeSupabase({ productStatus: { status: 'draft' }, variants: [] });
+    await expect(activeVariantDimensions(supabase, 'fap042')).rejects.toThrow(/no active variants/i);
   });
 
   it('throws when the product has zero active variants', async () => {

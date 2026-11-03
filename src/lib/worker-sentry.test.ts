@@ -1,5 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseSentryDsn, buildEventEnvelope, captureWorkerAlert } from './worker-sentry';
+import { parseSentryDsn, buildEventEnvelope, captureWorkerAlert, serializeError } from './worker-sentry';
+
+describe('serializeError', () => {
+  it('returns the message for a real Error', () => {
+    expect(serializeError(new Error('boom'))).toBe('boom');
+  });
+
+  it('returns .message for a plain error-shaped object (e.g. Supabase PostgrestError)', () => {
+    // PostgrestError is NOT an Error instance — String() on it gives "[object Object]".
+    expect(serializeError({ message: 'row not found', code: 'PGRST116', details: '', hint: '' })).toBe(
+      'row not found',
+    );
+  });
+
+  it('falls back to JSON for a plain object with no .message', () => {
+    expect(serializeError({ code: 'PGRST116' })).toBe('{"code":"PGRST116"}');
+  });
+
+  it('handles primitives', () => {
+    expect(serializeError('plain string')).toBe('"plain string"');
+    expect(serializeError(42)).toBe('42');
+  });
+
+  it('falls back to String() when JSON.stringify would return undefined (e.g. a caught `undefined`)', () => {
+    expect(serializeError(undefined)).toBe('undefined');
+  });
+});
 
 describe('parseSentryDsn', () => {
   it('parses a standard DSN', () => {

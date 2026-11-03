@@ -1,0 +1,1 @@
+{ "code": "VALIDATION_FAILED", "message": "Formularz zawiera błędy.", "requestId": "req_9c31aa", "fieldErrors": { "images": "Wymagane co najmniej jedno zdjęcie." } }

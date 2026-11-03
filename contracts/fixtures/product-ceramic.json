@@ -1,0 +1,24 @@
+{
+  "id": "prd_a1b2c3d4e5",
+  "type": "ceramic",
+  "revision": 1,
+  "publishedRevision": null,
+  "status": "draft",
+  "draft": {
+    "type": "ceramic",
+    "category": "kubki",
+    "displayNumber": "12",
+    "measure": "9 x 8 cm",
+    "pricePln": 12000,
+    "priceEur": 2800,
+    "priceGbp": 2400,
+    "images": ["https://anna-ciok.studio/uploads/kubki/k12-1.webp"],
+    "title": { "pl": "Kubek Fala" },
+    "description": { "pl": "Ręcznie toczony kubek z fakturą fali." },
+    "seo": {},
+    "showroom": false
+  },
+  "thumbnail": "https://anna-ciok.studio/uploads/kubki/k12-1.webp",
+  "proofs": [],
+  "availability": "available"
+}
