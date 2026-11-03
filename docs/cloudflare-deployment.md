@@ -156,7 +156,7 @@ Applied **2026-06-08** on zone `df154a46a71277a8b5b4a9e3d9af23ad`:
 
 Ruleset `237f07c4303b4afbaa7854baeea64c01` · rule `020447cad9604aeb9361fde0155d0689`.
 
-**Free plan constraints:** `http_ratelimit` rules use a 10 s sampling period, 10 s mitigation timeout, `block` only (no managed challenge), and **one rule per zone**. `/api/returns` is covered by the in-app limiter (`src/app/api/returns/route.ts`); add a second WAF rule after upgrading to Pro if needed.
+**Free plan constraints:** `http_ratelimit` rules use a 10 s sampling period, 10 s mitigation timeout, `block` only (no managed challenge), and **one rule per zone**. Add a second WAF rule after upgrading to Pro if another route needs one. (`/api/returns` no longer needs a limiter — since PR #295 it's a static `410` stub with no order lookup or in-app rate limiting.)
 
 Verify: Security → WAF → Rate limiting rules, or `GET /zones/{zone_id}/rulesets/phases/http_ratelimit/entrypoint`.
 
@@ -233,13 +233,12 @@ Same values as `.env.local`. Do **not** add GCP / GTM API secrets.
 
 ### Runtime secrets (`wrangler secret put`)
 
-The build vars above are **not** the runtime secrets. Server-only secrets are set per-environment with `wrangler secret put <NAME>` (or `.dev.vars` locally) — see `.env.example` for the authoritative list and inline notes. Beyond Stripe/Supabase/InPost, the **returns + studio-email** flow needs:
+The build vars above are **not** the runtime secrets. Server-only secrets are set per-environment with `wrangler secret put <NAME>` (or `.dev.vars` locally) — see `.env.example` for the authoritative list and inline notes. Beyond Stripe/Supabase/InPost, the **studio-email** flow needs:
 
-- `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (return labels, shipping confirmations); Resend template aliases are wired in `src/lib/email-layout.ts`.
+- `RESEND_API_KEY`, `STUDIO_NOTIFY_EMAIL` — transactional mail (shipping confirmations, studio notifications); Resend template aliases are wired in `src/lib/email-layout.ts`.
 - `RESEND_WEBHOOK_SECRET` — Svix signing secret for `/api/resend/webhook`; get from the Resend dashboard → Webhooks → signing secret. **Required after deploying PR #44** or the endpoint returns `500`.
 - `NEWSLETTER_CONFIRM_SECRET` — HMAC secret signing the newsletter double-opt-in confirm links (`openssl rand -hex 32`). Dedicated, fail-closed: `/api/newsletter` and `/api/newsletter/confirm` return `503` while unset. Optional `RESEND_NEWSLETTER_AUDIENCE_ID` only for Resend accounts still on legacy Audiences.
 - `CMS_PREVIEW_SECRET` — dedicated HMAC secret for admin draft-preview links (`openssl rand -hex 32`). Minting a preview link throws while unset; a PDP preview read fails closed to published/messages copy instead of 500ing.
-- `STUDIO_RETURN_FIRST_NAME` / `_LAST_NAME` / `_PHONE` / `_ADDRESS_STREET` / `_BUILDING` / `_CITY` / `_POSTAL` / `_POINT` — the InPost return receiver. **All required**, or `POST /api/returns` returns `503`. `STUDIO_RETURN_EMAIL` defaults to `STUDIO_NOTIFY_EMAIL` when unset.
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live

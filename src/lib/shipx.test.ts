@@ -3,13 +3,11 @@ import {
   validateDelivery,
   buildShipmentPayload,
   buildDispatchOrderPayload,
-  buildReturnShipmentPayload,
   needsShipment,
   parseShipxWebhook,
   pickBuyableOffer,
   SHIPX_SERVICE,
   type OrderForShipment,
-  type StudioReturnConfig,
 } from './shipx';
 
 const contact = { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com', phone: '+48600100200' };
@@ -158,58 +156,6 @@ describe('buildDispatchOrderPayload', () => {
     const now = new Date('2026-06-30T10:00:00Z');
     const p = buildDispatchOrderPayload('7', now);
     expect(p.deadline_time).toBe('2026-07-01 18:00');
-  });
-});
-
-const studioConfig: StudioReturnConfig = {
-  first_name: 'Anna Ciok',
-  last_name: 'Studio',
-  email: 'studio@ciok.art',
-  phone: '+48600000001',
-  address: { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019', country_code: 'PL' },
-};
-
-const returnOrder = {
-  id: 'ord-1',
-  email: 'a@example.com',
-  receiver_first_name: 'Anna',
-  receiver_last_name: 'Kowalska',
-  receiver_phone: '+48111222333',
-  locale: 'pl',
-};
-
-describe('buildReturnShipmentPayload', () => {
-  const configWithPoint = { ...studioConfig, return_point: 'WAW20A' };
-
-  it('builds a locker return with customer sender and studio receiver', () => {
-    const p = buildReturnShipmentPayload(returnOrder, configWithPoint);
-    expect(p.service).toBe(SHIPX_SERVICE.paczkomat);
-    expect(p.custom_attributes).toEqual({ sending_method: 'parcel_locker', target_point: 'WAW20A' });
-    expect(p.sender).toEqual({
-      first_name: 'Anna',
-      last_name: 'Kowalska',
-      email: 'a@example.com',
-      phone: '+48111222333',
-    });
-    expect(p.receiver).toMatchObject({
-      first_name: 'Anna Ciok',
-      last_name: 'Studio',
-      address: studioConfig.address,
-    });
-    expect(p.reference).toBe('return:ord-1');
-  });
-
-  it('throws when return_point is missing', () => {
-    expect(() => buildReturnShipmentPayload(returnOrder, studioConfig)).toThrow('return_point required');
-  });
-
-  it('throws when customer contact is incomplete', () => {
-    expect(() =>
-      buildReturnShipmentPayload(
-        { ...returnOrder, receiver_phone: null },
-        configWithPoint,
-      ),
-    ).toThrow('incomplete customer contact');
   });
 });
 
