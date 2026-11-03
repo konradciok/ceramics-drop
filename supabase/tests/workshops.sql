@@ -1,4 +1,4 @@
--- pgTAP tests for the workshops booking RPCs (20261021120000_workshops.sql).
+-- pgTAP tests for the workshops booking RPCs (20261103120000_workshops.sql).
 -- Run locally with: supabase test db
 -- Every assertion runs inside the BEGIN/ROLLBACK below, so no fixture data
 -- persists. Synthetic `tap_*` ids keep the fixtures clear of the seeded calendar.
