@@ -10,8 +10,6 @@ import {
   pushCheckoutStartedItemsOnce,
   reportPurchaseGapOnce,
   rememberCheckoutForReturn,
-  pushCheckoutStarted,
-  pushConfirmedPurchase,
   pushConfirmedPurchaseByIdsOnce,
   pushConfirmedPurchaseFromRememberedCheckout,
   pushPaymentFailedOnce,
@@ -24,46 +22,6 @@ const product = (id: string) => {
 };
 
 describe('checkout analytics semantics', () => {
-  it('checkout start pushes only begin_checkout until payment is actually confirmed', () => {
-    const push = vi.fn();
-
-    pushCheckoutStarted([product('k01'), product('v01')], {
-      shippingCost: 18,
-      shippingMethod: 'kurier',
-      push,
-    });
-
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'begin_checkout',
-      }),
-    );
-    expect(push).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'purchase',
-      }),
-    );
-  });
-
-  it('confirmed payment pushes purchase separately from checkout start', () => {
-    const push = vi.fn();
-
-    pushConfirmedPurchase([product('k01'), product('v01')], {
-      orderNo: 'ACC-1234',
-      shippingCost: 18,
-      shippingMethod: 'kurier',
-      push,
-    });
-
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'purchase',
-      }),
-    );
-  });
-
   it('confirmed payment by product ids keeps sold pieces in the purchase payload', () => {
     const push = vi.fn();
     const storage = new Map<string, string>();

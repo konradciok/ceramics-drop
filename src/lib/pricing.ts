@@ -115,17 +115,6 @@ export function orderAmountGBPPence(itemPence: number[], method: DeliveryMethod)
 }
 
 /**
- * Display price in a locale's *default* currency (no cookie): `pl` → PLN,
- * everyone else → EUR. Use this for cookie-independent surfaces (SEO structured
- * data, product feeds). For cookie-aware on-page/checkout prices use
- * `priceOfCurrency` with the currency resolved from `getCurrency`.
- */
-export function priceOf(product: { category: CategorySlug; price: number }, locale: string): number {
-  if (locale === 'pl') return product.price;
-  return PRICE_EUR[product.category];
-}
-
-/**
  * Display price for a product in an explicit currency. PLN is always the
  * product's own `price` (products.price_pln has always been the live DB
  * source of truth in db mode). EUR/GBP prefer the product's own DB-backed

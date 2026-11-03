@@ -1,13 +1,13 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-07-29 17:39:49",
+  "exportTime": "2026-11-02 11:39:29",
   "containerVersion": {
-    "path": "accounts/6000988917/containers/254296918/versions/17",
+    "path": "accounts/6000988917/containers/254296918/versions/18",
     "accountId": "6000988917",
     "containerId": "254296918",
-    "containerVersionId": "17",
-    "name": "Native Meta Pixel tags (retire Custom-HTML bridges)",
-    "description": "Replaces ACC - Meta Pixel base + ACC - Meta dataLayer bridge (Custom HTML) with 3 native Meta Pixel template tags: PageView (template auto-init; triggers meta page_view + Consent Update; Unlimited), standard events (dynamic name; manual meta.* object props; eventID={{DLV - meta.event_id}}=purchase-<pi> dedup with server CAPI; advanced matching em), SiteEngagement. Consent ad_storage/needed preserved; disablePushState prevents double PageView. dataLayer contract unchanged. Completes F-03/F-04 Meta half.",
+    "containerVersionId": "18",
+    "name": "ACC analytics stack",
+    "description": "Native GA4 (googtag + gaawe) + Meta Pixel template stack for Anna Ciok Ceramics ecommerce and engagement dataLayer events.",
     "container": {
       "path": "accounts/6000988917/containers/254296918",
       "accountId": "6000988917",
@@ -444,6 +444,21 @@
                     "value": "{{DLV - page_title}}"
                   }
                 ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "placement"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - placement}}"
+                  }
+                ]
               }
             ]
           },
@@ -458,7 +473,7 @@
             "value": "G-WPJ3RE32M6"
           }
         ],
-        "fingerprint": "1785332750877",
+        "fingerprint": "1791564856259",
         "firingTriggerId": [
           "3"
         ],
@@ -923,12 +938,12 @@
               {
                 "type": "template",
                 "key": "arg1",
-                "value": "^(page_view|view_item_list|select_item|view_item|add_to_cart|remove_from_cart|view_cart|begin_checkout|purchase|site_engagement)$"
+                "value": "^(page_view|view_item_list|select_item|view_item|add_to_cart|remove_from_cart|view_cart|begin_checkout|purchase|site_engagement|market_get_directions)$"
               }
             ]
           }
         ],
-        "fingerprint": "1780411957595"
+        "fingerprint": "1791564752566"
       },
       {
         "accountId": "6000988917",
@@ -981,12 +996,12 @@
               {
                 "type": "template",
                 "key": "arg1",
-                "value": "^(view_item|add_to_cart|begin_checkout|purchase)$"
+                "value": "^(view_item|add_to_cart|begin_checkout|purchase|market_get_directions)$"
               }
             ]
           }
         ],
-        "fingerprint": "1785332601235"
+        "fingerprint": "1791564765680"
       },
       {
         "accountId": "6000988917",
@@ -1804,6 +1819,31 @@
           }
         ],
         "fingerprint": "1785332741121"
+      },
+      {
+        "accountId": "6000988917",
+        "containerId": "254296918",
+        "variableId": "55",
+        "name": "DLV - placement",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "integer",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "boolean",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "name",
+            "value": "placement"
+          }
+        ],
+        "fingerprint": "1791564818182"
       }
     ],
     "builtInVariable": [
@@ -1850,8 +1890,8 @@
         "name": "Analytics Session ID"
       }
     ],
-    "fingerprint": "1785339584744",
-    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/17?apiLink=version",
+    "fingerprint": "1791564858458",
+    "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/18?apiLink=version",
     "customTemplate": [
       {
         "accountId": "6000988917",

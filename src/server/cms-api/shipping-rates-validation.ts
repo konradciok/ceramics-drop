@@ -163,13 +163,3 @@ export function parseShippingRateFields(rateId: ShippingRateId, fields: Field[])
   }
   return { ok: true, rateId, rates };
 }
-
-/** Narrow a parse result to the country table, for the international track. */
-export function internationalRatesOf(result: ShippingRatesParseResult): InternationalShippingRates | null {
-  return result.ok && result.rateId === 'international' ? result.rates : null;
-}
-
-/** Narrow a parse result to the per-currency table, for the domestic track. */
-export function domesticRatesOf(result: ShippingRatesParseResult): DomesticShippingRates | null {
-  return result.ok && result.rateId === 'domestic' ? result.rates : null;
-}

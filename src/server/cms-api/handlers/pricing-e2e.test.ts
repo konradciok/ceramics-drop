@@ -328,15 +328,15 @@ describe('pricing end-to-end: backfill -> get -> save -> preview -> publish -> r
 
   it('chains save -> preview -> publish -> restore with revisions that genuinely accumulate', async () => {
     const base = buildPricingFields(DEFAULT_PRINT_PRICING);
-    const raised = withValue(withValue(base, 'base_30x40_eur', '40'), 'eur_to_pln', '4.3');
+    const raised = withValue(withValue(base, 'base_30x40_eur', '50'), 'eur_to_pln', '4.3');
 
     // 1. save — revision 2. The LIVE row must not move: a draft is not a price.
     const saveRes = await save(ctx, 1, raised);
     expect(saveRes.status).toBe(200);
     expect((await saveRes.json()).revision).toBe(2);
-    expect(state.live?.base_30x40_eur).toBe(25);
+    expect(state.live?.base_30x40_eur).toBe(42);
     expect(state.live?.published_revision).toBe(1);
-    expect((await readPrintPricingConfig(makeFakeSupabase(state))).baseEur['30x40']).toBe(25);
+    expect((await readPrintPricingConfig(makeFakeSupabase(state))).baseEur['30x40']).toBe(42);
 
     // 2. preview at the new revision — 27 items, computed from the CANDIDATE
     // values in the request body, still without touching the live row.
@@ -345,11 +345,11 @@ describe('pricing end-to-end: backfill -> get -> save -> preview -> publish -> r
     const preview = await previewRes.json();
     expect(preview.items).toHaveLength(27);
     const baseEurItem = preview.items.find((i: { label: string; currency: string }) => i.label === 'Baza 30 × 40 cm' && i.currency === 'EUR');
-    // 40 EUR; PLN = round(40 x 4.3 / 5) x 5 = 170
-    expect(baseEurItem.minorUnits).toBe(4000);
+    // 50 EUR; PLN = round(50 x 4.3 / 5) x 5 = 215
+    expect(baseEurItem.minorUnits).toBe(5000);
     const basePlnItem = preview.items.find((i: { label: string; currency: string }) => i.label === 'Baza 30 × 40 cm' && i.currency === 'PLN');
-    expect(basePlnItem.minorUnits).toBe(17000);
-    expect(state.live?.base_30x40_eur).toBe(25);
+    expect(basePlnItem.minorUnits).toBe(21500);
+    expect(state.live?.base_30x40_eur).toBe(42);
 
     // 3. publish — NOW the live row moves, atomically, and the legacy read
     // path (the one checkout uses) sees the new numbers.
@@ -357,7 +357,7 @@ describe('pricing end-to-end: backfill -> get -> save -> preview -> publish -> r
     expect(publishRes.status).toBe(200);
     expect((await publishRes.json())).toMatchObject({ revision: 2, publishedRevision: 2 });
     const afterPublish = await readPrintPricingConfig(makeFakeSupabase(state));
-    expect(afterPublish.baseEur['30x40']).toBe(40);
+    expect(afterPublish.baseEur['30x40']).toBe(50);
     expect(afterPublish.eurToPln).toBe(4.3);
     expect(state.live?.updated_by).toBe('anna@studio.pl');
 
@@ -369,8 +369,8 @@ describe('pricing end-to-end: backfill -> get -> save -> preview -> publish -> r
     const restored = await restoreRes.json();
     expect(restored.revision).toBe(3);
     expect(restored.publishedRevision).toBe(2);
-    expect(restored.fields.find((f: Field) => f.key === 'base_30x40_eur').value).toBe('25');
-    expect((await readPrintPricingConfig(makeFakeSupabase(state))).baseEur['30x40']).toBe(40);
+    expect(restored.fields.find((f: Field) => f.key === 'base_30x40_eur').value).toBe('42');
+    expect((await readPrintPricingConfig(makeFakeSupabase(state))).baseEur['30x40']).toBe(50);
 
     expect(state.audit.map((a) => a.action)).toEqual(['draft_saved', 'published', 'restored']);
   });
@@ -383,7 +383,7 @@ describe('pricing end-to-end: backfill -> get -> save -> preview -> publish -> r
     expect(publishRes.status).toBe(422);
     expect((await publishRes.json()).fieldErrors).toHaveProperty('base_50x70_eur');
 
-    expect(state.live?.base_50x70_eur).toBe(50);
+    expect(state.live?.base_50x70_eur).toBe(79);
     expect(state.live?.published_revision).toBe(1);
   });
 

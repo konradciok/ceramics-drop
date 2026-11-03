@@ -442,16 +442,6 @@ export function buildViewCartEventFromItems(
   };
 }
 
-export function buildViewCartEvent(
-  products: Product[],
-  options: EventOptions = {},
-): DataLayerEvent {
-  const items = products.map((product, i) =>
-    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
-  );
-  return buildViewCartEventFromItems(items, { currency: options.currency, eventId: options.eventId });
-}
-
 /** begin_checkout from pre-resolved AnalyticsItems (ceramics + prints). */
 export function buildBeginCheckoutEventFromItems(
   items: AnalyticsItem[],
@@ -483,16 +473,6 @@ export function buildBeginCheckoutEventFromItems(
     eventId,
     orderTotal,
   );
-}
-
-export function buildBeginCheckoutEvent(
-  products: Product[],
-  options: CheckoutOptions,
-): DataLayerEvent {
-  const items = products.map((product, i) =>
-    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
-  );
-  return buildBeginCheckoutEventFromItems(items, options);
 }
 
 /** purchase from pre-resolved AnalyticsItems (ceramics + prints). */
@@ -532,16 +512,6 @@ export function buildPurchaseEventFromItems(
     orderTotal,
     options.orderNo,
   );
-}
-
-export function buildPurchaseEvent(
-  products: Product[],
-  options: PurchaseOptions,
-): DataLayerEvent {
-  const items = products.map((product, i) =>
-    toAnalyticsItem(product, { priceOverride: options.itemPrices?.[i] }),
-  );
-  return buildPurchaseEventFromItems(items, options);
 }
 
 export function buildEngagementEvent(

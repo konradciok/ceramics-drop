@@ -17,6 +17,7 @@ import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { getProductNote } from '@/lib/cms/messages';
 import { getPrintPdpContent } from '@/lib/cms/print-pdp';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { getCurrency } from '@/lib/currency.server';
 import { readWithFallback } from '@/lib/supabase-timeout';
 import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
@@ -101,7 +102,7 @@ export default async function Page({ params, searchParams }: Props) {
     const design = await getPrintById(id);
     if (!design || !design.published) notFound();
     const t = await getTranslations({ locale });
-    const [note, coverage, pricing, pdpContent, definitions, displayCurrency] = await Promise.all([
+    const [note, coverage, pricing, pdpContent, definitions, displayCurrency, shipping] = await Promise.all([
       getProductNote(PRINT_SLUG, locale as Locale, design.id, previewToken),
       readWithFallback<PrintAssetCoverage | null>(
         'printAssetCoverage',
@@ -113,6 +114,7 @@ export default async function Page({ params, searchParams }: Props) {
       getPrintPdpContent(locale as Locale, previewToken),
       loadPrintCollectionDefinitions(),
       getCurrency(locale),
+      getShippingRatesForDisplay(),
     ]);
     // undefined = do NOT gate (registry mode / no rows / fetch error); an empty
     // array is a real "nothing usable" signal and gates every variant.
@@ -135,6 +137,7 @@ export default async function Page({ params, searchParams }: Props) {
             pricing,
             definitions,
             displayCurrency,
+            shipping,
           })}
         />
         <PrintProductScreen design={design} noteOverride={note} usableVariantKeys={usableVariantKeys} pricing={pricing} content={pdpContent} definitions={definitions} />
@@ -145,10 +148,11 @@ export default async function Page({ params, searchParams }: Props) {
   const base = await getProductById(id);
   if (!base || base.category !== (slug as CategorySlug) || !isProductPublic(base)) notFound();
 
-  const [t, soldIds, showroomIds] = await Promise.all([
+  const [t, soldIds, showroomIds, shipping] = await Promise.all([
     getTranslations({ locale }),
     readWithFallback('soldIds', getSoldIds, [] as string[], { locale, slug, id }),
     readWithFallback('showroomIds', getShowroomIds, [] as string[], { locale, slug, id }),
+    getShippingRatesForDisplay(),
   ]);
 
   const withSold = soldIds.includes(base.id) ? { ...base, sold: true } : base;
@@ -165,9 +169,10 @@ export default async function Page({ params, searchParams }: Props) {
           t: (key: string) => t(key),
           tRaw: (key: string) => t.raw(key),
           description: note,
+          shipping,
         })}
       />
-      <ProductPageScreen product={product} soldIds={soldIds} showroomIds={showroomIds} noteOverride={note} />
+      <ProductPageScreen product={product} soldIds={soldIds} showroomIds={showroomIds} noteOverride={note} shipping={shipping} />
     </main>
   );
 }

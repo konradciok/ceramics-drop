@@ -189,69 +189,6 @@ export function buildDispatchOrderPayload(shipmentId: string, now: Date): Dispat
   };
 }
 
-// ── Return shipments ─────────────────────────────────────────────────────────
-
-/** Order fields needed to build a return shipment payload. */
-export type OrderForReturn = {
-  id: string;
-  email: string | null;
-  receiver_first_name: string | null;
-  receiver_last_name: string | null;
-  receiver_phone: string | null;
-  locale: string | null;
-};
-
-/** Studio contact + address used as the receiver on return shipments. */
-export type StudioReturnConfig = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  address: DeliveryAddress;
-  /** Optional paczkomat code pre-assigned as the return drop-off target. */
-  return_point?: string;
-};
-
-/**
- * Build the ShipX create-shipment body for a customer return.
- * Customer is the sender (drops off at `return_point` locker); studio is the receiver.
- * We set sender/receiver explicitly — `is_return: true` 500s on our ShipX org.
- */
-export function buildReturnShipmentPayload(
-  order: OrderForReturn,
-  config: StudioReturnConfig,
-): ShipmentPayload {
-  const firstName = str(order.receiver_first_name);
-  const lastName = str(order.receiver_last_name);
-  const email = str(order.email);
-  const phone = str(order.receiver_phone);
-  const returnPoint = str(config.return_point);
-  if (!firstName || !lastName || !email || !phone) {
-    throw new Error(`buildReturnShipmentPayload: incomplete customer contact for order ${order.id}`);
-  }
-  if (!returnPoint) {
-    throw new Error(`buildReturnShipmentPayload: return_point required for order ${order.id}`);
-  }
-
-  return {
-    sender: { first_name: firstName, last_name: lastName, email, phone },
-    receiver: {
-      first_name: config.first_name,
-      last_name: config.last_name,
-      email: config.email,
-      phone: config.phone,
-      address: config.address,
-    },
-    parcels: [DEFAULT_LOCKER_PARCEL],
-    custom_attributes: {
-      sending_method: SENDING_METHOD.paczkomat,
-      target_point: returnPoint,
-    },
-    service: SHIPX_SERVICE.paczkomat,
-    reference: `return:${order.id}`,
-  };
-}
-
 export type ShipxStatusEvent = {
   shipmentId: string;
   status: string;

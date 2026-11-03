@@ -6,8 +6,16 @@ import { Link } from '@/i18n/navigation';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
+import { shippingCopyValues } from '@/lib/shipping-copy';
 
 type Props = { params: Promise<{ locale: string }> };
+
+// The quoted InPost prices come from the CMS-published shipping table at
+// REQUEST time. Without this the route is prerendered at build (where
+// CATALOG_SOURCE is unset, so the code constants win) and a published rate
+// would never reach the page. Guarded by scripts/lib/catalog-runtime-artifact.ts.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -24,7 +32,9 @@ export default async function Page({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale });
+  const [t, shippingRates] = await Promise.all([getTranslations({ locale }), getShippingRatesForDisplay()]);
+  // {locker} / {courier}: the published InPost prices, never numbers typed into the copy.
+  const shipPrices = shippingCopyValues(locale, shippingRates.domestic);
 
   const mailtoLink = (c: ReactNode) => (
     <a className="inline" href={`mailto:${EMAIL.contact}`}>{c}</a>
@@ -60,10 +70,10 @@ export default async function Page({ params }: Props) {
           {/* ── #wysylka ─────────────────────────────────────────── */}
           <section id="wysylka">
             <h2>{t('shipping.s1H')}</h2>
-            <p>{t.rich('shipping.s1P', richTags)}</p>
+            <p>{t.rich('shipping.s1P', { ...richTags, ...shipPrices })}</p>
             <ul className="bullets">
-              <li>{t('shipping.s1Li1')}</li>
-              <li>{t('shipping.s1Li1b')}</li>
+              <li>{t('shipping.s1Li1', shipPrices)}</li>
+              <li>{t('shipping.s1Li1b', shipPrices)}</li>
               <li>{t('shipping.s1Li2')}</li>
               <li>{t('shipping.s1Li3')}</li>
             </ul>

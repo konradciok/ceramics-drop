@@ -9,6 +9,7 @@ import { printCollectionPageSchema } from '@/lib/seo/structured-data';
 import { alternatesForIndexableLocales } from '@/lib/seo/urls';
 import { getProductNotes } from '@/lib/cms/messages';
 import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
+import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { getPrintDesigns, registryPrintById } from '@/lib/prints';
 import { printListingImage } from '@/lib/print-mockups';
 import { printDisplayName } from '@/lib/print-curation';
@@ -89,11 +90,12 @@ export default async function Page({ params }: Props) {
   if (!loaded) notFound();
   const { page, definitions, designs } = loaded;
 
-  const [t, notes, pricing, currency] = await Promise.all([
+  const [t, notes, pricing, currency, shipping] = await Promise.all([
     getTranslations({ locale }),
     getProductNotes('fine-art-prints', locale as Locale).catch(() => ({}) as Record<string, string>),
     getPrintPricingConfig(),
     getCurrency(locale as Locale),
+    getShippingRatesForDisplay(),
   ]);
   const printCurrency = toChargeableCurrency(currency);
   const { fmt, code } = currencyFormatter(printCurrency);
@@ -121,6 +123,7 @@ export default async function Page({ params }: Props) {
     notes,
     pricing,
     definitions,
+    shipping,
     slug,
     name: page.name,
     description: page.description,
