@@ -224,9 +224,9 @@ Pozycje 1–3 pochodzą z weryfikacji produkcyjnej 2026-08-31 opisanej w §13 (S
 ### SEO-011 — brak finalnej bramki regresyjnej SEO (CZĘŚCIOWO ROZSTRZYGNIĘTE 2026-09-03 — PR #285 merged)
 
 - **Kategoria / ważność / confidence:** tests/process; **medium**; **confirmed**.
-- **Dowód:** istnieją dobre unit tests (`src/app/sitemap.test.ts`, `src/lib/seo/urls.test.ts`, `src/lib/seo/structured-data.test.ts`, `src/lib/feed.test.ts`), lecz nie ma E2E finalnego head/status/hreflang/feed parity. Audyt ujawnił pusty preview i `www`, których unity nie wykryły.
+- **Dowód:** istnieją dobre unit tests (`src/app/sitemap.test.ts`, `src/lib/seo/urls.test.ts`, `src/lib/seo/structured-data.test.ts`, `src/lib/feed.test.ts`), lecz w chwili audytu nie było E2E finalnego head/status/hreflang/feed parity (audyt ujawnił pusty preview i `www`, których unity nie wykryły). Head/status/hreflang/preview/404 pokrywa od 2026-09-03 PR #285 (zob. Aktualizacja poniżej); otwarte pozostają JSON-LD/schema, sitemap projection i feed/checkout price contract.
 - **Wpływ:** zmiana routingu, CMS lub pricing może przejść CI i uszkodzić indeksację/merchant data.
-- **Reprodukcja:** `rg` w testach; brak odpowiedniej macierzy.
+- **Reprodukcja:** `rg` w testach; w chwili audytu brak odpowiedniej macierzy (luka head/status/hreflang zamknięta w #285; pozostałe wiersze §9 nadal bez pokrycia).
 - **Rozwiązanie:** repo-native SEO contract suite na Vitest + Playwright; bez zewnętrznych usług w required CI.
 - **Zależności / koszt:** CI/webServer build; **M**.
 - **Weryfikacja:** testy zawodzą na kontrolowanych mutacjach fixture; czas i flakiness w limicie.
