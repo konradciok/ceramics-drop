@@ -99,3 +99,7 @@ docs/archive/image.png
 /.design-sync/learnings/
 /.design-sync/node_modules
 /.design-sync/
+
+# Local scratch: ad-generation input photos, generated Cloudflare typegen output
+/public/uploads/ads-input/
+/env.cf-typegen
