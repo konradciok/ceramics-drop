@@ -313,8 +313,8 @@ describe('processAssetJob — Task 10 claim/fail/finalize machinery (unchanged b
 describe('processAssetJob — Phase 3 container processing', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('happy path: renders every profile, stages the assets, then completes with asset_id set', async () => {
-    const { calls } = setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null } });
+  it.each(['active', 'draft'])('happy path for %s: renders and stages assets without activating the product', async (status) => {
+    const { calls } = setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null }, productResult: { data: { status }, error: null } });
     const env = makeEnv();
     await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
 
@@ -340,6 +340,10 @@ describe('processAssetJob — Phase 3 container processing', () => {
 
     const complete = failCall(calls, 'completed')!;
     expect(complete.payload).toMatchObject({ status: 'completed', asset_id: ASSET_ID, attempts: 1 });
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('promote_print_assets_ready', {
+      p_product_id: PRODUCT_ID, p_revision: REVISION, p_r2_keys: [R2_KEY],
+    });
     expect(mockCaptureAlert).not.toHaveBeenCalled();
   });
 
@@ -472,8 +476,8 @@ describe('processAssetJob — Phase 3 container processing', () => {
     );
   });
 
-  it('non-active product: fails as failed_action_required without waking the container', async () => {
-    setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null }, productResult: { data: { status: 'draft' }, error: null } });
+  it.each(['hidden', 'archived'])('%s product: fails as failed_action_required without waking the container', async (status) => {
+    setup({ uploadResult: { data: CONFIRMED_UPLOAD, error: null }, productResult: { data: { status }, error: null } });
     const env = makeEnv();
     await expect(processAssetJob(MSG, env, CTX)).resolves.toBeUndefined();
     expect(renderSpy(env)).not.toHaveBeenCalled();

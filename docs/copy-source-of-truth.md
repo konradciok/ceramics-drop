@@ -93,14 +93,14 @@ Sprawdzono kod, publiczną dokumentację producenta oraz nieodpłatne odczyty i 
 - [Zasady wysyłki producenta](https://support.prodigi.com/hc/en-us/articles/13168768147740-What-shipping-or-courier-options-are-there) wskazują, że Budget może być bez śledzenia; czas transportu dolicza się do produkcji. Nie obiecujemy śledzenia każdej przesyłki.
 - [Kontrakt API](https://www.prodigi.com/print-api/docs/reference/) przewiduje przydzielanie zakładu zależnie od produktu, kierunku i usługi oraz możliwość kilku przesyłek. Kraj realizacji pojedynczej wyceny nie stanowi gwarancji dla wszystkich zamówień.
 - `src/server/prodigi/merge.ts` obsługuje e-mail o nadaniu i zapis podstawowych danych śledzenia. Nie uzasadnia to obietnicy, że każda paczka ma tracking lub że konto pokazuje osobno wszystkie przesyłki.
-- Nie potwierdzono dotychczasowego „5–10 dni roboczych” jako wspólnego terminu doręczenia całej oferty. Do uzupełnienia: realny przedział produkcja + transport dla obsługiwanych wariantów i kierunków oraz obsługa terytoriów szczególnych przy walidacji tylko kodem kraju.
+- Dotychczasowe „5–10 dni roboczych” nie było potwierdzone jako wspólny termin doręczenia całej oferty. **Od 2026-10-01 obowiązuje termin potwierdzony przez właściciela (sekcja 13)**; powyższe dane producenta (produkcja 24–72 godziny, transport doliczany) pozostają zapisem weryfikacji, a nie gwarancją tego terminu. Nadal do uzupełnienia: obsługa terytoriów szczególnych przy walidacji tylko kodem kraju.
 - Polityka producenta wobec studia nie jest sama w sobie polityką zwrotów sklepu wobec klienta. Dokumentów konsumenckich nie uznajemy za zatwierdzone.
 
 ## 7. Rozbieżności wymagające działania w produkcie
 
 1. **Saldo karty:** `src/lib/gift-cards.ts` tworzy kod z `max_redemptions: 1`; `docs/gift-cards.md` opisuje utratę nadwyżki. Docelową decyzją jest zachowywanie salda. Trzeba skoordynować zmianę obsługi płatności i salda z tekstem karty oraz zasadami jej użycia. To nie jest gotowa funkcja potwierdzona przez ten dokument.
 2. **Ceramika poza aktywnym dropem:** obecnie sprzedaż odbywa się tylko w pracowni; przyszły aktywny drop może udostępnić ceramikę online, także z płatnością kartą podarunkową. Katalog, koszyk, checkout, feedy i linki muszą respektować ten stan, zachowując historię zamówień i prawdziwe statusy przedmiotów. Nie usuwać mechanizmu przyszłych dropów.
-3. **Koszt i termin dostawy:** klient płaci według konfiguracji sklepu. Przed obietnicą „koszt bez marży” lub konkretnym terminem trzeba zweryfikować aktualne dane. Nie zmieniono cen w tej sesji.
+3. **Koszt i termin dostawy:** klient płaci według konfiguracji sklepu. Termin realizacji i dostawy jest od 2026-10-01 potwierdzony przez właściciela (sekcja 13); przed obietnicą „koszt bez marży” trzeba zweryfikować aktualne dane. Nie zmieniono cen w tej sesji.
 4. **Treści w kilku źródłach:** runtime korzysta z `messages/*.json`, CMS i danych katalogowych. Sama zmiana tłumaczeń nie gwarantuje zmiany opublikowanego CMS. Zbadać zarówno źródło, jak i wynikowy HTML, e-maile i JSON-LD.
 5. **Dokumenty formalne:** użytkownik podał nazwę sprzedawcy, numer podatkowy, miejsce rejestracji oraz wspólny adres pracowni, rejestracyjny i zwrotny. Potwierdził również, że koszt odesłania przy zwykłym zwrocie bez reklamacji pokrywa klient. Gotowe zasady zwrotów i dokumenty nadal wymagają zatwierdzenia. Decyzja o niewymienianiu partnera w copy nie jest potwierdzeniem kompletności dokumentów prawnych.
 
@@ -118,7 +118,7 @@ Sprawdzono kod, publiczną dokumentację producenta oraz nieodpłatne odczyty i 
 **Zamówienia indywidualne:** Szukasz innego rozmiaru Fine Art Print lub obrazu malowanego na zamówienie? Napisz do mnie. Współpracuję również z architektami.
 
 **Dostawa — wersja bez niepotwierdzonego terminu:** Fine Art Print powstaje po złożeniu zamówienia. Dostawa jest dostępna do krajów Unii Europejskiej i Wielkiej Brytanii. Koszt zobaczysz przed płatnością.  
-To nie jest kompletna polityka dostawy; wymaga uzupełnienia zweryfikowanego terminu i warunków.
+To nie jest kompletna polityka dostawy. Termin realizacji i dostawy jest od 2026-10-01 potwierdzony przez właściciela (sekcja 13); warunki nadal wymagają uzupełnienia.
 
 **Kontakt:** Napisz na ania@ciok.art, aby umówić wizytę w pracowni lub porozmawiać o zamówieniu.  
 **Dane firmy:** Anna Ciok Studio · numer podatkowy: Y9608071L.  
@@ -126,7 +126,7 @@ To nie jest kompletna polityka dostawy; wymaga uzupełnienia zweryfikowanego ter
 
 ## 9. Kolejność dalszej pracy
 
-1. Uzupełnić zweryfikowane terminy dostawy. Nazwa firmy, numer podatkowy, miejsce rejestracji, adres rejestracyjny i zwrotny, koszt zwykłego odesłania po stronie klienta oraz zakres karty są już potwierdzone przez użytkownika.
+1. Terminy dostawy: potwierdzone przez właściciela 2026-10-01 (sekcja 13). Nazwa firmy, numer podatkowy, miejsce rejestracji, adres rejestracyjny i zwrotny, koszt zwykłego odesłania po stronie klienta oraz zakres karty są już potwierdzone przez użytkownika.
 2. Zatwierdzić propozycję ekspozycji ceramiki i przykładowy ton tekstów.
 3. Przygotować kompletny polski zestaw copy po stronach i komunikatach, ze wskazaniem źródła w tłumaczeniach, CMS albo kodzie. Dokumenty formalne oznaczać jako robocze do zatwierdzenia.
 4. Użytkownik zatwierdza finalne teksty. Przygotować konkretne zmiany funkcjonalne konieczne dla zgodności: saldo karty, jej ograniczony zakres i sprzedaż ceramiki online tylko podczas aktywnego dropu.
@@ -152,7 +152,7 @@ To nie jest kompletna polityka dostawy; wymaga uzupełnienia zweryfikowanego ter
 - Publiczna ceramika trafia do wspólnej galerii niezależnie od flagi `showroom`. Status „Sprzedane” wymaga rzeczywistej sprzedaży. Podczas aktywnego dropu oferta online jest wyodrębniona; zakończenie dropu blokuje nowe rezerwacje również przez linki prywatne, zachowując obsługę płatności w toku. Odczyt dostępności ma blokować sprzedaż w razie błędu.
 - Karta z saldem: PLN/EUR/GBP bez przewalutowania; pokrywa produkty i dostawę, zachowuje resztę, nie wygasa. Jedna karta na zamówienie, bez łączenia z rabatem. Dotychczasowe nominały i e-mail do kupującego pozostają.
 - Saldo wymaga atomowych rezerwacji, idempotencji, pełnego opłacenia bez Stripe oraz dopłaty respektującej minimum operatora. Pełne i częściowe zwroty uwzględniają proporcje źródeł zapłaty. Migracja musi zachować prawa istniejących kart; nie wolno przywrócić kodów zużytych lub unieważnionych.
-- Dotychczasowe ceny detaliczne dostawy pozostają. Różnica względem realizacji jest kosztem studia. Brak obietnicy śledzenia każdej przesyłki oraz niepotwierdzonych terminów.
+- Dotychczasowe ceny detaliczne dostawy pozostają. Różnica względem realizacji jest kosztem studia. Brak obietnicy śledzenia każdej przesyłki oraz niepotwierdzonych terminów (termin potwierdzony później: sekcja 13).
 - Nowe zwroty kierują do pracowni i kontaktu e-mail; nie generują nowych etykiet InPost. Dotychczasowe zwroty zachowują historię. Zwykłe odstąpienie, reklamacja i zakup zawarty w pracowni mają odrębne zasady.
 - Zapis rozmiarów: centymetry, bez A3+/B2/B1; format wydruku, pole obrazu i rozmiar zewnętrzny oprawy muszą być rozróżnione.
 
@@ -162,4 +162,29 @@ To nie jest kompletna polityka dostawy; wymaga uzupełnienia zweryfikowanego ter
 
 Odczyt CMS z tej sesji potwierdził 7 opublikowanych dokumentów. Do redakcji przygotowano PL: `page:home` (wersja 7), `page:print-pdp` (wersja 3), `product_notes:fine-art-prints` (wersja 4). [Propozycje CMS](copy/2026-09-09/cms-proposals-pl.json) zachowują media hero, identyfikatory i numery wersji bazowych oraz sumy kontrolne treści. Przed zapisaniem ponowić odczyt i sprawdzić brak nowszych zmian. Odczyt nie opublikował żadnego dokumentu.
 
-Warunki nadal otwarte: akceptacja nowego PL, potwierdzenie macierzy terminów i terytoriów dostawy, uzupełnienie dokumentów formalnych oraz wykonanie etapów funkcjonalnych i publikacyjnych planu. Sprawdzanie polityki prywatności wymaga również zweryfikowania rzeczywistych odbiorców, umów, transferów i retencji. Nie utożsamiać tego pakietu z ukończeniem wdrożenia całego serwisu.
+Warunki nadal otwarte: akceptacja nowego PL, potwierdzenie terytoriów dostawy (termin potwierdzony 2026-10-01, sekcja 13), uzupełnienie dokumentów formalnych oraz wykonanie etapów funkcjonalnych i publikacyjnych planu. Sprawdzanie polityki prywatności wymaga również zweryfikowania rzeczywistych odbiorców, umów, transferów i retencji. Nie utożsamiać tego pakietu z ukończeniem wdrożenia całego serwisu.
+
+## 13. Termin realizacji i dostawy — decyzja właściciela (1 października 2026)
+
+Właściciel potwierdził ostatecznie jeden termin dla całego sklepu:
+
+> **Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.**
+
+| Język | Brzmienie |
+|---|---|
+| PL | Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. |
+| EN | Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. |
+| ES | El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. |
+| DE | Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. |
+
+**Zasady stosowania**
+
+- Termin dotyczy wszystkich zamówień (ceramika i Fine Art Print) i obowiązuje wszędzie, gdzie sklep podaje czas realizacji lub dostawy: teksty w czterech językach, e-maile z potwierdzeniem, dane strukturalne JSON-LD (`handlingTime` 0–2 dni, `transitTime` 1–5 dni) i treści w CMS. Nie dopisujemy innych przedziałów ani terminów sezonowych.
+- Pełne zdanie (z „Europy”) stoi tam, gdzie nie ma listy krajów. Gdy tekst wymienia kraje (UE i Wielka Brytania dla odbitek, Polska dla ceramiki), kraje zostają, a termin jest ten sam. Checkout odbitek przyjmuje tylko kraje UE i Wielką Brytanię (`PRINT_COUNTRIES`), więc „Europa” nie oznacza dostaw np. do Szwajcarii czy Norwegii.
+- W skrótach (kafelki, pola kontaktowe) obie liczby zostają razem: „realizacja do 2 dni roboczych, dostawa do 5 dni roboczych”. Nie podajemy łącznej sumy („do 7 dni”) ani początku odliczania dostawy; „od zaksięgowania płatności” stoi tylko przy realizacji w Regulaminie i na stronie Dostawa i zwroty.
+- Zastąpione zapisy: „5–10 dni roboczych” (odbitki), „1–3 dni roboczych” (nadanie ceramiki), „1–2 dni po nadaniu” (metody dostawy ceramiki), „2–5 dni roboczych” (e-mail odbitek) oraz sezonowy komunikat o lipcu w e-mailu z potwierdzeniem ceramiki.
+- Testy pilnujące terminu: `src/lib/email.test.ts` (e-maile) i `src/lib/seo/structured-data.test.ts` (JSON-LD).
+
+**Zastrzeżenie.** To decyzja właściciela, nie wynik weryfikacji u producenta. Producent podaje produkcję 24–72 godziny (ramy 72 godziny), a czas transportu dolicza się do produkcji (sekcja 6); tryb Budget może mieć dłuższy tranzyt. Przed utrwaleniem terminu w dokumentach prawnych warto porównać go z rzeczywistymi czasami z zamówień (daty zapłaty i nadania).
+
+**Treści poza repozytorium.** Akordeon „Wysyłka i zwroty” na PDP odbitek jest w polskiej wersji nadpisany w CMS (`page:print-pdp`) i trzeba go zaktualizować w panelu administracyjnym; EN/ES/DE czytają tekst z `messages/`. Tekst PL do wklejenia (zachowuje obecną strukturę z CMS, bez zdania o partnerze druku): „Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.”

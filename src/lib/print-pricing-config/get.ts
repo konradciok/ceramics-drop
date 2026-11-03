@@ -16,19 +16,21 @@
      read) — never silently substitutes DEFAULT_PRINT_PRICING; see
      last-known-good.ts for why and what it falls back to instead.
    ============================================================ */
+import { cache } from 'react';
 import { catalogSource } from '../catalog/source';
 import * as Sentry from '@sentry/nextjs';
 import { DEFAULT_PRINT_PRICING, type PrintPricingConfig } from '../print-pricing';
 import { readWithFallback } from '../supabase-timeout';
 import { recordPrintPricingSuccess, resolvePrintPricingFallback } from './last-known-good';
 
-export async function getPrintPricingConfig(): Promise<PrintPricingConfig> {
+// Display reads share one result per server render, including a failed read.
+export const getPrintPricingConfig = cache(async (): Promise<PrintPricingConfig> => {
   if (catalogSource() === 'code') return DEFAULT_PRINT_PRICING;
   return readWithFallback('print-pricing-config', async () => {
     const { loadPrintPricingConfigFromDb } = await import('./load');
     return await loadPrintPricingConfigFromDb();
   }, DEFAULT_PRINT_PRICING);
-}
+});
 
 /** Thrown by getPrintPricingConfigForCheckout() when no safe price is
  *  available to charge — a cold isolate hit by a DB outage on its first

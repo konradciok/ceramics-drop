@@ -158,7 +158,7 @@ function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
         price_eur: priceOfVariant(sel, 'eur', pricing),
         price_gbp: priceOfVariant(sel, 'gbp', pricing),
         is_default: i === defaultIdx,
-        active: d.published,
+        active: catalogStatusForPrint(d.id) !== 'archived',
         position: i,
         track_inventory: false, // POD — no held stock
         stock_quantity: 0,

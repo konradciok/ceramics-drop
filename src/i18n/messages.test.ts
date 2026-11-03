@@ -3,8 +3,6 @@ import pl from '../../messages/pl.json';
 import en from '../../messages/en.json';
 import es from '../../messages/es.json';
 import de from '../../messages/de.json';
-import { SHIPPING_PLN, SHIPPING_EUR } from '@/lib/pricing';
-import { pln } from '@/lib/format';
 
 type MessageTree = Record<string, unknown>;
 
@@ -27,23 +25,28 @@ describe('locale message files', () => {
     expect(shape(de)).toEqual(referenceShape);
   });
 
-  it('keep current shipping timing and courier pricing in public copy', () => {
-    // pl/en/es shipping pages reference PLN prices (en.json keeps zł for consistency with the Polish market)
-    for (const messages of [pl, en, es]) {
+  it('keep current shipping timing in public copy', () => {
+    for (const messages of [pl, en, es, de]) {
       const serialized = JSON.stringify(messages);
 
       expect(serialized).toContain('1–3');
       expect(serialized).not.toContain('3–5');
       expect(serialized).not.toContain('75 zł');
-      expect(serialized).toContain(pln(SHIPPING_PLN.kurier));
-      expect(serialized).toContain(pln(SHIPPING_PLN.paczkomat));
     }
   });
 
-  it('de locale references EUR shipping prices', () => {
-    const serialized = JSON.stringify(de);
-    expect(serialized).toContain('1–3');
-    expect(serialized).toContain(`${SHIPPING_EUR.kurier} €`);
-    expect(serialized).toContain(`${SHIPPING_EUR.paczkomat} €`);
+  it('quote the InPost shipping prices through {locker}/{courier}, never as typed-in amounts', () => {
+    // The amounts come from the CMS-published table (src/lib/shipping-copy.ts),
+    // so a /v1/shipping-rates publish cannot leave the shipping page stale.
+    for (const messages of [pl, en, es, de]) {
+      const { s1P, s1Li1, s1Li1b } = messages.shipping;
+      expect(s1P).toContain('{locker}');
+      expect(s1P).toContain('{courier}');
+      expect(s1Li1).toContain('{locker}');
+      expect(s1Li1b).toContain('{courier}');
+      for (const text of [s1P, s1Li1, s1Li1b]) {
+        expect(text).not.toMatch(/\d+(?:[.,]\d+)?\s?(?:zł|€|£|PLN|EUR|GBP)/);
+      }
+    }
   });
 });

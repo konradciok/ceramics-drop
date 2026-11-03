@@ -1,0 +1,344 @@
+{
+  "note": "Local sources only; no products published. All three ratios prepared. 3x4 and 5x7 exported in Photoshop; print-042,044,047 preserve the complete source using user-approved side margins. Other designs crop background top/bottom. Size aliases are byte-identical copies.",
+  "prints": [
+    {
+      "sourceName": "Aurora 01",
+      "sourceFile": "sklep_obrobione_2026/Aurora 01/Aurora_01.jpg",
+      "folder": "print-042",
+      "master": "print-042__7x10.jpg",
+      "sizeAlias": "print-042_70x100.jpg",
+      "sha256": "dda43e03ab62a8501f131ac326c351976cf74502e9d2808bcbe6d7afc05aadcb",
+      "productId": "fap042",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Aurora",
+      "collectionSlug": "aurora",
+      "displayName": "Aurora 01",
+      "seriesNumber": "01",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Aurora 02",
+      "sourceFile": "sklep_obrobione_2026/Aurora 02/Aurora_02_010.jpg",
+      "folder": "print-043",
+      "master": "print-043__7x10.jpg",
+      "sizeAlias": "print-043_70x100.jpg",
+      "sha256": "52da0b45a42a99c980bc35b8c435769388a7e2c491aa234f2c0dc66f5e877613",
+      "productId": "fap043",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Aurora",
+      "collectionSlug": "aurora",
+      "displayName": "Aurora 02",
+      "seriesNumber": "02",
+      "positionInCollection": 2
+    },
+    {
+      "sourceName": "Aurora 04",
+      "sourceFile": "sklep_obrobione_2026/Aurora 04/Aurora_04.jpg",
+      "folder": "print-044",
+      "master": "print-044__7x10.jpg",
+      "sizeAlias": "print-044_70x100.jpg",
+      "sha256": "5bbfef75c7df45efacff9892536431ef5ef09f1114b6765d52cd38eb581720ef",
+      "productId": "fap044",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Aurora",
+      "collectionSlug": "aurora",
+      "displayName": "Aurora 04",
+      "seriesNumber": "04",
+      "positionInCollection": 3
+    },
+    {
+      "sourceName": "Cirrus 01",
+      "sourceFile": "sklep_obrobione_2026/Cirrus 01/cirrus 01_print_A3.jpg",
+      "folder": "print-045",
+      "master": "print-045__7x10.jpg",
+      "sizeAlias": "print-045_70x100.jpg",
+      "sha256": "c6334bdda1f72495528fe685a9d24c723324f1eda2dec15ab99b008f77155f73",
+      "productId": "fap045",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Cirrus",
+      "collectionSlug": "cirrus",
+      "displayName": "Cirrus 01",
+      "seriesNumber": "01",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Cumulonimbus 03",
+      "sourceFile": "sklep_obrobione_2026/Cumulonimbus 03/cumulonimbus 03.jpg",
+      "folder": "print-046",
+      "master": "print-046__7x10.jpg",
+      "sizeAlias": "print-046_70x100.jpg",
+      "sha256": "ed73ccaeef1da3299c68f5abf306984f3e781ba3208af03257a960616bcaa2af",
+      "productId": "fap046",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Cumulonimbus",
+      "collectionSlug": "cumulonimbus",
+      "displayName": "Cumulonimbus 03",
+      "seriesNumber": "03",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Cumulonimbus 06",
+      "sourceFile": "sklep_obrobione_2026/Cumulonimbus 06/cumulonimbus 06.jpg",
+      "folder": "print-047",
+      "master": "print-047__7x10.jpg",
+      "sizeAlias": "print-047_70x100.jpg",
+      "sha256": "8227f5cd76834d22d8ee639f206c6e9c38daa4118e28c98387779e2e3da766f6",
+      "productId": "fap047",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Cumulonimbus",
+      "collectionSlug": "cumulonimbus",
+      "displayName": "Cumulonimbus 06",
+      "seriesNumber": "06",
+      "positionInCollection": 2
+    },
+    {
+      "sourceName": "Cumulus 01",
+      "sourceFile": "sklep_obrobione_2026/Cumulus 01/cumulus 01.jpg",
+      "folder": "print-048",
+      "master": "print-048__7x10.jpg",
+      "sizeAlias": "print-048_70x100.jpg",
+      "sha256": "26496ef02ef157aaf9c636678eeebd610ea7234b6a9eb3113ff6ff4485ea18b6",
+      "productId": "fap048",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Cumulus",
+      "collectionSlug": "cumulus",
+      "displayName": "Cumulus 01",
+      "seriesNumber": "01",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Cumulus 06",
+      "sourceFile": "sklep_obrobione_2026/Cumulus 06/cumulus 06.jpg",
+      "folder": "print-049",
+      "master": "print-049__7x10.jpg",
+      "sizeAlias": "print-049_70x100.jpg",
+      "sha256": "72ef4ba925e95a8f0d38804140aca209c00ca35b5a30b6ea846218b021462e32",
+      "productId": "fap049",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Cumulus",
+      "collectionSlug": "cumulus",
+      "displayName": "Cumulus 06",
+      "seriesNumber": "06",
+      "positionInCollection": 2
+    },
+    {
+      "sourceName": "Obsidian 02",
+      "sourceFile": "sklep_obrobione_2026/Obsidian 02/obsidian_02_A2.jpg",
+      "folder": "print-050",
+      "master": "print-050__7x10.jpg",
+      "sizeAlias": "print-050_70x100.jpg",
+      "sha256": "aa1dc1e8b50db54c19f200b5284c3ea3176ef42163fa662241c706716a1a81b9",
+      "productId": "fap050",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Obsidian",
+      "collectionSlug": "obsidian",
+      "displayName": "Obsidian 02",
+      "seriesNumber": "02",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Obsidian 03",
+      "sourceFile": "sklep_obrobione_2026/Obsidian 03/obsidian_03.jpg",
+      "folder": "print-051",
+      "master": "print-051__7x10.jpg",
+      "sizeAlias": "print-051_70x100.jpg",
+      "sha256": "a7c6945ecac6f863c64deaf8e7758f09ba1c34c6c5744651b827d93338da3d66",
+      "productId": "fap051",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Obsidian",
+      "collectionSlug": "obsidian",
+      "displayName": "Obsidian 03",
+      "seriesNumber": "03",
+      "positionInCollection": 2
+    },
+    {
+      "sourceName": "Obsidian 04",
+      "sourceFile": "sklep_obrobione_2026/Obsidian 04/obsidian_04.jpg",
+      "folder": "print-052",
+      "master": "print-052__7x10.jpg",
+      "sizeAlias": "print-052_70x100.jpg",
+      "sha256": "f9d0fbb832c3896b9eac62110c3492142dd0c2d49c0e13977bd048f291c52429",
+      "productId": "fap052",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Obsidian",
+      "collectionSlug": "obsidian",
+      "displayName": "Obsidian 04",
+      "seriesNumber": "04",
+      "positionInCollection": 3
+    },
+    {
+      "sourceName": "Obsidian 05",
+      "sourceFile": "sklep_obrobione_2026/Obsidian 05/obsidian_05.jpg",
+      "folder": "print-053",
+      "master": "print-053__7x10.jpg",
+      "sizeAlias": "print-053_70x100.jpg",
+      "sha256": "bb69ceba37341430b482c0801e7a865650cb5d7095903554df324736a407ebb4",
+      "productId": "fap053",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Obsidian",
+      "collectionSlug": "obsidian",
+      "displayName": "Obsidian 05",
+      "seriesNumber": "05",
+      "positionInCollection": 4
+    },
+    {
+      "sourceName": "Scopulus 02",
+      "sourceFile": "sklep_obrobione_2026/Scopulus 02/Scopulus_02.jpg",
+      "folder": "print-054",
+      "master": "print-054__7x10.jpg",
+      "sizeAlias": "print-054_70x100.jpg",
+      "sha256": "975bedf262c77b013ec36d82af6e320e33d179762bf2bc16d29d5a5287372580",
+      "productId": "fap054",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Scopulus",
+      "collectionSlug": "scopulus",
+      "displayName": "Scopulus 02",
+      "seriesNumber": "02",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Unda 04",
+      "sourceFile": "sklep_obrobione_2026/Unda 04/Unda_04.jpg",
+      "folder": "print-055",
+      "master": "print-055__7x10.jpg",
+      "sizeAlias": "print-055_70x100.jpg",
+      "sha256": "8c27d743af2cc616beba2b89bc0dfd72b79175d7c60cdd2d285849264610a07d",
+      "productId": "fap055",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Unda",
+      "collectionSlug": "unda",
+      "displayName": "Unda 04",
+      "seriesNumber": "04",
+      "positionInCollection": 1
+    },
+    {
+      "sourceName": "Unda 05",
+      "sourceFile": "sklep_obrobione_2026/Unda 05/unda.jpg",
+      "folder": "print-056",
+      "master": "print-056__7x10.jpg",
+      "sizeAlias": "print-056_70x100.jpg",
+      "sha256": "ab7eee7dbee95930e385bc7c6568ad837e688b9727b26791c453a974d0a38086",
+      "productId": "fap056",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Unda",
+      "collectionSlug": "unda",
+      "displayName": "Unda 05",
+      "seriesNumber": "05",
+      "positionInCollection": 2
+    },
+    {
+      "sourceName": "Tachylite 03",
+      "sourceFile": "sklep_obrobione_2026/Tachylite 03/tachylite_3_A3.jpg",
+      "folder": "print-057",
+      "master": "print-057__7x10.jpg",
+      "sizeAlias": "print-057_70x100.jpg",
+      "sha256": "5d8bc5e7cde9bcc443e905baf171462a4e9562bb20944100df4ca2d3ba998937",
+      "productId": "fap057",
+      "status": "local_sources_id_assigned",
+      "preparedRatios": [
+        "3x4",
+        "5x7",
+        "7x10"
+      ],
+      "collectionName": "Tachylite",
+      "collectionSlug": "tachylite",
+      "displayName": "Tachylite 03",
+      "seriesNumber": "03",
+      "positionInCollection": 1
+    }
+  ],
+  "idVerification": {
+    "checkedAt": "2026-09-29T09:32:12.519Z",
+    "supabaseHost": "wnlysejenowymjdxlnaq.supabase.co",
+    "databaseTablesChecked": [
+      "products",
+      "product_variants",
+      "product_media",
+      "product_drafts",
+      "print_fulfilment_assets",
+      "print_variant_asset_assignments"
+    ],
+    "databaseConflicts": 0,
+    "r2Bucket": "anna-ciok-print-assets",
+    "r2Conflicts": 0,
+    "allocation": "assigned_in_local_batch_mapping",
+    "databaseReservation": false,
+    "recheckBeforeImport": true
+  },
+  "sourceFileBase": "External Prints archive; paths relative to its root, not the repository."
+}

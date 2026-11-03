@@ -1,0 +1,24 @@
+{
+  "status": "published",
+  "completedAt": "2026-09-30T15:45:10Z",
+  "sourceRows": 56,
+  "activeCollections": 12,
+  "indexableCollections": 10,
+  "retiredCollections": 5,
+  "localizedDescriptions": 48,
+  "catalogProducts": 183,
+  "catalogVariants": 821,
+  "catalogMedia": 186,
+  "applicationPullRequest": "https://github.com/konradciok/ceramics-drop/pull/342",
+  "applicationMergeCommit": "3a48126e117a2513592f6837d572d81cf83f380b",
+  "cloudflareVersionId": "e046c988-7681-4266-af01-61fe0681c4e4",
+  "verification": {
+    "collectionSyncPendingChanges": 0,
+    "descriptionImportPendingChanges": 0,
+    "renamePendingChanges": 0,
+    "activeCollectionRoutes": 12,
+    "retiredCollectionRoutes404": 5,
+    "merchantFeedsChecked": 8,
+    "productLocalesChecked": 4
+  }
+}

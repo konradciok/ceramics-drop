@@ -12,11 +12,19 @@ import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
 import type { Product } from '@/lib/types';
+import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 
-type Props = { product: Product; soldIds: readonly string[]; showroomIds?: readonly string[]; noteOverride?: string };
+type Props = {
+  product: Product;
+  soldIds: readonly string[];
+  showroomIds?: readonly string[];
+  noteOverride?: string;
+  /** The CMS-published shipping table checkout charges from (getShippingRatesForDisplay). */
+  shipping: ShippingRatesBundle;
+};
 
 /** Full product detail page layout — server component with client islands. */
-export async function ProductPageScreen({ product, soldIds, showroomIds = [], noteOverride }: Props) {
+export async function ProductPageScreen({ product, soldIds, showroomIds = [], noteOverride, shipping }: Props) {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);
   const currency = await getCurrency(locale);
   const { fmt } = currencyFormatter(currency);
@@ -72,7 +80,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                 {product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
-              {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} />}
+              {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} domesticShippingRates={shipping.domestic} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">

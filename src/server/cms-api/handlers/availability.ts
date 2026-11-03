@@ -68,6 +68,9 @@ export const availabilityRoute: RouteDef = {
     }
 
     const updated = await loadProductResponse(ctx.supabase, env, params.id);
+    if (!updated) {
+      return errorResponse('INTERNAL_ERROR', `Product ${params.id} could not be read back after the availability change.`, 500, ctx.requestId);
+    }
     return jsonResponse(updated);
   },
 };

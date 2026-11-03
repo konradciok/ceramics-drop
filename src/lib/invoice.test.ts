@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createOrderInvoice, createInvoiceForOrder } from './invoice';
+import { variantKey, variantLabel } from './print-cart';
+import { registryPrintById } from './prints';
 
 /**
  * Covers the regression where invoices were created EMPTY (pending invoice items
@@ -99,6 +101,47 @@ beforeEach(() => {
 });
 
 describe('createOrderInvoice', () => {
+  const printVariant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' } as const;
+  const printSuffix = ` — ${variantLabel(printVariant, 'en')} (${printVariant.prodigiSku})`;
+
+  it.each([
+    { description: `Print Nº ${registryPrintById('fap001')?.num}${printSuffix}`, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, metadata: {} },
+    { description: 'A previous title', metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } },
+  ])('reuses an existing print invoice line: $description', async (line) => {
+    orderRow = { ...ORDER, locale: 'en', shipping: 0, total: 50500 };
+    itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve.mockResolvedValue({ id: 'in_1', status: 'draft', total: 50500, lines: { data: [{ ...line, amount: 50500 }] } });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.invoiceItems.create).not.toHaveBeenCalled();
+    expect(stripeMock.invoices.finalizeInvoice).toHaveBeenCalledOnce();
+    expect(updateEq).toHaveBeenCalled();
+  });
+
+  it.each([
+    { description: `Print Nº 999${printSuffix}`, amount: 50500, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50499, metadata: {} },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap002', variant_key: variantKey(printVariant) } },
+    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap001', variant_key: 'another-variant' } },
+  ])('does not reuse a different print, variant or amount (%#)', async (line) => {
+    orderRow = { ...ORDER, locale: 'en', shipping: 0 };
+    itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
+    stripeMock.invoices.retrieve.mockReset();
+    stripeMock.invoices.retrieve
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', lines: { data: [line] } })
+      .mockResolvedValueOnce({ id: 'in_1', status: 'draft', total: ORDER.total });
+
+    await createOrderInvoice('pi_1');
+
+    expect(stripeMock.invoiceItems.create).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } }),
+      expect.anything(),
+    );
+  });
+
   it('invoices the full value of a balance payment without inventing a PaymentIntent or a discount', async () => {
     orderRow = { ...ORDER, payment_intent_id: null, currency: 'eur', gift_card_amount: 10500 };
     await createInvoiceForOrder({ orderId: 'ord-1' });
@@ -120,6 +163,7 @@ describe('createOrderInvoice', () => {
     expect(stripeMock.invoiceItems.create).not.toHaveBeenCalled();
     expect(stripeMock.invoices.sendInvoice).toHaveBeenCalledWith('in_existing', {}, expect.anything());
   });
+
   it('attaches items directly to a send_invoice PLN draft, pays out-of-band, then sends', async () => {
     await createOrderInvoice('pi_1');
 

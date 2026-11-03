@@ -100,7 +100,8 @@
     "studio": "Estudio",
     "kontakt": "Contacto",
     "konto": "Cuenta",
-    "giftCard": "Tarjeta regalo"
+    "giftCard": "Tarjeta regalo",
+    "kolekcje": "Colecciones"
   },
   "aria": {
     "cart": "Carrito",
@@ -365,10 +366,10 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Recogida en el Paczkomat elegido, normalmente 1–2 días laborables después de entregar el paquete.",
+    "paczkomatD": "Recogida en el Paczkomat elegido, entrega en un máximo de 5 días laborables.",
     "paczkomatPrice": "desde {price}",
     "courierT": "Mensajería InPost",
-    "courierD": "Entrega a domicilio, normalmente 1–2 días laborables después de entregar el paquete.",
+    "courierD": "Entrega a domicilio en un máximo de 5 días laborables.",
     "pickupT": "Recogida personal",
     "pickupD": "En Tenerife (San Pedro Abajo 12, Guimar), con cita previa.",
     "printT": "Envío por mensajería",
@@ -432,7 +433,7 @@
       "Impresión bajo pedido",
       "Papel fine art de 200 g/m²",
       "Marco: negro, marrón claro u oscuro",
-      "Envío a la UE y Reino Unido · 5–10 días"
+      "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
     ],
     "storyImageAlt": "Anna Ciok en su estudio de cerámica",
     "editorialImageAlt": "Obras enmarcadas de Anna Ciok en un interior bañado por el sol",
@@ -442,7 +443,7 @@
     "storyP2": "Las obras seleccionadas entran en edición fine art: se imprimen en papel de calidad de archivo y se envían en el formato que elijas — sin marco o con marco de madera.",
     "storyCta": "Ver las colecciones de impresiones",
     "collectionsEyebrow": "Colecciones",
-    "collectionsTitle": "Nueve series, <em>un mismo estudio.</em>",
+    "collectionsTitle": "Series de <em>un mismo estudio.</em>",
     "collectionsLead": "Cada colección es una serie propia de pinturas — elige el ambiente, el color y el ritmo que mejor encajen en tu espacio.",
     "collectionsCount": "{count, plural, one {# pieza} other {# piezas}}",
     "collectionsCta": "Todas las colecciones",
@@ -453,11 +454,11 @@
     "craft2H": "Eliges <em>tamaño y marco</em>",
     "craft2P": "Puedes elegir entre tres tamaños y un marco — sin marco o de madera, en negro, marrón claro u oscuro.",
     "craft3H": "Imprimimos <em>y enviamos</em>",
-    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión en 5–10 días laborables, a tu dirección en la Unión Europea o el Reino Unido.",
+    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega a tu dirección en la Unión Europea o el Reino Unido tarda hasta 5 días laborables.",
     "lgMaterialH": "Material y acabado",
     "lgMaterialP": "Impresión en papel fine art de 200 g/m², calidad de archivo. Cada impresión está disponible sin marco o con marco de madera: negro, marrón claro u oscuro.",
     "lgShippingH": "Producción y envío",
-    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido — normalmente en 5–10 días laborables.",
+    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
     "ctP": "¿Quieres ver una pieza en persona, preguntar por una impresión en otro tamaño o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
@@ -466,7 +467,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Envío de impresiones",
-    "ctVShipPrints": "UE y Reino Unido · 5–10 días laborables"
+    "ctVShipPrints": "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
   },
   "printCollections": {
     "inne": "Otras láminas"
@@ -517,11 +518,6 @@
       "eyebrow": "Drop de junio — 10 piezas",
       "title": "Cuencos de borde ondulado <em>Nº 01–10</em>",
       "lead": "Cuencos de borde ondulado. Para desayunos, aperitivos y pequeños rituales de casa; cada ejemplar es distinto."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Edición abierta",
-      "title": "Impresiones <em>Fine Art</em>",
-      "lead": "Reproducciones de pinturas en acuarela sobre papel Fine Art de 200 g/m². Elige tamaño y enmarcado — imprimimos y enviamos en 2–3 días laborables, a la Unión Europea y al Reino Unido."
     }
   },
   "studio": {
@@ -546,9 +542,9 @@
     "fact3K": "Técnicas",
     "fact3V": "Cerámica <em>y acuarela</em>",
     "fact3D": "Unas composiciones se quedan en papel y entran en una edición fine art. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
-    "fact4K": "Envío de cerámica",
-    "fact4V": "1–3 <em>días</em>",
-    "fact4D": "Embalo y envío la cerámica yo misma en 1–3 días laborables por toda Polonia. Las láminas fine art las produce y envía nuestro socio de impresión, normalmente en 5–10 días, a la Unión Europea y al Reino Unido.",
+    "fact4K": "Tramitación del pedido",
+    "fact4V": "hasta 2 <em>días</em>",
+    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Embalo y envío la cerámica yo misma; las láminas fine art las produce y envía nuestro socio de impresión.",
     "procEyebrow": "Cómo se hace una pieza",
     "procH": "De la primera línea <em>a una pieza terminada.</em>",
     "p1H": "Empiezo <em>con una línea</em>",
@@ -591,7 +587,7 @@
     "lStudio": "Recogida",
     "vStudio": "Tenerife — recogida con cita",
     "lShip": "Envío",
-    "vShip": "Polonia · envío en 1–3 días laborables",
+    "vShip": "Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables",
     "lReply": "Respondo",
     "vReply": "Normalmente el mismo día"
   },
@@ -606,15 +602,15 @@
     "toc4": "Recogida",
     "toc5": "Devoluciones",
     "toc6": "Daños",
-    "updated": "Actualizado: junio 2026",
+    "updated": "Actualizado: octubre 2026",
     "s1H": "Envío",
-    "s1P": "Envío por <strong>Paczkomat InPost (desde 20 zł)</strong> o <strong>mensajería (30 zł)</strong> a toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
-    "s1Li1": "Paczkomat InPost, toda Polonia — desde 20 zł",
-    "s1Li1b": "Mensajería InPost, toda Polonia — 30 zł",
+    "s1P": "Envío por <strong>Paczkomat InPost (desde {locker})</strong> o <strong>mensajería ({courier})</strong> a toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
+    "s1Li1": "Paczkomat InPost, toda Polonia — desde {locker}",
+    "s1Li1b": "Mensajería InPost, toda Polonia — {courier}",
     "s1Li2": "Recogida en Tenerife — gratis",
     "s1Li3": "Envío internacional — escríbeme y lo gestiono de forma individual",
     "s2H": "Plazos",
-    "s2P": "Las piezas de cerámica están terminadas y ya esperan en Polonia, así que no hay tiempo de producción. Envío el paquete en <strong>1–3 días laborables</strong> desde que se confirma el pago, y la mensajería suele entregarlo al día siguiente.",
+    "s2P": "Las piezas de cerámica están terminadas y ya esperan en Polonia, así que no hay tiempo de producción. El pedido se tramita en un máximo de <strong>2 días laborables</strong> desde que se confirma el pago, y la entrega tarda hasta <strong>5 días laborables</strong>.",
     "s2Note": "Embalo todo yo misma, entre el trabajo del estudio y las siguientes cocciones. Si necesitas una fecha concreta, escríbeme y comprobaré qué se puede hacer.",
     "s3H": "Embalaje",
     "s3P": "La cerámica viaja envuelta a mano — film, cartón y bastante relleno para que nada se mueva. Marco la caja como frágil. Intento limitar el plástico siempre que puedo, sin arriesgar la pieza.",
@@ -651,7 +647,7 @@
     "s3H": "§3 Precios y pago",
     "s3P": "Todos los precios se indican en złoty polaco (PLN) y son precios brutos. Verás el coste de envío en el carrito antes de confirmar la compra. El pago lo gestiona un proveedor externo seguro: Stripe.",
     "s4H": "§4 Cumplimiento y envío",
-    "s4P": "Envío los pedidos en 1–3 días laborables desde que se confirma el pago. Los detalles sobre costes, plazos y recogida se describen en la página <link>Envíos y devoluciones</link>.",
+    "s4P": "El pedido se tramita en un máximo de 2 días laborables desde que se confirma el pago, y la entrega tarda hasta 5 días laborables en Europa. Los detalles sobre costes, plazos y recogida se describen en la página <link>Envíos y devoluciones</link>.",
     "s5H": "§5 Derecho de desistimiento",
     "s5P": "El consumidor tiene derecho a desistir de la compra en un plazo de 14 días desde la recepción de la pieza, sin indicar motivo. Basta con enviar la declaración por correo. La pieza devuelta debe estar sin daños; el comprador asume el envío de vuelta y el reembolso se realiza en un plazo de 14 días.",
     "s6H": "§6 Reclamaciones",
@@ -897,7 +893,24 @@
       "Un amplio campo lavanda se oscurece en la obra hasta formar manchas suaves de marrón y carbón, cruzadas por líneas verticales y una estrecha banda crema rayada. Una costura horizontal rota de pigmento oscuro y oro separa la forma superior de su reflejo pálido. Profunda pero equilibrada, la composición lleva una atmósfera envolvente a un salón, comedor o estudio tranquilo.",
       "Veladuras azul pálido y rosa se extienden por la obra en una formación amplia y escalonada, elevada por dos trazos de cobalto en la esquina superior izquierda. Motas de óxido y líneas verticales descienden hacia una banda oscura donde contornos blancos crean un ritmo ondulante. Expansiva y discretamente viva, la lámina aporta sensación de apertura a un salón, dormitorio o pasillo largo.",
       "Un amplio bucle verde grisáceo abre la mitad superior de la obra, acompañado por un anillo verde azulado de líneas radiantes. Una franja concentrada de óxido cruza el centro, mientras un gran óvalo finamente dibujado recoge marcas cálidas sobre su superficie pálida. Equilibrada, gráfica y terrosa, la composición crea un foco seguro en un comedor, salón o espacio de trabajo sobrio.",
-      "Veladuras frías verde grisáceas ascienden por un lado de la obra, mientras marcas cálidas de óxido y terracota se reúnen al otro dejando un amplio canal blanco. Un anillo rayado verde azulado corona la forma fría, y floraciones plumosas con un trazo rosa pálido animan el borde cálido. Audaz y bien equilibrada, la lámina aporta contraste expresivo a un recibidor, estudio o salón contemporáneo."
+      "Veladuras frías verde grisáceas ascienden por un lado de la obra, mientras marcas cálidas de óxido y terracota se reúnen al otro dejando un amplio canal blanco. Un anillo rayado verde azulado corona la forma fría, y floraciones plumosas con un trazo rosa pálido animan el borde cálido. Audaz y bien equilibrada, la lámina aporta contraste expresivo a un recibidor, estudio o salón contemporáneo.",
+      "Franjas ondulantes de verde salvia, rosa apagado y gris azulado acompañan manchas oscuras rodeadas de amarillo mostaza. Las líneas finas que recorren las zonas claras aportan ligereza a una composición de contrastes marcados y ritmo vertical pausado. Aurora 01 puede dar presencia a un interior tranquilo; junto a madera clara y tejidos neutros, sus transiciones de color y su dibujo delicado encuentran espacio para destacar.",
+      "Unas curvas de rojo óxido flotan sobre amplias formas translúcidas en azul y verde, contraponiendo contornos definidos a colores suaves. Una mancha azul marino y pequeñas motas atraen la mirada hacia el interior, mientras el fondo abierto aporta amplitud. Aurora 02 introduce un acento dinámico entre muebles sencillos, con un gesto gráfico reconocible a distancia y detalles más delicados que se descubren de cerca.",
+      "Una fina línea de color óxido recorre capas ondulantes de azul, gris y crema, marcando un ritmo vertical. A su lado, una mancha oscura de centro claro interrumpe el movimiento suave, equilibrada por pequeños rastros azules sobre el fondo abierto. Aurora 04 puede aportar fluidez a una pared serena, con una paleta fría que contrasta suavemente con la madera cálida y los tejidos suaves.",
+      "Dos formas alargadas se encuentran entre un azul fresco y un borde naranja intenso, rodeadas de un fondo claro y abierto. Los anillos azules, los arcos finos y las pequeñas manchas añaden un ritmo ligero sin recargar la composición. Cirrus 01 aporta frescura a una estancia de líneas sencillas, combinando un contraste de color vivo con detalles de apariencia granulada que invitan a acercarse.",
+      "Amplias franjas de azul pálido y ocre cálido quedan interrumpidas por una banda horizontal oscura con aperturas claras. Más arriba, una pequeña mancha azul marino reúne líneas finas y motas dispersas, concentrando la atención dentro de la composición. Cumulonimbus 03 puede aportar profundidad serena a un espacio, equilibrando colores difusos con un acento más intenso y detalles que invitan a una mirada detenida.",
+      "Capas horizontales de turquesa, gris azulado y marrón terroso se reúnen alrededor de una estrecha franja oscura. Las zonas transparentes alternan con motas concentradas y trazos que descienden libremente, creando un ritmo irregular y envolvente. Cumulonimbus 06 puede ser un punto de atención amplio y sereno en un salón o estudio, donde su mezcla de tonos cálidos y fríos acompaña madera, piedra y muebles neutros.",
+      "El ocre y el naranja ascienden desde una base suave de gris azulado, recorridos por líneas finas que se curvan hacia arriba. Pequeños círculos mostaza flotan sobre la forma principal, aportando ligereza frente al borde izquierdo más oscuro. Cumulus 01 introduce un acento cálido y distendido en una estancia luminosa; sus marcas delicadas y su fondo abierto facilitan combinarlo con otras obras.",
+      "Tres campos claros e irregulares se apilan desde las motas de naranja oxidado hasta una ancha franja azul y varios puntos azul marino. Un centro oscuro rodeado de rojo y unas líneas verticales finas enlazan las capas, dando ritmo al fondo abierto. Cumulus 06 puede animar un interior en crema o gris con un equilibrio de acentos cálidos, color frío y pequeños detalles intensos.",
+      "Una gran forma amarillo pálido, de borde oscuro y difuso, se sitúa junto a dos óvalos abiertos en beige y marrón. Las líneas delicadas y las motas dispersas contrastan con el dibujo radial del anillo inferior, creando una composición tranquila y detallada. Obsidian 02 puede aportar calidez entre madera y tejidos naturales, mientras sus acentos oscuros mantienen la presencia de la obra a distancia.",
+      "Tres anillos irregulares en arena, gris y marrón oxidado forman una columna suelta, cada uno con una textura visual distinta. Las manchas claras del anillo oscuro, el pequeño óvalo estampado y el gesto negro de la izquierda animan la paleta contenida. Obsidian 03 aporta estructura gráfica sin rigidez, como acento sobre un aparador o junto a muebles sencillos, entre formas redondeadas y un dibujo enérgico.",
+      "Un anillo alargado de verde oliva se encuentra con una superficie gris pálida y una pequeña forma oscura de interior moteado. Lazos blancos cruzan la parte superior, mientras un grupo de trazos negros equilibra las curvas desde abajo. Obsidian 04 combina color contenido y ritmo lineal, aportando un acento definido a espacios en tonos piedra, beige y madera sin exigir grandes contrastes en el resto de la estancia.",
+      "Una forma alta de marrón oxidado, salpicada de manchas claras y suaves, acompaña un gran lazo gris crema atravesado por un gesto negro. Líneas ondulantes y dos marcas azul marino añaden movimiento sin ocupar el fondo abierto. Obsidian 05 puede aportar un acento cálido y definido a una habitación luminosa, con curvas amplias y un dibujo dinámico que mantienen el interés de cerca y a distancia.",
+      "Dos formas alargadas combinan marrón oxidado cálido y azul claro moteado, bajo un anillo crema superpuesto. Las manchas blancas y las líneas finas iluminan la forma oscura, mientras dos pequeñas marcas terracota animan el fondo. Scopulus 02 basa su carácter en una disposición sencilla y un contraste de temperaturas claro, aportando equilibrio a interiores donde la madera convive con superficies grises o acentos azules.",
+      "Formas translúcidas en crema y azul se superponen alrededor de manchas intensas de cobalto, dando profundidad a una composición ligera. Un gran anillo azul pálido y un arco parcial a la derecha establecen un ritmo suave atravesado por líneas finas. Unda 04 combina espacio claro y color saturado como acento fresco en un interior tranquilo, dejando protagonismo también a los tejidos suaves y los materiales discretos.",
+      "Una forma suave y escalonada en azul y gris desciende hacia una banda horizontal oscura, interrumpida por aperturas claras. Motas de ocre y líneas curvas añaden detalle, mientras el fondo abierto mantiene ligera la composición. Unda 05 puede introducir un ritmo amplio y sereno en un salón o dormitorio, con acentos azules intensos que conservan su presencia frente a paredes claras y tejidos neutros.",
+      "Grandes anillos irregulares en turquesa y marrón ocre se superponen junto a líneas finas y ondulantes rematadas en óvalos oscuros. Un pequeño lazo burdeos equilibra la parte inferior, mientras motas densas y trazos radiales distinguen cada forma. Tachylite 03 aporta movimiento gráfico y espontáneo a un espacio, combinando tonos terrosos con turquesa fresco para acompañar la madera y destacar sobre una pared neutra.",
+      "Manchas profundas de azul marino y cobalto flotan sobre un amplio campo azul pálido, atravesado por salpicaduras de óxido y finas líneas negras. Una esquina naranja intensa equilibra la zona inferior más oscura, mientras el fondo blanco conserva la ligereza de la composición vertical. Cumulus 02 aporta un acento definido y espacioso a un interior luminoso, en armonía con madera clara, grises fríos y formas sencillas."
     ]
   },
   "error": {
@@ -939,7 +952,7 @@
   "deliveryNotice": {
     "title": "Información de envío",
     "p1": "Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.",
-    "p2": "Enviamos los pedidos en un plazo de 1 a 3 días laborables desde la compra.",
+    "p2": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
     "p3": "Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete."
   },
   "consent": {
@@ -982,7 +995,7 @@
     "sectionEdition": "Edición",
     "editionOpen": "Edición abierta",
     "sectionDelivery": "Envío",
-    "deliveryNote": "Producido y enviado por nuestro socio de impresión, 5–10 días hábiles",
+    "deliveryNote": "Producido y enviado por nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa.",
     "sectionCare": "Cuidado",
     "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
     "moreFrom": "Más impresiones",
@@ -999,7 +1012,8 @@
     "artistBio": "Anna Ciok es una artista afincada en Tenerife que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
     "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
     "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
-    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas en un plazo de 5–10 días laborables. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles."
+    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
+    "seeCollection": "Ver toda la colección {name}"
   },
   "giftCard": {
     "eyebrow": "Regalo",
@@ -1066,5 +1080,264 @@
     "confirmationUnavailable": "No hemos podido abrir la confirmación. Revisa el correo del pedido o escribe a ania@ciok.art.",
     "refund": "Se han devuelto {cardAmount} a tu tarjeta regalo y {cashAmount} al método de pago original.",
     "usedCardRefund": "Si la tarjeta ya se ha utilizado parcial o totalmente, escribe a ania@ciok.art para solicitar la devolución de su compra. El estudio revisará el historial de pagos."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — colección Fine Art Print",
+    "metaDescriptionFallback": "La colección «{name}» — Fine Art Print de las pinturas de Anna Ciok en papel de 200 g/m², con o sin marco.",
+    "allCollections": "Todas las colecciones",
+    "shopCta": "Ir a la tienda",
+    "eyebrow": "Colección — {count, plural, one {# lámina} other {# láminas}}",
+    "otherCollections": "Otras colecciones"
+  },
+  "collectionsHub": {
+    "eyebrow": "Colecciones",
+    "title": "Colecciones de <em>Anna Ciok</em>",
+    "lead": "Cada colección es una serie propia de pinturas a la acuarela y tinta. Elige el ambiente, el color y el ritmo más cercanos a tu espacio — después el tamaño y el enmarcado de tu Fine Art Print.",
+    "metaTitle": "Colecciones de pintura de Anna Ciok",
+    "metaDescription": "{count, plural, one {# colección} other {# colecciones}} de pinturas a la acuarela y tinta de Anna Ciok. Elige una serie y pide un Fine Art Print en papel de 200 g/m², con o sin marco.",
+    "shopCta": "Ver todas las láminas en la tienda"
+  },
+  "shop": {
+    "metaTitle": "Tienda de Fine Art Print de las pinturas de Anna Ciok",
+    "metaDescription": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok — Fine Art Print en papel de 200 g/m², con o sin marco. Filtra por color y colección; envío a la UE y al Reino Unido.",
+    "eyebrow": "Fine Art Print",
+    "title": "Tienda de <em>Fine Art Print</em>",
+    "lead": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok. Elige tamaño y enmarcado — cada lámina se imprime bajo pedido. Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables en Europa.",
+    "priceLadder": "{size} · desde {price}",
+    "frameFrom": "Marco +{price}",
+    "priceNote": "El precio depende del tamaño y del enmarcado, no de la pintura.",
+    "filtersLabel": "Filtros de la tienda",
+    "sortLabel": "Ordenar",
+    "sort": {
+      "featured": "Destacados",
+      "new": "Novedades",
+      "collection": "Colección"
+    },
+    "colourLabel": "Color",
+    "colour": {
+      "blue": "Azules",
+      "green": "Verdes",
+      "warm": "Ocre y terracota",
+      "pink": "Rosa y violeta",
+      "earth": "Beige y marrón",
+      "mono": "Negro y gris"
+    },
+    "collectionLabel": "Colección",
+    "allCollections": "Todas las colecciones",
+    "clear": "Borrar filtros",
+    "empty": "No hay obras que coincidan con estos filtros.",
+    "emptyCta": "Ver colecciones",
+    "badgeNew": "Novedad",
+    "badgePick": "Elección de la artista",
+    "frameColoursLabel": "Marcos: {colours}",
+    "quickAdd": "Elegir rápido tamaño y marco",
+    "quickDetails": "Ver detalles",
+    "close": "Cerrar",
+    "giftTitle": "¿No sabes qué pintura elegir?",
+    "giftLead": "La tarjeta regalo cubre Fine Art Print: quien la recibe elige la composición, el tamaño y el enmarcado.",
+    "collectionsTitle": "Explorar por colección",
+    "collectionsCta": "Todas las colecciones",
+    "aboutTitle": "Sobre los Fine Art Print de Anna Ciok",
+    "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
+    "aboutMore": "Leer más",
+    "aboutLess": "Ver menos"
+  },
+  "market": {
+    "meta": {
+      "title": "Mercadillo de El Médano · {date}",
+      "description": "Cerámica pintada a mano y láminas de arte de Anna Ciok en el mercadillo artesanal de El Médano — sábado 24 de octubre de 2026, de 9:00 a 14:00, plaza principal. Un recuerdo único de Tenerife.",
+      "ogTitle": "Este sábado, en El Médano — Anna Ciok",
+      "ogAlt": "Láminas Fuerte Piba y un plato pintado a mano de Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok en el mercadillo artesanal de El Médano",
+      "dateLabel": "sábado 24 de octubre de 2026",
+      "shortDateLabel": "sáb 24 oct",
+      "timeLabel": "9:00 – 14:00",
+      "place": "Plaza principal, El Médano",
+      "area": "Granadilla de Abona, Tenerife",
+      "payment": "Efectivo, tarjeta o Bizum",
+      "calendarDetails": "Cerámica pintada a mano y láminas de arte de Anna Ciok. Efectivo, tarjeta o Bizum.",
+      "mapLabel": "Mapa"
+    },
+    "hero": {
+      "eyebrow": "Mercadillo artesanal · Handicraft market",
+      "line1": "Este sábado,",
+      "line2": "en El Médano.",
+      "lead": "Cerámica pintada a mano y láminas de arte, directamente desde mi taller en Tenerife. Ven a buscar un recuerdo que de verdad sea de la isla — o esa pieza que le faltaba a tu casa.",
+      "when": "Cuándo",
+      "where": "Dónde",
+      "pay": "Pago",
+      "directions": "Cómo llegar",
+      "calendar": "Añadir al calendario",
+      "imageAlt": "Dos láminas Fuerte Piba, una negra y otra crema, con un plato pintado a mano entre ellas sobre un suelo de cemento bañado por el sol",
+      "badgeDay": "Sábado",
+      "badgeNumber": "24",
+      "badgeMonth": "octubre",
+      "captionLabel": "Desde el taller",
+      "caption": "Láminas Fuerte Piba y un plato pintado a mano."
+    },
+    "marquee": [
+      "platos pintados a mano",
+      "tazas y jarrones",
+      "láminas de arte",
+      "piezas únicas",
+      "hecho en Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Llévate Tenerife a casa",
+      "title": "Un recuerdo que es <em>de aquí de verdad.</em>",
+      "p1": "Olvídate de los imanes de nevera. Cada plato, taza y jarrón de mi mesa está pintado a mano en mi taller de Güímar, con motivos de la isla: palmeras, el sol canario, una sirena, mujeres con sombreros de ala ancha.",
+      "p2": "No hay dos iguales, así que la pieza que elijas el sábado existe una sola vez.",
+      "tipTitle": "¿Vuelas de regreso?",
+      "tipText": "Las láminas viajan planas en la maleta — y pregúntame cómo embalar la cerámica con seguridad para el viaje.",
+      "imageAlt": "Anna sostiene dos jarrones blancos pintados a mano con palmeras azules y bordes de rayas terracota"
+    },
+    "apartment": {
+      "eyebrow": "Para tu casa en la isla",
+      "title": "Algo <em>para el apartamento.</em>",
+      "p1": "¿Te acabas de mudar o quieres darle alma a un piso de vacaciones? Apoya un par de láminas en la estantería, pon un jarrón de palmeras junto a la ventana, come en platos que nadie más tiene: piezas atrevidas y soleadas, hechas para la luz canaria y las paredes blancas.",
+      "p2": "Las láminas llevan dichos canarios y los personajes que los acompañan:",
+      "imageAlt": "Láminas azules enmarcadas Agüita y Chacho, Calma apoyadas en una estantería de madera sobre azulejos verdes, con luz cálida de tarde"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "En la mesa, <em>en la pared.</em>",
+      "aside": "Piezas hechas para usarse a diario — y igual de felices colgadas en la pared junto a una lámina.",
+      "viewLarger": "Ampliar: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Negro y terracota",
+        "caption": "Un plato con figura de sombrero, un jarrón de ola y dos tazas de palmera.",
+        "alt": "Un plato con una figura de sombrero de ala ancha, un jarrón con una ola negra y dos tazas con palmeras sobre pedestales de piedra"
+      },
+      "bluePieces": {
+        "label": "En azul",
+        "caption": "Ralladores, platitos de mano, una taza y un plato.",
+        "alt": "Ralladores de cerámica azules pintados a mano, dos platitos con forma de mano, una taza con ola y un plato con ola sobre una pared de yeso crema"
+      },
+      "platesOnPrints": {
+        "label": "Barro y papel",
+        "caption": "Sirenas, marineros y Fuerte Piba — en platos y en láminas.",
+        "alt": "Platos pintados a mano con una sirena, marineros y una mujer con sombrero de ala ancha sobre láminas Fuerte Piba e Islas Canarias en una mesa de madera"
+      },
+      "wallPlates": {
+        "label": "En la pared",
+        "caption": "Hojas, una ola y una palmera, colgados como una pequeña galería.",
+        "alt": "Tres platos pintados a mano colgados en una pared crema texturizada: hojas terracota, una ola negra con un sol terracota y una palmera terracota dentro de un borde festoneado negro"
+      },
+      "plateWall": {
+        "label": "No hay dos iguales",
+        "caption": "Una mesa entera de platos, cada uno pintado a mano.",
+        "alt": "Decenas de platos pintados a mano en negro y terracota dispuestos juntos al sol: palmeras, sirenas, manos, conchas, hojas y cuadros"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Una pared de platos pintados a mano",
+      "view": "Ampliar la foto de la pared de platos",
+      "line1": "No hay dos iguales.",
+      "line2": "Cada plato pintado a mano."
+    },
+    "table": {
+      "eyebrow": "En la mesa",
+      "title": "Lo que encontrarás <em>el sábado.</em>",
+      "items": [
+        {
+          "title": "Platos",
+          "text": "Desde platitos hasta grandes platos para servir."
+        },
+        {
+          "title": "Tazas",
+          "text": "Para un café con leche sin prisa en la terraza."
+        },
+        {
+          "title": "Jarrones",
+          "text": "Pequeños, medianos y grandes — palmeras incluidas."
+        },
+        {
+          "title": "Cuencos",
+          "text": "Grandes cuencos para servir y otros de borde ondulado."
+        },
+        {
+          "title": "Láminas de arte",
+          "text": "Dichos y personajes canarios para tus paredes."
+        }
+      ],
+      "note": "Cada pieza de cerámica es única. Cuando se vende, se acabó — <em>ven temprano.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Desde el showroom",
+      "title": "Una muestra de <em>lo que hago.</em>",
+      "aside": "Piezas de colecciones anteriores — no es una lista de lo que hay en el puesto. Cada pieza es única, así que ven el sábado a ver qué hay sobre la mesa.",
+      "tag": "Trabajo anterior",
+      "note": "De una colección anterior — pieza única, pintada a mano en mi taller de Güímar. Ven el sábado a ver qué hay sobre la mesa.",
+      "viewPiece": "Ampliar {title}",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Tamaño",
+      "madeIn": "Hecho en",
+      "madeInValue": "Güímar, Tenerife",
+      "alt": {
+        "k10": "pintada a mano con una concha azul",
+        "t20": "un cactus negro dentro de un borde terracota",
+        "h01": "pintada por dentro con dos palmeras negras",
+        "g01": "una palmera negra entre bordes terracota",
+        "s19": "un burro negro dentro de un borde festoneado terracota",
+        "w08": "pintada con suaves cactus azules y puntos terracota",
+        "v01": "un cactus azul y un sol terracota",
+        "d06": "una langosta negra dibujada alrededor del cuerpo"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, soy Anna",
+      "title": "Un par de manos, <em>una pieza a la vez.</em>",
+      "p1": "Vivo y trabajo en Tenerife. En mi pequeño taller de Güímar pinto acuarelas sobre papel y cerámica de mesa a mano — nunca en serie. Los colores, dichos y personajes de la isla acaban en casi todo lo que hago.",
+      "p2": "Pasa por el puesto a saludar, coge un plato y pregúntame lo que quieras sobre cómo se hizo.",
+      "instagram": "Sígueme en Instagram",
+      "imageAlt": "Anna Ciok en su taller con un gato negro en brazos, sonriendo ante una mesa llena de platos negros y terracota pintados a mano",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Nos vemos en la plaza el sábado. Ven temprano para elegir mejor — cada pieza de cerámica es única.",
+      "when": "Cuándo",
+      "where": "Dónde",
+      "pay": "Pago",
+      "cantMakeIt": "¿No puedes venir?",
+      "shop": "Compra en la tienda online",
+      "studio": ", o visita mi taller de Güímar con cita previa."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Tazas",
+        "singular": "Taza"
+      },
+      "wazony": {
+        "name": "Jarrones pequeños",
+        "singular": "Jarrón pequeño"
+      },
+      "wazony-duze": {
+        "name": "Jarrones grandes",
+        "singular": "Jarrón grande"
+      },
+      "talerze-srednie": {
+        "name": "Platos medianos",
+        "singular": "Plato mediano"
+      },
+      "duze-michy": {
+        "name": "Cuencos grandes",
+        "singular": "Cuenco grande"
+      },
+      "miski-falowane": {
+        "name": "Cuencos de borde ondulado",
+        "singular": "Cuenco de borde ondulado"
+      }
+    },
+    "aria": {
+      "close": "Cerrar",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "photo": "Foto"
+    }
   }
 }

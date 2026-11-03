@@ -15,11 +15,13 @@
         noteIndex per category. Stable ids survive; only num/category
         change. This protects sold/ordered pieces from renumbering.
    ============================================================ */
+import { cache } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import type { Category, CategorySlug, Product } from './types';
 import { PRICE_PLN } from './pricing';
 import { catalogSource } from './catalog/source';
 import { recordCeramicCatalogSuccess, resolveCeramicCatalogFallback } from './catalog/last-known-good';
+import { markCeramicCatalogColdFailClosed } from './request-degradation';
 
 export const CATEGORIES: Record<CategorySlug, Category> = {
   kubki: { slug: 'kubki', nameKey: 'nav.kubki', singularKey: 'mug', price: PRICE_PLN['kubki'], measure: '8 × 8 × 10 cm', count: 29 },
@@ -341,7 +343,9 @@ const REGISTRY_CATALOG: CeramicCatalog = {
   byCategory: PRODUCTS_BY_CATEGORY,
 };
 
-async function loadCeramicCatalog(): Promise<CeramicCatalog> {
+// Share successes and fallbacks across metadata and components in one render.
+// React clears this cache between requests; route handlers still read directly.
+const loadCeramicCatalog = cache(async (): Promise<CeramicCatalog> => {
   if (catalogSource() === 'code') return REGISTRY_CATALOG;
   // Resilience default: a DB read failure (including a bounded Supabase
   // timeout — see supabase-timeout.ts) degrades first to this isolate's
@@ -378,9 +382,12 @@ async function loadCeramicCatalog(): Promise<CeramicCatalog> {
     // fallbackTier as a tag (not `extra`) so the two tiers are filterable in
     // Sentry, distinct from a generic Supabase hiccup.
     Sentry.captureException(err, { tags: { supabaseTimeoutLabel: 'ceramic-catalog', fallbackTier: tier } });
+    // Lets worker.ts answer 503 instead of a fail-closed 404 / ceramic-less
+    // sitemap — see request-degradation.ts.
+    if (tier === 'cold-fail-closed') markCeramicCatalogColdFailClosed();
     return catalog;
   }
-}
+});
 
 /**
  * Returns every product across the nine categories, each with image

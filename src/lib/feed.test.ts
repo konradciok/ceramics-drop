@@ -19,7 +19,16 @@ vi.mock('./print-collections', async (importOriginal) => {
   };
 });
 
-import { buildFeedItems, buildGoogleXml, buildMetaXml, type FeedItem } from './feed';
+import {
+  buildFeedItems,
+  buildGoogleFeedItems,
+  buildGoogleXml,
+  EU_FEED_COUNTRIES,
+  buildMetaXml,
+  EU_PRINT_COUNTRIES,
+  GOOGLE_FEED_MARKETS,
+  type FeedItem,
+} from './feed';
 import { getPrintDesigns } from './prints';
 import { registryProducts } from './products';
 
@@ -42,6 +51,41 @@ const sampleItem: FeedItem = {
 };
 
 describe('buildFeedItems — fine-art prints only', () => {
+  it('defines exactly the approved PL/GB/EU markets and never exposes PL or GB in the EU market', () => {
+    expect(Object.keys(GOOGLE_FEED_MARKETS)).toEqual(['pl', 'gb', 'eu']);
+    expect(GOOGLE_FEED_MARKETS.pl.countries).toEqual(['PL']);
+    expect(GOOGLE_FEED_MARKETS.gb.countries).toEqual(['GB']);
+    expect(EU_PRINT_COUNTRIES).toHaveLength(26);
+    expect(EU_PRINT_COUNTRIES).not.toContain('PL');
+    expect(EU_PRINT_COUNTRIES).not.toContain('GB');
+  });
+
+  it('gives every Google market a product-level rate in the offer currency for every target country', async () => {
+    for (const [marketId, market] of Object.entries(GOOGLE_FEED_MARKETS)) {
+      const items = await buildGoogleFeedItems(marketId as keyof typeof GOOGLE_FEED_MARKETS);
+      expect(items.length).toBeGreaterThan(0);
+      items.forEach((item) => {
+        expect(item.price).toMatch(new RegExp(` ${market.currencyCode}$`));
+        expect(item.shipping.map((shipping) => shipping.country)).toEqual([...market.countries]);
+        expect(item.shipping.every((shipping) => shipping.price.endsWith(` ${market.currencyCode}`))).toBe(true);
+        expect(item.link).toContain(`currency=${market.currency}`);
+      });
+    }
+  });
+
+  it('keeps EUR prices while limiting localized EUR feeds to their intended countries', async () => {
+    for (const locale of ['en', 'es', 'de'] as const) {
+      const items = await buildGoogleFeedItems('eu', locale);
+      expect(items.every((item) => item.price.endsWith(' EUR'))).toBe(true);
+      items.forEach((item) => {
+        expect(item.shipping.map((shipping) => shipping.country)).toEqual([
+          ...EU_FEED_COUNTRIES[locale],
+        ]);
+      });
+      expect(items.every((item) => item.link.includes(`/${locale === 'en' ? 'en/' : `${locale}/`}fine-art-prints/`))).toBe(true);
+    }
+  });
+
   it('emits exactly one row per published print design, matching the emitted content_ids', async () => {
     const items = await buildFeedItems('en');
     const feedIds = items.map((i) => i.id).sort();
@@ -68,10 +112,10 @@ describe('buildFeedItems — fine-art prints only', () => {
   it('prices prints from print-pricing "from" price in the locale currency, always in stock', async () => {
     const pl = (await buildFeedItems('pl')).find((i) => i.id === 'fap005');
     const en = (await buildFeedItems('en')).find((i) => i.id === 'fap005');
-    // fap005 cheapest size (30x40) = 105 PLN / 22 GBP (print-pricing SIZE_BASE
-    // 25 EUR, derived per DEFAULT_PRINT_PRICING.eurToGbp = 0.86).
-    expect(pl?.price).toBe('105.00 PLN');
-    expect(en?.price).toBe('22.00 GBP');
+    // fap005 cheapest size (30x40) = 180 PLN / 36 GBP (canonical base 42 EUR,
+    // derived per DEFAULT_PRINT_PRICING.eurToPln = 4.25 / eurToGbp = 0.86).
+    expect(pl?.price).toBe('180.00 PLN');
+    expect(en?.price).toBe('36.00 GBP');
     expect(pl?.availability).toBe('in stock'); // print-on-demand — never sold out
     expect(pl?.shipping.length).toBeGreaterThan(0);
   });

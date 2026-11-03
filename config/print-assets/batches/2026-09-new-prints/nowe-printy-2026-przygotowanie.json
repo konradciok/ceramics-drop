@@ -1,0 +1,814 @@
+{
+  "checkedAt": "2026-09-29T14:39:19.197Z",
+  "revision": "2026-09-29-r1",
+  "status": "uploaded_verified_assigned_products_remain_draft",
+  "products": [
+    {
+      "productId": "fap042",
+      "displayName": "Aurora 01",
+      "manifestSha256": "befb09a398dd92c47615603a640afdd8c8eee66dafae61b1bd3474235ed94c27",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "57d133494c9babb5124ea234eb3cff15ed68c6e8e482288dac2898efe663584d",
+          "byteSize": 2954316,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-042/print-042__3x4.jpg",
+            "sha256": "dadadc99315463713b8f48d5e0fb56a534995b317d5663b11f7c60e917a88a23",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "ed5b2955f67284a761dd77f9d8627869b9c7cc1982e86917f70a62aadaa87371",
+          "byteSize": 6417365,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-042/print-042__5x7.jpg",
+            "sha256": "3575f138e4701e8a6e30758004bad112b08b2116210e578a6ca27da327ffd551",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "6196ec6fc3a9cee240ae1c5e4005b6340303a85ce0efc3da03cb281a660d5cae",
+          "byteSize": 9817593,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-042/print-042__7x10.jpg",
+            "sha256": "dda43e03ab62a8501f131ac326c351976cf74502e9d2808bcbe6d7afc05aadcb",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap043",
+      "displayName": "Aurora 02",
+      "manifestSha256": "968b23c1d9c5a12f1f86e6fd231e04accd87a2ff12e16ea828a91c0675c05a54",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "062603ecc70c5ec6e5375274548294d27823dcf798479e0c03054bea37211910",
+          "byteSize": 4161962,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-043/print-043__3x4.jpg",
+            "sha256": "c851623308db45f21dcd1c888e4989160437073433741fd50679b5e867c18944",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "0e6690fb520d33f8dc0953349652d41fdfa03081bcaa025244898cdba4c14e9b",
+          "byteSize": 8475100,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-043/print-043__5x7.jpg",
+            "sha256": "3033fa0a731b88d4f9e0ff91e84c010efd79ec9f6e49e5d675ecb1c0f253d291",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "53879ef6bd3dcc884d1ece1a21ec60d1a8268d54721eb86ad6c1b9eb7adea3fd",
+          "byteSize": 12299078,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-043/print-043__7x10.jpg",
+            "sha256": "52da0b45a42a99c980bc35b8c435769388a7e2c491aa234f2c0dc66f5e877613",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap044",
+      "displayName": "Aurora 04",
+      "manifestSha256": "a873c242e70c08bdcee3b9a96067ac3b1f18c74355856162805e8d4ec521f1e5",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "b5f2b3f7ffa2529aaddfb03695e344d77193f83204f34ee090eba049207563ab",
+          "byteSize": 3302154,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-044/print-044__3x4.jpg",
+            "sha256": "d46bc8ed66437a17633121f523bda42334f0b95498c7f07e1c7d3eacef080621",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "63fd9ead7cf02404dcb051b897ed98d1a87b355dc6dc2c4dec9369656b965805",
+          "byteSize": 7241141,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-044/print-044__5x7.jpg",
+            "sha256": "489152dc6c4a8b2dc5e8112316221f0399673d06fd3f57167b1cd6b3e77a8553",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "b023bec95ea91d937eb893f08e2d8479a688af8e8a4b49bca7ad8dde9d2961b2",
+          "byteSize": 10842242,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-044/print-044__7x10.jpg",
+            "sha256": "5bbfef75c7df45efacff9892536431ef5ef09f1114b6765d52cd38eb581720ef",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap045",
+      "displayName": "Cirrus 01",
+      "manifestSha256": "fcfe402ec149c8b91cdab5b7033b064c87bf6493a2f4fcc1c7e2751b37f6298c",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "79f8090099615884eeed435d629e3b341da9875c145382860bd5b2168391c6e7",
+          "byteSize": 4633586,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-045/print-045__3x4.jpg",
+            "sha256": "4a8c4f16811f91835eec2b00937367be108371f63310fd80370f849aef0594f0",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "d466ca9027dfeeb205f626b6a16c60628fa29d9493c18b989839f119aff0de42",
+          "byteSize": 9100219,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-045/print-045__5x7.jpg",
+            "sha256": "b4787da073a147db20f72373faeb1e568f2da636951890e097a145bd3fb07c29",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "73fb3bfbf1425c68ee6032b170840ecdff307c904bba0d5e7e9be0c3ad2dd0bd",
+          "byteSize": 12957994,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-045/print-045__7x10.jpg",
+            "sha256": "c6334bdda1f72495528fe685a9d24c723324f1eda2dec15ab99b008f77155f73",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap046",
+      "displayName": "Cumulonimbus 03",
+      "manifestSha256": "cdd1555d0da9c9da3dd16dd5fbe994bce315e44fcbdb76b661b923c9e3cd3fd7",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "a01151a08f14fdfc3e50211aac932f0d0204fd1cceafb3e72510089394a2a324",
+          "byteSize": 5197410,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-046/print-046__3x4.jpg",
+            "sha256": "71149e6ba7fa56458a48f211b3a3b9398566c0e1bfdcafaa1336b671243d804f",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "2f4d4fd7ce15e52db11a797e5f32e5c6d7a4d45b9f63585ddea124d7bc75dc37",
+          "byteSize": 10776783,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-046/print-046__5x7.jpg",
+            "sha256": "304b988053e47c77953cea573999dd466ece1e60d03b8afbabb59a4825d7633f",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "be462455742a988163bc3491b66b79590f81eaeff8dd1049da3f241a6524b251",
+          "byteSize": 15589432,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-046/print-046__7x10.jpg",
+            "sha256": "ed73ccaeef1da3299c68f5abf306984f3e781ba3208af03257a960616bcaa2af",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap047",
+      "displayName": "Cumulonimbus 06",
+      "manifestSha256": "e0b6935f5b4febb9d610f67c3a596decac0c10e0f02d3053f55ac81d048c9d0e",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "88a6c7d6f77f3b0ac51684b44dfc2c998a01540482af6ad836ed0bb94d3e03c5",
+          "byteSize": 4920285,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-047/print-047__3x4.jpg",
+            "sha256": "b3f10477307a78cb8e1fc01a74173ae661c19bdcc06d0920bbeff88109cc33ac",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "4ec89d468aaf15b2783d4aac3f11c8ebea00f5000145c4e91c2a57e7624863b0",
+          "byteSize": 10776605,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-047/print-047__5x7.jpg",
+            "sha256": "bfff308923968581e160daabd7124c52c02af6a9374dae22dc5346250896ac79",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "2a68c593f8f7451e1c2f57b1d1ab3564004cac88798ea1e96ce78400d7eab63f",
+          "byteSize": 15647947,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-047/print-047__7x10.jpg",
+            "sha256": "8227f5cd76834d22d8ee639f206c6e9c38daa4118e28c98387779e2e3da766f6",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap048",
+      "displayName": "Cumulus 01",
+      "manifestSha256": "fd2b0f9061019d23d93a9c8930c83d44768c8cb111c82e951adcc6856716efca",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "135b009db42c921c47f7a5d01c89293ffb6a57477c960ab2da56f439260e02b8",
+          "byteSize": 3580178,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-048/print-048__3x4.jpg",
+            "sha256": "877e1da34cb0536ff596684518f21bbdeb7eb7d0be9f28e20531730a88020712",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "dd7ae9f04cdacad4674c26aa8c2f117b532ac4aa55acec9cf93c14c01e1fda4c",
+          "byteSize": 7459256,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-048/print-048__5x7.jpg",
+            "sha256": "1083d3f60bff15413c5ea7adbe5a4ff4f3f6588f1f73d036b865b0e9d46cd63c",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "625e080aaba17f36d74f30e8d5c0f7138779ccfa461a241ce7c61ae4700bf65c",
+          "byteSize": 10910982,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-048/print-048__7x10.jpg",
+            "sha256": "26496ef02ef157aaf9c636678eeebd610ea7234b6a9eb3113ff6ff4485ea18b6",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap049",
+      "displayName": "Cumulus 06",
+      "manifestSha256": "d6e95f8110253639c9c29b10bad83a75c780201452611f2d30253f667de72605",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "88fcaf2e4521e1567c51900d9f628cdc271c0e9ee5d8c137201cddd263d71042",
+          "byteSize": 2820924,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-049/print-049__3x4.jpg",
+            "sha256": "f043fb9c57ced78be1aa54739d5dce42c4978d20bec3c137bb6bd6d57ddfd858",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "9798ea04cac0dee30c5eb74b02c797c60517ce7cdc9d62e20c45100105cb1325",
+          "byteSize": 5892023,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-049/print-049__5x7.jpg",
+            "sha256": "ff19981e29f35f9215b3174c5537982580f467dddb8afa16c4d7a9a5cf18b3e3",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "d4494c837ea06644309a40ac0fd19e5e6cc3b48bed264a7d48c5c430f616507e",
+          "byteSize": 8942158,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-049/print-049__7x10.jpg",
+            "sha256": "72ef4ba925e95a8f0d38804140aca209c00ca35b5a30b6ea846218b021462e32",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap050",
+      "displayName": "Obsidian 02",
+      "manifestSha256": "417c34b967f30e9c33a771d93231376490cc8222aaf1a0be1b30dc79d71b1b82",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "54ef27ee84d6d604df22bf7f3b287c19cf36d36b3a0d63e8c2ec867e9b3744fa",
+          "byteSize": 3583725,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-050/print-050__3x4.jpg",
+            "sha256": "16cd67cfe25a749fd52fa80f2d07d4c1d0680d2dc360e4af2f8d637c7415d8be",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "d71074bb504868915abd76cb90ec9bda45e9eb3c1d8e56f0ef18d0f7d225eae6",
+          "byteSize": 7256096,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-050/print-050__5x7.jpg",
+            "sha256": "322ffcbbcdefa6bc885b031194ed25b66345127b5ad6e936dafd81c922f65346",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "bb1dd1ed0f89a471e6020767c165d4e70f457f8e9a30f2985f8369125c37137c",
+          "byteSize": 10363257,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-050/print-050__7x10.jpg",
+            "sha256": "aa1dc1e8b50db54c19f200b5284c3ea3176ef42163fa662241c706716a1a81b9",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap051",
+      "displayName": "Obsidian 03",
+      "manifestSha256": "764d4d6d5e4b28879dc889310867467da96d5c8437bf0dabaa0fd33fc6851c53",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "b8f54792147e5ef36845b9ffa5383a962f927d70c74648011f58ec8d1668abdc",
+          "byteSize": 4024851,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-051/print-051__3x4.jpg",
+            "sha256": "45a9bf97e4840954ec7245b6f53d0ea9a720c15e320034d79c1f89eb2ac7e6f2",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "6962ff2725692719b075193f4a54f8842540577eb8975f04dcd882010a672dd4",
+          "byteSize": 8506870,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-051/print-051__5x7.jpg",
+            "sha256": "2ef7e6ef71605189d52876f421cdcac367000b79ae72086bfa62ce83f51e0b08",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "a3b7a091fbdc3a4f9f2833f624d9c59d4e34a6904dfe0d52d4724d4f6e2e7066",
+          "byteSize": 12383044,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-051/print-051__7x10.jpg",
+            "sha256": "a7c6945ecac6f863c64deaf8e7758f09ba1c34c6c5744651b827d93338da3d66",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap052",
+      "displayName": "Obsidian 04",
+      "manifestSha256": "efedaa66e332e423ff4659e1ef901f70a53df445007a6b2a353cbbc868543865",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "b51c4ec6306acb9d84894069ec30bb3f638c25881c50e93111d104b634f381b6",
+          "byteSize": 4261092,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-052/print-052__3x4.jpg",
+            "sha256": "fbb3f6ac03dbe909b9e3c058a443df66c1b92b01e3d12a7bbc8be84a843b2d98",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "4ae4f98071f61967ba98e0be2ed0bca335d362b3236ab87d4dd655646e404d34",
+          "byteSize": 9277465,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-052/print-052__5x7.jpg",
+            "sha256": "56ecae2b43db5bd613db5028ab6e6ad87b7cf06c1774b4dc12cce67da36b2c64",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "7fbebf8a341ae2190610ac6574581adab02bdf4892c02eb95bb320feb0066b38",
+          "byteSize": 13367885,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-052/print-052__7x10.jpg",
+            "sha256": "f9d0fbb832c3896b9eac62110c3492142dd0c2d49c0e13977bd048f291c52429",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap053",
+      "displayName": "Obsidian 05",
+      "manifestSha256": "4e5e717ff0e739318c8ac2f9df68e0e4eaeda4199b079987c984d38c4fcaa6e0",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "e549d4587e40b15ea5b814cb6c370d3209ae4a93f624d4f93de3a24c7a750642",
+          "byteSize": 4432887,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-053/print-053__3x4.jpg",
+            "sha256": "2762100b4480fb0527c6682102b1f3ea0bd9b7b379f74ca71f9bb8c31c362e24",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "ce320ae77a956afcee3a7455cf48ffa94bf940bcd003eddc466513300a0a547f",
+          "byteSize": 9468503,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-053/print-053__5x7.jpg",
+            "sha256": "6e9af6aeab22cb0e04ac6051e5303ea4a5dd7c5c80fc2755cf478512ba694b12",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "3c8dd83077a40f0c63bed9041e7e12ce2b32a3b492d41980f1f3481e9169de05",
+          "byteSize": 13631651,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-053/print-053__7x10.jpg",
+            "sha256": "bb69ceba37341430b482c0801e7a865650cb5d7095903554df324736a407ebb4",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap054",
+      "displayName": "Scopulus 02",
+      "manifestSha256": "7f5ab2f95896e8f8985df025817f12f71ccd4ede053bd2449a22eb3f28bb539c",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "04e3454100f8a8d8430a285ff9341893c5b631bf4e7c60c7b5dcd648009bd1b8",
+          "byteSize": 4118132,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-054/print-054__3x4.jpg",
+            "sha256": "51abaa9243cb82a5111ec0621f06acb0fac4d7f7e324bd2b57010ff786c33b2c",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "81c2f26d9ead5d914542ef401419dc2005ccb188b17b94d174a0d54eb248780c",
+          "byteSize": 8726149,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-054/print-054__5x7.jpg",
+            "sha256": "95d3d80e523e7cb6014d92679321d1f8bcde12b83d5f2453dc4400eddff37493",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "78865bc87c3b331efba8cba63f62c40cafb5cd13ac30030dbe1b090fb1dff500",
+          "byteSize": 12675007,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-054/print-054__7x10.jpg",
+            "sha256": "975bedf262c77b013ec36d82af6e320e33d179762bf2bc16d29d5a5287372580",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap055",
+      "displayName": "Unda 04",
+      "manifestSha256": "17755ca5b5b2eaf00e273553d2a75feb81cdf53a3a2cdc8c0d104f5eaf0d9431",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "b4778f22cfb8b16865d47e38bcc23bfb8e1dbc6a696bbcc4e816ae9226633438",
+          "byteSize": 3236955,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-055/print-055__3x4.jpg",
+            "sha256": "d33b4c8c19f717509f00b5b22982511e6a3f428b89629f9b0e1f3f4aee88addb",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "e523973138cb7bbca1e9584e2b5ec2c511a36bc98d6057c9ca56165ce1e01324",
+          "byteSize": 6780087,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-055/print-055__5x7.jpg",
+            "sha256": "24192a3045e6f6409e16688acae8a0668aaf936a963ee09b4d2132d9b2238421",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "2942fee37f935f7ce1ee374644e2cff073601f4080d0243e78fad5ff2bee2fc5",
+          "byteSize": 9904799,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-055/print-055__7x10.jpg",
+            "sha256": "8c27d743af2cc616beba2b89bc0dfd72b79175d7c60cdd2d285849264610a07d",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap056",
+      "displayName": "Unda 05",
+      "manifestSha256": "76c3ba8b7196badf75fb4e2a1774320bf896342699717b938c564f00bd3eacae",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "67d74fcd498f06775ea6f77963e74157f10ad4d3e3c38af5202d9931923cf85a",
+          "byteSize": 3094589,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-056/print-056__3x4.jpg",
+            "sha256": "4bbe22dc865498df50e3ebf0ffa9cb82868085e7b20110e8745f32d7616c362f",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "d3b3ea71d077c553a30eb9c9a1e35f83e01d41727d8c64023cd81f866a71705e",
+          "byteSize": 6492996,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-056/print-056__5x7.jpg",
+            "sha256": "2c7bacf3af316e95040dfe212bd32bc4b1be0e4dc23e61cd86699ad1169c481f",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "21c52e272e20e646ec06f6454f8312aceb1608cfdb87d77d9da967b6897b3bf8",
+          "byteSize": 9517215,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-056/print-056__7x10.jpg",
+            "sha256": "ab7eee7dbee95930e385bc7c6568ad837e688b9727b26791c453a974d0a38086",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    },
+    {
+      "productId": "fap057",
+      "displayName": "Tachylite 03",
+      "manifestSha256": "028a2fd57930de6d886ebe88f7d041b5f314ab18a38da25cdf1e031a0007a7db",
+      "derivatives": [
+        {
+          "width": 3600,
+          "height": 4800,
+          "format": "jpg",
+          "sha256": "0d4ecd0b092060006f5a73f071369ed61f4c9b584ca6d426aac4f6b1ce43a066",
+          "byteSize": 3726372,
+          "source": {
+            "ratio": "3x4",
+            "path": "design/uploads/master-images-prints/print-057/print-057__3x4.jpg",
+            "sha256": "524ad7fd7b4eaad5f3806a9e018d5cd4bcd9a356388bcb2e2a74ff8fad6f73ee",
+            "width": 3600,
+            "height": 4800
+          }
+        },
+        {
+          "width": 6000,
+          "height": 8400,
+          "format": "jpg",
+          "sha256": "f3ad4b4fb3700a7e39a773f0b95c661321fab8bd020200d032b7607022ccc786",
+          "byteSize": 7714775,
+          "source": {
+            "ratio": "5x7",
+            "path": "design/uploads/master-images-prints/print-057/print-057__5x7.jpg",
+            "sha256": "e2a778afdbf9f65fde37a4f790e3ffd3a307f1b4dc7b561a3462b5f66967fd85",
+            "width": 6000,
+            "height": 8400
+          }
+        },
+        {
+          "width": 8400,
+          "height": 12000,
+          "format": "jpg",
+          "sha256": "1bf3ce744ef5ffe1c9614fd158b8254764407207d023466cc851ac0685d77b2e",
+          "byteSize": 11169466,
+          "source": {
+            "ratio": "7x10",
+            "path": "design/uploads/master-images-prints/print-057/print-057__7x10.jpg",
+            "sha256": "5d8bc5e7cde9bcc443e905baf171462a4e9562bb20944100df4ca2d3ba998937",
+            "width": 8400,
+            "height": 12000
+          }
+        }
+      ],
+      "assignments": 12
+    }
+  ],
+  "uploadStarted": true,
+  "studioApproval": {
+    "date": "2026-09-29",
+    "message": "wszystko wyglada ok",
+    "scope": "All 48 proofs in the reviewed gallery; proceed with upload, verify and assignment publication for revision 2026-09-29-r1."
+  },
+  "publicationReport": "nowe-printy-2026-r2-publikacja.json"
+}

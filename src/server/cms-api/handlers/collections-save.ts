@@ -96,6 +96,9 @@ export const collectionsSaveRoute: RouteDef = {
     }
 
     const collection = await loadCollectionResponse(ctx.supabase, params.id);
+    if (!collection) {
+      return errorResponse('INTERNAL_ERROR', `Collection ${params.id} could not be read back after the save.`, 500, ctx.requestId);
+    }
     return jsonResponse(collection);
   },
 };

@@ -100,7 +100,8 @@
     "studio": "Studio",
     "kontakt": "Kontakt",
     "konto": "Konto",
-    "giftCard": "Geschenkkarte"
+    "giftCard": "Geschenkkarte",
+    "kolekcje": "Kollektionen"
   },
   "aria": {
     "cart": "Warenkorb",
@@ -365,10 +366,10 @@
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",
-    "paczkomatD": "Abholung an deinem gewählten Paketfach, in der Regel 1–2 Werktage nachdem ich das Paket übergeben habe.",
+    "paczkomatD": "Abholung an deinem gewählten Paketfach, Lieferung innerhalb von 5 Werktagen.",
     "paczkomatPrice": "ab {price}",
     "courierT": "InPost Kurier",
-    "courierD": "Lieferung an deine Adresse, in der Regel 1–2 Werktage nachdem ich das Paket übergeben habe.",
+    "courierD": "Lieferung an deine Adresse innerhalb von 5 Werktagen.",
     "pickupT": "Persönliche Abholung",
     "pickupD": "Auf Teneriffa (San Pedro Abajo 12, Guimar), nach Vereinbarung.",
     "printT": "Kurierversand",
@@ -432,7 +433,7 @@
       "Druck auf Bestellung",
       "Fine-Art-Papier 200 g/m²",
       "Rahmen: Schwarz, helles oder dunkles Braun",
-      "Lieferung in die EU und nach Großbritannien · 5–10 Tage"
+      "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
     ],
     "storyImageAlt": "Anna Ciok in ihrem Keramik-Studio",
     "editorialImageAlt": "Gerahmte Arbeiten von Anna Ciok in einem sonnenbeschienenen Interieur",
@@ -442,7 +443,7 @@
     "storyP2": "Ausgewählte Arbeiten erscheinen in einer Fine-Art-Edition: gedruckt auf Papier in Archivqualität und verschickt in dem Format, das du wählst — ungerahmt oder im Holzrahmen.",
     "storyCta": "Druckkollektionen ansehen",
     "collectionsEyebrow": "Kollektionen",
-    "collectionsTitle": "Neun Reihen, <em>ein Atelier.</em>",
+    "collectionsTitle": "Reihen <em>eines Ateliers.</em>",
     "collectionsLead": "Jede Kollektion ist eine eigene Bilderserie — wähle die Stimmung, Farbe und den Rhythmus, der zu deinem Raum passt.",
     "collectionsCount": "{count} Gemälde",
     "collectionsCta": "Alle Kollektionen",
@@ -453,11 +454,11 @@
     "craft2H": "Du wählst <em>Größe und Rahmen</em>",
     "craft2P": "Drei Größen stehen zur Wahl, dazu die Rahmung: ungerahmt oder im Holzrahmen — schwarz, hell- oder dunkelbraun.",
     "craft3H": "Wir drucken <em>und versenden</em>",
-    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und innerhalb von 5–10 Werktagen an deine Adresse in der EU oder im Vereinigten Königreich versendet.",
+    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung an deine Adresse in der EU oder im Vereinigten Königreich erfolgt innerhalb von 5 Werktagen.",
     "lgMaterialH": "Material & Ausführung",
     "lgMaterialP": "Druck auf Fine-Art-Papier mit 200 g/m², in Archivqualität. Jeder Druck ist ungerahmt oder im Holzrahmen erhältlich: schwarz, hell- oder dunkelbraun.",
     "lgShippingH": "Herstellung & Versand",
-    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet — in der Regel innerhalb von 5–10 Werktagen.",
+    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
     "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
@@ -466,7 +467,7 @@
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
     "ctLShipPrints": "Versand Drucke",
-    "ctVShipPrints": "EU & Vereinigtes Königreich · 5–10 Werktage"
+    "ctVShipPrints": "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
   },
   "printCollections": {
     "inne": "Weitere Drucke"
@@ -517,11 +518,6 @@
       "eyebrow": "Juni-Drop — 10 Stücke",
       "title": "Schüsseln mit Wellenrand <em>Nº 01–10</em>",
       "lead": "Schüsseln mit Wellenrand. Für Frühstück, Snacks und kleine häusliche Rituale, wobei jedes Stück ein bisschen anders ist."
-    },
-    "fine-art-prints": {
-      "eyebrow": "Offene Edition",
-      "title": "Fine Art <em>Drucke</em>",
-      "lead": "Reproduktionen von Aquarellgemälden auf 200 g/m² Fine Art Papier. Größe und Rahmung wählen — wir drucken und versenden innerhalb von 2–3 Werktagen in die EU oder ins Vereinigte Königreich."
     }
   },
   "studio": {
@@ -546,9 +542,9 @@
     "fact3K": "Techniken",
     "fact3V": "Keramik <em>und Aquarell</em>",
     "fact3D": "Manche Kompositionen bleiben auf Papier und gehen in eine Fine-Art-Edition ein. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
-    "fact4K": "Versand Keramik",
-    "fact4V": "1–3 <em>Tage</em>",
-    "fact4D": "Keramik verpacke und versende ich selbst innerhalb von 1–3 Werktagen in ganz Polen. Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet, meist innerhalb von 5–10 Tagen, in die EU oder ins Vereinigte Königreich.",
+    "fact4K": "Bearbeitung der Bestellung",
+    "fact4V": "bis zu 2 <em>Tage</em>",
+    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Keramik verpacke und versende ich selbst; Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet.",
     "procEyebrow": "Wie ein Stück entsteht",
     "procH": "Von der ersten Linie <em>zum fertigen Stück.</em>",
     "p1H": "Ich beginne <em>mit einer Linie</em>",
@@ -591,7 +587,7 @@
     "lStudio": "Abholung",
     "vStudio": "Teneriffa — Abholung nach Vereinbarung",
     "lShip": "Versand",
-    "vShip": "Polen · Versand in 1–3 Werktagen",
+    "vShip": "Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen",
     "lReply": "Ich antworte",
     "vReply": "Meist am selben Tag"
   },
@@ -606,15 +602,15 @@
     "toc4": "Abholung",
     "toc5": "Rücksendungen",
     "toc6": "Schäden",
-    "updated": "Aktualisiert: Juni 2026",
+    "updated": "Aktualisiert: Oktober 2026",
     "s1H": "Versand",
-    "s1P": "Ich versende per <strong>InPost Paketfach (ab 5 €)</strong> oder <strong>Kurier (10 €)</strong> in ganz Polen. Die Versandkosten sind unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
-    "s1Li1": "InPost Parcelshop, ganz Polen — ab 5 €",
-    "s1Li1b": "InPost Kurier, ganz Polen — 10 €",
+    "s1P": "Ich versende per <strong>InPost Paketfach (ab {locker})</strong> oder <strong>Kurier ({courier})</strong> in ganz Polen. Die Versandkosten sind unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
+    "s1Li1": "InPost Parcelshop, ganz Polen — ab {locker}",
+    "s1Li1b": "InPost Kurier, ganz Polen — {courier}",
     "s1Li2": "Abholung auf Teneriffa — kostenlos",
     "s1Li3": "Internationaler Versand — schreib mir und ich arrangiere es individuell",
     "s2H": "Bearbeitungszeit",
-    "s2P": "Die Keramikstücke sind fertig und warten bereits in Polen, daher gibt es keine Produktionszeit. Ich versende das Paket innerhalb von <strong>1–3 Werktagen</strong> nach Zahlungseingang, und der Kurier liefert in der Regel am nächsten Tag.",
+    "s2P": "Die Keramikstücke sind fertig und warten bereits in Polen, daher gibt es keine Produktionszeit. Die Bestellung wird innerhalb von <strong>2 Werktagen</strong> nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von <strong>5 Werktagen</strong>.",
     "s2Note": "Ich packe alles selbst, zwischen Studioarbeit und den nächsten Brennvorgängen. Wenn du ein bestimmtes Datum benötigst, schreib mir und ich prüfe, was möglich ist.",
     "s3H": "Verpackung",
     "s3P": "Die Keramik reist von Hand eingewickelt — Folie, Karton und viel Polsterung, damit sich nichts bewegt. Ich kennzeichne die Schachtel als zerbrechlich. Ich versuche, so wenig Plastik wie möglich zu verwenden, ohne das Stück zu gefährden.",
@@ -651,7 +647,7 @@
     "s3H": "§3 Preise & Zahlung",
     "s3P": "Alle Preise werden in Euro (EUR) angegeben und sind Bruttopreise. Die im Warenkorb vor der Bestätigung angezeigten Versandkosten werden zum Bestellbetrag addiert. Die Zahlung wird über einen sicheren externen Zahlungsanbieter, Stripe, abgewickelt.",
     "s4H": "§4 Erfüllung & Versand",
-    "s4P": "Ich versende Bestellungen innerhalb von 1–3 Werktagen nach Zahlungseingang. Details zu Kosten, Zeitrahmen und Abholung sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
+    "s4P": "Die Bestellung wird innerhalb von 2 Werktagen nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Details zu Kosten, Zeitrahmen und Abholung sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
     "s5H": "§5 Widerrufsrecht",
     "s5P": "Ein Verbraucher hat das Recht, innerhalb von 14 Tagen nach Erhalt des Stücks ohne Angabe von Gründen vom Kauf zurückzutreten. Die Erklärung kann einfach per E-Mail gesendet werden. Das zurückgesendete Stück sollte unbeschädigt sein; der Käufer trägt die Rücksendekosten, und die Erstattung erfolgt innerhalb von 14 Tagen.",
     "s6H": "§6 Reklamationen",
@@ -897,7 +893,24 @@
       "Ein breites Lavendelfeld verdunkelt sich im Werk zu weich auslaufenden braunen und schwarzen Blüten, gekreuzt von schlanken vertikalen Linien und einem schmalen cremefarbenen Streifenband. Eine gebrochene horizontale Naht aus dunklem Pigment und Gold trennt die obere Form von ihrem hellen Gegenstück darunter. Stimmungsvoll und ausgewogen bringt die Komposition atmosphärische Tiefe in Wohnzimmer, Essbereich oder ruhiges Arbeitszimmer.",
       "Helle blaue und rosige Flächen breiten sich im Werk in einer weiten, gestuften Form aus, angehoben von zwei satten Kobaltstrichen oben links. Rostsprenkel und feine vertikale Linien sinken zu einem dunklen horizontalen Band, in dem weiße Konturen einen sanften Wellenrhythmus bilden. Weit und leise lebendig verleiht der Print Wohnzimmer, Schlafzimmer oder langem Flur ein Gefühl von Offenheit.",
       "Eine weite graugrüne Schlaufe öffnet die obere Hälfte des Werks, begleitet von einem dunkel blaugrünen Ring aus fein strahlenden Linien. Ein konzentriertes Rostband kreuzt die Mitte, während ein großes zart gezeichnetes Oval darunter warme Spuren auf seiner hellen Fläche trägt. Ausgewogen, grafisch und ruhig erdig bildet die Komposition einen sicheren Mittelpunkt für Esszimmer, Wohnbereich oder zurückhaltenden Arbeitsplatz.",
-      "Kühle graugrüne Flächen steigen an einer Seite des Werks auf, während sich auf der anderen warme Rost- und Terrakottaspuren sammeln und dazwischen viel Weiß bleibt. Ein dunkel blaugrün gestreifter Ring krönt die kühle Form, federartige Blüten und ein blassrosa Strich beleben den warmen Rand. Kühn und schön ausbalanciert bringt der Print expressiven Kontrast in Flur, Studio oder zeitgenössisches Wohnzimmer."
+      "Kühle graugrüne Flächen steigen an einer Seite des Werks auf, während sich auf der anderen warme Rost- und Terrakottaspuren sammeln und dazwischen viel Weiß bleibt. Ein dunkel blaugrün gestreifter Ring krönt die kühle Form, federartige Blüten und ein blassrosa Strich beleben den warmen Rand. Kühn und schön ausbalanciert bringt der Print expressiven Kontrast in Flur, Studio oder zeitgenössisches Wohnzimmer.",
+      "Wellige Bänder in Salbeigrün, gedecktem Rosa und Blaugrau verlaufen neben dunklen Farbflächen mit senfgelben Rändern. Feine, frei gezogene Linien verbinden die hellen Partien und verleihen der kontrastreichen Komposition einen leichten, ruhigen Rhythmus. Aurora 01 setzt einen markanten vertikalen Akzent im Raum; helles Holz und neutrale Textilien lassen den sanften Farbübergängen und der zarten Zeichnung dabei genügend Raum.",
+      "Rostrote Schlaufen schweben über breiten, durchscheinenden Formen in Blau und Grün und setzen klare Konturen gegen weich verlaufende Farbe. Eine tiefblaue Fläche und verstreute Farbsprenkel ziehen den Blick nach innen, während der offene Hintergrund Leichtigkeit bewahrt. Aurora 02 belebt Räume mit schlichten Möbeln durch eine prägnante grafische Geste und feinere Details, die sich erst beim näheren Betrachten zeigen.",
+      "Eine schmale rostfarbene Linie zieht sich durch wellige Schichten in Blau, Grau und hellem Creme und gibt der Komposition einen vertikalen Rhythmus. Daneben unterbricht eine dunkle, unregelmäßige Fläche mit hellem Zentrum den sanften Verlauf, begleitet von kleinen blauen Spuren. Aurora 04 bringt fließende Bewegung an eine ruhige Wand und bildet mit ihrer kühlen Palette einen feinen Gegenpol zu warmem Holz und weichen Stoffen.",
+      "Zwei längliche Formen treffen in kühlem Blau und einer leuchtend orangefarbenen Kante aufeinander, umgeben von viel hellem Raum. Blaue Ringe, feine Bögen und kleine Farbspuren geben den größeren Flächen einen lebendigen, luftigen Rhythmus. Cirrus 01 setzt einen frischen Akzent in schlicht eingerichteten Räumen und verbindet einen klaren Farbkontrast mit körnig wirkenden Details, die aus der Nähe sichtbar werden.",
+      "Breite Spuren in Hellblau und warmem Ocker werden von einem dunklen horizontalen Band mit hellen Unterbrechungen durchzogen. Darüber bündelt eine kleine tiefblaue Farbfläche feine Linien und verstreute Sprenkel zu einem konzentrierten Blickpunkt. Cumulonimbus 03 verleiht einem Raum ruhige Tiefe, verbindet weiche Farbübergänge mit einem kräftigeren Akzent und lädt dazu ein, die filigranen Spuren aus der Nähe zu entdecken.",
+      "Horizontale Schichten in Türkis, Blaugrau und erdigem Braun gruppieren sich um eine schmale dunkle Trennlinie. Durchscheinende Partien wechseln mit dichten Sprenkeln und locker nach unten verlaufenden Spuren, wodurch die breite Komposition einen lebendigen Rhythmus erhält. Cumulonimbus 06 kann einem ruhigen Wohn- oder Arbeitsraum einen weiten visuellen Schwerpunkt geben; warme und kühle Töne verbinden sich dabei gut mit Holz, Stein und neutralen Möbeln.",
+      "Ocker und Orange steigen aus einer weichen blaugrauen Basis auf, durchzogen von feinen Linien in lockeren Bögen. Kleine senfgelbe Kreise schweben über der Hauptform und verleihen ihr Leichtigkeit, während die dunklere linke Kante für Ausgleich sorgt. Cumulus 01 bringt einen warmen, gelassenen Akzent in helle Räume und lässt sich durch seine zarten Spuren und offenen Flächen gut mit weiteren Bildern kombinieren.",
+      "Drei helle, unregelmäßige Felder liegen übereinander: rostorange Sprenkel, ein breites blaues Band und verstreute dunkelblaue Punkte. Ein dunkles Zentrum mit rotem Rand und feine vertikale Linien verbinden die Schichten zu einem klaren Rhythmus auf offenem Grund. Cumulus 06 belebt cremefarbene oder graue Räume mit einer ausgewogenen Mischung aus warmen Akzenten, kühler Farbe und kleinen, besonders prägnanten Details.",
+      "Eine große blassgelbe Form mit dunkel verlaufender Kante steht neben zwei offenen Ovalen in Beige und Braun. Feine Linien und verstreute Sprenkel treffen auf die dichten radialen Striche des unteren Rings, wodurch die Anordnung ruhig und zugleich detailreich wirkt. Obsidian 02 bringt Wärme in reduzierte Räume mit Holz und natürlichen Stoffen, während die dunkleren Akzente auch aus der Entfernung Kontur geben.",
+      "Drei unregelmäßige Ringe in Sand, Grau und Rostbraun bilden eine lockere vertikale Anordnung mit unterschiedlichen Oberflächenmustern. Helle Flecken auf der dunkelsten Form, ein kleines gemustertes Oval und eine schwarze Geste links beleben die zurückhaltende Palette. Obsidian 03 gibt einem Raum grafische Ordnung ohne Strenge und setzt über einer Kommode oder neben schlichten Möbeln einen Akzent aus runden Formen und energischer Zeichnung.",
+      "Ein länglicher olivgrüner Ring trifft auf eine hellgraue Fläche und eine kleine dunkle Form mit geflecktem Zentrum. Weiße Schlaufen kreuzen die oberen Formen, während schwarze Striche links unten der weich gerundeten Komposition Halt geben. Obsidian 04 verbindet zurückhaltende Farbe mit einem markanteren Linienrhythmus und setzt einen gezielten Akzent in Räumen mit Stein-, Beige- und Holztönen, ohne kräftige Kontraste im gesamten Raum zu verlangen.",
+      "Eine hohe rostbraune Form mit weichen hellen Flecken steht neben einer großen cremegrauen Schlaufe, die von einer schwarzen Geste durchzogen wird. Feine wellige Linien und zwei dunkelblaue Zeichen bringen Bewegung, während viel freier Hintergrund bleibt. Obsidian 05 setzt einen kräftigen, warmen Akzent in hellen Räumen und verbindet breite Rundungen mit einer lebhaften Zeichnung, die aus der Nähe wie aus der Entfernung wirkt.",
+      "Zwei längliche Formen verbinden warmes Rostbraun mit hellem, gesprenkeltem Blau, überlagert von einem cremefarbenen Ring. Weiche weiße Flecken und feine Linien hellen die dunklere Fläche auf, während zwei kleine Terrakottaspuren den offenen Hintergrund beleben. Scopulus 02 gewinnt seinen Charakter aus einer einfachen Anordnung und dem deutlichen Warm-Kalt-Kontrast und bringt Ausgleich in Räume, in denen Holz auf Grau oder blaue Akzente trifft.",
+      "Durchscheinende Formen in Creme und Blau überlagern sich um konzentrierte kobaltblaue Flächen und geben der luftigen Anordnung Tiefe. Ein großer hellblauer Ring und ein angeschnittener Bogen rechts bilden einen sanften Rhythmus, durchzogen von feinen Linien. Unda 04 verbindet großzügige helle Bereiche mit gesättigter Farbe und setzt einen kühlen Blickpunkt in ruhigen Räumen, ohne zarte Stoffe oder zurückhaltende Materialien zu überlagern.",
+      "Eine weiche, abgestufte Form in Blau und Grau senkt sich zu einem dunklen horizontalen Band mit hellen Unterbrechungen. Ockerfarbene Sprenkel und feine gebogene Linien ergänzen wechselnde Details, während der offene Hintergrund Leichtigkeit bewahrt. Unda 05 bringt einen ruhigen, weiten Rhythmus in Wohn- oder Schlafräume und behält durch die kräftigen blauen Akzente auch vor hellen Wänden und neutralen Textilien ihre klare Präsenz.",
+      "Große unregelmäßige Ringe in Türkis und Ockerbraun überlagern sich neben schlanken, welligen Linien mit dunklen ovalen Enden. Eine kleine burgunderrote Schlaufe gleicht die untere Anordnung aus, während dichte Sprenkel und feine radiale Striche jede Form unterscheiden. Tachylite 03 bringt lockere grafische Bewegung in einen Raum und verbindet erdige Farben mit kühlem Türkis, das mit Holz harmoniert und sich von neutralen Wänden abhebt.",
+      "Tiefe marineblaue und kobaltblaue Farbflecken schweben über einem weiten hellblauen Feld, das von rostfarbenen Sprenkeln und feinen schwarzen Linien durchzogen wird. Eine leuchtend orangefarbene Ecke gleicht den dunkleren unteren Bereich aus, während der offene weiße Grund die vertikale Komposition luftig hält. Cumulus 02 setzt einen klaren, zugleich großzügigen Akzent in hellen Räumen und harmoniert mit hellem Holz, kühlen Grautönen und schlichten Formen."
     ]
   },
   "error": {
@@ -939,7 +952,7 @@
   "deliveryNotice": {
     "title": "Versandinformationen",
     "p1": "Alle Bestellungen in Polen werden per InPost-Kurier oder InPost-Paketfach verschickt.",
-    "p2": "Bestellungen werden innerhalb von 1–3 Werktagen nach dem Kauf versandt.",
+    "p2": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
     "p3": "Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist."
   },
   "consent": {
@@ -982,7 +995,7 @@
     "sectionEdition": "Edition",
     "editionOpen": "Offene Edition",
     "sectionDelivery": "Lieferung",
-    "deliveryNote": "Produktion und Versand über unseren Druckpartner, 5–10 Werktage",
+    "deliveryNote": "Produktion und Versand über unseren Druckpartner. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa.",
     "sectionCare": "Pflege",
     "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
     "moreFrom": "Weitere Drucke",
@@ -999,7 +1012,8 @@
     "artistBio": "Anna Ciok ist eine auf Teneriffa lebende Künstlerin, die malt und Keramik gestaltet; ihre Arbeiten verbinden kräftige Farben mit handwerklicher Geste. Die Drucke dieser Kollektion reproduzieren ihre Originalgemälde und werden in offener Edition auf Archivpapier gedruckt.",
     "accordionProductDetails": "Fine-Art-Druck auf EMA-Papier 200 g/m² — ein mattes Papier in Archivqualität. Offene Edition.\n\nVor Feuchtigkeit und direktem Sonnenlicht schützen; den Rahmen mit einem trockenen Tuch abwischen.",
     "accordionFraming": "Jeder Druck ist ungerahmt oder mit Holzrahmen erhältlich: schwarz, hellbraun oder dunkelbraun.",
-    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke innerhalb von 5–10 Werktagen. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe."
+    "accordionShipping": "Unser Druckpartner produziert und versendet die Drucke. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Wir liefern an Hausadressen in der Europäischen Union und im Vereinigten Königreich — Paketautomaten-Lieferung ist nicht verfügbar. Details zur Rückgabe auf der Seite Versand & Rückgabe.",
+    "seeCollection": "Ganze Kollektion {name} ansehen"
   },
   "giftCard": {
     "eyebrow": "Geschenk",
@@ -1066,5 +1080,264 @@
     "confirmationUnavailable": "Die Bestätigung konnte nicht geöffnet werden. Prüfe die Bestell-E-Mail oder schreibe an ania@ciok.art.",
     "refund": "{cardAmount} wurden deiner Geschenkkarte und {cashAmount} deinem ursprünglichen Zahlungsmittel erstattet.",
     "usedCardRefund": "Wenn die Karte bereits teilweise oder vollständig verwendet wurde, schreibe wegen einer Erstattung des Kartenkaufs an ania@ciok.art. Das Studio prüft den Zahlungsverlauf."
+  },
+  "collectionPage": {
+    "metaTitle": "{name} — Fine-Art-Print-Kollektion",
+    "metaDescriptionFallback": "Die Kollektion „{name}“ — Fine Art Prints nach Anna Cioks Gemälden auf 200-g/m²-Papier, mit oder ohne Rahmen.",
+    "allCollections": "Alle Kollektionen",
+    "shopCta": "Zum Shop",
+    "eyebrow": "Kollektion — {count, plural, one {# Print} other {# Prints}}",
+    "otherCollections": "Weitere Kollektionen"
+  },
+  "collectionsHub": {
+    "eyebrow": "Kollektionen",
+    "title": "Kollektionen von <em>Anna Ciok</em>",
+    "lead": "Jede Kollektion ist eine eigene Serie von Aquarell- und Tuschemalereien. Wähle Stimmung, Farbe und Rhythmus, die zu deinem Raum passen — danach Größe und Rahmung deines Fine Art Prints.",
+    "metaTitle": "Anna Cioks Malerei-Kollektionen",
+    "metaDescription": "{count, plural, one {# Kollektion} other {# Kollektionen}} mit Aquarell- und Tuschemalereien von Anna Ciok. Serie wählen und Fine Art Print auf 200-g/m²-Papier bestellen, mit oder ohne Rahmen.",
+    "shopCta": "Alle Prints im Shop ansehen"
+  },
+  "shop": {
+    "metaTitle": "Shop: Fine Art Prints nach Anna Cioks Gemälden",
+    "metaDescription": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien — Fine Art Print auf 200-g/m²-Papier, mit oder ohne Rahmen. Nach Farbe und Kollektion filtern; Lieferung in die EU und ins Vereinigte Königreich.",
+    "eyebrow": "Fine Art Print",
+    "title": "Shop für <em>Fine Art Prints</em>",
+    "lead": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien. Größe und Rahmung wählen — jeder Print wird auf Bestellung gedruckt. Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen in Europa.",
+    "priceLadder": "{size} · ab {price}",
+    "frameFrom": "Rahmen +{price}",
+    "priceNote": "Der Preis hängt von Größe und Rahmung ab — nicht vom Gemälde.",
+    "filtersLabel": "Shop-Filter",
+    "sortLabel": "Sortieren",
+    "sort": {
+      "featured": "Empfohlen",
+      "new": "Neuheiten",
+      "collection": "Kollektion"
+    },
+    "colourLabel": "Farbe",
+    "colour": {
+      "blue": "Blautöne",
+      "green": "Grüntöne",
+      "warm": "Ocker & Terrakotta",
+      "pink": "Rosa & Violett",
+      "earth": "Beige & Braun",
+      "mono": "Schwarz & Grau"
+    },
+    "collectionLabel": "Kollektion",
+    "allCollections": "Alle Kollektionen",
+    "clear": "Filter zurücksetzen",
+    "empty": "Keine Arbeiten für diese Filter.",
+    "emptyCta": "Kollektionen ansehen",
+    "badgeNew": "Neu",
+    "badgePick": "Auswahl der Künstlerin",
+    "frameColoursLabel": "Rahmen: {colours}",
+    "quickAdd": "Größe und Rahmen schnell wählen",
+    "quickDetails": "Details ansehen",
+    "close": "Schließen",
+    "giftTitle": "Unsicher, welches Gemälde es sein soll?",
+    "giftLead": "Die Geschenkkarte gilt für Fine Art Print — die beschenkte Person wählt Motiv, Größe und Rahmung selbst.",
+    "collectionsTitle": "Nach Kollektion stöbern",
+    "collectionsCta": "Alle Kollektionen",
+    "aboutTitle": "Über Anna Cioks Fine Art Prints",
+    "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
+    "aboutMore": "Weiterlesen",
+    "aboutLess": "Weniger anzeigen"
+  },
+  "market": {
+    "meta": {
+      "title": "Markt in El Médano · {date}",
+      "description": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok auf dem Kunsthandwerkermarkt in El Médano — Samstag, 24. Oktober 2026, 9:00–14:00 Uhr, Hauptplatz. Ein einzigartiges Souvenir aus Teneriffa.",
+      "ogTitle": "Diesen Samstag in El Médano — Anna Ciok",
+      "ogAlt": "Fuerte-Piba-Prints und ein handbemalter Teller von Anna Ciok"
+    },
+    "event": {
+      "name": "Anna Ciok auf dem Kunsthandwerkermarkt in El Médano",
+      "dateLabel": "Samstag, 24. Oktober 2026",
+      "shortDateLabel": "Sa, 24. Okt.",
+      "timeLabel": "9:00 – 14:00 Uhr",
+      "place": "Hauptplatz, El Médano",
+      "area": "Granadilla de Abona, Teneriffa",
+      "payment": "Bar, Karte oder Bizum",
+      "calendarDetails": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok. Bar, Karte oder Bizum.",
+      "mapLabel": "Karte"
+    },
+    "hero": {
+      "eyebrow": "Kunsthandwerkermarkt · Mercadillo artesanal",
+      "line1": "Diesen Samstag",
+      "line2": "in El Médano.",
+      "lead": "Handbemalte Keramik und Fine-Art-Prints, direkt aus meinem Atelier auf Teneriffa. Komm vorbei und finde ein Souvenir, das wirklich von der Insel stammt — oder das Stück, das deiner Wohnung noch gefehlt hat.",
+      "when": "Wann",
+      "where": "Wo",
+      "pay": "Zahlung",
+      "directions": "Route anzeigen",
+      "calendar": "Zum Kalender hinzufügen",
+      "imageAlt": "Zwei Fuerte-Piba-Prints, einer schwarz und einer cremefarben, dazwischen ein handbemalter Teller auf einem sonnigen Betonboden",
+      "badgeDay": "Samstag",
+      "badgeNumber": "24",
+      "badgeMonth": "Oktober",
+      "captionLabel": "Aus dem Atelier",
+      "caption": "Fuerte-Piba-Prints und ein handbemalter Teller."
+    },
+    "marquee": [
+      "handbemalte Teller",
+      "Tassen & Vasen",
+      "Fine-Art-Prints",
+      "Unikate",
+      "made in Tenerife"
+    ],
+    "take": {
+      "eyebrow": "Nimm Teneriffa mit nach Hause",
+      "title": "Ein Souvenir, das <em>wirklich von hier ist.</em>",
+      "p1": "Vergiss Kühlschrankmagnete. Jeder Teller, jede Tasse und jede Vase auf meinem Tisch ist in meinem Atelier in Güímar von Hand bemalt, mit Motiven der Insel — Palmen, die kanarische Sonne, eine Sirene, Frauen mit breitkrempigen Hüten.",
+      "p2": "Keine zwei sind gleich, also gibt es das Stück, das du am Samstag auswählst, nur ein einziges Mal.",
+      "tipTitle": "Fliegst du nach Hause?",
+      "tipText": "Prints reisen flach im Koffer — und frag mich, wie du Keramik sicher für die Reise verpackst.",
+      "imageAlt": "Anna hält zwei weiße Vasen, handbemalt mit blauen Palmen und terrakottafarbenen gestreiften Rändern"
+    },
+    "apartment": {
+      "eyebrow": "Für dein Zuhause auf der Insel",
+      "title": "Etwas <em>für die Wohnung.</em>",
+      "p1": "Gerade hierher gezogen oder du willst einer Ferienwohnung Seele geben? Lehne ein paar Prints ins Regal, stell eine Palmenvase ans Fenster, iss von Tellern, die sonst niemand hat — kräftige, sonnige Stücke für kanarisches Licht und weiße Wände.",
+      "p2": "Die Prints tragen kanarische Redensarten und die Figuren dazu:",
+      "imageAlt": "Gerahmte blaue Prints „Agüita“ und „Chacho, Calma“ an ein Holzregal über grünen Fliesen gelehnt, im warmen Nachmittagslicht"
+    },
+    "lookbook": {
+      "eyebrow": "Lookbook",
+      "title": "Auf dem Tisch, <em>an der Wand.</em>",
+      "aside": "Stücke für den täglichen Gebrauch — und genauso gern an der Wand neben einem Print aufgehängt.",
+      "viewLarger": "Vergrößern: {caption}"
+    },
+    "photos": {
+      "studioSet": {
+        "label": "Schwarz & Terrakotta",
+        "caption": "Ein Teller mit Hutfigur, eine Wellenvase und zwei Palmentassen.",
+        "alt": "Ein Teller mit einer Figur mit breitkrempigem Hut, eine Vase mit schwarzer Welle und zwei Palmentassen auf Steinsockeln"
+      },
+      "bluePieces": {
+        "label": "In Blau",
+        "caption": "Reiben, Handschalen, eine Tasse und ein Teller.",
+        "alt": "Blaue handbemalte Keramikreiben, zwei handförmige Schalen, eine Tasse mit Welle und ein Teller mit Welle vor einer cremefarbenen Putzwand"
+      },
+      "platesOnPrints": {
+        "label": "Ton & Papier",
+        "caption": "Meerjungfrauen, Seemänner und Fuerte Piba — auf Tellern und auf Prints.",
+        "alt": "Handbemalte Teller mit Meerjungfrau, Seemännern und einer Frau mit breitkrempigem Hut, gelegt auf Fuerte-Piba- und Islas-Canarias-Prints auf einem Holztisch"
+      },
+      "wallPlates": {
+        "label": "An der Wand",
+        "caption": "Blätter, eine Welle und eine Palme, als kleine Galerie aufgehängt.",
+        "alt": "Drei handbemalte Teller an einer strukturierten cremefarbenen Wand: terrakottafarbene Blätter, eine schwarze Welle mit terrakottafarbener Sonne und eine terrakottafarbene Palme in einem schwarzen Wellenrand"
+      },
+      "plateWall": {
+        "label": "Keine zwei gleich",
+        "caption": "Ein ganzer Tisch voller Teller, jeder von Hand bemalt.",
+        "alt": "Dutzende handbemalter Teller in Schwarz und Terrakotta, gemeinsam in der Sonne ausgelegt: Palmen, Meerjungfrauen, Hände, Muscheln, Blätter und Karos"
+      }
+    },
+    "wall": {
+      "ariaLabel": "Eine Wand aus handbemalten Tellern",
+      "view": "Foto der Tellerwand vergrößern",
+      "line1": "Keine zwei gleich.",
+      "line2": "Jeder Teller von Hand bemalt."
+    },
+    "table": {
+      "eyebrow": "Auf dem Tisch",
+      "title": "Was dich <em>am Samstag erwartet.</em>",
+      "items": [
+        {
+          "title": "Teller",
+          "text": "Von kleinen Tellern bis zu großen Servierplatten."
+        },
+        {
+          "title": "Tassen",
+          "text": "Für einen gemütlichen Café con leche auf der Terrasse."
+        },
+        {
+          "title": "Vasen",
+          "text": "Klein, mittel und groß — Palmen inklusive."
+        },
+        {
+          "title": "Schalen",
+          "text": "Große Servierschalen und welche mit Wellenrand."
+        },
+        {
+          "title": "Fine-Art-Prints",
+          "text": "Kanarische Redensarten und Figuren für deine Wände."
+        }
+      ],
+      "note": "Jedes Keramikstück ist ein Unikat. Einmal verkauft, ist es weg — <em>komm früh.</em>"
+    },
+    "showroom": {
+      "eyebrow": "Aus dem Showroom",
+      "title": "Ein Vorgeschmack auf <em>das, was ich mache.</em>",
+      "aside": "Stücke aus früheren Kollektionen — keine Liste dessen, was am Stand liegt. Jedes Stück ist ein Unikat, also komm am Samstag vorbei und sieh, was auf dem Tisch liegt.",
+      "tag": "Frühere Arbeit",
+      "note": "Aus einer früheren Kollektion — ein Unikat, von Hand in meinem Atelier in Güímar bemalt. Komm am Samstag vorbei und sieh, was auf dem Tisch liegt.",
+      "viewPiece": "{title} vergrößern",
+      "pieceAlt": "{name}, {detail}",
+      "size": "Größe",
+      "madeIn": "Hergestellt in",
+      "madeInValue": "Güímar, Teneriffa",
+      "alt": {
+        "k10": "handbemalt mit einer blauen Muschel",
+        "t20": "ein schwarzer Kaktus in einem terrakottafarbenen Rand",
+        "h01": "innen mit zwei schwarzen Palmen bemalt",
+        "g01": "eine schwarze Palme zwischen terrakottafarbenen Borten",
+        "s19": "ein schwarzer Esel in einem terrakottafarbenen Wellenrand",
+        "w08": "bemalt mit sanften blauen Kakteen und terrakottafarbenen Punkten",
+        "v01": "ein blauer Kaktus und eine terrakottafarbene Sonne",
+        "d06": "ein schwarzer Hummer um den Korpus gezeichnet"
+      }
+    },
+    "artist": {
+      "eyebrow": "Hola, ich bin Anna",
+      "title": "Ein Paar Hände, <em>ein Stück nach dem anderen.</em>",
+      "p1": "Ich lebe und arbeite auf Teneriffa. In meinem kleinen Atelier in Güímar male ich Aquarelle auf Papier und bemale Keramikgeschirr von Hand — nie in Serie. Die Farben, Redensarten und Figuren der Insel landen auf fast allem, was ich mache.",
+      "p2": "Komm am Stand vorbei, sag hola, nimm einen Teller in die Hand und frag mich alles darüber, wie er entstanden ist.",
+      "instagram": "Auf Instagram folgen",
+      "imageAlt": "Anna Ciok in ihrem Atelier mit einer schwarzen Katze auf dem Arm, lächelnd über einem Tisch voller handbemalter schwarzer und terrakottafarbener Teller",
+      "signature": "Anna"
+    },
+    "visit": {
+      "title": "¡Nos vemos <em>en la plaza!</em>",
+      "text": "Wir sehen uns am Samstag auf dem Platz. Komm früh für die beste Auswahl — jedes Keramikstück ist ein Unikat.",
+      "when": "Wann",
+      "where": "Wo",
+      "pay": "Zahlung",
+      "cantMakeIt": "Kannst du nicht kommen?",
+      "shop": "Online einkaufen",
+      "studio": " oder besuche mein Atelier in Güímar nach Vereinbarung."
+    },
+    "categories": {
+      "kubki": {
+        "name": "Tassen",
+        "singular": "Tasse"
+      },
+      "wazony": {
+        "name": "Kleine Vasen",
+        "singular": "Kleine Vase"
+      },
+      "wazony-duze": {
+        "name": "Große Vasen",
+        "singular": "Große Vase"
+      },
+      "talerze-srednie": {
+        "name": "Mittlere Teller",
+        "singular": "Mittlerer Teller"
+      },
+      "duze-michy": {
+        "name": "Große Schalen",
+        "singular": "Große Schale"
+      },
+      "miski-falowane": {
+        "name": "Schalen mit Wellenrand",
+        "singular": "Schale mit Wellenrand"
+      }
+    },
+    "aria": {
+      "close": "Schließen",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "photo": "Foto"
+    }
   }
 }

@@ -40,6 +40,9 @@ export type PrintCuration = {
   sourceNumber: string;
   productId: string;
   number?: string;
+  seriesNumber?: string;
+  displayName?: string;
+  status?: 'draft';
   collectionSlug?: string;
   duplicateOf?: string;
   reason?: string;
@@ -50,11 +53,14 @@ export type PrintCollectionDefinition = {
   name: string;
   designIds: string[];
   prints: PrintCuration[];
+  /** Localized editorial copy from the CMS `description` fields, keyed by locale. */
+  descriptions?: Partial<Record<string, string>>;
 };
 
 export type PrintCurationSource = {
   schemaVersion: number;
-  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string }> }>;
+  collections: Array<{ slug: string; name: string; prints: Array<{ sourceNumber: string; productId: string; number: string; seriesNumber?: string; displayName?: string; status?: 'draft' }> }>;
+  retiredCollections?: Array<{ slug: string; name: string }>;
   retired: Array<{ sourceNumber: string; productId: string; duplicateOf: string; reason: string }>;
 };
 
@@ -67,37 +73,62 @@ function fail(message: string): never {
 export function validatePrintCuration(input: PrintCurationSource): void {
   if (input.schemaVersion !== 1) fail(`unsupported schemaVersion ${input.schemaVersion}`);
   if (!Array.isArray(input.collections) || !Array.isArray(input.retired)) fail('collections and retired must be arrays');
-  const expectedNames = ['Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals', 'Signs', 'Ciala', 'Balance', 'Verticles'];
-  if (input.collections.map(({ name }) => name).join() !== expectedNames.join()) {
-    fail('collection names must be exactly Ostrea, Gestures, Linea, Horizons, Portals, Signs, Ciala, Balance, Verticles');
-  }
-  if (input.retired.map(({ productId }) => productId).join() !== 'fap029,fap037') {
-    fail('retired IDs must be exactly fap029 and fap037');
-  }
-  const activeIds = input.collections.flatMap(({ prints }) => prints.map(({ productId }) => productId));
-  const allIds = [...activeIds, ...input.retired.map(({ productId }) => productId)].sort();
-  const expectedIds = Array.from({ length: 41 }, (_, index) => `fap${String(index + 1).padStart(3, '0')}`);
-  if (allIds.join() !== expectedIds.join()) fail('product ID universe must be fap001 through fap041');
-  const active: PrintCuration[] = input.collections.flatMap((collection) => {
-  if (!collection.slug || !collection.name) fail('every collection requires slug and name');
-  return collection.prints.map((item) => ({ ...item, collectionSlug: collection.slug }));
-  });
-  const retired: PrintCuration[] = input.retired.map((item) => ({ ...item }));
-  const all = [...active, ...retired];
-
-  for (const item of all) {
-  if (item.productId !== `fap${item.sourceNumber}`) fail(`${item.productId} must match sourceNumber ${item.sourceNumber}`);
-  }
-  if (new Set(all.map((item) => item.productId)).size !== 41) fail('expected 41 unique product IDs');
-  if (active.length !== 39) fail(`expected 39 active mappings, got ${active.length}`);
-  const expectedNumbers = Array.from({ length: 39 }, (_, index) => String(index + 1).padStart(2, '0'));
-  if (active.map((item) => item.number).join() !== expectedNumbers.join()) fail('active numbers must be 01 through 39 in authored order');
-  if (new Set(active.map((item) => item.number)).size !== 39) fail('active numbers must be unique');
+  const slugs = new Set<string>();
+  const names = new Set<string>();
   for (const collection of input.collections) {
-  if (collection.prints.length < 1) fail(`${collection.slug} must contain at least 1 print`);
+    if (!collection.slug?.trim() || !collection.name?.trim()) fail('every collection requires slug and name');
+    if (slugs.has(collection.slug)) fail(`duplicate collection slug: ${collection.slug}`);
+    if (names.has(collection.name)) fail(`duplicate collection name: ${collection.name}`);
+    slugs.add(collection.slug);
+    names.add(collection.name);
+    if (!Array.isArray(collection.prints) || collection.prints.length === 0) {
+      fail(`${collection.slug} must contain at least 1 print`);
+    }
   }
-  for (const item of retired) {
-  if (!active.some((candidate) => candidate.productId === item.duplicateOf)) fail(`${item.productId} duplicateOf must be active`);
+  const retiredCollections = input.retiredCollections ?? [];
+  if (new Set(retiredCollections.map((collection) => collection.slug)).size !== retiredCollections.length
+    || new Set(retiredCollections.map((collection) => collection.name)).size !== retiredCollections.length) {
+    fail('retired collection slugs and names must be unique');
+  }
+  for (const collection of retiredCollections) {
+    if (!collection.slug?.trim() || !collection.name?.trim()) fail('retired collections require slug and name');
+    if (slugs.has(collection.slug) || names.has(collection.name)) fail(`retired collection is still active: ${collection.name}`);
+  }
+  const active = input.collections.flatMap((collection) => collection.prints);
+  const all = [...active, ...input.retired];
+  const ids = new Set<string>();
+  for (const item of all) {
+    if (!/^\d{3,}$/.test(item.sourceNumber) || Number(item.sourceNumber) < 1
+      || item.productId !== `fap${item.sourceNumber}`) {
+      fail(`${item.productId} must match a positive sourceNumber of at least three digits`);
+    }
+    if (ids.has(item.productId)) fail(`duplicate product ID: ${item.productId}`);
+    ids.add(item.productId);
+    if ('status' in item && item.status !== 'draft') fail(`${item.productId} has an invalid status`);
+    if ('seriesNumber' in item && !/^\d{2,}$/.test(item.seriesNumber ?? '')) fail(`${item.productId} has an invalid series number`);
+    if ('displayName' in item && !item.displayName?.trim()) fail(`${item.productId} has an invalid display name`);
+  }
+  // Global display numbers remain contiguous and unique. Collection-local
+  // names and stable source IDs are separate; neither imposes a batch size.
+  const expectedNumbers = active.map((_, index) => String(index + 1).padStart(2, '0'));
+  if (active.map((item) => item.number).join() !== expectedNumbers.join()) {
+    fail('active numbers must be consecutive from 01 in authored order');
+  }
+  for (const item of input.retired) {
+    if (!item.reason?.trim()) fail(`${item.productId} requires a retirement reason`);
+    if (!active.some((candidate) => candidate.productId === item.duplicateOf)) {
+      fail(`${item.productId} duplicateOf must be active`);
+    }
+  }
+}
+
+/** Every source must be curated exactly once, including retired designs. */
+export function validatePrintRegistry(sourceIds: readonly string[], curatedIds: readonly string[]): void {
+  const sources = new Set(sourceIds);
+  const curated = new Set(curatedIds);
+  if (sources.size !== sourceIds.length || curated.size !== curatedIds.length
+    || sources.size !== curated.size || [...curated].some((id) => !sources.has(id))) {
+    throw new Error('Print curation and source registry must cover the same unique IDs');
   }
 }
 
@@ -108,7 +139,8 @@ const retired: PrintCuration[] = input.retired.map((item) => ({ ...item }));
 const all = [...active, ...retired];
 
 export const PRINT_CURATION = all;
-export const ACTIVE_PRINT_CURATION = active;
+export const ACTIVE_PRINT_CURATION = active.filter((item) => item.status !== 'draft');
+export const DRAFT_PRINT_CURATION = active.filter((item) => item.status === 'draft');
 export const RETIRED_PRINT_CURATION = retired;
 export const PRINT_COLLECTION_DEFINITIONS: PrintCollectionDefinition[] = input.collections.map(({ slug, name, prints }) => ({
   slug,
@@ -118,7 +150,7 @@ export const PRINT_COLLECTION_DEFINITIONS: PrintCollectionDefinition[] = input.c
 }));
 
 export function curationForProduct(id: string): PrintCuration | undefined {
-  return ACTIVE_PRINT_CURATION.find((item) => item.productId === id);
+  return active.find((item) => item.productId === id);
 }
 
 /** Customer-facing name, numbered independently in each authored collection.
@@ -131,13 +163,33 @@ export function printDisplayName(
 ): string {
   for (const collection of definitions) {
     const index = collection.designIds.indexOf(design.id);
-    if (index !== -1) return `${collection.name} ${String(index + 1).padStart(2, '0')}`;
+    if (index !== -1) {
+      const curated = curationForProduct(design.id);
+      // CMS definitions carry membership, while source series numbers remain
+      // stable even when the works are reordered within their collection.
+      const collectionPrint = collection.prints.find((item) => item.productId === design.id);
+      const explicitName = collectionPrint?.displayName ?? curated?.displayName;
+      if (explicitName) return explicitName;
+      const series = collectionPrint?.seriesNumber
+        ?? (curated?.collectionSlug === collection.slug ? curated.seriesNumber : undefined);
+      return `${collection.name} ${series ?? String(index + 1).padStart(2, '0')}`;
+    }
   }
   return `${fallback} Nº ${design.num}`;
 }
 
-export function catalogStatusForPrint(id: string): 'active' | 'archived' {
-  if (curationForProduct(id)) return 'active';
+/** The collection a design belongs to (first match in array order, same rule as
+ *  printDisplayName), or undefined for designs in no collection ('inne'). */
+export function printCollectionOf(
+  designId: string,
+  definitions: PrintCollectionDefinition[] = PRINT_COLLECTION_DEFINITIONS,
+): PrintCollectionDefinition | undefined {
+  return definitions.find((c) => c.designIds.includes(designId));
+}
+
+export function catalogStatusForPrint(id: string): 'active' | 'draft' | 'archived' {
+  const curated = curationForProduct(id);
+  if (curated) return curated.status === 'draft' ? 'draft' : 'active';
   if (RETIRED_PRINT_CURATION.some((item) => item.productId === id)) return 'archived';
   throw new Error(`Unknown print ID: ${id}`);
 }

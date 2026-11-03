@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   ACTIVE_PRINT_CURATION,
+  DRAFT_PRINT_CURATION,
   PRINT_COLLECTION_DEFINITIONS,
   PRINT_CURATION,
   RETIRED_PRINT_CURATION,
@@ -9,21 +10,29 @@ import {
   curationForProduct,
   printDisplayName,
   validatePrintCuration,
+  validatePrintRegistry,
 } from './print-curation';
-import type { PrintCollectionDefinition } from './print-curation';
-import source from '../../config/print-catalog-curation.json';
+import type { PrintCollectionDefinition, PrintCurationSource } from './print-curation';
+import sourceJson from '../../config/print-catalog-curation.json';
+import batch from '../../config/print-assets/batches/2026-09-new-prints/nowe-printy-2026-kolekcje.json';
+const source = sourceJson as PrintCurationSource;
 
 describe('fine-art print curation map', () => {
   it('names every collection independently from 01 in display order', () => {
     for (const collection of PRINT_COLLECTION_DEFINITIONS) {
       collection.designIds.forEach((id, index) => {
         expect(printDisplayName({ id, num: '99' }, 'Druk')).toBe(
-          `${collection.name} ${String(index + 1).padStart(2, '0')}`,
+          collection.prints[index].displayName
+            ?? `${collection.name} ${collection.prints[index].seriesNumber ?? String(index + 1).padStart(2, '0')}`,
         );
       });
     }
     expect(printDisplayName({ id: 'fap004', num: '30' })).toBe('Signs 01');
     expect(printDisplayName({ id: 'fap008', num: '32' })).toBe('Ciala 01');
+    expect(printDisplayName({ id: 'fap046', num: '25' })).toBe('Cumulonimbus 03');
+    expect(printDisplayName({ id: 'fap055', num: '32' })).toBe('Unda 04');
+    expect(printDisplayName({ id: 'fap057', num: '40' })).toBe('Tachylite 03');
+    expect(printDisplayName({ id: 'fap058', num: '53' })).toBe('Cumulus 02');
     expect(printDisplayName({ id: 'unknown', num: '42' }, 'Druk')).toBe('Druk Nº 42');
   });
 
@@ -92,19 +101,20 @@ describe('fine-art print curation map', () => {
   it('preserves the authored collection and numbering invariants', () => {
     expect(PRINT_COLLECTION_DEFINITIONS.map(({ name }) => name)).toEqual([
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
-      'Signs', 'Ciala', 'Balance', 'Verticles',
+      'Signs', 'Ciala', 'Balance', 'Verticles', 'Obsidian', 'Aurora', 'Cirrus',
     ]);
     expect(ACTIVE_PRINT_CURATION.map(({ number }) => number)).toEqual(
-      Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
+      Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
-    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
+    expect(PRINT_COLLECTION_DEFINITIONS.map(({ prints }) => prints.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
+    expect(source.retiredCollections?.map(({ name }) => name)).toEqual(['Cumulonimbus', 'Cumulus', 'Scopulus', 'Unda', 'Tachylite']);
     expect(RETIRED_PRINT_CURATION.map(({ productId }) => productId)).toEqual(['fap029', 'fap037']);
 
     for (const item of PRINT_CURATION) {
       expect(item.productId).toBe(`fap${item.sourceNumber}`);
     }
-    expect(new Set(PRINT_CURATION.map((item) => item.productId)).size).toBe(41);
-    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(39);
+    expect(new Set(PRINT_CURATION.map((item) => item.productId)).size).toBe(58);
+    expect(new Set(ACTIVE_PRINT_CURATION.map((item) => item.number)).size).toBe(56);
     for (const retired of RETIRED_PRINT_CURATION) {
       expect(ACTIVE_PRINT_CURATION.some((item) => item.productId === retired.duplicateOf)).toBe(true);
     }
@@ -119,18 +129,59 @@ describe('fine-art print curation map', () => {
     expect(() => catalogStatusForPrint('unknown')).toThrow(/unknown print/i);
   });
 
-  it('fails descriptively when exact authored invariants are malformed', () => {
-    const names = structuredClone(source);
-    names.collections[0].name = 'Wrong';
-    expect(() => validatePrintCuration(names)).toThrow(/collection names must be exactly/i);
+  it('publishes all 16 approved designs with original series numbering, including CMS definitions', () => {
+    expect(DRAFT_PRINT_CURATION).toHaveLength(0);
+    expect(PRINT_CURATION).toHaveLength(58);
+    for (const collection of batch.collections) {
+      const definition = { slug: collection.slug, name: collection.name, designIds: collection.prints.map(p => p.productId).toReversed(), prints: [] };
+      for (const print of collection.prints) {
+        expect(catalogStatusForPrint(print.productId)).toBe('active');
+        expect(printDisplayName({ id: print.productId, num: '99' })).toBe(print.displayName);
+        expect(printDisplayName({ id: print.productId, num: '99' }, 'Print', [definition])).toBe(print.displayName);
+      }
+    }
+    expect(() => validatePrintCuration(source)).not.toThrow();
+  });
 
+  it('rejects duplicate collection slugs and names, and empty collections', () => {
+    const duplicateSlug = structuredClone(source);
+    duplicateSlug.collections[1].slug = duplicateSlug.collections[0].slug;
+    expect(() => validatePrintCuration(duplicateSlug)).toThrow(/duplicate collection slug/);
+    const duplicateName = structuredClone(source);
+    duplicateName.collections[1].name = duplicateName.collections[0].name;
+    expect(() => validatePrintCuration(duplicateName)).toThrow(/duplicate collection name/);
+    const empty = structuredClone(source);
+    empty.collections[0].prints = [];
+    expect(() => validatePrintCuration(empty)).toThrow(/at least 1 print/);
+    const stillActive = structuredClone(source);
+    stillActive.retiredCollections = [{ slug: 'ostrea', name: 'Ostrea' }];
+    expect(() => validatePrintCuration(stillActive)).toThrow(/still active/);
+  });
+
+  it('rejects duplicate IDs across active and retired designs and invalid source mapping', () => {
+    const duplicate = structuredClone(source);
+    Object.assign(duplicate.retired[0], { productId: 'fap001', sourceNumber: '001' });
+    expect(() => validatePrintCuration(duplicate)).toThrow(/duplicate product ID/);
+    const mismatch = structuredClone(source);
+    mismatch.collections[0].prints[0].productId = 'fap999';
+    expect(() => validatePrintCuration(mismatch)).toThrow(/must match/);
+  });
+
+  it('rejects inconsistent global numbers and retired references', () => {
+    const numbers = structuredClone(source);
+    numbers.collections[0].prints[1].number = '01';
+    expect(() => validatePrintCuration(numbers)).toThrow(/consecutive/);
     const retired = structuredClone(source);
-    retired.retired[0].productId = 'fap040';
-    expect(() => validatePrintCuration(retired)).toThrow(/retired IDs must be exactly/i);
+    retired.retired[0].duplicateOf = 'fap999';
+    expect(() => validatePrintCuration(retired)).toThrow(/duplicateOf must be active/);
+  });
 
-    const universe = structuredClone(source);
-    universe.collections[0].prints[0].productId = 'fap999';
-    expect(() => validatePrintCuration(universe)).toThrow(/product ID universe must be fap001 through fap041/i);
+  it('rejects missing, extra and duplicate source registry identities at any catalogue size', () => {
+    const ids = PRINT_CURATION.map((p) => p.productId);
+    expect(() => validatePrintRegistry([...ids, 'fap042'], ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry(ids.slice(1), ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry([...ids, ids[0]], ids)).toThrow(/same unique IDs/);
+    expect(() => validatePrintRegistry(ids, [...ids, ids[0]])).toThrow(/same unique IDs/);
   });
 });
 

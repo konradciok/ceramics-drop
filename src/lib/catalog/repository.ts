@@ -94,11 +94,13 @@ export async function backfillCatalog(supabase: SupabaseClient): Promise<Backfil
  * loadCeramicProductsFromDb via the ceramic accessors.
  */
 export async function readCeramicProducts(supabase: SupabaseClient): Promise<Product[]> {
+  // One budget for the complete load, not a fresh five seconds per stage.
+  const signal = supabaseTimeout();
   const productsRes = await supabase
     .from('products')
     .select('*')
     .eq('type', 'ceramic')
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (productsRes.error) throw new Error(`read products: ${productsRes.error.message}`);
 
   // Customer-facing reader: SKIP an invalid ceramic row (never render/sell at
@@ -111,7 +113,7 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
     .from('product_media')
     .select('*')
     .in('product_id', ids)
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
   return mapCeramicProducts(rows, (mediaRes.data ?? []) as MediaSeedRow[]);
@@ -125,12 +127,14 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
  * reconstruction is stable.
  */
 export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintDesign[]> {
+  // One budget for the complete load, not a fresh five seconds per stage.
+  const signal = supabaseTimeout();
   const productsRes = await supabase
     .from('products')
     .select('*')
     .eq('type', 'print')
     .order('num', { ascending: true })
-    .abortSignal(supabaseTimeout());
+    .abortSignal(signal);
   if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
 
   const rawProducts = productsRes.data ?? [];
@@ -143,13 +147,13 @@ export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintD
       .select('*')
       .in('product_id', ids)
       .order('position', { ascending: true })
-      .abortSignal(supabaseTimeout()),
+      .abortSignal(signal),
     supabase
       .from('product_media')
       .select('*')
       .in('product_id', ids)
       .order('position', { ascending: true })
-      .abortSignal(supabaseTimeout()),
+      .abortSignal(signal),
   ]);
   if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
   if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);

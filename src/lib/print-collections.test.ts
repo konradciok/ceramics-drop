@@ -27,11 +27,11 @@ describe('PRINT_COLLECTIONS integrity', () => {
     expect(slugs).not.toContain(UNASSIGNED_COLLECTION);
   });
 
-  it('every member id refers to a published registry design', () => {
-    const published = new Map(PRINT_DESIGNS.filter((d) => d.published).map((d) => [d.id, d]));
+  it('every member id refers to a known registry design, including staged drafts', () => {
+    const published = new Map(PRINT_DESIGNS.map((d) => [d.id, d]));
     for (const { slug, designIds } of PRINT_COLLECTIONS) {
       for (const id of designIds) {
-        expect(published.has(id), `${slug} → ${id} must be a published design`).toBe(true);
+        expect(published.has(id), `${slug} → ${id} must be a known design`).toBe(true);
       }
     }
   });
@@ -42,7 +42,7 @@ describe('PRINT_COLLECTIONS integrity', () => {
   });
 
   it('derives its ordered members from the curation map', () => {
-    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
+    expect(PRINT_COLLECTIONS.map((collection) => collection.designIds.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
   });
 });
 
@@ -53,11 +53,11 @@ describe('groupPrintDesigns', () => {
     const groups = groupPrintDesigns(published);
     expect(groups.map(({ name }) => name)).toEqual([
       'Ostrea', 'Gestures', 'Linea', 'Horizons', 'Portals',
-      'Signs', 'Ciala', 'Balance', 'Verticles',
+      'Signs', 'Ciala', 'Balance', 'Verticles', 'Obsidian', 'Aurora', 'Cirrus',
     ]);
-    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 8, 9, 2, 5, 2, 2, 2, 4]);
+    expect(groups.map(({ designs }) => designs.length)).toEqual([5, 8, 9, 4, 7, 2, 2, 3, 4, 4, 3, 5]);
     expect(groups.flatMap(({ designs }) => designs.map(({ num }) => num))).toEqual(
-      Array.from({ length: 39 }, (_, i) => String(i + 1).padStart(2, '0')),
+      Array.from({ length: 56 }, (_, i) => String(i + 1).padStart(2, '0')),
     );
     expect(groups.some(({ slug }) => slug === UNASSIGNED_COLLECTION)).toBe(false);
   });
@@ -262,6 +262,21 @@ describe('loadPrintCollectionDefinitionsFromDb', () => {
     });
     const result = await loadPrintCollectionDefinitionsFromDb(supabase);
     expect(result.map((d) => d.name)).toEqual(['A', 'B']);
+  });
+
+  it('orders known storefront collections by the curation map before CMS creation time', async () => {
+    const supabase = fakeSupabase({
+      collections: [
+        { id: 'col_aurora', published_revision: 1, created_at: '2026-01-01T00:00:00Z' },
+        { id: 'col_obsidian', published_revision: 1, created_at: '2026-02-01T00:00:00Z' },
+      ],
+      collection_drafts: [
+        { collection_id: 'col_aurora', revision: 1, created_at: '2026-01-01T00:00:00Z', payload: { name: 'Aurora', fields: [KIND_FIELD, slugField('aurora')] } },
+        { collection_id: 'col_obsidian', revision: 1, created_at: '2026-02-01T00:00:00Z', payload: { name: 'Obsidian', fields: [KIND_FIELD, slugField('obsidian')] } },
+      ],
+    });
+    const result = await loadPrintCollectionDefinitionsFromDb(supabase);
+    expect(result.map((d) => d.name)).toEqual(['Obsidian', 'Aurora']);
   });
 
   it('orders by the collection\'s created_at, not the published draft\'s — a republish must not reshuffle the storefront', async () => {
