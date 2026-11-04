@@ -6,6 +6,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { workshopsUrl } from '@/lib/site';
+import { AnnounceBar } from './AnnounceBar';
 import { LangSwitch } from './LangSwitch';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import { CartCount } from './CartCount';
@@ -36,7 +37,7 @@ export async function Header() {
 
   return (
     <>
-      <div className="announce"><span className="dot" />{t('announce')}<span className="dot" /></div>
+      <AnnounceBar promo={t('announcePromo')} regular={t('announce')} />
 
       <header id="site-header" className="header">
         <div className="header-inner">
