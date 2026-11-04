@@ -70,7 +70,7 @@ export async function createInvoiceForOrder(
 
   const { data: order, error: orderError } = await supabase
     .from('orders').select('*')
-    .eq('orderId' in reference ? 'id' : 'payment_intent_id', 'orderId' in reference ? reference.orderId : reference.paymentIntentId).single();
+    .eq('orderId' in reference ? 'id' : 'payment_intent_id', 'orderId' in reference ? reference.orderId : reference.paymentIntentId).maybeSingle();
   if (orderError) throw new Error(`Invoice order lookup failed: ${orderError.message}`);
   if (!order || order.status !== 'paid' || order.invoiced_at || !order.email) return;
 
