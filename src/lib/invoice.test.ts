@@ -44,7 +44,7 @@ const updateEq = vi.fn();
 const supabaseMock = {
   from: vi.fn((table: string) => {
     if (table === 'orders' && fromMode === 'select') {
-      return { select: () => ({ eq: () => ({ single: async () => ({ data: orderRow }) }) }) };
+      return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: orderRow }) }) }) };
     }
     if (table === 'order_items') {
       fromMode = 'update'; // orders is selected first, items second, update third
