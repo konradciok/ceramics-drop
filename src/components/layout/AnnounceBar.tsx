@@ -6,8 +6,32 @@ import { Link } from '@/i18n/navigation';
 /** Promo copy shows until this instant (1 Dec 2026 00:00 Europe/Warsaw = 30 Nov 23:00 UTC). */
 export const ANNOUNCE_PROMO_UNTIL = Date.parse('2026-11-30T23:00:00Z');
 
-// Never-changing store: the bar only needs the clock once, after hydration.
-const subscribe = () => () => {};
+// setTimeout stores its delay as a signed 32-bit int (~24.8 days); a longer
+// delay fires immediately, so wait in chunks until the cutoff is reached.
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
+// Notify React when the cutoff passes (open tab) or the tab wakes up (a
+// suspended/sleeping tab's timer may be late), so the bar swaps without a reload.
+function subscribe(onChange: () => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const schedule = () => {
+    const remaining = ANNOUNCE_PROMO_UNTIL - Date.now();
+    if (remaining <= 0) return;
+    timer = setTimeout(() => {
+      onChange();
+      schedule();
+    }, Math.min(remaining, MAX_TIMEOUT_MS));
+  };
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') onChange();
+  };
+  schedule();
+  document.addEventListener('visibilitychange', onVisible);
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener('visibilitychange', onVisible);
+  };
+}
 const getPromoOver = () => Date.now() >= ANNOUNCE_PROMO_UNTIL;
 // Server HTML always carries the promo copy (the page may be prerendered, so a
 // render-time Date.now() would freeze at build time).
