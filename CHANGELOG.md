@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.17.0](https://github.com/konradciok/ceramics-drop/compare/v0.16.0...v0.17.0) (2026-11-04)
+
+
+### Features
+
+* **feed:** market param for Meta product feed ([#368](https://github.com/konradciok/ceramics-drop/issues/368)) ([dca2898](https://github.com/konradciok/ceramics-drop/commit/dca2898535cb515604839fdff7c373a324181ba3))
+* **layout:** NOVEMBER promo in announcement bar (4 locales) ([#370](https://github.com/konradciok/ceramics-drop/issues/370)) ([61f2b17](https://github.com/konradciok/ceramics-drop/commit/61f2b17e6dc84ffea8dd98d12c59032c24a9633b))
+
+
+### Bug Fixes
+
+* **invoice:** treat missing order as no-op instead of throwing ([#372](https://github.com/konradciok/ceramics-drop/issues/372)) ([27cf2b6](https://github.com/konradciok/ceramics-drop/commit/27cf2b6b697e10c574f3eddf4cb2963bbe901e1c))
+
 ## [0.16.0](https://github.com/konradciok/ceramics-drop/compare/v0.15.0...v0.16.0) (2026-11-03)
 
 
