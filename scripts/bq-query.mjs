@@ -12,12 +12,12 @@
  *   2. GCP IAM: grant the service account roles/bigquery.dataViewer + roles/bigquery.jobUser
  *      https://console.cloud.google.com/iam-admin/iam?project=anna-ciok-studio-analytics
  *   3. GA4 Admin → Property → BigQuery Links → New Link → select anna-ciok-studio-analytics
- *      Dataset: analytics_raw  |  Export: daily (or streaming)
- *   4. BIGQUERY_DATASET_ID set in .env.local (default: analytics_raw)
+ *      Dataset: analytics_539909256  |  Export: daily (or streaming)
+ *   4. BIGQUERY_DATASET_ID set in .env.local (default: analytics_539909256)
  *   5. GA4_PROPERTY_ID set in .env.local
  *
  * Note: GA4 export starts flowing ~24h after the BigQuery Link is created.
- *       Tables are date-sharded: analytics_raw.events_YYYYMMDD
+ *       Tables are date-sharded: analytics_539909256.events_YYYYMMDD
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -30,7 +30,7 @@ loadEnvFiles();
 
 const DEFAULT_KEY = resolve(repoRoot, '.secrets/gtm-api-deploy.json');
 const GCP_PROJECT = process.env.GCP_PROJECT_ID ?? 'anna-ciok-studio-analytics';
-const DATASET = process.env.BIGQUERY_DATASET_ID ?? 'analytics_raw';
+const DATASET = process.env.BIGQUERY_DATASET_ID ?? 'analytics_539909256';
 const BQ_LOCATION = process.env.BIGQUERY_LOCATION ?? 'europe-west1';
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 const args = process.argv.slice(2);
