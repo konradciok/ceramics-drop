@@ -176,6 +176,18 @@ Verify after changes: Security → Events — Prodigi IPs (`20.54.35.86`, `20.67
 
 **Ops note:** Re-enabling Bot Fight Mode breaks print fulfilment on Free until you upgrade to Pro (Super Bot Fight Mode + per-path WAF skip) or leave BFM off.
 
+### US bot traffic (WAF custom rule)
+
+Applied **2026-11-06** on `anna-ciok.studio`. GA4/BigQuery showed a burst of suspected bot traffic from the US starting 2026-11-03 (21 sessions in 7 days, 19 bounces, ~2 pages/session, ~13 s engagement, vs ~11 pages and ~65 s elsewhere; rising 5 → 12 sessions/day). The evidence is behavioural only — reduced Chrome UA strings such as `139.0.0.0` are normal Chrome UA reduction and are not a bot signal. GA4 data filters cannot filter by country, so it is blocked at the edge instead.
+
+| Control | Setting |
+| --- | --- |
+| **WAF custom rule** `challenge-us-page-views` (order 3, after the scanner-probe block and the Prodigi skip) | `ip.geoip.country eq "US" and not starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/admin") and not cf.client.bot` → **Managed Challenge** |
+
+`/api/*` is excluded on purpose: Stripe, Prodigi, Resend and InPost webhooks, the Merchant Center feeds and print-asset downloads all come from US infrastructure. Verified bots (Googlebot etc.) are excluded via `cf.client.bot`. Free plan has no Log action, so the rule is live immediately.
+
+Verify: Security → Events (challenge hits from US IPs, no hits on `/api/*`), US sessions dropping in GA4, and that Meta/Google ad review still approves ads (`fb / paid`, `google / cpc`).
+
 ### Local verification checklist
 
 After `npm run preview:cf` (stop preview before `deploy:cf` on Windows — preview locks `.open-next/assets`):
