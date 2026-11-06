@@ -178,7 +178,7 @@ Verify after changes: Security → Events — Prodigi IPs (`20.54.35.86`, `20.67
 
 ### US bot traffic (WAF custom rule)
 
-Applied **2026-11-06** on `anna-ciok.studio`. GA4 showed a bot wave from the US starting 2026-11-03 (21 sessions in 7 days, 19 bounces, ~2 pages/session, truncated Chrome UAs such as `139.0.0.0`). GA4 data filters cannot filter by country, so it is blocked at the edge instead.
+Applied **2026-11-06** on `anna-ciok.studio`. GA4/BigQuery showed a burst of suspected bot traffic from the US starting 2026-11-03 (21 sessions in 7 days, 19 bounces, ~2 pages/session, ~13 s engagement, vs ~11 pages and ~65 s elsewhere; rising 5 → 12 sessions/day). The evidence is behavioural only — reduced Chrome UA strings such as `139.0.0.0` are normal Chrome UA reduction and are not a bot signal. GA4 data filters cannot filter by country, so it is blocked at the edge instead.
 
 | Control | Setting |
 | --- | --- |
