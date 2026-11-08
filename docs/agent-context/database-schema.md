@@ -1,0 +1,19 @@
+# Database Schema (Supabase)
+
+> Moved verbatim from `AGENTS.md` (context-diet restructure). `AGENTS.md` keeps a short stub with the invariants; this file holds the full detail. Perishable feature state lives in `docs/STATUS.md`.
+
+### Database Schema (Supabase)
+
+- `piece_state`: `product_id` PK, `status` (available|reserved|sold), `reserved_until`, `order_id`, `showroom` (bool — visible but not purchasable, independent of `status`) + `showroom_entered_at` + `showroom_note`
+- `drops`: `id`, `status` (active|ended), `ended_at` — ended via `/api/admin/end-drop`; ending a drop is pure bookkeeping and does NOT auto-move its pieces into the showroom (that's a separate, explicit `toggle-showroom` step)
+- `product_interest`: anonymous showroom-interest capture (`product_id`, `email`, `message`, `consent_marketing`, `locale`), deduped per (`product_id`, `email`) via `POST /api/interest`; notifies the studio by email on genuinely new submissions only
+- `orders`: UUID id, `payment_intent_id`, `status` (pending|paid|failed|expired|refunded), totals in minor units, contact JSON, `delivery_method`, `locale`, `currency` (pln|eur|gbp), `marketing` (jsonb — server-conversion context), `confirmation_email_sent_at`, `conversions_sent_at` (claim column — server-side purchase conversions are sent at most once per order), `private_sale_id` (nullable FK), `user_id` (nullable FK → `auth.users`, `ON DELETE SET NULL` — customer-account link, set at checkout or by verified-email backfill-on-login) + `user_unlinked_at` (deletion stamp; permanently excludes rows from backfill), `resend_email_id` (links the order to its Resend confirmation email so the Resend webhook can Sentry-alert on a bounce/complaint), `promo_code` (nullable, denormalized) + `discount` (minor units, default 0 — `subtotal` stays pre-discount; `total = subtotal − discount + shipping`)
+- `order_items`: `order_id`, `product_id`, `unit_price` (minor units, in the order's currency)
+- `private_sales`: `id`, `token`, `product_ids`, `expires_at`, `consumed_at` — single-use re-sale links for sold pieces (one paid order per token, enforced by a partial unique index)
+- `fulfilment_jobs` + `prodigi_orders`: async print-fulfilment queue state and the Prodigi order records it produces (migration `supabase/migrations/20260626120002_fulfilment_jobs.sql`); `prodigi_orders` also persists the primary shipment's `carrier`/`tracking_number`/`tracking_url` (https-validated)/`shipped_at` (from Prodigi `dispatchDate` only), written by the callback and backfilled from `prodigi_raw_json`
+- `pod_variants`: print-on-demand SKU catalogue (design × size × frame → Prodigi SKU), reconciled by `npm run sync-prodigi-skus`
+- `webhook_events`: idempotency ledger for inbound webhooks — dedup on (`provider`, `provider_event_id`) with a leased `status`; shared by the Stripe webhook and the Prodigi callbacks (migrations `20260626120003` + `20260728120000`)
+- `promo_codes` + `promo_redemptions`: promo-code definitions (percent or per-currency fixed amount, `applies_to` track, schedule window, `max_redemptions`, `newsletter_welcome` — at most one active) and their redemption ledger (`pending`→`redeemed`/`released`), claimed/settled by the `claim_promo_redemption()` / `settle_promo_redemption()` RPCs (migration `20260830120000_promo_codes.sql`). See `docs/promo-codes.md`.
+- `reserve_pieces()` RPC: atomically reserves rows; returns array of conflicting product IDs (empty = success). `reserve_private_sale_pieces()` does the same for sold pieces behind a valid token
+
+RLS is enabled; all server-side code uses the service-role key (`getSupabaseAdmin()`). That client's custom fetch (`src/lib/supabase-stall-retry.ts`) retries a bounded read (GET/HEAD carrying a caller `.abortSignal(...)`) once when no response headers arrive within 2.5 s — production timeouts were connections that stalled before reaching Supabase. Writes/RPCs and unbounded reads are never retried.
