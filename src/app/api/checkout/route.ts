@@ -37,7 +37,7 @@ import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
 import type { CheckoutAmounts } from '@/lib/checkout-client';
 import type { MarketingContext } from '@/lib/marketing/context';
-import { resolveGaClientId } from '@/lib/marketing/context';
+import { resolveGaClientId, sanitizeGoogleClickId } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
@@ -355,7 +355,7 @@ export async function POST(req: Request) {
   const localePrefix = locale !== 'pl' ? `/${locale}` : '';
   const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
   // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
-  // identifiers (fbp/fbc/ga_*) and IP/UA have no purpose once the visitor has
+  // identifiers (fbp/fbc/ga_*/gclid/gbraid/wbraid) and IP/UA have no purpose once the visitor has
   // declined tracking, so they're dropped rather than merely flagged.
   const marketing: MarketingContext =
     consent === 'granted'
@@ -365,6 +365,9 @@ export async function POST(req: Request) {
           fbc: str2(mc.fbc),
           ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
           ga_session_id: str2(mc.ga_session_id),
+          gclid: sanitizeGoogleClickId(mc.gclid),
+          gbraid: sanitizeGoogleClickId(mc.gbraid),
+          wbraid: sanitizeGoogleClickId(mc.wbraid),
           ip: clientIp,
           user_agent: req.headers.get('user-agent'),
           event_source_url: eventSourceUrl,
@@ -376,6 +379,9 @@ export async function POST(req: Request) {
           fbc: null,
           ga_client_id: null,
           ga_session_id: null,
+          gclid: null,
+          gbraid: null,
+          wbraid: null,
           ip: null,
           user_agent: null,
           event_source_url: null,

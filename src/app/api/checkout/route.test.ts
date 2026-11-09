@@ -534,11 +534,67 @@ describe('POST /api/checkout', () => {
           fbc: null,
           ga_client_id: null,
           ga_session_id: null,
+          gclid: null,
+          gbraid: null,
+          wbraid: null,
           ip: null,
           user_agent: null,
           event_source_url: null,
           captured_at: expect.any(String),
         },
+      }),
+    );
+  });
+
+  it('stores Google Ads click ids when consent is granted and drops malformed ones', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=granted' },
+      body: JSON.stringify(
+        makeCheckoutBody({
+          attemptId: VALID_ATTEMPT_ID,
+          marketing_cookies: {
+            gclid: 'Cj0KCQjw_valid-Gclid123',
+            gbraid: "x'); drop table orders;--", // not a URL-safe token → rejected
+            wbraid: 42, // wrong type → rejected
+          },
+        }),
+      ),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({
+          consent: 'granted',
+          gclid: 'Cj0KCQjw_valid-Gclid123',
+          gbraid: null,
+          wbraid: null,
+        }),
+      }),
+    );
+  });
+
+  it('never stores Google Ads click ids when consent is denied', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=denied' },
+      body: JSON.stringify(
+        makeCheckoutBody({
+          attemptId: VALID_ATTEMPT_ID,
+          marketing_cookies: { gclid: 'Cj0KCQjw_valid-Gclid123', gbraid: 'AAAAvalidGbraid1', wbraid: 'BBBBvalidWbraid1' },
+        }),
+      ),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({ consent: 'denied', gclid: null, gbraid: null, wbraid: null }),
       }),
     );
   });
