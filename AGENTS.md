@@ -114,7 +114,7 @@ Detail: [docs/agent-context/prints-prodigi.md](docs/agent-context/prints-prodigi
 
 Detail (admin + CMS API entrypoint): [docs/agent-context/admin-cms-api.md](docs/agent-context/admin-cms-api.md). Invariants:
 
-- Back-office at `src/app/admin/` (outside `[locale]`), helpers in `src/lib/admin/`; every `/admin` and `/api/admin` request is gated in production by a **Cloudflare Access JWT** verified in `worker.ts`. `/api/admin/*` routes are thin adapters over `src/lib/admin/actions.ts`.
+- Back-office at `src/app/admin/` (outside `[locale]`), helpers in `src/lib/admin/`; every `/admin` and `/api/admin` request is gated in production by a **Cloudflare Access JWT** verified in `worker.ts`. `/api/admin/*` routes are mostly thin adapters over `src/lib/admin/actions.ts`; `set-piece-status`, `toggle-showroom` and `end-drop` talk to Supabase directly instead.
 - `CmsApi` (`WorkerEntrypoint`, `src/server/cms-api/`) is reachable **only** via a Cloudflare Service Binding, with its own Access audience/team trust boundary; contract is `contracts/cms-v1.json`. Unimplemented operations return `404 NOT_IMPLEMENTED` by design.
 
 ### Other API Routes
@@ -132,7 +132,7 @@ Four locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), Ger
 
 Table-by-table schema notes: [docs/agent-context/database-schema.md](docs/agent-context/database-schema.md). Invariants:
 
-- Core tables: `piece_state`, `drops`, `orders`, `order_items`, `private_sales`, `fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `webhook_events`, `promo_codes`/`promo_redemptions`, `product_interest`. Migrations go in `supabase/migrations/` (timestamp prefix) and auto-apply on merge to `main`.
+- Core tables: `piece_state`, `drops`, `orders`, `order_items`, `private_sales`, `fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `webhook_events`, `promo_codes`/`promo_redemptions`, `product_interest`. Migrations go in `supabase/migrations/` (timestamp prefix).
 - RLS is enabled; all server code uses the service-role client `getSupabaseAdmin()`. `reserve_pieces()` is the atomic reservation RPC (returns conflicting ids; empty = success).
 
 ### Pricing & Shipping
