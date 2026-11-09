@@ -10,15 +10,25 @@ export type MarketingCookies = {
   wbraid: string | null;
 };
 
+// A malformed %-sequence in a third-party cookie must never throw: this runs
+// right before the checkout POST, so an exception would block the purchase.
+function safeDecode(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
 function readCookie(cookieString: string, name: string): string | null {
   const match = cookieString.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return match ? safeDecode(match[1]) : null;
 }
 
 function readGaSessionCookie(cookieString: string): string | null {
   // The _ga_<streamId> name carries a per-stream suffix we don't know at build time.
   const match = cookieString.match(/(?:^|;\s*)_ga_[A-Z0-9]+=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  return match ? safeDecode(match[1]) : null;
 }
 
 export function collectMarketingCookies(

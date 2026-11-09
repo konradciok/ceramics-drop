@@ -46,6 +46,13 @@ describe('collectMarketingCookies', () => {
     expect(collectMarketingCookies(fakeEnv('_gcl_aw=garbage').doc, fakeEnv('').loc, nowMs).gclid).toBeNull();
   });
 
+  it('does not throw on malformed percent-encoding in cookies', () => {
+    const { doc, loc, nowMs } = fakeEnv('_gcl_aw=%E0%A4%A; _fbp=%E0%A4%A; _ga_ABC123=%E0%A4%A; _ga=GA1.1.111.222');
+    expect(() => collectMarketingCookies(doc, loc, nowMs)).not.toThrow();
+    const out = collectMarketingCookies(doc, loc, nowMs);
+    expect(out).toMatchObject({ gclid: null, fbp: null, ga_session_id: null, ga_client_id: '111.222' });
+  });
+
   it('derives _fbc from an fbclid query param when the cookie is absent', () => {
     const { doc, loc, nowMs } = fakeEnv('_ga=GA1.1.111.222', '?fbclid=XYZ');
     const out = collectMarketingCookies(doc, loc, nowMs);
