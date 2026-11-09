@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/konradciok/ceramics-drop/compare/v0.17.0...v0.18.0) (2026-11-09)
+
+
+### Features
+
+* **analytics:** capture Google Ads click ids at checkout; sync analytics docs ([#376](https://github.com/konradciok/ceramics-drop/issues/376)) ([02b6324](https://github.com/konradciok/ceramics-drop/commit/02b63240e509ab48fc5be49cf28afd2446bf762d))
+
+
+### Bug Fixes
+
+* point bq:query at the live GA4 export dataset and document US bot WAF rule ([#373](https://github.com/konradciok/ceramics-drop/issues/373)) ([3ec1b4c](https://github.com/konradciok/ceramics-drop/commit/3ec1b4ced12d0ad2ce79e08570931072a5fe3bc0))
+
 ## [0.17.0](https://github.com/konradciok/ceramics-drop/compare/v0.16.0...v0.17.0) (2026-11-04)
 
 
