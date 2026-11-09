@@ -6,11 +6,37 @@ export type MarketingContext = {
   fbc: string | null;
   ga_client_id: string | null;
   ga_session_id: string | null;
+  /**
+   * Google Ads click identifiers (gclid; gbraid/wbraid for iOS app-to-web and web-to-app),
+   * captured at checkout under granted consent only. Stored for server-side / offline
+   * Google Ads conversion upload and attribution audits; nothing sends them yet.
+   * Optional: orders persisted before this field existed simply lack the keys.
+   */
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
   ip: string | null;
   user_agent: string | null;
   event_source_url: string | null;
   captured_at: string;
 };
+
+/**
+ * Google click ids (gclid / gbraid / wbraid) are URL-safe tokens. Anything else is
+ * dropped so malformed or hostile input can never reach `orders.marketing`.
+ */
+export function sanitizeGoogleClickId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const s = value.trim();
+  return /^[A-Za-z0-9_-]{8,200}$/.test(s) ? s : null;
+}
+
+/** Google tag click cookies (`_gcl_aw`, `_gcl_gb`) hold "GCL.<unix_ts>.<click_id>". */
+export function parseGclCookie(cookie: string | null): string | null {
+  if (!cookie) return null;
+  const match = cookie.match(/^GCL\.\d+\.(.+)$/);
+  return sanitizeGoogleClickId(match ? match[1] : null);
+}
 
 /** _ga = "GA1.1.<client_id_parts>"; client_id is the 3rd + 4th dot-segments. */
 export function parseGaClientId(gaCookie: string | null): string | null {

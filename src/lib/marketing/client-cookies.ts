@@ -1,10 +1,13 @@
-import { parseGaClientId, parseGaSessionId } from './context';
+import { parseGaClientId, parseGaSessionId, parseGclCookie, sanitizeGoogleClickId } from './context';
 
 export type MarketingCookies = {
   fbp: string | null;
   fbc: string | null;
   ga_client_id: string | null;
   ga_session_id: string | null;
+  gclid: string | null;
+  gbraid: string | null;
+  wbraid: string | null;
 };
 
 function readCookie(cookieString: string, name: string): string | null {
@@ -29,10 +32,17 @@ export function collectMarketingCookies(
     const fbclid = new URLSearchParams(loc.search).get('fbclid');
     if (fbclid) fbc = `fb.1.${nowMs}.${fbclid}`; // Meta's documented _fbc format
   }
+  const params = new URLSearchParams(loc.search);
   return {
     fbp: readCookie(cookies, '_fbp'),
     fbc,
     ga_client_id: parseGaClientId(readCookie(cookies, '_ga')),
     ga_session_id: parseGaSessionId(readGaSessionCookie(cookies)),
+    // Google Ads click ids: the Google tag's first-party cookies survive navigation
+    // (the URL param is only present on the landing page), so prefer the cookie and
+    // fall back to the URL for a same-page checkout.
+    gclid: parseGclCookie(readCookie(cookies, '_gcl_aw')) ?? sanitizeGoogleClickId(params.get('gclid')),
+    gbraid: parseGclCookie(readCookie(cookies, '_gcl_gb')) ?? sanitizeGoogleClickId(params.get('gbraid')),
+    wbraid: sanitizeGoogleClickId(params.get('wbraid')),
   };
 }
