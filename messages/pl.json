@@ -1147,14 +1147,14 @@
   "market": {
     "meta": {
       "title": "Targ w El Médano · {date}",
-      "description": "Ręcznie malowana ceramika i fine art prints Anny Ciok na targu rękodzieła w El Médano — sobota 24 października 2026, 9:00–14:00, główny plac. Unikatowa pamiątka z Teneryfy.",
+      "description": "Ręcznie malowana ceramika i fine art prints Anny Ciok na targu rękodzieła w El Médano — co sobotę, 9:00–14:00, główny plac. Unikatowa pamiątka z Teneryfy.",
       "ogTitle": "W tę sobotę w El Médano — Anna Ciok",
       "ogAlt": "Odbitki Fuerte Piba i ręcznie malowany talerz Anny Ciok"
     },
     "event": {
       "name": "Anna Ciok na targu rękodzieła w El Médano",
-      "dateLabel": "sobota 24 października 2026",
-      "shortDateLabel": "sob. 24 paź",
+      "dateLabel": "co sobotę",
+      "shortDateLabel": "co sobotę",
       "timeLabel": "9:00 – 14:00",
       "place": "Główny plac, El Médano",
       "area": "Granadilla de Abona, Teneryfa",
@@ -1173,9 +1173,9 @@
       "directions": "Wyznacz trasę",
       "calendar": "Dodaj do kalendarza",
       "imageAlt": "Dwie odbitki Fuerte Piba, czarna i kremowa, a między nimi ręcznie malowany talerz na nasłonecznionej betonowej posadzce",
-      "badgeDay": "sobota",
-      "badgeNumber": "24",
-      "badgeMonth": "października",
+      "badgeDay": "co",
+      "badgeNumber": "sob.",
+      "badgeMonth": "9–14",
       "captionLabel": "Z pracowni",
       "caption": "Odbitki Fuerte Piba i ręcznie malowany talerz."
     },

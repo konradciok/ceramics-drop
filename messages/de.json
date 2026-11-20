@@ -1147,14 +1147,14 @@
   "market": {
     "meta": {
       "title": "Markt in El Médano · {date}",
-      "description": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok auf dem Kunsthandwerkermarkt in El Médano — Samstag, 24. Oktober 2026, 9:00–14:00 Uhr, Hauptplatz. Ein einzigartiges Souvenir aus Teneriffa.",
+      "description": "Handbemalte Keramik und Fine-Art-Prints von Anna Ciok auf dem Kunsthandwerkermarkt in El Médano — jeden Samstag, 9:00–14:00 Uhr, Hauptplatz. Ein einzigartiges Souvenir aus Teneriffa.",
       "ogTitle": "Diesen Samstag in El Médano — Anna Ciok",
       "ogAlt": "Fuerte-Piba-Prints und ein handbemalter Teller von Anna Ciok"
     },
     "event": {
       "name": "Anna Ciok auf dem Kunsthandwerkermarkt in El Médano",
-      "dateLabel": "Samstag, 24. Oktober 2026",
-      "shortDateLabel": "Sa, 24. Okt.",
+      "dateLabel": "Jeden Samstag",
+      "shortDateLabel": "Jeden Samstag",
       "timeLabel": "9:00 – 14:00 Uhr",
       "place": "Hauptplatz, El Médano",
       "area": "Granadilla de Abona, Teneriffa",
@@ -1173,9 +1173,9 @@
       "directions": "Route anzeigen",
       "calendar": "Zum Kalender hinzufügen",
       "imageAlt": "Zwei Fuerte-Piba-Prints, einer schwarz und einer cremefarben, dazwischen ein handbemalter Teller auf einem sonnigen Betonboden",
-      "badgeDay": "Samstag",
-      "badgeNumber": "24",
-      "badgeMonth": "Oktober",
+      "badgeDay": "Jeden",
+      "badgeNumber": "Sa",
+      "badgeMonth": "9–14",
       "captionLabel": "Aus dem Atelier",
       "caption": "Fuerte-Piba-Prints und ein handbemalter Teller."
     },
