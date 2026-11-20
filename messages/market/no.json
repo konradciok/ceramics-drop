@@ -1,14 +1,14 @@
 {
   "meta": {
     "title": "Markedet i El Médano · {date}",
-    "description": "Håndmalt keramikk og kunsttrykk av Anna Ciok på håndverksmarkedet i El Médano — lørdag 24. oktober 2026, kl. 9–14, hovedtorget. En unik suvenir fra Tenerife.",
+    "description": "Håndmalt keramikk og kunsttrykk av Anna Ciok på håndverksmarkedet i El Médano — hver lørdag, kl. 9–14, hovedtorget. En unik suvenir fra Tenerife.",
     "ogTitle": "Denne lørdagen, i El Médano — Anna Ciok",
     "ogAlt": "Fuerte Piba-trykk og en håndmalt tallerken av Anna Ciok"
   },
   "event": {
     "name": "Anna Ciok på håndverksmarkedet i El Médano",
-    "dateLabel": "lørdag 24. oktober 2026",
-    "shortDateLabel": "lør. 24. okt.",
+    "dateLabel": "hver lørdag",
+    "shortDateLabel": "hver lørdag",
     "timeLabel": "kl. 9–14",
     "place": "Hovedtorget, El Médano",
     "area": "Granadilla de Abona, Tenerife",
@@ -27,9 +27,9 @@
     "directions": "Få veibeskrivelse",
     "calendar": "Legg til i kalender",
     "imageAlt": "To Fuerte Piba-trykk, ett svart og ett kremfarget, med en håndmalt tallerken imellom på et solfylt betonggulv",
-    "badgeDay": "Lørdag",
-    "badgeNumber": "24",
-    "badgeMonth": "oktober",
+    "badgeDay": "Hver",
+    "badgeNumber": "lør.",
+    "badgeMonth": "kl. 9–14",
     "captionLabel": "Fra atelieret",
     "caption": "Fuerte Piba-trykk og en håndmalt tallerken."
   },

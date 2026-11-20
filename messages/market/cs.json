@@ -1,14 +1,14 @@
 {
   "meta": {
     "title": "Trh v El Médano · {date}",
-    "description": "Ručně malovaná keramika a umělecké tisky Anny Ciok na řemeslném trhu v El Médano — sobota 24. října 2026, 9:00–14:00, hlavní náměstí. Jedinečná památka z Tenerife.",
+    "description": "Ručně malovaná keramika a umělecké tisky Anny Ciok na řemeslném trhu v El Médano — každou sobotu, 9:00–14:00, hlavní náměstí. Jedinečná památka z Tenerife.",
     "ogTitle": "Tuto sobotu v El Médano — Anna Ciok",
     "ogAlt": "Tisky Fuerte Piba a ručně malovaný talíř od Anny Ciok"
   },
   "event": {
     "name": "Anna Ciok na řemeslném trhu v El Médano",
-    "dateLabel": "sobota 24. října 2026",
-    "shortDateLabel": "so 24. 10.",
+    "dateLabel": "každou sobotu",
+    "shortDateLabel": "každou sobotu",
     "timeLabel": "9:00 – 14:00",
     "place": "Hlavní náměstí, El Médano",
     "area": "Granadilla de Abona, Tenerife",
@@ -27,9 +27,9 @@
     "directions": "Navigovat",
     "calendar": "Přidat do kalendáře",
     "imageAlt": "Dva tisky Fuerte Piba, černý a krémový, mezi nimi ručně malovaný talíř na slunné betonové podlaze",
-    "badgeDay": "Sobota",
-    "badgeNumber": "24",
-    "badgeMonth": "října",
+    "badgeDay": "Každou",
+    "badgeNumber": "so",
+    "badgeMonth": "9–14",
     "captionLabel": "Z ateliéru",
     "caption": "Tisky Fuerte Piba a ručně malovaný talíř."
   },

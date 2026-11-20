@@ -24,9 +24,14 @@ export const MARKET_EXTRA_LANGS = ['fr', 'nl', 'no', 'sv', 'cs', 'sk'] as const;
 export type MarketExtraLang = (typeof MARKET_EXTRA_LANGS)[number];
 
 export const MARKET_EVENT = {
-  /** Local wall-clock times in `timeZone`, Google Calendar `dates` format. */
-  startLocal: '20261024T090000',
-  endLocal: '20261024T140000',
+  /**
+   * First occurrence, local wall-clock times in `timeZone`, Google Calendar
+   * `dates` format. The market runs every Saturday — see `recurrence`.
+   */
+  startLocal: '20261121T090000',
+  endLocal: '20261121T140000',
+  /** Weekly, every Saturday (RFC 5545 RRULE, Google Calendar `recur`). */
+  recurrence: 'RRULE:FREQ=WEEKLY;BYDAY=SA',
   timeZone: 'Atlantic/Canary',
   /** Google Maps link supplied by the studio for the market square. */
   mapsUrl: 'https://maps.app.goo.gl/U5MMXTApFgmbyVadA',
@@ -46,6 +51,7 @@ export function marketCalendarUrl(copy: MarketEventCopy): string {
     text: copy.name,
     dates: `${MARKET_EVENT.startLocal}/${MARKET_EVENT.endLocal}`,
     ctz: MARKET_EVENT.timeZone,
+    recur: MARKET_EVENT.recurrence,
     location: `${copy.place}, Tenerife`,
     details: [copy.calendarDetails, `${copy.mapLabel}: ${marketMapsUrl()}`].join(' '),
   });
