@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/konradciok/ceramics-drop/compare/v0.18.0...v0.18.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **market:** show El Médano market as every Saturday ([#377](https://github.com/konradciok/ceramics-drop/issues/377)) ([84e3f73](https://github.com/konradciok/ceramics-drop/commit/84e3f73f5f9aebd3db4386a317c649c7d79bbf98))
+
 ## [0.18.0](https://github.com/konradciok/ceramics-drop/compare/v0.17.0...v0.18.0) (2026-11-09)
 
 
