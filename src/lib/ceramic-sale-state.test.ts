@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { mergeCeramicSaleState, getCeramicSaleState, type CeramicSaleState } from './ceramic-sale-state';
+import { ceramicSaleFixtureEnabled, mergeCeramicSaleState, getCeramicSaleState, type CeramicSaleState } from './ceramic-sale-state';
 import type { Product } from './types';
 
 vi.mock('./supabase', () => ({ getSupabaseAdmin: () => { throw new Error('offline'); } }));
@@ -44,5 +44,45 @@ describe('ceramic online availability', () => {
     expect(failed.failed).toBe(true);
     expect(mergeCeramicSaleState([product], failed, now)[0]).toMatchObject({ id: 'k01', onlineAvailable: false, saleState: 'unknown' });
     log.mockRestore();
+  });
+});
+
+describe('ceramicSaleFixtureEnabled (hermetic e2e only)', () => {
+  const env = process.env;
+  const withEnv = (patch: Record<string, string | undefined>, fn: () => void) => {
+    const saved = { ...env };
+    Object.assign(process.env, patch);
+    for (const [k, v] of Object.entries(patch)) if (v === undefined) delete process.env[k];
+    try {
+      fn();
+    } finally {
+      process.env = saved;
+    }
+  };
+
+  it('is off unless explicitly requested', () => {
+    withEnv({ E2E_CERAMIC_SALE_FIXTURE: undefined, SUPABASE_URL: undefined }, () => {
+      expect(ceramicSaleFixtureEnabled()).toBe(false);
+    });
+  });
+
+  it('never turns on when a real backend is configured', () => {
+    withEnv({ E2E_CERAMIC_SALE_FIXTURE: '1', SUPABASE_URL: 'https://x.supabase.co' }, () => {
+      expect(ceramicSaleFixtureEnabled()).toBe(false);
+    });
+  });
+
+  it('makes every registry piece available in an active drop when on', async () => {
+    let state: CeramicSaleState | undefined;
+    await new Promise<void>((resolve, reject) => {
+      withEnv({ E2E_CERAMIC_SALE_FIXTURE: '1', SUPABASE_URL: undefined }, () => {
+        expect(ceramicSaleFixtureEnabled()).toBe(true);
+        getCeramicSaleState().then((s) => { state = s; resolve(); }, reject);
+      });
+    });
+    expect(state!.failed).toBe(false);
+    expect(state!.pieces.length).toBeGreaterThan(0);
+    expect(state!.pieces.every((p) => p.status === 'available' && !p.showroom)).toBe(true);
+    expect(state!.drops.every((d) => d.status === 'active')).toBe(true);
   });
 });

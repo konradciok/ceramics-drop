@@ -787,6 +787,12 @@ ul { list-style:none; padding:0; margin:0; }
 .collection-more-inner { max-width:var(--max); margin:18px auto 0; padding:0 var(--gut); }
 .collection-more-cta { display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(28px,4vw,48px); }
 
+/* ── /sklep — ceramics shop: "available now" gallery + family cards ── */
+/* The shop head already closes with breathing room; keep the first section tight under it. */
+.ceramic-shop-available { padding-top:clamp(8px,1.5vw,24px); }
+.ceramic-shop-available .gallery-group-head,
+[data-testid="ceramic-shop-families"] .gallery-group-head { margin-top:0; margin-bottom:clamp(18px,2.4vw,32px); }
+
 /* ── /sklep: strip, toolbar, cards, bands, quick picker ─────── */
 .shop-strip { background:var(--c-cream); border-bottom:1px solid var(--c-line-soft); padding:18px var(--gut); }
 .shop-strip-inner { max-width:var(--max); margin:0 auto; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:14px 48px; }

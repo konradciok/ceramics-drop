@@ -57,10 +57,9 @@
       "cancelled": "Cancelado"
     }
   },
-  "announce": "Un estudio — cerámica y pinturas en edición fine art",
-  "announcePromo": "Promoción de otoño — con el código NOVEMBER, todos los prints −15 % hasta finales de noviembre",
+  "announce": "Las láminas fine art de mis pinturas tienen un nuevo hogar — anna-ciok.com",
   "title": {
-    "home": "Anna Ciok Studio — Pintura y láminas Fine Art",
+    "home": "Anna Ciok Studio — Cerámica pintada a mano",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
     "wazonySrednie": "Jarrones medianos",
@@ -418,58 +417,48 @@
   "home": {
     "heroLine1": "Pintado a mano,",
     "heroLine2": "una pieza a la vez.",
-    "heroTagline": "ESTUDIO ANNA CIOK — CERÁMICA Y ARTE",
+    "heroTagline": "ESTUDIO ANNA CIOK — CERÁMICA PINTADA A MANO",
     "heroCta": "Ver la tienda",
     "heroAlt": "Piezas de cerámica pintadas a mano sobre una mesa de madera en el estudio de Anna Ciok",
     "marquee": [
-      "pinturas en edición fine art",
-      "impresión bajo pedido",
-      "papel fine art de 200 g/m²",
-      "envíos a la UE y Reino Unido"
-    ],
-    "printsEyebrow": "Pintura",
-    "printsTitle": "Pinturas en edición <em>fine art.</em>",
-    "printsLead": "{count} pinturas — tinta y acuarela sobre papel. Elige tamaño y marco, y nosotros imprimimos y te enviamos tu impresión.",
-    "printsCta": "Ver todas las impresiones",
-    "printsFacts": [
-      "Impresión bajo pedido",
-      "Papel fine art de 200 g/m²",
-      "Marco: negro, marrón claro u oscuro",
-      "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
+      "cerámica pintada a mano",
+      "cada pieza es única",
+      "cocción a 1040 °C",
+      "un estudio en Tenerife"
     ],
     "storyImageAlt": "Anna Ciok en su estudio de cerámica",
     "editorialImageAlt": "Obras enmarcadas de Anna Ciok en un interior bañado por el sol",
     "storyEyebrow": "Sobre la artista",
-    "storyTitle": "Todo empieza <em>con una pintura.</em>",
-    "storyP1": "Soy Anna. Pinto con tinta y acuarela sobre papel — cada composición nace como una pieza única, hecha a mano en mi estudio.",
-    "storyP2": "Las obras seleccionadas entran en edición fine art: se imprimen en papel de calidad de archivo y se envían en el formato que elijas — sin marco o con marco de madera.",
-    "storyCta": "Ver las colecciones de impresiones",
-    "collectionsEyebrow": "Colecciones",
-    "collectionsTitle": "Series de <em>un mismo estudio.</em>",
-    "collectionsLead": "Cada colección es una serie propia de pinturas — elige el ambiente, el color y el ritmo que mejor encajen en tu espacio.",
+    "storyTitle": "Pinto <em>sobre cerámica.</em>",
+    "storyP1": "Soy Anna. Pinto cada motivo a mano, sin calco ni plantilla, directamente sobre piezas que después esmalto y cuezo en mi estudio de Tenerife.",
+    "storyP2": "Cada taza, plato y jarrón existe una sola vez. Cuando una pieza encuentra su hogar, deja la tienda para siempre.",
+    "storyCta": "Ver la cerámica",
+    "collectionsEyebrow": "Cerámica",
+    "collectionsTitle": "Tazas, jarrones, <em>platos y cuencos.</em>",
+    "collectionsLead": "Cada categoría es una serie de vajilla pintada a mano — todas las piezas son únicas.",
     "collectionsCount": "{count, plural, one {# pieza} other {# piezas}}",
-    "collectionsCta": "Todas las colecciones",
-    "craftEyebrow": "Cómo pedir",
-    "craftTitle": "Del estudio <em>a tu pared.</em>",
-    "craft1H": "Eliges <em>una composición</em>",
-    "craft1P": "Recorres las colecciones y escoges la pintura que más te habla.",
-    "craft2H": "Eliges <em>tamaño y marco</em>",
-    "craft2P": "Puedes elegir entre tres tamaños y un marco — sin marco o de madera, en negro, marrón claro u oscuro.",
-    "craft3H": "Imprimimos <em>y enviamos</em>",
-    "craft3P": "Tu impresión la hace y envía nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega a tu dirección en la Unión Europea o el Reino Unido tarda hasta 5 días laborables.",
-    "lgMaterialH": "Material y acabado",
-    "lgMaterialP": "Impresión en papel fine art de 200 g/m², calidad de archivo. Cada impresión está disponible sin marco o con marco de madera: negro, marrón claro u oscuro.",
-    "lgShippingH": "Producción y envío",
-    "lgShippingP": "Cada impresión se hace bajo pedido con nuestro socio de impresión y se envía a tu dirección en la Unión Europea o el Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
+    "collectionsCta": "Ir a la tienda",
+    "craftEyebrow": "Cómo comprar",
+    "craftTitle": "Del estudio <em>a tu casa.</em>",
+    "craft1H": "Eliges <em>la pieza</em>",
+    "craft1P": "Cada pieza existe una sola vez, así que eliges exactamente la taza, el plato o el jarrón que ves en las fotos.",
+    "craft2H": "Embalo <em>y envío</em>",
+    "craft2P": "Embalo y envío la cerámica yo misma. El pedido se tramita en un máximo de 2 días laborables.",
+    "craft3H": "Envío <em>o recogida</em>",
+    "craft3P": "Paczkomat o mensajería InPost en Polonia, con entrega en un máximo de 5 días laborables. En Tenerife también puedes recoger tu pedido en persona, con cita previa.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
-    "ctP": "¿Quieres ver una pieza en persona, preguntar por una impresión en otro tamaño o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
+    "ctP": "¿Quieres ver una pieza en persona o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
     "ctBtn": "Escribir un mensaje",
     "ctLEmail": "Correo",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "ctLShipPrints": "Envío de impresiones",
-    "ctVShipPrints": "UE y Reino Unido · tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables"
+    "printsMovedEyebrow": "Pintura",
+    "printsMovedTitle": "Las pinturas tienen <em>un nuevo hogar.</em>",
+    "printsMovedLead": "Las láminas fine art de mis pinturas — tinta y acuarela sobre papel — tienen ahora su propia tienda.",
+    "printsMovedCta": "Ir a la tienda de láminas",
+    "ctLShip": "Envío de cerámica",
+    "ctVShip": "Polonia · InPost, entrega en un máximo de 5 días laborables"
   },
   "printCollections": {
     "inne": "Otras láminas"
@@ -532,7 +521,7 @@
     "storyH": "Pinto. <em>Sobre papel y sobre cerámica.</em>",
     "storyP1": "Soy Anna. Soy pintora y ceramista — para mí es un solo oficio, no dos por separado. Pinto con tinta y acuarela sobre papel, y llevo esos mismos gestos y motivos a la vajilla, que esmalto y cuezo.",
     "storyP2": "Llegué a la cerámica despacio: primero un curso, luego una estantería en el estudio de otra persona y, por fin, mi propio lugar pequeño — una mesa de esmaltado y un rincón de pintura, uno junto al otro, además de un horno. Es un trabajo tranquilo y físico, imposible de acelerar del todo.",
-    "storyP3": "Pinto a mano, sin calco ni plantilla — sobre papel o sobre una pieza. Por eso una línea a veces se escapa un poco, una palmera sale algo torcida y dos motivos parecidos nunca son iguales. Las composiciones en papel entran en una edición fine art como láminas; la cerámica sigue siendo única — pero en ambas, ahí empieza la vida del objeto.",
+    "storyP3": "Pinto a mano, sin calco ni plantilla — sobre papel o sobre una pieza. Por eso una línea a veces se escapa un poco, una palmera sale algo torcida y dos motivos parecidos nunca son iguales. La cerámica sigue siendo siempre única — y ahí empieza la vida del objeto.",
     "factsEyebrow": "Detalles del estudio",
     "factsH": "Unos números <em>y datos.</em>",
     "fact1K": "Estudio",
@@ -543,22 +532,22 @@
     "fact2D": "Después de la pintura y el esmaltado, la cerámica pasa por el horno: la cocción fija el color y convierte la superficie en una capa vítrea y funcional.",
     "fact3K": "Técnicas",
     "fact3V": "Cerámica <em>y acuarela</em>",
-    "fact3D": "Unas composiciones se quedan en papel y entran en una edición fine art. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
+    "fact3D": "Unas composiciones se quedan en papel como pinturas. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
     "fact4K": "Tramitación del pedido",
     "fact4V": "hasta 2 <em>días</em>",
-    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Embalo y envío la cerámica yo misma; las láminas fine art las produce y envía nuestro socio de impresión.",
+    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega en Polonia tarda hasta 5 días laborables. Embalo y envío la cerámica yo misma.",
     "procEyebrow": "Cómo se hace una pieza",
     "procH": "De la primera línea <em>a una pieza terminada.</em>",
     "p1H": "Empiezo <em>con una línea</em>",
     "p1P": "Cada pieza empieza como un dibujo o una composición en acuarela sobre papel — pienso la disposición, elijo los colores y trabajo sin calco, capa a capa.",
     "p2H": "Dos <em>caminos</em>",
-    "p2P": "Algunas composiciones se quedan en papel y entran en una edición fine art como láminas. El resto las llevo a la vajilla: aplico esmalte y pinto el motivo a mano, directamente sobre la cerámica.",
-    "p3H": "Cuezo <em>o imprimo</em>",
-    "p3P": "La cerámica la cuezo en el horno a 1040 °C, la reviso con cuidado y firmo la base. Las láminas fine art se imprimen en papel y las envía nuestro socio de impresión.",
+    "p2P": "Algunas composiciones se quedan en papel como pinturas. El resto las llevo a la vajilla: aplico esmalte y pinto el motivo a mano, directamente sobre la cerámica.",
+    "p3H": "Cuezo <em>y firmo</em>",
+    "p3P": "La cerámica la cuezo en el horno a 1040 °C, la reviso con cuidado y firmo la base.",
     "ctaH": "Un estudio, <em>dos formas de vivir con el arte.</em>",
-    "ctaP": "La cerámica existe una sola vez — cuando una pieza encuentra su hogar, deja la tienda para siempre. Las láminas fine art se hacen bajo pedido, así que la composición que te enamora siempre puede colgar en tu casa.",
+    "ctaP": "La cerámica existe una sola vez — cuando una pieza encuentra su hogar, deja la tienda para siempre. Las láminas fine art de mis pinturas tienen su propia tienda.",
     "ctaB1": "Ver la cerámica",
-    "ctaB2": "Ver las láminas"
+    "ctaB2": "Tienda de láminas"
   },
   "contact": {
     "eyebrow": "Contacto",
@@ -949,7 +938,7 @@
       "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop.",
       "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
     },
-    "giftCard": "Tarjeta regalo Anna Ciok Studio — elige entre cuatro importes. El código llega por correo electrónico y se puede usar en un futuro pedido de cerámica o grabados de arte."
+    "giftCard": "Tarjeta regalo Anna Ciok Studio — elige entre cuatro importes. El código llega por correo electrónico y se puede usar en un futuro pedido de cerámica."
   },
   "deliveryNotice": {
     "title": "Información de envío",
@@ -1020,7 +1009,7 @@
   "giftCard": {
     "eyebrow": "Regalo",
     "h1": "Tarjeta regalo",
-    "lead": "Regala la elección de Fine Art Print o cerámica disponible online durante un drop activo. El código llega por correo y el saldo no utilizado se conserva para futuras compras.",
+    "lead": "Regala la elección de cerámica disponible online durante un drop activo. El código llega por correo y el saldo no utilizado se conserva para futuras compras.",
     "tierLabel": "Importe de la tarjeta",
     "buy": "Comprar tarjeta regalo",
     "continueToPayment": "Continuar al pago",
@@ -1031,7 +1020,7 @@
     "accordionHowTitle": "Cómo funciona",
     "accordionHowBody": "Elige uno de los cuatro importes y paga online. Recibirás un código por correo que puedes regalar a otra persona.\n\nAl comprar, introdúcelo en el campo «Tengo una tarjeta regalo». El saldo cubre los productos y el envío. Si no cubre todo el pedido, podrás abonar la diferencia. El saldo restante se conserva.",
     "accordionTermsTitle": "Condiciones",
-    "accordionTermsBody": "La tarjeta funciona en la moneda de compra: PLN, EUR o GBP, sin conversión. No tiene fecha de caducidad.\n\nIncluye Fine Art Print estándar online y cerámica durante un drop activo. No incluye visitas al estudio, encargos personalizados ni otras tarjetas regalo.\n\nUna tarjeta por pedido, sin combinarla con códigos de descuento. Fine Art Print y cerámica se compran en pedidos separados.\n\nPara solicitar la devolución de la compra de una tarjeta, escribe a ania@ciok.art. Si ya se ha utilizado, el estudio revisará el historial de pagos."
+    "accordionTermsBody": "La tarjeta funciona en la moneda de compra: PLN, EUR o GBP, sin conversión. No tiene fecha de caducidad.\n\nIncluye la cerámica disponible online durante un drop activo. No incluye visitas al estudio, encargos personalizados, láminas de la tienda anna-ciok.com ni otras tarjetas regalo.\n\nUna tarjeta por pedido, sin combinarla con códigos de descuento.\n\nPara solicitar la devolución de la compra de una tarjeta, escribe a ania@ciok.art. Si ya se ha utilizado, el estudio revisará el historial de pagos."
   },
   "ceramics": {
     "archiveTitle": "Obras anteriores",
@@ -1075,7 +1064,7 @@
     "wrongCurrency": "Esta tarjeta está en {currency}. Cambia la moneda del pedido para usarla.",
     "empty": "Esta tarjeta no tiene saldo disponible.",
     "reserved": "Parte del saldo está reservado para otro pago. Inténtalo cuando haya finalizado.",
-    "excluded": "La tarjeta sirve para Fine Art Print estándar online y cerámica durante un drop activo. No permite comprar otra tarjeta regalo.",
+    "excluded": "La tarjeta sirve para la cerámica disponible online durante un drop activo. No permite comprar otra tarjeta regalo.",
     "promoConflict": "Puedes usar una tarjeta regalo o un código de descuento por pedido.",
     "minimumPayment": "Para poder cobrar el importe pendiente, usaremos {used} de la tarjeta. Conservarás {remaining} para otra compra.",
     "unavailable": "El pago con tarjeta regalo no está disponible temporalmente. Tu saldo se conserva.",
@@ -1341,5 +1330,17 @@
       "next": "Siguiente",
       "photo": "Foto"
     }
+  },
+  "ceramicShop": {
+    "metaTitle": "Tienda: cerámica pintada a mano de Anna Ciok",
+    "metaDescription": "Tazas, jarrones, platos y cuencos pintados a mano en un estudio de Tenerife. Cada pieza es única; envío con InPost dentro de Polonia.",
+    "eyebrow": "Tienda",
+    "title": "Cerámica <em>única.</em>",
+    "lead": "Pinto a mano y cuezo cada taza, plato y jarrón en mi estudio. Cuando una pieza encuentra su hogar, deja la tienda para siempre.",
+    "availableTitle": "Disponible ahora",
+    "availableEmpty": "Todas las piezas actuales ya han encontrado hogar. Mira las categorías de abajo o suscríbete a la newsletter para no perderte el próximo drop.",
+    "familiesTitle": "Categorías",
+    "familyCount": "{count, plural, one {# pieza} other {# piezas}} · disponibles: {available}",
+    "printsCta": "Láminas fine art de mis pinturas — anna-ciok.com"
   }
 }

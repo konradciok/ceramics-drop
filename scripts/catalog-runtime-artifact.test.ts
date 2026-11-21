@@ -13,20 +13,16 @@ import { verifyCatalogRuntimeArtifact } from './lib/catalog-runtime-artifact';
 const requiredAppPaths = [
   '/[locale]/page',
   '/[locale]/(collections)/[slug]/page',
-  '/[locale]/(collections)/fine-art-prints/page',
   '/[locale]/(collections)/sklep/page',
   '/[locale]/(pdp)/[slug]/[id]/page',
   '/[locale]/koszyk/page',
   '/[locale]/dostawa-i-zwroty/page',
-  '/api/feed/google/route',
-  '/api/feed/meta/route',
   '/sitemap.xml/route',
 ];
 
 const catalogDynamicRouteTemplates = [
   '/[locale]',
   '/[locale]/[slug]',
-  '/[locale]/fine-art-prints',
   '/[locale]/sklep',
   '/[locale]/[slug]/[id]',
   '/[locale]/koszyk',
@@ -189,12 +185,10 @@ describe('catalog runtime artifact verifier', () => {
 
   it.each([
     '/',
-    '/fine-art-prints',
     '/sklep',
     '/koszyk',
     '/dostawa-i-zwroty',
     '/kubki',
-    '/fine-art-prints/fap01',
     '/kubki/k01',
   ])('rejects unprefixed Polish catalog route %s', (route) => {
     const root = tempRoot();

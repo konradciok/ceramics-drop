@@ -5,9 +5,11 @@ import { createTranslator } from 'next-intl';
 
 /**
  * Home copy stays derived, never hard-coded (audit 2026-07-16 found stale
- * prices in every locale and divergent counts in German; the 2026-09-04
- * print-first redesign removed the ceramic category cards entirely). These
- * tests fail if anyone re-bakes a count into the collections/print strings,
+ * prices in every locale and divergent counts in German). Since 2026-11 the
+ * homepage is ceramics-first again — fine-art prints moved to their own shop
+ * (PRINT_SHOP_URL) — and the family cards derive their counts from the
+ * catalogue. These tests fail if anyone re-bakes a count into those strings,
+ * lets print-shop copy back onto the page,
  * breaks the ICU syntax, reintroduces a date-specific delivery notice, or
  * lets a dated ceramics-drop announcement back into the page `<title>`.
  */
@@ -28,12 +30,21 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     }
   });
 
-  test('print rail copy renders the derived design count', () => {
-    expect(messages.home.printsLead).toContain('{count');
-    expect(t('home.printsLead' as never, { count: 41 } as never)).toContain('41');
+  test('no print-shop copy remains (prints moved to their own shop)', () => {
+    for (const key of ['printsEyebrow', 'printsTitle', 'printsLead', 'printsCta', 'printsFacts', 'lgMaterialH', 'lgMaterialP', 'lgShippingH', 'lgShippingP', 'ctLShipPrints', 'ctVShipPrints'] as const) {
+      expect(messages.home[key]).toBeUndefined();
+    }
+    expect(messages.announcePromo).toBeUndefined();
   });
 
-  test('collections index copy renders the derived per-collection count', () => {
+  test('the homepage points to the print shop', () => {
+    for (const key of ['printsMovedEyebrow', 'printsMovedTitle', 'printsMovedLead', 'printsMovedCta'] as const) {
+      expect((messages.home[key] as string).length).toBeGreaterThan(0);
+    }
+    expect(messages.announce).toContain('anna-ciok.com');
+  });
+
+  test('family card copy renders the derived per-family count', () => {
     expect(messages.home.collectionsCount).toContain('{count');
     expect(t('home.collectionsCount' as never, { count: 5 } as never)).toContain('5');
   });
@@ -42,10 +53,16 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     expect(messages.home.card).toBeUndefined();
   });
 
-  test('no ceramics/prints split logistics or shipping copy remains', () => {
-    for (const key of ['colEyebrow', 'colTitle', 'colAllCta', 'colLead', 'heroBeatCap', 'lgCeramicH', 'lgCeramicP', 'lgPrintsH', 'lgPrintsP', 'ctLShip', 'ctVShip'] as const) {
+  test('no ceramics/prints split logistics copy remains', () => {
+    for (const key of ['colEyebrow', 'colTitle', 'colAllCta', 'colLead', 'heroBeatCap', 'lgCeramicH', 'lgCeramicP', 'lgPrintsH', 'lgPrintsP'] as const) {
       expect(messages.home[key]).toBeUndefined();
     }
+  });
+
+  test('ceramic shop copy renders both family counts', () => {
+    const label = t('ceramicShop.familyCount' as never, { count: 12, available: 3 } as never);
+    expect(label).toContain('12');
+    expect(label).toContain('3');
   });
 
   test('the page title is evergreen — no dated ceramics-drop announcement', () => {

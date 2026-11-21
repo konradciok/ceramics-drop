@@ -140,23 +140,6 @@ test.describe('promo codes @ci', () => {
     await expect(page.locator('.sum-total .v')).toHaveText(totalBefore);
   });
 
-  test('prints track: the discount row renders in a print cart too', async ({ page }) => {
-    await resetCart(page);
-    // Seed a print via the configurator (fap005, 50x70 — same seam as mixed-cart.spec).
-    await page.goto('/fine-art-prints/fap005');
-    await page.getByTestId('opt-size-50x70').click();
-    await page.getByTestId('print-add').click();
-    await expect(page.locator('[data-cart-count]')).toHaveText('1');
-    await goToCart(page);
-
-    await stubValidate(page, { ok: true, code: 'ART10', discount: 1000 });
-    await applyCode(page, 'art10');
-
-    const row = page.locator(sel.promoDiscountRow);
-    await expect(row).toBeVisible();
-    await expect(row).toContainText('ART10');
-  });
-
   test.describe('mobile 390px', () => {
     test.use({ viewport: { width: 390, height: 844 } });
 

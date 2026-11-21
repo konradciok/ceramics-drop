@@ -13,16 +13,8 @@ vi.mock('./catalog/load', () => ({
 vi.mock('@/server/print-assets/repository', () => ({
   resolvePrintAsset: vi.fn(),
 }));
-// Mock the pricing-config loader so the db-mode test can prove checkout prices
-// from the DB config (admin-edited), not the code default.
-vi.mock('./print-pricing-config/load', () => ({
-  loadPrintPricingConfigFromDb: vi.fn(),
-}));
 import { loadCeramicProductsFromDb } from './catalog/load';
 import { resolvePrintAsset } from '@/server/print-assets/repository';
-import { loadPrintPricingConfigFromDb } from './print-pricing-config/load';
-import { DEFAULT_PRINT_PRICING } from './print-pricing';
-import { resetLastKnownGoodForTests } from './print-pricing-config/last-known-good';
 
 const MOCK_ASSET = {
   assetId: 'asset-uuid-1',
@@ -111,87 +103,13 @@ describe('validateCart', () => {
     }
   });
 
-  it('accepts a valid print token and snapshots the resolved asset', async () => {
-    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    const result = await validateCart([token], 'pln');
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.items[0].variant?.prodigiSku).toBe('GLOBAL-CFP-20X28');
-    expect(result.items[0].unit_price).toBe(67000); // (335 base + 335 frame) PLN × 100 (DEFAULT_PRINT_PRICING)
-    expect(result.items[0].variant).toMatchObject({
-      assetId: MOCK_ASSET.assetId,
-      assetKey: MOCK_ASSET.r2Key,
-      assetSha256: MOCK_ASSET.sha256,
-      assetContentType: MOCK_ASSET.contentType,
-      assetWidthPx: MOCK_ASSET.widthPx,
-      assetHeightPx: MOCK_ASSET.heightPx,
-    });
-    expect(resolvePrintAsset).toHaveBeenCalledWith('fap005', '50x70:true:false:black');
-  });
-
-  it('prices prints from the DB pricing config in db mode, not the code default', async () => {
-    vi.stubEnv('CATALOG_SOURCE', 'db');
-    // The catalog loaders are bare vi.fn()s here, so the design read falls back
-    // to the registry with a logged error — silence it; the pricing read is the
-    // subject under test.
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      vi.mocked(loadPrintPricingConfigFromDb).mockResolvedValue({
-        ...DEFAULT_PRINT_PRICING,
-        baseEur: { ...DEFAULT_PRINT_PRICING.baseEur, '50x70': 99 }, // admin-edited value
-      });
-      const token = encodePrintToken('fap005', { size: '50x70', framed: false, mount: false, frameColour: 'none' });
-      const result = await validateCart([token], 'eur');
-      expect(result.ok).toBe(true);
-      if (result.ok) expect(result.items[0].unit_price).toBe(9900); // 99 EUR × 100 from the DB config
-      expect(loadPrintPricingConfigFromDb).toHaveBeenCalled();
-    } finally {
-      vi.unstubAllEnvs();
-      errSpy.mockRestore();
-      resetLastKnownGoodForTests();
-    }
-  });
-
-  it('rejects a print variant with no ready asset', async () => {
-    vi.mocked(resolvePrintAsset).mockResolvedValueOnce(null);
-    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_unavailable' });
-  });
-
-  it('returns print_asset_error on a transient DB error from resolvePrintAsset', async () => {
-    vi.mocked(resolvePrintAsset).mockRejectedValueOnce(new Error('connection reset'));
-    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_asset_error' });
-  });
-
-  it('returns print_pricing_unavailable (never the hardcoded default) on a cold-isolate DB pricing failure', async () => {
-    vi.stubEnv('CATALOG_SOURCE', 'db');
-    resetLastKnownGoodForTests();
-    vi.mocked(loadPrintPricingConfigFromDb).mockRejectedValueOnce(new Error('supabase down'));
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-      expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'print_pricing_unavailable' });
-    } finally {
-      vi.unstubAllEnvs();
-      errSpy.mockRestore();
-      resetLastKnownGoodForTests();
-    }
-  });
-
-  it('rejects a mixed ceramics + prints cart', async () => {
-    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    expect(await validateCart(['k01', token], 'pln')).toEqual({ ok: false, reason: 'mixed_cart' });
-  });
-
-  it('rejects an unknown design id in print token', async () => {
-    const token = encodePrintToken('fap99', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
-  });
-
-  it('rejects an unpublished design', async () => {
-    const token = encodePrintToken('fap04', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(await validateCart([token], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+  it('refuses any print token as not_for_sale (prints moved to their own shop)', async () => {
+    const token = encodePrintToken('fap005', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
+    expect(await validateCart([token])).toEqual({ ok: false, reason: 'not_for_sale' });
+    // Also when mixed into an otherwise valid ceramic cart — never silently dropped.
+    expect(await validateCart(['k01', token])).toEqual({ ok: false, reason: 'not_for_sale' });
+    // No asset lookup or pricing work happens for a refused print.
+    expect(resolvePrintAsset).not.toHaveBeenCalled();
   });
 });
 
@@ -224,11 +142,11 @@ describe('validateCart gift cards', () => {
     });
   });
 
-  it('rejects a cart mixing a gift card with a print', async () => {
+  it('refuses a gift card alongside a print token (the print is no longer for sale)', async () => {
     const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
     expect(await validateCart([token, encodeGiftCardToken('gc-200')], 'pln')).toEqual({
       ok: false,
-      reason: 'mixed_cart',
+      reason: 'not_for_sale',
     });
   });
 

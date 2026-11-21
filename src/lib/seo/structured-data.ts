@@ -448,6 +448,50 @@ export function printCollectionsHubSchema({ locale, t, cards, description }: {
   };
 }
 
+export type CeramicShopFamilyCard = { slug: CategorySlug; name: string; image: string };
+
+/** `@graph` for /sklep (the ceramics shop): `CollectionPage` + `ItemList` of the family pages + `BreadcrumbList`. */
+export function ceramicShopSchema({ locale, name, description, families }: {
+  locale: Locale;
+  name: string;
+  description?: string;
+  families: CeramicShopFamilyCard[];
+}): Graph {
+  const shopUrl = absoluteUrl(locale, '/sklep');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': shopUrl,
+        url: shopUrl,
+        name,
+        ...(description && { description }),
+        inLanguage: locale,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: families.length,
+          itemListElement: families.map((f, i) => ({
+            '@type': 'ListItem' as const,
+            position: i + 1,
+            url: absoluteUrl(locale, `/${f.slug}`),
+            name: f.name,
+            image: `${SITE_URL}${f.image}`,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl(locale, '/') },
+          { '@type': 'ListItem', position: 2, name, item: shopUrl },
+        ],
+      },
+    ],
+  };
+}
+
 type PrintProductArgs = {
   design: PrintDesign;
   locale: Locale;

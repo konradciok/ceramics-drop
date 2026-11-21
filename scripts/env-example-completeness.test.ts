@@ -103,6 +103,10 @@ const UNTYPED_ALLOWLIST = new Set([
   'NODE_ENV',
   'NEXT_RUNTIME',
   'CI',
+  // Hermetic-e2e switch read from process.env by `next start` only (set by
+  // playwright.config.ts) — deliberately NOT a Worker binding: it must never
+  // exist in a deployed Worker (src/lib/ceramic-sale-state.ts).
+  'E2E_CERAMIC_SALE_FIXTURE',
   // Build-time `NEXT_PUBLIC_*` values inlined into the client bundle by
   // `next build` (see AGENTS.md § Environment Variables) — set as Workers
   // Build env vars, never `wrangler secret put`, never read from the

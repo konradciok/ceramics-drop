@@ -1230,7 +1230,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Karta podarunkowa',
     codeLabel: 'Kod',
     terms:
-      'Kartą zapłacisz za standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu, także za dostawę. Niewykorzystane saldo pozostaje na kolejne zakupy w walucie karty. Jedna karta na zamówienie, bez łączenia z kodem rabatowym. Karta nie obejmuje innych kart, zamówień indywidualnych ani zakupów podczas wizyty w pracowni.',
+      'Kartą zapłacisz za ceramikę dostępną online podczas aktywnego dropu, także za dostawę. Niewykorzystane saldo pozostaje na kolejne zakupy w walucie karty. Jedna karta na zamówienie, bez łączenia z kodem rabatowym. Karta nie obejmuje innych kart, zamówień indywidualnych ani zakupów podczas wizyty w pracowni.',
     printHint: 'Możesz wydrukować tę wiadomość lub zapisać ją jako PDF, aby wręczyć kartę w formie fizycznej.',
     signOff: 'Dziękujemy! Anna Ciok Studio',
   },
@@ -1241,7 +1241,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Gift card',
     codeLabel: 'Code',
     terms:
-      'Use your card for standard Fine Art Print orders online and ceramics during an active drop, including delivery. Unused balance stays on the card for future purchases in its currency. One card per order, without a discount code. Other gift cards, custom orders and purchases during a studio visit are excluded.',
+      'Use your card for ceramics available online during an active drop, including delivery. Unused balance stays on the card for future purchases in its currency. One card per order, without a discount code. Other gift cards, custom orders and purchases during a studio visit are excluded.',
     printHint: 'You can print this email or save it as a PDF to give the card as a physical gift.',
     signOff: 'Thank you! Anna Ciok Studio',
   },
@@ -1252,7 +1252,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Tarjeta regalo',
     codeLabel: 'Código',
     terms:
-      'La tarjeta sirve para Fine Art Print estándar online y cerámica durante un drop activo, incluido el envío. El saldo restante se conserva para futuras compras en la moneda de la tarjeta. Una tarjeta por pedido, sin código de descuento. No incluye otras tarjetas, encargos personalizados ni compras durante una visita al estudio.',
+      'La tarjeta sirve para la cerámica disponible online durante un drop activo, incluido el envío. El saldo restante se conserva para futuras compras en la moneda de la tarjeta. Una tarjeta por pedido, sin código de descuento. No incluye otras tarjetas, encargos personalizados ni compras durante una visita al estudio.',
     printHint: 'Puedes imprimir este correo o guardarlo como PDF para regalar la tarjeta en formato físico.',
     signOff: '¡Gracias! Anna Ciok Studio',
   },
@@ -1263,7 +1263,7 @@ const I18N_GIFT_CARD: Record<SupportedLocale, {
     cardLabel: 'Geschenkkarte',
     codeLabel: 'Code',
     terms:
-      'Die Karte gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops, einschließlich Versand. Restguthaben bleibt für weitere Einkäufe in der Kartenwährung erhalten. Eine Karte pro Bestellung, ohne Rabattcode. Weitere Geschenkkarten, Sonderanfertigungen und Einkäufe bei einem Atelierbesuch sind ausgeschlossen.',
+      'Die Karte gilt für Keramik, die während eines aktiven Drops online erhältlich ist, einschließlich Versand. Restguthaben bleibt für weitere Einkäufe in der Kartenwährung erhalten. Eine Karte pro Bestellung, ohne Rabattcode. Weitere Geschenkkarten, Sonderanfertigungen und Einkäufe bei einem Atelierbesuch sind ausgeschlossen.',
     printHint: 'Du kannst diese E-Mail ausdrucken oder als PDF speichern, um die Karte physisch zu verschenken.',
     signOff: 'Danke! Anna Ciok Studio',
   },
