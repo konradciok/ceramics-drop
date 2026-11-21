@@ -918,7 +918,7 @@ async function reconcileRefundConfirm(
       detail:
         `Prodigi fulfilment is still active for ${orderId}` +
         (prodigi ? ` (prodigi order ${prodigi.prodigi_order_id}, stage ${prodigi.prodigi_status_stage})` : ` (${jobs.length} active job(s))`) +
-        '. Cancel via cancelPrintFulfilment in the Workers env: replay the charge.refunded event from Stripe Workbench, or cancel manually in the Prodigi dashboard. Do NOT mark this handled until the job/order is cancelled.',
+        '. The Prodigi pipeline is retired (prints moved to their own shop), so nothing cancels it automatically: cancel it manually in the Prodigi dashboard. Do NOT mark this handled until the job/order is cancelled.',
     });
   }
   if (order.status === 'paid' && order.conversions_sent_at) {
