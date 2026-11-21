@@ -13,7 +13,9 @@ export const capabilitiesRoute: RouteDef = {
   handler: async () => {
     return jsonResponse({
       contractVersion: CMS_API_CONTRACT_VERSION,
-      productTypes: ['ceramic', 'print'],
+      // Prints moved to their own shop (2026-11): the CMS can no longer create
+      // or publish them. The print* fields below stay for contract shape.
+      productTypes: ['ceramic'],
       productStatuses: ['draft', 'active', 'hidden', 'archived'],
       ceramicCategories: CERAMIC_CATEGORIES,
       printSizes: ['30x40', '50x70', '70x100'],

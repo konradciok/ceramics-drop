@@ -7,10 +7,8 @@
    eventual storefront flip (Stage 3) reuses the exact same reconstruction.
    ============================================================ */
 import { CATEGORY_ORDER } from '../products';
-import { PRINT_FRAME_COLOURS } from '../print-cart';
-import { MOUNT_TEMPORARILY_DISABLED } from '../print-availability';
-import type { CategorySlug, PrintDesign, PrintFrameColour, PrintSize, Product } from '../types';
-import type { MediaSeedRow, ProductSeedRow, VariantSeedRow } from './types';
+import type { CategorySlug, Product } from '../types';
+import type { MediaSeedRow, ProductSeedRow } from './types';
 
 function ceramicCategoryRank(slug: CategorySlug): number {
   const i = CATEGORY_ORDER.indexOf(slug);
@@ -97,87 +95,3 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
   return out;
 }
 
-/** Distinct values in first-seen order (variants are read in `position` order). */
-function distinctInOrder<T>(values: T[]): T[] {
-  const seen = new Set<T>();
-  const out: T[] = [];
-  for (const v of values) {
-    if (!seen.has(v)) {
-      seen.add(v);
-      out.push(v);
-    }
-  }
-  return out;
-}
-
-/**
- * Reconstruct `PrintDesign[]` from catalog rows — the inverse of `printRows`
- * in seed.ts. Axes (size / frame colour / mount) are recovered from the variant
- * rows in `position` order; `published` comes from the product status; media
- * gives image + gallery. Inactive variants are excluded from axis recovery on
- * published designs only (drafts seed every variant inactive).
- *
- * NOTE (Stage 3a): `unavailable` and per-size `prices` overrides are NOT stored
- * as such in the shadow tables (variants are the flattened form), so they are
- * left unset here. No design in the current registry (fap001–fap041) uses
- * either field, so the round-trip is exact for today's data; proper storage
- * of those fields lands with print CRUD (Stage 5). `variants`/`media` must be
- * passed in `position` order.
- */
-export function mapPrintDesigns(
-  products: ProductSeedRow[],
-  variants: VariantSeedRow[],
-  media: MediaSeedRow[],
-): PrintDesign[] {
-  const mediaFor = mediaByProduct(media);
-  const variantsFor = new Map<string, VariantSeedRow[]>();
-  for (const v of variants) {
-    const list = variantsFor.get(v.product_id) ?? [];
-    list.push(v);
-    variantsFor.set(v.product_id, list);
-  }
-  for (const list of variantsFor.values()) list.sort((a, b) => a.position - b.position);
-
-  const out: PrintDesign[] = [];
-  for (const row of products) {
-    if (row.type !== 'print') continue;
-    const allVs = variantsFor.get(row.id) ?? [];
-    // Published designs: honour per-variant deactivation. Drafts seed all variants
-    // inactive, so axis recovery must still read them to match the registry.
-    const vs = row.status === 'active' ? allVs.filter((v) => v.active) : allVs;
-    const axes = vs.map((v) => v.axes).filter((a): a is NonNullable<VariantSeedRow['axes']> => a !== null);
-    const imgs = mediaFor.get(row.id) ?? [];
-    const primary = imgs.find((m) => m.is_primary) ?? imgs[0];
-    const gallery = imgs.filter((m) => !m.is_primary).map((m) => m.url);
-
-    const sizes = distinctInOrder(axes.map((a) => a.size)) as PrintSize[];
-    // Axes are runtime DB data: clamp recovered colours to the canonical axis so
-    // a retired colour still present in stale variant rows (e.g. legacy 'white'
-    // before the post-swap backfill) can never surface a dead option — missing
-    // i18n label, unsellable token, 404 mockup hero.
-    const frameColours = distinctInOrder(
-      axes.filter((a) => a.framed && a.frameColour !== 'none').map((a) => a.frameColour),
-    ).filter((c): c is PrintFrameColour =>
-      (PRINT_FRAME_COLOURS as readonly string[]).includes(c),
-    );
-    // Mount rows stay ACTIVE in product_variants — passe-partout is withdrawn at
-    // read time only (print-availability.ts), so flipping the switch back restores
-    // availability with no DB write. Mirrors the same gate on PRINT_DESIGNS.
-    const mountAvailable = !MOUNT_TEMPORARILY_DISABLED && axes.some((a) => a.mount);
-
-    out.push({
-      id: row.id,
-      category: 'fine-art-prints',
-      num: row.num,
-      image: primary?.url ?? '',
-      ...(gallery.length ? { gallery } : {}),
-      noteIndex: row.note_index ?? 0,
-      sizes,
-      frameColours,
-      mountAvailable,
-      published: row.status === 'active',
-    });
-  }
-
-  return out;
-}

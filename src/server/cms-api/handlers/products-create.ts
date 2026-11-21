@@ -41,7 +41,14 @@ export const productsCreateRoute: RouteDef = {
     }
 
     const draft = validated.data;
-    const categorySlug = draft.type === 'ceramic' ? draft.category : 'fine-art-prints';
+    // Prints moved to their own shop (2026-11): the CMS can no longer create one.
+    if (draft.type !== 'ceramic') {
+      await releaseIdempotencyKey(ctx.supabase, 'products:create', idempotencyKey, leaseToken);
+      return errorResponse('VALIDATION_FAILED', 'Druki są wycofane — sprzedaż przeniesiona do anna-ciok.com.', 422, ctx.requestId, {
+        fieldErrors: { type: 'Druki są wycofane.' },
+      });
+    }
+    const categorySlug = draft.category;
 
     try {
       let productId = generateProductId();

@@ -41,13 +41,6 @@ function deps(over = {}) {
     sendGa4: vi.fn().mockResolvedValue({ ok: true, status: 204 }),
     appVersion: '0.10.0',
     appGitSha: '8ae90a5',
-    // Hermetic stub: without this, deps.loadDefinitions falls through to the
-    // real loadPrintCollectionDefinitions, which attempts a real Supabase
-    // call via getSupabaseAdmin(). No test in this file's default path
-    // exercises print-collection naming, so an empty list is a safe default;
-    // the one test that does (the print-line-item-naming test below)
-    // overrides this with the real curation map.
-    loadDefinitions: vi.fn().mockResolvedValue([]),
     ...over,
   };
 }
@@ -122,17 +115,8 @@ describe('sendPurchaseConversions', () => {
     expect(ceramicItem.item_variant).toMatch(/^Nº \d+$/);
   });
 
-  it('labels a print line item with its design name + variant (GA4) and keeps value/contents correct', async () => {
+  it('labels a historical print line item from the frozen legacy table (GA4) and keeps value/contents correct', async () => {
     const d = deps({
-      // Exercises the CMS-resolved naming path with a fixture whose name the
-      // static PRINT_COLLECTION_DEFINITIONS default cannot produce for fap005
-      // (it maps fap005 to 'Signs'): this pins that `definitions` is
-      // actually threaded through to printDisplayName, not silently dropped
-      // in favor of the static fallback (which would happen to also resolve
-      // fap005 to a plausible-looking name and let this test pass either way).
-      loadDefinitions: vi.fn().mockResolvedValue([
-        { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-      ]),
       loadOrder: vi.fn().mockResolvedValue(
         baseOrder({
           // Totals consistent with the two items below: 9000 + 35000 + 1800 shipping.
@@ -152,7 +136,7 @@ describe('sendPurchaseConversions', () => {
     const printItem = ga4Input.items.find((i: { item_id: string }) => i.item_id === 'fap005');
     expect(printItem).toMatchObject({
       item_id: 'fap005',
-      item_name: 'CmsOnly 01',
+      item_name: 'Signs 02',
       item_category: 'fine-art-prints',
       item_variant: '50×70 cm · frame black',
       price: 350,

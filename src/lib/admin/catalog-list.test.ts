@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { registryProducts } from '@/lib/products';
-import { PRINT_DESIGNS } from '@/lib/prints';
 import type { Piece } from '@/lib/admin/data';
 import { assembleProductRows } from './catalog-list';
 
@@ -20,9 +19,10 @@ function piece(overrides: Partial<Piece> & Pick<Piece, 'product_id' | 'status'>)
 }
 
 describe('assembleProductRows', () => {
-  it('produces one row per catalogue product (ceramics + prints)', () => {
+  it('produces one row per catalogue product (ceramics only)', () => {
     const rows = assembleProductRows(catalog, new Map());
-    expect(rows).toHaveLength(registryProducts().length + PRINT_DESIGNS.length);
+    expect(rows).toHaveLength(registryProducts().length);
+    expect(rows.every((r) => r.type === 'ceramic')).toBe(true);
   });
 
   it('defaults an untouched ceramic to active, 1/1, one variant', () => {
@@ -104,53 +104,40 @@ describe('assembleProductRows', () => {
     expect(expired.status).toBe('active');
   });
 
-  it('marks prints as POD with many variants and a "from" price', () => {
-    const rows = assembleProductRows(catalog, new Map());
-    const fap005 = rows.find((r) => r.id === 'fap005')!;
-    expect(fap005.type).toBe('print');
-    expect(fap005.stockLabel).toBe('POD');
-    // No mount source in the 2026-08-17 batch (mountAvailable: false as raw
-    // truth): 3 sizes × (1 unframed + 3 colours) = 12.
-    expect(fap005.variantCount).toBe(12);
-    expect(fap005.priceLabel).toMatch(/^od \d+ zł$/);
-    // An unpublished design lands as a draft. All 41 current designs are
-    // published (2026-08-17) — synthesize a draft row rather than depending
-    // on a real one existing.
-    const withDraft = {
-      products: catalog.products.map((p) => (p.id === 'fap005' ? { ...p, status: 'draft' as const } : p)),
-      variants: catalog.variants,
+  it('still renders a legacy print row left in the DB as POD with a frozen name', () => {
+    // The seed no longer carries prints, but a backfill leaves existing print
+    // rows untouched until the schema drop — they must still render sanely.
+    const legacy = {
+      products: [
+        {
+          ...catalog.products[0],
+          id: 'fap005',
+          type: 'print' as const,
+          category_slug: 'fine-art-prints' as const,
+          num: '005',
+          price_pln: null,
+          status: 'hidden' as const,
+        },
+      ],
+      variants: [
+        { ...catalog.variants[0], product_id: 'fap005', variant_key: 'a', price_pln: 320, track_inventory: false, stock_quantity: 0 },
+        { ...catalog.variants[0], product_id: 'fap005', variant_key: 'b', price_pln: 240, track_inventory: false, stock_quantity: 0 },
+      ],
     };
-    expect(assembleProductRows(withDraft, new Map()).find((r) => r.id === 'fap005')!.status).toBe('draft');
+    const row = assembleProductRows(legacy, new Map())[0];
+    expect(row).toMatchObject({
+      type: 'print',
+      stockLabel: 'POD',
+      variantCount: 2,
+      priceLabel: 'od 240 zł',
+      title: 'Signs 02',
+      image: null,
+    });
   });
 
-  it('sorts by category order then display number, prints last', () => {
+  it('sorts by category order then display number', () => {
     const rows = assembleProductRows(catalog, new Map());
-    // First row is a kubek (first category), last rows are prints.
     expect(rows[0].category).toBe('kubki');
-    expect(rows[rows.length - 1].category).toBe('fine-art-prints');
-  });
-
-  it('sorts prints numerically by num, not lexicographically', () => {
-    const rows = assembleProductRows(catalog, new Map());
-    const printRows = rows.filter((r) => r.category === 'fine-art-prints');
-    // A string sort would put fap010 (num '10') before fap002 (num '2').
-    // Numeric sort never regresses: each row's num is >= the previous row's.
-    for (let i = 1; i < printRows.length; i++) {
-      expect(Number(printRows[i].num)).toBeGreaterThanOrEqual(Number(printRows[i - 1].num));
-    }
-  });
-
-  it('threads definitions through productRef for print naming (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
-    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the title
-    // proves that the definitions parameter was actually threaded through to
-    // productRef and printDisplayName, not silently dropped in favor of the static fallback.
-    const discriminatingDefs = [
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ];
-    const rows = assembleProductRows(catalog, new Map(), discriminatingDefs);
-    const fap005 = rows.find((r) => r.id === 'fap005')!;
-    expect(fap005.title).toContain('CmsOnly 01');
-    expect(fap005.title).not.toContain('Signs');
+    expect(rows[0].num).toBe('01');
   });
 });

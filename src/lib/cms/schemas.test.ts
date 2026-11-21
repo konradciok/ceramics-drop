@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { registryContentPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
 import { collectionCopySchema, homePageSchema, printPdpSchema, productNoteIds, validateCmsPayload, validateProductNotesPayload } from './schemas';
 
@@ -16,10 +15,9 @@ describe('CMS product note schemas', () => {
     expect(Object.keys(payload.notes).sort()).toEqual([...ids].sort());
   });
 
-  it('accepts a payload keyed by active and draft fine-art print design ids', () => {
-    const ids = registryContentPrintDesigns().map((design) => design.id);
-    expect(productNoteIds('fine-art-prints')).toEqual(ids);
-    expect(() => validateProductNotesPayload('fine-art-prints', { notes: notesFor(ids) })).not.toThrow();
+  it('no longer treats fine-art-prints as a product notes document (prints left the store)', () => {
+    expect(productNoteIds('fine-art-prints')).toBeNull();
+    expect(() => validateProductNotesPayload('fine-art-prints', { notes: {} })).toThrow('Nieznany dokument notatek');
   });
 
   it('rejects a payload missing a product id (catalogue reorder must not drop a note)', () => {
@@ -37,21 +35,21 @@ describe('CMS product note schemas', () => {
   });
 
   it('read mode drops a stale id instead of rejecting the whole document', () => {
-    // Regression: fap029/fap037 left the curation on 2026-08-29 while the
-    // published notes still carried them — every print PDP fell back to the
-    // message files in all four locales (Sentry CERAMICS-DROP-1S/1T).
-    const ids = registryContentPrintDesigns().map((design) => design.id);
+    // Regression: ids that left the catalogue while the published notes still
+    // carried them made every PDP in that document fall back to the message
+    // files in all four locales (Sentry CERAMICS-DROP-1S/1T).
+    const ids = registryProductsByCategory('wazony').map((product) => product.id);
     const stale = notesFor(ids);
-    stale['fap-stale'] = 'Opis';
-    const payload = validateProductNotesPayload('fine-art-prints', { notes: stale }, { lenient: true });
+    stale['zz-stale-id'] = 'Opis';
+    const payload = validateProductNotesPayload('wazony', { notes: stale }, { lenient: true });
     expect(Object.keys(payload.notes).sort()).toEqual([...ids].sort());
   });
 
-  it('read mode tolerates a missing id (a newly added design falls back per id, not per document)', () => {
-    const ids = registryContentPrintDesigns().map((design) => design.id);
+  it('read mode tolerates a missing id (a newly added piece falls back per id, not per document)', () => {
+    const ids = registryProductsByCategory('wazony').map((product) => product.id);
     const incomplete = notesFor(ids);
     delete incomplete[ids[0]];
-    const payload = validateProductNotesPayload('fine-art-prints', { notes: incomplete }, { lenient: true });
+    const payload = validateProductNotesPayload('wazony', { notes: incomplete }, { lenient: true });
     expect(payload.notes).not.toHaveProperty(ids[0]);
     expect(Object.keys(payload.notes)).toHaveLength(ids.length - 1);
   });

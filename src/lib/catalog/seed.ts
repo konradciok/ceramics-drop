@@ -1,58 +1,20 @@
 /* ============================================================
    Catalog seed builder — code registry → DB rows
    ------------------------------------------------------------
-   Pure, deterministic transform from the static registry
-   (src/lib/products.ts + src/lib/prints.ts + pricing) into the
-   `products` / `product_variants` / `product_media` row shapes.
+   Pure, deterministic transform from the static ceramic registry
+   (src/lib/products.ts + pricing) into the `products` /
+   `product_variants` / `product_media` row shapes.
 
    This is the SINGLE structural source of the backfill. `backfillCatalog()`
-   passes this projection to one transaction-scoped RPC, which stages new
-   registry-active prints as draft, preserves existing DB status for
-   registry-active prints, keeps registry-retired prints archived, and replaces
-   variants/media before rechecking any active prints. The parity test
-   round-trips this desired projection through the mappers. No variant business
-   rule is re-implemented here — print validity reuses the existing axis rules
-   from `prints.ts` / `print-cart.ts`.
+   passes this projection to one transaction-scoped RPC, which touches only
+   the ids in the seed. Fine-art prints left the registry with the print shop
+   (2026-11): their DB rows are no longer seeded, so a backfill leaves them
+   exactly as they are until the print-schema drop migration removes them.
+   The parity test round-trips this desired projection through the mappers.
    ============================================================ */
-import type { PrintDesign, PrintFrameColour, PrintVariantSelection } from '../types';
 import { registryProducts } from '../products';
-// Ungated on purpose: the backfill must keep seeding every structurally valid
-// variant (incl. mount) while passe-partout is temporarily withdrawn from sale,
-// so a run during the disabled window reproduces the existing DB exactly.
-import { PRINT_DESIGNS_RAW as PRINT_DESIGNS } from '../prints';
-import { catalogStatusForPrint } from '../print-curation';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
-import { assetPxFor, variantKey, PRODIGI_SKU_MAP } from '../print-cart';
-import { DEFAULT_PRINT_PRICING, priceOfVariant, type PrintPricingConfig } from '../print-pricing';
 import type { CatalogSeed } from './types';
-
-/**
- * Enumerate every structurally-valid print variant for a design, in a stable
- * order: per size — the unframed variant, then each frame colour (no-mount, then
- * mount when the design offers it). Mirrors the axis rules encoded in
- * `isVariantAvailable` (prints.ts) without depending on `published`, so a draft
- * design still yields its variant rows (flagged inactive).
- */
-export function enumeratePrintVariants(design: PrintDesign): PrintVariantSelection[] {
-  const excluded = new Set(design.unavailable ?? []);
-  const out: PrintVariantSelection[] = [];
-  const add = (sel: PrintVariantSelection) => {
-    // Structural exclusions (design.unavailable) are published-independent, so a
-    // draft design still yields its variant rows minus the excluded keys —
-    // matching the sellability rules in isVariantAvailable (prints.ts).
-    if (!excluded.has(variantKey(sel))) out.push(sel);
-  };
-  for (const size of design.sizes) {
-    add({ size, framed: false, mount: false, frameColour: 'none' });
-    for (const frameColour of design.frameColours as PrintFrameColour[]) {
-      add({ size, framed: true, mount: false, frameColour });
-      if (design.mountAvailable) {
-        add({ size, framed: true, mount: true, frameColour });
-      }
-    }
-  }
-  return out;
-}
 
 function ceramicRows(seed: CatalogSeed): void {
   for (const p of registryProducts()) {
@@ -109,82 +71,9 @@ function ceramicRows(seed: CatalogSeed): void {
   }
 }
 
-function printRows(seed: CatalogSeed, pricing: PrintPricingConfig): void {
-  for (const d of PRINT_DESIGNS) {
-    seed.products.push({
-      id: d.id,
-      type: 'print',
-      category_slug: 'fine-art-prints',
-      num: d.num,
-      slug: null,
-      // Prints are priced per variant via print-pricing.ts; product-level price
-      // stays null (dynamic) until a later stage migrates print pricing.
-      price_pln: null,
-      price_eur: null,
-      price_gbp: null,
-      sale_price_pln: null,
-      sale_price_eur: null,
-      sale_price_gbp: null,
-      measure: '',
-      status: catalogStatusForPrint(d.id),
-      seo_title: null,
-      seo_description: null,
-      title: null,
-      description: null,
-      drop_id: null,
-      note_index: d.noteIndex,
-    });
-
-    const sels = enumeratePrintVariants(d);
-    // Default = the cheapest sellable variant (matches fromPriceOf semantics),
-    // rather than the first enumerated one — robust even if `design.unavailable`
-    // ever excludes the smallest unframed variant.
-    const prices = sels.map((sel) => priceOfVariant(sel, 'pln', pricing));
-    const defaultIdx = prices.reduce((best, p, i) => (p < prices[best] ? i : best), 0);
-    sels.forEach((sel, i) => {
-      const key = variantKey(sel);
-      const mapped = PRODIGI_SKU_MAP[key];
-      seed.variants.push({
-        product_id: d.id,
-        variant_key: key,
-        sku: mapped?.sku ?? null,
-        axes: sel,
-        // Derived from the passed pricing config at seed time (major units;
-        // defaults to DEFAULT_PRINT_PRICING). These shadow columns are read by
-        // nobody — checkout prices via getPrintPricingConfig() — so after an
-        // /admin/pricing edit they reflect the code default, not the live DB
-        // config. The parity test pins them to the same default.
-        price_pln: prices[i],
-        price_eur: priceOfVariant(sel, 'eur', pricing),
-        price_gbp: priceOfVariant(sel, 'gbp', pricing),
-        is_default: i === defaultIdx,
-        active: catalogStatusForPrint(d.id) !== 'archived',
-        position: i,
-        track_inventory: false, // POD — no held stock
-        stock_quantity: 0,
-        allow_backorder: true,
-        low_stock_threshold: null,
-        // Per-variant ASSET pixels at 300 DPI (assetPxFor: the render we upload,
-        // not necessarily Prodigi's reported print area — black 30x40 framed
-        // submits the shared 3600×4800 render, prodigi/decisions.md #6); the
-        // publish_print_asset_revision RPC checks ready assets against these.
-        // Absent key → null → RPC treats it as a dimension mismatch (fail-closed).
-        print_area_width_px: mapped ? assetPxFor(mapped).w : null,
-        print_area_height_px: mapped ? assetPxFor(mapped).h : null,
-      });
-    });
-
-    seed.media.push({ product_id: d.id, url: d.image, alt: null, position: 0, is_primary: true });
-    (d.gallery ?? []).forEach((url, i) => {
-      seed.media.push({ product_id: d.id, url, alt: null, position: i + 1, is_primary: false });
-    });
-  }
-}
-
 /** Build the full catalog backfill payload from the static registry. */
-export function buildCatalogSeed(pricing: PrintPricingConfig = DEFAULT_PRINT_PRICING): CatalogSeed {
+export function buildCatalogSeed(): CatalogSeed {
   const seed: CatalogSeed = { products: [], variants: [], media: [] };
   ceramicRows(seed);
-  printRows(seed, pricing);
   return seed;
 }

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createOrderInvoice, createInvoiceForOrder } from './invoice';
-import { variantKey, variantLabel } from './print-cart';
-import { registryPrintById } from './prints';
+import { formatLegacyPrintVariant, legacyPrintVariantKey } from './legacy-print-lines';
 
 /**
  * Covers the regression where invoices were created EMPTY (pending invoice items
@@ -60,25 +59,6 @@ let itemRows: Array<Record<string, unknown>> | null = ITEMS;
 vi.mock('./stripe', () => ({ getStripe: () => stripeMock }));
 vi.mock('./supabase', () => ({ getSupabaseAdmin: () => supabaseMock }));
 
-// Deterministic CMS-collection name resolution for print line items — only
-// the DB-facing loadPrintCollectionDefinitions call is mocked (same pattern
-// as cart-lines-server.test.ts), so createInvoiceForOrder never makes a real
-// Supabase call to resolve print collection names.
-vi.mock('./print-collections', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./print-collections')>();
-  return {
-    ...actual,
-    // Name deliberately NOT 'Ostrea' — the static PRINT_COLLECTION_DEFINITIONS
-    // default also names fap001's collection 'Ostrea', so asserting on that
-    // name wouldn't prove this mocked `definitions` value was actually used
-    // versus the static fallback silently winning (see the print-line-naming
-    // assertion below, which pins on 'CmsOnly 01').
-    loadPrintCollectionDefinitions: vi.fn(async () => [
-      { slug: 'ostrea', name: 'CmsOnly', designIds: ['fap001'], prints: [] },
-    ]),
-  };
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
   fromMode = 'select';
@@ -102,12 +82,13 @@ beforeEach(() => {
 
 describe('createOrderInvoice', () => {
   const printVariant = { size: '70x100', framed: false, mount: false, frameColour: 'none', prodigiSku: 'GLOBAL-FAP-28X40' } as const;
-  const printSuffix = ` — ${variantLabel(printVariant, 'en')} (${printVariant.prodigiSku})`;
+  const printSuffix = ` — ${formatLegacyPrintVariant(printVariant, 'en')} (${printVariant.prodigiSku})`;
+  const printKey = legacyPrintVariantKey(printVariant);
 
   it.each([
-    { description: `Print Nº ${registryPrintById('fap001')?.num}${printSuffix}`, metadata: {} },
-    { description: `CmsOnly 01${printSuffix}`, metadata: {} },
-    { description: 'A previous title', metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } },
+    { description: `Ostrea 01${printSuffix}`, metadata: {} },
+    { description: `Print fap001${printSuffix}`, metadata: {} },
+    { description: 'A previous title', metadata: { product_id: 'fap001', variant_key: printKey } },
   ])('reuses an existing print invoice line: $description', async (line) => {
     orderRow = { ...ORDER, locale: 'en', shipping: 0, total: 50500 };
     itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
@@ -123,9 +104,9 @@ describe('createOrderInvoice', () => {
 
   it.each([
     { description: `Print Nº 999${printSuffix}`, amount: 50500, metadata: {} },
-    { description: `CmsOnly 01${printSuffix}`, amount: 50499, metadata: {} },
-    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap002', variant_key: variantKey(printVariant) } },
-    { description: `CmsOnly 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap001', variant_key: 'another-variant' } },
+    { description: `Ostrea 01${printSuffix}`, amount: 50499, metadata: {} },
+    { description: `Ostrea 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap002', variant_key: printKey } },
+    { description: `Ostrea 01${printSuffix}`, amount: 50500, metadata: { product_id: 'fap001', variant_key: 'another-variant' } },
   ])('does not reuse a different print, variant or amount (%#)', async (line) => {
     orderRow = { ...ORDER, locale: 'en', shipping: 0 };
     itemRows = [{ product_id: 'fap001', unit_price: 50500, variant: printVariant }];
@@ -137,7 +118,7 @@ describe('createOrderInvoice', () => {
     await createOrderInvoice('pi_1');
 
     expect(stripeMock.invoiceItems.create).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ metadata: { product_id: 'fap001', variant_key: variantKey(printVariant) } }),
+      expect.objectContaining({ metadata: { product_id: 'fap001', variant_key: printKey } }),
       expect.anything(),
     );
   });
@@ -470,7 +451,7 @@ describe('createOrderInvoice', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
-  it('labels a fine-art print line item with the CMS-resolved collection name (proves `definitions` is threaded through, not dropped)', async () => {
+  it('labels a historical fine-art print line from the frozen legacy table', async () => {
     itemRows = [
       {
         id: 'oi-1',
@@ -485,7 +466,7 @@ describe('createOrderInvoice', () => {
       (c: unknown[]) => (c[1] as { idempotencyKey: string }).idempotencyKey === 'ii2_ord-1_fap001_GLOBAL-FAP-28X40_oi-1',
     );
     expect(call).toBeDefined();
-    expect((call![0] as { description: string }).description).toContain('CmsOnly 01');
+    expect((call![0] as { description: string }).description).toBe('Ostrea 01 — 70×100 cm · bez ramy (GLOBAL-FAP-28X40)');
   });
 
   it('uses English product labels and shipping description for en locale', async () => {

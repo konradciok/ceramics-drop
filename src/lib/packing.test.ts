@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CUSTOM_CARTONS, PACK_SPECS, PARCEL_DIMS, recommendPacking, type PackingPlan } from './packing';
 import { CATEGORIES, CATEGORY_ORDER, registryProductById } from './products';
-import { encodePrintToken } from './print-cart';
 
 /** Every input id lands in exactly one parcel (unknown/print ids excluded). */
 function packedIds(plan: PackingPlan): string[] {
@@ -34,7 +33,7 @@ describe('CUSTOM_CARTONS', () => {
 describe('PACK_SPECS', () => {
   it('stays in sync with the category measures in the product registry', () => {
     for (const slug of CATEGORY_ORDER) {
-      if (slug === 'fine-art-prints') continue; // prints ship via Prodigi, no pack spec
+      if (slug === 'fine-art-prints') continue; // retired prints have no pack spec
       const spec = PACK_SPECS[slug];
       expect(spec, `missing pack spec for ${slug}`).toBeDefined();
       const numbers = (CATEGORIES[slug].measure.match(/\d+(?:,\d+)?/g) ?? []).map((n) => Number(n.replace(',', '.')));
@@ -176,13 +175,14 @@ describe('recommendPacking', () => {
     assertInvariants(plan);
   });
 
-  it('excludes print cart tokens with a Prodigi note, without manual review', () => {
-    const token = encodePrintToken('fap01', { size: '50x70', framed: true, mount: false, frameColour: 'natural' });
+  it('excludes retired print cart tokens with a note, without manual review', () => {
+    // Frozen shape of a retired print cart token: print:<design>:<size>:<framed>:<mount>:<frameColour>.
+    const token = 'print:fap001:50x70:true:false:natural';
     const plan = recommendPacking([token, 'k01']);
     expect(plan.planLabel).toBe('B');
     expect(packedIds(plan)).toEqual(['k01']);
     expect(plan.manualReview).toBe(false);
-    expect(plan.notes.some((n) => n.includes('Prodigi'))).toBe(true);
+    expect(plan.notes.some((n) => n.includes('dawne zamówienie druku'))).toBe(true);
   });
 
   it('excludes persisted print design ids (order_items store fap005, not the token)', () => {
@@ -190,14 +190,14 @@ describe('recommendPacking', () => {
     expect(plan.planLabel).toBe('B');
     expect(packedIds(plan)).toEqual(['k01']);
     expect(plan.manualReview).toBe(false);
-    expect(plan.notes.some((n) => n.includes('fap005') && n.includes('Prodigi'))).toBe(true);
+    expect(plan.notes.some((n) => n.includes('fap005') && n.includes('dawne zamówienie druku'))).toBe(true);
   });
 
-  it('emits a single Prodigi note for multiple print lines', () => {
+  it('emits a single note for multiple retired print lines', () => {
     const plan = recommendPacking(['fap005', 'fap006', 'fap007']);
     expect(plan.packages).toEqual([]);
     expect(plan.manualReview).toBe(false);
-    expect(plan.notes.filter((n) => n.includes('Prodigi'))).toHaveLength(1);
+    expect(plan.notes.filter((n) => n.includes('dawne zamówienie druku'))).toHaveLength(1);
   });
 
   it('stacks plates at most four high', () => {

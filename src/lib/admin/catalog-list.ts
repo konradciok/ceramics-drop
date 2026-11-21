@@ -11,7 +11,6 @@
 import { adminSupabase } from '@/lib/admin/clients';
 import { listInventory, type Piece } from '@/lib/admin/data';
 import { CATEGORY_LABEL, productRef } from '@/lib/admin/products';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { listCatalogRows, readProductRow, type CatalogRows } from '@/lib/catalog/repository';
 import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplayStatus } from '@/lib/catalog/status';
@@ -62,7 +61,6 @@ function categoryRank(slug: CategorySlug): number {
 export function assembleProductRows(
   catalog: CatalogRows,
   pieceById: Map<string, Piece>,
-  definitions?: PrintCollectionDefinition[],
 ): ProductListRow[] {
   const variantsByProduct = new Map<string, CatalogRows['variants']>();
   for (const v of catalog.variants) {
@@ -74,7 +72,7 @@ export function assembleProductRows(
   const rows: ProductListRow[] = catalog.products.map((p) => {
     const variants = variantsByProduct.get(p.id) ?? [];
     const piece = pieceById.get(p.id) ?? null;
-    const ref = productRef(p.id, undefined, definitions);
+    const ref = productRef(p.id);
 
     // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
     // A product with NO variants is unknown-stock (e.g. a partial backfill) → not
@@ -148,7 +146,7 @@ export function assembleProductRows(
  * are empty (backfill not run yet) it falls back to the code registry — which is
  * byte-for-byte the seed the backfill would insert, so the list is identical.
  */
-export async function listProducts(definitions?: PrintCollectionDefinition[]): Promise<ProductListResult> {
+export async function listProducts(): Promise<ProductListResult> {
   const supabase = adminSupabase();
   // A transient DB failure on the catalogue read must not take down the page —
   // fall back to the registry (same path as an un-backfilled DB).
@@ -173,7 +171,7 @@ export async function listProducts(definitions?: PrintCollectionDefinition[]): P
 
   const pieceById = new Map(pieces.map((p) => [p.product_id, p]));
   return {
-    rows: assembleProductRows(catalog, pieceById, definitions),
+    rows: assembleProductRows(catalog, pieceById),
     source,
     dbCount: dbRows.products.length,
     expectedCount: registry.products.length,
@@ -212,7 +210,6 @@ export interface ProductEditorState {
  */
 export async function getProductEditorState(
   id: string,
-  definitions?: PrintCollectionDefinition[],
 ): Promise<ProductEditorState | null> {
   const supabase = adminSupabase();
   const dbRow = await readProductRow(supabase, id).catch((err) => {
@@ -227,7 +224,7 @@ export async function getProductEditorState(
   }
   if (!row) return null;
 
-  const ref = productRef(id, undefined, definitions);
+  const ref = productRef(id);
   // Ceramic piece_state context for the sidebar (reservation/expiry/order/showroom).
   // Null for prints, registry fallback, or a transient DB failure — the page must
   // not 500.

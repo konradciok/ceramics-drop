@@ -18,8 +18,6 @@ import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } f
 import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
-import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
-import type { PrintVariantSelection } from '@/lib/types';
 import { isGiftCardOrderItemVariant, type GiftCardOrderItemVariant } from '@/lib/gift-cards';
 
 export const dynamic = 'force-dynamic';
@@ -587,27 +585,22 @@ export async function POST(req: Request) {
           };
 
           const items =
-            (itemRows as Array<{ product_id: string; unit_price: number; variant: PrintVariantSelection | GiftCardOrderItemVariant | null }> | null) ?? [];
+            (itemRows as Array<{ product_id: string; unit_price: number; variant: GiftCardOrderItemVariant | Record<string, unknown> | null }> | null) ?? [];
           const isGiftCardOrder = items.length > 0 && items.every((it) => isGiftCardOrderItemVariant(it.variant));
           const notifyOrder = {
             order: {
               ...orderRowTyped,
-              // Print items carry variant + Prodigi SKU so the studio email
-              // shows exactly what will be produced; gift cards pass their own
-              // shape through unchanged (buildNewOrderToStudioEmail special-
-              // cases `kind: 'giftcard'`); ceramics pass null.
+              // Gift cards pass their own shape through unchanged
+              // (buildNewOrderToStudioEmail special-cases `kind: 'giftcard'`);
+              // ceramics pass null. A historical print variant already carries
+              // its snapshotted SKU.
               items: items.map((it) => ({
                 product_id: it.product_id,
                 unit_price: it.unit_price,
-                variant: isGiftCardOrderItemVariant(it.variant)
-                  ? it.variant
-                  : it.variant
-                    ? { ...it.variant, prodigiSku: PRODIGI_SKU_MAP[variantKey(it.variant)]?.sku ?? '—' }
-                    : null,
+                variant: it.variant ?? null,
               })),
             },
           };
-          const isPrintOnlyOrder = !isGiftCardOrder && items.length > 0 && items.every((it) => it.variant !== null);
 
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
@@ -633,7 +626,7 @@ export async function POST(req: Request) {
               emailOrderConfirmationToCustomer({
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
                 locale: orderRowTyped.locale ?? 'pl',
-                kind: isPrintOnlyOrder ? 'print' : 'ceramic',
+                kind: 'ceramic',
                 idempotencyKey: `order-confirmation/${orderId}`,
               }),
               'resend_email_id',

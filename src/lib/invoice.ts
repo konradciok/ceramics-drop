@@ -1,14 +1,9 @@
-import { printDisplayName } from '@/lib/print-curation';
 import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
 import { registryProductById, CATEGORIES } from './products';
-import { registryPrintById } from './prints';
-import { loadPrintCollectionDefinitions } from './print-collections';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
-import { variantKey, variantLabel } from './print-cart';
+import { formatLegacyPrintVariant, legacyPrintName, legacyPrintSku, legacyPrintVariantKey } from './legacy-print-lines';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
-import type { PrintVariantSelection } from './types';
 import plMessages from '../../messages/pl.json';
 import enMessages from '../../messages/en.json';
 import esMessages from '../../messages/es.json';
@@ -86,7 +81,6 @@ export async function createInvoiceForOrder(
   // early return — and even past it, a retry that finds the invoice already
   // finalized/paid never enters the items loop at all, so this DB read
   // (with its own timeout) would otherwise be wasted work in both cases.
-  let definitions: PrintCollectionDefinition[] | undefined;
 
   const addr = normalizeShippingAddress(order.shipping_address);
   const customerShipping =
@@ -186,19 +180,19 @@ export async function createInvoiceForOrder(
         label = tier ? `${gcLabel} — ${formatGiftCardAmount(tier, orderCurrency)}` : gcLabel;
         idempotencySuffix = `_${rawVariant.tierId}`;
       } else if (rawVariant) {
-        // Fine-art print: design name + chosen variant. The idempotency key
-        // below carries both the design id and the SKU so that two variants of
-        // the same design AND two designs in the same variant all invoice.
-        const variant = rawVariant as PrintVariantSelection & { prodigiSku: string };
-        const design = registryPrintById(it.product_id);
+        // Historical fine-art print line (prints moved to their own shop,
+        // 2026-11): named from the frozen legacy table. The idempotency key
+        // carries both the design id and the SKU so that two variants of the
+        // same design AND two designs in the same variant all invoice.
+        const sku = legacyPrintSku(rawVariant) ?? '—';
         const printName = productNames['print'] ?? 'Fine-art print';
-        if (design && !definitions) definitions = await loadPrintCollectionDefinitions();
-        const suffix = ` — ${variantLabel(variant, invoiceLocale)} (${variant.prodigiSku})`;
-        label = (design ? printDisplayName(design, printName, definitions) : printName)
-          + suffix;
-        legacyPrintLabel = `${printName} Nº ${design?.num ?? ''}`.trim() + suffix;
-        printIdentity = { product_id: it.product_id, variant_key: variantKey(variant) };
-        idempotencySuffix = `_${variant.prodigiSku}`;
+        const suffix = ` — ${formatLegacyPrintVariant(rawVariant, invoiceLocale) ?? ''} (${sku})`;
+        label = legacyPrintName(it.product_id, invoiceLocale) + suffix;
+        // Pre-metadata lines were described as "<noun> Nº <num>"; the design
+        // number is not kept in the legacy table, so match on the id instead.
+        legacyPrintLabel = `${printName} ${it.product_id}` + suffix;
+        printIdentity = { product_id: it.product_id, variant_key: legacyPrintVariantKey(rawVariant) ?? '' };
+        idempotencySuffix = `_${sku}`;
       } else {
         const product = registryProductById(it.product_id);
         label = product

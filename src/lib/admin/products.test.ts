@@ -17,19 +17,15 @@ describe('productRef', () => {
     expect(ref.category).toBe('fine-art-prints');
   });
 
-  it('threads definitions through printDisplayName (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
-    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the name
-    // proves that the definitions parameter was actually threaded through to
-    // printDisplayName, not silently dropped in favor of the static fallback.
-    const discriminatingDefs = [
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ];
-    const ref = productRef('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' }, discriminatingDefs);
-    expect(ref.known).toBe(true);
-    expect(ref.label).toContain('CmsOnly 01');
-    expect(ref.label).not.toContain('Signs');
-    expect(ref.label).toContain('50×70 cm');
+  it('labels a legacy print id from the frozen name table, with no thumbnail', () => {
+    const ref = productRef('fap001');
+    expect(ref).toEqual({
+      id: 'fap001',
+      label: 'Ostrea 01',
+      category: 'fine-art-prints',
+      image: null,
+      known: true,
+    });
   });
 
   it('degrades unknown ids', () => {

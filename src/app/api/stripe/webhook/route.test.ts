@@ -1812,8 +1812,8 @@ describe('webhook email idempotency on retry (F1)', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('print order: studio email carries variant + Prodigi SKU, confirmation uses print copy', async () => {
-    const printVariant = { size: '50x70', framed: true, mount: false, frameColour: 'black' };
+  it('historical print line: studio email passes the stored variant (with its SKU) through, confirmation uses the ceramic copy', async () => {
+    const printVariant = { size: '50x70', framed: true, mount: false, frameColour: 'black', prodigiSku: 'GLOBAL-CFP-20X28' };
     const { supabase } = makeSucceededSupabase({
       casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
       shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
@@ -1833,12 +1833,9 @@ describe('webhook email idempotency on retry (F1)', () => {
     const studioPayload = vi.mocked(emailNewOrderToStudio).mock.calls[0][0] as {
       order: { items: Array<{ variant: { prodigiSku: string } | null }> };
     };
-    expect(studioPayload.order.items[0].variant).toMatchObject({
-      ...printVariant,
-      prodigiSku: 'GLOBAL-CFP-20X28',
-    });
+    expect(studioPayload.order.items[0].variant).toEqual(printVariant);
     expect(emailOrderConfirmationToCustomer).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ kind: 'print' });
+    expect(vi.mocked(emailOrderConfirmationToCustomer).mock.calls[0][0]).toMatchObject({ kind: 'ceramic' });
   });
 
   it('ceramic order: confirmation stays on ceramic copy, studio items carry variant null', async () => {

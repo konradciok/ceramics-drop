@@ -112,21 +112,19 @@ function makeContentStateFakeSupabase(row: {
   };
 }
 
-describe('contentItems threads definitions through print naming', () => {
-  it('uses definitions to resolve fine-art-print names (discriminating fixture)', async () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
-    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the label
-    // proves that the definitions parameter was actually threaded through to
-    // printDisplayName, not silently dropped in favor of the static fallback.
-    const discriminatingDefs = [
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ];
+describe('editable documents after the print shop left', () => {
+  it('no longer exposes a fine-art-prints product_notes document', async () => {
+    const { EDITABLE_DOCUMENTS, editableDocument } = await import('./content');
+    expect(editableDocument('product_notes', 'fine-art-prints')).toBeNull();
+    // 9 ceramic product_notes + print-pdp (gift-card copy) + home.
+    expect(EDITABLE_DOCUMENTS).toHaveLength(11);
+    expect(EDITABLE_DOCUMENTS.filter((doc) => doc.kind === 'product_notes')).toHaveLength(9);
+  });
+
+  it('labels ceramic content items from the registry', async () => {
     const { contentItems } = await import('./content');
-    const items = contentItems('fine-art-prints', discriminatingDefs);
-    const fap005Item = items.find((item) => item.id === 'fap005');
-    expect(fap005Item).toBeDefined();
-    expect(fap005Item?.label).toBe('CmsOnly 01');
-    expect(fap005Item?.label).not.toContain('Signs');
+    const k01 = contentItems('kubki').find((item) => item.id === 'k01');
+    expect(k01).toMatchObject({ label: 'kubki Nº 01', image: expect.stringContaining('/uploads/') });
   });
 });
 
@@ -237,7 +235,7 @@ describe('localeState (via getContentEditorState) — stale intervening draft re
 
     const { getContentEditorState } = await import('./content');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const state = await getContentEditorState('page', HOME_PAGE_SLUG, undefined, fake as any);
+    const state = await getContentEditorState('page', HOME_PAGE_SLUG, fake as any);
 
     expect(state?.locales.pl.payload).toEqual(v3CurrentlyPublished.payload);
     expect(state?.locales.pl.versions[0]?.version).toBe(3);

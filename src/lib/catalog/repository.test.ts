@@ -6,7 +6,6 @@ import {
   updateProductStatus,
   listCatalogRows,
   readCeramicProducts,
-  readPrintDesigns,
   readProductRow,
   updateProductMeta,
 } from './repository';
@@ -101,8 +100,8 @@ function supabaseForBackfill(
   return { supabase: { rpc } as unknown as SupabaseClient, rpc };
 }
 
-describe('backfillCatalog print publication safety', () => {
-  it('sends the complete structural seed through one atomic database RPC', async () => {
+describe('backfillCatalog', () => {
+  it('sends the ceramics-only structural seed through one atomic database RPC', async () => {
     const { supabase, rpc } = supabaseForBackfill();
 
     await backfillCatalog(supabase);
@@ -110,19 +109,24 @@ describe('backfillCatalog print publication safety', () => {
     expect(rpc).toHaveBeenCalledOnce();
     expect(rpc).toHaveBeenCalledWith('backfill_catalog', {
       p_products: expect.arrayContaining([
-        expect.objectContaining({ id: 'fap001', type: 'print', status: 'active' }),
-        expect.objectContaining({ id: 'fap029', type: 'print', status: 'archived' }),
         expect.objectContaining({ id: 'k01', type: 'ceramic', status: 'active' }),
       ]),
       p_variants: expect.arrayContaining([
-        expect.objectContaining({ product_id: 'fap001' }),
         expect.objectContaining({ product_id: 'k01', variant_key: 'default' }),
       ]),
       p_media: expect.arrayContaining([
-        expect.objectContaining({ product_id: 'fap001' }),
         expect.objectContaining({ product_id: 'k01' }),
       ]),
     });
+    // Retired prints are never re-seeded: a backfill leaves their DB rows alone.
+    const payload = rpc.mock.calls[0][1] as {
+      p_products: { type: string }[];
+      p_variants: { product_id: string }[];
+      p_media: { product_id: string }[];
+    };
+    expect(payload.p_products.every((p) => p.type === 'ceramic')).toBe(true);
+    expect(payload.p_variants.some((v) => v.product_id.startsWith('fap'))).toBe(false);
+    expect(payload.p_media.some((m) => m.product_id.startsWith('fap'))).toBe(false);
   });
 
   it('surfaces an atomic backfill RPC failure', async () => {
@@ -153,7 +157,7 @@ describe('backfillCatalog print publication safety', () => {
    Fail-closed read guard (M-4) — one test per reader path.
 
    Two-tier behavior per the Dispatch B ruling: customer/storefront readers
-   (readCeramicProducts, readPrintDesigns) SKIP an invalid ceramic row;
+   (readCeramicProducts) SKIP an invalid ceramic row;
    admin-only readers (listCatalogRows, readProductRow, updateProductMeta)
    validate + report but keep the row — see read-schemas.ts's parseProductRow
    doc comment for why (catalog-list.ts's cascading registry-fallback would
@@ -182,17 +186,6 @@ function ceramicRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
     description: null,
     drop_id: 'drop-1',
     note_index: 1,
-    ...over,
-  };
-}
-
-function printRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
-  return {
-    ...ceramicRow(),
-    id: 'fap01',
-    type: 'print',
-    category_slug: 'fine-art-prints',
-    price_pln: null,
     ...over,
   };
 }
@@ -259,43 +252,6 @@ describe('fail-closed read guard — per-reader behavior', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('readPrintDesigns (storefront) passes a NULL-priced print row through untouched', async () => {
-    const design = printRow({ id: 'fap01', price_pln: null, status: 'active' });
-    const from = vi.fn((table: string) => {
-      if (table === 'products') return makeChain({ data: [design], error: null });
-      if (table === 'product_variants') return makeChain({ data: [], error: null });
-      if (table === 'product_media') return makeChain({ data: [], error: null });
-      throw new Error(`unexpected table ${table}`);
-    });
-    const supabase = { from } as unknown as SupabaseClient;
-
-    const designs = await readPrintDesigns(supabase);
-
-    expect(designs.map((d) => d.id)).toEqual(['fap01']);
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
-  });
-
-  it('readPrintDesigns (storefront) defensively skips+reports a bad-priced ceramic-typed row if one ever appeared', async () => {
-    // Defensive/synthetic: the `.eq('type','print')` query means a ceramic
-    // row should never actually reach this reader in practice, but the
-    // shared parseProductRows guard must still catch it if it somehow did —
-    // proving "a reader the fix forgot" cannot bypass validation.
-    const rogueCeramic = ceramicRow({ id: 'k99', price_pln: null });
-    const design = printRow({ id: 'fap01', price_pln: null, status: 'active' });
-    const from = vi.fn((table: string) => {
-      if (table === 'products') return makeChain({ data: [design, rogueCeramic], error: null });
-      if (table === 'product_variants') return makeChain({ data: [], error: null });
-      if (table === 'product_media') return makeChain({ data: [], error: null });
-      throw new Error(`unexpected table ${table}`);
-    });
-    const supabase = { from } as unknown as SupabaseClient;
-
-    const designs = await readPrintDesigns(supabase);
-
-    expect(designs.map((d) => d.id)).toEqual(['fap01']); // rogue ceramic never surfaces
-    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
-  });
-
   it('readProductRow (admin editor) validates + reports a bad ceramic row but still returns it', async () => {
     const bad = ceramicRow({ id: 'k02', price_pln: 0 });
     const from = vi.fn((table: string) => {
@@ -333,13 +289,11 @@ describe('fail-closed read guard — per-reader behavior', () => {
 });
 
 describe('catalog load timeout budget', () => {
-  it.each(['ceramic', 'print'] as const)('%s shares one deadline across all query stages', async (type) => {
+  it('ceramic read shares one deadline across all query stages', async () => {
     const signals: AbortSignal[] = [];
     const timeout = vi.spyOn(AbortSignal, 'timeout');
     const from = vi.fn((table: string) => {
-      const data = table === 'products'
-        ? [type === 'ceramic' ? ceramicRow({ id: 'k01', price_pln: 120 }) : PRINT_DRAFT]
-        : [];
+      const data = table === 'products' ? [ceramicRow({ id: 'k01', price_pln: 120 })] : [];
       const chain = makeChain({ data, error: null });
       chain.abortSignal = vi.fn((signal: AbortSignal) => {
         signals.push(signal);
@@ -349,8 +303,8 @@ describe('catalog load timeout budget', () => {
     });
     try {
       const client = { from } as unknown as SupabaseClient;
-      await (type === 'ceramic' ? readCeramicProducts(client) : readPrintDesigns(client));
-      expect(signals).toHaveLength(type === 'ceramic' ? 2 : 3);
+      await readCeramicProducts(client);
+      expect(signals).toHaveLength(2);
       expect(new Set(signals).size).toBe(1);
       expect(timeout).toHaveBeenCalledExactlyOnceWith(5000);
     } finally {

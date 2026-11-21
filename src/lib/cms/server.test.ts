@@ -1,6 +1,6 @@
 // Regression coverage for verifyPreviewToken: a crafted/malformed ?preview=
 // token must resolve to null, never throw — a throw here 500s every page
-// that reads preview content (homepage, print PDPs).
+// that reads preview content (homepage, PDPs).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 
@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) 
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
 import { mintPreviewToken, verifyPreviewToken, getPublishedContent } from './server';
-import { registryPrintDesigns } from '@/lib/prints';
+import { registryProductsByCategory } from '@/lib/products';
 
 /** A thenable chain where every builder returns the chain; resolves to `result`.
  *  Mirrors the idiom in src/lib/catalog/repository.test.ts. */
@@ -59,12 +59,12 @@ describe('getPublishedContent — product notes read leniency', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('returns the live notes minus stale ids instead of null when the published payload carries a retired design', async () => {
-    const ids = registryPrintDesigns().map((d) => d.id);
+  it('returns the live notes minus stale ids instead of null when the published payload carries a retired piece', async () => {
+    const ids = registryProductsByCategory('kubki').map((p) => p.id);
     const notes = Object.fromEntries(ids.map((id) => [id, `Opis ${id}`]));
-    const payload = { notes: { ...notes, 'fap-stale': 'Opis' } };
+    const payload = { notes: { ...notes, 'zz-stale-id': 'Opis' } };
     mockFrom.mockReturnValue(makeChain({ data: { id: 'doc', cms_document_versions: [{ payload }] }, error: null }));
-    const result = await getPublishedContent<{ notes: Record<string, string> }>('product_notes', 'fine-art-prints', 'es');
+    const result = await getPublishedContent<{ notes: Record<string, string> }>('product_notes', 'kubki', 'es');
     expect(result).not.toBeNull();
     expect(Object.keys(result!.notes).sort()).toEqual([...ids].sort());
     expect(Sentry.captureException).not.toHaveBeenCalled();

@@ -6,10 +6,10 @@
    every inactive -> active transition is guarded in Postgres.
    ============================================================ */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PrintDesign, Product } from '../types';
+import type { Product } from '../types';
 import { supabaseTimeout } from '../supabase-timeout';
 import { buildCatalogSeed } from './seed';
-import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
+import { mapCeramicProducts, sortCeramicProductRows } from './mappers';
 import { parseProductRow, parseProductRows } from './read-schemas';
 import type { MediaSeedRow, ProductSeedRow, ProductStatus, VariantSeedRow } from './types';
 import type { ProductUpdateInput } from './schemas';
@@ -117,56 +117,6 @@ export async function readCeramicProducts(supabase: SupabaseClient): Promise<Pro
   if (mediaRes.error) throw new Error(`read media: ${mediaRes.error.message}`);
 
   return mapCeramicProducts(rows, (mediaRes.data ?? []) as MediaSeedRow[]);
-}
-
-/**
- * Read the print catalogue from the DB and reconstruct `PrintDesign[]` (all
- * designs, published and draft — `getPrintById` needs the drafts too). Called in
- * production (CATALOG_SOURCE=db) by loadPrintDesignsFromDb via the print
- * accessors. Variants and media are read in `position` order so the axis/gallery
- * reconstruction is stable.
- */
-export async function readPrintDesigns(supabase: SupabaseClient): Promise<PrintDesign[]> {
-  // One budget for the complete load, not a fresh five seconds per stage.
-  const signal = supabaseTimeout();
-  const productsRes = await supabase
-    .from('products')
-    .select('*')
-    .eq('type', 'print')
-    .order('num', { ascending: true })
-    .abortSignal(signal);
-  if (productsRes.error) throw new Error(`read prints: ${productsRes.error.message}`);
-
-  const rawProducts = productsRes.data ?? [];
-  const ids = rawProducts.map((r) => r.id);
-  if (ids.length === 0) return [];
-
-  const [variantsRes, mediaRes] = await Promise.all([
-    supabase
-      .from('product_variants')
-      .select('*')
-      .in('product_id', ids)
-      .order('position', { ascending: true })
-      .abortSignal(signal),
-    supabase
-      .from('product_media')
-      .select('*')
-      .in('product_id', ids)
-      .order('position', { ascending: true })
-      .abortSignal(signal),
-  ]);
-  if (variantsRes.error) throw new Error(`read print variants: ${variantsRes.error.message}`);
-  if (mediaRes.error) throw new Error(`read print media: ${mediaRes.error.message}`);
-
-  // Customer-facing reader: run through the same shared guard as
-  // readCeramicProducts. In practice a `type='print'` query never returns a
-  // ceramic row to skip, but applying the guard here anyway keeps the "no
-  // reader can bypass validation" property uniform across all readers.
-  return mapPrintDesigns(
-    parseProductRows(rawProducts),
-    (variantsRes.data ?? []) as VariantSeedRow[],
-    (mediaRes.data ?? []) as MediaSeedRow[],
-  );
 }
 
 /* ============================================================

@@ -1,11 +1,8 @@
 import { z } from 'zod';
-import { registryContentPrintDesigns } from '@/lib/prints';
 import { registryProductsByCategory } from '@/lib/products';
 import { IMAGE_KEY_RE, VIDEO_KEY_RE } from '@/lib/site-media';
 import { CMS_DOCUMENT_KINDS, CMS_LOCALES, HOME_PAGE_SLUG, PRINT_PDP_SLUG, type CmsDocumentKind, type ProductNotesPayload } from './types';
 import type { CategorySlug } from '@/lib/types';
-
-const PRINTS_SLUG = 'fine-art-prints';
 
 export const cmsLocaleSchema = z.enum(CMS_LOCALES);
 export const cmsKindSchema = z.enum(CMS_DOCUMENT_KINDS);
@@ -87,9 +84,8 @@ export const deliveryNoticeSchema = z.object({
 
 export type ProductNoteEntry = { id: string; noteIndex: number };
 
-/** Content identities, including staged prints, in catalogue order. */
+/** Content identities in catalogue order. */
 export function productNoteEntries(slug: string): ProductNoteEntry[] | null {
-  if (slug === PRINTS_SLUG) return registryContentPrintDesigns().map(({ id, noteIndex }) => ({ id, noteIndex }));
   try {
     return registryProductsByCategory(slug as CategorySlug).map(({ id, noteIndex }) => ({ id, noteIndex }));
   } catch {

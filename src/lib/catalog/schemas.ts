@@ -13,7 +13,7 @@
 import { z } from 'zod';
 import type { ProductStatus } from './types';
 
-/** The nine ceramic category slugs (fine-art-prints is edited via the print path). */
+/** The nine ceramic category slugs (fine-art-prints is the retired print shop). */
 export const CERAMIC_CATEGORY = z.enum([
   'kubki',
   'wazony',

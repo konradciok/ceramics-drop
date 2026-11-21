@@ -8,6 +8,7 @@ describe('capabilitiesRoute', () => {
   it('lists exactly the 9 ceramic categories and print axes', async () => {
     const res = await capabilitiesRoute.handler(new Request('https://x.test/v1/capabilities'), {} as CloudflareEnv, {}, ctx);
     const body = await res.json();
+    expect(body.productTypes).toEqual(['ceramic']);
     expect(body.ceramicCategories).toHaveLength(9);
     expect(body.printSizes).toEqual(['30x40', '50x70', '70x100']);
     expect(body.currencies).toEqual(['pln', 'eur', 'gbp']);

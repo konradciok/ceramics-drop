@@ -1,7 +1,7 @@
 import type { RouteDef } from '../router';
 import { jsonResponse, errorResponse } from '../http';
 import { loadProductResponse } from '../mapping';
-import { computeReadiness, buildPrintVariantSpecs } from '../readiness';
+import { computeReadiness } from '../readiness';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from '../idempotency';
 
 function extractCurrentRevision(error: { details?: string | null; message?: string }): number | undefined {
@@ -64,7 +64,8 @@ export const publicationPostRoute: RouteDef = {
         return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
       }
 
-      let variantsParam: unknown = null;
+      // Print variants used to ride this param; ceramics never send any.
+      const variantsParam: unknown = null;
       let mediaParam: unknown = null;
       let structuralParam: unknown = null;
 
@@ -79,9 +80,8 @@ export const publicationPostRoute: RouteDef = {
 
         mediaParam = product.draft.images.map((url, i) => ({ url, alt: null, position: i, is_primary: i === 0 }));
 
-        if (product.draft.type === 'print') {
-          variantsParam = buildPrintVariantSpecs(product.draft);
-        } else {
+        // computeReadiness refuses every print, so only ceramics reach here.
+        if (product.draft.type === 'ceramic') {
           structuralParam = {
             category_slug: product.draft.category,
             num: product.draft.displayNumber,

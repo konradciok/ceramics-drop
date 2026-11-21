@@ -137,39 +137,6 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect((await res.json()).code).toBe('NOT_IMPLEMENTED');
   });
 
-  // Task 6 — the pricing handlers must never reach for adminSupabase() /
-  // getCloudflareContext() (the Task 5 gap documented on the /v1/content test
-  // below). This exercises the real, unmocked pricing read path
-  // (pricing-list.ts -> pricing-mapping.ts's loadPricingResource) through the
-  // full entrypoint with nothing but a minimal Supabase stand-in in
-  // deps.makeSupabase — exactly the role it plays in production. If any
-  // pricing module acquired a getCloudflareContext() dependency, this would
-  // throw rather than return 200.
-  it('GET /v1/pricing (real, unmocked path) succeeds via ctx.supabase without ever calling getCloudflareContext()', async () => {
-    const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
-    const rowsByTable: Record<string, unknown> = {
-      print_pricing_config: { published_revision: 1 },
-      pricing_config_drafts: { revision: 1, payload: { fields: [] } },
-    };
-    const fakeSupabase = {
-      from: (table: string) => {
-        if (!(table in rowsByTable)) throw new Error(`unexpected table in pricing stub: ${table}`);
-        const builder = {
-          select: () => builder,
-          order: () => builder,
-          limit: () => builder,
-          maybeSingle: async () => ({ data: rowsByTable[table], error: null }),
-        };
-        return builder;
-      },
-    } as unknown as never;
-    const res = await handleCmsApiRequest(reqWithToken('/v1/pricing', token), baseEnv, { makeSupabase: () => fakeSupabase });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.items).toHaveLength(1);
-    expect(body.items[0]).toMatchObject({ id: 'print-pricing', kind: 'pricing', revision: 1, publishedRevision: 1 });
-  });
-
   // Task 7 — the same guard for the shipping-rates handlers: they must never
   // reach for adminSupabase() / getCloudflareContext() (the Task 5 gap
   // documented on the /v1/content test below). This exercises the real,
@@ -224,7 +191,11 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     ['POST', '/v1/jobs/j1/retry'],
     ['POST', '/v1/jobs/j1/publish'],
     ['POST', '/v1/products/fap001/proofs/p1'],
-  ])('%s %s → 404 NOT_IMPLEMENTED (retired print-asset operation)', async (method, path) => {
+    ['GET', '/v1/pricing'],
+    ['POST', '/v1/pricing/print/preview'],
+    ['GET', '/v1/collections'],
+    ['POST', '/v1/collections'],
+  ])('%s %s → 404 NOT_IMPLEMENTED (retired print operation)', async (method, path) => {
     const token = await signToken({ email: OWNER_EMAIL, aud: AUD, iss: TEAM_DOMAIN });
     const makeSupabase = vi.fn(() => ({ from: () => { throw new Error('must not touch Supabase'); } }) as unknown as never);
     const base = reqWithToken(path, token);
@@ -288,9 +259,9 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.items)).toBe(true);
-    // EDITABLE_DOCUMENTS.length (12) x CMS_LOCALES.length (4) — see
+    // EDITABLE_DOCUMENTS.length (11) x CMS_LOCALES.length (4) — see
     // content-mapping.ts's loadAllContentResources.
-    expect(body.items.length).toBe(48);
+    expect(body.items.length).toBe(44);
   });
 
 });

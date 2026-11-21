@@ -16,7 +16,6 @@ import {
   buildLabelToStudioEmail,
   buildNewOrderToStudioEmail,
   buildOrderConfirmationEmail,
-  buildPrintShippingConfirmation,
   buildRefundFailedAlertEmail,
   buildReturnLabelEmail,
   buildShippingConfirmation,
@@ -157,7 +156,7 @@ describe('buildNewOrderToStudioEmail', () => {
     expect(html).toContain('105.00');
   });
 
-  it('renders the variant label and Prodigi SKU for print items', () => {
+  it('renders a historical print line with its variant label and snapshotted SKU', () => {
     const printOrder = {
       ...newOrder,
       delivery_method: 'kurier',
@@ -518,61 +517,6 @@ describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale });
     expect(html).not.toMatch(/lipc|July|julio|\bJuli\b/i);
     expect(html).not.toMatch(SUPERSEDED_RANGE);
-  });
-
-  it.each(locales)('print confirmations state the same term, with the region (%s)', (locale) => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale, kind: 'print' });
-    expect(html).toMatch(TERM[locale]);
-    expect(html).not.toMatch(SUPERSEDED_RANGE);
-  });
-});
-
-describe('buildOrderConfirmationEmail — print copy (kind: print)', () => {
-  const locales = ['pl', 'en', 'es', 'de'] as const;
-
-  it.each(locales)('uses on-demand/courier copy with no InPost/locker/Poland text (%s)', (locale) => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale, kind: 'print' });
-    // The fulfilment partner is a trade secret — never named in customer copy.
-    expect(html).not.toContain('Prodigi');
-    expect(html).not.toContain('InPost');
-    expect(html).not.toContain('Paczkomat');
-    expect(html).not.toContain('paczkomat');
-  });
-
-  it('keeps the ceramic copy when kind is omitted', () => {
-    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
-    expect(html).toContain('InPost');
-    expect(html).not.toContain('Prodigi');
-  });
-});
-
-describe('buildPrintShippingConfirmation', () => {
-  const printOrder = { id: 'ord-p1', email: 'buyer@example.com', receiver_first_name: 'Anna' };
-  const tracking = { number: '1Z999AA1', url: 'https://track.example.com/1Z999AA1', carrier: 'dpd' };
-
-  it('includes carrier tracking number and link, localised', () => {
-    const { subject, html } = buildPrintShippingConfirmation({ order: printOrder, tracking, locale: 'en' });
-    expect(subject).toBe('Your order has been shipped');
-    expect(html).toContain('1Z999AA1');
-    expect(html).toContain('https://track.example.com/1Z999AA1');
-    expect(html).toContain('dpd');
-  });
-
-  it('has no returns block and no InPost/locker language', () => {
-    const { html } = buildPrintShippingConfirmation({ order: printOrder, tracking, locale: 'pl' });
-    expect(html).not.toContain('zwrot');
-    expect(html).not.toContain('inpost.pl');
-    expect(html).not.toContain('Paczkomat');
-  });
-
-  it('omits the tracking block when no number is available yet', () => {
-    const { html } = buildPrintShippingConfirmation({
-      order: printOrder,
-      tracking: { number: null, url: null },
-      locale: 'de',
-    });
-    expect(html).toContain('Hallo Anna');
-    expect(html).not.toContain('Sendungsnummer:');
   });
 });
 

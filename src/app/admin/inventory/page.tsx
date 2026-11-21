@@ -1,7 +1,5 @@
 import { listInventory, listDrops, listInterest } from '@/lib/admin/data';
 import { productRef } from '@/lib/admin/products';
-import { adminSupabase } from '@/lib/admin/clients';
-import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { registryProductById } from '@/lib/products';
 import { formatDateTime } from '../ui';
 import { InventoryManager, type InventoryRow, type DropInfo } from './InventoryManager';
@@ -9,11 +7,10 @@ import { InventoryManager, type InventoryRow, type DropInfo } from './InventoryM
 export const dynamic = 'force-dynamic';
 
 export default async function InventoryPage() {
-  const [pieces, drops, interest, definitions] = await Promise.all([
+  const [pieces, drops, interest] = await Promise.all([
     listInventory(),
     listDrops(),
     listInterest(),
-    loadPrintCollectionDefinitions(adminSupabase()),
   ]);
 
   const counts = { available: 0, reserved: 0, sold: 0, showroom: 0 };
@@ -36,7 +33,7 @@ export default async function InventoryPage() {
   }
 
   const rows: InventoryRow[] = pieces.map((p) => {
-    const ref = productRef(p.product_id, undefined, definitions);
+    const ref = productRef(p.product_id);
     return {
       productId: p.product_id,
       label: ref.label,

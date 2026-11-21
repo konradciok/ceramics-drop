@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPrintVariantSpecs, computeReadiness } from './readiness';
+import { computeReadiness, PRINTS_RETIRED_BLOCKER } from './readiness';
 import type { PrintDraft, ProductResponse } from './types';
 
 function makeQuery(data: unknown[]) {
@@ -24,48 +24,6 @@ const printDraft: PrintDraft = {
   title: { pl: 'Test' },
   description: { pl: 'Opis' },
 };
-
-describe('buildPrintVariantSpecs', () => {
-  it('expands unframed + each frame colour, honoring mountAvailable', () => {
-    const specs = buildPrintVariantSpecs(printDraft);
-    expect(specs.map((s) => s.variant_key)).toEqual(['30x40:false:false:none', '30x40:true:false:black']);
-  });
-
-  it('adds a mounted variant per frame colour when mountAvailable is true', () => {
-    const specs = buildPrintVariantSpecs({ ...printDraft, mountAvailable: true });
-    expect(specs.map((s) => s.variant_key)).toEqual([
-      '30x40:false:false:none',
-      '30x40:true:false:black',
-      '30x40:true:true:black',
-    ]);
-  });
-
-  it('excludes variantKeys listed in unavailable', () => {
-    const specs = buildPrintVariantSpecs({ ...printDraft, unavailable: ['30x40:false:false:none'] });
-    expect(specs.map((s) => s.variant_key)).toEqual(['30x40:true:false:black']);
-  });
-
-  it('looks up real print-area pixels from PRODIGI_SKU_MAP', () => {
-    const specs = buildPrintVariantSpecs(printDraft);
-    expect(specs[0]).toMatchObject({ sku: 'GLOBAL-FAP-12X16', print_area_width_px: 3600, print_area_height_px: 4800 });
-  });
-
-  it('includes the axes selection on every generated spec', () => {
-    const specs = buildPrintVariantSpecs(printDraft);
-    expect(specs[0].axes).toEqual({ size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(specs[1].axes).toEqual({ size: '30x40', framed: true, mount: false, frameColour: 'black' });
-  });
-
-  it('uses assetPxFor (not printAreaPx) for a variant where the master asset diverges from the Prodigi print-area spec', () => {
-    // '30x40:true:false:black' is the one PRODIGI_SKU_MAP entry with a distinct
-    // assetPx (3600x4800) vs printAreaPx (3614x4795) — Decision 2026-08-03,
-    // prodigi/decisions.md #6. Readiness must compare against the real asset
-    // dimensions (assetPx), or every print becomes permanently unpublishable.
-    const specs = buildPrintVariantSpecs(printDraft);
-    const framed = specs.find((s) => s.variant_key === '30x40:true:false:black');
-    expect(framed).toMatchObject({ print_area_width_px: 3600, print_area_height_px: 4800 });
-  });
-});
 
 describe('computeReadiness', () => {
   const ceramicProduct: ProductResponse = {
@@ -112,14 +70,13 @@ describe('computeReadiness', () => {
     availability: 'available',
   };
 
-  it('blocks a print with no assigned/ready asset for a required variant', async () => {
-    const supabase = fakeSupabase({ print_variant_asset_assignments: [], print_fulfilment_assets: [] });
+  it('blocks every print with the retired-prints blocker (prints left the store)', async () => {
+    const supabase = fakeSupabase({});
     const result = await computeReadiness(supabase, printProduct);
-    expect(result.ready).toBe(false);
-    expect(result.blockers.length).toBeGreaterThan(0);
+    expect(result).toMatchObject({ revision: 1, ready: false, blockers: [PRINTS_RETIRED_BLOCKER] });
   });
 
-  it('is ready when every variant has a dimension-matched ready asset', async () => {
+  it('blocks a print even when it would previously have had every asset ready', async () => {
     const supabase = fakeSupabase({
       print_variant_asset_assignments: [
         { variant_key: '30x40:false:false:none', asset_id: 'a1' },
@@ -131,16 +88,7 @@ describe('computeReadiness', () => {
       ],
     });
     const result = await computeReadiness(supabase, printProduct);
-    expect(result.ready).toBe(true);
-    expect(result.blockers).toEqual([]);
-  });
-
-  it('blocks when the assigned asset is staged rather than ready', async () => {
-    const supabase = fakeSupabase({
-      print_variant_asset_assignments: [{ variant_key: '30x40:false:false:none', asset_id: 'a1' }],
-      print_fulfilment_assets: [{ id: 'a1', status: 'staged', width_px: 3600, height_px: 4800 }],
-    });
-    const result = await computeReadiness(supabase, printProduct);
     expect(result.ready).toBe(false);
+    expect(result.blockers).toEqual([PRINTS_RETIRED_BLOCKER]);
   });
 });

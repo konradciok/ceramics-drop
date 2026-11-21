@@ -46,7 +46,7 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
       await emailOrderConfirmationToCustomer({
         order: { id: orderId, email: order.email, receiver_first_name: order.receiver_first_name,
           payment: { total: order.total, currency: order.currency, gift_card_amount: order.gift_card_amount, gift_card_balance_after: order.gift_card_balance_after } },
-        locale: order.locale ?? 'pl', kind: order.fulfilment_type === 'prodigi' ? 'print' : 'ceramic', env,
+        locale: order.locale ?? 'pl', kind: 'ceramic', env,
         idempotencyKey: `order-confirmation/${orderId}`,
       });
       }
