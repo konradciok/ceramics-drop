@@ -21,8 +21,6 @@ test.describe('SEO routing contract @ci', () => {
       { label: 'wrong category (k01 is kubki, not wazony)', path: '/wazony/k01' },
       { label: 'nonexistent ceramic id', path: '/kubki/nonexistent-id-999' },
       { label: 'removed ceramic id (k15, in the REMOVED set)', path: '/kubki/k15' },
-      { label: 'nonexistent print id', path: '/fine-art-prints/fap999' },
-      { label: 'nonexistent print collection', path: '/kolekcje/nonexistent-collection' },
       { label: 'unmapped legacy-shaped URL stays a real 404, never bulk-redirects', path: '/products/some-fake-handle' },
     ];
 
@@ -39,6 +37,30 @@ test.describe('SEO routing contract @ci', () => {
       const response = await page.goto('/kubki/nonexistent-id-999');
       expect(response?.status()).toBe(404);
       await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    });
+  });
+
+  test.describe('fine-art prints moved to the print shop (301, absolute)', () => {
+    const cases = [
+      { path: '/fine-art-prints/fap001', location: 'https://anna-ciok.com/pl/products/ostrea-01-fine-art-print' },
+      { path: '/en/fine-art-prints/fap001', location: 'https://anna-ciok.com/products/ostrea-01-fine-art-print' },
+      { path: '/fine-art-prints/fap999', location: 'https://anna-ciok.com/pl/collections/all' },
+      { path: '/fine-art-prints', location: 'https://anna-ciok.com/pl/collections/all' },
+      { path: '/de/kolekcje/cirrus', location: 'https://anna-ciok.com/de/collections/all' },
+      { path: '/kolekcje', location: 'https://anna-ciok.com/pl/collections/all' },
+    ];
+    for (const { path, location } of cases) {
+      test(`${path} -> ${location}`, async ({ request }) => {
+        const response = await request.get(path, { maxRedirects: 0 });
+        expect(response.status()).toBe(301);
+        expect(response.headers()['location']).toBe(location);
+      });
+    }
+
+    test('/sklep is the ceramics shop (200, no redirect)', async ({ page }) => {
+      const response = await page.goto('/sklep');
+      expect(response?.status()).toBe(200);
+      await expect(page.getByTestId('ceramic-shop-families')).toBeVisible();
     });
   });
 

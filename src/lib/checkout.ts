@@ -1,10 +1,8 @@
 import { getProductById, isProductPublic, registryProducts } from './products';
 import { priceOfCurrency, toMinor } from './pricing';
-import { getPrintById, isVariantAvailable, registryPrintDesigns } from './prints';
-import { assetPxFor, decodePrintToken, isPrintToken, variantKey, PRODIGI_SKU_MAP } from './print-cart';
-import { priceOfVariant, type PrintPricingConfig } from './print-pricing';
-import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from './print-pricing-config/get';
-import { resolvePrintAsset } from '@/server/print-assets/repository';
+import { registryPrintDesigns } from './prints';
+import { isPrintToken } from './print-cart';
+import type { PrintPricingConfig } from './print-pricing';
 import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
 import type { PrintVariantSelection } from './types';
 
@@ -78,9 +76,6 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
 
   const seen = new Set<string>();
   const items: CheckoutItem[] = [];
-  // Loaded lazily on the first print token so ceramic-only carts skip it.
-  // This is THE price of record for prints — the client never sends a price.
-  let pricing: PrintPricingConfig | null = null;
   for (const raw of rawIds) {
     if (typeof raw !== 'string' || seen.has(raw)) continue;
     if (isGiftCardToken(raw)) {
@@ -90,52 +85,11 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
       items.push({ product_id: line.tierId, unit_price: line.unitPriceMinor, giftCardTierId: line.tierId });
       continue;
     }
-    if (isPrintToken(raw)) {
-      const dec = decodePrintToken(raw);
-      if (!dec) return { ok: false, reason: 'unknown' };
-      const design = await getPrintById(dec.designId);
-      if (!design || !isVariantAvailable(design, dec.sel)) return { ok: false, reason: 'unknown' };
-      const skuInfo = PRODIGI_SKU_MAP[variantKey(dec.sel)];
-      if (!skuInfo) return { ok: false, reason: 'unknown' };
-      let asset;
-      try {
-        asset = await resolvePrintAsset(dec.designId, variantKey(dec.sel));
-      } catch {
-        // Transient Supabase error — let the buyer retry rather than collapsing
-        // checkout with a 500 before any PI or reservation is created.
-        return { ok: false, reason: 'print_asset_error' };
-      }
-      if (!asset) return { ok: false, reason: 'print_asset_unavailable' };
-      seen.add(raw);
-      if (!pricing) {
-        try {
-          pricing = await getPrintPricingConfigForCheckout();
-        } catch (err) {
-          if (err instanceof PrintPricingUnavailableError) {
-            return { ok: false, reason: 'print_pricing_unavailable' };
-          }
-          throw err;
-        }
-      }
-      const major = priceOfVariant(dec.sel, currency, pricing);
-      const unit_price = toMinor(major);
-      items.push({
-        product_id: dec.designId,
-        unit_price,
-        variant: {
-          ...dec.sel,
-          prodigiSku: skuInfo.sku,
-          printAreaPx: assetPxFor(skuInfo),
-          assetId: asset.assetId,
-          assetKey: asset.r2Key,
-          assetSha256: asset.sha256,
-          assetContentType: asset.contentType,
-          assetWidthPx: asset.widthPx,
-          assetHeightPx: asset.heightPx,
-        },
-      });
-      continue;
-    }
+    // Fine-art prints moved to their own shop (PRINT_SHOP_URL, 2026-11) and
+    // are no longer sold here. A stale `print:` token (an old cart in
+    // localStorage, a replayed request) is a hard refusal before any
+    // reservation or PaymentIntent work.
+    if (isPrintToken(raw)) return { ok: false, reason: 'not_for_sale' };
     const id = raw;
     const product = await getProductById(id);
     if (!product) return { ok: false, reason: 'unknown' };
@@ -172,5 +126,5 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   if (!hasGiftCards && items.some((i) => i.variant) && items.some((i) => !i.variant)) {
     return { ok: false, reason: 'mixed_cart' };
   }
-  return { ok: true, items, ...(pricing ? { printPricing: pricing } : {}) };
+  return { ok: true, items };
 }

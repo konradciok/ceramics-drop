@@ -61,7 +61,7 @@ test.describe('SEO metadata contract @ci', () => {
     }
   });
 
-  test.describe('PDP — representative ceramic + print pair, default and non-default locale', () => {
+  test.describe('PDP — representative ceramic, default and non-default locale', () => {
     // Retry only this block: investigated at length (server response verified
     // correct via 40+ direct curl checks and a raw DOM snapshot at failure
     // time; ruled out locale-cookie redirects, goto's `load` vs
@@ -69,7 +69,7 @@ test.describe('SEO metadata contract @ci', () => {
     // this is a rare, non-deterministic gap between the server always
     // emitting generateMetadata's async <head> tags and Chromium's
     // navigation lifecycle occasionally observing the document before they
-    // land, specific to this print PDP's heavier async metadata chain.
+    // land, specific to the PDP's heavier async metadata chain.
     // Never seen on repeated direct HTTP checks, only intermittently via a
     // real browser under this suite's full-file load.
     test.describe.configure({ retries: 2 });
@@ -77,8 +77,6 @@ test.describe('SEO metadata contract @ci', () => {
     const cases = [
       { locale: 'pl' as const, slug: 'kubki', id: 'k01', path: '/kubki/k01' },
       { locale: 'en' as const, slug: 'kubki', id: 'k01', path: '/en/kubki/k01' },
-      { locale: 'pl' as const, slug: 'fine-art-prints', id: 'fap001', path: '/fine-art-prints/fap001' },
-      { locale: 'en' as const, slug: 'fine-art-prints', id: 'fap001', path: '/en/fine-art-prints/fap001' },
     ];
 
     for (const { locale, slug, id, path } of cases) {

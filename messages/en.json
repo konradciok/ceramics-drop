@@ -57,10 +57,9 @@
       "cancelled": "Cancelled"
     }
   },
-  "announce": "One studio — ceramics and paintings as fine art prints",
-  "announcePromo": "Autumn sale — use code NOVEMBER for 15% off all prints until the end of November",
+  "announce": "Fine art prints of my paintings have a new home — anna-ciok.com",
   "title": {
-    "home": "Anna Ciok Studio — Paintings & Fine Art Prints",
+    "home": "Anna Ciok Studio — Hand-painted ceramics",
     "kubki": "Mugs",
     "wazony": "Small vases",
     "wazonySrednie": "Medium vases",
@@ -418,58 +417,48 @@
   "home": {
     "heroLine1": "Hand-painted,",
     "heroLine2": "one piece at a time.",
-    "heroTagline": "ANNA CIOK STUDIO — CERAMICS & FINE ART PRINTS",
+    "heroTagline": "ANNA CIOK STUDIO — HAND-PAINTED CERAMICS",
     "heroCta": "Browse the shop",
     "heroAlt": "Hand-painted ceramic pieces on a wooden table in Anna Ciok's studio",
     "marquee": [
-      "paintings as fine art prints",
-      "printed to order",
-      "200 gsm fine art paper",
-      "shipping across the EU & UK"
-    ],
-    "printsEyebrow": "Painting",
-    "printsTitle": "Paintings in <em>fine art editions.</em>",
-    "printsLead": "{count} paintings — ink and watercolour on paper. Choose a size and frame, and we’ll print your copy and ship it to you.",
-    "printsCta": "See all prints",
-    "printsFacts": [
-      "Printed to order",
-      "200 gsm fine art paper",
-      "Frames: black, light or dark brown",
-      "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
+      "hand-painted ceramics",
+      "every piece one of a kind",
+      "fired at 1040 °C",
+      "a studio in Tenerife"
     ],
     "storyImageAlt": "Anna Ciok in her ceramics studio",
     "editorialImageAlt": "Framed Anna Ciok works in a sunlit interior",
     "storyEyebrow": "About the artist",
-    "storyTitle": "Every piece begins <em>as a painting.</em>",
-    "storyP1": "I’m Anna. I paint in ink and watercolour on paper — each composition starts as a single, hand-made piece in my studio.",
-    "storyP2": "Selected paintings enter a fine art edition: printed on archival-quality paper and shipped in the format you choose — unframed or in a wooden frame.",
-    "storyCta": "Browse the print collections",
-    "collectionsEyebrow": "Collections",
-    "collectionsTitle": "Threads of <em>one studio.</em>",
-    "collectionsLead": "Each collection is its own series of paintings — pick the mood, colour and rhythm that suits your space.",
+    "storyTitle": "I paint <em>on ceramics.</em>",
+    "storyP1": "I’m Anna. I paint every motif by hand, without transfers or stencils, straight onto pieces I then glaze and fire in my studio in Tenerife.",
+    "storyP2": "Every mug, plate and vase exists only once. When a piece finds its home, it leaves the shop for good.",
+    "storyCta": "See the ceramics",
+    "collectionsEyebrow": "Ceramics",
+    "collectionsTitle": "Mugs, vases, <em>plates and bowls.</em>",
+    "collectionsLead": "Each category is a series of hand-painted tableware — every piece a single one of a kind.",
     "collectionsCount": "{count, plural, one {# piece} other {# pieces}}",
-    "collectionsCta": "All collections",
-    "craftEyebrow": "How to order",
-    "craftTitle": "From the studio <em>to your wall.</em>",
-    "craft1H": "You choose <em>a composition</em>",
-    "craft1P": "Browse the collections and pick the painting that speaks to you most.",
-    "craft2H": "You pick <em>size and frame</em>",
-    "craft2P": "Choose from three sizes and a frame — unframed or wooden, in black, light or dark brown.",
-    "craft3H": "We print <em>and ship</em>",
-    "craft3P": "Your print is made and shipped by our print partner. Orders are fulfilled within 2 business days, and delivery to your home address in the EU or UK takes up to 5 business days.",
-    "lgMaterialH": "Material & finish",
-    "lgMaterialP": "Printed on 200 gsm fine art paper, archival quality. Every print is available unframed or in a wooden frame: black, light or dark brown.",
-    "lgShippingH": "Production & shipping",
-    "lgShippingP": "Every print is made to order by our print partner and shipped to your home address anywhere in the EU or UK. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
+    "collectionsCta": "Go to the shop",
+    "craftEyebrow": "How to buy",
+    "craftTitle": "From the studio <em>to your home.</em>",
+    "craft1H": "You choose <em>the piece</em>",
+    "craft1P": "Every piece exists only once, so you choose the exact mug, plate or vase you see in the photos.",
+    "craft2H": "I pack <em>and ship</em>",
+    "craft2P": "I pack and ship the ceramics myself. Orders are fulfilled within 2 business days.",
+    "craft3H": "Delivery <em>or pickup</em>",
+    "craft3P": "InPost parcel locker or courier within Poland, delivered within 5 business days. In Tenerife you can also collect your order in person, by appointment.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
-    "ctP": "Want to see a piece in person, ask about a print in another size, or place a special order? Write to me — the fastest way is email or Instagram.",
+    "ctP": "Want to see a piece in person or place a special order? Write to me — the fastest way is email or Instagram.",
     "ctBtn": "Write a message",
     "ctLEmail": "Email",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "ctLShipPrints": "Prints shipping",
-    "ctVShipPrints": "EU & UK · fulfilment within 2 business days, delivery within 5 business days"
+    "printsMovedEyebrow": "Painting",
+    "printsMovedTitle": "The paintings have <em>a new home.</em>",
+    "printsMovedLead": "Fine art prints of my paintings — ink and watercolour on paper — now have their own shop.",
+    "printsMovedCta": "Visit the print shop",
+    "ctLShip": "Ceramics shipping",
+    "ctVShip": "Poland · InPost, delivery within 5 business days"
   },
   "printCollections": {
     "inne": "More prints"
@@ -532,7 +521,7 @@
     "storyH": "I paint. <em>On paper, and on ceramics.</em>",
     "storyP1": "I’m Anna. I am a painter and a ceramicist — to me it is one practice, not two separate ones. I paint in ink and watercolour on paper, then carry the same gestures and motifs onto tableware, which I glaze and fire.",
     "storyP2": "I came to ceramics slowly: first a course, then a shelf in someone else’s studio, and finally my own small place — a glazing table and a painting corner side by side, plus a kiln. It is calm, physical work, and it refuses to be rushed.",
-    "storyP3": "I paint by hand, without transfers or stencils — on paper or on a piece alike. That is why a line sometimes wanders, a palm leans a little, and two similar motifs are never truly the same. The paper compositions enter a fine art edition as prints; the ceramic piece stays one of a kind — but in both, that is where the object starts to feel alive.",
+    "storyP3": "I paint by hand, without transfers or stencils — on paper or on a piece alike. That is why a line sometimes wanders, a palm leans a little, and two similar motifs are never truly the same. The ceramic piece always stays one of a kind — and that is where the object starts to feel alive.",
     "factsEyebrow": "Studio details",
     "factsH": "A few numbers <em>and facts.</em>",
     "fact1K": "Studio",
@@ -543,22 +532,22 @@
     "fact2D": "After painting and glazing, the ceramic piece goes into the kiln, where the firing sets the colour and turns the surface into a glassy, functional layer.",
     "fact3K": "Media",
     "fact3V": "Ceramics <em>& watercolour</em>",
-    "fact3D": "Some compositions stay on paper and enter a fine art edition. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
+    "fact3D": "Some compositions stay on paper as paintings. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
     "fact4K": "Order fulfilment",
     "fact4V": "up to 2 <em>days</em>",
-    "fact4D": "Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. I pack and ship ceramics myself; fine art prints are made and shipped by our print partner.",
+    "fact4D": "Orders are fulfilled within 2 business days, with delivery within Poland in up to 5 business days. I pack and ship the ceramics myself.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
     "p1P": "Every piece starts as a drawing or a watercolour composition on paper — I plan the layout, choose the colours, and work without transfers, layer by layer.",
     "p2H": "Two <em>paths</em>",
-    "p2P": "Some compositions stay on paper and enter a fine art edition as prints. The rest I carry onto tableware: I apply glaze and paint the motif by hand, straight onto the ceramic.",
-    "p3H": "I fire <em>or print</em>",
-    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base. Fine art prints are printed on paper and shipped by our print partner.",
+    "p2P": "Some compositions stay on paper as paintings. The rest I carry onto tableware: I apply glaze and paint the motif by hand, straight onto the ceramic.",
+    "p3H": "I fire <em>and sign</em>",
+    "p3P": "Ceramics I fire in the kiln at 1040°C, look over carefully, and sign on the base.",
     "ctaH": "One studio, <em>two ways to live with art.</em>",
-    "ctaP": "Ceramics exist only once — when a piece finds its home, it leaves the shop for good. Fine art prints are made to order, so the composition you love can always hang in yours.",
+    "ctaP": "Ceramics exist only once — when a piece finds its home, it leaves the shop for good. Fine art prints of my paintings have their own shop.",
     "ctaB1": "See the ceramics",
-    "ctaB2": "See the prints"
+    "ctaB2": "Visit the print shop"
   },
   "contact": {
     "eyebrow": "Contact",
@@ -949,7 +938,7 @@
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop.",
       "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
     },
-    "giftCard": "Anna Ciok Studio gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics or fine-art prints."
+    "giftCard": "Anna Ciok Studio gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics."
   },
   "deliveryNotice": {
     "title": "Delivery information",
@@ -1020,7 +1009,7 @@
   "giftCard": {
     "eyebrow": "Gift",
     "h1": "Gift Card",
-    "lead": "Give someone a choice of Fine Art Print or ceramics available online during an active drop. The code arrives by email, and unused balance stays on the card for future purchases.",
+    "lead": "Give someone a choice of ceramics available online during an active drop. The code arrives by email, and unused balance stays on the card for future purchases.",
     "tierLabel": "Card amount",
     "buy": "Buy gift card",
     "continueToPayment": "Continue to payment",
@@ -1031,7 +1020,7 @@
     "accordionHowTitle": "How it works",
     "accordionHowBody": "Choose one of four amounts and pay online. Your code arrives by email, ready to give to someone.\n\nEnter it in the “I have a gift card” field at checkout. The balance covers products and delivery. Pay any remaining amount using another payment method. Unused funds stay on the card.",
     "accordionTermsTitle": "Terms",
-    "accordionTermsBody": "The card uses its purchase currency: PLN, EUR or GBP, without currency conversion. It has no expiry date.\n\nIt covers standard Fine Art Print orders online and ceramics during an active drop. Studio visits, custom orders and other gift cards are excluded.\n\nUse one gift card per order, without a discount code. Fine Art Print and ceramics require separate orders.\n\nTo request a refund of the card purchase, email ania@ciok.art. If the card has been used, the studio will review its payment history."
+    "accordionTermsBody": "The card uses its purchase currency: PLN, EUR or GBP, without currency conversion. It has no expiry date.\n\nIt covers ceramics available online during an active drop. Studio visits, custom orders, prints from the anna-ciok.com shop and other gift cards are excluded.\n\nUse one gift card per order, without a discount code.\n\nTo request a refund of the card purchase, email ania@ciok.art. If the card has been used, the studio will review its payment history."
   },
   "ceramics": {
     "archiveTitle": "Earlier work",
@@ -1075,7 +1064,7 @@
     "wrongCurrency": "This card uses {currency}. Change the order currency to use it.",
     "empty": "This card has no available balance.",
     "reserved": "Some funds are reserved for another payment. Try again once it has finished.",
-    "excluded": "Gift cards cover standard Fine Art Print orders online and ceramics during an active drop. They cannot pay for another gift card.",
+    "excluded": "Gift cards cover ceramics available online during an active drop. They cannot pay for another gift card.",
     "promoConflict": "Use one gift card or one discount code per order.",
     "minimumPayment": "To allow the remaining payment, we will use {used} from your card. You will keep {remaining} for another purchase.",
     "unavailable": "Gift card payments are temporarily unavailable. Your balance is preserved.",
@@ -1341,5 +1330,17 @@
       "next": "Next",
       "photo": "Photo"
     }
+  },
+  "ceramicShop": {
+    "metaTitle": "Shop hand-painted ceramics by Anna Ciok",
+    "metaDescription": "Mugs, vases, plates and bowls hand-painted in a studio in Tenerife. Every piece is one of a kind; InPost delivery within Poland.",
+    "eyebrow": "Shop",
+    "title": "Ceramics, <em>one of a kind.</em>",
+    "lead": "I hand-paint and fire every mug, plate and vase in my studio. When a piece finds its home, it leaves the shop for good.",
+    "availableTitle": "Available now",
+    "availableEmpty": "No pieces are available online right now. Browse the categories below, or join the newsletter so you don’t miss the next drop.",
+    "familiesTitle": "Categories",
+    "familyCount": "{count, plural, one {# piece} other {# pieces}} · available: {available}",
+    "printsCta": "Fine art prints of my paintings — anna-ciok.com"
   }
 }

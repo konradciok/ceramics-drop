@@ -777,15 +777,25 @@ ul { list-style:none; padding:0; margin:0; }
 .collection-card-meta { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 10px; padding:0 2px; }
 /* Long series names ("Cumulonimbus") must wrap inside a 2-up phone card rather than push the page wider. */
 .collection-card-meta .nm { font-family:var(--f-display); font-weight:300; font-size:clamp(20px,1.9vw,26px); line-height:1.05; min-width:0; overflow-wrap:anywhere; }
-.collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; white-space:nowrap; }
+/* No nowrap: "29 prac · dostępne: 5" is wider than a 2-up card at 320px. */
+.collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
 .collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
+/* The external print-shop link ("Obrazy w edycji fine art — anna-ciok.com")
+   is ~390px on one line, wider than a 320px phone: let it wrap there. */
+.collections-hub-cta .section-link { white-space:normal; text-align:center; max-width:100%; }
 /* Collection header: the first sentence is the lead, the rest of the description sits
    beside it on wide screens and wraps below on phones (the lead column is only 42ch). */
 .collection-body { flex:1 1 340px; max-width:58ch; margin:0; font-size:16px; line-height:1.7; opacity:.85; }
 .collection-more { padding-bottom:clamp(48px,6vw,96px); }
 .collection-more-inner { max-width:var(--max); margin:18px auto 0; padding:0 var(--gut); }
 .collection-more-cta { display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(28px,4vw,48px); }
+
+/* ── /sklep — ceramics shop: "available now" gallery + family cards ── */
+/* The shop head already closes with breathing room; keep the first section tight under it. */
+.ceramic-shop-available { padding-top:clamp(8px,1.5vw,24px); }
+.ceramic-shop-available .gallery-group-head,
+[data-testid="ceramic-shop-families"] .gallery-group-head { margin-top:0; margin-bottom:clamp(18px,2.4vw,32px); }
 
 /* ── /sklep: strip, toolbar, cards, bands, quick picker ─────── */
 .shop-strip { background:var(--c-cream); border-bottom:1px solid var(--c-line-soft); padding:18px var(--gut); }

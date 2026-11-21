@@ -30,20 +30,26 @@ test('@ci hero CTA is in the first viewport before scroll (mobile + desktop)', a
   }
 });
 
-test('@ci homepage print rail heading renders and is visible under reduced motion', async ({ page }) => {
+test('@ci homepage family grid heading renders and is visible under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await expect(page.locator('.prints-home .section-title')).toBeVisible();
+  await expect(page.getByTestId('home-families').locator('.section-title')).toBeVisible();
 });
 
-test('@ci homepage print rail renders 5 daily-rotated tiles linking to print PDPs', async ({ page }) => {
+test('@ci homepage family cards link to ceramic categories; prints link out to the print shop', async ({ page }) => {
   await page.goto('/');
-  const tiles = page.locator('.prints-home .prints-home-card');
-  await expect(tiles).toHaveCount(5);
-  const hrefs = await tiles.evaluateAll((links) => links.map((l) => l.getAttribute('href')));
+  const cards = page.getByTestId('home-families').getByTestId('collection-card');
+  await expect(cards.first()).toBeVisible();
+  const hrefs = await cards.evaluateAll((links) => links.map((l) => l.getAttribute('href')));
   for (const href of hrefs) {
-    expect(href).toMatch(/fine-art-prints\//);
+    expect(href).not.toMatch(/fine-art-prints|kolekcje/);
   }
+  await expect(page.getByTestId('home-prints-moved').locator('a.section-link')).toHaveAttribute(
+    'href',
+    'https://anna-ciok.com/pl',
+  );
+  // No print PDP link survives anywhere on the page.
+  await expect(page.locator('a[href*="/fine-art-prints/"]')).toHaveCount(0);
 });
 
 test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {

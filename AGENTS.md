@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository. This is the **canonica
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. Ceramics are unique (no quantities) — once sold, they're gone. The catalogue is **~125 live ceramic pieces across 9 categories** (`src/lib/products.test.ts` asserts the exact count). The store also sells **fine-art prints fulfilled on demand via Prodigi** — a separate registry (`src/lib/prints.ts`) and a separate order/fulfilment path (see Fine-Art Prints & Prodigi below). **Four locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de`) and **multi-currency driven by a `currency_pref` cookie** (not the locale): `pl` always prices in PLN; every other locale defaults to EUR and can switch to GBP (auto-seeded from the visitor's `CF-IPCountry`, overridable in the header switcher). USD/CAD are scaffolded in the type/DB/format layer but throw in `priceOfCurrency` and are hidden until their price tables land. Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. Ceramics are unique (no quantities) — once sold, they're gone. The catalogue is **~125 live ceramic pieces across 9 categories** (`src/lib/products.test.ts` asserts the exact count). **Fine-art prints no longer sell here:** since 2026-11 they live in a separate Shopify store at `PRINT_SHOP_URL` (https://anna-ciok.com); every former print URL 301s there (`src/lib/print-shop-redirects.ts`) and checkout refuses `print:` tokens. The print code and Prodigi pipeline below are being removed in follow-up PRs — do not build on them. **Four locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de`) and **multi-currency driven by a `currency_pref` cookie** (not the locale): `pl` always prices in PLN; every other locale defaults to EUR and can switch to GBP (auto-seeded from the visitor's `CF-IPCountry`, overridable in the header switcher). USD/CAD are scaffolded in the type/DB/format layer but throw in `priceOfCurrency` and are hidden until their price tables land. Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -71,8 +71,8 @@ Detail: [docs/agent-context/product-registry.md](docs/agent-context/product-regi
 
 Detail: [docs/agent-context/storefront-surfaces.md](docs/agent-context/storefront-surfaces.md). Invariants:
 
-- Routes live under `src/app/[locale]/`; groups `(collections)` (has `loading.tsx`) and `(pdp)` (**no** `loading.tsx`, so `notFound()` returns a real 404). `/kolekcje` lives directly under `[locale]/` for the same reason.
-- Surfaces: homepage (CMS hero + daily print rail), ceramic collections `/{category}`, `/sklep` print shop, `/kolekcje`, `/showroom`, PDPs `/{category}/{id}` and `/fine-art-prints/{id}`, `/konto` (customer accounts, fail-closed behind `SUPABASE_PUBLISHABLE_KEY`). `/fine-art-prints` 308-redirects to `/sklep`.
+- Routes live under `src/app/[locale]/`; groups `(collections)` (has `loading.tsx`) and `(pdp)` (**no** `loading.tsx`, so `notFound()` returns a real 404).
+- Surfaces: homepage (CMS hero + ceramic family cards), ceramic collections `/{category}`, `/sklep` ceramics shop (pieces on sale now + family cards), `/showroom`, PDPs `/{category}/{id}`, `/konto` (customer accounts, fail-closed behind `SUPABASE_PUBLISHABLE_KEY`). `/fine-art-prints[/{id}]` and `/kolekcje[/{slug}]` 301 to the print shop (middleware, `printShopRedirectTarget`).
 - Product photos render at natural ratio, never cropped; native `<img>` via `srcSet()`, not `next/image`.
 
 ### Cart
@@ -121,7 +121,7 @@ Detail (admin + CMS API entrypoint): [docs/agent-context/admin-cms-api.md](docs/
 
 Full route list with behaviours: [docs/agent-context/api-routes.md](docs/agent-context/api-routes.md). Invariants:
 
-- Merchant feeds (`/api/feed/google`, `/api/feed/meta`) are **fine-art prints only**; ceramics are deliberately excluded (one-of-a-kind ⇒ unavoidable availability mismatch). `en` is fixed to GBP/GB in feeds and print-PDP JSON-LD.
+- Merchant feeds (`/api/feed/google`, `/api/feed/meta`) are **retired (static 410)**: they only ever listed prints, which moved to their own shop; ceramics stay deliberately out of feeds (one-of-a-kind ⇒ unavoidable availability mismatch).
 - Private-sale links are ceramics-only (`400 private_sale_prints_unsupported` with prints). `/api/returns` is retired (static 410). `/api/auth/*` is fail-closed 404 unless `SUPABASE_PUBLISHABLE_KEY` is set. `/api/debug/fulfilment-status` is secret-gated and never enabled in production.
 
 ### Internationalization

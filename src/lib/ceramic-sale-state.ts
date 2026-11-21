@@ -1,5 +1,7 @@
 import { cache } from 'react';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from './supabase';
+import { registryProducts } from './products';
 import { supabaseTimeout } from './supabase-timeout';
 import type { Product } from './types';
 
@@ -16,8 +18,38 @@ export type CeramicSaleState = {
   failed: boolean;
 };
 
+/**
+ * Hermetic-e2e switch. The @ci Playwright suite runs `next start` with no
+ * backend, where real sale state fails closed and no ceramic is purchasable —
+ * so it could never exercise the ceramic add-to-cart funnel. With
+ * `E2E_CERAMIC_SALE_FIXTURE=1` AND no Supabase configured anywhere, every
+ * registry piece reads as available in an active drop. The second condition is
+ * the safety rail: a deployed Worker always has `SUPABASE_URL`, so the fixture
+ * can never turn on in production even if the variable leaked there.
+ */
+export function ceramicSaleFixtureEnabled(): boolean {
+  if (process.env.E2E_CERAMIC_SALE_FIXTURE !== '1') return false;
+  if (process.env.SUPABASE_URL) return false;
+  try {
+    if (getCloudflareContext().env.SUPABASE_URL) return false;
+  } catch {
+    // No Workers request context (plain `next start`): nothing more to check.
+  }
+  return true;
+}
+
+function ceramicSaleFixture(): CeramicSaleState {
+  const products = registryProducts();
+  return {
+    pieces: products.map((p) => ({ product_id: p.id, status: 'available', showroom: false, reserved_until: null })),
+    drops: [...new Set(products.map((p) => p.dropId))].map((id) => ({ id, label: id, status: 'active' })),
+    failed: false,
+  };
+}
+
 /** Request-scoped only: never cache mutable availability across requests. */
 export const getCeramicSaleState = cache(async (): Promise<CeramicSaleState> => {
+  if (ceramicSaleFixtureEnabled()) return ceramicSaleFixture();
   try {
     const db = getSupabaseAdmin();
     const [pieces, drops] = await Promise.all([
