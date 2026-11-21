@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { printShippingOf } from '@/lib/print-shipping';
-import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
 import type { PromoCode } from '@/lib/promo';
 
 type PgError = { code: string; message: string } | null;
@@ -154,7 +152,7 @@ vi.mock('@/lib/pricing', () => ({
 // Real shipping-rates/get.ts (getShippingRatesForCheckout) runs for real in
 // every test — CATALOG_SOURCE defaults to 'code' in this file, so it
 // short-circuits to CODE_SHIPPING_RATES (the two constant tables above and the
-// real print-shipping SHIPPING_EUR) without touching this mock. The two tests
+// print-shipping international table) without touching this mock. The two tests
 // that stub CATALOG_SOURCE=db get the same values back from here, so the
 // cutover cannot change any expected amount — only where they came from.
 const loadShippingRatesFromDb = vi.fn(async () => ({
@@ -162,13 +160,6 @@ const loadShippingRatesFromDb = vi.fn(async () => ({
   international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
 }));
 vi.mock('@/lib/shipping-rates/load', () => ({ loadShippingRatesFromDb }));
-
-// Real print-pricing-config/get.ts (getPrintPricingConfigForCheckout) runs
-// for real in every test — CATALOG_SOURCE defaults to 'code' in this file,
-// so it short-circuits to DEFAULT_PRINT_PRICING without touching this mock.
-// Only the one test that stubs CATALOG_SOURCE=db exercises the DB branch.
-const loadPrintPricingConfigFromDb = vi.fn<() => Promise<import('@/lib/print-pricing').PrintPricingConfig>>();
-vi.mock('@/lib/print-pricing-config/load', () => ({ loadPrintPricingConfigFromDb }));
 
 const sendCheckoutStartedEvent = vi.fn(async () => {});
 vi.mock('@/lib/resend-events', () => ({ sendCheckoutStartedEvent }));
@@ -291,73 +282,22 @@ describe('POST /api/checkout', () => {
     expect(createPaymentIntent).not.toHaveBeenCalled();
   });
 
-  it('maps print_asset_error from validateCart to 503 (transient DB failure, buyer should retry)', async () => {
+  it('refuses a stale print token (prints moved to their own shop) with 400 before reserving or charging', async () => {
     validateCart.mockReturnValueOnce(
-      { ok: false, reason: 'print_asset_error' } as unknown as ReturnType<typeof validateCart>,
+      { ok: false, reason: 'not_for_sale' } as unknown as ReturnType<typeof validateCart>,
     );
     const { POST } = await import('./route');
-    const req = new Request('http://localhost/api/checkout', {
-      method: 'POST',
-      body: JSON.stringify({
-        ids: ['print:fap01:50x70:true:false:black'],
-        locale: 'pl',
-        delivery_method: 'kurier',
-        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
-        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ ids: ['print:fap001:50x70:true:false:black'] })),
       }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(503);
-    expect(await res.json()).toEqual({ error: 'print_asset_error' });
-    expect(reserveRpc).not.toHaveBeenCalled();
-    expect(createPaymentIntent).not.toHaveBeenCalled();
-  });
-
-  it('maps print_pricing_unavailable from validateCart to 503 (cold-isolate pricing failure)', async () => {
-    validateCart.mockReturnValueOnce(
-      { ok: false, reason: 'print_pricing_unavailable' } as unknown as ReturnType<typeof validateCart>,
     );
-    const { POST } = await import('./route');
-    const req = new Request('http://localhost/api/checkout', {
-      method: 'POST',
-      body: JSON.stringify({
-        ids: ['print:fap01:50x70:true:false:black'],
-        locale: 'pl',
-        delivery_method: 'kurier',
-        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
-        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(503);
-    expect(await res.json()).toEqual({ error: 'print_pricing_unavailable' });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'not_for_sale' });
     expect(reserveRpc).not.toHaveBeenCalled();
     expect(createPaymentIntent).not.toHaveBeenCalled();
-  });
-
-  it('maps print_asset_unavailable from validateCart to 409 before reserving or charging', async () => {
-    validateCart.mockReturnValueOnce(
-      { ok: false, reason: 'print_asset_unavailable' } as unknown as ReturnType<typeof validateCart>,
-    );
-    const { POST } = await import('./route');
-    const req = new Request('http://localhost/api/checkout', {
-      method: 'POST',
-      body: JSON.stringify({
-        ids: ['print:fap01:50x70:true:false:black'],
-        locale: 'pl',
-        delivery_method: 'kurier',
-        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok' },
-        address: { street: 'Marszałkowska', building_number: '1', city: 'Warszawa', post_code: '00-001', country_code: 'PL' },
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ error: 'print_asset_unavailable' });
-    expect(reserveRpc).not.toHaveBeenCalled();
-    expect(createPaymentIntent).not.toHaveBeenCalled();
+    expect(insertOrders).not.toHaveBeenCalled();
   });
 
   it('uses EUR currency when locale is es', async () => {
@@ -905,29 +845,12 @@ describe('POST /api/checkout', () => {
     expect(sendCheckoutStartedEvent).toHaveBeenCalledTimes(1);
   });
 
-  const PRINT_ITEM = {
-    product_id: 'print:fap01:50x70:true:false:black',
-    unit_price: 42_000,
-    variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' },
-  };
   const DE_ADDRESS = {
     line1: 'Hauptstr. 1',
     line2: 'Hinterhaus',
     city: 'Berlin',
     post_code: '10115',
     country_code: 'DE',
-  };
-  const PRINT_CONTACT = {
-    email: ' ANNA@EXAMPLE.COM ',
-    first_name: ' Anna ',
-    last_name: ' Ciok ',
-    phone: '030 123456',
-  };
-  const PRINT_BODY = {
-    ids: [PRINT_ITEM.product_id],
-    delivery_method: 'kurier',
-    contact: PRINT_CONTACT,
-    address: DE_ADDRESS,
   };
   const kurierDelivery = (address: Record<string, unknown> | null) => ({
     ok: true as const,
@@ -948,7 +871,7 @@ describe('POST /api/checkout', () => {
     },
   };
   const GIFT_CARD_ITEM = { product_id: 'gc-500', unit_price: 50_000, giftCardTierId: 'gc-500' };
-  const expectFulfilment = (type: 'pickup' | 'inpost' | 'prodigi' | 'giftcard') => {
+  const expectFulfilment = (type: 'pickup' | 'inpost' | 'giftcard') => {
     expect(insertOrders).toHaveBeenCalledWith(
       expect.objectContaining({ fulfilment_type: type }),
     );
@@ -1005,24 +928,6 @@ describe('POST /api/checkout', () => {
       );
       expect(res.status).toBe(200);
       expectFulfilment('inpost');
-    });
-
-    it("writes 'prodigi' for a print order (kurier to an EU address)", async () => {
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-      } as unknown as ReturnType<typeof validateCart>);
-      const { POST } = await import('./route');
-      const res = await POST(
-        new Request('http://localhost/api/checkout', {
-          method: 'POST',
-          body: JSON.stringify(makeCheckoutBody(PRINT_BODY)),
-        }),
-      );
-      expect(res.status).toBe(200);
-      expectFulfilment('prodigi');
-      // Print carts never touch piece_state.
-      expect(reserveRpc).not.toHaveBeenCalled();
     });
 
     it("writes 'giftcard' for a gift-card order (contact only, no delivery method)", async () => {
@@ -1154,199 +1059,17 @@ describe('POST /api/checkout', () => {
     });
   });
 
-  describe('print delivery branch (Finding 11 regression matrix)', () => {
-    const printCart = () =>
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-      } as unknown as ReturnType<typeof validateCart>);
-    const loosePrintCart = () =>
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [{ ...PRINT_ITEM, variant: { size: '50x70', framed: false, mount: false, frameColour: 'none' } }],
-      } as unknown as ReturnType<typeof validateCart>);
+  describe('delivery + cart guards', () => {
     const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
       const { POST } = await import('./route');
       return POST(
         new Request('http://localhost/api/checkout', {
           method: 'POST',
-          body: JSON.stringify(makeCheckoutBody({ ...PRINT_BODY, ...body })),
+          body: JSON.stringify(makeCheckoutBody({ delivery_method: 'kurier', ...body })),
           ...init,
         }),
       );
     };
-
-    it('print + paczkomat → 400 invalid_delivery (no PI, no insert)', async () => {
-      printCart();
-      const res = await post({ delivery_method: 'paczkomat', target_point: 'WAW01A' });
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
-      expect(createPaymentIntent).not.toHaveBeenCalled();
-      expect(insertOrders).not.toHaveBeenCalled();
-    });
-
-    it('print + odbior → 400 invalid_delivery', async () => {
-      printCart();
-      const res = await post({ delivery_method: 'odbior' });
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_delivery' });
-    });
-
-    it('print + kurier without an address → 400 invalid_delivery', async () => {
-      printCart();
-      const res = await post({ address: null });
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_address' });
-    });
-
-    it.each(['US', 'CH'])('print + kurier to %s (outside EU+UK) → 400', async (cc) => {
-      printCart();
-      const res = await post({ address: { ...DE_ADDRESS, country_code: cc } });
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_address' });
-      expect(createPaymentIntent).not.toHaveBeenCalled();
-    });
-
-    it('rejects invalid print contact data before creating a PI or order', async () => {
-      printCart();
-      const res = await post({ contact: { ...PRINT_CONTACT, phone: '123' } });
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_contact' });
-      expect(createPaymentIntent).not.toHaveBeenCalled();
-      expect(insertOrders).not.toHaveBeenCalled();
-    });
-
-    it('framed print + kurier DE → 200 with printShippingOf-based shipping (never the InPost rate)', async () => {
-      printCart();
-      const res = await post();
-      expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({
-          shipping: toMinor(printShippingOf('DE', true, 'pln')),
-          email: 'anna@example.com',
-          receiver_phone: '+4930123456',
-          shipping_address: DE_ADDRESS,
-        }),
-      );
-      expect(createPaymentIntent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          shipping: {
-            name: 'Anna Ciok',
-            phone: '+4930123456',
-            address: {
-              line1: 'Hauptstr. 1',
-              line2: 'Hinterhaus',
-              city: 'Berlin',
-              postal_code: '10115',
-              country: 'DE',
-            },
-          },
-        }),
-        expect.anything(),
-      );
-      // The InPost ceramic price list must not be consulted for prints.
-      expect(orderAmountGrosze).not.toHaveBeenCalled();
-    });
-
-    it('a cold-isolate DB pricing failure on the shipping-cost read returns 503 print_pricing_unavailable, never a silently-priced order', async () => {
-      vi.stubEnv('CATALOG_SOURCE', 'db');
-      const { resetLastKnownGoodForTests } = await import('@/lib/print-pricing-config/last-known-good');
-      resetLastKnownGoodForTests();
-      loadPrintPricingConfigFromDb.mockRejectedValueOnce(new Error('supabase down'));
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      try {
-        printCart();
-        const res = await post();
-        expect(res.status).toBe(503);
-        expect(await res.json()).toEqual({ error: 'print_pricing_unavailable' });
-        expect(createPaymentIntent).not.toHaveBeenCalled();
-        expect(insertOrders).not.toHaveBeenCalled();
-      } finally {
-        vi.unstubAllEnvs();
-        errSpy.mockRestore();
-        resetLastKnownGoodForTests();
-      }
-    });
-
-    it('prices shipping from validateCart\'s own resolved config, never re-reading pricing independently', async () => {
-      // A pricing config visibly different from DEFAULT_PRINT_PRICING (10x the
-      // EUR→PLN rate) — if the response's shipping cost reflects THIS rate,
-      // it proves the config came from validateCart's `printPricing`, not a
-      // second, independent getPrintPricingConfigForCheckout() read (which
-      // would use DEFAULT_PRINT_PRICING here, CATALOG_SOURCE being unset).
-      const CUSTOM_PRICING = { ...DEFAULT_PRINT_PRICING, eurToPln: 10 };
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-        printPricing: CUSTOM_PRICING,
-      } as unknown as ReturnType<typeof validateCart>);
-      // Stubbed to fail loudly if a second read is ever attempted — proves
-      // the reused config path, not just a coincidentally-matching value.
-      vi.stubEnv('CATALOG_SOURCE', 'db');
-      loadPrintPricingConfigFromDb.mockRejectedValueOnce(new Error('unexpected second read'));
-      try {
-        const res = await post();
-        expect(res.status).toBe(200);
-        expect(loadPrintPricingConfigFromDb).not.toHaveBeenCalled();
-        expect(insertOrders).toHaveBeenCalledWith(
-          expect.objectContaining({
-            shipping: toMinor(printShippingOf('DE', true, 'pln', CUSTOM_PRICING)),
-          }),
-        );
-      } finally {
-        vi.unstubAllEnvs();
-      }
-    });
-
-    it('loose print ships cheaper than framed (framed/loose rates differ)', async () => {
-      loosePrintCart();
-      const res = await post();
-      expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', false, 'pln')) }),
-      );
-    });
-
-    it('framed print + kurier DE charges EUR shipping when currency_pref=eur', async () => {
-      printCart();
-      const res = await post(
-        { locale: 'en', delivery_method: 'kurier' },
-        { headers: { Cookie: 'currency_pref=eur' } },
-      );
-      expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'eur')) }),
-      );
-      expect(createPaymentIntent).toHaveBeenCalledWith(
-        expect.objectContaining({ currency: 'eur' }),
-        expect.anything(),
-      );
-    });
-
-    it('framed print + kurier DE charges GBP shipping when currency_pref=gbp', async () => {
-      printCart();
-      const res = await post(
-        { locale: 'en', delivery_method: 'kurier' },
-        { headers: { Cookie: 'currency_pref=gbp' } },
-      );
-      expect(res.status).toBe(200);
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'gbp')) }),
-      );
-      expect(createPaymentIntent).toHaveBeenCalledWith(
-        expect.objectContaining({ currency: 'gbp' }),
-        expect.anything(),
-      );
-    });
-
-    it('print + kurier PL → 200 (PL is a print country)', async () => {
-      printCart();
-      const res = await post({
-        contact: { ...PRINT_CONTACT, phone: '501 234 567' },
-        address: { ...DE_ADDRESS, country_code: 'PL' },
-      });
-      expect(res.status).toBe(200);
-    });
 
     it('ceramic + kurier to DE → 400 (ceramics are PL-only)', async () => {
       validateDelivery.mockReturnValueOnce(
@@ -1367,30 +1090,6 @@ describe('POST /api/checkout', () => {
       expect(reserveRpc).not.toHaveBeenCalled();
       expect(createPaymentIntent).not.toHaveBeenCalled();
     });
-  });
-
-  it('rejects a private-sale token combined with prints: 400, no reservation, no PaymentIntent (Finding 12)', async () => {
-    validateCart.mockReturnValueOnce({
-      ok: true,
-      items: [PRINT_ITEM],
-    } as unknown as ReturnType<typeof validateCart>);
-    const { POST } = await import('./route');
-    const res = await POST(
-      new Request('http://localhost/api/checkout', {
-        method: 'POST',
-        body: JSON.stringify(
-          makeCheckoutBody({
-            ...PRINT_BODY,
-            private_sale_token: 'tok_secret_123',
-          }),
-        ),
-      }),
-    );
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: 'private_sale_prints_unsupported' });
-    expect(reserveRpc).not.toHaveBeenCalled();
-    expect(createPaymentIntent).not.toHaveBeenCalled();
-    expect(insertOrders).not.toHaveBeenCalled();
   });
 
   it('rolls back (cancels PI + releases pieces) on a genuine, non-23505 orders-insert failure', async () => {
@@ -1575,66 +1274,6 @@ describe('POST /api/checkout', () => {
         p_promo_id: PROMO_ID,
         p_order_id: VALID_ATTEMPT_ID,
       });
-    });
-
-    it('applies a fixed EUR promo to a print cart; print shipping untouched', async () => {
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-      } as unknown as ReturnType<typeof validateCart>);
-      fetchPromoByCode.mockResolvedValueOnce({
-        promo: mkPromo({
-          code: 'ART10',
-          kind: 'fixed',
-          percent: null,
-          amount_pln: 4_500,
-          amount_eur: 1_000,
-          amount_gbp: 900,
-          applies_to: 'prints',
-        }),
-        redemptionCount: 0,
-      });
-      const shipEur = toMinor(printShippingOf('DE', true, 'eur'));
-      const res = await post(
-        makeCheckoutBody({ ...PRINT_BODY, locale: 'en', promo_code: 'art10' }),
-        { headers: { Cookie: 'currency_pref=eur' } },
-      );
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({
-        client_secret: 'cs_test',
-        discount: 1_000,
-        amounts: { currency: 'eur', subtotal: 42_000, shipping: shipEur, discount: 1_000, total: 42_000 - 1_000 + shipEur },
-      });
-      expect(insertOrders).toHaveBeenCalledWith(
-        expect.objectContaining({
-          promo_code: 'ART10',
-          discount: 1_000,
-          subtotal: 42_000,
-          shipping: shipEur, // discount never touches shipping
-          total: 42_000 - 1_000 + shipEur,
-        }),
-      );
-      expect(createPaymentIntent).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 42_000 - 1_000 + shipEur, currency: 'eur' }),
-        expect.anything(),
-      );
-    });
-
-    it('ceramics-only code on a print cart → 400 wrong_track, no PI, no order, no claim', async () => {
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-      } as unknown as ReturnType<typeof validateCart>);
-      fetchPromoByCode.mockResolvedValueOnce({
-        promo: mkPromo({ applies_to: 'ceramics' }),
-        redemptionCount: 0,
-      });
-      const res = await post(makeCheckoutBody({ ...PRINT_BODY, promo_code: 'WELCOME10' }));
-      expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid_promo', reason: 'wrong_track' });
-      expect(createPaymentIntent).not.toHaveBeenCalled();
-      expect(insertOrders).not.toHaveBeenCalled();
-      expect(claimPromoRpc).not.toHaveBeenCalled();
     });
 
     it('prints-only code on a ceramic cart → 400 wrong_track BEFORE any reservation', async () => {
@@ -1830,30 +1469,6 @@ describe('POST /api/checkout', () => {
       }
     });
 
-    it('international: charges the published EUR table, still converted at the pricing config\'s single FX source', async () => {
-      vi.stubEnv('CATALOG_SOURCE', 'db');
-      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates({ DE: { framed: 50, loose: 5 } }));
-      // eurToPln = 10 comes from the PRICING config, never from the shipping
-      // tables — 50 EUR x 10 = 500 PLN proves both halves at once.
-      const CUSTOM_PRICING = { ...DEFAULT_PRINT_PRICING, eurToPln: 10 };
-      validateCart.mockReturnValueOnce({
-        ok: true,
-        items: [PRINT_ITEM],
-        printPricing: CUSTOM_PRICING,
-      } as unknown as ReturnType<typeof validateCart>);
-      try {
-        const res = await post(makeCheckoutBody(PRINT_BODY));
-        expect(res.status).toBe(200);
-        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 50_000 }));
-      } finally {
-        vi.unstubAllEnvs();
-      }
-    });
-
-    // The gap this closes: the cart's summary is computed from the CODE-default
-    // tables, so if the response only carried `client_secret` the buyer could
-    // read 30 zł shipping while Stripe charged the published 44 zł. The
-    // response has to hand the cart the figures the charge was built from.
     it('hands the client the PUBLISHED shipping/total, not the figures the cart would compute itself', async () => {
       vi.stubEnv('CATALOG_SOURCE', 'db');
       loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
@@ -1886,7 +1501,7 @@ describe('POST /api/checkout', () => {
       }
     });
 
-    it('a failed read degrades BOTH branches to the code constants in the same deploy — never one track on each source', async () => {
+    it('a failed read degrades to the code constants', async () => {
       vi.stubEnv('CATALOG_SOURCE', 'db');
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
@@ -1898,17 +1513,6 @@ describe('POST /api/checkout', () => {
         // The SHIPPING_PLN constant, not PUBLISHED_DOMESTIC's 44.
         expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 3_000 }));
 
-        insertOrders.mockClear();
-        validateCart.mockReturnValueOnce({
-          ok: true,
-          items: [PRINT_ITEM],
-          printPricing: DEFAULT_PRINT_PRICING,
-        } as unknown as ReturnType<typeof validateCart>);
-        expect((await post(makeCheckoutBody(PRINT_BODY))).status).toBe(200);
-        // print-shipping.ts's own constant table, likewise.
-        expect(insertOrders).toHaveBeenCalledWith(
-          expect.objectContaining({ shipping: toMinor(printShippingOf('DE', true, 'pln', DEFAULT_PRINT_PRICING)) }),
-        );
       } finally {
         errSpy.mockRestore();
         vi.unstubAllEnvs();

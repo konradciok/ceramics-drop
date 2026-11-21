@@ -99,18 +99,18 @@ describe('checkPromoEligibility', () => {
     const promo = mkPromo({ starts_at: now.toISOString() });
     expect(checkPromoEligibility(promo, 'ceramics', 0, now)).toEqual({ ok: true, promo });
   });
-  it("applies_to 'ceramics' rejects the prints track", () => {
-    const promo = mkPromo({ applies_to: 'ceramics' });
-    expect(checkPromoEligibility(promo, 'prints', 0, now)).toEqual({
+  it("a legacy applies_to 'prints' code never matches (prints moved to their own shop)", () => {
+    const promo = mkPromo({ applies_to: 'prints' });
+    expect(checkPromoEligibility(promo, 'ceramics', 0, now)).toEqual({
       ok: false,
       reason: 'wrong_track',
     });
-    expect(checkPromoEligibility(promo, 'ceramics', 0, now)).toEqual({ ok: true, promo });
   });
-  it("applies_to 'all' passes both tracks", () => {
-    const promo = mkPromo({ applies_to: 'all' });
-    expect(checkPromoEligibility(promo, 'ceramics', 0, now)).toEqual({ ok: true, promo });
-    expect(checkPromoEligibility(promo, 'prints', 0, now)).toEqual({ ok: true, promo });
+  it("applies_to 'ceramics' and 'all' pass the ceramics track", () => {
+    for (const applies_to of ['ceramics', 'all'] as const) {
+      const promo = mkPromo({ applies_to });
+      expect(checkPromoEligibility(promo, 'ceramics', 0, now)).toEqual({ ok: true, promo });
+    }
   });
   it('max_redemptions reached -> exhausted; below the cap passes', () => {
     const promo = mkPromo({ max_redemptions: 5 });

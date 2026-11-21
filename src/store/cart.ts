@@ -7,10 +7,11 @@
    ============================================================ */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isRetiredPrintToken } from '@/lib/legacy-print-lines';
 
 /** True for a cart token of a product line this store no longer sells. */
 export function isRetiredCartToken(id: unknown): boolean {
-  return typeof id !== 'string' || id.startsWith('print:');
+  return typeof id !== 'string' || isRetiredPrintToken(id);
 }
 
 interface CartState {

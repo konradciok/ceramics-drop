@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { validateCart, MAX_CART } from './checkout';
-import { encodePrintToken } from './print-cart';
 import { encodeGiftCardToken } from './gift-cards';
 import type { Product } from './types';
 
@@ -8,22 +7,11 @@ import type { Product } from './types';
 // (getProductById → loadCeramicCatalog → dynamic import of ./catalog/load).
 vi.mock('./catalog/load', () => ({
   loadCeramicProductsFromDb: vi.fn(),
-  loadPrintDesignsFromDb: vi.fn(),
-}));
-vi.mock('@/server/print-assets/repository', () => ({
-  resolvePrintAsset: vi.fn(),
 }));
 import { loadCeramicProductsFromDb } from './catalog/load';
-import { resolvePrintAsset } from '@/server/print-assets/repository';
 
-const MOCK_ASSET = {
-  assetId: 'asset-uuid-1',
-  r2Key: 'prints/fap005/rev1/3600x4800-abc.jpg',
-  sha256: 'a'.repeat(64),
-  contentType: 'image/jpeg' as const,
-  widthPx: 4800,
-  heightPx: 7200,
-};
+// A token from the retired print shop, exactly as old carts persisted it.
+const PRINT_TOKEN = 'print:fap005:50x70:true:false:black';
 
 const k01 = (status?: Product['status']): Product => ({
   id: 'k01',
@@ -39,10 +27,6 @@ const k01 = (status?: Product['status']): Product => ({
 });
 
 describe('validateCart', () => {
-  beforeEach(() => {
-    vi.mocked(resolvePrintAsset).mockResolvedValue(MOCK_ASSET);
-  });
-
   it('maps known ids to products with grosze prices', async () => {
     const r = await validateCart(['k01', 'v01']);
     expect(r.ok).toBe(true);
@@ -104,12 +88,9 @@ describe('validateCart', () => {
   });
 
   it('refuses any print token as not_for_sale (prints moved to their own shop)', async () => {
-    const token = encodePrintToken('fap005', { size: '30x40', framed: false, mount: false, frameColour: 'none' });
-    expect(await validateCart([token])).toEqual({ ok: false, reason: 'not_for_sale' });
+    expect(await validateCart([PRINT_TOKEN])).toEqual({ ok: false, reason: 'not_for_sale' });
     // Also when mixed into an otherwise valid ceramic cart — never silently dropped.
-    expect(await validateCart(['k01', token])).toEqual({ ok: false, reason: 'not_for_sale' });
-    // No asset lookup or pricing work happens for a refused print.
-    expect(resolvePrintAsset).not.toHaveBeenCalled();
+    expect(await validateCart(['k01', PRINT_TOKEN])).toEqual({ ok: false, reason: 'not_for_sale' });
   });
 });
 
@@ -143,8 +124,7 @@ describe('validateCart gift cards', () => {
   });
 
   it('refuses a gift card alongside a print token (the print is no longer for sale)', async () => {
-    const token = encodePrintToken('fap005', { size: '50x70', framed: true, mount: false, frameColour: 'black' });
-    expect(await validateCart([token, encodeGiftCardToken('gc-200')], 'pln')).toEqual({
+    expect(await validateCart([PRINT_TOKEN, encodeGiftCardToken('gc-200')], 'pln')).toEqual({
       ok: false,
       reason: 'not_for_sale',
     });

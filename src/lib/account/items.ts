@@ -3,12 +3,8 @@
    Names resolve through the code registry like the cart and invoices do;
    unknown ids (retired pieces on old orders) degrade to the raw id.
    ============================================================ */
-import { printDisplayName } from '@/lib/print-curation';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { CATEGORIES, registryProductById } from '@/lib/products';
-import { registryPrintById } from '@/lib/prints';
-import { PRINT_FRAME_COLOURS, PRINT_SIZES as CANONICAL_PRINT_SIZES, variantLabel } from '@/lib/print-cart';
-import type { PrintVariantSelection } from '@/lib/types';
+import { formatLegacyPrintVariant, legacyPrintName } from '@/lib/legacy-print-lines';
 import type { AccountOrderItem } from './orders';
 
 export type AccountItemLabel = {
@@ -20,46 +16,17 @@ export type AccountItemLabel = {
 
 type Translate = (key: string) => string;
 
-// Sets built from the canonical axis constants so a future size/colour change
-// can't silently strand this validation (the white→brown swap nearly did).
-const PRINT_SIZES = new Set<string>(CANONICAL_PRINT_SIZES);
-const FRAME_COLOURS = new Set<string>(PRINT_FRAME_COLOURS);
-
-function printDetail(variant: unknown, locale: string): string | null {
-  if (typeof variant !== 'object' || variant === null) return null;
-  const v = variant as Record<string, unknown>;
-  if (typeof v.size !== 'string' || !PRINT_SIZES.has(v.size) || typeof v.framed !== 'boolean') {
-    return null;
-  }
-  // A legacy/corrupt persisted colour must never reach variantLabel (it would
-  // render as "frame undefined"): unframed is always 'none', and a framed
-  // variant with an unknown colour degrades to the colour-less frame label.
-  const frameColour: PrintVariantSelection['frameColour'] =
-    v.framed && typeof v.frameColour === 'string' && FRAME_COLOURS.has(v.frameColour)
-      ? (v.frameColour as PrintVariantSelection['frameColour'])
-      : 'none';
-  const sel: PrintVariantSelection = {
-    size: v.size as PrintVariantSelection['size'],
-    framed: v.framed,
-    mount: v.framed && v.mount === true,
-    frameColour,
-  };
-  return variantLabel(sel, locale);
-}
-
-/** Localised display name for one order line (ceramic piece or print variant). */
-export function accountItemLabel(
-  item: AccountOrderItem,
-  t: Translate,
-  locale: string,
-  definitions?: PrintCollectionDefinition[],
-): AccountItemLabel {
+/**
+ * Localised display name for one order line. Ceramics resolve through the
+ * registry; a historical fine-art print line (prints moved to their own shop)
+ * resolves through the frozen legacy table, never the retired print registry.
+ */
+export function accountItemLabel(item: AccountOrderItem, t: Translate, locale: string): AccountItemLabel {
   if (item.variant != null) {
-    const design = registryPrintById(item.product_id);
     return {
       key: `${item.product_id}-${JSON.stringify(item.variant)}`,
-      name: design ? printDisplayName(design, t('product.print'), definitions) : item.product_id,
-      detail: printDetail(item.variant, locale),
+      name: legacyPrintName(item.product_id, locale),
+      detail: formatLegacyPrintVariant(item.variant, locale),
     };
   }
   const product = registryProductById(item.product_id);

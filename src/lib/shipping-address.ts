@@ -1,7 +1,19 @@
 import type { DeliveryAddress } from './shipx';
-import type { PrintShippingAddress } from './print-delivery';
 
-export type StoredShippingAddress = DeliveryAddress | PrintShippingAddress;
+/**
+ * Native international address shape persisted on historical fine-art print
+ * orders (prints moved to their own shop, 2026-11). Still read for order
+ * history, exports and invoices; never written any more.
+ */
+export type LegacyPrintShippingAddress = {
+  line1: string;
+  line2?: string;
+  city: string;
+  post_code: string;
+  country_code: string;
+};
+
+export type StoredShippingAddress = DeliveryAddress | LegacyPrintShippingAddress;
 
 export type NormalizedShippingAddress = {
   line1: string;

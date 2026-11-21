@@ -206,54 +206,13 @@ ul { list-style:none; padding:0; margin:0; }
 .section-link svg { width:14px; height:14px; transition:transform .25s ease; }
 .section-link:hover svg { transform:translateX(3px); }
 
-/* ─── PRINT COLLECTIONS INDEX (nine named series) ────────── */
-.print-collections { background:var(--c-cream); }
-.print-collections-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
-.print-collections-grid .prints-home-meta { flex-wrap:wrap; gap:4px 10px; }
-.print-collections-grid .nm { overflow-wrap:anywhere; }
-@media (min-width:861px) {
-  .print-collections-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px; }
-}
-
-/* ─── PRINTS (home rail) ──────────────────────────────── */
-.prints-home { background:var(--c-paper); }
+/* ─── Homepage section-head aside (lead + CTA beside a section title) ─── */
 .prints-home-aside { display:flex; flex-direction:column; align-items:flex-start; gap:18px; }
 .prints-home-aside p { max-width:38ch; opacity:.8; font-size:16px; line-height:1.6; margin:0; }
 @media (min-width:861px) {
   .prints-home-aside { align-items:flex-end; }
   .prints-home-aside p { text-align:right; }
 }
-/* Mobile: gutter-bleed snap scroller; ≥861px: static 5-up row (no scroll). */
-.prints-home-grid {
-  display:flex; gap:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
-  margin:0 calc(-1 * var(--gut)); padding:8px var(--gut) 16px;
-  scroll-snap-type:x proximity; scroll-padding-inline:var(--gut);
-  overscroll-behavior-x:contain; scrollbar-width:none;
-}
-.prints-home-grid::-webkit-scrollbar { display:none; }
-/* Base card layout — shared by the scrolling rail and the (non-scrolling)
-   print-collections-grid, which must NOT inherit the rail's fixed width. */
-.prints-home-card { display:flex; flex-direction:column; gap:10px; }
-.prints-home-grid .prints-home-card { flex:none; width:min(60vw,220px); scroll-snap-align:start; }
-@media (min-width:861px) {
-  .prints-home-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:24px; overflow:visible; margin:0; padding:0; scroll-snap-type:none; }
-  .prints-home-grid .prints-home-card { width:auto; }
-}
-.prints-home-card img {
-  width:100%; height:auto; display:block; border-radius:var(--r-sharp);
-  box-shadow:0 14px 34px -16px rgba(58,40,24,.3); transition:transform .4s var(--ease);
-}
-.prints-home-card:hover img { transform:translateY(-4px); }
-.prints-home-meta { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:0 2px; }
-.prints-home-meta .nm { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
-.prints-home-meta .pr { font-size:15px; white-space:nowrap; }
-.prints-home-facts {
-  display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px 28px;
-  margin-top:clamp(28px,4vw,44px); font-family:var(--f-cond); font-size:12px;
-  letter-spacing:.14em; text-transform:uppercase; opacity:.75;
-}
-.prints-home-facts span { display:inline-flex; align-items:center; gap:28px; }
-.prints-home-facts span + span::before { content:''; width:5px; height:5px; background:var(--c-terracotta); border-radius:50%; flex:none; }
 
 /* ─── STORY (o artystce) ──────────────────────────────── */
 .story { display:grid; grid-template-columns:1fr; gap:clamp(40px,6vw,92px); align-items:center; }
@@ -394,16 +353,8 @@ ul { list-style:none; padding:0; margin:0; }
 /* ─── JULY DELIVERY NOTICE ────────────────────────────── */
 /* ─── LOGISTYKA (split band: ceramika PL / odbitki EU) ── */
 .logistics { background:var(--c-bone); color:var(--c-espresso); padding:clamp(48px,6vw,80px) var(--gut); }
-.logistics-inner { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr; gap:28px; align-items:start; }
-@media (min-width:861px) {
-  .logistics-inner { grid-template-columns:1fr 1px 1fr; gap:56px; }
-}
 .logistics h3 { font-family:var(--f-cond); font-weight:400; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-terracotta); margin:0 0 14px; }
 .logistics p { font-size:16px; line-height:1.65; margin:0; opacity:.85; }
-.logistics-divider { background:var(--c-line); height:1px; }
-@media (min-width:861px) {
-  .logistics-divider { height:auto; align-self:stretch; }
-}
 
 /* ─── KONTAKT ─────────────────────────────────────────── */
 .contact { background:var(--c-sand); }
@@ -581,14 +532,11 @@ ul { list-style:none; padding:0; margin:0; }
    pill row keeps its full width and the filter drops to its own line below.
    From @sm up it is a single nowrap row — the pills fill the left (wrapping
    internally) and the filter stays pinned to the right, vertically centred. */
-.shop-nav-track.has-filter,
 .shop-switch-row {
   display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 16px;
 }
-.shop-nav-track.has-filter > .shop-switch,
 .shop-switch-row > .shop-switch { flex:1 1 auto; width:auto; min-width:0; }
 @media (min-width:561px) {
-  .shop-nav-track.has-filter,
   .shop-switch-row { flex-wrap:nowrap; }
 }
 
@@ -641,27 +589,6 @@ ul { list-style:none; padding:0; margin:0; }
 .tile .veil { position:absolute; inset:0; background:rgba(110,138,196,.0); transition:background .2s ease; }
 .tile.selected { outline-width:3px; }
 .tile.selected .veil { background:rgba(110,138,196,.16); }
-
-/* Print tiles: the image (framed-natural mockup by default) dictates the
-   tile's proportions — it flows in-document at natural ratio instead of
-   filling a fixed 4/5 box, so the file is never cropped or letterboxed.
-   Placeholder estimate mirrors .tile's but at the 7:10 mockup ratio
-   (2286/1600 = 1.42875); `auto` remembers the true size after first render. */
-.tile-print { aspect-ratio:auto; }
-.tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 12px) / 2 * 1.42875); }
-@media (min-width:561px) {
-  .tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 2 * clamp(14px,1.6vw,24px)) / 3 * 1.42875); }
-}
-@media (min-width:1101px) {
-  .tile-print { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.42875); }
-}
-.tile-print img { position:static; height:auto; }
-/* Print tiles: caption sits below the image — the mockups are light, so the
-   ceramic overlay gradient has no contrast to work against. */
-.tile-print .tile-meta {
-  position:static; background:none; color:var(--c-espresso);
-  padding:10px 2px 2px;
-}
 
 /* znacznik wyboru (kółko / checkmark) */
 .tile .check {
@@ -743,12 +670,6 @@ ul { list-style:none; padding:0; margin:0; }
 .tile.sold .tile-multi { display:none; }
 
 /* ── /sklep grouped gallery ─────────────────────────────────── */
-.shop-nav-sticky {
-  position:sticky; top:var(--header-h); z-index:5;
-  background:var(--c-paper); padding-block:10px;
-  border-bottom:1px solid var(--c-line-soft);
-}
-.shop-nav-track { max-width:var(--max); margin:0 auto; padding:0 var(--gut); }
 .shop-switch a[aria-current="true"] {
   background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso);
 }
@@ -784,133 +705,12 @@ ul { list-style:none; padding:0; margin:0; }
 /* The external print-shop link ("Obrazy w edycji fine art — anna-ciok.com")
    is ~390px on one line, wider than a 320px phone: let it wrap there. */
 .collections-hub-cta .section-link { white-space:normal; text-align:center; max-width:100%; }
-/* Collection header: the first sentence is the lead, the rest of the description sits
-   beside it on wide screens and wraps below on phones (the lead column is only 42ch). */
-.collection-body { flex:1 1 340px; max-width:58ch; margin:0; font-size:16px; line-height:1.7; opacity:.85; }
-.collection-more { padding-bottom:clamp(48px,6vw,96px); }
-.collection-more-inner { max-width:var(--max); margin:18px auto 0; padding:0 var(--gut); }
-.collection-more-cta { display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(28px,4vw,48px); }
 
 /* ── /sklep — ceramics shop: "available now" gallery + family cards ── */
 /* The shop head already closes with breathing room; keep the first section tight under it. */
 .ceramic-shop-available { padding-top:clamp(8px,1.5vw,24px); }
 .ceramic-shop-available .gallery-group-head,
 [data-testid="ceramic-shop-families"] .gallery-group-head { margin-top:0; margin-bottom:clamp(18px,2.4vw,32px); }
-
-/* ── /sklep: strip, toolbar, cards, bands, quick picker ─────── */
-.shop-strip { background:var(--c-cream); border-bottom:1px solid var(--c-line-soft); padding:18px var(--gut); }
-.shop-strip-inner { max-width:var(--max); margin:0 auto; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:14px 48px; }
-.shop-strip ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 24px; }
-.shop-strip-facts { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.75; }
-.shop-strip-prices ul { font-size:15px; gap:6px 20px; }
-.shop-strip-prices p { font-size:13px; opacity:.65; margin:6px 0 0; }
-
-.shop-toolbar-inner { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 20px; }
-.shop-toolbar-colours { display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 auto; }
-.shop-toolbar-colours .shop-switch { flex:1 1 auto; width:auto; }
-.shop-toolbar-label { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.6; white-space:nowrap; }
-.shop-toolbar-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; }
-.shop-select { display:inline-flex; align-items:center; gap:8px; }
-.shop-select select {
-  font:inherit; font-size:14px; color:var(--c-espresso); background:var(--c-paper);
-  border:1px solid var(--c-line); border-radius:var(--r-pill); padding:8px 32px 8px 14px; min-height:40px; max-width:200px;
-  appearance:none; cursor:pointer;
-  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
-  background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%; background-size:5px 5px; background-repeat:no-repeat;
-}
-.shop-select select:focus-visible, .shop-chip:focus-visible, .shop-clear:focus-visible, .shop-card-quick:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:2px; }
-.shop-count { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; white-space:nowrap; }
-.shop-clear { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; background:none; border:0; cursor:pointer; color:var(--c-terracotta); min-height:44px; }
-.shop-chip {
-  display:inline-flex; align-items:center; gap:8px; flex:none; scroll-snap-align:start; white-space:nowrap; cursor:pointer;
-  font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--c-espresso);
-  padding:8px 13px; min-height:40px; border-radius:999px; border:1px solid var(--c-line); background:transparent; transition:all .25s var(--ease);
-}
-.shop-chip:hover:not(:disabled) { border-color:var(--c-espresso); }
-.shop-chip.on { background:var(--c-espresso); color:var(--c-paper); border-color:var(--c-espresso); }
-.shop-chip:disabled { opacity:.35; cursor:not-allowed; }
-.shop-chip-count { opacity:.55; font-size:11px; }
-.shop-dot { width:12px; height:12px; border-radius:50%; flex:none; border:1px solid rgba(0,0,0,.18); background:var(--dot,#ccc); }
-.shop-dot[data-colour="blue"] { --dot:#6d8fb8; }
-.shop-dot[data-colour="green"] { --dot:#88a07c; }
-.shop-dot[data-colour="warm"] { --dot:#cf8a4b; }
-.shop-dot[data-colour="pink"] { --dot:#d9a1a6; }
-.shop-dot[data-colour="earth"] { --dot:#b8a184; }
-.shop-dot[data-colour="mono"] { --dot:#33302c; }
-/* On a phone the two-row toolbar would eat the viewport — let it scroll away.
-   Tap targets follow the site-wide 44px convention below the desktop breakpoint. */
-@media (max-width:860px) {
-  .shop-toolbar { position:static; }
-  .shop-chip, .shop-select select { min-height:44px; }
-}
-
-.shop-grid { padding-bottom:clamp(40px,5vw,72px); }
-.shop-card { background:none; cursor:auto; display:flex; flex-direction:column; }
-.shop-card:hover img { transform:none; }
-.shop-card-link { display:block; position:relative; overflow:hidden; background:var(--c-bone); }
-.shop-card-link .shop-card-hover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .35s var(--ease); pointer-events:none; }
-@media (hover:hover) {
-  .shop-card-link:hover .shop-card-hover, .shop-card-link:focus-visible .shop-card-hover { opacity:1; }
-}
-.shop-badges { position:absolute; top:10px; left:10px; display:flex; flex-direction:column; align-items:flex-start; gap:6px; z-index:1; }
-.shop-badge { font-family:var(--f-cond); font-size:10px; letter-spacing:.16em; text-transform:uppercase; padding:5px 9px; border-radius:var(--r-pill); background:var(--c-paper); color:var(--c-espresso); }
-.shop-badge-pick { background:var(--c-espresso); color:var(--c-paper); }
-.shop-card-quick {
-  position:absolute; top:4px; right:4px; z-index:2; width:44px; height:44px; padding:0;
-  display:flex; align-items:center; justify-content:center; background:none; border:0; cursor:pointer; color:var(--c-espresso);
-}
-.shop-card-quick span { width:32px; height:32px; border-radius:50%; background:var(--c-paper); display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; box-shadow:0 4px 14px -6px rgba(58,40,24,.5); transition:background .2s ease, color .2s ease; }
-.shop-card-quick:hover span { background:var(--c-espresso); color:var(--c-paper); }
-@media (hover:hover) {
-  .shop-card-quick { opacity:0; transition:opacity .2s var(--ease); }
-  .shop-card:hover .shop-card-quick, .shop-card:focus-within .shop-card-quick { opacity:1; }
-}
-.shop-card-meta { flex-wrap:wrap; row-gap:6px; align-items:baseline; }
-/* Two-up phone grid: the wide-tracked name and the price cannot share a line. */
-@media (max-width:560px) { .shop-card-meta .nm { flex-basis:100%; } }
-.shop-card-meta .nm { min-width:0; overflow-wrap:anywhere; }
-.shop-frame-dots { display:inline-flex; gap:5px; align-items:center; }
-.shop-frame-dots i { width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.2); }
-.shop-frame-dots i[data-frame="black"] { background:#1d1b19; }
-.shop-frame-dots i[data-frame="natural"] { background:#c9a877; }
-.shop-frame-dots i[data-frame="brown"] { background:#6b4a30; }
-
-/* Editorial bands dropped into the grid (only while nothing is filtered). */
-.shop-promo { grid-column:1 / -1; }
-.shop-band { background:var(--c-cream); padding:clamp(24px,3.2vw,44px); }
-.shop-band h3 { font-family:var(--f-display); font-weight:300; font-size:clamp(22px,2.4vw,32px); line-height:1.1; margin:0 0 8px; }
-.shop-band h3 em { font-style:italic; color:var(--c-terracotta); }
-.shop-band p { margin:0; font-size:15px; line-height:1.6; opacity:.8; }
-.shop-band-how ol { list-style:none; margin:0; padding:0; display:grid; gap:22px; grid-template-columns:1fr; }
-@media (min-width:861px) { .shop-band-how ol { grid-template-columns:repeat(3,1fr); gap:36px; } }
-.shop-band-how .num { display:block; font-family:var(--f-cond); font-size:12px; letter-spacing:.2em; opacity:.55; margin-bottom:8px; }
-.shop-band-how h3 { font-size:clamp(20px,1.9vw,26px); }
-.shop-band-gift { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px 32px; }
-.shop-band-gift p { max-width:56ch; }
-
-.shop-empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:20px; }
-.shop-collections { background:var(--c-paper); padding-block:clamp(32px,4vw,64px); }
-.shop-collections .gallery-group-head { margin-top:0; padding:0; }
-.shop-collections-chips { margin:18px 0 22px; }
-.shop-collections-chips a { font-family:var(--f-cond); }
-.shop-about { background:var(--c-cream); }
-.shop-about .section-title { margin-bottom:14px; }
-.shop-about-text { max-width:72ch; font-size:16px; line-height:1.7; opacity:.85; margin:0 0 28px; }
-
-/* Quick size/frame picker (native <dialog>). */
-.shop-quick { border:0; padding:0; background:var(--c-paper); color:var(--c-espresso); width:min(440px,calc(100vw - 24px)); max-height:min(88vh,760px); overflow:auto; border-radius:var(--r-sharp); box-shadow:0 30px 80px -20px rgba(31,22,16,.55); }
-.shop-quick::backdrop { background:rgba(31,22,16,.55); }
-.shop-quick-inner { position:relative; padding:22px 22px 26px; }
-.shop-quick-close { position:absolute; top:6px; right:6px; width:44px; height:44px; background:none; border:0; cursor:pointer; font-size:28px; line-height:1; color:var(--c-espresso); }
-.shop-quick-close:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-4px; }
-.shop-quick-head { display:flex; gap:16px; align-items:center; margin:0 40px 18px 0; }
-.shop-quick-head img { width:64px; height:auto; flex:none; box-shadow:0 8px 20px -10px rgba(58,40,24,.4); }
-.shop-quick-head h2 { font-family:var(--f-display); font-weight:300; font-size:24px; line-height:1.1; margin:0 0 6px; }
-.shop-quick-details { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; }
-@media (max-width:560px) {
-  .shop-quick { margin:auto auto 0; width:100%; max-width:none; border-radius:16px 16px 0 0; }
-}
-body:has(dialog.shop-quick[open]) { overflow:hidden; }
 
 /* ─── PASEK WYBORU (sticky) ───────────────────────────── */
 .selbar {
@@ -1116,7 +916,6 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
   .delivery-fields .field-row { flex-direction:row; gap:14px; }
 }
 .delivery-fields .field { flex:1; }
-.delivery-fields .field-error { color:var(--c-terracotta); font-size:13px; line-height:1.4; }
 .delivery-fields [aria-invalid="true"] { border-color:var(--c-terracotta); }
 .locker-pick { display:flex; flex-direction:column; gap:10px; }
 .locker-toggle { align-self:flex-start; }
@@ -1131,13 +930,6 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
 }
 .geowidget inpost-geowidget { display:block; width:100%; height:100%; }
 .geowidget-msg { font-size:13px; opacity:.7; margin:0; }
-.addr-autocomplete { position:relative; }
-.addr-suggestions-panel { position:absolute; z-index:2; top:calc(100% + 4px); left:0; right:0; background:var(--c-paper); border:1px solid var(--c-line); border-radius:var(--r-sharp); box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:hidden; }
-.addr-suggestions { margin:0; padding:4px 0; list-style:none; max-height:240px; overflow-y:auto; }
-.addr-suggestion { padding:9px 14px; font-size:14px; line-height:1.4; cursor:pointer; }
-.addr-suggestion.is-active,
-.addr-suggestion:hover { background:var(--c-bone); }
-.addr-attribution { margin:0; padding:6px 14px; font-size:10px; letter-spacing:.04em; text-transform:uppercase; opacity:.5; border-top:1px solid var(--c-line-soft); }
 
 /* ── Left column: task sections ─────────────────────────────────────── */
 .cart-main { display:flex; flex-direction:column; }
@@ -1508,7 +1300,7 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
 .pdp-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
 .pdp-body .lb-specs { margin-top:auto; }
 
-/* ── PDP accordions (print info sections) ─────────────────── */
+/* ── PDP accordions (gift-card info sections) ─────────────── */
 .pdp-accordions { border-top:1px solid var(--c-line); margin-bottom:24px; }
 .pdp-body .pdp-accordions { margin-top:auto; }
 .pdp-acc { border-bottom:1px solid var(--c-line); }
@@ -1523,7 +1315,6 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
 .pdp-acc-body { padding:2px 0 16px; font-size:14.5px; line-height:1.65; opacity:.85; }
 .pdp-acc-body p { margin:0 0 10px; }
 .pdp-acc-body p:last-child { margin-bottom:0; }
-.pdp-acc-facts { font-family:var(--f-cond); font-size:12.5px; letter-spacing:.06em; opacity:.75; }
 
 /* ── Expandable text (PDP note "read more") ───────────────── */
 .x-text { margin:0 0 22px; }
@@ -1534,7 +1325,7 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
 }
 .x-text-toggle:hover { opacity:1; }
 
-/* ── About the artist (print PDP band) ────────────────────── */
+/* ── About the artist (gift-card page band) ──────────────── */
 .about-artist-inner { max-width:640px; margin:0 auto; text-align:center; }
 .about-artist .section-eyebrow { justify-content:center; }
 .about-artist .section-title { margin-bottom:8px; }
@@ -1543,8 +1334,7 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
 .about-artist-bio p { margin:0 0 12px; }
 .about-artist-bio p:last-child { margin-bottom:0; }
 
-/* Fine-art print configurator */
-.print-config { margin:0 0 24px; display:flex; flex-direction:column; gap:14px; }
+/* Option pickers (gift-card configurator; class names predate the retired print configurator) */
 .print-axis {
   border:0; margin:0; padding:0; min-inline-size:0;
   display:flex; flex-direction:column; gap:8px;
@@ -1568,21 +1358,10 @@ body:has(dialog.shop-quick[open]) { overflow:hidden; }
   background:var(--c-espresso); border-color:var(--c-espresso); color:var(--c-paper);
 }
 .print-opt:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:2px; }
-.print-opt-colour::before {
-  content:''; width:13px; height:13px; border-radius:50%;
-  border:1px solid rgba(58,40,24,.2); background:var(--c-bone);
-}
-.print-opt-colour[data-colour="black"]::before { background:var(--c-frame-black); border-color:rgba(250,246,236,.35); }
-.print-opt-colour[data-colour="natural"]::before { background:var(--c-sand); }
-.print-opt-colour[data-colour="brown"]::before { background:var(--c-espresso); }
-.print-opt-colour.active::before,
-.print-opt-colour[aria-checked="true"]::before { border-color:rgba(250,246,236,.7); }
 .print-price {
   font-family:var(--f-display); font-weight:400; font-size:22px; line-height:1;
   margin:2px 0 0;
 }
-.print-config .lb-add { margin-top:2px; }
-.print-paper-note { font-size:15px; line-height:1.55; opacity:.78; margin:10px 0 0; }
 .pdp-body .pay-error { color:var(--c-terracotta); font-size:14px; line-height:1.5; margin:0; }
 
 /* Gift-card PDP — single centered column (no gallery), a small stylized

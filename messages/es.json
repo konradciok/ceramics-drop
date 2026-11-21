@@ -80,7 +80,6 @@
     "sklep": "Fine Art Print",
     "showroom": "Cerámica",
     "gallery": "Galería",
-    "fineArtPrints": "Fine Art Print",
     "giftCard": "Tarjeta regalo"
   },
   "nav": {
@@ -306,9 +305,6 @@
     "trust": "El precio que ves es el precio que pagas — sin cargos ocultos al finalizar.",
     "trustGbp": "El precio mostrado es lo que pagas al finalizar. Los pedidos al Reino Unido pueden tener cargos de importación en la entrega."
   },
-  "ceramic": {
-    "mixedCart": "La cerámica se pide por separado de las láminas — primero finaliza o vacía tu carrito de láminas."
-  },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",
     "emptyP": "Elige piezas del drop de junio. Haz clic en una miniatura para añadirla a tu selección.",
@@ -344,11 +340,7 @@
     "payError": "El pago ha fallado. Por favor, inténtalo de nuevo.",
     "privateSaleInvalid": "Este enlace de pedido ha caducado o ya se ha utilizado. Ponte en contacto con el estudio.",
     "fineprint": "El pago es gestionado de forma segura por Stripe — tarjeta u otros métodos de pago.",
-    "mixedNotice": "La cerámica y las láminas son pedidos separados — elimina un tipo del carrito para continuar.",
-    "privateSalePrintsNotice": "Los enlaces de pedido privado son solo para cerámica — elimina las láminas del carrito para continuar.",
-    "printAssetUnavailable": "Esta variante de lámina no está disponible temporalmente — elimínala del carrito o inténtalo más tarde.",
-    "printAssetError": "Algo falló momentáneamente. Inténtalo de nuevo.",
-    "printPricingUnavailable": "No se pudo obtener el precio actual de la lámina. Inténtalo de nuevo en un momento.",
+    "serviceUnavailable": "Algo falló momentáneamente. Inténtalo de nuevo.",
     "promo": {
       "label": "Código promocional",
       "have": "Tengo un código promocional",
@@ -360,7 +352,6 @@
       "expired": "Este código ha caducado.",
       "notStarted": "Este código aún no está activo.",
       "wrongTrackCeramics": "Este código solo aplica a láminas fine-art.",
-      "wrongTrackPrints": "Este código solo aplica a cerámica.",
       "exhausted": "Este código ya se ha utilizado por completo.",
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
     }
@@ -372,9 +363,7 @@
     "courierT": "Mensajería InPost",
     "courierD": "Entrega a domicilio en un máximo de 5 días laborables.",
     "pickupT": "Recogida personal",
-    "pickupD": "En Tenerife (San Pedro Abajo 12, Guimar), con cita previa.",
-    "printT": "Envío por mensajería",
-    "printD": "Enviado por nuestro socio de impresión fine-art a tu dirección en la UE y Reino Unido."
+    "pickupD": "En Tenerife (San Pedro Abajo 12, Guimar), con cita previa."
   },
   "delivery": {
     "firstName": "Nombre",
@@ -389,19 +378,7 @@
     "chooseLocker": "Elegir taquilla",
     "changeLocker": "Cambiar",
     "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
-    "country": "País",
-    "plOnly": "La cerámica se envía únicamente a direcciones en Polonia.",
-    "line1": "Calle y número",
-    "line2": "Piso, planta, etc. (opcional)",
-    "suggestionsLabel": "Sugerencias de dirección",
-    "googleAttribution": "Powered by Google",
-    "errors": {
-      "required": "Este campo es obligatorio.",
-      "email": "Introduce un correo electrónico válido.",
-      "phone": "Introduce un teléfono válido para el país seleccionado.",
-      "tooLong": "Este valor es demasiado largo.",
-      "invalid": "Revisa este campo."
-    }
+    "plOnly": "La cerámica se envía únicamente a direcciones en Polonia."
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",
@@ -459,9 +436,6 @@
     "printsMovedCta": "Ir a la tienda de láminas",
     "ctLShip": "Envío de cerámica",
     "ctVShip": "Polonia · InPost, entrega en un máximo de 5 días laborables"
-  },
-  "printCollections": {
-    "inne": "Otras láminas"
   },
   "collection": {
     "hint": "Haz clic en una miniatura o en el título para ver los <b>detalles</b> de la pieza. Añádela con el botón <b>«Añadir al carrito»</b> en la ficha o en la vista previa. Las piezas seleccionadas se reúnen en la barra inferior.",
@@ -935,8 +909,7 @@
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Nueve piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único. Cinco piezas del drop de junio de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única. Diez piezas del drop de junio de Anna Ciok.",
-      "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop.",
-      "fineArtPrints": "Impresiones fine art en papel 200 g/m² — con o sin marco."
+      "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop."
     },
     "giftCard": "Tarjeta regalo Anna Ciok Studio — elige entre cuatro importes. El código llega por correo electrónico y se puede usar en un futuro pedido de cerámica."
   },
@@ -952,45 +925,6 @@
     "accept": "Acepto",
     "reject": "Rechazo",
     "more": "Política de privacidad"
-  },
-  "print": {
-    "size": {
-      "label": "Tamaño",
-      "30x40": "30×40 cm",
-      "50x70": "50×70 cm",
-      "70x100": "70×100 cm"
-    },
-    "sizeHint": {
-      "30x40": "A3+",
-      "50x70": "B2",
-      "70x100": "B1"
-    },
-    "framing": "Enmarcado",
-    "unframed": "Sin marco",
-    "framed": "Enmarcado",
-    "frameColour": "Color del marco",
-    "colour_black": "Negro",
-    "colour_natural": "Marrón claro",
-    "colour_brown": "Marrón oscuro",
-    "mount": "Passepartout",
-    "mount_none": "Sin",
-    "mount_yes": "Con passepartout",
-    "addToCart": "Añadir al carrito",
-    "inCart": "En el carrito",
-    "unavailable": "No disponible",
-    "assetUnavailable": "Esta opción no está disponible temporalmente",
-    "paperNote": "Impreso en papel Fine Art EMA 200 g/m²",
-    "from": "Desde {price}",
-    "sectionDetails": "Detalles",
-    "technique": "Impresión Fine Art, papel EMA 200 g/m²",
-    "sectionEdition": "Edición",
-    "editionOpen": "Edición abierta",
-    "sectionDelivery": "Envío",
-    "deliveryNote": "Producido y enviado por nuestro socio de impresión. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa.",
-    "sectionCare": "Cuidado",
-    "careNote": "Mantener alejado de la humedad. Marco — limpiar con un paño seco.",
-    "moreFrom": "Más impresiones",
-    "mixedCart": "Las láminas se piden por separado de la cerámica — primero finaliza o vacía tu carrito de cerámica."
   },
   "printPdp": {
     "aboutArtistTitle": "Sobre la artista",
@@ -1071,67 +1005,6 @@
     "confirmationUnavailable": "No hemos podido abrir la confirmación. Revisa el correo del pedido o escribe a ania@ciok.art.",
     "refund": "Se han devuelto {cardAmount} a tu tarjeta regalo y {cashAmount} al método de pago original.",
     "usedCardRefund": "Si la tarjeta ya se ha utilizado parcial o totalmente, escribe a ania@ciok.art para solicitar la devolución de su compra. El estudio revisará el historial de pagos."
-  },
-  "collectionPage": {
-    "metaTitle": "{name} — colección Fine Art Print",
-    "metaDescriptionFallback": "La colección «{name}» — Fine Art Print de las pinturas de Anna Ciok en papel de 200 g/m², con o sin marco.",
-    "allCollections": "Todas las colecciones",
-    "shopCta": "Ir a la tienda",
-    "eyebrow": "Colección — {count, plural, one {# lámina} other {# láminas}}",
-    "otherCollections": "Otras colecciones"
-  },
-  "collectionsHub": {
-    "eyebrow": "Colecciones",
-    "title": "Colecciones de <em>Anna Ciok</em>",
-    "lead": "Cada colección es una serie propia de pinturas a la acuarela y tinta. Elige el ambiente, el color y el ritmo más cercanos a tu espacio — después el tamaño y el enmarcado de tu Fine Art Print.",
-    "metaTitle": "Colecciones de pintura de Anna Ciok",
-    "metaDescription": "{count, plural, one {# colección} other {# colecciones}} de pinturas a la acuarela y tinta de Anna Ciok. Elige una serie y pide un Fine Art Print en papel de 200 g/m², con o sin marco.",
-    "shopCta": "Ver todas las láminas en la tienda"
-  },
-  "shop": {
-    "metaTitle": "Tienda de Fine Art Print de las pinturas de Anna Ciok",
-    "metaDescription": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok — Fine Art Print en papel de 200 g/m², con o sin marco. Filtra por color y colección; envío a la UE y al Reino Unido.",
-    "eyebrow": "Fine Art Print",
-    "title": "Tienda de <em>Fine Art Print</em>",
-    "lead": "Reproducciones de las pinturas a la acuarela y tinta de Anna Ciok. Elige tamaño y enmarcado — cada lámina se imprime bajo pedido. Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables en Europa.",
-    "priceLadder": "{size} · desde {price}",
-    "frameFrom": "Marco +{price}",
-    "priceNote": "El precio depende del tamaño y del enmarcado, no de la pintura.",
-    "filtersLabel": "Filtros de la tienda",
-    "sortLabel": "Ordenar",
-    "sort": {
-      "featured": "Destacados",
-      "new": "Novedades",
-      "collection": "Colección"
-    },
-    "colourLabel": "Color",
-    "colour": {
-      "blue": "Azules",
-      "green": "Verdes",
-      "warm": "Ocre y terracota",
-      "pink": "Rosa y violeta",
-      "earth": "Beige y marrón",
-      "mono": "Negro y gris"
-    },
-    "collectionLabel": "Colección",
-    "allCollections": "Todas las colecciones",
-    "clear": "Borrar filtros",
-    "empty": "No hay obras que coincidan con estos filtros.",
-    "emptyCta": "Ver colecciones",
-    "badgeNew": "Novedad",
-    "badgePick": "Elección de la artista",
-    "frameColoursLabel": "Marcos: {colours}",
-    "quickAdd": "Elegir rápido tamaño y marco",
-    "quickDetails": "Ver detalles",
-    "close": "Cerrar",
-    "giftTitle": "¿No sabes qué pintura elegir?",
-    "giftLead": "La tarjeta regalo cubre Fine Art Print: quien la recibe elige la composición, el tamaño y el enmarcado.",
-    "collectionsTitle": "Explorar por colección",
-    "collectionsCta": "Todas las colecciones",
-    "aboutTitle": "Sobre los Fine Art Print de Anna Ciok",
-    "aboutBody": "Cada Fine Art Print es una reproducción de una pintura a la acuarela y tinta, impresa en papel Fine Art de 200 g/m². Hay tres tamaños — 30×40, 50×70 y 70×100 cm — y dos opciones de enmarcado: sin marco o con marco de madera negro, marrón claro o marrón oscuro. La lámina se imprime bajo pedido y se envía a un domicilio de la Unión Europea o del Reino Unido. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
-    "aboutMore": "Leer más",
-    "aboutLess": "Ver menos"
   },
   "market": {
     "meta": {

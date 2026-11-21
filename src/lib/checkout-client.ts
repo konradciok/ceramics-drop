@@ -151,7 +151,7 @@ export function cartSummaryAmounts(
  * rejects a reused order id that carries a different promo — a stale
  * attemptId across a code change would surface as a Stripe 400 or a
  * misleading `promo_exhausted`. The `\n` delimiter cannot appear in a cart
- * key (ids are registry ids / `print:` tokens), so no (cartKey, promo) pair
+ * key (ids are registry ids / `giftcard:` tokens), so no (cartKey, promo) pair
  * can alias another.
  */
 export function attemptIdentityKey(cartKey: string, promoCode: string | null): string {
@@ -166,8 +166,8 @@ export function shouldKeepAttemptIdOnCatch(status: number): boolean {
 }
 
 export type CheckoutPreBodyError = {
-  errorKey: 'cart.printAssetError' | 'cart.printPricingUnavailable' | 'cart.rateLimited';
-  analyticsReason: 'print_asset_error' | 'print_pricing_unavailable' | 'rate_limited';
+  errorKey: 'cart.serviceUnavailable' | 'cart.rateLimited';
+  analyticsReason: 'service_unavailable' | 'rate_limited';
   analyticsStatus: 429 | 503;
 };
 
@@ -187,17 +187,12 @@ export function checkoutPreBodyError(
     };
   }
   if (status === 503) {
-    if (body?.error === 'print_pricing_unavailable') {
-      return {
-        errorKey: 'cart.printPricingUnavailable',
-        analyticsReason: 'print_pricing_unavailable',
-        analyticsStatus: 503,
-      };
-    }
-    if (body?.error && body.error !== 'print_asset_error') return null;
+    // A coded 503 (e.g. gift_card_unavailable) has its own handling downstream;
+    // a bare one is an edge/platform blip before any reserve/PI work.
+    if (body?.error) return null;
     return {
-      errorKey: 'cart.printAssetError',
-      analyticsReason: 'print_asset_error',
+      errorKey: 'cart.serviceUnavailable',
+      analyticsReason: 'service_unavailable',
       analyticsStatus: 503,
     };
   }

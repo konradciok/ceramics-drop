@@ -47,7 +47,7 @@ type CheckoutSnapshot = {
   discountMinor?: number;
 };
 
-/** begin_checkout from pre-resolved AnalyticsItems (mixed ceramic + print carts). */
+/** begin_checkout from pre-resolved AnalyticsItems. */
 export function pushCheckoutStartedItems(
   items: AnalyticsItem[],
   { shippingCost, shippingMethod, userData, currency, coupon, discountMinor, push = pushDataLayer }: CheckoutStartOptions,
@@ -85,28 +85,8 @@ export async function pushConfirmedPurchaseByIdsOnce(
   const key = `${PURCHASE_DEDUPE_PREFIX}${paymentIntentId}`;
   if (safeGetItem(storage, key) === '1') return false;
 
-  // NO CMS-derived print names here, deliberately. This module is structurally
-  // BROWSER code: every caller is a `'use client'` component (the /koszyk/return
-  // page's useEffect, CartView, GiftCardConfigurator). Reaching the CMS for
-  // collection names means loadPrintCollectionDefinitions() →
-  // getSupabaseAdmin() → getCloudflareContext(), which throws outside a
-  // Cloudflare Workers request context — i.e. always, in a browser. The throw is
-  // swallowed by readWithFallback and the result is PRINT_COLLECTIONS, which is
-  // exactly the static default printDisplayName already uses on its own. So the
-  // lookup could only ever compute the string it was meant to replace, while
-  // dragging @supabase/supabase-js and @opennextjs/cloudflare into three client
-  // bundles. Item names therefore stay on printDisplayName's static fallback ON
-  // PURPOSE, not by accident.
-  //
-  // The server-side conversion path (src/lib/marketing/conversions.ts — Meta
-  // CAPI / GA4 Measurement Protocol) DOES use CMS names, correctly, because it
-  // genuinely runs server-side. Giving this browser dataLayer push the same
-  // names would need new server-side plumbing (e.g. names resolved server-side
-  // and handed to the client), which is out of scope here.
-  //
-  // Resolve both ceramic ids and print tokens; a print-only order would otherwise
-  // produce zero items here, skipping the browser purchase event (and tripping a
-  // false reportPurchaseGapOnce 'unresolvable_ids' alert).
+  // Resolve ceramic ids and gift-card tokens; an order of nothing resolvable
+  // produces zero items and skips the browser purchase event.
   const items = analyticsItemsForIds(ids, options.itemPrices);
   if (items.length === 0) return false;
 

@@ -8,8 +8,6 @@ import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
 import type { CartLine } from '@/lib/cart-lines-server';
 import { useCartLines } from '@/lib/use-cart-lines';
-import { priceOfVariant, type PrintPricingConfig } from '@/lib/print-pricing';
-import { variantLabel } from '@/lib/print-cart';
 import { isGiftCardToken } from '@/lib/gift-cards';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
@@ -22,7 +20,6 @@ import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
   buildEngagementEvent,
-  buildPrintRemoveFromCartEvent,
   buildRemoveFromCartEvent,
   buildViewCartEventFromItems,
   pushDataLayer,
@@ -37,12 +34,6 @@ import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
 import {
-  PRINT_COUNTRIES,
-  printShippingOf,
-  type PrintCountry,
-  type InternationalShippingRates,
-} from '@/lib/print-shipping';
-import {
   attemptIdentityKey,
   cartSummaryAmounts,
   checkoutPreBodyError,
@@ -55,8 +46,6 @@ import { CheckoutForm } from './CheckoutForm';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
-import { PrintDeliveryForm, PRINT_DELIVERY_FORM_ID } from './PrintDeliveryForm';
-import type { PrintDeliveryContact, PrintShippingAddress } from '@/lib/print-delivery';
 
 /**
  * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
@@ -149,24 +138,16 @@ function readOrCreateAttemptId(): string {
 
 export function CartView({
   privateSaleToken: propSaleToken,
-  initialPrintCountry = 'PL',
-  printPricing,
-  internationalShippingRates,
   domesticShippingRates,
 }: {
   privateSaleToken?: string | null;
-  initialPrintCountry?: PrintCountry;
-  /** Global print price list, resolved by the server page (client islands cannot reach the DB). */
-  printPricing: PrintPricingConfig;
   /**
-   * The SAME published shipping tables checkout charges from
+   * The SAME published (InPost) shipping table checkout charges from
    * (src/lib/shipping-rates/get.ts's getShippingRatesForDisplay, resolved by
    * the server page — client islands cannot reach the DB). Required, with no
-   * code-constant default: a caller that forgot them would silently show a
+   * code-constant default: a caller that forgot it would silently show a
    * price the CMS has since changed away from.
    */
-  internationalShippingRates: InternationalShippingRates;
-  /** Ceramic (InPost) track of the same published table. */
   domesticShippingRates: DomesticShippingRates;
 }) {
   const t = useTranslations();
@@ -209,8 +190,6 @@ export function CartView({
   // fields and the pay CTA unconditionally. It now mounts only on explicit
   // intent and collapses back to the chosen point after selection.
   const [lockerMapOpen, setLockerMapOpen] = useState(false);
-  // Destination country — print carts only (Prodigi ships EU + UK); ceramics are PL/InPost.
-  const [country, setCountry] = useState<PrintCountry>(initialPrintCountry);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -243,7 +222,7 @@ export function CartView({
   const [giftCard, setGiftCard] = useState<AppliedGiftCard | null>(null);
   const [balancePayment, setBalancePayment] = useState<{ giftCard: number; cash: number } | null>(null);
 
-  // Persist the buyer's own choice (not the print-forced kurier override).
+  // Persist the buyer's delivery choice.
   useEffect(() => {
     sessionStorage.setItem('acc_ship', shipChoice);
   }, [shipChoice]);
@@ -319,50 +298,30 @@ export function CartView({
     setShowUnavailableNotice(true);
   }, [allLines, linesStatus, remove]);
 
-  // This is the ceramics/prints merchandise cart — gift cards are their own
+  // This is the ceramics merchandise cart — gift cards are their own
   // exclusive checkout track (no shipping, no mixing) with a dedicated flow,
   // so any gift-card token that ends up in the shared cart store is dropped
-  // here rather than half-rendered through ceramic/print-shaped UI.
-  const lines = allLines.filter(
-    (l): l is Extract<CartLine, { kind: 'ceramic' | 'print' }> => l.kind === 'ceramic' || l.kind === 'print',
-  );
+  // here rather than half-rendered through ceramic-shaped UI.
+  const lines = allLines.filter((l): l is Extract<CartLine, { kind: 'ceramic' }> => l.kind === 'ceramic');
   const n = lines.length;
-  // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
-  // can't carry them, so any cart with a print line is locked to courier delivery
-  // (the checkout API enforces the same rule server-side).
-  const hasPrints = lines.some((l) => l.kind === 'print');
-  const hasCeramics = lines.some((l) => l.kind === 'ceramic');
-  // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate orders.
-  const mixedCart = hasPrints && hasCeramics;
-  // Private-sale links re-offer sold ceramics only; a print-only cart on that URL
-  // (e.g. buyer removed seeded pieces and added prints) cannot checkout.
-  const privateSalePrints = privateSale && hasPrints;
-  const hasFramed = lines.some((l) => l.kind === 'print' && l.sel.framed);
-  const ship: ShipId = hasPrints ? 'kurier' : shipChoice;
+  const ship: ShipId = shipChoice;
   const currency = useCurrency();
-  // priceOfVariant / printShippingOf only price pln/eur/gbp; toChargeableCurrency
-  // maps any other currency to EUR.
-  const printCurrency = toChargeableCurrency(currency);
+  // Stripe only charges pln/eur/gbp; toChargeableCurrency maps any other
+  // display currency to EUR.
+  const chargeCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
-  const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' | 'print' }>) =>
-    l.kind === 'print'
-      ? priceOfVariant(l.sel, printCurrency, printPricing)
-      : priceOfCurrency(l.product, currency);
+  const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' }>) => priceOfCurrency(l.product, currency);
   const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method, domesticShippingRates);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
-  // Print carts charge Prodigi's shipping cost by destination country;
-  // ceramic carts use the InPost price list. `internationalShippingRates` and
-  // `domesticShippingRates` are the same published tables checkout resolves via
-  // getShippingRatesForCheckout, so what's shown here always matches what
-  // the buyer is charged.
-  const shipCost = hasPrints
-    ? printShippingOf(country, hasFramed, printCurrency, printPricing, internationalShippingRates)
-    : shippingOf(ship);
+  // `domesticShippingRates` is the same published table checkout resolves via
+  // getShippingRatesForCheckout, so what's shown here always matches what the
+  // buyer is charged.
+  const shipCost = shippingOf(ship);
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
   const total = subtotal + shipCost - promoDiscount;
-  const cardSplit = giftCard?.currency === printCurrency && total > 0
-    ? splitGiftCardPayment(Math.round(total * 100), giftCard.available, STRIPE_MINIMUM_MINOR[printCurrency]) : null;
+  const cardSplit = giftCard?.currency === chargeCurrency && total > 0
+    ? splitGiftCardPayment(Math.round(total * 100), giftCard.available, STRIPE_MINIMUM_MINOR[chargeCurrency]) : null;
   // The figures the order summary renders. Before the PaymentIntent exists
   // this is the live estimate above — a legitimate pre-payment quote that must
   // keep tracking the buyer's delivery/promo/currency choices. After it
@@ -382,12 +341,7 @@ export function CartView({
   // figure is the same desync the summary rows above are protected against.
   // Before confirmation there is nothing charged yet, so the live currency is
   // correct (and is what `giftCard.currency` is matched against).
-  const giftCardCurrency = summary.confirmed ? summary.currency : printCurrency;
-  // Localized country names for the print destination selector, sorted A→Z.
-  const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
-  const countryOptions = PRINT_COUNTRIES
-    .map((code) => ({ code, name: regionNames.of(code) ?? code }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale));
+  const giftCardCurrency = summary.confirmed ? summary.currency : chargeCurrency;
   const cartKey = lines.map((l) => l.id).join('|');
 
   // The cart changing (add/remove) — or the applied promo code changing — means
@@ -396,7 +350,7 @@ export function CartView({
   // promo-bound, so both are part of the attempt identity (hard Phase 3 gate,
   // see attemptIdentityKey). Regenerate so a stale attemptId is never reused.
   // Skips the initial mount (same attempt).
-  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null) + (giftCard ? `\ncard:${giftCard.code}:${printCurrency}:${ship}:${country}` : '');
+  const attemptKey = attemptIdentityKey(cartKey, promo?.code ?? null) + (giftCard ? `\ncard:${giftCard.code}:${chargeCurrency}:${ship}` : '');
   const attemptCartKey = useRef(attemptKey);
   useEffect(() => {
     if (attemptCartKey.current === attemptKey) return;
@@ -410,7 +364,7 @@ export function CartView({
   // was computed for a specific cart + currency, so a line add/remove or a
   // currency switch re-validates it (and an emptied cart just drops it). On a
   // network failure the code is kept — checkout remains the authority.
-  const promoSyncKey = `${cartKey}|${printCurrency}`;
+  const promoSyncKey = `${cartKey}|${chargeCurrency}`;
   const promoSyncRef = useRef(promoSyncKey);
   useEffect(() => {
     if (promoSyncRef.current === promoSyncKey) return;
@@ -451,7 +405,7 @@ export function CartView({
     // Every apply-attempt outcome fires promo_apply — attempts are legitimately
     // repeatable, so unlike checkout_error this needs no dedup. `result` is the
     // GA4-facing outcome; `code` is the raw (unnormalized) input the buyer typed.
-    const track = hasPrints ? 'prints' : 'ceramics';
+    const track = 'ceramics';
     const fireApplyEvent = (result: string) =>
       pushDataLayer(buildEngagementEvent('promo_apply', { result, code: raw, track }));
     try {
@@ -501,7 +455,7 @@ export function CartView({
     const key =
       reason === 'expired' ? 'expired'
       : reason === 'not_started' ? 'notStarted'
-      : reason === 'wrong_track' ? (hasPrints ? 'wrongTrackPrints' : 'wrongTrackCeramics')
+      : reason === 'wrong_track' ? 'wrongTrackCeramics'
       : reason === 'exhausted' ? 'exhausted'
       : reason === 'network' ? 'networkError'
       : 'invalid'; // not_found, inactive, anything unrecognised
@@ -514,7 +468,6 @@ export function CartView({
     const items = analyticsItemsForIds(
       lines.map((l) => l.id),
       lines.map(priceOfLine),
-      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
     );
     pushDataLayer(buildViewCartEventFromItems(items, { currency: analyticsCurrency }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -541,12 +494,9 @@ export function CartView({
       address.building.trim() !== '' &&
       address.city.trim() !== '' &&
       address.postCode.trim() !== '');
-  const deliveryReady = hasPrints || (contactReady && phoneReady && lockerReady && addressReady);
+  const deliveryReady = contactReady && phoneReady && lockerReady && addressReady;
 
-  function deliveryBody(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
-    if (hasPrints && printDelivery) {
-      return { locale, delivery_method: 'kurier' as const, ...printDelivery };
-    }
+  function deliveryBody() {
     return {
       locale,
       delivery_method: ship,
@@ -564,16 +514,16 @@ export function CartView({
               building_number: address.building.trim(),
               city: address.city.trim(),
               post_code: address.postCode.trim(),
-              // InPost kurier is domestic; Prodigi ships prints EU + UK.
-              country_code: hasPrints ? country : 'PL',
+              // InPost kurier is domestic only.
+              country_code: 'PL',
             },
           }
         : {}),
     };
   }
 
-  async function handleCheckout(printDelivery?: { contact: PrintDeliveryContact; address: PrintShippingAddress }) {
-    if (giftCard && giftCard.currency !== printCurrency) {
+  async function handleCheckout() {
+    if (giftCard && giftCard.currency !== chargeCurrency) {
       setCheckoutError(t('giftBalance.wrongCurrency', { currency: giftCard.currency.toUpperCase() }));
       return;
     }
@@ -584,18 +534,16 @@ export function CartView({
     // Guard against a double-click: a second in-flight /api/checkout would
     // 409 against this buyer's own fresh reservation and silently strip the
     // items from their cart.
-    if (lines.length === 0 || submitting || !deliveryReady || mixedCart || privateSalePrints) return;
+    if (lines.length === 0 || submitting || !deliveryReady) return;
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
-    const emailNorm = (printDelivery?.contact.email ?? contact.email).trim().toLowerCase();
+    const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
-    // begin_checkout itemises the whole cart (ceramics + prints); print items are
-    // resolved from their tokens with server-equal prices.
+    // begin_checkout itemises the whole cart with server-equal prices.
     const checkoutItems = analyticsItemsForIds(
       lines.map((l) => l.id),
       lines.map(priceOfLine),
-      lines.map((l) => (l.kind === 'print' ? l.name : undefined)),
     );
     pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
       shippingCost: shipCost,
@@ -619,9 +567,8 @@ export function CartView({
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        // Send EVERY line id — bare ceramic ids and print tokens alike; the server
-        // (validateCart) resolves and prices both.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(printDelivery), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
+        // Send every line id; the server (validateCart) resolves and prices them.
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -648,11 +595,6 @@ export function CartView({
           // a fresh attempt that would 409 against its own live hold.
           pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_in_progress', status: 409 }));
           setCheckoutError(t('cart.checkoutError'));
-          return;
-        }
-        if (conflict.error === 'print_asset_unavailable') {
-          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'print_asset_unavailable', status: 409 }));
-          setCheckoutError(t('cart.printAssetUnavailable'));
           return;
         }
         if (conflict.error === 'promo_exhausted') {
@@ -701,10 +643,6 @@ export function CartView({
         if (res.status === 400) {
           try {
             const body = (await res.json()) as { error?: string; reason?: string };
-            if (body.error === 'private_sale_prints_unsupported') {
-              reason = 'private_sale_prints_unsupported';
-              errorMessage = t('cart.privateSalePrintsNotice');
-            }
             if (body.error === 'invalid_promo') {
               // The code stopped validating between apply and pay (operator
               // deactivation, expiry). Fail closed server-side surfaces here:
@@ -748,7 +686,7 @@ export function CartView({
         setPromo({ code: promo.code, discount });
       }
       // Snapshot EVERY line id (+ price) so /koszyk/return fires a complete purchase
-      // event for print-only and mixed carts (and never false-alarms a "purchase gap").
+      // event (and never false-alarms a "purchase gap").
       rememberCheckoutForReturn(lines.map((l) => l.id), {
         // Deliberately the client-side estimate, not the server's confirmed
         // shipping: GA4 needs PER-ITEM prices, which only exist client-side,
@@ -893,39 +831,6 @@ export function CartView({
         {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
         <div className="cart-list">
           {lines.map((l) => {
-            if (l.kind === 'print') {
-              const d = l.design;
-              const name = l.name;
-              return (
-                <div key={l.id} className="cart-row" data-testid="cart-line" data-product-id={l.id}>
-                  <Link href={`/fine-art-prints/${d.id}`} className="thumb" aria-label={name}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={d.image} srcSet={srcSet(d.image)} sizes="(min-width:561px) 96px, 72px" alt="" />
-                  </Link>
-                  <div>
-                    <h4>{name}</h4>
-                    <div className="meta">{variantLabel(l.sel, locale)}</div>
-                  </div>
-                  <div className="right">
-                    <span className="price">{fmt(priceOfLine(l))}</span>
-                    <button
-                      className="rm"
-                      onClick={() => {
-                        remove(l.id);
-                        pushDataLayer(
-                          buildPrintRemoveFromCartEvent(
-                            { id: d.id, num: d.num, variantLabel: variantLabel(l.sel, locale), price: priceOfLine(l), itemName: name },
-                            { currency: analyticsCurrency },
-                          ),
-                        );
-                      }}
-                    >
-                      <Icon name="trash" /> {t('cart.remove')}
-                    </button>
-                  </div>
-                </div>
-              );
-            }
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);
@@ -966,34 +871,30 @@ export function CartView({
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.delivery')}</div>
             <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
-              {!hasPrints && (
-                <ShipOption
-                  id="paczkomat"
-                  active={ship === 'paczkomat'}
-                  onPick={handlePickShip}
-                  title={t('ship.paczkomatT')}
-                  desc={t('ship.paczkomatD')}
-                  price={priceLabel('paczkomat')}
-                />
-              )}
+              <ShipOption
+                id="paczkomat"
+                active={ship === 'paczkomat'}
+                onPick={handlePickShip}
+                title={t('ship.paczkomatT')}
+                desc={t('ship.paczkomatD')}
+                price={priceLabel('paczkomat')}
+              />
               <ShipOption
                 id="kurier"
                 active={ship === 'kurier'}
                 onPick={handlePickShip}
-                title={t(hasPrints ? 'ship.printT' : 'ship.courierT')}
-                desc={t(hasPrints ? 'ship.printD' : 'ship.courierD')}
-                price={hasPrints ? fmt(shipCost) : priceLabel('kurier')}
+                title={t('ship.courierT')}
+                desc={t('ship.courierD')}
+                price={priceLabel('kurier')}
               />
-              {!hasPrints && (
-                <ShipOption
-                  id="odbior"
-                  active={ship === 'odbior'}
-                  onPick={handlePickShip}
-                  title={t('ship.pickupT')}
-                  desc={t('ship.pickupD')}
-                  price={priceLabel('odbior')}
-                />
-              )}
+              <ShipOption
+                id="odbior"
+                active={ship === 'odbior'}
+                onPick={handlePickShip}
+                title={t('ship.pickupT')}
+                desc={t('ship.pickupD')}
+                price={priceLabel('odbior')}
+              />
             </div>
           </div>
         )}
@@ -1001,14 +902,6 @@ export function CartView({
         {!clientSecret && (
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
-            {hasPrints ? (
-              <PrintDeliveryForm
-                initialCountry={initialPrintCountry}
-                countryOptions={countryOptions}
-                onCountryChange={setCountry}
-                onSubmit={handleCheckout}
-              />
-            ) : (
             <div className="delivery-fields">
               {/* Shipping (InPost locker/courier) is Poland-only; the free pickup option is at the Tenerife studio. */}
               <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
@@ -1125,17 +1018,10 @@ export function CartView({
                 </>
               )}
             </div>
-            )}
           </div>
         )}
 
         <div className="cart-cta">
-          {mixedCart && (
-            <p className="pay-error" data-testid="mixed-cart-notice">{t('cart.mixedNotice')}</p>
-          )}
-          {privateSalePrints && (
-            <p className="pay-error" data-testid="private-sale-prints-notice">{t('cart.privateSalePrintsNotice')}</p>
-          )}
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -1154,10 +1040,9 @@ export function CartView({
               className="btn btn-primary"
               id="checkout"
               data-testid="checkout-button"
-              type={hasPrints ? 'submit' : 'button'}
-              form={hasPrints ? PRINT_DELIVERY_FORM_ID : undefined}
-              onClick={hasPrints ? undefined : () => void handleCheckout()}
-              disabled={submitting || !deliveryReady || mixedCart || privateSalePrints}
+              type="button"
+              onClick={() => void handleCheckout()}
+              disabled={submitting || !deliveryReady}
             >
               {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>
@@ -1174,21 +1059,6 @@ export function CartView({
         <h3>{t('cart.summary')}</h3>
         <ul className="sum-items">
           {lines.map((l) => {
-            if (l.kind === 'print') {
-              const d = l.design;
-              return (
-                <li key={l.id} className="sum-item">
-                  <Link href={`/fine-art-prints/${d.id}`} className="sum-item-thumb" aria-label={l.name}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={d.image} srcSet={srcSet(d.image)} sizes="56px" alt="" />
-                  </Link>
-                  <div className="sum-item-info">
-                    <span className="sum-item-name">{l.name} · {variantLabel(l.sel, locale)}</span>
-                    <span className="sum-item-price">{fmt(priceOfLine(l))}</span>
-                  </div>
-                </li>
-              );
-            }
             const p = l.product;
             const cat = CATEGORIES[p.category];
             const name = t(`product.${cat.singularKey}` as Parameters<typeof t>[0]);

@@ -8,7 +8,6 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/shipx';
-import { validatePrintDelivery, type PrintShippingAddress } from '@/lib/print-delivery';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
 import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
@@ -18,8 +17,6 @@ import {
   computePromoDiscountMinor,
   type PromoCode,
 } from '@/lib/promo';
-import { printShippingOf } from '@/lib/print-shipping';
-import { getPrintPricingConfigForCheckout, PrintPricingUnavailableError } from '@/lib/print-pricing-config/get';
 import { getShippingRatesForCheckout } from '@/lib/shipping-rates/get';
 import { validateGiftCardContact } from '@/lib/gift-cards';
 import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
@@ -115,31 +112,20 @@ export async function POST(req: Request) {
   };
 
   const valid = await validateCart(body.ids, chargeCurrency);
-  if (!valid.ok) {
-    const status =
-      valid.reason === 'print_asset_unavailable' ? 409 :
-      valid.reason === 'print_asset_error' ? 503 :
-      valid.reason === 'print_pricing_unavailable' ? 503 :
-      400;
-    return respond({ error: valid.reason }, { status });
-  }
+  if (!valid.ok) return respond({ error: valid.reason }, { status: 400 });
 
   const ids = valid.items.map((i) => i.product_id);
-  // Only ceramics carry a piece_state row to reserve; prints and gift cards
-  // are not. validateCart guarantees a cart is all-ceramic, all-print, or
-  // all-gift-card (no mixing).
-  const ceramicIds = valid.items.filter((i) => !i.variant && !i.giftCardTierId).map((i) => i.product_id);
-  const hasPrints = valid.items.some((i) => i.variant);
+  // Only ceramics carry a piece_state row to reserve; gift cards do not.
+  // validateCart guarantees a cart is all-ceramic or all-gift-card (no mixing).
+  const ceramicIds = valid.items.filter((i) => !i.giftCardTierId).map((i) => i.product_id);
   const hasGiftCards = valid.items.some((i) => i.giftCardTierId != null);
-  // Delivery details are collected before payment. Prints use their own native
-  // international-address schema; the ceramic/InPost contract stays unchanged.
+  // Delivery details are collected before payment (ceramic/InPost contract).
   // Gift cards have no delivery at all — the buyer always receives the code
   // themselves, so only a name + email are collected (no address, no method).
   let method: 'paczkomat' | 'kurier' | 'odbior';
   let contact: DeliveryContact;
   let target_point: string | undefined;
-  let address: DeliveryAddress | PrintShippingAddress | undefined;
-  let printAddress: PrintShippingAddress | undefined;
+  let address: DeliveryAddress | undefined;
   if (hasGiftCards) {
     const gc = validateGiftCardContact(body);
     if (!gc.ok) return respond({ error: gc.reason }, { status: 400 });
@@ -148,23 +134,15 @@ export async function POST(req: Request) {
     // discriminator for downstream fulfilment logic is fulfilmentType below.
     method = 'odbior';
     contact = { first_name: gc.contact.first_name, last_name: gc.contact.last_name, email: gc.contact.email, phone: gc.contact.phone ?? '' };
-  } else if (hasPrints) {
-    const delivery = validatePrintDelivery(body);
-    if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
-    ({ method, contact, address: printAddress } = delivery.delivery);
-    address = printAddress;
   } else {
     const delivery = validateDelivery(body);
     if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
     ({ method, contact, target_point, address } = delivery.delivery);
   }
-  const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : hasPrints ? 'prodigi' : 'inpost';
+  const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : 'inpost';
 
-  // Prints are fulfilled by Prodigi to a home address — a locker or studio pickup
-  // leaves shipping_address NULL and the Prodigi order could never be built.
-  // Print country allowlisting is part of validatePrintDelivery. InPost courier
-  // remains domestic and must never inherit the print country list.
-  if (!hasPrints && address && address.country_code !== 'PL') {
+  // InPost courier is domestic only.
+  if (address && address.country_code !== 'PL') {
     return respond({ error: 'invalid_delivery' }, { status: 400 });
   }
 
@@ -172,7 +150,7 @@ export async function POST(req: Request) {
 
   // Promo code (optional). Validated server-side BEFORE any reservation or PI
   // work, so every failure path leaves no hold, no order row, no PaymentIntent
-  // behind (same ordering principle as the print_asset_unavailable pre-checks).
+  // behind.
   // Fail closed: a present-but-ineligible code is a hard error — the request
   // never silently charges full price. The atomic redemption claim runs later
   // (after the orders insert — its FK requires the row) as the last gate
@@ -191,7 +169,7 @@ export async function POST(req: Request) {
       return respond({ error: 'invalid_promo', reason: 'not_found' }, { status: 400 });
     }
     const { promo: found, redemptionCount } = await fetchPromoByCode(supabase, code);
-    const eligibility = checkPromoEligibility(found, hasPrints ? 'prints' : 'ceramics', redemptionCount);
+    const eligibility = checkPromoEligibility(found, 'ceramics', redemptionCount);
     if (!eligibility.ok) {
       if (eligibility.reason === 'exhausted') {
         return respond({ error: 'promo_exhausted' }, { status: 409 });
@@ -203,26 +181,14 @@ export async function POST(req: Request) {
 
   const unitPrices = valid.items.map((i) => i.unit_price);
   const subtotalMinor = unitPrices.reduce((s, v) => s + v, 0);
-  // Shipping is explicit in both branches — the discount applies to the
-  // merchandise subtotal only, so shipping can no longer be derived later as
-  // `amount − subtotal`.
+  // Shipping is explicit — the discount applies to the merchandise subtotal
+  // only, so shipping can no longer be derived later as `amount − subtotal`.
   //
-  // ONE-DEPLOY CUTOVER (plan Priority 7): BOTH shipping tracks are priced from
-  // the CMS-published rates, read here exactly once. A single accessor
-  // returning both tables is what makes the cutover atomic by construction —
-  // there is no arrangement of this code in which domestic reads the DB while
-  // international reads the constants, or vice versa, and a fallback (see
-  // src/lib/shipping-rates/last-known-good.ts) moves both together.
-  //
-  // It never throws: unlike the print pricing config below, shipping has a safe
-  // value to charge in every outage tier — ultimately the very constants both
-  // tracks were served from before this cutover existed — so a Supabase hiccup
-  // degrades the rate rather than blocking the purchase.
-  //
-  // The EUR→PLN/GBP conversion used by the international branch still comes
-  // from the print pricing config (`printPricing` below), NOT from these
-  // tables: one currency pair, one source, so an order's items and its shipping
-  // can never be converted at two different rates.
+  // Priced from the CMS-published rates, read here exactly once. It never
+  // throws: shipping has a safe value to charge in every outage tier
+  // (ultimately the code constants, see src/lib/shipping-rates/
+  // last-known-good.ts), so a Supabase hiccup degrades the rate rather than
+  // blocking the purchase.
   const shippingRates = await getShippingRatesForCheckout();
   let shipMinor: number;
   if (hasGiftCards) {
@@ -236,50 +202,6 @@ export async function POST(req: Request) {
     // orders shipping. Zero here is a property of the fulfilment type, not a
     // value read from any price list.
     shipMinor = 0;
-  } else if (hasPrints && printAddress) {
-    // Print carts charge Prodigi's shipping cost (see print-shipping.ts), not
-    // the InPost price list.
-    const hasFramed = valid.items.some((i) => i.variant?.framed);
-    const framedCount = valid.items.filter((i) => i.variant?.framed).length;
-    // Same admin-editable conversion rates the item prices were derived with —
-    // shipping must not silently keep stale rates after an FX edit at /admin/pricing.
-    // Reuse validateCart's own resolved config rather than an independent
-    // second read: two reads could straddle a pricing edit or a last-known-
-    // good swap mid-request and price items and shipping from different
-    // config generations. validateCart always resolves one for any cart
-    // with a print item (hasPrints is true here), so this is a defensive
-    // fallback only — never expected to fire in production.
-    let printPricing = valid.printPricing;
-    if (!printPricing) {
-      try {
-        printPricing = await getPrintPricingConfigForCheckout();
-      } catch (err) {
-        if (!(err instanceof PrintPricingUnavailableError)) throw err;
-        return respond({ error: 'print_pricing_unavailable' }, { status: 503 });
-      }
-    }
-    const shipMajor = printShippingOf(
-      printAddress.country_code,
-      hasFramed,
-      chargeCurrency,
-      printPricing,
-      shippingRates.international,
-    );
-    shipMinor = toMinor(shipMajor);
-    if (framedCount > 1) {
-      // ponytail: flat print shipping under-charges multi-frame orders — this
-      // log is the observability signal only; revisit with Prodigi POST /quotes
-      // when margin data shows the gap hurts (settled decision #5).
-      console.warn(JSON.stringify({
-        event: 'print_multi_frame_flat_shipping',
-        framed_count: framedCount,
-        item_count: valid.items.length,
-        charge_currency: chargeCurrency,
-        shipping_minor: shipMinor,
-        has_framed: hasFramed,
-        country: printAddress.country_code,
-      }));
-    }
   } else {
     // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
     // per-currency price lists are independently maintained, exactly as the
@@ -332,15 +254,10 @@ export async function POST(req: Request) {
   const privateSaleToken = normalizeToken(body.private_sale_token);
   let privateSaleId: string | null = null;
 
-  // Private-sale links re-offer already-sold ceramic pieces; prints are
-  // open-edition and never part of one (settled decision — see
-  // docs/plans/ceramics-prints-separation/00-master.md #4). Gift cards are not
-  // pieces at all. Reject before any reservation is attempted.
+  // Private-sale links re-offer already-sold ceramic pieces; gift cards are
+  // not pieces at all. Reject before any reservation is attempted.
   if (privateSaleToken && hasGiftCards) {
     return respond({ error: 'private_sale_giftcards_unsupported' }, { status: 400 });
-  }
-  if (privateSaleToken && hasPrints) {
-    return respond({ error: 'private_sale_prints_unsupported' }, { status: 400 });
   }
 
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
@@ -412,7 +329,7 @@ export async function POST(req: Request) {
           shipping_address: address ?? null, locale, private_sale_id: privateSaleId, user_id: sessionUserId,
           marketing,
         },
-        items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: i.variant ? { kind: 'print', ...i.variant } : null })),
+        items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: null })),
       });
       // Same summary renders behind a gift-card-funded checkout, so it gets
       // the same authoritative figures. `total` here is still the full order
@@ -509,26 +426,10 @@ export async function POST(req: Request) {
           delivery_method: method,
           fulfilment_type: fulfilmentType,
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
-          ...(hasPrints ? { has_prints: '1' } : {}),
           ...(hasGiftCards ? { has_gift_cards: '1', gift_card_tier: valid.items[0].giftCardTierId ?? '' } : {}),
           // Reporting/reconciliation only — the DB owns promo truth.
           ...(promo ? { promo_code: promo.code, promo_id: promo.id } : {}),
         },
-        ...(hasPrints && printAddress
-          ? {
-              shipping: {
-                name: `${contact.first_name} ${contact.last_name}`,
-                phone: contact.phone,
-                address: {
-                  line1: printAddress.line1,
-                  ...(printAddress.line2 ? { line2: printAddress.line2 } : {}),
-                  city: printAddress.city,
-                  postal_code: printAddress.post_code,
-                  country: printAddress.country_code,
-                },
-              },
-            }
-          : {}),
       },
       // Same key + same params → Stripe returns the SAME PaymentIntent instead
       // of creating a new one, so a retried POST replays onto the original PI.
@@ -681,11 +582,7 @@ export async function POST(req: Request) {
           order_id: orderId,
           product_id: i.product_id,
           unit_price: i.unit_price,
-          variant: i.variant
-            ? { kind: 'print' as const, ...i.variant }
-            : i.giftCardTierId
-              ? { kind: 'giftcard' as const, tierId: i.giftCardTierId }
-              : null,
+          variant: i.giftCardTierId ? { kind: 'giftcard' as const, tierId: i.giftCardTierId } : null,
         })),
       );
       // A concurrent replay of the same attemptId may have backfilled first —
