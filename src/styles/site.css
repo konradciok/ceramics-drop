@@ -781,6 +781,9 @@ ul { list-style:none; padding:0; margin:0; }
 .collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
 .collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
+/* The external print-shop link ("Obrazy w edycji fine art — anna-ciok.com")
+   is ~390px on one line, wider than a 320px phone: let it wrap there. */
+.collections-hub-cta .section-link { white-space:normal; text-align:center; max-width:100%; }
 /* Collection header: the first sentence is the lead, the rest of the description sits
    beside it on wide screens and wraps below on phones (the lead column is only 42ch). */
 .collection-body { flex:1 1 340px; max-width:58ch; margin:0; font-size:16px; line-height:1.7; opacity:.85; }
